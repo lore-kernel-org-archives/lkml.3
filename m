@@ -1,135 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaA0WN5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:13:57 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:55738
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753545AbaA0WN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:13:56 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next] hyperv: Add support for physically discontinuous receive buffer
-Date: Mon, 27 Jan 2014 15:03:42 -0800
-Message-Id: <1390863822-3509-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754089AbaA0WRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:17:25 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:46215 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaA0WRY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 17:17:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <52E6D866.604@amacapital.net>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+	<20140127002255.GA10323@ZenIV.linux.org.uk>
+	<CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com>
+	<20140127074208.GB10323@ZenIV.linux.org.uk>
+	<52E6D866.604@amacapital.net>
+Date: Mon, 27 Jan 2014 14:17:23 -0800
+X-Google-Sender-Auth: 7att80goV9P56mLsJktG20ja8tA
+Message-ID: <CA+55aFzWRjNC4kPeVad3isOOW+vZhnzX0Gk5_8QzD16GZEw5Kg@mail.gmail.com>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow us to use bigger receive buffer, and prevent allocation failure
-due to fragmented memory.
+On Mon, Jan 27, 2014 at 2:06 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> It's not just ip and sp -- cs matters here, too, I think.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/channel.c            |   14 ++++++++------
- drivers/net/hyperv/hyperv_net.h |    2 +-
- drivers/net/hyperv/netvsc.c     |    7 ++-----
- 3 files changed, 11 insertions(+), 12 deletions(-)
+For signal *delivery*, CS will always be __USER_CS, and %rcx can be
+crap, so sysret should be fine. We could easily check that %rip is
+valid in the whole slow-path instead of saying "return 1 if we did
+do_signal()".
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index cea623c..69ea36f 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -209,7 +209,6 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- {
- 	int i;
- 	int pagecount;
--	unsigned long long pfn;
- 	struct vmbus_channel_gpadl_header *gpadl_header;
- 	struct vmbus_channel_gpadl_body *gpadl_body;
- 	struct vmbus_channel_msginfo *msgheader;
-@@ -219,7 +218,6 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 	int pfnsum, pfncount, pfnleft, pfncurr, pfnsize;
- 
- 	pagecount = size >> PAGE_SHIFT;
--	pfn = virt_to_phys(kbuffer) >> PAGE_SHIFT;
- 
- 	/* do we need a gpadl body msg */
- 	pfnsize = MAX_SIZE_CHANNEL_MESSAGE -
-@@ -248,7 +246,8 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 		gpadl_header->range[0].byte_offset = 0;
- 		gpadl_header->range[0].byte_count = size;
- 		for (i = 0; i < pfncount; i++)
--			gpadl_header->range[0].pfn_array[i] = pfn+i;
-+			gpadl_header->range[0].pfn_array[i] = slow_virt_to_phys(
-+				kbuffer + PAGE_SIZE * i) >> PAGE_SHIFT;
- 		*msginfo = msgheader;
- 		*messagecount = 1;
- 
-@@ -301,7 +300,9 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 			 * so the hypervisor gurantees that this is ok.
- 			 */
- 			for (i = 0; i < pfncurr; i++)
--				gpadl_body->pfn[i] = pfn + pfnsum + i;
-+				gpadl_body->pfn[i] = slow_virt_to_phys(
-+					kbuffer + PAGE_SIZE * (pfnsum + i)) >>
-+					PAGE_SHIFT;
- 
- 			/* add to msg header */
- 			list_add_tail(&msgbody->msglistentry,
-@@ -327,7 +328,8 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 		gpadl_header->range[0].byte_offset = 0;
- 		gpadl_header->range[0].byte_count = size;
- 		for (i = 0; i < pagecount; i++)
--			gpadl_header->range[0].pfn_array[i] = pfn+i;
-+			gpadl_header->range[0].pfn_array[i] = slow_virt_to_phys(
-+				kbuffer + PAGE_SIZE * i) >> PAGE_SHIFT;
- 
- 		*msginfo = msgheader;
- 		*messagecount = 1;
-@@ -344,7 +346,7 @@ nomem:
-  * vmbus_establish_gpadl - Estabish a GPADL for the specified buffer
-  *
-  * @channel: a channel
-- * @kbuffer: from kmalloc
-+ * @kbuffer: from kmalloc or vmalloc
-  * @size: page-size multiple
-  * @gpadl_handle: some funky thing
-  */
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index a26eecb..7b594ce 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -462,7 +462,7 @@ struct nvsp_message {
- 
- #define NETVSC_MTU 65536
- 
--#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*2)	/* 2MB */
-+#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
- 
- #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
- 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 93b485b..03a2c6e 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -136,8 +136,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 
- 	if (net_device->recv_buf) {
- 		/* Free up the receive buffer */
--		free_pages((unsigned long)net_device->recv_buf,
--			get_order(net_device->recv_buf_size));
-+		vfree(net_device->recv_buf);
- 		net_device->recv_buf = NULL;
- 	}
- 
-@@ -163,9 +162,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 		return -ENODEV;
- 	ndev = net_device->ndev;
- 
--	net_device->recv_buf =
--		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
--				get_order(net_device->recv_buf_size));
-+	net_device->recv_buf = vzalloc(net_device->recv_buf_size);
- 	if (!net_device->recv_buf) {
- 		netdev_err(ndev, "unable to allocate receive "
- 			"buffer of size %d\n", net_device->recv_buf_size);
--- 
-1.7.4.1
+Now, it's a different thing wrt signal handler *return*, because at
+that point we really cannot return with some random value in %rcx. We
+absolutely do need to use 'iretq' in that whole [rt_]sigreturn() path,
+but on x86-64 that is all handled by the system call itself (see the
+stub_*_sigreturn stuff in entry_64.S) and it very much uses iret
+explicitly (the 32-bit case also does that, by forcing the sigreturn
+to be done with an "int 0x80" instruction - we could change that to
+use syscall+iret, but frankly, I'm not all that inclined to care,
+although it might be worth trying to do just to unify the models a
+bit).
 
+                   Linus
