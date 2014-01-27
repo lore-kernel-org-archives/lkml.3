@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaA0Xlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 18:41:37 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:53892 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862AbaA0Xlg (ORCPT
+	id S1754590AbaA0XnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 18:43:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57090 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754205AbaA0XnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 18:41:36 -0500
-Date: Mon, 27 Jan 2014 15:41:35 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
-        linux-kernel@vger.kernel.org, LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
-Message-ID: <20140127234135.GA18059@roeck-us.net>
-References: <52E561D0.4040308@roeck-us.net>
- <20140126211357.6fa68909@endymion.delvare>
- <52E573B6.9040903@roeck-us.net>
- <20140126214936.7736f530@endymion.delvare>
- <52E58330.90602@roeck-us.net>
- <52E58656.7000903@roeck-us.net>
- <20140126235103.GP11727@sirena.org.uk>
- <52E6951C.60609@wwwdotorg.org>
- <20140127185031.GA28910@roeck-us.net>
- <20140127230447.7e8be3a4@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140127230447.7e8be3a4@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Jan 2014 18:43:10 -0500
+Message-ID: <1390866011.4405.2.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: netdev@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>,
+        devicetree@vger.kernel.org, Roger Luethi <rl@hellgate.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Jan 2014 23:40:11 +0000
+In-Reply-To: <CABjd4Yz2Kfed_qBfSAEXoAcVxfsmhTBA-83YJ9_iSwPZ+r1qYQ@mail.gmail.com>
+References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
+	 <1390823503-24087-1-git-send-email-alchark@gmail.com>
+	 <1390823503-24087-4-git-send-email-alchark@gmail.com>
+	 <1390834654.2735.148.camel@deadeye.wl.decadent.org.uk>
+	 <CABjd4Yz2Kfed_qBfSAEXoAcVxfsmhTBA-83YJ9_iSwPZ+r1qYQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-lqUvMEKlP/A+W9wDQi+i"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 82.132.219.176
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 11:04:47PM +0100, Jean Delvare wrote:
-> On Mon, 27 Jan 2014 10:50:31 -0800, Guenter Roeck wrote:
-> > On Mon, Jan 27, 2014 at 10:19:24AM -0700, Stephen Warren wrote:
-> > > On 01/26/2014 04:51 PM, Mark Brown wrote:
-> > > > On Sun, Jan 26, 2014 at 02:04:06PM -0800, Guenter Roeck wrote:
-> > > > 
-> > > >> I think I have a better idea: Surround the regulator code, or at least
-> > > >> its error handling, in the lm90 driver with
-> > > > 
-> > > >> 	if (IS_ENABLED(CONFIG_OF)) {
-> > > >> 	}
-> > > > 
-> > > >> Would that be ok ? If yes I'll submit a patch. I'll do the same in
-> > > >> another driver I am working on.
-> > > > 
-> > > > That's not going to have the desired effect in cases where DT is built
-> > > > into the kernel but not in use on the current system (which is a
-> > > > configuration that gets used) ...
-> > > 
-> > > The solution to that particular aspect of the problem is the following:
-> > > 
-> > > if (of_have_populated_dt()) {
-> > > 	...
-> > > 
-> > 
-> > Turns out that won't help either after Mark's patches to ACPI and
-> > to the regulator core are applied. Right now I don't have a solution
-> > that would work for all systems.
-> > 
-> > I'll leave it up to Jean to decide how to proceed.
-> 
-> I have no idea, really. I have seen multiple patches flying around,
-> each seems to have its own merits, but I simply don't know which is
-> going in the direction. I don't know a thing about regulators, OF, DT
-> etc. so I am really not the right person to make a decision about this.
-> 
-> All I can say is: either someone comes up with a patch set which
-> properly fixes the regression for all lm90 drivers users, or I will have
-> to revert commit 3e0f964f.
-> 
-I'll test Mark's two patches on my system and let you know the results.
-After looking some more into it, those _may_ actually fix the problem at least
-for systems supporting ACPI. No promise, though, and I am not sure if that
-would be sufficient (it may still not work on non-ACPI PCs). But then who
-am I to say ...  Mark keeps repeating that I don't know what I am talking about,
-after all, and maybe he has a point ;-).
 
-Guenter
+--=-lqUvMEKlP/A+W9wDQi+i
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 2014-01-27 at 19:34 +0400, Alexey Charkov wrote:
+> 2014/1/27 Ben Hutchings <ben@decadent.org.uk>:
+> > On Mon, 2014-01-27 at 15:51 +0400, Alexey Charkov wrote:
+> >> This should make the driver usable with VIA/WonderMedia ARM-based
+> >> Systems-on-Chip integrated Rhine III adapters. Note that these
+> >> are always in MMIO mode, and don't have any known EEPROM.
+> > [...]
+> >> --- a/drivers/net/ethernet/via/Kconfig
+> >> +++ b/drivers/net/ethernet/via/Kconfig
+> >> @@ -19,7 +19,7 @@ if NET_VENDOR_VIA
+> >>
+> >>  config VIA_RHINE
+> >>         tristate "VIA Rhine support"
+> >> -       depends on PCI
+> >> +       depends on (PCI || USE_OF)
+> >>         select CRC32
+> >>         select MII
+> >>         ---help---
+> >
+> > This seems like the right thing to do, but it means you need to add
+> > #ifdef CONFIG_PCI and #ifdef CONFIG_USE_OF around the driver structures
+> > and related functions.
+>=20
+> Frankly, I would like to avoid that if possible (as pointed out in the
+> cover email), as I believe we would get a cleaner driver without
+> #ifdef. This is also the way it was done in via-velocity, and it works
+> just fine.
+
+OK, I'm surprised that all the PCI functions have dummy definitions.
+
+> > You should compile-test in configurations that have just one of those
+> > dependencies enabled.
+>=20
+> This has been compile-tested and runtime-tested in OF-only
+> configuration on WM8950, and Roger also tested it in PCI-only
+> configuration, so it seems to work fine.
+[...]
+
+Good, then I have no objection.
+
+Ben.
+
+--=20
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
+
+--=-lqUvMEKlP/A+W9wDQi+i
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIVAwUAUubuW+e/yOyVhhEJAQpVGQ//d1srlooIRbGRoSGeEH7zZbpAMv6grkeS
+ABdZhue0hVQRq/dIIDmzwfkPHMYykjJPM7YTVY6tT2QJ+UCvgNBFCeG8kXBRTUMQ
+Ybz02Od5YbqqY0IXPFFj3jrVixAk+Nwx6+DVwjP84+odUmg8UTn1V9IviXSk3Jfg
+9qV9ut07SffsWYyDqHsf4zUmFPYIWXE8CCsXN3YMWCcKFkdhwVI7fbMQEazRLEHZ
+QseVmmHGIoBS9KBfGc+aIHzME9wFIIAFbFouFlXY39+i70Wdkyf+GidS/TjP5nSF
+0kumtirxSopbowlWsJSC2+Cd0vYz4P6tQQk/8t+9qR5VkgmNmSceyQtEZGfhvPx9
+VMf7NhSJ1P8ASnoGiheEFgEgCLfBoNKnXmPtRVkhesZhp1iWUv7W6HOD/ot/gH2R
+TKeBzsDA0WMXmkNntumStolS418lkF4IQz7EX4EXiLafxlJdnnNcZ/BYVYRd5na3
+9X55qslsbrEaRt+3ZjJWmu3gp1N0Kmh3fVzlFsfiSQHJiso89OEer7LnpB/hcQBg
+v6VQrIGaTG03pN2Bb9vQjW99v4IcKLD3pibCecSmOW9nPXiKTXPI+8KBSqoBDUly
+RZ6ND+6xrX880gMNKOnyTfNwUJW6/0tCFtaRj05KEILmsPDcjuWADaBqiMy4rFEi
+tn97EGF+hBg=
+=3EKG
+-----END PGP SIGNATURE-----
+
+--=-lqUvMEKlP/A+W9wDQi+i--
