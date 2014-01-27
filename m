@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaA0Tde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:33:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36819 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334AbaA0Tdd (ORCPT
+	id S1754038AbaA0TfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:35:07 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60169 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaA0TfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:33:33 -0500
-Date: Mon, 27 Jan 2014 20:33:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Honig <ahonig@google.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Dave Anderson <anderson@redhat.com>,
-        Eugene Surovegin <surovegin@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v2] x86, kaslr: export offset in VMCOREINFO ELF notes
-Message-ID: <20140127193320.GB9636@twins.programming.kicks-ass.net>
-References: <20140123173120.GA25474@www.outflux.net>
- <20140125074738.GB10565@gmail.com>
- <52E669F1.9080603@intel.com>
- <20140127152557.GA27792@gmail.com>
- <52E681B6.7020501@intel.com>
- <20140127161959.GD4941@twins.programming.kicks-ass.net>
- <20140127162226.GA3229@twins.programming.kicks-ass.net>
- <CAKB9nXucRwn78+pw1oRQ_jP_kQJuOaUzPyiH0JE5Sv9utkK1ww@mail.gmail.com>
+	Mon, 27 Jan 2014 14:35:03 -0500
+Date: Mon, 27 Jan 2014 19:34:57 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140127193457.GR11841@sirena.org.uk>
+References: <20140123163428.GP17314@sirena.org.uk>
+ <1390499847-8822-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="562f9N4fbIs+fPrJ"
 Content-Disposition: inline
-In-Reply-To: <CAKB9nXucRwn78+pw1oRQ_jP_kQJuOaUzPyiH0JE5Sv9utkK1ww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1390499847-8822-1-git-send-email-nm@ti.com>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V4] regulator: ti-abb: Add support for interleaved LDO
+ registers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A: Because it messes up the order in which people normally read text.
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
+
+--562f9N4fbIs+fPrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Jan 23, 2014 at 11:57:27AM -0600, Nishanth Menon wrote:
+> Certain platforms such as DRA7 have quirky memory maps such as:
+> PRM_ABBLDO_DSPEVE_CTRL	0x4ae07e20
+> PRM_ABBLDO_IVA_CTRL	0x4ae07e24
+
+Applied, thanks.
+
+--562f9N4fbIs+fPrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS5rTeAAoJELSic+t+oim9iZEP/R5nR6txXjzrDDL0R6C0VuvP
+3tJ0GUpfYWhdEUjQP58Ow8C8Pd8+qmP6MheQc1lpH5Xhorw0e4Ccb7drO/KwN20m
+Lzbo95eHLZV8sNYXf0lLcs0erSZbgbGtIHmpp5YBfNHeP9WbhnoI6Bg1wGDkssoO
++Mv6BH7GzWCjHPsdUPCDH5e3fQgG5fJ0NB1qzmlI8WAXDjKS1vU+2V7p/ZUVZUPk
+ik9Sk5I62jVWiMqjwwRTB6+jwS49IS3GI6oP4qqzNAOGaFnABlASVtMUIYCtnnHc
+X3Q6m9maz/1Ip38fcQmSi4Uh/faIUsDAI2OJbFC897+0fIN/dFU7f7NS7DDQibRn
+Kc1x58Mu9RY8RiqEMeTsZuxMpoDfIX4+V+b/CEeAbiNiCbwFs8YhBhgPlZ+9rsTQ
+Ev9/BX2QK6vJ4IOrqzY1fVAM1BKnfMS58AQjzd9jq6rttR+i+HjCwGvx6b9gcuhv
+g33swG2Wpxo9QypPJMZMSDWiesuJK5BUDkL44vDgbKUj8xSGquP4Y94n51inpB+z
+qMyhsLJfSKTbaT58bW4df1AofXXIf/0c5xfSeDQDuun8UCOnIYcLOXtPVDUvwmLu
+Lb+MPLFoH7gm2+4i/RFZpvSy5wlgcUwrQfXKcLDWuDmwKImAZK02tC9k1IrhDEb6
+PqyVw6eZzhBbDRRMqtjH
+=S9HT
+-----END PGP SIGNATURE-----
+
+--562f9N4fbIs+fPrJ--
