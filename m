@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaA0NWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 08:22:32 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:42751 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaA0NVy (ORCPT
+	id S1753794AbaA0N0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 08:26:50 -0500
+Received: from palinux.external.hp.com ([192.25.206.14]:60157 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398AbaA0N0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 08:21:54 -0500
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 2/3] fs/compat: fix lookup_dcookie() parameter handling
-Date: Mon, 27 Jan 2014 14:21:44 +0100
-Message-Id: <1390828905-52245-3-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1390828905-52245-1-git-send-email-heiko.carstens@de.ibm.com>
-References: <1390828905-52245-1-git-send-email-heiko.carstens@de.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012713-2966-0000-0000-00000A0E0B24
+	Mon, 27 Jan 2014 08:26:49 -0500
+Date: Mon, 27 Jan 2014 06:26:45 -0700
+From: Matthew Wilcox <matthew@wil.cx>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 10/22] Remove get_xip_mem
+Message-ID: <20140127132644.GB20939@parisc-linux.org>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <557203b474f633a59f32fee1f624a5239effcab7.1389779961.git.matthew.r.wilcox@intel.com> <52D739F4.8060108@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D739F4.8060108@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d5dc77bfeeab0 "consolidate compat lookup_dcookie()" coverted all
-architectures to the new compat_sys_lookup_dcookie() syscall.
+On Wed, Jan 15, 2014 at 05:46:28PM -0800, Randy Dunlap wrote:
+> > +In order to support this method, the storage must be byte-accessable by
+> 
+>                                                         byte-accessible
 
-The "len" paramater of the new compat syscall must have the type
-compat_size_t in order to enforce zero extension for architectures
-where the ABI requires that the caller of a function performed
-zero and/or sign extension to 64 bit of all parameters.
+Thanks.  Fixed.
 
-Cc: stable@vger.kernel.org # v3.10+
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- fs/dcookies.c          | 2 +-
- include/linux/compat.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> > +- ensuring that there is sufficient locking between reads, writes,
+> > +  truncates and page faults
+> 
+>      truncates, and
+> but that's up to you and your editor/proofreader etc.  :)
 
-diff --git a/fs/dcookies.c b/fs/dcookies.c
-index ab5954b50267..ac44a69fbea9 100644
---- a/fs/dcookies.c
-+++ b/fs/dcookies.c
-@@ -204,7 +204,7 @@ out:
- }
- 
- #ifdef CONFIG_COMPAT
--COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, size_t, len)
-+COMPAT_SYSCALL_DEFINE4(lookup_dcookie, u32, w0, u32, w1, char __user *, buf, compat_size_t, len)
- {
- #ifdef __BIG_ENDIAN
- 	return sys_lookup_dcookie(((u64)w0 << 32) | w1, buf, len);
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index c5642b83e02b..19f6003291de 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -422,7 +422,7 @@ extern long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
- asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
- 				  compat_long_t addr, compat_long_t data);
- 
--asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, size_t);
-+asmlinkage long compat_sys_lookup_dcookie(u32, u32, char __user *, compat_size_t);
- /*
-  * epoll (fs/eventpoll.c) compat bits follow ...
-  */
+Ooh, do we really get to have a discussion about the Oxford Comma on
+linux-kernel?  :-)
+
+I haven't actually run this material past my editor (who is my wife, so
+I need really convincing arguments to do it your way instead of hers),
+but funnily we had a conversation about the Oxford Comma while on holiday
+last week.  http://en.wikipedia.org/wiki/Serial_comma has a reasonably
+exhaustive discourse on the subject, and I learned that she's probably
+primarily against it because of her journalism degree.
+
+> > +Even if the kernel or its modules are stored on an filesystem that supports
+> 
+>                                                    a
+
+Good catch.  I think I started out with 'an fs', then expanded it to
+"an filesystem" which of course is nonsense.
+
 -- 
-1.8.4.5
-
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
