@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaA0ADS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 19:03:18 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:48342 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbaA0ADO (ORCPT
+	id S1753450AbaA0AFG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 19:05:06 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36758 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173AbaA0AFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 19:03:14 -0500
-Date: Mon, 27 Jan 2014 01:03:05 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.14-mw regression:  rtl8169 WARNING: DMA-API: exceeded 7
- overlapping mappings of pfn 55ebe
-Message-ID: <20140127000305.GA14236@electric-eye.fr.zoreil.com>
-References: <1859471893.20140126115521@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1859471893.20140126115521@eikelenboom.it>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 26 Jan 2014 19:05:04 -0500
+Date: Mon, 27 Jan 2014 00:04:26 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Mark Brown <broonie@kernel.org>, Tomasz Figa <t.figa@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+Message-ID: <20140127000426.6027cdd5@www.etchedpixels.co.uk>
+In-Reply-To: <20140126210907.GB7246@Nokia-N900>
+References: <1390208555-27770-1-git-send-email-tushar.behera@linaro.org>
+	<1390208555-27770-2-git-send-email-tushar.behera@linaro.org>
+	<20140120100530.GY15937@n2100.arm.linux.org.uk>
+	<CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com>
+	<20140123180423.1a62611a@www.etchedpixels.co.uk>
+	<20140123184022.GC11727@sirena.org.uk>
+	<52E163DC.1090002@samsung.com>
+	<20140123193633.GG11727@sirena.org.uk>
+	<20140126210907.GB7246@Nokia-N900>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sander Eikelenboom <linux@eikelenboom.it> :
-[...]
-> I have got a regression with a 3.14-mw kernel (last commit is 4ba9920e5e9c0e16b5ed24292d45322907bb9035):
-> It looks like it's related to the rtl8169 ...
-> 
-> --
-> Sander
-> 
-> Jan 26 11:36:26 serveerstertje kernel: [   89.105537] ------------[ cut here ]------------
-> Jan 26 11:36:26 serveerstertje kernel: [   89.116779] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x103/0x130()
-> Jan 26 11:36:26 serveerstertje kernel: [   89.128148] DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
-> Jan 26 11:36:26 serveerstertje kernel: [   89.139397] Modules linked in:
-> Jan 26 11:36:26 serveerstertje kernel: [   89.150535] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-20140125-mw-pcireset+ #1
-> Jan 26 11:36:26 serveerstertje kernel: [   89.161784] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
-> Jan 26 11:36:26 serveerstertje kernel: [   89.172965]  0000000000000009 ffff88005f603838 ffffffff81acbcfa ffffffff822134e0
-> Jan 26 11:36:26 serveerstertje kernel: [   89.184156]  ffff88005f603888 ffff88005f603878 ffffffff810bdf62 ffff880000000000
-> Jan 26 11:36:26 serveerstertje kernel: [   89.195186]  0000000000055ebe 00000000ffffffef 0000000000000200 ffff8800592ea098
-> Jan 26 11:36:26 serveerstertje kernel: [   89.206227] Call Trace:
-> Jan 26 11:36:26 serveerstertje kernel: [   89.217027]  <IRQ>  [<ffffffff81acbcfa>] dump_stack+0x46/0x58
-> Jan 26 11:36:26 serveerstertje kernel: [   89.227907]  [<ffffffff810bdf62>] warn_slowpath_common+0x82/0xb0
-> Jan 26 11:36:26 serveerstertje kernel: [   89.238678]  [<ffffffff810be031>] warn_slowpath_fmt+0x41/0x50
-> Jan 26 11:36:26 serveerstertje kernel: [   89.249336]  [<ffffffff81471c5a>] ? active_pfn_read_overlap+0x3a/0x70
-> Jan 26 11:36:26 serveerstertje kernel: [   89.259904]  [<ffffffff814729e3>] add_dma_entry+0x103/0x130
-> Jan 26 11:36:26 serveerstertje kernel: [   89.270416]  [<ffffffff81472de6>] debug_dma_map_page+0x126/0x150
-> Jan 26 11:36:26 serveerstertje kernel: [   89.280840]  [<ffffffff81714686>] rtl8169_start_xmit+0x216/0xa20
-[r8169 and xen stuff]
+On Sun, 26 Jan 2014 22:09:07 +0100
+Pavel Machek <pavel@ucw.cz> wrote:
 
-Dan, I miss the part of the debug code that tells where the mappings were
-previously set.
+> On Thu 2014-01-23 19:36:33, Mark Brown wrote:
+> > On Thu, Jan 23, 2014 at 07:47:56PM +0100, Tomasz Figa wrote:
+> > > On 23.01.2014 19:40, Mark Brown wrote:
+> > 
+> > > >We'd need to leave it user selectable rather than enabling it for ARM,
+> > > >the whole reason this got noticed is that people are trying to build
+> > > >kernels that support a wider range of devices for ARM.
+> > 
+> > > What about making it depend on !MULTIPLATFORM and enabled by default?
+> > 
+> > That'd work, but if we're doing that then substituting in the dynamic
+> > assignment only when we hit a collision seems smoother and more general.
+> 
+> That seems like a mess. I had enough fun debugging "WTF is
+> going on with my serials" as is...
+> 
+> Plus... collision can happen at runtime when you insert
+> BT CF card... at that point it is too late to reassign.
 
--- 
-Ueimor
+Agreed entirely - you want predictability here, plus making it happen by
+magic is going to do the nut of anyone trying to figure out why kernel A
+works on their platform and kernel B doesn't.
+
+It needs to be something you choose to turn on as compatibility, like old
+sysfs files and so forth.
