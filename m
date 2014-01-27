@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaA0UQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:16:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36169 "EHLO
+	id S1754330AbaA0UQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:16:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981AbaA0UQK (ORCPT
+	with ESMTP id S1754201AbaA0UQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:10 -0500
+	Mon, 27 Jan 2014 15:16:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bernd Porr <mail@berndporr.me.uk>, Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.13 02/10] staging: comedi: fix result of memdup_user for user chanlist
-Date: Mon, 27 Jan 2014 12:17:05 -0800
-Message-Id: <20140127201535.520608166@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 08/10] ALSA: hda - Explicitly keep codec powered up in hdmi_present_sense
+Date: Mon, 27 Jan 2014 12:17:11 -0800
+Message-Id: <20140127201535.937672648@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -26,43 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernd Porr <mail@berndporr.me.uk>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit e56b1401056288a725d50942ef300dcbed5e519a upstream.
+commit da4a7a3926d09c13ae052ede67feb7285e01e3f5 upstream.
 
-If the channel list is not set in userspace we get an error at
-PTR_ERR(async->cmd.chanlist). However, do_become_nonbusy(dev, s) cleans
-up this pointer which causes a kernel ooops. Setting the channel list in
-async to NULL and checking this in do_become_nonbusy prevents the oops.
+This should help us avoid the following mutex deadlock:
 
-[Ian Abbott] Also do the same for the chanlist allocated in
-do_cmdtest_ioctl().
+[] mutex_lock+0x2a/0x50
+[] hdmi_present_sense+0x53/0x3a0 [snd_hda_codec_hdmi]
+[] generic_hdmi_resume+0x5a/0x70 [snd_hda_codec_hdmi]
+[] hda_call_codec_resume+0xec/0x1d0 [snd_hda_codec]
+[] snd_hda_power_save+0x1e4/0x280 [snd_hda_codec]
+[] codec_exec_verb+0x5f/0x290 [snd_hda_codec]
+[] snd_hda_codec_read+0x5b/0x90 [snd_hda_codec]
+[] snd_hdmi_get_eld_size+0x1e/0x20 [snd_hda_codec_hdmi]
+[] snd_hdmi_get_eld+0x2c/0xd0 [snd_hda_codec_hdmi]
+[] hdmi_present_sense+0x9a/0x3a0 [snd_hda_codec_hdmi]
+[] hdmi_repoll_eld+0x34/0x50 [snd_hda_codec_hdmi]
 
-Signed-off-by: Bernd Porr <mail@berndporr.me.uk>
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Fixes: cbbaa603a03c ('ALSA: hda - Fix possible races in HDMI driver')
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_hdmi.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1425,6 +1425,7 @@ static int do_cmd_ioctl(struct comedi_de
- 					  async->cmd.chanlist_len * sizeof(int));
- 	if (IS_ERR(async->cmd.chanlist)) {
- 		ret = PTR_ERR(async->cmd.chanlist);
-+		async->cmd.chanlist = NULL;
- 		DPRINTK("memdup_user failed with code %d\n", ret);
- 		goto cleanup;
- 	}
-@@ -1547,6 +1548,7 @@ static int do_cmdtest_ioctl(struct comed
- 				       cmd.chanlist_len * sizeof(int));
- 		if (IS_ERR(chanlist)) {
- 			ret = PTR_ERR(chanlist);
-+			chanlist = NULL;
- 			DPRINTK("memdup_user exited with code %d", ret);
- 			goto cleanup;
- 		}
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1496,11 +1496,14 @@ static bool hdmi_present_sense(struct hd
+ 	 * specification worked this way. Hence, we just ignore the data in
+ 	 * the unsolicited response to avoid custom WARs.
+ 	 */
+-	int present = snd_hda_pin_sense(codec, pin_nid);
++	int present;
+ 	bool update_eld = false;
+ 	bool eld_changed = false;
+ 	bool ret;
+ 
++	snd_hda_power_up(codec);
++	present = snd_hda_pin_sense(codec, pin_nid);
++
+ 	mutex_lock(&per_pin->lock);
+ 	pin_eld->monitor_present = !!(present & AC_PINSENSE_PRESENCE);
+ 	if (pin_eld->monitor_present)
+@@ -1573,6 +1576,7 @@ static bool hdmi_present_sense(struct hd
+ 		jack->block_report = !ret;
+ 
+ 	mutex_unlock(&per_pin->lock);
++	snd_hda_power_down(codec);
+ 	return ret;
+ }
+ 
 
 
