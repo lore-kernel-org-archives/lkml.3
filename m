@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263AbaA0FV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 00:21:56 -0500
-Received: from toro.web-alm.net ([62.245.132.31]:48506 "EHLO toro.web-alm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751530AbaA0FVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 00:21:55 -0500
-X-Greylist: delayed 1176 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jan 2014 00:21:54 EST
-Message-ID: <52E5E687.1090808@osadl.org>
-Date: Mon, 27 Jan 2014 05:54:31 +0100
-From: Carsten Emde <C.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL)
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753354AbaA0FYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 00:24:04 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:61991 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275AbaA0FYC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 00:24:02 -0500
+X-AuditID: 9c93017e-b7b63ae000000e6a-40-52e5ed6f1a22
+From: Namhyung Kim <namhyung@kernel.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix traceevent plugin path definitions
+References: <20140122150147.GK16455@hansolo.jdub.homelinux.org>
+Date: Mon, 27 Jan 2014 14:23:58 +0900
+In-Reply-To: <20140122150147.GK16455@hansolo.jdub.homelinux.org> (Josh Boyer's
+	message of "Wed, 22 Jan 2014 10:01:48 -0500")
+Message-ID: <877g9m6lqp.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.12.8-rt11
-References: <20140125134519.GA9845@linutronix.de>
-In-Reply-To: <20140125134519.GA9845@linutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2014 02:45 PM, Sebastian Andrzej Siewior wrote:
-> Dear RT folks!
+On Wed, 22 Jan 2014 10:01:48 -0500, Josh Boyer wrote:
+> The plugindir_SQ definition contains $(prefix) which is not needed
+> as the $(libdir) definition already contains prefix in it.  This
+> leads to the path including an extra prefix in it, e.g. /usr/usr/lib64.
 >
-> I'm pleased to announce the v3.12.8-rt11 patch set.
-> [..]
-Thanks a lot, Sebastian, excellent work!
+> The -DPLUGIN_DIR defintion includes DESTDIR.  This is incorrect, as it
+> sets the plugin search path to include the value of DESTDIR.  DESTDIR
+> is a mechanism to install in a non-standard location such as a chroot
+> or an RPM build root.  In the RPM case, this leads to the search path
+> being incorrect after the resulting RPM is installed (or in some cases
+> an RPM build failure).
+>
+> Remove both of these unnecessary inclusions.
 
-I have upgraded about 40 different QA Farm systems (x86: 32-bit, 64-bit, 
-single-core, multi-core 2 to 32, single-socket, dual-socket; ARM: 
-single-core, multi-core), and they all boot and run without any problem. 
-I didn't see any crash of unknown origin so far. Most systems use the 
-original kernel besides some unimportant farm patches. Several systems 
-have a worst-case latency below 20 microseconds (e.g. 
-https://www.osadl.org/?id=1420 and https://www.osadl.org/?id=1805). Even 
-Raspberry Pi and BeagleBone-Black work like a charm and have reasonably 
-low real-time latency (https://www.osadl.org/?id=1663 and 
-https://www.osadl.org/?id=1601), although they still are not 100% 
-mainline. It is well conceivable that this or one of the next 3.12.X-rtY 
-versions will remind us of the legendary 2.6.33 RT kernel.
+Oops, I replied before reading this and previous discussion.. :-/ 
 
-Seems that an important milestone is being reached.
+Anyway it looks good to me too.
 
 Thanks,
-	-Carsten.
+Namhyung
