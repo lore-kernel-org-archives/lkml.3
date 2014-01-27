@@ -1,137 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765AbaA0QR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:17:28 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:58232 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaA0QR1 (ORCPT
+	id S1753936AbaA0QTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:19:52 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:25239 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366AbaA0QTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:17:27 -0500
-Message-ID: <52E6868C.3070401@gmail.com>
-Date: Mon, 27 Jan 2014 20:17:16 +0400
-From: Max Filippov <jcmvbkbc@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 27 Jan 2014 11:19:51 -0500
+X-IronPort-AV: E=Sophos;i="4.95,729,1384300800"; 
+   d="scan'208";a="94860365"
+Message-ID: <52E6871D.2050107@citrix.com>
+Date: Mon, 27 Jan 2014 17:19:41 +0100
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Zankel <chris@zankel.net>,
-        Marc Gauthier <marc@cadence.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 1/3] net: ethoc: don't advertise gigabit speed on attached
- PHY
-References: <1390795167-6677-1-git-send-email-jcmvbkbc@gmail.com> <1390795167-6677-2-git-send-email-jcmvbkbc@gmail.com> <1390817904.2735.127.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1390817904.2735.127.camel@deadeye.wl.decadent.org.uk>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH] xen-blkback: fix memory leaks
+References: <1390817621-12031-1-git-send-email-roger.pau@citrix.com> <20140127160914.GA23059@phenom.dumpdata.com>
+In-Reply-To: <20140127160914.GA23059@phenom.dumpdata.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-On Mon, Jan 27, 2014 at 2:18 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Mon, 2014-01-27 at 07:59 +0400, Max Filippov wrote:
->> OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but does
->> not disable advertisement when PHY supports them. This results in
->> non-functioning network when the MAC is connected to a gigabit PHY connected
->> to a gigabit switch.
+On 27/01/14 17:09, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 27, 2014 at 11:13:41AM +0100, Roger Pau Monne wrote:
+>> I've at least identified two possible memory leaks in blkback, both
+>> related to the shutdown path of a VBD:
 >>
->> The fix is to disable gigabit speed advertisement on attached PHY
->> unconditionally.
+>> - We don't wait for any pending purge work to finish before cleaning
+>>   the list of free_pages. The purge work will call put_free_pages and
+>>   thus we might end up with pages being added to the free_pages list
+>>   after we have emptied it.
+>> - We don't wait for pending requests to end before cleaning persistent
+>>   grants and the list of free_pages. Again this can add pages to the
+>>   free_pages lists or persistent grants to the persistent_gnts
+>>   red-black tree.
 >>
->> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+>> Also, add some checks in xen_blkif_free to make sure we are cleaning
+>> everything.
+>>
+>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: David Vrabel <david.vrabel@citrix.com>
+>> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>> Cc: Matt Rushton <mrushton@amazon.com>
+>> Cc: Matt Wilson <msw@amazon.com>
+>> Cc: Ian Campbell <Ian.Campbell@citrix.com>
 >> ---
->>  drivers/net/ethernet/ethoc.c | 2 ++
->>  1 file changed, 2 insertions(+)
+>> This should be applied after the patch:
 >>
->> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
->> index 4de8cfd..0aa1a05 100644
->> --- a/drivers/net/ethernet/ethoc.c
->> +++ b/drivers/net/ethernet/ethoc.c
->> @@ -712,6 +712,8 @@ static int ethoc_open(struct net_device *dev)
->>               netif_start_queue(dev);
->>       }
+>> xen-blkback: fix memory leak when persistent grants are used
+> 
+> Could you respin the series with the issues below fixed and
+> have said patch as part of the series. That way not only does
+> it have your SoB on it but it makes it easier to apply the patch
+> for lazy^H^H^Hbusy maintainers and makes it clear that you had
+> tested both of them.
+> 
+> Also, please CC Jens Axboe on these patches.
+
+Ack, will do once the comments below are sorted out.
+
 >>
->> +     priv->phy->advertising &= ~(ADVERTISED_1000baseT_Full |
->> +                                 ADVERTISED_1000baseT_Half);
->>       phy_start(priv->phy);
->>       napi_enable(&priv->napi);
+>> >From Matt Rushton & Matt Wilson and backported to stable.
 >>
->
-> This is not sufficient to disable gigabit speeds; the supported mask
-> should also be limited.  And it should be done even before the net
+>> I've been able to create and destroy ~4000 guests while doing heavy IO
+>> operations with this patch on a 512M Dom0 without problems.
+>> ---
+>>  drivers/block/xen-blkback/blkback.c |   29 +++++++++++++++++++----------
+>>  drivers/block/xen-blkback/xenbus.c  |    9 +++++++++
+>>  2 files changed, 28 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+>> index 30ef7b3..19925b7 100644
+>> --- a/drivers/block/xen-blkback/blkback.c
+>> +++ b/drivers/block/xen-blkback/blkback.c
+>> @@ -169,6 +169,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>>  				struct pending_req *pending_req);
+>>  static void make_response(struct xen_blkif *blkif, u64 id,
+>>  			  unsigned short op, int st);
+>> +static void xen_blk_drain_io(struct xen_blkif *blkif, bool force);
+>>  
+>>  #define foreach_grant_safe(pos, n, rbtree, node) \
+>>  	for ((pos) = container_of(rb_first((rbtree)), typeof(*(pos)), node), \
+>> @@ -625,6 +626,12 @@ purge_gnt_list:
+>>  			print_stats(blkif);
+>>  	}
+>>  
+>> +	/* Drain pending IO */
+>> +	xen_blk_drain_io(blkif, true);
+>> +
+>> +	/* Drain pending purge work */
+>> +	flush_work(&blkif->persistent_purge_work);
+>> +
+>>  	/* Free all persistent grant pages */
+>>  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
+>>  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
+>> @@ -930,7 +937,7 @@ static int dispatch_other_io(struct xen_blkif *blkif,
+>>  	return -EIO;
+>>  }
+>>  
+>> -static void xen_blk_drain_io(struct xen_blkif *blkif)
+>> +static void xen_blk_drain_io(struct xen_blkif *blkif, bool force)
+>>  {
+>>  	atomic_set(&blkif->drain, 1);
+>>  	do {
+>> @@ -943,7 +950,7 @@ static void xen_blk_drain_io(struct xen_blkif *blkif)
+>>  
+>>  		if (!atomic_read(&blkif->drain))
+>>  			break;
+>> -	} while (!kthread_should_stop());
+>> +	} while (!kthread_should_stop() || force);
+>>  	atomic_set(&blkif->drain, 0);
+>>  }
+>>  
+>> @@ -976,17 +983,19 @@ static void __end_block_io_op(struct pending_req *pending_req, int error)
+>>  	 * the proper response on the ring.
+>>  	 */
+>>  	if (atomic_dec_and_test(&pending_req->pendcnt)) {
+>> -		xen_blkbk_unmap(pending_req->blkif,
+>> +		struct xen_blkif *blkif = pending_req->blkif;
+>> +
+>> +		xen_blkbk_unmap(blkif,
+>>  		                pending_req->segments,
+>>  		                pending_req->nr_pages);
+>> -		make_response(pending_req->blkif, pending_req->id,
+>> +		make_response(blkif, pending_req->id,
+>>  			      pending_req->operation, pending_req->status);
+>> -		xen_blkif_put(pending_req->blkif);
+>> -		if (atomic_read(&pending_req->blkif->refcnt) <= 2) {
+>> -			if (atomic_read(&pending_req->blkif->drain))
+>> -				complete(&pending_req->blkif->drain_complete);
+>> +		free_req(blkif, pending_req);
+>> +		xen_blkif_put(blkif);
+>> +		if (atomic_read(&blkif->refcnt) <= 2) {
+>> +			if (atomic_read(&blkif->drain))
+>> +				complete(&blkif->drain_complete);
+>>  		}
+>> -		free_req(pending_req->blkif, pending_req);
+>>  	}
+>>  }
+>>  
+>> @@ -1224,7 +1233,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>>  	 * issue the WRITE_FLUSH.
+>>  	 */
+>>  	if (drain)
+>> -		xen_blk_drain_io(pending_req->blkif);
+>> +		xen_blk_drain_io(pending_req->blkif, false);
+>>  
+>>  	/*
+>>  	 * If we have failed at this point, we need to undo the M2P override,
+>> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+>> index c2014a0..3c10281 100644
+>> --- a/drivers/block/xen-blkback/xenbus.c
+>> +++ b/drivers/block/xen-blkback/xenbus.c
+>> @@ -125,6 +125,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>>  	blkif->persistent_gnts.rb_node = NULL;
+>>  	spin_lock_init(&blkif->free_pages_lock);
+>>  	INIT_LIST_HEAD(&blkif->free_pages);
+>> +	INIT_LIST_HEAD(&blkif->persistent_purge_list);
+> 
+> Hm,
 
-I tried that, but when I also limit supported mask the phy driver doesn't
-touch gigabit advertising register int the genphy_config_advert at all.
-That's probably right for ethtool interface, but ethoc doesn't support
-ethtool.
+See comment below.
 
-> device is registered.
->
-> Rather than poking into the phy_device structure directly from this
-> driver, I think you should add a function in phylib for this purpose.
+>>  	blkif->free_pages_num = 0;
+>>  	atomic_set(&blkif->persistent_gnt_in_use, 0);
+>>  
+>> @@ -259,6 +260,14 @@ static void xen_blkif_free(struct xen_blkif *blkif)
+>>  	if (!atomic_dec_and_test(&blkif->refcnt))
+>>  		BUG();
+>>  
+>> +	/* Make sure everything is drained before shutting down */
+>> +	BUG_ON(blkif->persistent_gnt_c != 0);
+>> +	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
+>> +	BUG_ON(blkif->free_pages_num != 0);
+>> +	BUG_ON(!list_empty(&blkif->persistent_purge_list));
+> 
+> You don't seem to put anything on this list? Or even declare this?
+> Was there another patch in the series?
 
-Like below?
+No, the list is already used in current code, but it is initialized only
+before usage, now I need to make sure it's initialized even if not used, or:
 
----8<---
->From 347331f399626ecaa9a8e54252f55e0b6788772f Mon Sep 17 00:00:00 2001
-From: Max Filippov <jcmvbkbc@gmail.com>
-Date: Mon, 27 Jan 2014 04:01:40 +0400
-Subject: [PATCH 1/3] net: ethoc: don't advertise gigabit speed on attached PHY
+BUG_ON(!list_empty(&blkif->persistent_purge_list));
 
-OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but does
-not disable advertisement when PHY supports them. This results in
-non-functioning network when the MAC is connected to a gigabit PHY connected
-to a gigabit switch.
+Is going to fail.
 
-The fix is to disable gigabit speed advertisement on attached PHY
-unconditionally.
+I will resend this and replace the other (now useless) initialization
+with a BUG_ON(!list_empty...
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
----
- drivers/net/ethernet/ethoc.c | 3 +++
- include/linux/phy.h          | 5 +++++
- 2 files changed, 8 insertions(+)
+> 
+>> +	BUG_ON(!list_empty(&blkif->free_pages));
+>> +	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
+>> +
+>>  	/* Check that there is no request in use */
+>>  	list_for_each_entry_safe(req, n, &blkif->pending_free, free_list) {
+>>  		list_del(&req->free_list);
+>> -- 
+>> 1.7.7.5 (Apple Git-26)
+>>
 
-diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
-index 4de8cfd..e817d58 100644
---- a/drivers/net/ethernet/ethoc.c
-+++ b/drivers/net/ethernet/ethoc.c
-@@ -688,6 +688,9 @@ static int ethoc_mdio_probe(struct net_device *dev)
- 	}
-
- 	priv->phy = phy;
-+	phy_update_adv(phy,
-+		       ~(ADVERTISED_1000baseT_Full |
-+			 ADVERTISED_1000baseT_Half), 0);
- 	return 0;
- }
-
-diff --git a/include/linux/phy.h b/include/linux/phy.h
-index 48a4dc3..0282a8d 100644
---- a/include/linux/phy.h
-+++ b/include/linux/phy.h
-@@ -559,6 +559,11 @@ static inline int phy_read_status(struct phy_device *phydev) {
- 	return phydev->drv->read_status(phydev);
- }
-
-+static inline void phy_update_adv(struct phy_device *phydev, u32 mask, u32 set)
-+{
-+	phydev->advertising = (phydev->advertising & mask) | set;
-+}
-+
- int genphy_setup_forced(struct phy_device *phydev);
- int genphy_restart_aneg(struct phy_device *phydev);
- int genphy_config_aneg(struct phy_device *phydev);
--- 
-1.8.1.4
-
-
--- 
-Thanks.
--- Max
