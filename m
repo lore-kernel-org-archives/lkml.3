@@ -1,118 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaA0T34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:29:56 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:65091 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaA0T3y convert rfc822-to-8bit (ORCPT
+	id S1754001AbaA0Tcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:32:52 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60163 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaA0Tct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:29:54 -0500
+	Mon, 27 Jan 2014 14:32:49 -0500
+Date: Mon, 27 Jan 2014 19:31:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        linux-sound@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20140127193149.GQ11841@sirena.org.uk>
+References: <1390805726-1841-1-git-send-email-voice.shen@atmel.com>
+ <1390805726-1841-4-git-send-email-voice.shen@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <1864335.qYXGSfrppl@phil>
-References: <1390848373-7723-1-git-send-email-luiorpe1@upv.es>
- <1390848373-7723-3-git-send-email-luiorpe1@upv.es> <1864335.qYXGSfrppl@phil>
-From: Luis Ortega <luiorpe1@upv.es>
-Date: Mon, 27 Jan 2014 20:29:33 +0100
-X-Google-Sender-Auth: 4CuOZ23iHU82hYldB7SQvi04MFY
-Message-ID: <CAHLRGxzc4Zcj4Td1VMVPtWHn2mrscMn5W9u271RVTQ1eOzNufg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] Input: zforce - fix lines exceeding 80 columns
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Luis Ortega <luiorpe1@upv.es>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        yongjun_wei@trendmicro.com.cn, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aNvCJ41Feu8IgPyB"
+Content-Disposition: inline
+In-Reply-To: <1390805726-1841-4-git-send-email-voice.shen@atmel.com>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 3/3] Binding: atmel-wm8904: add option to choose clock
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah, I also ran checkpatch on the file and it had nothing to report.
-Unfortunately those lines are slightly long and got word wrapped in my
-editor, disrupting the flow of text. I thought fixing them wouldn't hurt.
 
-On Mon, Jan 27, 2014 at 8:12 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> On Monday, 27. January 2014 19:46:11 Luis Ortega wrote:
->> Fixed lines exceeding 80 characters long wherever possible,
->> as per the coding style.
->>
->> Signed-off-by: Luis Ortega <luiorpe1@upv.es>
->
-> checkpatch did not complain on the initial submission, so I guess it's more an
-> issue of taste. Nevertheless I don't have a preference for one way or the
-> other, so
->
-> Acked-by: Heiko Stuebner <heiko@sntech.de>
->
->
->> ---
->>  drivers/input/touchscreen/zforce_ts.c | 19 ++++++++++++-------
->>  1 file changed, 12 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/input/touchscreen/zforce_ts.c
->> b/drivers/input/touchscreen/zforce_ts.c index c145c1d..c1b6b82 100644
->> --- a/drivers/input/touchscreen/zforce_ts.c
->> +++ b/drivers/input/touchscreen/zforce_ts.c
->> @@ -235,7 +235,8 @@ static int zforce_scan_frequency(struct zforce_ts *ts,
->> u16 idle, u16 finger, (finger & 0xff), ((finger >> 8) & 0xff),
->>                       (stylus & 0xff), ((stylus >> 8) & 0xff) };
->>
->> -     dev_dbg(&client->dev, "set scan frequency to (idle: %d, finger: %d,
->> stylus: %d)\n", +     dev_dbg(&client->dev,
->> +             "set scan frequency to (idle: %d, finger: %d, stylus: %d)\n",
->>               idle, finger, stylus);
->>
->>       return zforce_send_wait(ts, &buf[0], ARRAY_SIZE(buf));
->> @@ -332,7 +333,8 @@ static int zforce_touch_event(struct zforce_ts *ts, u8
->> *payload)
->>
->>       count = payload[0];
->>       if (count > ZFORCE_REPORT_POINTS) {
->> -             dev_warn(&client->dev, "too many coordinates %d, expected max %d\n",
->> +             dev_warn(&client->dev,
->> +                      "too many coordinates %d, expected max %d\n",
->>                        count, ZFORCE_REPORT_POINTS);
->>               count = ZFORCE_REPORT_POINTS;
->>       }
->> @@ -494,8 +496,8 @@ static irqreturn_t zforce_irq_thread(int irq, void
->> *dev_id) while (!gpio_get_value(pdata->gpio_int)) {
->>               ret = zforce_read_packet(ts, payload_buffer);
->>               if (ret < 0) {
->> -                     dev_err(&client->dev, "could not read packet, ret: %d\n",
->> -                             ret);
->> +                     dev_err(&client->dev,
->> +                             "could not read packet, ret: %d\n", ret);
->>                       break;
->>               }
->>
->> @@ -539,7 +541,8 @@ static irqreturn_t zforce_irq_thread(int irq, void
->> *dev_id) payload[RESPONSE_DATA + 4];
->>                       ts->version_rev   = (payload[RESPONSE_DATA + 7] << 8) |
->>                                               payload[RESPONSE_DATA + 6];
->> -                     dev_dbg(&ts->client->dev, "Firmware Version %04x:%04x %04x:
-> %04x\n",
->> +                     dev_dbg(&ts->client->dev,
->> +                             "Firmware Version %04x:%04x %04x:%04x\n",
->>                               ts->version_major, ts->version_minor,
->>                               ts->version_build, ts->version_rev);
->>
->> @@ -552,7 +555,8 @@ static irqreturn_t zforce_irq_thread(int irq, void
->> *dev_id) break;
->>
->>               default:
->> -                     dev_err(&ts->client->dev, "unrecognized response id: 0x%x\n",
->> +                     dev_err(&ts->client->dev,
->> +                             "unrecognized response id: 0x%x\n",
->>                               payload[RESPONSE_ID]);
->>                       break;
->>               }
->> @@ -618,7 +622,8 @@ static int zforce_suspend(struct device *dev)
->>
->>               enable_irq_wake(client->irq);
->>       } else if (input->users) {
->> -             dev_dbg(&client->dev, "suspend without being a wakeup source\n");
->> +             dev_dbg(&client->dev,
->> +                     "suspend without being a wakeup source\n");
->>
->>               ret = zforce_stop(ts);
->>               if (ret)
->
+--aNvCJ41Feu8IgPyB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Jan 27, 2014 at 02:55:26PM +0800, Bo Shen wrote:
+
+> diff --git a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt b/D=
+ocumentation/devicetree/bindings/sound/atmel-wm8904.txt
+> index 8bbe50c..2d86e2b 100644
+> --- a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> +++ b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
+> @@ -33,6 +33,12 @@ Required properties:
+> =20
+>  Optional properties:
+>    - pinctrl-names, pinctrl-0: Please refer to pinctrl-bindings.txt
+> +  - atmel,clk-from-rk-pin: bool property.
+> +     - When SSC works in slave mode, according to the hardware design, t=
+he
+> +       clock can get from TK pin, and also can get from RK pin. So, add
+> +       this parameter to choose where the clock from.
+> +     - By default the clock is from TK pin, if the clock from RK pin, th=
+is
+> +       property is needed.
+
+Can this be made a property of the SSC device so that it's available for
+all cards using it rather than just this one?  That would also address
+the issue with the way the configuration is passed to the controller
+that Lars-Peter identified.
+
+--aNvCJ41Feu8IgPyB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS5rQiAAoJELSic+t+oim9SaQP/j/gJn19O2uDOb/Vy9xTetL7
+xdX9xq8LknromRrCXPIzOafVM3+UK+NvPI1cgA9PYCaJ61djg/KfR53tHrpscmzk
+V1xlmCfNsgtH0H1bW3LGRXq6PAwcZCj4ppL1Z7EDbT1j5OpSXQvKYN5WP8j2lhPo
+67NYWnvDDliVVoH39gzaw1o+c/mEYfb0seAFOyXFUPwqxKvbY5/PpUJaz+6AT7ZS
+BKI5BlVcEsqoyBSbvHiIPc/x5OFxPv1EQLHwh866NPXoYdYHvkn71jjSwkGd/2b/
+GZ8Ut+NC19uK9/ObsU35jQfHSck6OJzgoKqVxWU8ggbdVUgxC8tMy3mnrrJ1qH73
+QqTeyDSmkwBkpnAVpBBqSB5fKYSm0EMSLGJoftHdVOmHcEXeDRyQhBxcuGpeXSMa
+ICmRR+/4iJjF6Ok4IiLzYYritzCUe8Qt7PNPvqvNTEHbdR+nPa0AlWYt7fRf4lDO
+XUq4WHcHTXUgw5IEayRsqWOCwhF22IqyrrLymfFtJHxQR9c4wly4RCV6TGXV/L1c
+deikYCcxMlf4LCFfKOIBVxk0WFnVNKyMlghIuyZ7KOwzIg5zyJNTsyEdzZfiy2dR
+kOkfPUqIMC8IReySjDlU0fARWpTY/tIODT1BwbmPIhxBZQ35ZZ1hD4+645A/jfd3
+RKzcMdxMYzH6SnA7deBd
+=ubGp
+-----END PGP SIGNATURE-----
+
+--aNvCJ41Feu8IgPyB--
