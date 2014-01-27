@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaA0Gmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 01:42:55 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:56290 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaA0Gmx (ORCPT
+	id S1753473AbaA0GtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 01:49:14 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:41768 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329AbaA0GtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 01:42:53 -0500
-Date: Sun, 26 Jan 2014 22:42:53 -0800 (PST)
-Message-Id: <20140126.224253.171312551216917580.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: tedheadster@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/apne: Remove unused variable ei_local
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1390733063-9077-1-git-send-email-geert@linux-m68k.org>
-References: <1390733063-9077-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	Mon, 27 Jan 2014 01:49:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <52E5EFAF.3060609@linux.intel.com>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+	<CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
+	<52E5EFAF.3060609@linux.intel.com>
+Date: Mon, 27 Jan 2014 07:49:10 +0100
+Message-ID: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0R6h2PW007201
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Sun, 26 Jan 2014 11:44:23 +0100
+On Mon, Jan 27, 2014 at 6:33 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 01/26/2014 02:16 AM, Richard Weinberger wrote:
+>>
+>> Currently we print the kernel offset only upon a panic() using the
+>> panic notifier list.
+>> This way it does not show up if the kernel hits a BUG() in process
+>> context or something less critical.
+>> Wouldn't make more sense to report the offset in every dump_stack() or
+>> show_regs() call?
+>
+> No, because that information is available to user space unless we panic.
 
-> drivers/net/ethernet/8390/apne.c: In function ¡apne_probe1¢:
-> drivers/net/ethernet/8390/apne.c:215: warning: unused variable ¡ei_local¢
-> 
-> Introduced by commit c45f812f0280c13f1b7992be5e0de512312a9e8f ("8390 :
-> Replace ei_debug with msg_enable/NETIF_MSG_* feature"), which added the
-> variable without using it.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Didn't you mean non-root?
+I thought one has to set dmesg_restrict anyways if kASLR is used.
 
-Applied.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+And isn't the offset available to perf too?
+Of course only for root, but still user space.
+
+-- 
+Thanks,
+//richard
