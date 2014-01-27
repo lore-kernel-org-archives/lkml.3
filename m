@@ -1,129 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaA0S65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:58:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49389 "EHLO mx1.redhat.com"
+	id S1754190AbaA0S64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:58:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50700 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753926AbaA0S6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:58:45 -0500
+	id S1753903AbaA0S6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 13:58:44 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         jkosina@suse.cz, Vivek Goyal <vgoyal@redhat.com>
-Subject: [RFC PATCH 00/11][V2] kexec: A new system call to allow in kernel loading 
-Date: Mon, 27 Jan 2014 13:57:40 -0500
-Message-Id: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 09/11] kexec: Provide a function to add a segment at fixed address
+Date: Mon, 27 Jan 2014 13:57:49 -0500
+Message-Id: <1390849071-21989-10-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+kexec_add_buffer() can find a suitable range of memory for user buffer and
+add it to list of segments. But ELF loader will require that a buffer can
+be loaded at the address it has been compiled for (ET_EXEC type executables).
+So we need a helper function which can see if requested memory is valid and
+available and add a segment accordiingly. This patch provides that helper
+function. It will be used by elf loader in later patch.
 
-This is V2 of new system call patches. Previous version was posted here.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ include/linux/kexec.h |  3 +++
+ kernel/kexec.c        | 65 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 68 insertions(+)
 
-https://lkml.org/lkml/2013/11/20/540
-
-V2 primarily does following changes
-
-- Creates a binary object (called purgatory) which runs between two kernels.
-  This is a stand alone relocatable object (it is not linked with kernel) and
-  it is loaded and relocated by kexec syscall.
-
-- Provided kexec support for loading ELF of type ET_EXEC. This only works for
-  kexec case and not kexec on panic case. More about it patch changelog.
-
-- Took care of feedback received during first round.
-
-Primary goal of this patchset is to prepare groundwork so that kernel
-image can be signed and signatures be verified during kexec load. This
-should help with two things.
-
-- It should allow kexec/kdump on secureboot enabled machines.
-
-- In general it can help even without secureboot. By being able to verify
-  kernel image signature in kexec, it should help with avoiding module
-  signing restrictions. Matthew Garret showed how to boot into a custom
-  kernel, modify first kernel's memory and then jump back to old kernel and
-  bypass any policy one wants to. 
-
-I have not taken care of signing part yet. First I want to get to a stage
-where all the required pieces of kexec are re-implemented in kernel. And
-then I want to look into signing part. Also only 64bit bzImage entry is
-supported, no EFI/UEFI support, no x86_32 support. Trying to first come
-up with minimum functionality which matters most.
-
-Posting patches for early reiew. Your feedback and comments are welcome.
-
-Thanks
-Vivek
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index d391ed7..2fb052c 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -208,6 +208,9 @@ extern asmlinkage long sys_kexec_load(unsigned long entry,
+ 					struct kexec_segment __user *segments,
+ 					unsigned long flags);
+ extern int kernel_kexec(void);
++extern int kexec_add_segment(struct kimage *image, char *buffer,
++			unsigned long bufsz, unsigned long memsz,
++			unsigned long base);
+ extern int kexec_add_buffer(struct kimage *image, char *buffer,
+ 			unsigned long bufsz, unsigned long memsz,
+ 			unsigned long buf_align, unsigned long buf_min,
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 20169a4..9e4718b 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -2002,6 +2002,71 @@ static int __kexec_add_segment(struct kimage *image, char *buf,
+ 	return 0;
+ }
  
-
-Vivek Goyal (11):
-  kexec: Move segment verification code in a separate function
-  resource: Provide new functions to walk through resources
-  bin2c: Move bin2c in scripts/basic
-  kernel: Build bin2c based on config option CONFIG_BUILD_BIN2C
-  kexec: Make kexec_segment user buffer pointer a union
-  kexec: A new system call, kexec_file_load, for in kernel kexec
-  kexec: Create a relocatable object called purgatory
-  kexec-bzImage: Support for loading bzImage using 64bit entry
-  kexec: Provide a function to add a segment at fixed address
-  kexec: Support for loading ELF x86_64 images
-  kexec: Support for Kexec on panic using new system call
-
- arch/x86/Kbuild                      |    1 +
- arch/x86/Kconfig                     |    2 +
- arch/x86/Makefile                    |    6 +
- arch/x86/include/asm/crash.h         |    9 +
- arch/x86/include/asm/kexec-bzimage.h |   11 +
- arch/x86/include/asm/kexec-elf.h     |   11 +
- arch/x86/include/asm/kexec.h         |   51 ++
- arch/x86/kernel/Makefile             |    3 +
- arch/x86/kernel/crash.c              |  574 ++++++++++++++
- arch/x86/kernel/kexec-bzimage.c      |  255 +++++++
- arch/x86/kernel/kexec-elf.c          |  231 ++++++
- arch/x86/kernel/machine_kexec.c      |  149 ++++
- arch/x86/kernel/machine_kexec_64.c   |  173 +++++
- arch/x86/purgatory/Makefile          |   35 +
- arch/x86/purgatory/entry64.S         |  111 +++
- arch/x86/purgatory/purgatory.c       |  103 +++
- arch/x86/purgatory/setup-x86_32.S    |   29 +
- arch/x86/purgatory/setup-x86_64.S    |   68 ++
- arch/x86/purgatory/sha256.c          |  315 ++++++++
- arch/x86/purgatory/sha256.h          |   33 +
- arch/x86/purgatory/stack.S           |   29 +
- arch/x86/syscalls/syscall_64.tbl     |    1 +
- include/linux/ioport.h               |    6 +
- include/linux/kexec.h                |  102 ++-
- include/linux/syscalls.h             |    3 +
- include/uapi/linux/kexec.h           |    4 +
- init/Kconfig                         |    5 +
- kernel/Makefile                      |    2 +-
- kernel/kexec.c                       | 1356 +++++++++++++++++++++++++++++++---
- kernel/resource.c                    |  108 ++-
- kernel/sys_ni.c                      |    1 +
- scripts/Makefile                     |    1 -
- scripts/basic/Makefile               |    1 +
- scripts/basic/bin2c.c                |   36 +
- scripts/bin2c.c                      |   36 -
- 35 files changed, 3701 insertions(+), 160 deletions(-)
- create mode 100644 arch/x86/include/asm/crash.h
- create mode 100644 arch/x86/include/asm/kexec-bzimage.h
- create mode 100644 arch/x86/include/asm/kexec-elf.h
- create mode 100644 arch/x86/kernel/kexec-bzimage.c
- create mode 100644 arch/x86/kernel/kexec-elf.c
- create mode 100644 arch/x86/kernel/machine_kexec.c
- create mode 100644 arch/x86/purgatory/Makefile
- create mode 100644 arch/x86/purgatory/entry64.S
- create mode 100644 arch/x86/purgatory/purgatory.c
- create mode 100644 arch/x86/purgatory/setup-x86_32.S
- create mode 100644 arch/x86/purgatory/setup-x86_64.S
- create mode 100644 arch/x86/purgatory/sha256.c
- create mode 100644 arch/x86/purgatory/sha256.h
- create mode 100644 arch/x86/purgatory/stack.S
- create mode 100644 scripts/basic/bin2c.c
- delete mode 100644 scripts/bin2c.c
-
++static int validate_ram_range_callback(u64 start, u64 end, void *arg)
++{
++	struct kexec_segment *ksegment = arg;
++	u64 mstart = ksegment->mem;
++	u64 mend = ksegment->mem + ksegment->memsz - 1;
++
++	/* Found a valid range. Stop going through more ranges */
++	if (mstart >= start && mend <= end)
++		return 1;
++
++	/* Range did not match. Go to next one */
++	return 0;
++}
++
++/* Add a kexec segment at fixed address provided by caller */
++int kexec_add_segment(struct kimage *image, char *buffer, unsigned long bufsz,
++			unsigned long memsz, unsigned long base)
++{
++	struct kexec_segment ksegment;
++	int ret;
++
++	/* Currently adding segment this way is allowed only in file mode */
++	if (!image->file_mode)
++		return -EINVAL;
++
++	if (image->nr_segments >= KEXEC_SEGMENT_MAX)
++		return -EINVAL;
++
++	/*
++	 * Make sure we are not trying to add segment after allocating
++	 * control pages. All segments need to be placed first before
++	 * any control pages are allocated. As control page allocation
++	 * logic goes through list of segments to make sure there are
++	 * no destination overlaps.
++	 */
++	WARN_ONCE(!list_empty(&image->control_pages), "Adding kexec segment"
++			" after allocating control pages\n");
++
++	if (bufsz > memsz)
++		return -EINVAL;
++	if (memsz == 0)
++		return -EINVAL;
++
++	/* Align memsz to next page boundary */
++	memsz = ALIGN(memsz, PAGE_SIZE);
++
++	/* Make sure base is atleast page size aligned */
++	if (base & (PAGE_SIZE - 1))
++		return -EINVAL;
++
++	memset(&ksegment, 0, sizeof(struct kexec_segment));
++	ksegment.mem = base;
++	ksegment.memsz = memsz;
++
++	/* Validate memory range */
++	ret = walk_system_ram_res(base, base + memsz - 1, &ksegment,
++				validate_ram_range_callback);
++
++	/* If a valid range is found, 1 is returned */
++	if (ret != 1)
++		return -EINVAL;
++
++	return __kexec_add_segment(image, buffer, bufsz, base, memsz);
++}
++
+ static int locate_mem_hole_top_down(unsigned long start, unsigned long end,
+ 					struct kexec_buf *kbuf)
+ {
 -- 
 1.8.4.2
 
