@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaA0SKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:10:33 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:43591 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675AbaA0SKb (ORCPT
+	id S1754128AbaA0SLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:11:42 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:59818 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845AbaA0SLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:10:31 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] iio: max1363: Use devm_regulator_get_optional for optional regulator
-Date: Mon, 27 Jan 2014 10:10:27 -0800
-Message-Id: <1390846227-28320-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Mon, 27 Jan 2014 13:11:40 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gleb@kernel.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        mtosatti@redhat.com
+Subject: [PATCH 0/2] x86, kvm: fix detection of KVM features when KVM and Hyper-V coexist
+Date: Mon, 27 Jan 2014 19:11:28 +0100
+Message-Id: <1390846290-26844-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kernel version 3.13, devm_regulator_get() may return no error
-if a regulator is undeclared. regulator_get_voltage() will return
--EINVAL if this happens. This causes the driver to fail loading if
-the vref regulator is not declared.
+When KVM also presents Hyper-V features (which is useful because Windows
+behaves better), Linux guests prefer KVM because emulated leaves are at
+0x40000000 and the native ones are at 0x40000100.
 
-Since vref is optional, call devm_regulator_get_optional instead.
+However, Linux is then not accounting for the offset when reading the
+available hypervisor features from CPUID.  Instead of looking at
+0x40000101, it will always look at 0x40000001.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Should be a candidate for -stable (v3.12+).
+This series makes sure that features such as async page faults or steal
+time are available even if, for whatever reason, Hyper-V features are
+enabled.
 
- drivers/iio/adc/max1363.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+As a side effect, patch 1 makes a bunch of code non inline, which also
+makes sense since it should only be called during initialization.  As 
+a result, vmlinux .text size decreases by 96 bytes.
 
-diff --git a/drivers/iio/adc/max1363.c b/drivers/iio/adc/max1363.c
-index e283f2f..3602592 100644
---- a/drivers/iio/adc/max1363.c
-+++ b/drivers/iio/adc/max1363.c
-@@ -1560,7 +1560,7 @@ static int max1363_probe(struct i2c_client *client,
- 	st->client = client;
- 
- 	st->vref_uv = st->chip_info->int_vref_mv * 1000;
--	vref = devm_regulator_get(&client->dev, "vref");
-+	vref = devm_regulator_get_optional(&client->dev, "vref");
- 	if (!IS_ERR(vref)) {
- 		int vref_uv;
- 
+Please review!
+
+Paolo Bonzini (2):
+  x86, kvm: cache the base of the KVM cpuid leaves
+  x86, kvm: correctly access the KVM_CPUID_FEATURES leaf at 0x40000101
+
+ arch/x86/include/asm/kvm_para.h | 33 ++++++++++++---------------------
+ arch/x86/kernel/kvm.c           | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 21 deletions(-)
+
 -- 
-1.7.9.7
+1.8.3.1
 
