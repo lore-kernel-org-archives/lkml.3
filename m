@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaA0TJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:09:31 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48986 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719AbaA0TJ3 (ORCPT
+	id S1754178AbaA0TLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:11:45 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:45197 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516AbaA0TLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:09:29 -0500
-From: Tom Gundersen <teg@jklm.no>
-To: linux-kernel@vger.kernel.org
-Cc: linux-input@vger.kernel.org, kay@vrfy.org, Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [RFC][PATCH] module: allow multiple calls to MODULE_DEVICE_TABLE() per module
-Date: Mon, 27 Jan 2014 20:09:55 +0100
-Message-Id: <1390849795-2155-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.8.5.3
+	Mon, 27 Jan 2014 14:11:44 -0500
+Message-ID: <1390849530.1792.513.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] x86, mm: Avoid duplicated pxm_to_node() calling.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Jan 2014 12:05:30 -0700
+In-Reply-To: <CAE9FiQUZ8WD3nNAr=Y946y7=hqMfkqa72N-5fpOrGfaE4KTYfA@mail.gmail.com>
+References: <1390770102-4007-1-git-send-email-yinghai@kernel.org>
+	 <1390834182.1792.512.camel@misato.fc.hp.com>
+	 <CAE9FiQUZ8WD3nNAr=Y946y7=hqMfkqa72N-5fpOrGfaE4KTYfA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
-second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
-the modaliases being exposed.
+On Mon, 2014-01-27 at 11:08 -0800, Yinghai Lu wrote:
+> On Mon, Jan 27, 2014 at 6:49 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > On Sun, 2014-01-26 at 13:01 -0800, Yinghai Lu wrote:
+> >> In slit init code, more pxm_to_node() calling are added.
+> >>
+> >> We can store from_node/to_node instead of keep calling pxm_to_node().
+> >>
+> >> After this patch: pxm_to_node() is called n*(1+n)
+> >> Before this patch: pxm_to_node() is called n*(1+n*3)
+> >>
+> >> for 8 socket, it will be 72 instead of 200.
+> >> for 32 socket, it will be 1056 instead of 3104.
+> >>
+> >> -v2: update title and change log according to Ingo.
+> >>      move from_node/to_node in loop and change to const according to
+> >>       David Rientjes.
+> >>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >
+> > In my original patch, I added the following comment to the function to
+> > address David's comment (which he acked).  So, can you add this comment?
+> >
+> > -/* Callback for SLIT parsing */
+> > +/*
+> > + * Callback for SLIT parsing.  pxm_to_node() returns NUMA_NO_NODE for
+> > + * I/O localities since SRAT does not list them.  I/O localities are
+> > + * not supported at this point.
+> > + */
+> >
+> > Otherwise, the change looks good to me.
+> >
+> > Acked-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> Hi, Toshi,
+> 
+> This patch is delta patch to your patch that is in tip already.
+> 
+> So you comments change is still there and not touched.
 
-This fixes the problem by including the name of the device_id table in the
-__mod_*_device_table alias, allowing us to export several device_id tables
-per module.
+Hi Yinghai,
 
-Suggested-by: Kay Sievers <kay@vrfy.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
----
- include/linux/module.h   |  2 +-
- scripts/mod/file2alias.c | 14 +++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+Sounds great!  Thanks for the clarification!
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 15cd6b1..7732d76 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -143,7 +143,7 @@ extern const struct gtype##_id __mod_##gtype##_table		\
- #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
- 
- #define MODULE_DEVICE_TABLE(type,name)		\
--  MODULE_GENERIC_TABLE(type##_device,name)
-+  MODULE_GENERIC_TABLE(type##__##name##_device,name)
- 
- /* Version of form [<epoch>:]<version>[-<extra-version>].
-    Or for CVS/RCS ID version, everything but the number is stripped.
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 2370863..6778381 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -42,7 +42,7 @@ typedef unsigned char	__u8;
- 
- /* This array collects all instances that use the generic do_table */
- struct devtable {
--	const char *device_id; /* name of table, __mod_<name>_device_table. */
-+	const char *device_id; /* name of table, __mod_<name>__*_device_table. */
- 	unsigned long id_size;
- 	void *function;
- };
-@@ -146,7 +146,8 @@ static void device_id_check(const char *modname, const char *device_id,
- 
- 	if (size % id_size || size < id_size) {
- 		fatal("%s: sizeof(struct %s_device_id)=%lu is not a modulo "
--		      "of the size of section __mod_%s_device_table=%lu.\n"
-+		      "of the size of "
-+		      "section __mod_%s__<identifier>_device_table=%lu.\n"
- 		      "Fix definition of struct %s_device_id "
- 		      "in mod_devicetable.h\n",
- 		      modname, device_id, id_size, device_id, size, device_id);
-@@ -1206,7 +1207,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- {
- 	void *symval;
- 	char *zeros = NULL;
--	const char *name;
-+	const char *name, *identifier;
- 	unsigned int namelen;
- 
- 	/* We're looking for a section relative symbol */
-@@ -1217,7 +1218,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
- 		return;
- 
--	/* All our symbols are of form <prefix>__mod_XXX_device_table. */
-+	/* All our symbols are of form <prefix>__mod_<name>__<identifier>_device_table. */
- 	name = strstr(symname, "__mod_");
- 	if (!name)
- 		return;
-@@ -1227,7 +1228,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 		return;
- 	if (strcmp(name + namelen - strlen("_device_table"), "_device_table"))
- 		return;
--	namelen -= strlen("_device_table");
-+	identifier = strstr(name, "__");
-+	if (!identifier)
-+		return;
-+	namelen = identifier - name;
- 
- 	/* Handle all-NULL symbols allocated into .bss */
- 	if (info->sechdrs[get_secindex(info, sym)].sh_type & SHT_NOBITS) {
--- 
-1.8.5.3
+-Toshi
+
 
