@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaA0P6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 10:58:36 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:55484 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753483AbaA0P6d (ORCPT
+	id S1753796AbaA0QFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:05:50 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:49537 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753580AbaA0QFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 10:58:33 -0500
-Date: Mon, 27 Jan 2014 15:57:55 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH 2/9] ARM64: get rid of arch_cpu_idle_prepare()
-Message-ID: <20140127155755.GH32608@arm.com>
-References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org>
- <1390802904-28399-3-git-send-email-nicolas.pitre@linaro.org>
- <20140127154315.GG32608@arm.com>
- <alpine.LFD.2.11.1401271047240.1652@knanqh.ubzr>
+	Mon, 27 Jan 2014 11:05:48 -0500
+Date: Mon, 27 Jan 2014 11:05:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Excessive WARN()s in Intel 915 driver
+In-Reply-To: <20140127155640.GA9772@phenom.ffwll.local>
+Message-ID: <Pine.LNX.4.44L0.1401271105150.1207-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1401271047240.1652@knanqh.ubzr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 03:51:02PM +0000, Nicolas Pitre wrote:
-> On Mon, 27 Jan 2014, Catalin Marinas wrote:
-> 
-> > On Mon, Jan 27, 2014 at 06:08:17AM +0000, Nicolas Pitre wrote:
-> > > ARM and ARM64 are the only two architectures implementing
-> > > arch_cpu_idle_prepare() simply to call local_fiq_enable().
-> > > 
-> > > We have secondary_start_kernel() already calling local_fiq_enable() and
-> > > this is done a second time in arch_cpu_idle_prepare() in that case. And
-> > > enabling FIQs has nothing to do with idling the CPU to start with.
-> > > 
-> > > So let's introduce init_fiq_boot_cpu() to take care of FIQs on the boot
-> > > CPU and remove arch_cpu_idle_prepare(). This is now done a bit earlier
-> > > at late_initcall time but this shouldn't make a difference in practice
-> > > given that FIQs are not currently used on ARM64.
-> > > 
-> > > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+On Mon, 27 Jan 2014, Daniel Vetter wrote:
+
+> > By the way, I tried getting an up-to-date version of your 
+> > drm-intel-nightly branch, and ended up with the following:
 > > 
-> > For arm64, we could simply remove any reference to FIQs. I'm not aware
-> > of anyone using them.
+> > $ git clone --depth 1 -b drm-intel-nightly http://cgit.freedesktop.org/~danvet/drm-intel/
+> > Cloning into 'drm-intel'...
+> > fatal: dumb http transport does not support --depth
+> > 
+> > (I can't remember what happened the first time I tried to clone your 
+> > repository).  So I will try running with this patch on top of 3.13.
 > 
-> OK. What if I sumply remove arch_cpu_idle_prepare() and let you do the 
-> remove the rest?
-> 
-> IMHO I'd simply remove local_fiq_{enable/disable}() from 
-> arm64/kernel/smp.c and leave the infrastructure in place in case someone 
-> needs it eventually.  In which case I could include that into my patch 
-> as well.
+> Well, use the git:// link with --depth ...
 
-Sounds good. We can keep the local_fiq_*() functions but remove about 4
-calling sites (process.c and smp.c) until needed.
+$ git clone --depth 1 -b drm-intel-nightly git://cgit.freedesktop.org/~danvet/drm-intel/
+Cloning into 'drm-intel'...
+fatal: remote error: access denied or repository not exported: ~danvet/drm-intel/
 
-Thanks.
+Alan Stern
 
--- 
-Catalin
