@@ -1,132 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaA0QHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:07:01 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59051 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753366AbaA0QG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:06:59 -0500
-Date: Mon, 27 Jan 2014 10:05:20 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        <george.cherian@ti.com>, <rogerq@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/2] usb: dwc3: core: continue probing if usb phy library
- returns -ENODEV/-ENXIO
-Message-ID: <20140127160458.GF13268@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1385373690-12170-1-git-send-email-kishon@ti.com>
- <1390299099-14764-1-git-send-email-kishon@ti.com>
- <20140121144725.GF30451@saruman.home>
- <20140127150855.GA17928@xps8300>
+	id S1753941AbaA0QH1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:07:27 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49973 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753366AbaA0QHX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 11:07:23 -0500
+Date: Mon, 27 Jan 2014 16:06:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 1/9] ARM: get rid of arch_cpu_idle_prepare()
+Message-ID: <20140127160654.GO15937@n2100.arm.linux.org.uk>
+References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org> <1390802904-28399-2-git-send-email-nicolas.pitre@linaro.org> <20140127124511.GK15937@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1401271004060.1652@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bO4vSxwwZtUjUWHo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140127150855.GA17928@xps8300>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.11.1401271004060.1652@knanqh.ubzr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bO4vSxwwZtUjUWHo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 27, 2014 at 10:45:59AM -0500, Nicolas Pitre wrote:
+> On Mon, 27 Jan 2014, Russell King - ARM Linux wrote:
+> 
+> > On Mon, Jan 27, 2014 at 01:08:16AM -0500, Nicolas Pitre wrote:
+> > > ARM and ARM64 are the only two architectures implementing
+> > > arch_cpu_idle_prepare() simply to call local_fiq_enable().
+> > > 
+> > > We have secondary_start_kernel() already calling local_fiq_enable() and
+> > > this is done a second time in arch_cpu_idle_prepare() in that case. And
+> > > enabling FIQs has nothing to do with idling the CPU to start with.
+> > > 
+> > > So let's introduce init_fiq_boot_cpu() to take care of FIQs on the boot
+> > > CPU and remove arch_cpu_idle_prepare(). This is now done a bit earlier
+> > > at late_initcall time but this shouldn't make a difference in practice
+> > > i.e. when FIQs are actually used.
+> > > 
+> > > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> > > ---
+> > >  arch/arm/kernel/process.c | 5 -----
+> > >  arch/arm/kernel/setup.c   | 7 +++++++
+> > >  2 files changed, 7 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> > > index 92f7b15dd2..725b8c95e0 100644
+> > > --- a/arch/arm/kernel/process.c
+> > > +++ b/arch/arm/kernel/process.c
+> > > @@ -142,11 +142,6 @@ static void default_idle(void)
+> > >  	local_irq_enable();
+> > >  }
+> > >  
+> > > -void arch_cpu_idle_prepare(void)
+> > > -{
+> > > -	local_fiq_enable();
+> > > -}
+> > > -
+> > >  void arch_cpu_idle_enter(void)
+> > >  {
+> > >  	ledtrig_cpu(CPU_LED_IDLE_START);
+> > > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> > > index 987a7f5bce..d027b1a6fe 100644
+> > > --- a/arch/arm/kernel/setup.c
+> > > +++ b/arch/arm/kernel/setup.c
+> > > @@ -789,6 +789,13 @@ static int __init init_machine_late(void)
+> > >  }
+> > >  late_initcall(init_machine_late);
+> > >  
+> > > +static int __init init_fiq_boot_cpu(void)
+> > > +{
+> > > +	local_fiq_enable();
+> > > +	return 0;
+> > > +}
+> > > +late_initcall(init_fiq_boot_cpu);
+> > 
+> > arch_cpu_idle_prepare() gets called from the swapper thread, and changes
+> > the swapper thread's CPSR. init_fiq_boot_cpu() gets called from PID1, the
+> > init thread, and changes the init thread's CPSR, which will already have
+> > FIQs enabled by way of how kernel threads are created.
+> > 
+> > Hence, the above code fragment has no effect what so ever, and those
+> > platforms using FIQs will not have FIQs delivered if they're idle
+> > (because the swapper will have FIQs masked at the CPU.)
+> 
+> You're right.
+> 
+> What about moving local_fiq_enable() to trap_init() then?
 
-Hi,
+That's potentially unsafe, as we haven't touched any of the IRQ
+controllers at that point - we can't guarantee what state they'd be
+in.  Given that the default FIQ is to just return, a FIQ being raised
+at that point will end up with an infinite loop re-entering the FIQ
+handler.
 
-On Mon, Jan 27, 2014 at 05:08:55PM +0200, Heikki Krogerus wrote:
-> > > Since PHYs for dwc3 is optional (not all SoCs that have DWC3 use PHYs=
-),
-> > > do not return from probe if the USB PHY library returns -ENODEV as th=
-at
-> >=20
-> > this isn't correct, they all have PHYs, some of them might not be
-> > controllable.
-> >=20
-> > > indicates the platform does not have PHY.
-> >=20
-> > not really, that indicates the current platform tried to grab a PHY and
-> > the PHY doesn't exist. If there's anybody with a non-controllable PHY
-> > and someone gives me a really good reason for not using the generic
-> > no-op PHY, then we should add a flag and we could:
-> >=20
-> > 	if (!likely(dwc->flags & DWC3_USB2PHY_DRIVER_NOT_NEEDED))
-> > 		dwc3_grab_phys(dwc);
->=20
-> Why would you need to know if the PHY drivers are needed or not
-> explicitly in your controller driver?
-
-because, one way or another, they all do need it. Except for quirky ones
-like AM437x where a USB3 IP was hardwired into USB2-only mode, so it
-really lacks a USB3 PHY.
-
-> > But I really want to see the argument against using no-op. As far as I
-> > could see, everybody needs a PHY driver one way or another, some
-> > platforms just haven't sent any PHY driver upstream and have their own
-> > hacked up solution to avoid using the PHY layer.
->=20
-> Not true in our case. Platforms using Intel's SoCs and chip sets may
-> or may not have controllable USB PHY. Quite often they don't. The
-> Baytrails have usually ULPI PHY for USB2, but that does not mean they
-> provide any vendor specific functions or any need for a driver in any
-> case.
-
-that's different from what I heard.
-
-> Are we talking about the old USB PHY library or the new PHY framework
-> with the no-op PHY driver?
->=20
-> Well, in any case, I don't understand what is the purpose of the no-op
-> PHY driver. What are you drying to achieve with that?
-
-I'm trying to avoid supporting 500 different combinations for a single
-driver. We already support old USB PHY layer and generic PHY layer, now
-they both need to be made optional. The old USB PHY layer also provides
-a no-op, now called phy-generic, which is actually pretty useful.
-
-On top of all that, I'm sure you'll subscribe to the idea of preventing
-dwc3 from becoming another MUSB which supports several different
-configurations and none work correctly. I much prefer to take baby steps
-which are well thought-out and very well exercised, so I'll be very
-pedantic about proof of testing.
-
-An invasive change such as $subject needs to be very well-tested in
-different architectures with different Kconfig choices before I'd feel
-comfortable applying it.
-
-Also, the assumptions made in $subject are just plain wrong, which
-gets me really iffy about applying it or not.
-
-cheers
-
---=20
-balbi
-
---bO4vSxwwZtUjUWHo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJS5oO/AAoJEIaOsuA1yqREIBMQALFjYLnDuz5DMwnWpgWzsJI1
-Co6bNyF+u/5Ntvuogxr9EheJCtz119dWntIKHIc1rORwrKY/VEL07KFfpw8Ap+a3
-2+4JHegg+UgSSNw2vBgwPac1bpPdB9xLVBnXlfxaR4pSFqq13+VEWFja6hvXLXMR
-j+gBGRHlaVN4ZAEQJV/ucmW+jFn7hp2H531AnzgV4XSurp08jpWlBw9nPYdV2gCa
-T6dDTKoD8gXZKthlH+/2zvYQoaZVkNwTO+O8fFHlEOhBy6gc250iVyDB/cy6ILBe
-agKYvw+DybaV06XWigKYkUsP1anpHPz8QPplfY/EHS4nQvrQswOkUUhfe8B2C7EE
-xRIhy5DnRt9AAvBiUv05EmGU/9nUhzjD7U/C3JmTEbH5djo3qN79Qh1ZzXAWygmV
-gXoGtL6TMcUHrzWuAJHD7SOKpjPZfYAFges6fTUikMgBHbV6lNj4liIdxjCe4fZw
-i2AzbsqcQ4a7cnsnFmW8g0uiqTkBrp1vdPfBQlLxPNXYw5VHQiiHQGZl7Iiuv81A
-bPND6OBHy9dAPo1NVpdTOTDJG+aUQA9sHhWZT0sXbFOrW/jS321DNL0IsMQLiPJe
-imLdIquGW1MF/WwYW2z9MgpV6/BVCDbQBjesF5Tp1I+CTueJ/PWA8WUAbtRB/LTA
-qcLBtnnCMYXrPdzXbAbw
-=tVlI
------END PGP SIGNATURE-----
-
---bO4vSxwwZtUjUWHo--
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
