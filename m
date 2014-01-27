@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaA0XRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 18:17:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37084 "EHLO
+	id S1754308AbaA0X0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 18:26:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37175 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861AbaA0XRG (ORCPT
+	with ESMTP id S1750829AbaA0X0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 18:17:06 -0500
-Date: Mon, 27 Jan 2014 15:17:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Daniel Borkmann <dborkman@redhat.com>, Ryan Mallon <rmallon@gmail.com>
-Subject: Re: [PATCH] vsprintf: BUG on %n
-Message-Id: <20140127151704.2a5b2d05e33cfd7a8f17896d@linux-foundation.org>
-In-Reply-To: <1390864354.20150.57.camel@joe-AO722>
-References: <20140127230326.GA877@www.outflux.net>
-	<1390864354.20150.57.camel@joe-AO722>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Jan 2014 18:26:31 -0500
+Date: Mon, 27 Jan 2014 15:27:36 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org, xypron.glpk@gmx.de, linux-usb@vger.kernel.org,
+        ly80toro@cip.cs.fau.de, linux-kernel@vger.kernel.org,
+        ke42caxa@cip.cs.fau.de
+Subject: Re: [PATCH 1/1] usbip/userspace/libsrc/names.c: memory leak
+Message-ID: <20140127232736.GA652@kroah.com>
+References: <1390861789-8981-1-git-send-email-xypron.glpk@gmx.de>
+ <20140127225004.GA17970@kroah.com>
+ <20140127230212.GA5364@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140127230212.GA5364@mwanda>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jan 2014 15:12:34 -0800 Joe Perches <joe@perches.com> wrote:
-
-> On Mon, 2014-01-27 at 15:03 -0800, Kees Cook wrote:
-> > Now that there has been a full release of the kernel, and all users
-> > of %n have been dropped, switch to %n use triggering a BUG. Ignoring
-> > arguments could be used to assist in information leaks if an arbitrary
-> > format string was under the control of an attacker.
-> []
-> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> []
-> > @@ -1735,15 +1735,12 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
-> >  		case FORMAT_TYPE_NRCHARS: {
-> >  			/*
-> >  			 * Since %n poses a greater security risk than
-> > -			 * utility, ignore %n and skip its argument.
-> > +			 * utility, it should not be implemented. Instead,
-> > +			 * BUG when encountering %n, since there are no
-> > +			 * legitimate users and skipping arguments could
-> > +			 * assist information leak attacks.
-> >  			 */
-> > -			void *skip_arg;
-> > -
-> > -			WARN_ONCE(1, "Please remove ignored %%n in '%s'\n",
-> > -					old_fmt);
-> > -
-> > -			skip_arg = va_arg(args, void *);
-> > -			break;
-> > +			BUG();
+On Tue, Jan 28, 2014 at 02:02:12AM +0300, Dan Carpenter wrote:
+> On Mon, Jan 27, 2014 at 02:50:04PM -0800, Greg KH wrote:
+> > On Mon, Jan 27, 2014 at 11:29:48PM +0100, xypron.glpk@gmx.de wrote:
+> > > From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> > > 
+> > > p is freed if NULL.
+> > 
+> > Not a real problem, right?
+> > 
+> > > p is leaked if second calloc fails.
+> > 
+> > You just created a new bug in your "fix" :(
+> > 
+> > Please run your patches through scripts/checkpatch.pl, odds are, it
+> > would have caught this error.
+> > 
 > 
-> BUGs should be avoided where possible.
-> 
-> I think using BUG here isn't necessary or good.
-> 
+> Checkpatch doesn't catch the problems here.  I thought it would have
+> caught the style issue but apparently it only looks for extra curly
+> braces when you run it in --file mode.
 
-Good point(s).  
+Ah, that's good to know.
 
-In fact the patch makes the kernel less secure - it provides a way for
-people to make the kernel crash if they a) are able to inject printk
-control strings and b) don't know about %s ;)
+> Fengguang would hopefully have caught the missing curly braces bug with
+> Coccinelle.
 
+Is Coccinelle run on the userspace .c code in the kernel?
+
+thanks,
+
+greg k-h
