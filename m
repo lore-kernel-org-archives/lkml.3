@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaA0O5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 09:57:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55878 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753726AbaA0O5r (ORCPT
+	id S1753837AbaA0PDw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 10:03:52 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:34770 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329AbaA0PDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 09:57:47 -0500
-Message-ID: <1390834654.2735.148.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: netdev@vger.kernel.org, linux@prisktech.co.nz, devicetree@vger.kernel.org,
-        rl@hellgate.ch, linux-kernel@vger.kernel.org
-Date: Mon, 27 Jan 2014 14:57:34 +0000
-In-Reply-To: <1390823503-24087-4-git-send-email-alchark@gmail.com>
-References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
-	 <1390823503-24087-1-git-send-email-alchark@gmail.com>
-	 <1390823503-24087-4-git-send-email-alchark@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-0zul8nVdeMz661fyLdCf"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 27 Jan 2014 10:03:49 -0500
+Date: Mon, 27 Jan 2014 10:03:47 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Alan Cox <alan@etchedpixels.co.uk>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mark Brown <broonie@kernel.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        jslaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH 1/2] serial: samsung: Move uart_register_driver call to
+ device probe
+In-Reply-To: <20140127123249.GJ15937@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.11.1401270957450.1652@knanqh.ubzr>
+References: <1390208555-27770-2-git-send-email-tushar.behera@linaro.org> <20140120100530.GY15937@n2100.arm.linux.org.uk> <CAHbNUh3m=uNybv=3yxmr2on=Cc0UuGrYP8zf3GMR-9RQZ394dg@mail.gmail.com> <20140120214305.54f65ffa@www.etchedpixels.co.uk>
+ <20140120231457.GZ17314@sirena.org.uk> <20140120234734.11b78578@www.etchedpixels.co.uk> <20140121001657.GO15937@n2100.arm.linux.org.uk> <50b66ac6-1150-4ad7-aeaf-3d0dce77334d@email.android.com> <20140126115402.GA25689@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1401262318350.1652@knanqh.ubzr> <20140127123249.GJ15937@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 27 Jan 2014, Russell King - ARM Linux wrote:
 
---=-0zul8nVdeMz661fyLdCf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> On Sun, Jan 26, 2014 at 11:30:00PM -0500, Nicolas Pitre wrote:
+> > On Sun, 26 Jan 2014, Russell King - ARM Linux wrote:
+> > 
+> > > On Tue, Jan 21, 2014 at 12:45:05AM +0000, Alan Cox wrote:
+> > > > Peter handed it on. Try using git log on Documentation/devices.txt. It
+> > > > still gets updates.
+> > > > 
+> > > > Perhaps you'd care to stick to reality and fix the tree instead of trying
+> > > > to excuse the mess ?
+> > > 
+> > > Perhaps returning to reality might be advantageous rather than trying
+> > > to repeat statements which can't have any bearing on this - especially
+> > > as the git history which you're referring to only goes back to 2.6.12-rc2,
+> > > and this predates 2.6.12-rc2 by a long shot.
+> > > 
+> > > > More importantly certain folks need to stop abusing static numbers
+> > > > allocated properly. Repeating it having made a total hash of it before
+> > > > is dismal.
+> > > 
+> > > And if you continue these stupid accusations which have no basis at all,
+> > > we're going to get into a real big argument, because you are soo _wrong_
+> > > on that point.  I was always the one arguing /against/ the re-use of
+> > > existing major/minor numbers.  I was the one arguing /against/ Nicolas'
+> > > patches to make every serial port appear in the 4,64 ttyS namespace.
+> > 
+> > If you remember correctly, that was my attempt at making serial port 
+> > minor assignment to be dynamic... just like everything else is today.  
+> > And it seemed to me that you thought this was a good idea.
+> 
+> I may have thought that a dynamic space for serial devices was a good
+> idea, but what I was referring to above was specifically the
+> implementation.
 
-On Mon, 2014-01-27 at 15:51 +0400, Alexey Charkov wrote:
-> This should make the driver usable with VIA/WonderMedia ARM-based
-> Systems-on-Chip integrated Rhine III adapters. Note that these
-> are always in MMIO mode, and don't have any known EEPROM.
-[...]
-> --- a/drivers/net/ethernet/via/Kconfig
-> +++ b/drivers/net/ethernet/via/Kconfig
-> @@ -19,7 +19,7 @@ if NET_VENDOR_VIA
-> =20
->  config VIA_RHINE
->         tristate "VIA Rhine support"
-> -       depends on PCI
-> +       depends on (PCI || USE_OF)
->         select CRC32
->         select MII
->         ---help---
+Oh I do not dispute the fact that the implementation at the time was not 
+up to needed standards.  That would have been fixed eventually though, 
+if it hadn't been for the policy based objection we received.  At which 
+point this effort was simply dropped.
 
-This seems like the right thing to do, but it means you need to add
-#ifdef CONFIG_PCI and #ifdef CONFIG_USE_OF around the driver structures
-and related functions.
 
-You should compile-test in configurations that have just one of those
-dependencies enabled.
-
-[...]
-> --- a/drivers/net/ethernet/via/via-rhine.c
-> +++ b/drivers/net/ethernet/via/via-rhine.c
-[...]
-> @@ -847,7 +856,8 @@ static void rhine_hw_init(struct net_device *dev, lon=
-g pioaddr)
->  		msleep(5);
-> =20
->  	/* Reload EEPROM controlled bytes cleared by soft reset */
-> -	rhine_reload_eeprom(pioaddr, dev);
-> +	if (!strncmp(dev->dev.parent->bus->name, "pci", 3))
-> +		rhine_reload_eeprom(pioaddr, dev);
-[...]
-
-Ew.  I think you should use dev_is_pci(), although you might also need
-to guard that with #ifdef CONFIG_PCI.
-
-Ben.
-
---=20
-Ben Hutchings
-If at first you don't succeed, you're doing about average.
-
---=-0zul8nVdeMz661fyLdCf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUuZz3ue/yOyVhhEJAQoomRAA1oBECLtbT/EgIpt2b7ITfE6jk29iHmgK
-RS7Fq3vqWCTCZcNE2zNOXpjF7HYkGPNG0hUChGcxGAVdkW6A/jcMKGD+LYf00KOb
-YSSpwT9H7fXa07/6OAnx9F/kQ7dAkY8ntiWTN4gVUwNfy7x/e3umu/+8u+wOZJzE
-5SszaLdNMagluTV6Yy5/2qL8JzS2IdB0veyz+ZYHDGLOweB5UkwiH/nSvtSDkEqg
-92xEBeDyh85r0w/AcOsNBAY/0NbTBoHTKx8yfZLZn25Xj4Xre8P5CV9aqYUVSRoC
-GdDYAjPtwknX2/+tZAUf3O+PqFUnxfpFsP+f7Dd8JsdK6rd7u5z/CIKl0SAMRiZe
-y+tM6Nzcw+YQmfZlZhG5PM0LmMR2PBz+Yzdgs/jttRxVEZlTXxiynKwl4gcNi9W/
-0QAMMVYB7hfQYUmpWNQYtibBHn6PVvxhG9YuVT2yP4IABuUYeF0ZJuoQngv2FrRK
-BdD0kVHAVosws3JBhIYQIKRCeWEAaaQGYA2v5nnbAUpO/MV7EBMPMfo3m62jgWXH
-M32EHH8ESX1CzD0OmDmYUPq+qHjaMh4iCAAgC209UjJPt2FoT3q774RfsRYNKsZN
-is0VCR2yr3PNPh1zVmDSsedKjlWKkvQ1yTT/L/5bami6YZsyfStpo6K7Ym2I3LUT
-VPe1r1mpvS4=
-=bJwS
------END PGP SIGNATURE-----
-
---=-0zul8nVdeMz661fyLdCf--
+Nicolas
