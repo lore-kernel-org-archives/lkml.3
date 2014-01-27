@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaA0Ebv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 23:31:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20006 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753157AbaA0Ebu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 23:31:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,727,1384329600"; 
-   d="scan'208";a="471211653"
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: rui.zhang@intel.com, eduardo.valentin@ti.com
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [PATCH v2] Thermal: ACPI INT3403 thermal driver
-Date: Sun, 26 Jan 2014 20:31:40 -0800
-Message-Id: <1390797101-3301-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753494AbaA0EcN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 23:32:13 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:47933 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445AbaA0EcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jan 2014 23:32:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140127002255.GA10323@ZenIV.linux.org.uk>
+References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
+	<20140127002255.GA10323@ZenIV.linux.org.uk>
+Date: Sun, 26 Jan 2014 20:32:09 -0800
+X-Google-Sender-Auth: UFjgms_YgkapdRbxbva-XQPqGJw
+Message-ID: <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com>
+Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 26, 2014 at 4:22 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Umm...  Can't uprobe_notify_resume() modify regs as well?
 
-v2:
-Updated description of CONFIG_ACPI_INT3403_THERMAL:
+Probably.
 
-Linus didn't like the config help text. This patch updated the help text to
-"
-Newer laptops and tablets that use ACPI may have thermal sensors outside the
-core CPU/SOC for thermal safety reasons. These temperature sensors are also
-exposed for the OS to use via the so called INT3403 ACPI object. This driver
-will, on devices that have such sensors, expose the temperature information
-from these sensors to userspace via the normal thermal framework. This means
-that a wide range of applications and GUI widgets can show this information to
-the user or use this information for making decisions. For example, the Intel
-Thermal Daemon can use this information to allow the user to select his laptop
-to run without turning on the fans.
-"
+.. and on the other hand, we should actually be able to use 'sysret'
+for signal handling on x86-64, because while sysret destroys %rcx and
+doesn't allow for returning to odd modes, for calling a signal handler
+I don't think we really care..
 
-v1:
-Base version reviewed and merged to linux-next
+> While we
+> are at it, when we start using the same thing on 32bit kernels, we'll
+> need to watch out for execve() - the reason why start_thread() sets
+> TIF_NOTIFY_RESUME is to force us away from sysexit path.  IIRC, vm86
+> is another thing to watch out for (same reasons).
 
-Srinivas Pandruvada (1):
-  Thermal: ACPI INT3403 thermal driver
+Yes, the 32-bit code I didn't want to touch, partly because I no
+longer have a test-case. And it does end up having some more
+interesting cases.
 
- drivers/thermal/Kconfig           |  15 +++
- drivers/thermal/Makefile          |   1 +
- drivers/thermal/int3403_thermal.c | 237 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 253 insertions(+)
- create mode 100644 drivers/thermal/int3403_thermal.c
-
--- 
-1.8.3.2
-
+                 Linus
