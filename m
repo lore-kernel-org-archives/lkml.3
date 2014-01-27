@@ -1,66 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaA0EDM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jan 2014 23:03:12 -0500
-Received: from mail.windriver.com ([147.11.1.11]:42364 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbaA0EDK (ORCPT
+	id S1753279AbaA0EP3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jan 2014 23:15:29 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:31063 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157AbaA0EP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jan 2014 23:03:10 -0500
-Date: Sun, 26 Jan 2014 23:03:31 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Hugh Dickins <hughd@google.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: bring back /sys/kernel/mm
-Message-ID: <20140127040330.GA17584@windriver.com>
-References: <alpine.LSU.2.11.1401261849120.1259@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401261849120.1259@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 26 Jan 2014 23:15:28 -0500
+Message-ID: <1390796125.12245.0.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 8/8] mm, hugetlb: improve page-fault scalability
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: akpm@linux-foundation.org
+Cc: iamjoonsoo.kim@lge.com, riel@redhat.com, mgorman@suse.de, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hughd@google.com, david@gibson.dropbear.id.au, js1304@gmail.com,
+        liwanp@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com, dhillf@gmail.com,
+        rientjes@google.com, aswin@hp.com, scott.norton@hp.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Sun, 26 Jan 2014 20:15:25 -0800
+In-Reply-To: <1390794746-16755-9-git-send-email-davidlohr@hp.com>
+References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
+	 <1390794746-16755-9-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[PATCH] mm: bring back /sys/kernel/mm] On 26/01/2014 (Sun 18:52) Hugh Dickins wrote:
+sigh, I sent the wrong patch, this one has some bogus leftovers of some
+other things. Please ignore, I'm sending v2.
 
-> Commit da29bd36224b ("mm/mm_init.c: make creation of the mm_kobj happen
-> earlier than device_initcall") changed to pure_initcall(mm_sysfs_init).
+On Sun, 2014-01-26 at 19:52 -0800, Davidlohr Bueso wrote:
+> The kernel can currently only handle a single hugetlb page fault at a time.
+> This is due to a single mutex that serializes the entire path. This lock
+> protects from spurious OOM errors under conditions of low of low availability
+> of free hugepages. This problem is specific to hugepages, because it is
+> normal to want to use every single hugepage in the system - with normal pages
+> we simply assume there will always be a few spare pages which can be used
+> temporarily until the race is resolved.
 > 
-> That's too early: mm_sysfs_init() depends on core_initcall(ksysfs_init)
-> to have made the kernel_kobj directory "kernel" in which to create "mm".
+> Address this problem by using a table of mutexes, allowing a better chance of
+> parallelization, where each hugepage is individually serialized. The hash key
+> is selected depending on the mapping type. For shared ones it consists of the
+> address space and file offset being faulted; while for private ones the mm and
+> virtual address are used. The size of the table is selected based on a compromise
+> of collisions and memory footprint of a series of database workloads.
 > 
-> Make it postcore_initcall(mm_sysfs_init).  We could use core_initcall(),
-> and depend upon Makefile link order kernel/ mm/ fs/ ipc/ security/ ...
-> as core_initcall(debugfs_init) and core_initcall(securityfs_init) do;
-> but better not.
-
-Agreed, N+1 is better than link order.  I guess it silently fails then,
-with /sys/kernel/mm missing as the symptom?  I'd booted i386 and ppc
-and didn't spot this, unfortunately...  wondering now if there was a
-hint in dmesg that I simply failed to notice.
-
+> Large database workloads that make heavy use of hugepages can be particularly
+> exposed to this issue, causing start-up times to be painfully slow. This patch
+> reduces the startup time of a 10 Gb Oracle DB (with ~5000 faults) from 37.5 secs
+> to 25.7 secs. Larger workloads will naturally benefit even more.
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-
-Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-Thanks,
-Paul.
-
+> NOTE:
+> The only downside to this patch, detected by Joonsoo Kim, is that a small race
+> is possible in private mappings: A child process (with its own mm, after cow)
+> can instantiate a page that is already being handled by the parent in a cow
+> fault. When low on pages, can trigger spurious OOMs. I have not been able to
+> think of a efficient way of handling this... but do we really care about such
+> a tiny window? We already maintain another theoretical race with normal pages.
+> If not, one possible way to is to maintain the single hash for private mappings
+> -- any workloads that *really* suffer from this scaling problem should already
+> use shared mappings.
+> 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 > ---
+>  mm/hugetlb.c | 86 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 73 insertions(+), 13 deletions(-)
 > 
->  mm/mm_init.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- 3.13.0+/mm/mm_init.c	2014-01-23 21:51:26.004001378 -0800
-> +++ linux/mm/mm_init.c	2014-01-26 18:06:40.488488209 -0800
-> @@ -202,4 +202,4 @@ static int __init mm_sysfs_init(void)
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 5f3efa5..ec04e84 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/swap.h>
+>  #include <linux/swapops.h>
+>  #include <linux/page-isolation.h>
+> +#include <linux/jhash.h>
 >  
+>  #include <asm/page.h>
+>  #include <asm/pgtable.h>
+> @@ -53,6 +54,13 @@ static unsigned long __initdata default_hstate_size;
+>   */
+>  DEFINE_SPINLOCK(hugetlb_lock);
+>  
+> +/*
+> ++ * Serializes faults on the same logical page.  This is used to
+> ++ * prevent spurious OOMs when the hugepage pool is fully utilized.
+> ++ */
+> +static int __read_mostly num_fault_mutexes;
+> +static struct mutex *htlb_fault_mutex_table ____cacheline_aligned_in_smp;
+> +
+>  static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
+>  {
+>  	bool free = (spool->count == 0) && (spool->used_hpages == 0);
+> @@ -1922,11 +1930,14 @@ static void __exit hugetlb_exit(void)
+>  	}
+>  
+>  	kobject_put(hugepages_kobj);
+> +	kfree(htlb_fault_mutex_table);
+>  }
+>  module_exit(hugetlb_exit);
+>  
+>  static int __init hugetlb_init(void)
+>  {
+> +	int i;
+> +
+>  	/* Some platform decide whether they support huge pages at boot
+>  	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
+>  	 * there is no such support
+> @@ -1951,6 +1962,18 @@ static int __init hugetlb_init(void)
+>  	hugetlb_register_all_nodes();
+>  	hugetlb_cgroup_file_init();
+>  
+> +#ifdef CONFIG_SMP
+> +	num_fault_mutexes = roundup_pow_of_two(8 * num_possible_cpus());
+> +#else
+> +	num_fault_mutexes = 1;
+> +#endif
+> +	htlb_fault_mutex_table =
+> +		kmalloc(sizeof(struct mutex) * num_fault_mutexes, GFP_KERNEL);
+> +	if (!htlb_fault_mutex_table)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < num_fault_mutexes; i++)
+> +		mutex_init(&htlb_fault_mutex_table[i]);
 >  	return 0;
 >  }
-> -pure_initcall(mm_sysfs_init);
-> +postcore_initcall(mm_sysfs_init);
+>  module_init(hugetlb_init);
+> @@ -2733,15 +2756,14 @@ static bool hugetlbfs_pagecache_present(struct hstate *h,
+>  }
+>  
+>  static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> -			unsigned long address, pte_t *ptep, unsigned int flags)
+> +			   struct address_space *mapping, pgoff_t idx,
+> +			   unsigned long address, pte_t *ptep, unsigned int flags)
+>  {
+>  	struct hstate *h = hstate_vma(vma);
+>  	int ret = VM_FAULT_SIGBUS;
+>  	int anon_rmap = 0;
+> -	pgoff_t idx;
+>  	unsigned long size;
+>  	struct page *page;
+> -	struct address_space *mapping;
+>  	pte_t new_pte;
+>  	spinlock_t *ptl;
+>  
+> @@ -2756,9 +2778,6 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		return ret;
+>  	}
+>  
+> -	mapping = vma->vm_file->f_mapping;
+> -	idx = vma_hugecache_offset(h, vma, address);
+> -
+>  	/*
+>  	 * Use page lock to guard against racing truncation
+>  	 * before we get page_table_lock.
+> @@ -2868,17 +2887,53 @@ backout_unlocked:
+>  	goto out;
+>  }
+>  
+> +#ifdef CONFIG_SMP
+> +static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
+> +			    struct vm_area_struct *vma,
+> +			    struct address_space *mapping,
+> +			    pgoff_t idx, unsigned long address)
+> +{
+> +	unsigned long key[2];
+> +	u32 hash;
+> +
+> +	if (vma->vm_flags & VM_SHARED) {
+> +		key[0] = (unsigned long) mapping;
+> +		key[1] = idx;
+> +	} else {
+> +		key[0] = (unsigned long) mm;
+> +		key[1] = address >> huge_page_shift(h);
+> +	}
+> +
+> +	hash = jhash2((u32 *)&key, sizeof(key)/sizeof(u32), 0);
+> +
+> +	return hash & (num_fault_mutexes - 1);
+> +}
+> +#else
+> +/*
+> + * For uniprocesor systems we always use a single mutex, so just
+> + * return 0 and avoid the hashing overhead.
+> + */
+> +static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
+> +			    struct vm_area_struct *vma,
+> +			    struct address_space *mapping,
+> +			    pgoff_t idx, unsigned long address)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>  int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			unsigned long address, unsigned int flags)
+>  {
+> -	pte_t *ptep;
+> -	pte_t entry;
+> +	pte_t *ptep, entry;
+>  	spinlock_t *ptl;
+>  	int ret;
+> +	u32 hash, parent_hash;
+> +	pgoff_t idx;
+>  	struct page *page = NULL;
+>  	struct page *pagecache_page = NULL;
+> -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+>  	struct hstate *h = hstate_vma(vma);
+> +	struct address_space *mapping;
+>  
+>  	address &= huge_page_mask(h);
+>  
+> @@ -2897,15 +2952,21 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	if (!ptep)
+>  		return VM_FAULT_OOM;
+>  
+> +	mapping = vma->vm_file->f_mapping;
+> +	idx = vma_hugecache_offset(h, vma, address);
+> +
+>  	/*
+>  	 * Serialize hugepage allocation and instantiation, so that we don't
+>  	 * get spurious allocation failures if two CPUs race to instantiate
+>  	 * the same page in the page cache.
+>  	 */
+> -	mutex_lock(&hugetlb_instantiation_mutex);
+> +	parent_hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
+> +	hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
+> +	mutex_lock(&htlb_fault_mutex_table[hash]);
+> +
+>  	entry = huge_ptep_get(ptep);
+>  	if (huge_pte_none(entry)) {
+> -		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
+> +		ret = hugetlb_no_page(mm, vma, mapping, idx, address, ptep, flags);
+>  		goto out_mutex;
+>  	}
+>  
+> @@ -2974,8 +3035,7 @@ out_ptl:
+>  	put_page(page);
+>  
+>  out_mutex:
+> -	mutex_unlock(&hugetlb_instantiation_mutex);
+> -
+> +	mutex_unlock(&htlb_fault_mutex_table[hash]);
+>  	return ret;
+>  }
+>  
+
+
