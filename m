@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbaA0TuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:50:24 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:39979 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765AbaA0TuW (ORCPT
+	id S1754119AbaA0Tut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:50:49 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60196 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765AbaA0Tus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:50:22 -0500
-From: "Network Nut" <sillystack@gmail.com>
-To: "'Clemens Ladisch'" <clemens@ladisch.de>
-Cc: <linux-kernel@vger.kernel.org>
-References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de>
-In-Reply-To: <52E6219A.3020405@ladisch.de>
-Subject: RE: WaitForMultipleObjects/etc. In Kernel
-Date: Mon, 27 Jan 2014 13:50:19 -0600
-Message-ID: <00d001cf1b99$026407d0$072c1770$@gmail.com>
+	Mon, 27 Jan 2014 14:50:48 -0500
+Date: Mon, 27 Jan 2014 19:50:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, kuninori.morimoto.gx@renesas.com, rob@landley.net,
+        perex@perex.cz, moinejf@free.fr, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Message-ID: <20140127195037.GV11841@sirena.org.uk>
+References: <1390549386-4702-1-git-send-email-Li.Xiubo@freescale.com>
+ <1390549386-4702-2-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQNT3acP/4y+UoGLob+8VizidhBl0AFz54/xAX6FO6UBfOQBmZdr389A
-Content-Language: en-us
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1AtvaQRkIQxkm1Oe"
+Content-Disposition: inline
+In-Reply-To: <1390549386-4702-2-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/7] ASoC: simple-card: fix __asoc_simple_card_dai_init
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Unrelated processes cannot directly open objects created by another
-> process (with the exception of sockets and pipes, which can be created in
-> the file system).  However, sharing of any file descriptor is possible by
-> sending it in a control message through a Unix domain socket.
 
-I just spent a bit more time snooping around the Internet to see what is
-possible and what is not.
+--1AtvaQRkIQxkm1Oe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-My gut feeling, before trying to port my application from Windows to Linux,
-was that I have been using (enjoying) synchronization primitives on Windows
-that are fundamental to generalized-synchronization. Most importantly, as I
-mentioned initially, I do not believe that I am victim of tunnel-vision,
-where my familiarity with a particular OS has biased my perception of how
-synchronization should be done. On the contrary, knowing what I know about
-synchronization now, if it were left to me to design a Generalized
-Synchronization Model for an OS kernel from scratch, without regard for
-pre-existing OS's, the model that I would devise would probably look very
-similar to what the Windows engineers  did. I feel a bit bad saying this, as
-my intent here is not to take a stab at Linux's synchronization model. It's
-to say...I feel that I am struggling to synthesize what I regard as a
-"regular model" from bits and pieces on Linux. I am convinced that, if I
-were going in the other direction, from Linux to Windows, I would not have
-any problem recreating, under Windows, whatever model I had been using under
-Linux.
+On Fri, Jan 24, 2014 at 03:43:00PM +0800, Xiubo Li wrote:
+> If the CPU/CODEC DAI set_sysclk() is not support, the -ENOTSUPP will returnd.
+> Here do the check like set_fmt().
 
-That said, I really do need to have multiple threads, each within their
-respective processes, P1:T1, P2:T2, ...Pn:Tn; all blocking on what are
-effectively potentially globally-named synchronization primitives
-(semaphore, mutex event)...and...ideally...as each thread blocks against
-multiple, potentially-named primitives, there is an option for the master
-blocking function [epoll_wait, in this case], to time-out, with the
-expiration for time-out being specified as an argument to the function. And
-to make matters worse, sometimes, while blocking on {semaphore + event +
-event +....}, I need to block, simultaneously, on asynchronous I/O.
+Applied, thanks.
 
-So what I know so far is that, if my problem is to be solved:
+--1AtvaQRkIQxkm1Oe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-1. epoll/epoll_wait/etc. will definitely be part of it (Thanks!)
-2. I am OK with timerfd and eventfd (Thanks!)
-3. Other synchronization primitives will have to be accessible vial
-file-descriptor.
-4. If epoll_wait is to block on asynchronous I/O, use io_set_eventfd  to
-bind completion of asynchronous I/O to signaling of an eventfd
-5. I can simulate system-global named mutex using shared-memory for
-underlying state of mutex (POCO NamedMutex)
-6. I can get named semaphore using POSIX sem_create 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-It seems that the remaining problem is to get named mutex and named
-semaphore to be accessible by file-descriptor.
+iQIcBAEBAgAGBQJS5riKAAoJELSic+t+oim9fooQAIFXCnKqJzESU8MhE/V2hl3D
+DMW4L/WvuPt4w00b3ILfBvLpENqftBMaAjRPu9SGoC6fDXoWtrbwkD0vrjyz8eHF
+e2ufZt0zTWRsMPI5LH68U+9THlF/U97yf64uIqTCHMSkS472yjKE5anSAKZMhgSn
+/puHorpeW3hRgzumZ6sFazcSU3p9DxDF5W3Gx6IWJy2YeiSjgxzcVBPHDvA9s/PB
+Ox0qoYCCoR3HvuGwT5ba8xvKxrx4Pb04o7n7BQsKGIVs2rXyy1+F4zCvGf8TQv1/
+0YhlVaMDWp9t/Igjr7+sV1JTsJCNNMiXsNfAZniGmvs855am+9iGloXZJiFyCWP4
+tsFa2IcyX3EIzHdlBnw/t8nEduKlzx3aJNBAhXTmy2/VWgNZVIG9jJvxyQUG6+TK
+por1+YwYjbIzfMMy6QLUmkwWXuyDzNWe8CtcoLtTh82JWVgReka3dvndVFyeCAo7
+VvVb2uQWpy9+2osaElkQ/N2eJpQ/K0K/+li8Fi68dtsSHvcV/LGt/AORE4VRlaB5
+ZQO4N7SjmyMl4nrZDvUCVPxy/GqpFcU3HbKR7+yxn3SwMbpQsV7WgXs2F3g4Gn6s
+0sABFRgpNXYPiW/Ltcg1r3ddYk0UMmOStHMHVH6Ztl5+C21+IIRFgQH28Bs5gDxJ
+INZT5PKKj0T1bzliAzRx
+=HGbO
+-----END PGP SIGNATURE-----
 
-> > BTW, the man page for epoll_wait seems to be incorrect.
-> 
-> <https://www.kernel.org/doc/man-pages/reporting_bugs.html>
-> 
-> > "The timeout argument specifies the minimum number of milliseconds
-> >        that epoll_wait() will block."
-> >
-> > I think the word "minimum" should be "maximum".
-> 
-> This sentence was copied from the poll(2) man page, where the previous
-> sentence says "poll() blocks until one of the events occurs".  So the word
-> "block" implies that no event has occured.
-
-So that means that it is a bug, right? Or?
-
-Regards,
-
--Nut
-
+--1AtvaQRkIQxkm1Oe--
