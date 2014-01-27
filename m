@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842AbaA0KJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:09:07 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:58289 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622AbaA0KJE (ORCPT
+	id S1753686AbaA0KKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:10:06 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:60208 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaA0KKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:09:04 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-2f-52e6303f044e
+	Mon, 27 Jan 2014 05:10:03 -0500
+X-AuditID: cbfee61b-b7f456d000006dfd-1d-52e6307a5778
 From: Weijie Yang <weijie.yang@samsung.com>
 To: hughd@google.com
 Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
@@ -18,73 +18,100 @@ Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'Linux-MM'" <linux-mm@kvack.org>,
         "'linux-kernel'" <linux-kernel@vger.kernel.org>,
         stable@vger.kernel.org
-Subject: [PATCH 3/8] mm/swap: prevent concurrent swapon on the same S_ISBLK
- blockdev
+Subject: [PATCH 2/8] mm/swap: fix race on swap_info reuse between swapoff and
+ swapon
 Date: Mon, 27 Jan 2014 18:03:04 +0800
-Message-id: <000c01cf1b47$ce280170$6a780450$%yang@samsung.com>
+Message-id: <000d01cf1b47$f12e11f0$d38a35d0$%yang@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8bRudppeILuSNKSMywpTnYTmP1Dw==
+Thread-index: Ac8bRuTYzqeM0Z/kS7aK909yUBXOSw==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jAV17g2dBBgv3iFnMWb+GzaLr1FQW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAd0qg2dBBkfmclnMWb+GzaLr1FQW
 	i4OzlzBZPP3Ux2JxedccNot7a/6zWiz7+p7dYsrDSYwWFw7dZ7L4dPQRm8WCjY8YLZ6c+M/i
 	wOOxc9Zddo8Fm0o9Nq3qZPPY9GkSu8eJGb9ZPD4+vcXi8X7fVTaPvi2rGD2ufyvy+LxJLoAr
-	issmJTUnsyy1SN8ugStjxYEN7AVt3BWXD99ka2D8ztHFyMkhIWAiMfvBKiYIW0ziwr31bF2M
-	XBxCAosYJd4u+MUC4fxhlFg89SMrSBWbgLbE3f6NYLaIgIjEmjsLGUGKmAV+MUn09x8A6uDg
-	EBYIk1j6JwykhkVAVeLooensIDavgJ1E29OXrBC2oMSPyffAypkF1CWmTMkFCTMLyEtsXvOW
-	GSQsARR+9FcXYpOexI2zJ9kgSsQlNh65xTKBUWAWkkGzEAbNQjJoFpKOBYwsqxhFUwuSC4qT
-	0nMN9YoTc4tL89L1kvNzNzGCI+uZ1A7GlQ0WhxgFOBiVeHgzrj8NEmJNLCuuzD3EKMHBrCTC
-	W6HzLEiINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QD45xz
-	oXdX973d5GdUG7ON0+iuweYH1xyd58vY75ijeZ931tZZJ3P013VVrrbNuH+5dlFc+yWuqC39
-	j8JyW791qydeZ97OmRbKYCchGSyhUCvD80FEREySe5eQoYXIpPeGnIseXSsoYNCYWcX/qPPc
-	96ePFjYZmlo5RDplCYTsuVvXUPPn/fR+JZbijERDLeai4kQAiEgWxKgCAAA=
+	issmJTUnsyy1SN8ugStj850bTAW3hSomLNvN1MA4gb+LkZNDQsBEYvqbE+wQtpjEhXvr2UBs
+	IYFFjBJ7W1i6GLmA7D+MEg0n94El2AS0Je72b2QFsUUERCTW3FnICFLELPCLSaK//wBQBweH
+	sECYxJOz1iA1LAKqEkcPTWcHCfMK2Ek8mqMFEuYVEJT4MfkeWDWzgLrElCm5IGFmAXmJzWve
+	MoOEJYDCj/7qQizSk3i2+goLRIm4xMYjt1gmMArMQjJoFsKgWUgGzULSsYCRZRWjaGpBckFx
+	UnqukV5xYm5xaV66XnJ+7iZGcFQ9k97BuKrB4hCjAAejEg9vxvWnQUKsiWXFlbmHGCU4mJVE
+	eCt0ngUJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYNx2
+	9PTd/anaTKXmLKYbWRragjXNTiS0RJqWbk5vdc76dDWMhU3z4KLeKM9iK583xwp+GmW9t7/p
+	ns9mevqmdnkK78aC7XNO/V9Q8m/lrK1Lv2r+vLvtno8nw+YpGhUVExJ+ljW82/tuI/Pkh+9a
+	7h24fjl6+YRD8kobzE5XV7qps60oqg7q2avEUpyRaKjFXFScCAA4F0Y1pgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When swapon the same S_ISBLK blockdev concurrent, the allocated two
-swap_info could hold the same block_device, because claim_swapfile()
-allow the same holder(here, it is sys_swapon function).
+swapoff clear swap_info's SWP_USED flag prematurely and free its resources
+after that. A concurrent swapon will reuse this swap_info while its previous
+resources are not cleared completely.
 
-To prevent this situation, This patch adds swap_lock protect to ensure
-we can find this situation and return -EBUSY for one swapon call.
+These late freed resources are:
+ - p->percpu_cluster
+ - swap_cgroup_ctrl[type]
+ - block_device setting
+ - inode->i_flags &= ~S_SWAPFILE
 
-As for S_ISREG swapfile, claim_swapfile() already prevent this scenario
-by holding inode->i_mutex.
+This patch clear SWP_USED flag after all its resources freed, so that swapon
+can reuse this swap_info by alloc_swap_info() safely.
 
 This patch is just for a rare scenario, aim to correct of code.
 
+Suggested-by: Heesub Shin <heesub.shin@samsung.com>
+Suggested-by: Mateusz Guzik <mguzik@redhat.com>
 Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
- mm/swapfile.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/swapfile.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 4d24158..413c213 100644
+index 0a623a9..4d24158 100644
 --- a/mm/swapfile.c
 +++ b/mm/swapfile.c
-@@ -2459,9 +2459,10 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 		goto bad_swap;
+@@ -1977,7 +1977,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	p->swap_map = NULL;
+ 	cluster_info = p->cluster_info;
+ 	p->cluster_info = NULL;
+-	p->flags = 0;
+ 	frontswap_map = frontswap_map_get(p);
+ 	spin_unlock(&p->lock);
+ 	spin_unlock(&swap_lock);
+@@ -2003,6 +2002,15 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 		mutex_unlock(&inode->i_mutex);
  	}
- 
-+	/* prevent concurrent swapon on the same S_ISBLK blockdev */
-+	spin_lock(&swap_lock);
- 	p->swap_file = swap_file;
- 	mapping = swap_file->f_mapping;
--
- 	for (i = 0; i < nr_swapfiles; i++) {
- 		struct swap_info_struct *q = swap_info[i];
- 
-@@ -2472,6 +2473,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 			goto bad_swap;
- 		}
- 	}
-+	spin_unlock(&swap_lock);
- 
- 	inode = mapping->host;
- 	/* If S_ISREG(inode->i_mode) will do mutex_lock(&inode->i_mutex); */
+ 	filp_close(swap_file, NULL);
++
++	/*
++	 * clear SWP_USED flag after all resources freed so that
++	 * swapon can reuse this swap_info in alloc_swap_info() safely
++	 * it is ok to not hold any lock after we cleared SWP_WRITEOK flag
++	 */
++	smp_wmb();
++	p->flags = 0;
++
+ 	err = 0;
+ 	atomic_inc(&proc_poll_event);
+ 	wake_up_interruptible(&proc_poll_wait);
+@@ -2050,7 +2058,7 @@ static void *swap_start(struct seq_file *swap, loff_t *pos)
+ 	for (type = 0; type < nr_swapfiles; type++) {
+ 		smp_rmb();	/* read nr_swapfiles before swap_info[type] */
+ 		si = swap_info[type];
+-		if (!(si->flags & SWP_USED) || !si->swap_map)
++		if (!(si->flags & SWP_WRITEOK))
+ 			continue;
+ 		if (!--l)
+ 			return si;
+@@ -2072,7 +2080,7 @@ static void *swap_next(struct seq_file *swap, void *v, loff_t *pos)
+ 	for (; type < nr_swapfiles; type++) {
+ 		smp_rmb();	/* read nr_swapfiles before swap_info[type] */
+ 		si = swap_info[type];
+-		if (!(si->flags & SWP_USED) || !si->swap_map)
++		if (!(si->flags & SWP_WRITEOK))
+ 			continue;
+ 		++*pos;
+ 		return si;
 -- 
 1.7.10.4
 
