@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaA0RT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:19:28 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56234 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516AbaA0RT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:19:27 -0500
-Message-ID: <52E6951C.60609@wwwdotorg.org>
-Date: Mon, 27 Jan 2014 10:19:24 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754055AbaA0RUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:20:23 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753477AbaA0RUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 12:20:22 -0500
+Message-ID: <52E6954F.2060303@nod.at>
+Date: Mon, 27 Jan 2014 18:20:15 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Guenter Roeck <linux@roeck-us.net>
-CC: Jean Delvare <khali@linux-fr.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Wei Ni <wni@nvidia.com>, linux-kernel@vger.kernel.org,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
-References: <52E561D0.4040308@roeck-us.net> <20140126211357.6fa68909@endymion.delvare> <52E573B6.9040903@roeck-us.net> <20140126214936.7736f530@endymion.delvare> <52E58330.90602@roeck-us.net> <52E58656.7000903@roeck-us.net> <20140126235103.GP11727@sirena.org.uk>
-In-Reply-To: <20140126235103.GP11727@sirena.org.uk>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: Kees Cook <keescook@chromium.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>	<CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>	<52E5EFAF.3060609@linux.intel.com>	<CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com> <CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 04:51 PM, Mark Brown wrote:
-> On Sun, Jan 26, 2014 at 02:04:06PM -0800, Guenter Roeck wrote:
-> 
->> I think I have a better idea: Surround the regulator code, or at least
->> its error handling, in the lm90 driver with
-> 
->> 	if (IS_ENABLED(CONFIG_OF)) {
->> 	}
-> 
->> Would that be ok ? If yes I'll submit a patch. I'll do the same in
->> another driver I am working on.
-> 
-> That's not going to have the desired effect in cases where DT is built
-> into the kernel but not in use on the current system (which is a
-> configuration that gets used) ...
+Am 27.01.2014 18:05, schrieb Kees Cook:
+> I would argue that decoding a non-panic oops on a running system is
+> entirely possible as-is, since the offset can be found from
+> /proc/kallsyms as root. It was the dead system that needed the offset
+> exported: via text in the panic, or via an ELF note in a core.
 
-The solution to that particular aspect of the problem is the following:
+The problem is that you have to pickup information from two sources.
+As a kernel developer users/customers often show you a backtrace (oops or panic)
+and want you do find the problem.
+They barley manage it copy&paste the topmost full trace from dmesg or /var/log/messages.
+If I have to ask them a bit later to tell me the offset from /proc/kallsyms or something else
+I'm lost. Mostly because they have already rebooted the box...
 
-if (of_have_populated_dt()) {
-	...
-
-which is a run-time rather than compile-time test.
-
+Thanks,
+//richard
