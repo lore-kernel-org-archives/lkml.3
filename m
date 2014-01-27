@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaA0UUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:20:22 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50226 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751843AbaA0UUV (ORCPT
+	id S1754193AbaA0UWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:22:55 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:58270 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753763AbaA0UWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:20:21 -0500
-Date: Mon, 27 Jan 2014 20:20:12 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 15/24] drm/i2c: tda998x: use irq for connection
-	status and EDID read
-Message-ID: <20140127202012.GZ15937@n2100.arm.linux.org.uk>
-References: <cover.1390646891.git.moinejf@free.fr> <20140125181438.1353afc7@armhf>
+	Mon, 27 Jan 2014 15:22:54 -0500
+Date: Mon, 27 Jan 2014 21:22:52 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
+Message-ID: <20140127202252.GA11821@two.firstfloor.org>
+References: <52E6AFFE.3030004@siemens.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140125181438.1353afc7@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52E6AFFE.3030004@siemens.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 06:14:38PM +0100, Jean-Francois Moine wrote:
-> This patch adds the optional treatment of the tda998x IRQ.
+On Mon, Jan 27, 2014 at 08:14:06PM +0100, Jan Kiszka wrote:
+> apic_icr_write and its users in smpboot.c were apparently written under
+> the assumption that this code would only run during early boot. But
+> nowadays we also execute it when onlining a CPU later on while the
+> system is fully running. That will make wakeup_cpu_via_init_nmi and,
+> thus, also native_apic_icr_write run in plain process context. If we
+> migrate the caller to a different CPU at the wrong time or interrupt it
+> and write to ICR/ICR2 to send unrelated IPIs, we can end up sending
+> INIT, SIPI or NMIs to wrong CPUs.
 > 
-> The interrupt function is used to know the display connection status
-> without polling and to speedup reading the EDID.
-> 
-> The IRQ number is defined in the i2c client either by platform data or
-> in the DT.
-> 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> Fix this by disabling interrupts during the write to the ICR halves and
+> disable preemption around waiting for ICR availability and using it.
 
-I don't see where you free the interrupt in this - you used to, but it
-appears that hunk got dropped?
+If you just want to disable migration use get_cpu()/put_cpu()
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+-Andi
