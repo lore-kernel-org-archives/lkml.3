@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaA0SMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:12:17 -0500
-Received: from mout.gmx.net ([212.227.17.21]:61795 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753845AbaA0SLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:11:43 -0500
-From: xypron.glpk@gmx.de
-To: gxt@mprc.pku.edu.cn
-Cc: akpm@linux-foundation.org, paul.gortmaker@windriver.com, vapier@gentoo.org,
-        totglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] __init setup_early_printk: missing initialization
-Date: Mon, 27 Jan 2014 19:10:24 +0100
-Message-Id: <1390846224-6995-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Provags-ID: V03:K0:tXkUS6FZmbwxZMW/lw7YBpH7a/B+l0UOpHy9wgDJacncfFSDGAn
- sS7SVcbTBUyanY5+9inrV3HK8ga3n9aTFLS6vA8fwF4MHRXgAG5gw81W2+cc7tdyPGHJkd9
- N8bNFbv1WXr3uABohj5fBiKUQb2/GIKVCZzbsBXQmA1IoM7eCjUXip+UflLEknPw/gbFObY
- DDRqyOQ4+vi1sfu1cbk2Q==
+	id S1754024AbaA0SRM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:17:12 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:47312 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753756AbaA0SRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 13:17:10 -0500
+MIME-Version: 1.0
+Date: Mon, 27 Jan 2014 13:17:09 -0500
+X-Google-Sender-Auth: jU6rnlHLNl22_SfS39kPJdrmp5o
+Message-ID: <CA+5PVA7ceNpHdh6zO2p1Xg+wSyoA8RTzspOOTrT0yRBW7LdE0g@mail.gmail.com>
+Subject: perf build failure on ARM with v3.13-8330-g4ba9920
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Francesco Fusco <ffusco@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Hi All,
 
-If is based on uninitialized value keep_early.
-This leads to unpredictable result.
+When building perf on ARM, we get a build failure because it can't
+find #include <asm/hash.h> from the linux/hash.h file:
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- arch/unicore32/kernel/early_printk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+gcc -o builtin-kvm.o -c  -Wbad-function-cast
+-Wdeclaration-after-statement -Wformat-security -Wformat-y2k
+-Winit-self -Wmissing-declarations -Wmissing-prototypes
+-Wnested-externs -Wno-system-headers -Wold-style-definition -Wpacked
+-Wredundant-decls -Wshadow -Wstrict-aliasing=3 -Wstrict-prototypes
+-Wswitch-default -Wswitch-enum -Wundef -Wwrite-strings -Wformat
+-DHAVE_PERF_REGS_SUPPORT -O6 -fno-omit-frame-pointer -ggdb3
+-funwind-tables -Wall -Wextra -std=gnu99 -fstack-protector-all
+-D_FORTIFY_SOURCE=2
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util/include
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/arch/arm/include
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/include/
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/arch/arm/include/uapi
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/arch/arm/include
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/include/uapi
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/include
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf
+-I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/lib/
+-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+-DHAVE_LIBELF_SUPPORT -DHAVE_LIBELF_MMAP_SUPPORT
+-DHAVE_ELF_GETPHDRNUM_SUPPORT -DHAVE_DWARF_SUPPORT
+-DHAVE_LIBAUDIT_SUPPORT -I/usr/include/slang -DHAVE_SLANG_SUPPORT
+-DHAVE_TIMERFD_SUPPORT -DHAVE_LIBBFD_SUPPORT -DHAVE_ON_EXIT_SUPPORT
+-DHAVE_BACKTRACE_SUPPORT builtin-kvm.c
+In file included from
+/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util/include/linux/hash.h:1:0,
+                 from builtin-lock.c:28:
+/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util/include/../../../../include/linux/hash.h:18:22:
+fatal error: asm/hash.h: No such file or directory
+ #include <asm/hash.h>
+                      ^
+compilation terminated.
 
-diff --git a/arch/unicore32/kernel/early_printk.c b/arch/unicore32/kernel/early_printk.c
-index 9be0d5d..460a3b6 100644
---- a/arch/unicore32/kernel/early_printk.c
-+++ b/arch/unicore32/kernel/early_printk.c
-@@ -35,7 +35,7 @@ static struct console early_ocd_console = {
- 
- static int __init setup_early_printk(char *buf)
- {
--	int keep_early;
-+	int keep_early = 0;
- 
- 	if (!buf || early_console)
- 		return 0;
--- 
-1.7.10.4
+It looks like commit 71ae8aac3e19 ("lib: introduce arch optimized hash
+library") added the asm/hash.h include, and then commit e3fec2f74f7f
+("lib: Add missing arch generic-y entries for asm-generic/hash.h")
+added the asm-generic plumbing for arches that don't have that file in
+asm/.  However, perf doesn't seem to be picking this up for some
+reason.
 
+Does anyone have any ideas as to what could be going wrong here?
+
+josh
