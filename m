@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaA0Ozz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 09:55:55 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:19205 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886AbaA0Ozy (ORCPT
+	id S1753947AbaA0O5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 09:57:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55878 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753726AbaA0O5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 09:55:54 -0500
-Message-ID: <1390834182.1792.512.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] x86, mm: Avoid duplicated pxm_to_node() calling.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-Date: Mon, 27 Jan 2014 07:49:42 -0700
-In-Reply-To: <1390770102-4007-1-git-send-email-yinghai@kernel.org>
-References: <1390770102-4007-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+	Mon, 27 Jan 2014 09:57:47 -0500
+Message-ID: <1390834654.2735.148.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: netdev@vger.kernel.org, linux@prisktech.co.nz, devicetree@vger.kernel.org,
+        rl@hellgate.ch, linux-kernel@vger.kernel.org
+Date: Mon, 27 Jan 2014 14:57:34 +0000
+In-Reply-To: <1390823503-24087-4-git-send-email-alchark@gmail.com>
+References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
+	 <1390823503-24087-1-git-send-email-alchark@gmail.com>
+	 <1390823503-24087-4-git-send-email-alchark@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-0zul8nVdeMz661fyLdCf"
+X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.4.239
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-01-26 at 13:01 -0800, Yinghai Lu wrote:
-> In slit init code, more pxm_to_node() calling are added.
-> 
-> We can store from_node/to_node instead of keep calling pxm_to_node().
-> 
-> After this patch: pxm_to_node() is called n*(1+n)
-> Before this patch: pxm_to_node() is called n*(1+n*3)
-> 
-> for 8 socket, it will be 72 instead of 200.
-> for 32 socket, it will be 1056 instead of 3104.
-> 
-> -v2: update title and change log according to Ingo.
->      move from_node/to_node in loop and change to const according to
-> 	David Rientjes.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-In my original patch, I added the following comment to the function to
-address David's comment (which he acked).  So, can you add this comment?
+--=-0zul8nVdeMz661fyLdCf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--/* Callback for SLIT parsing */
-+/*
-+ * Callback for SLIT parsing.  pxm_to_node() returns NUMA_NO_NODE for
-+ * I/O localities since SRAT does not list them.  I/O localities are
-+ * not supported at this point.
-+ */
+On Mon, 2014-01-27 at 15:51 +0400, Alexey Charkov wrote:
+> This should make the driver usable with VIA/WonderMedia ARM-based
+> Systems-on-Chip integrated Rhine III adapters. Note that these
+> are always in MMIO mode, and don't have any known EEPROM.
+[...]
+> --- a/drivers/net/ethernet/via/Kconfig
+> +++ b/drivers/net/ethernet/via/Kconfig
+> @@ -19,7 +19,7 @@ if NET_VENDOR_VIA
+> =20
+>  config VIA_RHINE
+>         tristate "VIA Rhine support"
+> -       depends on PCI
+> +       depends on (PCI || USE_OF)
+>         select CRC32
+>         select MII
+>         ---help---
 
-Otherwise, the change looks good to me. 
+This seems like the right thing to do, but it means you need to add
+#ifdef CONFIG_PCI and #ifdef CONFIG_USE_OF around the driver structures
+and related functions.
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+You should compile-test in configurations that have just one of those
+dependencies enabled.
 
+[...]
+> --- a/drivers/net/ethernet/via/via-rhine.c
+> +++ b/drivers/net/ethernet/via/via-rhine.c
+[...]
+> @@ -847,7 +856,8 @@ static void rhine_hw_init(struct net_device *dev, lon=
+g pioaddr)
+>  		msleep(5);
+> =20
+>  	/* Reload EEPROM controlled bytes cleared by soft reset */
+> -	rhine_reload_eeprom(pioaddr, dev);
+> +	if (!strncmp(dev->dev.parent->bus->name, "pci", 3))
+> +		rhine_reload_eeprom(pioaddr, dev);
+[...]
 
-Thanks,
--Toshi
+Ew.  I think you should use dev_is_pci(), although you might also need
+to guard that with #ifdef CONFIG_PCI.
 
+Ben.
+
+--=20
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
+
+--=-0zul8nVdeMz661fyLdCf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIVAwUAUuZz3ue/yOyVhhEJAQoomRAA1oBECLtbT/EgIpt2b7ITfE6jk29iHmgK
+RS7Fq3vqWCTCZcNE2zNOXpjF7HYkGPNG0hUChGcxGAVdkW6A/jcMKGD+LYf00KOb
+YSSpwT9H7fXa07/6OAnx9F/kQ7dAkY8ntiWTN4gVUwNfy7x/e3umu/+8u+wOZJzE
+5SszaLdNMagluTV6Yy5/2qL8JzS2IdB0veyz+ZYHDGLOweB5UkwiH/nSvtSDkEqg
+92xEBeDyh85r0w/AcOsNBAY/0NbTBoHTKx8yfZLZn25Xj4Xre8P5CV9aqYUVSRoC
+GdDYAjPtwknX2/+tZAUf3O+PqFUnxfpFsP+f7Dd8JsdK6rd7u5z/CIKl0SAMRiZe
+y+tM6Nzcw+YQmfZlZhG5PM0LmMR2PBz+Yzdgs/jttRxVEZlTXxiynKwl4gcNi9W/
+0QAMMVYB7hfQYUmpWNQYtibBHn6PVvxhG9YuVT2yP4IABuUYeF0ZJuoQngv2FrRK
+BdD0kVHAVosws3JBhIYQIKRCeWEAaaQGYA2v5nnbAUpO/MV7EBMPMfo3m62jgWXH
+M32EHH8ESX1CzD0OmDmYUPq+qHjaMh4iCAAgC209UjJPt2FoT3q774RfsRYNKsZN
+is0VCR2yr3PNPh1zVmDSsedKjlWKkvQ1yTT/L/5bami6YZsyfStpo6K7Ym2I3LUT
+VPe1r1mpvS4=
+=bJwS
+-----END PGP SIGNATURE-----
+
+--=-0zul8nVdeMz661fyLdCf--
