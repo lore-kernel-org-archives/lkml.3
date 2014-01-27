@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaA0WFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:05:00 -0500
-Received: from shelob.surriel.com ([74.92.59.67]:58592 "EHLO
-	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343AbaA0WEY (ORCPT
+	id S1754539AbaA0WFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:05:12 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44856 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaA0WFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:04:24 -0500
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, peterz@infradead.org, mgorman@suse.de,
-        mingo@redhat.com, chegu_vinod@hp.com
-Subject: [PATCH 7/9] numa,sched: do statistics calculation using local variables only
-Date: Mon, 27 Jan 2014 17:03:46 -0500
-Message-Id: <1390860228-21539-8-git-send-email-riel@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1390860228-21539-1-git-send-email-riel@redhat.com>
-References: <1390860228-21539-1-git-send-email-riel@redhat.com>
+	Mon, 27 Jan 2014 17:05:08 -0500
+Date: Mon, 27 Jan 2014 23:04:47 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
+        linux-kernel@vger.kernel.org, LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
+Message-ID: <20140127230447.7e8be3a4@endymion.delvare>
+In-Reply-To: <20140127185031.GA28910@roeck-us.net>
+References: <52E561D0.4040308@roeck-us.net>
+	<20140126211357.6fa68909@endymion.delvare>
+	<52E573B6.9040903@roeck-us.net>
+	<20140126214936.7736f530@endymion.delvare>
+	<52E58330.90602@roeck-us.net>
+	<52E58656.7000903@roeck-us.net>
+	<20140126235103.GP11727@sirena.org.uk>
+	<52E6951C.60609@wwwdotorg.org>
+	<20140127185031.GA28910@roeck-us.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+On Mon, 27 Jan 2014 10:50:31 -0800, Guenter Roeck wrote:
+> On Mon, Jan 27, 2014 at 10:19:24AM -0700, Stephen Warren wrote:
+> > On 01/26/2014 04:51 PM, Mark Brown wrote:
+> > > On Sun, Jan 26, 2014 at 02:04:06PM -0800, Guenter Roeck wrote:
+> > > 
+> > >> I think I have a better idea: Surround the regulator code, or at least
+> > >> its error handling, in the lm90 driver with
+> > > 
+> > >> 	if (IS_ENABLED(CONFIG_OF)) {
+> > >> 	}
+> > > 
+> > >> Would that be ok ? If yes I'll submit a patch. I'll do the same in
+> > >> another driver I am working on.
+> > > 
+> > > That's not going to have the desired effect in cases where DT is built
+> > > into the kernel but not in use on the current system (which is a
+> > > configuration that gets used) ...
+> > 
+> > The solution to that particular aspect of the problem is the following:
+> > 
+> > if (of_have_populated_dt()) {
+> > 	...
+> > 
+> 
+> Turns out that won't help either after Mark's patches to ACPI and
+> to the regulator core are applied. Right now I don't have a solution
+> that would work for all systems.
+> 
+> I'll leave it up to Jean to decide how to proceed.
 
-The current code in task_numa_placement calculates the difference
-between the old and the new value, but also temporarily stores half
-of the old value in the per-process variables.
+I have no idea, really. I have seen multiple patches flying around,
+each seems to have its own merits, but I simply don't know which is
+going in the direction. I don't know a thing about regulators, OF, DT
+etc. so I am really not the right person to make a decision about this.
 
-The NUMA balancing code looks at those per-process variables, and
-having other tasks temporarily see halved statistics could lead to
-unwanted numa migrations. This can be avoided by doing all the math
-in local variables.
+All I can say is: either someone comes up with a patch set which
+properly fixes the regression for all lm90 drivers users, or I will have
+to revert commit 3e0f964f.
 
-This change also simplifies the code a little.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- kernel/sched/fair.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8fb81c5..eb32b3e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1513,12 +1513,9 @@ static void task_numa_placement(struct task_struct *p)
- 			long diff, f_diff, f_weight;
- 
- 			i = task_faults_idx(nid, priv);
--			diff = -p->numa_faults_memory[i];
--			f_diff = -p->numa_faults_cpu[i];
- 
- 			/* Decay existing window, copy faults since last scan */
--			p->numa_faults_memory[i] >>= 1;
--			p->numa_faults_memory[i] += p->numa_faults_buffer_memory[i];
-+			diff = p->numa_faults_buffer_memory[i] - p->numa_faults_memory[i] / 2;
- 			fault_types[priv] += p->numa_faults_buffer_memory[i];
- 			p->numa_faults_buffer_memory[i] = 0;
- 
-@@ -1532,13 +1529,12 @@ static void task_numa_placement(struct task_struct *p)
- 			f_weight = (65536 * runtime) / (period + 1);
- 			f_weight = (f_weight * p->numa_faults_buffer_cpu[i]) /
- 				   (total_faults + 1);
--			p->numa_faults_cpu[i] >>= 1;
--			p->numa_faults_cpu[i] += f_weight;
-+			f_diff = f_weight - p->numa_faults_cpu[i] / 2;
- 			p->numa_faults_buffer_cpu[i] = 0;
- 
-+			p->numa_faults_memory[i] += diff;
-+			p->numa_faults_cpu[i] += f_diff;
- 			faults += p->numa_faults_memory[i];
--			diff += p->numa_faults_memory[i];
--			f_diff += p->numa_faults_cpu[i];
- 			p->total_numa_faults += diff;
- 			if (p->numa_group) {
- 				/* safe because we can only change our own group */
 -- 
-1.8.4.2
-
+Jean Delvare
