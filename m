@@ -1,230 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaA0VV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 16:21:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44891 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451AbaA0VV5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 16:21:57 -0500
-Date: Mon, 27 Jan 2014 16:21:46 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Roger Pau Monne <roger.pau@citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH] xen-blkback: fix memory leaks
-Message-ID: <20140127212146.GA32007@phenom.dumpdata.com>
-References: <1390817621-12031-1-git-send-email-roger.pau@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1390817621-12031-1-git-send-email-roger.pau@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1754366AbaA0VgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 16:36:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153AbaA0VgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 16:36:17 -0500
+Message-ID: <1390858573.2315.57.camel@bling.home>
+Subject: Re: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Don Dutile <ddutile@redhat.com>
+Cc: Varun Sethi <Varun.Sethi@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 27 Jan 2014 14:36:13 -0700
+In-Reply-To: <52E6CCE7.4090708@redhat.com>
+References: <20140117203126.11429.25235.stgit@gimli.home>
+	 <4bc6dcb96df44b0e94152d9729958d60@BL2PR03MB468.namprd03.prod.outlook.com>
+	 <1390234886.8705.142.camel@bling.home> <52E6CCE7.4090708@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 11:13:41AM +0100, Roger Pau Monne wrote:
-> I've at least identified two possible memory leaks in blkback, both
-> related to the shutdown path of a VBD:
-> 
-> - We don't wait for any pending purge work to finish before cleaning
->   the list of free_pages. The purge work will call put_free_pages and
->   thus we might end up with pages being added to the free_pages list
->   after we have emptied it.
-> - We don't wait for pending requests to end before cleaning persistent
->   grants and the list of free_pages. Again this can add pages to the
->   free_pages lists or persistent grants to the persistent_gnts
->   red-black tree.
-> 
-> Also, add some checks in xen_blkif_free to make sure we are cleaning
-> everything.
-> 
-> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> Cc: Matt Rushton <mrushton@amazon.com>
-> Cc: Matt Wilson <msw@amazon.com>
-> Cc: Ian Campbell <Ian.Campbell@citrix.com>
-> ---
-> This should be applied after the patch:
-> 
-> xen-blkback: fix memory leak when persistent grants are used
-> 
-> >From Matt Rushton & Matt Wilson and backported to stable.
-> 
-> I've been able to create and destroy ~4000 guests while doing heavy IO
-> operations with this patch on a 512M Dom0 without problems.
-> ---
->  drivers/block/xen-blkback/blkback.c |   29 +++++++++++++++++++----------
->  drivers/block/xen-blkback/xenbus.c  |    9 +++++++++
->  2 files changed, 28 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> index 30ef7b3..19925b7 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -169,6 +169,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  				struct pending_req *pending_req);
->  static void make_response(struct xen_blkif *blkif, u64 id,
->  			  unsigned short op, int st);
-> +static void xen_blk_drain_io(struct xen_blkif *blkif, bool force);
->  
->  #define foreach_grant_safe(pos, n, rbtree, node) \
->  	for ((pos) = container_of(rb_first((rbtree)), typeof(*(pos)), node), \
-> @@ -625,6 +626,12 @@ purge_gnt_list:
->  			print_stats(blkif);
->  	}
->  
-> +	/* Drain pending IO */
-> +	xen_blk_drain_io(blkif, true);
-> +
-> +	/* Drain pending purge work */
-> +	flush_work(&blkif->persistent_purge_work);
-> +
+On Mon, 2014-01-27 at 16:17 -0500, Don Dutile wrote:
+> On 01/20/2014 11:21 AM, Alex Williamson wrote:
+> > On Mon, 2014-01-20 at 14:45 +0000, Varun Sethi wrote:
+> >>
+> >>> -----Original Message-----
+> >>> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> >>> Sent: Saturday, January 18, 2014 2:06 AM
+> >>> To: Sethi Varun-B16395
+> >>> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+> >>> Subject: [RFC PATCH] vfio/iommu_type1: Multi-IOMMU domain support
+> >>>
+> >>> RFC: This is not complete but I want to share with Varun the dirrection
+> >>> I'm thinking about.  In particular, I'm really not sure if we want to
+> >>> introduce a "v2" interface version with slightly different unmap
+> >>> semantics.  QEMU doesn't care about the difference, but other users
+> >>> might.  Be warned, I'm not even sure if this code works at the moment.
+> >>> Thanks,
+> >>>
+> >>> Alex
+> >>>
+> >>>
+> >>> We currently have a problem that we cannot support advanced features of
+> >>> an IOMMU domain (ex. IOMMU_CACHE), because we have no guarantee that
+> >>> those features will be supported by all of the hardware units involved
+> >>> with the domain over its lifetime.  For instance, the Intel VT-d
+> >>> architecture does not require that all DRHDs support snoop control.  If
+> >>> we create a domain based on a device behind a DRHD that does support
+> >>> snoop control and enable SNP support via the IOMMU_CACHE mapping option,
+> >>> we cannot then add a device behind a DRHD which does not support snoop
+> >>> control or we'll get reserved bit faults from the SNP bit in the
+> >>> pagetables.  To add to the complexity, we can't know the properties of a
+> >>> domain until a device is attached.
+> >> [Sethi Varun-B16395] Effectively, it's the same iommu and iommu_ops
+> >> are common across all bus types. The hardware feature differences are
+> >> abstracted by the driver.
+> >
+> > That's a simplifying assumption that is not made anywhere else in the
+> > code.  The IOMMU API allows entirely independent IOMMU drivers to
+> > register per bus_type.  There is no guarantee that all devices are
+> > backed by the same IOMMU hardware unit or make use of the same
+> > iommu_ops.
+> >
+> >>> We could pass this problem off to userspace and require that a separate
+> >>> vfio container be used, but we don't know how to handle page accounting
+> >>> in that case.  How do we know that a page pinned in one container is the
+> >>> same page as a different container and avoid double billing the user for
+> >>> the page.
+> >>>
+> >>> The solution is therefore to support multiple IOMMU domains per
+> >>> container.  In the majority of cases, only one domain will be required
+> >>> since hardware is typically consistent within a system.  However, this
+> >>> provides us the ability to validate compatibility of domains and support
+> >>> mixed environments where page table flags can be different between
+> >>> domains.
+> >>>
+> >>> To do this, our DMA tracking needs to change.  We currently try to
+> >>> coalesce user mappings into as few tracking entries as possible.  The
+> >>> problem then becomes that we lose granularity of user mappings.  We've
+> >>> never guaranteed that a user is able to unmap at a finer granularity than
+> >>> the original mapping, but we must honor the granularity of the original
+> >>> mapping.  This coalescing code is therefore removed, allowing only unmaps
+> >>> covering complete maps.  The change in accounting is fairly small here, a
+> >>> typical QEMU VM will start out with roughly a dozen entries, so it's
+> >>> arguable if this coalescing was ever needed.
+> >>>
+> >>> We also move IOMMU domain creation to the point where a group is attached
+> >>> to the container.  An interesting side-effect of this is that we now have
+> >>> access to the device at the time of domain creation and can probe the
+> >>> devices within the group to determine the bus_type.
+> >>> This finally makes vfio_iommu_type1 completely device/bus agnostic.
+> >>> In fact, each IOMMU domain can host devices on different buses managed by
+> >>> different physical IOMMUs, and present a single DMA mapping interface to
+> >>> the user.  When a new domain is created, mappings are replayed to bring
+> >>> the IOMMU pagetables up to the state of the current container.  And of
+> >>> course, DMA mapping and unmapping automatically traverse all of the
+> >>> configured IOMMU domains.
+> >>>
+> >> [Sethi Varun-B16395] This code still checks to see that devices being
+> >> attached to the domain are connected to the same bus type. If we
+> >> intend to merge devices from different bus types but attached to
+> >> compatible domains in to a single domain, why can't we avoid the bus
+> >> check? Why can't we remove the bus dependency from domain allocation?
+> >
+> > So if I were to test iommu_ops instead of bus_type (ie. assume that if a
+> > if an IOMMU driver manages iommu_ops across bus_types that it can accept
+> > the devices), would that satisfy your concern?
+> >
+> > It may be possible to remove the bus_type dependency from domain
+> > allocation, but the IOMMU API currently makes the assumption that
+> > there's one IOMMU driver per bus_type.  Your fix to remove the bus_type
+> > dependency from iommu_domain_alloc() adds an assumption that there is
+> > only one IOMMU driver for all bus_types.  That may work on your
+> > platform, but I don't think it's a valid assumption in the general case.
+> > If you'd like to propose alternative ways to remove the bus_type
+> > dependency, please do.  Thanks,
 
-I think this means we can eliminate the refcnt usage - at least when
-it comes to xen_blkif_disconnect where if we would initiate the shutdown, and
-there is
+> >
+> Making iommu-ops per-bus, and not per-bus-type would solve the problem as well,
+> as Joerg tried to do at one point.  ... would layer the proper IOMMU for a given
+> device to the bus it masters. (makes more sense if thought in context of bus's &
+> devices as objects, and object-oriented semantics ... a device would ask its bus
+> for it's mapping services, not a 'bus-type'.
 
-239         atomic_dec(&blkif->refcnt);                                             
-240         wait_event(blkif->waiting_to_free, atomic_read(&blkif->refcnt) == 0);   
-241         atomic_inc(&blkif->refcnt);                                             
-242                                                                                 
+Certainly that's where we'll need to be eventually, but it doesn't solve
+anything for us right now.  We can get everything we need with the IOMMU
+API now and it should be trivial to update for per-bus iommu_ops should
+they happen.  Thanks,
 
-which is done _after_ the thread is done executing. That check won't
-be needed anymore as the xen_blk_drain_io, flush_work, and free_persistent_gnts
-has pretty much drained every I/O out - so the moment the thread exits
-there should be no need for waiting_to_free. I think.
+Alex
 
-
->  	/* Free all persistent grant pages */
->  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
->  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
-> @@ -930,7 +937,7 @@ static int dispatch_other_io(struct xen_blkif *blkif,
->  	return -EIO;
->  }
->  
-> -static void xen_blk_drain_io(struct xen_blkif *blkif)
-> +static void xen_blk_drain_io(struct xen_blkif *blkif, bool force)
->  {
->  	atomic_set(&blkif->drain, 1);
->  	do {
-> @@ -943,7 +950,7 @@ static void xen_blk_drain_io(struct xen_blkif *blkif)
->  
->  		if (!atomic_read(&blkif->drain))
->  			break;
-> -	} while (!kthread_should_stop());
-> +	} while (!kthread_should_stop() || force);
->  	atomic_set(&blkif->drain, 0);
->  }
->  
-> @@ -976,17 +983,19 @@ static void __end_block_io_op(struct pending_req *pending_req, int error)
->  	 * the proper response on the ring.
->  	 */
->  	if (atomic_dec_and_test(&pending_req->pendcnt)) {
-> -		xen_blkbk_unmap(pending_req->blkif,
-> +		struct xen_blkif *blkif = pending_req->blkif;
-> +
-> +		xen_blkbk_unmap(blkif,
->  		                pending_req->segments,
->  		                pending_req->nr_pages);
-> -		make_response(pending_req->blkif, pending_req->id,
-> +		make_response(blkif, pending_req->id,
->  			      pending_req->operation, pending_req->status);
-> -		xen_blkif_put(pending_req->blkif);
-> -		if (atomic_read(&pending_req->blkif->refcnt) <= 2) {
-> -			if (atomic_read(&pending_req->blkif->drain))
-> -				complete(&pending_req->blkif->drain_complete);
-> +		free_req(blkif, pending_req);
-> +		xen_blkif_put(blkif);
-> +		if (atomic_read(&blkif->refcnt) <= 2) {
-> +			if (atomic_read(&blkif->drain))
-> +				complete(&blkif->drain_complete);
->  		}
-> -		free_req(pending_req->blkif, pending_req);
-
-I keep coming back to this and I am not sure what to think - especially
-in the context of WRITE_BARRIER and disconnecting the vbd.
-
-You moved the 'free_req' to be done before you do atomic_read/dec.
-
-Which means that we do:
-
-	list_add(&req->free_list, &blkif->pending_free);
-	wake_up(&blkif->pending_free_wq);
-
-	atomic_dec
-	if atomic_read <= 2 poke thread that is waiting for drain.
-
-
-while in the past we did:
-
-	atomic_dec
-	if atomic_read <= 2 poke thread that is waiting for drain.
-
-	list_add(&req->free_list, &blkif->pending_free);
-	wake_up(&blkif->pending_free_wq);
-
-which means that we are giving the 'req' _before_ we decrement
-the refcnts.
-
-Could that mean that __do_block_io_op takes it for a spin - oh
-wait it won't as it is sitting on a WRITE_BARRIER and waiting:
-
-1226         if (drain)                                                              
-1227                 xen_blk_drain_io(pending_req->blkif);  
-
-But still that feels 'wrong'?
-
-If you think this is right and OK, then perhaps we should
-document this behavior in case somebody in the future wants to
-rewrite this and starts working it out ?
-
-
->  
-> @@ -1224,7 +1233,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  	 * issue the WRITE_FLUSH.
->  	 */
->  	if (drain)
-> -		xen_blk_drain_io(pending_req->blkif);
-> +		xen_blk_drain_io(pending_req->blkif, false);
->  
->  	/*
->  	 * If we have failed at this point, we need to undo the M2P override,
-> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-> index c2014a0..3c10281 100644
-> --- a/drivers/block/xen-blkback/xenbus.c
-> +++ b/drivers/block/xen-blkback/xenbus.c
-> @@ -125,6 +125,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
->  	blkif->persistent_gnts.rb_node = NULL;
->  	spin_lock_init(&blkif->free_pages_lock);
->  	INIT_LIST_HEAD(&blkif->free_pages);
-> +	INIT_LIST_HEAD(&blkif->persistent_purge_list);
->  	blkif->free_pages_num = 0;
->  	atomic_set(&blkif->persistent_gnt_in_use, 0);
->  
-> @@ -259,6 +260,14 @@ static void xen_blkif_free(struct xen_blkif *blkif)
->  	if (!atomic_dec_and_test(&blkif->refcnt))
->  		BUG();
->  
-> +	/* Make sure everything is drained before shutting down */
-> +	BUG_ON(blkif->persistent_gnt_c != 0);
-> +	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
-> +	BUG_ON(blkif->free_pages_num != 0);
-> +	BUG_ON(!list_empty(&blkif->persistent_purge_list));
-> +	BUG_ON(!list_empty(&blkif->free_pages));
-> +	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
-> +
->  	/* Check that there is no request in use */
->  	list_for_each_entry_safe(req, n, &blkif->pending_free, free_list) {
->  		list_del(&req->free_list);
-> -- 
-> 1.7.7.5 (Apple Git-26)
-> 
