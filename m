@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaA0WRZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 17:17:25 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:46215 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaA0WRY (ORCPT
+	id S1754213AbaA0WSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 17:18:54 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:62322 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757AbaA0WSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 17:17:24 -0500
+	Mon, 27 Jan 2014 17:18:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <52E6D866.604@amacapital.net>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
-	<20140127002255.GA10323@ZenIV.linux.org.uk>
-	<CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com>
-	<20140127074208.GB10323@ZenIV.linux.org.uk>
-	<52E6D866.604@amacapital.net>
-Date: Mon, 27 Jan 2014 14:17:23 -0800
-X-Google-Sender-Auth: 7att80goV9P56mLsJktG20ja8tA
-Message-ID: <CA+55aFzWRjNC4kPeVad3isOOW+vZhnzX0Gk5_8QzD16GZEw5Kg@mail.gmail.com>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+References: <1390486503-1504-1-git-send-email-dh.herrmann@gmail.com>
+Date: Mon, 27 Jan 2014 23:18:51 +0100
+Message-ID: <CANq1E4S=+ixMQRMfX2-DXh3ZDO0jNAdWrUe6=z9aTdOSfR-SDA@mail.gmail.com>
+Subject: Re: [PATCH 00/11] SimpleDRM & Sysfb
+From: David Herrmann <dh.herrmann@gmail.com>
+To: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 2:06 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+Hi
+
+On Thu, Jan 23, 2014 at 3:14 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
 >
-> It's not just ip and sp -- cs matters here, too, I think.
+> Another round of SimpleDRM patches. I somehow lost track of the last ones and as
+> this is a major rewrite, I'll just start at v1 again.
+>
+> Some comments up-front:
+>
+>  - @Ingo: Patch #1 and #2 are unchanged from the previous ML discussions. I
+>    included them in this series as the other patches depend on them. Could you
+>    pick them up for the x86 tree? The other 9 patches won't make it in 3.14 so
+>    no reason to put them through the DRM tree.
+>    All mentioned issues should be addressed. If there's still sth missing,
+>    please let me know.
+>
+>  - The DRM patches depend on my "DRM Anonymous Inode" patches. But it should be
+>    trivial to apply them on drm-next (I think only one line needs to be changed:
+>    i_mapping => dev_mapping).
+>
+>  - I tested the SimpleDRM fbdev fallback with linux-console+Xorg and it works
+>    fine. The DRM backend is only tested with some DRM tests I have locally. I
+>    have no idea how to make Xorg pick up a specific /dev/dri/card0 card. It
+>    always tells me "no screens found" (as the underlying device is not marked as
+>    boot_vga..). If someone knows how to tell Xorg to use card0, I'd gladly test
+>    this. But I'm no longer used to writing xorg.confs..
 
-For signal *delivery*, CS will always be __USER_CS, and %rcx can be
-crap, so sysret should be fine. We could easily check that %rip is
-valid in the whole slow-path instead of saying "return 1 if we did
-do_signal()".
+For completeness, I tested this with Xorg+xf86-video-modesetting and
+it works just fine. The xorg.conf I used can be found below. If this
+driver gets upstreamed, I will try to make the X11 auto-loader detect
+it just like any other platform-device.
 
-Now, it's a different thing wrt signal handler *return*, because at
-that point we really cannot return with some random value in %rcx. We
-absolutely do need to use 'iretq' in that whole [rt_]sigreturn() path,
-but on x86-64 that is all handled by the system call itself (see the
-stub_*_sigreturn stuff in entry_64.S) and it very much uses iret
-explicitly (the 32-bit case also does that, by forcing the sigreturn
-to be done with an "int 0x80" instruction - we could change that to
-use syscall+iret, but frankly, I'm not all that inclined to care,
-although it might be worth trying to do just to unify the models a
-bit).
+Thanks
+David
 
-                   Linus
+
+Section "ServerLayout"
+    Identifier     "MyLayout"
+    Screen         0 "MyScreen" 0 0
+EndSection
+
+Section "Device"
+    Identifier     "MyDevice"
+    Driver         "modesetting"
+    BusID          "platform:/sys/devices/platform/simple-framebuffer.0"
+    Screen         0
+EndSection
+
+Section "Screen"
+    Identifier     "MyScreen"
+    Device         "MyDevice"
+EndSection
