@@ -1,247 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaA0KVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:21:19 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39396 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751571AbaA0KVM (ORCPT
+	id S1753828AbaA0KWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:22:11 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55224 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753526AbaA0KWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:21:12 -0500
-Date: Mon, 27 Jan 2014 10:20:37 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        "adam.jaremko@gmail.com" <adam.jaremko@gmail.com>,
-        "sylvester.nawrocki@gmail.com" <sylvester.nawrocki@gmail.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v10] clk: add MOXA ART SoCs clock driver
-Message-ID: <20140127102037.GB16516@e106331-lin.cambridge.arm.com>
-References: <1389971035-17781-1-git-send-email-jonas.jensen@gmail.com>
- <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 27 Jan 2014 05:22:09 -0500
+Message-ID: <1390818121.2735.130.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH net] net: hyperv: initialize link status correctly
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jason Wang <jasowang@redhat.com>
+Cc: David Miller <davem@davemloft.net>, kys@microsoft.com,
+        haiyangz@microsoft.com, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 27 Jan 2014 10:22:01 +0000
+In-Reply-To: <52E629A8.5010302@redhat.com>
+References: <1390807854-4469-1-git-send-email-jasowang@redhat.com>
+	 <20140127.003559.2290408024387922847.davem@davemloft.net>
+	 <52E629A8.5010302@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Pm0nFb8yzSmiCkblxa3B"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.239
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 12:44:21PM +0000, Jonas Jensen wrote:
-> MOXA ART SoCs allow to determine PLL output and APB frequencies
-> by reading registers holding multiplier and divisor information.
-> 
-> Add a clock driver for this SoC.
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
-> 
-> Notes:
->     Thanks for the reply Sudeep, changes are in v10.
->     
->     Changes since v9:
->     
->     1. rebase drivers/clk/Makefile to next-20140121
->     2. remove unnecessary switch
->     3. use a more elaborate commit message
->     
->     Applies to next-20140121
-> 
->  .../bindings/clock/moxa,moxart-clock.txt           | 48 +++++++++++
->  drivers/clk/Makefile                               |  1 +
->  drivers/clk/clk-moxart.c                           | 99 ++++++++++++++++++++++
->  3 files changed, 148 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
->  create mode 100644 drivers/clk/clk-moxart.c
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-> new file mode 100644
-> index 0000000..242e3fc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-> @@ -0,0 +1,48 @@
-> +Device Tree Clock bindings for arch-moxart
-> +
-> +This binding uses the common clock binding[1].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +MOXA ART SoCs allow to determine PLL output and APB frequencies
-> +by reading registers holding multiplier and divisor information.
-> +
-> +
-> +PLL:
-> +
-> +Required properties:
-> +- compatible : Must be "moxa,moxart-pll-clock"
-> +- #clock-cells : Should be 0
-> +- reg : Should contain registers location and length
-> +- clocks : Should contain phandle to parent clock
 
-Nit: clocks are referenced with a clock-specifier (which might be zero
-cells), not just a phandle.
+--=-Pm0nFb8yzSmiCkblxa3B
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-How about:
+On Mon, 2014-01-27 at 17:40 +0800, Jason Wang wrote:
+> On 01/27/2014 04:35 PM, David Miller wrote:
+> > From: Jason Wang <jasowang@redhat.com>
+> > Date: Mon, 27 Jan 2014 15:30:54 +0800
+> >
+> >> Call netif_carrier_on() after register_device(). Otherwise it won't wo=
+rk since
+> >> the device was still in NETREG_UNINITIALIZED state.
+> >>
+> >> Fixes a68f9614614749727286f675d15f1e09d13cb54a
+> >> (hyperv: Fix race between probe and open calls)
+> >>
+> >> Cc: Haiyang Zhang <haiyangz@microsoft.com>
+> >> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> >> Reported-by: Di Nie <dnie@redhat.com>
+> >> Tested-by: Di Nie <dnie@redhat.com>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > A device up can occur at the moment you call register_netdevice(),
+> > therefore that up call can see the carrier as down and fail or
+> > similar.  So you really cannot resolve the carrier to be on in this
+> > way.
+>=20
+> True, we need a workqueue to synchronize them.
 
-clocks: should contain a phandle + clock-specifier for the parent clock
+Whatever for?  All you need to do is:
 
-> +
-> +Optional properties:
-> +- clock-output-names : Should contain clock name
-> +
-> +
-> +APB:
-> +
-> +Required properties:
-> +- compatible : Must be "moxa,moxart-apb-clock"
-> +- #clock-cells : Should be 0
-> +- reg : Should contain registers location and length
-> +- clocks : Should contain phandle to parent clock
+	rtnl_lock();
+	register_netdevice();
+	netif_carrier_on();
+	rtnl_unlock();
 
-Likewise.
+It would be nice if we could make the current code work with a change in
+the core, though.
 
-> +
-> +Optional properties:
-> +- clock-output-names : Should contain clock name
-> +
-> +
-> +For example:
-> +
-> +	clk_pll: clk_pll@98100000 {
-> +		compatible = "moxa,moxart-pll-clock";
-> +		#clock-cells = <0>;
-> +		reg = <0x98100000 0x34>;
-> +	};
-> +
-> +	clk_apb: clk_apb@98100000 {
-> +		compatible = "moxa,moxart-apb-clock";
-> +		#clock-cells = <0>;
-> +		reg = <0x98100000 0x34>;
-> +		clocks = <&clk_pll>;
-> +	};
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index 58b2d72..24361bf 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
->  # SoCs specific
->  obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
->  obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
-> +obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
->  obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
->  obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
->  obj-$(CONFIG_ARCH_HI3xxx)	+= hisilicon/
-> diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-> new file mode 100644
-> index 0000000..7021748
-> --- /dev/null
-> +++ b/drivers/clk/clk-moxart.c
-> @@ -0,0 +1,99 @@
-> +/*
-> + * MOXA ART SoCs clock driver.
-> + *
-> + * Copyright (C) 2013 Jonas Jensen
-> + *
-> + * Jonas Jensen <jonas.jensen@gmail.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/io.h>
-> +#include <linux/of_address.h>
-> +#include <linux/clkdev.h>
-> +
-> +void __init moxart_of_pll_clk_init(struct device_node *node)
-> +{
-> +	static void __iomem *base;
-> +	struct clk *clk, *ref_clk;
-> +	unsigned long rate;
-> +	unsigned int mul;
-> +	const char *name = node->name;
-> +
-> +	of_property_read_string(node, "clock-output-names", &name);
-> +
-> +	base = of_iomap(node, 0);
-> +	if (!base) {
-> +		pr_err("%s: of_iomap failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	mul = readl(base + 0x30) >> 3 & 0x3f;
-> +	iounmap(base);
-> +
-> +	ref_clk = of_clk_get(node, 0);
-> +	if (IS_ERR(ref_clk)) {
-> +		pr_err("%s: of_clk_get failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	rate = mul * clk_get_rate(ref_clk);
-> +
-> +	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
+Ben.
 
-If this clock has a parent, Surely CLK_IS_ROOT is not appropriate by its
-definition:
+--=20
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
 
-#define CLK_IS_ROOT             BIT(4) /* root clk, has no parent */
+--=-Pm0nFb8yzSmiCkblxa3B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Surely this is a fixed factor clock rather than a fixed rate clock?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-> +	if (IS_ERR(clk)) {
-> +		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	clk_register_clkdev(clk, NULL, name);
-> +	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-> +}
-> +CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
-> +	       moxart_of_pll_clk_init);
-> +
-> +void __init moxart_of_apb_clk_init(struct device_node *node)
-> +{
-> +	static void __iomem *base;
-> +	struct clk *clk, *pll_clk;
-> +	unsigned long rate;
-> +	unsigned int div, val;
-> +	unsigned int div_idx[] = { 2, 3, 4, 6, 8};
-> +	const char *name = node->name;
-> +
-> +	of_property_read_string(node, "clock-output-names", &name);
-> +
-> +	base = of_iomap(node, 0);
-> +	if (!base) {
-> +		pr_err("%s: of_iomap failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	val = readl(base + 0xc) >> 4 & 0x7;
-> +	iounmap(base);
-> +
-> +	if (val > 4)
-> +		val = 0;
-> +	div = div_idx[val];
-> +
-> +	pll_clk = of_clk_get(node, 0);
-> +	if (IS_ERR(pll_clk)) {
-> +		pr_err("%s: of_clk_get failed\n", node->full_name);
-> +		return;
-> +	}
-> +
-> +	rate = clk_get_rate(pll_clk) / (div * 2);
-> +
-> +	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
+iQIVAwUAUuYzSee/yOyVhhEJAQrwKRAAoNT8UQO+OLP1w55+PzAoFerVeTBYn2e0
+jX0ExDZ2U/z08Wqfy6MD/wJ725j5QDLTaMssuaKxA4G07bVwUT58fwk3/dlYZzsS
+NmQECLZtXojRScp4FBASMbOW4Rm9Gu7m6gEqi4gtYg1Prj2B6XaYEboVxOsnJ3Pg
+LcBgCoeIIoSb31kbFZmz+CsBAOYBxL+gv0DID2cg8USK/DT9nfD/LSWqY8DroXDz
+GlUwtUmKFkPkIA+BCKn9pxL76S+wxR1QBqsuZywdZnTT/75e3qtEam/dpzWxh4Jz
+PHcqnSliP4Vh4dIJq7SYYoRjqNH+649jyj4MFwrtBbU66GOFlEdjDNaLVxufZbr5
+iJOazhuUBhFtQvJy6fFS6IdyWYH4jKnvJ59IzrRAEsETifxydf0j0ikksgBfvKrh
+HgungN03288vuvcR6QOgHngN86DSpa3Jy1bRofr5HWqJzYTAussSfaVsiFgzBp0Z
+k5fRxhpvXGFe5S/ig61pOrkl7Ws1PZupWfLElqL4W6fpMTy17KTjyllZWIRINL7W
+b5lNfz7s9Q7xhxsmu5HJCHXFGaHrUJtQ75j1MOeViaJViEXQsbj4oA0olluNaGXc
+2NiN2O0GZaaCIWWjy0ybXxuNNhdxlr+coaK34gw/CYkgbpuk7Sze1ouHkX1LaKZZ
+UpuTrllg+Zs=
+=2ynY
+-----END PGP SIGNATURE-----
 
-Likewise.
-
-Thanks,
-Mark.
+--=-Pm0nFb8yzSmiCkblxa3B--
