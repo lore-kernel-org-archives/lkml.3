@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaA0KKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:10:06 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:60208 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaA0KKD (ORCPT
+	id S1753845AbaA0KKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:10:44 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48284 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaA0KKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:10:03 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-1d-52e6307a5778
-From: Weijie Yang <weijie.yang@samsung.com>
-To: hughd@google.com
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Minchan Kim'" <minchan@kernel.org>, shli@kernel.org,
-        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
-        "'Seth Jennings'" <sjennings@variantweb.net>,
-        "'Heesub Shin'" <heesub.shin@samsung.com>, mquzik@redhat.com,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: [PATCH 2/8] mm/swap: fix race on swap_info reuse between swapoff and
- swapon
-Date: Mon, 27 Jan 2014 18:03:04 +0800
-Message-id: <000d01cf1b47$f12e11f0$d38a35d0$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8bRuTYzqeM0Z/kS7aK909yUBXOSw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAd0qg2dBBkfmclnMWb+GzaLr1FQW
-	i4OzlzBZPP3Ux2JxedccNot7a/6zWiz7+p7dYsrDSYwWFw7dZ7L4dPQRm8WCjY8YLZ6c+M/i
-	wOOxc9Zddo8Fm0o9Nq3qZPPY9GkSu8eJGb9ZPD4+vcXi8X7fVTaPvi2rGD2ufyvy+LxJLoAr
-	issmJTUnsyy1SN8ugStj850bTAW3hSomLNvN1MA4gb+LkZNDQsBEYvqbE+wQtpjEhXvr2UBs
-	IYFFjBJ7W1i6GLmA7D+MEg0n94El2AS0Je72b2QFsUUERCTW3FnICFLELPCLSaK//wBQBweH
-	sECYxJOz1iA1LAKqEkcPTWcHCfMK2Ek8mqMFEuYVEJT4MfkeWDWzgLrElCm5IGFmAXmJzWve
-	MoOEJYDCj/7qQizSk3i2+goLRIm4xMYjt1gmMArMQjJoFsKgWUgGzULSsYCRZRWjaGpBckFx
-	UnqukV5xYm5xaV66XnJ+7iZGcFQ9k97BuKrB4hCjAAejEg9vxvWnQUKsiWXFlbmHGCU4mJVE
-	eCt0ngUJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYNx2
-	9PTd/anaTKXmLKYbWRragjXNTiS0RJqWbk5vdc76dDWMhU3z4KLeKM9iK583xwp+GmW9t7/p
-	ns9mevqmdnkK78aC7XNO/V9Q8m/lrK1Lv2r+vLvtno8nw+YpGhUVExJ+ljW82/tuI/Pkh+9a
-	7h24fjl6+YRD8kobzE5XV7qps60oqg7q2avEUpyRaKjFXFScCAA4F0Y1pgIAAA==
+	Mon, 27 Jan 2014 05:10:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140126231543.GN11727@sirena.org.uk>
+References: <52E561D0.4040308@roeck-us.net>
+	<20140126211357.6fa68909@endymion.delvare>
+	<52E573B6.9040903@roeck-us.net>
+	<20140126214936.7736f530@endymion.delvare>
+	<20140126212256.GK11727@sirena.org.uk>
+	<20140126224425.724698cd@endymion.delvare>
+	<20140126231543.GN11727@sirena.org.uk>
+Date: Mon, 27 Jan 2014 11:10:41 +0100
+X-Google-Sender-Auth: xAj0EC2Uwt1LF5tDBIiKHYU-ICE
+Message-ID: <CAMuHMdXn=PC9+gZC05_yufLhPgYUy2FhcocRpY-Qatux=kftiA@mail.gmail.com>
+Subject: Re: lm90 driver no longer working on PCs in 3.13
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-swapoff clear swap_info's SWP_USED flag prematurely and free its resources
-after that. A concurrent swapon will reuse this swap_info while its previous
-resources are not cleared completely.
+On Mon, Jan 27, 2014 at 12:15 AM, Mark Brown <broonie@kernel.org> wrote:
+>> No, you don't get what I'm saying. For PC users, the lm90 did not
+>
+> I understand perfectly well thank you very much.
+>
+>> request a regulator and things worked because the kernel isn't supposed
+>> to take care about things like that on PC machines. Now that the lm90
+>> driver does request a regulator, it fails on PC machines because no
+>> regulator is declared.
+>
+> If and only if the user has enabled the regulator API on a platform that
+> hasn't fully configured it; if the user has not enabled the regulator
+> API it'll stub itself out and they'll never see it.
+>
+>> Don't tell me that it is expected that things will fail if
+>> CONFIG_REGULATOR is enabled on a system which doesn't need it. It
+>> doesn't make any sense. If kernels would fail as soon as any enabled
+>> option wasn't actually needed, no system would boot out there.
+>
+> It's very easy to generate unbootable kernels by changing the kernel
+> config, I'd not immediately expect a randomly generated config to do
+> anything useful and things like FW_LOADER_USER_HELPER can be rather
+> miserable if you turn them on (that one produces enormous delays during
+> init which look awfully like hangs when you're watching your board
+> boot).
 
-These late freed resources are:
- - p->percpu_cluster
- - swap_cgroup_ctrl[type]
- - block_device setting
- - inode->i_flags &= ~S_SWAPFILE
+This is not just a randomly generated config where you disable critical
+options. Just enabling a subsystem like the regulator subsystem shouldn't
+give you an unbootable kernel. It's even needed, think multi-platform
+kernels.
+Typically, I'd expect allmodconfig/allyesconfig kernels to actually boot
+(ignoring RAM size issues etc.).
 
-This patch clear SWP_USED flag after all its resources freed, so that swapon
-can reuse this swap_info by alloc_swap_info() safely.
+Gr{oetje,eeting}s,
 
-This patch is just for a rare scenario, aim to correct of code.
+                        Geert
 
-Suggested-by: Heesub Shin <heesub.shin@samsung.com>
-Suggested-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- mm/swapfile.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 0a623a9..4d24158 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1977,7 +1977,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 	p->swap_map = NULL;
- 	cluster_info = p->cluster_info;
- 	p->cluster_info = NULL;
--	p->flags = 0;
- 	frontswap_map = frontswap_map_get(p);
- 	spin_unlock(&p->lock);
- 	spin_unlock(&swap_lock);
-@@ -2003,6 +2002,15 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 		mutex_unlock(&inode->i_mutex);
- 	}
- 	filp_close(swap_file, NULL);
-+
-+	/*
-+	 * clear SWP_USED flag after all resources freed so that
-+	 * swapon can reuse this swap_info in alloc_swap_info() safely
-+	 * it is ok to not hold any lock after we cleared SWP_WRITEOK flag
-+	 */
-+	smp_wmb();
-+	p->flags = 0;
-+
- 	err = 0;
- 	atomic_inc(&proc_poll_event);
- 	wake_up_interruptible(&proc_poll_wait);
-@@ -2050,7 +2058,7 @@ static void *swap_start(struct seq_file *swap, loff_t *pos)
- 	for (type = 0; type < nr_swapfiles; type++) {
- 		smp_rmb();	/* read nr_swapfiles before swap_info[type] */
- 		si = swap_info[type];
--		if (!(si->flags & SWP_USED) || !si->swap_map)
-+		if (!(si->flags & SWP_WRITEOK))
- 			continue;
- 		if (!--l)
- 			return si;
-@@ -2072,7 +2080,7 @@ static void *swap_next(struct seq_file *swap, void *v, loff_t *pos)
- 	for (; type < nr_swapfiles; type++) {
- 		smp_rmb();	/* read nr_swapfiles before swap_info[type] */
- 		si = swap_info[type];
--		if (!(si->flags & SWP_USED) || !si->swap_map)
-+		if (!(si->flags & SWP_WRITEOK))
- 			continue;
- 		++*pos;
- 		return si;
--- 
-1.7.10.4
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
