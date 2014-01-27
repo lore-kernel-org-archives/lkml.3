@@ -1,280 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481AbaA0U7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:59:33 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40916 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112AbaA0U7b (ORCPT
+	id S1754402AbaA0VBx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 16:01:53 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60409 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875AbaA0VBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:59:31 -0500
-Message-ID: <52E6C8B0.3030007@amacapital.net>
-Date: Mon, 27 Jan 2014 12:59:28 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 27 Jan 2014 16:01:51 -0500
+Date: Mon, 27 Jan 2014 20:59:25 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        linux-sound@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org
+Message-ID: <20140127205925.GE11841@sirena.org.uk>
+References: <1389669956-2304-1-git-send-email-voice.shen@atmel.com>
+ <1389669956-2304-3-git-send-email-voice.shen@atmel.com>
+ <20140114203650.GX15567@sirena.org.uk>
+ <52D7366B.1030909@atmel.com>
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT, PR_MPX_RELEASE
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KPK+YGx+4g/J2wGm"
+Content-Disposition: inline
+In-Reply-To: <52D7366B.1030909@atmel.com>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] ASoC: atmel_wm8904: make it available to choose clock
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 01:08 AM, Qiaowei Ren wrote:
-> This patch adds the PR_MPX_INIT and PR_MPX_RELEASE prctl()
-> commands on the x86 platform. These commands can be used to
-> init and release MPX related resource.
-> 
-> A MMU notifier will be registered during PR_MPX_INIT
-> command execution. So the bound tables can be automatically
-> deallocated when one memory area is unmapped.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> ---
->  arch/x86/Kconfig                 |    4 ++
->  arch/x86/include/asm/mpx.h       |    9 ++++
->  arch/x86/include/asm/processor.h |   16 +++++++
->  arch/x86/kernel/mpx.c            |   84 ++++++++++++++++++++++++++++++++++++++
->  include/uapi/linux/prctl.h       |    6 +++
->  kernel/sys.c                     |   12 +++++
->  6 files changed, 131 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index cd18b83..28916e1 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -236,6 +236,10 @@ config HAVE_INTEL_TXT
->  	def_bool y
->  	depends on INTEL_IOMMU && ACPI
->  
-> +config HAVE_INTEL_MPX
-> +	def_bool y
-> +	select MMU_NOTIFIER
-> +
->  config X86_32_SMP
->  	def_bool y
->  	depends on X86_32 && SMP
-> diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-> index d074153..9652e9e 100644
-> --- a/arch/x86/include/asm/mpx.h
-> +++ b/arch/x86/include/asm/mpx.h
-> @@ -30,6 +30,15 @@
->  
->  #endif
->  
-> +typedef union {
-> +	struct {
-> +		unsigned long ignored:MPX_IGN_BITS;
-> +		unsigned long l2index:MPX_L2_BITS;
-> +		unsigned long l1index:MPX_L1_BITS;
-> +	};
-> +	unsigned long addr;
-> +} mpx_addr;
-> +
->  void do_mpx_bt_fault(struct xsave_struct *xsave_buf);
->  
->  #endif /* _ASM_X86_MPX_H */
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index fdedd38..5962413 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -943,6 +943,22 @@ extern void start_thread(struct pt_regs *regs, unsigned long new_ip,
->  extern int get_tsc_mode(unsigned long adr);
->  extern int set_tsc_mode(unsigned int val);
->  
-> +#ifdef CONFIG_HAVE_INTEL_MPX
-> +
-> +/* Init/release a process' MPX related resource */
-> +#define MPX_INIT(tsk)		mpx_init((tsk))
-> +#define MPX_RELEASE(tsk)	mpx_release((tsk))
-> +
-> +extern int mpx_init(struct task_struct *tsk);
-> +extern int mpx_release(struct task_struct *tsk);
-> +
-> +#else /* CONFIG_HAVE_INTEL_MPX */
-> +
-> +#define MPX_INIT(tsk)		(-EINVAL)
-> +#define MPX_RELEASE(tsk)	(-EINVAL)
-> +
-> +#endif /* CONFIG_HAVE_INTEL_MPX */
-> +
->  extern u16 amd_get_nb_id(int cpu);
->  
->  static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
-> diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
-> index e055e0e..9e91178 100644
-> --- a/arch/x86/kernel/mpx.c
-> +++ b/arch/x86/kernel/mpx.c
-> @@ -1,5 +1,7 @@
->  #include <linux/kernel.h>
->  #include <linux/syscalls.h>
-> +#include <linux/prctl.h>
-> +#include <linux/mmu_notifier.h>
->  #include <asm/processor.h>
->  #include <asm/mpx.h>
->  #include <asm/mman.h>
-> @@ -7,6 +9,88 @@
->  #include <asm/fpu-internal.h>
->  #include <asm/alternative.h>
->  
-> +static struct mmu_notifier mpx_mn;
-> +
-> +static void mpx_invl_range_end(struct mmu_notifier *mn,
-> +		struct mm_struct *mm,
-> +		unsigned long start, unsigned long end)
-> +{
-> +	struct xsave_struct *xsave_buf;
-> +	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
-> +	unsigned long bt_addr;
-> +	unsigned long bd_base;
-> +	unsigned long bd_entry, bde_start, bde_end;
-> +	mpx_addr lap;
-> +
-> +	pgd_t *pgd;
-> +	pud_t *pud;
-> +	pmd_t *pmd;
-> +	pte_t *pte;
-> +
-> +	/* ignore swap notifications */
-> +	pgd = pgd_offset(mm, start);
-> +	pud = pud_offset(pgd, start);
-> +	pmd = pmd_offset(pud, start);
-> +	pte = pte_offset_kernel(pmd, start);
-> +	if (!pte_present(*pte) && !pte_none(*pte) && !pte_file(*pte))
-> +		return;
-> +
-> +	/* get bound directory base address */
-> +	fpu_xsave(&current->thread.fpu);
 
-I may be wrong, but I think that this will corrupt things if you call it
-from within kernel_fpu_begin.
+--KPK+YGx+4g/J2wGm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-One of these days I think we should just start unconditionally doing
-xsaveopt on kernel entry.
+On Thu, Jan 16, 2014 at 09:31:23AM +0800, Bo Shen wrote:
 
-> +	xsave_buf = &(current->thread.fpu.state->xsave);
-> +	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
-> +
-> +	/* get related bde range */
-> +	lap.addr = start;
-> +	bde_start = bd_base + (lap.l1index << MPX_L1_SHIFT);
-> +
-> +	lap.addr = end;
-> +	if (lap.ignored || lap.l2index)
-> +		bde_end = bd_base + (lap.l1index<<MPX_L1_SHIFT) + sizeof(long);
-> +	else
-> +		bde_end = bd_base + (lap.l1index<<MPX_L1_SHIFT);
-> +
-> +	for (bd_entry = bde_start; bd_entry < bde_end;
-> +		bd_entry += sizeof(unsigned long)) {
-> +
-> +		if (get_user(bt_addr, (long __user *)bd_entry))
-> +			return;
-> +
-> +		if (bt_addr & 0x1) {
-> +			user_atomic_cmpxchg_inatomic(&bt_addr,
-> +					(long __user *)bd_entry, bt_addr, 0);
+> >Shouldn't this code be in the DAI driver?  Otherwise this series looks
+> >fine to me, though the DT folks might have something to say I guess.
 
-Shouldn't this check whether the cmpxchg worked?
+>   For audio on Atmel SoC, it depends on three device nodes, one is
+> SSC node, one is the codec node and the sound node.
+>   The sound node will parse by machine driver, and machine driver is
+> mainly for hardware connection. As the "clk_from_rk_pin" is decided
+> by hardware, so, I put it here.
+>   If I move the code to dai driver, it will parse the sound node in
+> dai driver, I think it will make the code a little bit not explicit.
+> What do you think?
 
-> +			do_munmap(mm, bt_addr & MPX_L2_NODE_ADDR_MASK, bt_size);
+I think it should just be a property of the DAI device.  It's true that
+the card defines the connections but if something is going to be an
+option that's there for most if not all systems then putting it in the
+device driver means less effort on each integration.
 
-Is it safe for munmap to recurse like this?
+--KPK+YGx+4g/J2wGm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +		}
-> +	}
-> +}
-> +
-> +static struct mmu_notifier_ops mpx_mmuops = {
-> +	.invalidate_range_end = mpx_invl_range_end,
-> +};
-> +
-> +int mpx_init(struct task_struct *tsk)
-> +{
-> +	if (!boot_cpu_has(X86_FEATURE_MPX))
-> +		return -EINVAL;
-> +
-> +	/* register mmu_notifier to delallocate the bound tables */
-> +	mpx_mn.ops = &mpx_mmuops;
-> +	mmu_notifier_register(&mpx_mn, current->mm);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-What happens if evil userspace runs this in a loop?
+iQIcBAEBAgAGBQJS5siqAAoJELSic+t+oim9MHkP/RFle2mFJCWuNpUqfkcVIDF4
+JAqbH3k+5X1gmw5SE8/NQLuwsXb1jfp4AKQBPnw8uu3M6BbVohCavIO8Q8FAYvZq
+XBIlOjoGrgRLjgoCpiC//RXd49IkMW4G7JhbS3mRtaPkVh37JP84kY3hKiQuSvjL
+hZd8I+6Jc0jMfpf+GJE4Sndi0XMOPw1O+h8sIdy8r6ufdcfLz8KVtYpqJ8H8i7Tc
+bUiO2Wto9ntPWOeAThIkqESnAwOvTfHBkQ6JPnpzGn6XyjdnAw5MeNuYcYuBE6wZ
++vu/7IOwAIA2KUMmlq2v+9w+pmeMYYDvmUNyA3sh0hUlqYrZ36Su+le+cimTW2o0
+szdKywT2G8sJp6nWIDDMiab0e54A8qeYX0KW+ptJR8FoyDYCqUxLVKdT5W1UplHV
+r/F7XcbSmQen8B1uCSsflSqvQFJy5of8kioaPQTsCaaDEM0ZYxyW4o/uRf/0mH75
+5zZG6Ic32iJ2/346+DZehoYgEYCcZh49bNR1mVh4cYzjztHprojYSqwQYij+b6PA
+s+3kxTz9pr6wqsmh4ahwy7NTSMAU/kQDMQSvYyIXHWvgdVRAYbJWGVhyVjzf+ldA
+3KTJGr/NKzUH2nAvLrsYugDf167sgcLhvazVw+GkPLSN9WxKIYq/5wHudZvlEpX6
+aREgA0c+Djq7lLUzpGX9
+=S9B2
+-----END PGP SIGNATURE-----
 
-FWIW, I'm at a loss to understand why the mmu_notifier code works if
-there are multiple struct mmu_notifiers in play.
-
-> +
-> +	return 0;
-> +}
-> +
-> +int mpx_release(struct task_struct *tsk)
-> +{
-> +	if (!boot_cpu_has(X86_FEATURE_MPX))
-> +		return -EINVAL;
-> +
-> +	/* unregister mmu_notifier */
-> +	mmu_notifier_unregister(&mpx_mn, current->mm);
-> +
-> +	return 0;
-> +}
-> +
->  static bool allocate_bt(unsigned long bd_entry)
->  {
->  	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
-> diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
-> index 289760f..19ab881 100644
-> --- a/include/uapi/linux/prctl.h
-> +++ b/include/uapi/linux/prctl.h
-> @@ -149,4 +149,10 @@
->  
->  #define PR_GET_TID_ADDRESS	40
->  
-> +/*
-> + * Init/release MPX related resource.
-> + */
-> +#define PR_MPX_INIT	41
-> +#define PR_MPX_RELEASE	42
-> +
->  #endif /* _LINUX_PRCTL_H */
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index c723113..0334d03 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -91,6 +91,12 @@
->  #ifndef SET_TSC_CTL
->  # define SET_TSC_CTL(a)		(-EINVAL)
->  #endif
-> +#ifndef MPX_INIT
-> +# define MPX_INIT(a)		(-EINVAL)
-> +#endif
-> +#ifndef MPX_RELEASE
-> +# define MPX_RELEASE(a)		(-EINVAL)
-> +#endif
->  
->  /*
->   * this is where the system-wide overflow UID and GID are defined, for
-> @@ -1998,6 +2004,12 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
->  		if (arg2 || arg3 || arg4 || arg5)
->  			return -EINVAL;
->  		return current->no_new_privs ? 1 : 0;
-> +	case PR_MPX_INIT:
-> +		error = MPX_INIT(me);
-> +		break;
-> +	case PR_MPX_RELEASE:
-> +		error = MPX_RELEASE(me);
-> +		break;
-
-IMO this is ugly.  I'd personally rather see the CONFIG_ checks in here.
-
-Also, usual nit: please return -EINVAL if any of the unused arguments
-are zero.
-
-Who allocates the original L1 table?  Userspace or the kernel?  If
-userspace, what happens if there are multiple userspace things trying to
-manage this?  Is configuredness reference-counted?
-
---Andy
+--KPK+YGx+4g/J2wGm--
