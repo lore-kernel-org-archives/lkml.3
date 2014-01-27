@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaA0Qlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:41:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47035 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473AbaA0Qll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:41:41 -0500
-Message-ID: <52E68C25.1070804@zytor.com>
-Date: Mon, 27 Jan 2014 08:41:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753998AbaA0Qmq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:42:46 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:51732 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaA0Qmo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 11:42:44 -0500
+Date: Mon, 27 Jan 2014 10:39:39 -0600
+From: Andrew Ruder <andy@aeruder.net>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] reproducable ubifs reboot assert and corruption
+Message-ID: <20140127163939.GA27809@gmail.com>
+Mail-Followup-To: Richard Weinberger <richard.weinberger@gmail.com>,
+	"linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <20140122051510.GB17284@gmail.com>
+ <CAFLxGvwmzftdQKSjjjwpFLS8g3EJqMrQ2gU2scBsh2MvG7Wyyw@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Jiri Kosina <jkosina@suse.cz>, Michael Matz <matz@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] x86: Disable traditional FPU instructions too
-References: <20140127163758.GC6839@pd.tnic>
-In-Reply-To: <20140127163758.GC6839@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvwmzftdQKSjjjwpFLS8g3EJqMrQ2gU2scBsh2MvG7Wyyw@mail.gmail.com>
+User-Agent: Mutt/1.5.21+155 (d3096e8796e7) (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 08:37 AM, Borislav Petkov wrote:
-> Hey guys,
-> 
-> should we do the below? It looks like we don't disable the generation of
-> *all* FPU instructions on x86_64 (commit message below has the rationale
-> why).
-> 
-> We do -msoft-float on 32-bit only and Micha says that -msoft-float and
-> -mno-80387 are the same and the gcc manpage says:
-> 
->            On machines where a function returns floating-point results in the 80387
->            register stack, some floating-point opcodes may be emitted even if
->            -msoft-float is used.
-> 
-> and right after, it has also
-> 
->        -mno-fp-ret-in-387
->            Do not use the FPU registers for return values of functions.
-> 
->            The usual calling convention has functions return values of types "float"
->            and "double" in an FPU register, even if there is no FPU.  The idea is that
->            the operating system should emulate an FPU.
-> 
->            The option -mno-fp-ret-in-387 causes such values to be returned in ordinary
->            CPU registers instead.
-> 
-> Btw, there's this -mno-fp-regs switch too which forces passing of FP
-> results of functions in integer registers...
-> 
+On Sat, Jan 25, 2014 at 04:02:15PM +0100, Richard Weinberger wrote:
+> So ubifs_bgt0_0 stops and the fun begins.
+> Can you trigger the issue also by unmounting /mnt?
+> I.e umount -l /mnt
+> The background thread should only stop after all io is done...
 
-I don't think it'd hurt... although I think the above pretty much
-requires that the code contain actual floating-point types to ever be
-generated.  The issue with MMX/SSE is that an autovectorizing compiler
-could decide to use them for *integer* code.
+Did some experiments last week to see if I could trigger the bug with
+full debug messages enabled.  Biggest problem is that I don't have
+non-volatile memory available, serial logging slows it down too much to
+trigger the bug, and the reboot tends to shut down any attempt to
+offload the log to capture the relevant messages.
 
--mno-fp-ret-in-387 in particular will only ever apply if a function
-return type is a floating-point type.
+That being said, I was able to trigger the bug with the following:
 
-	-hpa
+[root@buildroot ~]# (sleep 5 ; while ! mount -o remount,ro /mnt ; do true ; done ; echo remount > /dev/kmsg ; sleep 5 ; echo reboot > /dev/kmsg ; reboot ) &
+[2] 564
+[root@buildroot ~]# fsstress -p 10 -n 10 -X -d /mnt/fsstress -l 0
 
+In my log I can see the "remount" message and 100ms later I can see the
+first ubifs assert.  I've attached the relevant portion of the logs
+below from the first time I see LEB 44 mentioned through the asserts.
+I've put the logs on the web due to concerns of flooding the mailing
+list with 100's of kB in attachments.
 
+https://gist.github.com/aeruder/8651928
+
+ubi_corruption.txt is the kernel log
+afterwards.txt is the console log with the ensuing issue with ubifs
+
+I also have logs of the recovery process in the Linux kernel later on,
+(still takes 2 mounts), an image of the MTD device, and would be happy
+to try anything or enable any additional debug messages.
+
+> Can you also please find out whether fssstress is still running when
+> reboot takes action?
+
+Thanks for taking a look.  I'm reading everything I can find about ubifs
+to see if I can make some headway into understanding what is going on
+but filesytems are definitely not my forte :).
+
+Cheers,
+Andrew Ruder
