@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaA0Tq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 14:46:29 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63664 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580AbaA0Tq0 (ORCPT
+	id S1754072AbaA0Tty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 14:49:54 -0500
+Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:33832 "EHLO
+	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753781AbaA0Ttw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 14:46:26 -0500
+	Mon, 27 Jan 2014 14:49:52 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=cNMOdCco8XaPTmmhQsELWzRKH6fpsOlg6zcfeikrIaYisfRnI4Vgb9H2yqMhdpdl;
+  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
+From: "Frank Filz" <ffilzlnx@mindspring.com>
+To: "'Pavel Shilovsky'" <piastry@etersoft.ru>
+Cc: "'Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
+        "'linux-cifs'" <linux-cifs@vger.kernel.org>,
+        "'linux-fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        "'Linux NFS Mailing list'" <linux-nfs@vger.kernel.org>,
+        <wine-devel@winehq.org>, <nfs-ganesha-devel@lists.sourceforge.net>
+References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>	<051001cf13b4$080833b0$18189b10$@mindspring.com> <CAKywueTOi-WPpgH7x3VK7EkGJXE8fHUqcLgSUm6o6UA+uaQtjA@mail.gmail.com>
+In-Reply-To: <CAKywueTOi-WPpgH7x3VK7EkGJXE8fHUqcLgSUm6o6UA+uaQtjA@mail.gmail.com>
+Subject: RE: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
+Date: Mon, 27 Jan 2014 11:49:49 -0800
+Message-ID: <02de01cf1b98$f115f240$d341d6c0$@mindspring.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMo8BfKm_rzDDs9BpfQkaew9DP9T8y0RnjzT_1gzs9Xrbx2CLA@mail.gmail.com>
-References: <1390795167-6677-1-git-send-email-jcmvbkbc@gmail.com>
- <1390795167-6677-4-git-send-email-jcmvbkbc@gmail.com> <CAL_JsqLjn4FXrNGLGHs639TEqmQKPx_kk9JbAd-hn7mexzAjNg@mail.gmail.com>
- <CAMo8BfKm_rzDDs9BpfQkaew9DP9T8y0RnjzT_1gzs9Xrbx2CLA@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Mon, 27 Jan 2014 11:45:45 -0800
-Message-ID: <CAGVrzcb4Y8zu6Q24-0d-uKppGE=HrvEXPUD2-Mo8r5JC80nDSw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] net: ethoc: document OF bindings
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQG8fgJyQjp4G5QLxJCshrN0oG//QAK5+V1aAPtKxEWaoIm8AA==
+Content-Language: en-us
+X-Antivirus: avast! (VPS 140127-1, 01/27/2014), Outbound message
+X-Antivirus-Status: Clean
+X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4df08edabb44b6b1bac5038de0210586f9350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-27 Max Filippov <jcmvbkbc@gmail.com>:
-> Hi Rob,
->
-> On Mon, Jan 27, 2014 at 6:10 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On Sun, Jan 26, 2014 at 9:59 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
->>> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
->>> ---
->>>  .../devicetree/bindings/net/opencores-ethoc.txt    | 25 ++++++++++++++++++++++
->>>  1 file changed, 25 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/net/opencores-ethoc.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/net/opencores-ethoc.txt b/Documentation/devicetree/bindings/net/opencores-ethoc.txt
->>> new file mode 100644
->>> index 0000000..f7c6c94
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/net/opencores-ethoc.txt
->>> @@ -0,0 +1,25 @@
->>> +* OpenCores MAC 10/100 Mbps
->>> +
->>> +Required properties:
->>> +- compatible: Should be "opencores,ethoc".
->>
->> There are not different versions of IP or is the version probeable?
->
-> AFAIK there's single version of this 10/100 MAC.
-> It doesn't have any identification registers.
+> 2014/1/17 Frank Filz <ffilzlnx@mindspring.com>:
+> > This looks wonderful and will be useful to the Ganesha user space NFS
+> > server also.
+> >
+> > I do have a couple questions.
+> >
+> > 1. How will this interact with the idea of private locks from the
+> > patch set Jeff Layton has been pushing?
+> 
+> They don't touch each other.
+> 
+> >
+> > 2. If a process opens multiple file descriptors with deny modes, will
+> > they conflict with each other (which is the behavior we will want for
+> Ganesha).
+> 
+> Yes, a deny mode is associated with file descriptor - so, it will conflict
+with any
+> other access/deny modes of file descriptors from any process.
+> 
+> >
+> > 3. Is there any functionality to upgrade or downgrade the access and
+> > deny modes (thinking in terms of NFS v4 support of OPEN upgrade and
+> > OPEN_DOWNGRADE operations).
+> 
+> The proposed patchset doesn't allow to change deny modes after an open is
+> done. But we can add a functionality to let flock syscall change deny
+modes
+> as on option.
 
-Since this is an IP block that people can modify due to its open
-source nature, it would have been good to define a revision register
-or such which would allow software to gate specific code based on that
-revision.
->
->>> +- reg: Address and length of the register set for the device and of its
->>> +  descriptor memory.
->>> +- interrupts: Should contain ethoc interrupt.
->>> +
->>> +Optional properties:
->>> +- local-mac-address: 6 bytes, mac address
->>
->> There's a patch in progress to move all the standard network
->> properties to a common location, so you can remove this.
->
-> Will do.
->
->>> +- clock-frequency: basic MAC frequency.
->>> +- mii-mgmt-clock-frequency: frequency of MII management bus. Together
->>> +  with clock-frequency determines the value programmed into the CLKDIV
->>> +  field of MIIMODER register.
->>> +
->>> +Examples:
->>> +
->>> +       enet0: ethoc@fd030000 {
->>> +               compatible = "opencores,ethoc";
->>> +               reg = <0xfd030000 0x4000 0xfd800000 0x4000>;
->>> +               interrupts = <1>;
->>> +               local-mac-address = [00 50 c2 13 6f 00];
->>> +               clock-frequency = <50000000>;
->>> +               mii-mgmt-clock-frequency = <5000000>;
+Yes, that would be good. NFS v4 allows upgrade/downgrade of acces/deny modes
+(hmm, changing access mode would be trickier, but we need to be able to
+upgrade/downgrade those as well as deny modes...). It could still be done
+with an fcntl.  I don't know if any NFS clients make use of
+upgrade/downgrade (I do know there are pynfs tests for it).
 
-5Mhz management clock? Can't you make it work with the standard 2.5Mhz
-management clock? Is not there a risk not to be able to "talk" to some
-PHY chips out there which do not support > 2.5Mhz management clock?
+Interestingly, upgrade/downgrade would be a solution to Ganesha's problems
+with POSIX locks being dumped on any file descriptor close since we could
+change the access mode as needed rather than needing to close and open the
+file.
 
-Since this is an ethoc specific property, should it be prefixed with "ethoc,"?
--- 
-Florian
+Frank
+
+
