@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaA0GNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 01:13:43 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:41926 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaA0GNl (ORCPT
+	id S1753347AbaA0GWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 01:22:46 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59215 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaA0GWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 01:13:41 -0500
-Message-ID: <52E5F90C.3000400@linaro.org>
-Date: Mon, 27 Jan 2014 15:13:32 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 27 Jan 2014 01:22:45 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-1d-52e5fb33688c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHSET 00/24] perf tools: Add support to accumulate hist periods (v7)
+References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
+	<20140123162248.GF1180@krava.brq.redhat.com>
+Date: Mon, 27 Jan 2014 15:22:43 +0900
+In-Reply-To: <20140123162248.GF1180@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Thu, 23 Jan 2014 17:22:48 +0100")
+Message-ID: <87k3dm54gc.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v2 5/6] arm64: audit: Add makefile rule to create unistd_32.h
- for compat syscalls
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org> <1389946399-4525-6-git-send-email-takahiro.akashi@linaro.org> <20140123145351.GF27520@arm.com>
-In-Reply-To: <20140123145351.GF27520@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin,
-
-On 01/23/2014 11:53 PM, Catalin Marinas wrote:
-> On Fri, Jan 17, 2014 at 08:13:18AM +0000, AKASHI Takahiro wrote:
->> generic compat sycall audit (lib/compat_audit.c) requires unistd_32.h
->> for __NR_xyx compat syscall numbers. This is a different file from unistd32.h
->> on arm64 and so it must be generated from unistd32.h.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/Makefile                 |    4 ++++
->>   arch/arm64/kernel/syscalls/Makefile |   20 ++++++++++++++++++++
->>   2 files changed, 24 insertions(+)
->>   create mode 100644 arch/arm64/kernel/syscalls/Makefile
->>
->> diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
->> index 2fceb71..6d24f92 100644
->> --- a/arch/arm64/Makefile
->> +++ b/arch/arm64/Makefile
->> @@ -72,6 +72,10 @@ PHONY += vdso_install
->>   vdso_install:
->>   	$(Q)$(MAKE) $(build)=arch/arm64/kernel/vdso $@
->>
->> +# Compat syscall header generation
->> +archheaders:
->> +	$(Q)$(MAKE) $(build)=arch/arm64/kernel/syscalls $@
+On Thu, 23 Jan 2014 17:22:48 +0100, Jiri Olsa wrote:
+> On Thu, Jan 23, 2014 at 09:13:44AM +0900, Namhyung Kim wrote:
+>> 
+>>   $ perf report --no-call-graph --children --stdio
+>> 
+>>   #     Self  Children  Command      Shared Object                 Symbol
+>>   # ........  ........  .......  .................  .....................
+>>   #
+>>        0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
+>>        0.00%    91.50%      abc  abc                [.] main             
+>>        0.00%    91.50%      abc  abc                [.] c                
+>>        0.00%    91.50%      abc  abc                [.] b                
+>>       91.50%    91.50%      abc  abc                [.] a                
+>>        0.00%     8.18%      abc  ld-2.17.so         [.] _dl_sysdep_start 
+>>        8.18%     8.18%      abc  ld-2.17.so         [.] strlen           
+>>        0.01%     0.33%      abc  ld-2.17.so         [.] _start           
+>>        0.31%     0.31%      abc  [kernel.kallsyms]  [k] page_fault       
 >
-> See my other post to the lib/compat_audit.c file. I think that's too
-> complex for what you need.
+> I couldnt get this one working:
+>
+> [jolsa@krava perf]$ ./perf report --no-call-graph --children --stdio
+>
+> #
+> #     Self  Children  Command  Shared Object                      Symbol
+> # ........  ........  .......  .............  ..........................
+> #
+>     94.47%    94.47%      abc  abc            [.] a                     
+>      4.74%     4.74%      abc  ld-2.17.so     [.] _dl_map_object_from_fd
+>      0.75%     0.75%      abc  ld-2.17.so     [.] _dl_start             
+>      0.04%     0.04%      abc  ld-2.17.so     [.] _start                
+>
+> I was looking for cumulated stdio output without callchain unwinded,
+> TUI shows it properly as default
 
-Generation script is getting more complexed than I assumed at first
-because some of system call names are a bit inconsistent with native 32-bit
-system calls, for example, fchown16 vs. fchown, fchown vs. fchown32.
+Oops, I missed a change below, sorry.
 
-Now my tentative sed script looks like:
-+quiet_cmd_syshdr = SYSHDR $@
-+        cmd_syshdr = cat $< | sed -r \
-+        -e 's/compat_//' \
-+        -e 's/_wrapper//' \
-+        -e 's/(sys_[fl]?chown)(\))/\132\)/' \
-+        -e 's/(sys_[gs]et)(|e|fs|re|res)(uid\))/\1\2uid32\)/' \
-+        -e 's/(sys_[gs]et)(|e|fs|re|res)(gid\))/\1\2gid32\)/' \
-+        -e 's/(sys_[gs]etgroups)(\))/\132\)/' \
-+        -e 's/(sys_new)(.*)/sys_\2/' \
-+        -e 's/sys_mmap_pgoff/sys_mmap2/' \
-+        -e 's/(sys_[_a-z]*)16(.*)/\1\2/' \
-+        -e 's/^__SYSCALL\((.*),[ ]*sys_([^)].*)\).*/\#define __NR_\2 \1/p;d' \
-+        | grep -v __NR_ni_syscall > $@
 
-So, yeah, I agree with you now.
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index ac658135079f..c1d4ccd755ed 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -538,7 +538,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ 	if (sample->callchain == NULL)
+ 		return 0;
+ 
+-	if (symbol_conf.use_callchain || sort__has_parent) {
++	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
++	    sort__has_parent) {
+ 		return machine__resolve_callchain(al->machine, evsel, al->thread,
+ 						  sample, parent, al, max_stack);
+ 	}
+-- 
+1.7.11.7
 
--Takahiro AKASHI
