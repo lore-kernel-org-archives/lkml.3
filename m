@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaA0JYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:24:13 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51148 "EHLO comal.ext.ti.com"
+	id S1753459AbaA0J0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:26:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:41255 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaA0JYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:24:11 -0500
-Message-ID: <52E625B6.3020304@ti.com>
-Date: Mon, 27 Jan 2014 14:54:06 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1750990AbaA0J0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 04:26:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,728,1384329600"; 
+   d="scan'208";a="471306592"
+From: "Dorau, Lukasz" <lukasz.dorau@intel.com>
+To: Jose Alonso <joalonsof@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Patelczyk, Maciej" <maciej.patelczyk@intel.com>,
+        "Jiang, Dave" <dave.jiang@intel.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <axboe@kernel.dk>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] for_each macros correctness
+Thread-Topic: [PATCH] for_each macros correctness
+Thread-Index: AQHPGoT7e7SrNIkTEES4xIkxtgFybpqYTqkg
+Date: Mon, 27 Jan 2014 09:26:45 +0000
+Message-ID: <D9FFE20C522965449E182ACE73889AEB1A6BEBEC@IRSMSX105.ger.corp.intel.com>
+References: <1390733658.3059.10.camel@laptop>
+In-Reply-To: <1390733658.3059.10.camel@laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <linux-usb@vger.kernel.org>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        "Cherian, George" <george.cherian@ti.com>
-Subject: Re: [PATCH 3/3] usb: musb: musb_cppi41: Handle ISOCH differently
- and not use the hrtimer.
-References: <1390572895-26428-1-git-send-email-george.cherian@ti.com> <1390572895-26428-4-git-send-email-george.cherian@ti.com> <52E2A6F7.7010301@cogentembedded.com>
-In-Reply-To: <52E2A6F7.7010301@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0R9QxLf007776
 
-On 1/24/2014 11:16 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 24-01-2014 18:14, George Cherian wrote:
->
->> In case of ISOCH transfers the hrtimer workaround for the hardware issue
->> is not very reliable. Instead of checking musb_is_tx_fifo_empty() in 
->> hrtimer
->> routine, schedule a completion work and check the same in completion 
->> work.
->
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   drivers/usb/musb/musb_cppi41.c | 54 
->> +++++++++++++++++++++++++++++++++++++++++-
->>   1 file changed, 53 insertions(+), 1 deletion(-)
->
->> diff --git a/drivers/usb/musb/musb_cppi41.c 
->> b/drivers/usb/musb/musb_cppi41.c
->> index 39ee516..8075562 100644
->> --- a/drivers/usb/musb/musb_cppi41.c
->> +++ b/drivers/usb/musb/musb_cppi41.c
-> [...]
->> @@ -165,6 +178,32 @@ static void cppi41_trans_done(struct 
->> cppi41_dma_channel *cppi41_channel)
->>       }
->>   }
->>
->> +static void cppi_trans_done_work(struct work_struct *work)
->> +{
->> +    unsigned long flags;
->> +    struct cppi41_dma_channel *cppi41_channel =
->> +        container_of(work, struct cppi41_dma_channel, dma_completion);
->> +    struct cppi41_dma_controller *controller = 
->> cppi41_channel->controller;
->> +    struct musb *musb = controller->musb;
->> +    struct musb_hw_ep *hw_ep = cppi41_channel->hw_ep;
->> +    bool empty;
->> +
->> +    if (!cppi41_channel->is_tx && is_isoc(hw_ep, 1)) {
->> +            spin_lock_irqsave(&musb->lock, flags);
->> +            cppi41_trans_done(cppi41_channel);
->> +            spin_unlock_irqrestore(&musb->lock, flags);
->
->    This *if* arm is clearly over-indented by one tab. Compare with 
-> below *else* arm.
+On Sunday, January 26, 2014 11:54 AM Jose Alonso <joalonsof@gmail.com> wrote:
+> I observed that there are for_each macros that do an extra memory access
+> beyond the defined area.
+> Normally this does not cause problems.
+> But, this can cause exceptions. For example: if the area is allocated at
+> the end of a page and the next page is not accessible.
+> 
+> For correctness, I suggest changing the arguments of the 'for loop' like
+> others 'for_each' do in the kernel.
+> 
+> files involved:
+>    drivers/s390/cio/qdio.h
+>    drivers/scsi/isci/host.h
 
-Will Fix in v2
+Hi Jose,
 
+The macro in "drivers/scsi/isci/host.h" has already been corrected:
+http://marc.info/?l=linux-kernel&m=139030404415970&w=2
+So you can remove the part regarding "drivers/scsi/isci/host.h" from your patch.
 
->
->> +    } else {
->> +        empty = musb_is_tx_fifo_empty(hw_ep);
->> +        if (empty) {
->> +            spin_lock_irqsave(&musb->lock, flags);
->> +            cppi41_trans_done(cppi41_channel);
->> +            spin_unlock_irqrestore(&musb->lock, flags);
->> +        } else {
->> + schedule_work(&cppi41_channel->dma_completion);
->> +        }
->> +    }
->> +}
->> +
->
-> WBR, Sergei
->
+Lukasz
 
-
--- 
--George
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
