@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaA0IYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 03:24:33 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:53806 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380AbaA0IYb (ORCPT
+	id S1753489AbaA0I2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 03:28:18 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:30190 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334AbaA0I2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 03:24:31 -0500
-Message-ID: <52E617BF.4030500@linaro.org>
-Date: Mon, 27 Jan 2014 09:24:31 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 3/9] idle: no more arch_cpu_idle_prepare() users
-References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org> <1390802904-28399-4-git-send-email-nicolas.pitre@linaro.org>
-In-Reply-To: <1390802904-28399-4-git-send-email-nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 27 Jan 2014 03:28:14 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc96d000004885-b3-52e618992f25
+Content-transfer-encoding: 8BIT
+Message-id: <1390811288.4974.4.camel@AMDC1943>
+Subject: Re: [PATCH 1/2] mfd: max14577: max14577_{suspend,resume}() should
+ depend on CONFIG_PM_SLEEP
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Date: Mon, 27 Jan 2014 09:28:08 +0100
+In-reply-to: <1390732723-7129-1-git-send-email-geert@linux-m68k.org>
+References: <1390732723-7129-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t/xK7ozJZ4FGXxdrmhx/ctzVotnt/Yy
+	Wdz/epTR4vKuOWwWp7tZLS6u+MLkwOZx59oeNo9DhzsYPeadDPTo27KK0ePzJrkA1igum5TU
+	nMyy1CJ9uwSujIeNT1gLPnBW9B4/w9LAOJmji5GTQ0LAROLAynWsELaYxIV769m6GLk4hASW
+	Mkr82f6LDSTBKyAo8WPyPZYuRg4OZgF5iSOXskHCzALqEpPmLWKGqP/MKDHx5icWiHo9iZaH
+	f5lBbGGBNIlFsyeB2WwCxhKbly9hA5kjIqArMecnE0gvs8A2RonGP/OZQGpYBFQlLux9DraX
+	U8BF4vKUXWAzhQScJXYd3wd1qJLE7vZO9gmMArOQnDcL4bxZSM5bwMi8ilE0tTS5oDgpPddI
+	rzgxt7g0L10vOT93EyMkqL/uYFx6zOoQowAHoxIPb8b1p0FCrIllxZW5hxglOJiVRHir2J4F
+	CfGmJFZWpRblxxeV5qQWH2Jk4uCUamCMCPga4y57QY/5/LoZsW1yFoaO3nfEcidq1il3flCe
+	dGWtJ0/Sl7h2/QfJXleE755dab/yaa5UmXQ7o8itDevfBm3ZK6aeqJfqLyp6i+GTqq/OeaHv
+	FpWaxlOuhF7/lnnSN27y+mnvJ7WGsQjO621rOvx6zwerd05b1lxYPXdFr+f2lDyOVxFKLMUZ
+	iYZazEXFiQA1UkCnSAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 07:08 AM, Nicolas Pitre wrote:
-> ... so we can get rid of it entirely.
->
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
-
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
+On Sun, 2014-01-26 at 11:38 +0100, Geert Uytterhoeven wrote:
+> If CONFIG_PM_SLEEP=n:
+> 
+> drivers/mfd/max14577.c:177: warning: ‘max14577_suspend’ defined but not used
+> drivers/mfd/max14577.c:200: warning: ‘max14577_resume’ defined but not used
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 > ---
->   include/linux/cpu.h | 1 -
->   kernel/cpu/idle.c   | 2 --
->   2 files changed, 3 deletions(-)
->
-> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-> index 03e235ad1b..218fab7521 100644
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -221,7 +221,6 @@ void cpu_idle(void);
->   void cpu_idle_poll_ctrl(bool enable);
->
->   void arch_cpu_idle(void);
-> -void arch_cpu_idle_prepare(void);
->   void arch_cpu_idle_enter(void);
->   void arch_cpu_idle_exit(void);
->   void arch_cpu_idle_dead(void);
-> diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-> index 988573a9a3..4e327e211b 100644
-> --- a/kernel/cpu/idle.c
-> +++ b/kernel/cpu/idle.c
-> @@ -52,7 +52,6 @@ static inline int cpu_idle_poll(void)
->   }
->
->   /* Weak implementations for optional arch specific functions */
-> -void __weak arch_cpu_idle_prepare(void) { }
->   void __weak arch_cpu_idle_enter(void) { }
->   void __weak arch_cpu_idle_exit(void) { }
->   void __weak arch_cpu_idle_dead(void) { }
-> @@ -136,6 +135,5 @@ void cpu_startup_entry(enum cpuhp_state state)
->   	boot_init_stack_canary();
->   #endif
->   	__current_set_polling();
-> -	arch_cpu_idle_prepare();
->   	cpu_idle_loop();
->   }
->
+>  drivers/mfd/max14577.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+> index ac514fb2b877..71aa14a6bfbb 100644
+> --- a/drivers/mfd/max14577.c
+> +++ b/drivers/mfd/max14577.c
+> @@ -173,6 +173,7 @@ static const struct i2c_device_id max14577_i2c_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
+>  
+> +#ifdef CONFIG_PM_SLEEP
+>  static int max14577_suspend(struct device *dev)
+>  {
+>  	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+> @@ -208,6 +209,7 @@ static int max14577_resume(struct device *dev)
+>  
+>  	return 0;
+>  }
+> +#endif /* CONFIG_PM_SLEEP */
+>  
+>  static struct of_device_id max14577_dt_match[] = {
+>  	{ .compatible = "maxim,max14577", },
 
+Same here:
+http://thread.gmane.org/gmane.linux.kernel/1615513/focus=1615563
+although I don't mind if your patch comes in :).
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Best regards,
+Krzysztof
 
