@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637AbaA0KyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:54:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51809 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571AbaA0KyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:54:15 -0500
-Date: Mon, 27 Jan 2014 11:54:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Dave Jones <davej@redhat.com>,
-        trinity@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched_rr_get_interval NULL pointer OOPS
-Message-ID: <20140127105413.GC11314@laptop.programming.kicks-ass.net>
-References: <CA+ydwtpvqv7pHFiQsPX+DeRyjKVvxvS2SKxXEttdT=PQr6qqFQ@mail.gmail.com>
+	id S1753362AbaA0LD1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 06:03:27 -0500
+Received: from ra.se.axis.com ([195.60.68.10]:34109 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098AbaA0LD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 06:03:26 -0500
+Date: Mon, 27 Jan 2014 12:03:23 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel@axis.com
+Subject: [GIT PULL] CRIS updates for 3.14
+Message-ID: <20140127110322.GR17210@axis.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+ydwtpvqv7pHFiQsPX+DeRyjKVvxvS2SKxXEttdT=PQr6qqFQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 24, 2014 at 10:55:56PM +0200, Tommi Rantala wrote:
-> Hello,
-> 
-> Trinity triggered the following bug in two separate qemu virtual
-> machines after fuzzing v3.13-3995-g0dc3fd0 for a day or two. I have
-> not been running Trinity in a while, so no idea if this is a
-> regression or not.
-> 
-> If I'm reading this right, it's oopsing in kernel/sched/core.c:
-> 
-> SYSCALL_DEFINE2(sched_rr_get_interval, pid_t, pid,
->     struct timespec __user *, interval)
-> {
-> ...
->     rq = task_rq_lock(p, &flags);
->     time_slice = p->sched_class->get_rr_interval(rq, p);   <==
->     task_rq_unlock(rq, p, &flags);
-> ...
+Hi Linus!
+
+Please pull for CRIS Linux 3.14 updates.
+Mostly removal of deprecated or old code, but also
+a long promised update of the CRIS syscalls.
+
+Thanks!
+
+The following changes since commit ceb3b0212dfc843a6abe8a6f3b4e28c1f2059e64:
+
+  Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/nouveau/linux-2.6 into drm-fixes (2014-01-08 17:57:45 +1000)
+
+are available in the git repository at:
 
 
----
-Subject: sched: make sched_class::get_rr_interval optional
+  git://jni.nu/cris tags/cris-for-3.14
 
-Not all classes implement (or can implement) a useful get_rr_interval()
-function, default to a 0 time-slice for them.
+for you to fetch changes up to e269a869417cd4053b37da1b19186902d3cbf63b:
 
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
-Index: linux-2.6/kernel/sched/core.c
-===================================================================
---- linux-2.6.orig/kernel/sched/core.c
-+++ linux-2.6/kernel/sched/core.c
-@@ -4324,7 +4324,9 @@ SYSCALL_DEFINE2(sched_rr_get_interval, p
- 		goto out_unlock;
- 
- 	rq = task_rq_lock(p, &flags);
--	time_slice = p->sched_class->get_rr_interval(rq, p);
-+	time_slice = 0;
-+	if (p->sched_class->get_rr_interval)
-+		time_slice = p->sched_class->get_rr_interval(rq, p);
- 	task_rq_unlock(rq, p, &flags);
- 
- 	rcu_read_unlock();
+  Drop code for CRISv10 CPU simulator (2014-01-15 14:44:02 +0100)
+
+----------------------------------------------------------------
+CRIS changes for 3.14
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      cris: sync_serial: remove interruptible_sleep_on
+
+Jesper Nilsson (3):
+      CRIS: Add missing syscalls
+      Cleanup whitespace, remove old author tag
+      Drop code for CRISv10 CPU simulator
+
+Michael Opdenacker (1):
+      cris: remove deprecated IRQF_DISABLED
+
+ arch/cris/Kconfig                         |   6 -
+ arch/cris/arch-v10/drivers/gpio.c         |   4 +-
+ arch/cris/arch-v10/drivers/sync_serial.c  |   8 +-
+ arch/cris/arch-v10/kernel/Makefile        |   1 -
+ arch/cris/arch-v10/kernel/debugport.c     |   7 --
+ arch/cris/arch-v10/kernel/entry.S         | 184 ++++++++++++++++--------------
+ arch/cris/arch-v10/kernel/head.S          | 127 ++++++++++-----------
+ arch/cris/arch-v10/kernel/irq.c           |  18 +--
+ arch/cris/arch-v10/kernel/process.c       |   5 +-
+ arch/cris/arch-v10/kernel/time.c          |  98 +++++++---------
+ arch/cris/arch-v10/lib/dram_init.S        |  40 +++----
+ arch/cris/arch-v32/drivers/mach-a3/gpio.c |   2 +-
+ arch/cris/arch-v32/drivers/mach-fs/gpio.c |   4 +-
+ arch/cris/arch-v32/drivers/sync_serial.c  |   4 +-
+ arch/cris/arch-v32/kernel/entry.S         |  34 ++++--
+ arch/cris/arch-v32/kernel/fasttimer.c     |   2 +-
+ arch/cris/arch-v32/kernel/irq.c           |  10 +-
+ arch/cris/arch-v32/kernel/smp.c           |   2 +-
+ arch/cris/arch-v32/kernel/time.c          |   6 +-
+ arch/cris/arch-v32/mach-a3/arbiter.c      |   4 +-
+ arch/cris/arch-v32/mach-fs/arbiter.c      |   2 +-
+ arch/cris/boot/rescue/kimagerescue.S      |   2 -
+ arch/cris/include/arch-v10/arch/io.h      |  29 +----
+ arch/cris/include/arch-v10/arch/irq.h     |   6 +-
+ arch/cris/include/arch-v32/arch/irq.h     |   6 +-
+ arch/cris/include/asm/unistd.h            |   2 +-
+ arch/cris/include/uapi/asm/unistd.h       |  16 +++
+ arch/cris/kernel/irq.c                    |   3 -
+ 28 files changed, 299 insertions(+), 333 deletions(-)
+
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
