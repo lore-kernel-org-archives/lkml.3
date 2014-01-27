@@ -1,158 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaA0MDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 07:03:51 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:41665 "EHLO e8.ny.us.ibm.com"
+	id S1753501AbaA0MJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 07:09:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4137 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827AbaA0MDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 07:03:48 -0500
-Message-ID: <52E64A37.4090405@linux.vnet.ibm.com>
-Date: Mon, 27 Jan 2014 17:29:51 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751275AbaA0MJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 07:09:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,728,1384329600"; 
+   d="scan'208";a="465288143"
+Date: Mon, 27 Jan 2014 20:09:43 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Glauber Costa <glommer@parallels.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        lkp@linux.intel.com, "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [numa shrinker] 9b17c62382: -36.6% regression on sparse file copy
+Message-ID: <20140127120943.GA17055@localhost>
+References: <20140106082048.GA567@localhost>
+ <20140106131042.GA5145@destitution>
+ <20140109025715.GA11984@localhost>
+ <20140115001827.GO3469@dastard>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/9] PPC: remove redundant cpuidle_idle_call()
-References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org> <1390802904-28399-7-git-send-email-nicolas.pitre@linaro.org>
-In-Reply-To: <1390802904-28399-7-git-send-email-nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012712-0320-0000-0000-0000024AB78E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115001827.GO3469@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+Hi Dave,
 
-On 01/27/2014 11:38 AM, Nicolas Pitre wrote:
-> The core idle loop now takes care of it.  However a few things need
-> checking:
+On Wed, Jan 15, 2014 at 11:18:27AM +1100, Dave Chinner wrote:
+> On Thu, Jan 09, 2014 at 10:57:15AM +0800, Fengguang Wu wrote:
+> > Hi Dave,
+> > 
+> > As you suggested, I added tests for ext4 and btrfs, the results are
+> > the same.
+> > 
+> > Then I tried running perf record for 10 seconds starting from 200s.
+> > (The test runs for 410s). I see several warning messages and hope
+> > they do not impact the accuracy too much:
+> > 
+> > [  252.608069] perf samples too long (2532 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+> > [  252.608863] perf samples too long (2507 > 2500), lowering kernel.perf_event_max_sample_rate to 25000
+> > [  252.609422] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 1.389 msecs
+> > 
+> > Anyway the noticeable perf change are:
+> > 
+> > 1d3d4437eae1bb2  9b17c62382dd2e7507984b989  
+> > ---------------  -------------------------  
+> >      12.15 ~10%    +209.8%      37.63 ~ 2%  brickland2/debug2/vm-scalability/300s-btrfs-lru-file-readtwice
+> >      12.88 ~16%    +189.4%      37.27 ~ 0%  brickland2/debug2/vm-scalability/300s-ext4-lru-file-readtwice
+> >      15.24 ~ 9%    +146.0%      37.50 ~ 1%  brickland2/debug2/vm-scalability/300s-xfs-lru-file-readtwice
+> >      40.27         +179.1%     112.40       TOTAL perf-profile.cpu-cycles._raw_spin_lock.grab_super_passive.super_cache_count.shrink_slab.do_try_to_free_pages
+> > 
+> > 1d3d4437eae1bb2  9b17c62382dd2e7507984b989  
+> > ---------------  -------------------------  
+> >      11.91 ~12%    +218.2%      37.89 ~ 2%  brickland2/debug2/vm-scalability/300s-btrfs-lru-file-readtwice
+> >      12.47 ~16%    +200.3%      37.44 ~ 0%  brickland2/debug2/vm-scalability/300s-ext4-lru-file-readtwice
+> >      15.36 ~11%    +145.4%      37.68 ~ 1%  brickland2/debug2/vm-scalability/300s-xfs-lru-file-readtwice
+> >      39.73         +184.5%     113.01       TOTAL perf-profile.cpu-cycles._raw_spin_lock.put_super.drop_super.super_cache_count.shrink_slab
+> > 
+> > perf report for 9b17c62382dd2e7507984b989:
+> > 
+> > # Overhead          Command       Shared Object                                          Symbol
+> > # ........  ...............  ..................  ..............................................
+> > #
+> >     77.74%               dd  [kernel.kallsyms]   [k] _raw_spin_lock                            
+> >                          |
+> >                          --- _raw_spin_lock
+> >                             |          
+> >                             |--47.65%-- grab_super_passive
 > 
-> - Invocation of cpuidle_idle_call() in pseries_lpar_idle() happened
->   through arch_cpu_idle() and was therefore always preceded by a call
->   to ppc64_runlatch_off().  To preserve this property now that
->   cpuidle_idle_call() is invoked directly from core code, a call to
->   ppc64_runlatch_off() has been added to idle_loop_prolog() in
->   platforms/pseries/processor_idle.c.
+> Oh, it's superblock lock contention, probably caused by an increase
+> in shrinker calls (i.e. per-node rather than global). I think we've
+> seen this before - can you try the two patches from Tim Chen here:
 > 
-> - Similarly, cpuidle_idle_call() was followed by ppc64_runlatch_off()
->   so a call to the later has been added to idle_loop_epilog().
+> https://lkml.org/lkml/2013/9/6/353
+> https://lkml.org/lkml/2013/9/6/356
 > 
-> - And since arch_cpu_idle() always made sure to re-enable IRQs if they
->   were not enabled, this is now
->   done in idle_loop_epilog() as well.
-> 
-> The above was made in order to keep the execution flow close to the
-> original.  I don't know if that was strictly necessary. Someone well
-> aquainted with the platform details might find some room for possible
-> optimizations.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> ---
->  arch/powerpc/platforms/pseries/processor_idle.c |  5 ++++
->  arch/powerpc/platforms/pseries/setup.c          | 34 ++++++++++---------------
->  2 files changed, 19 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-> index a166e38bd6..72ddfe3d2f 100644
-> --- a/arch/powerpc/platforms/pseries/processor_idle.c
-> +++ b/arch/powerpc/platforms/pseries/processor_idle.c
-> @@ -33,6 +33,7 @@ static struct cpuidle_state *cpuidle_state_table;
-> 
->  static inline void idle_loop_prolog(unsigned long *in_purr)
->  {
-> +	ppc64_runlatch_off();
->  	*in_purr = mfspr(SPRN_PURR);
->  	/*
->  	 * Indicate to the HV that we are idle. Now would be
-> @@ -49,6 +50,10 @@ static inline void idle_loop_epilog(unsigned long in_purr)
->  	wait_cycles += mfspr(SPRN_PURR) - in_purr;
->  	get_lppaca()->wait_state_cycles = cpu_to_be64(wait_cycles);
->  	get_lppaca()->idle = 0;
-> +
-> +	if (irqs_disabled())
-> +		local_irq_enable();
-> +	ppc64_runlatch_on();
->  }
-> 
->  static int snooze_loop(struct cpuidle_device *dev,
-> diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
-> index c1f1908587..7604c19d54 100644
-> --- a/arch/powerpc/platforms/pseries/setup.c
-> +++ b/arch/powerpc/platforms/pseries/setup.c
-> @@ -39,7 +39,6 @@
->  #include <linux/irq.h>
->  #include <linux/seq_file.h>
->  #include <linux/root_dev.h>
-> -#include <linux/cpuidle.h>
->  #include <linux/of.h>
->  #include <linux/kexec.h>
-> 
-> @@ -356,29 +355,24 @@ early_initcall(alloc_dispatch_log_kmem_cache);
-> 
->  static void pseries_lpar_idle(void)
->  {
-> -	/* This would call on the cpuidle framework, and the back-end pseries
-> -	 * driver to  go to idle states
-> +	/*
-> +	 * Default handler to go into low thread priority and possibly
-> +	 * low power mode by cedeing processor to hypervisor
->  	 */
-> -	if (cpuidle_idle_call()) {
-> -		/* On error, execute default handler
-> -		 * to go into low thread priority and possibly
-> -		 * low power mode by cedeing processor to hypervisor
-> -		 */
-> 
-> -		/* Indicate to hypervisor that we are idle. */
-> -		get_lppaca()->idle = 1;
-> +	/* Indicate to hypervisor that we are idle. */
-> +	get_lppaca()->idle = 1;
-> 
-> -		/*
-> -		 * Yield the processor to the hypervisor.  We return if
-> -		 * an external interrupt occurs (which are driven prior
-> -		 * to returning here) or if a prod occurs from another
-> -		 * processor. When returning here, external interrupts
-> -		 * are enabled.
-> -		 */
-> -		cede_processor();
-> +	/*
-> +	 * Yield the processor to the hypervisor.  We return if
-> +	 * an external interrupt occurs (which are driven prior
-> +	 * to returning here) or if a prod occurs from another
-> +	 * processor. When returning here, external interrupts
-> +	 * are enabled.
-> +	 */
-> +	cede_processor();
-> 
-> -		get_lppaca()->idle = 0;
-> -	}
-> +	get_lppaca()->idle = 0;
->  }
-> 
->  /*
-> 
+> If they fix the problem, I'll get them into 3.14 and pushed back to
+> the relevant stable kernels.
 
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Yes, the two patches help a lot:
 
-The consequence of this would be for other Power platforms like PowerNV,
-we will need to invoke ppc_runlatch_off() and ppc_runlatch_on() in each
-of the idle routines since the idle_loop_prologue() and
-idle_loop_epilogue() are not invoked by them, but we will take care of this.
+9b17c62382dd2e7  8401edd4b12960c703233f4ed
+---------------  -------------------------  
+   6748913 ~ 2%     +37.5%    9281049 ~ 1%  brickland2/debug2/vm-scalability/300s-btrfs-lru-file-readtwice
+   8417200 ~ 0%     +56.5%   13172417 ~ 0%  brickland2/debug2/vm-scalability/300s-ext4-lru-file-readtwice
+   8333983 ~ 1%     +56.9%   13078610 ~ 0%  brickland2/debug2/vm-scalability/300s-xfs-lru-file-readtwice
+  23500096 ~ 1%     +51.2%   35532077 ~ 0%  TOTAL vm-scalability.throughput
 
-Regards
-Preeti U Murthy
+They restore performance numbers back to 1d3d4437eae1bb2's level
+(which is 9b17c62382's parent commit).
 
+Thanks,
+Fengguang
