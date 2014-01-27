@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaA0UQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:16:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36164 "EHLO
+	id S1754515AbaA0USn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:18:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625AbaA0UQJ (ORCPT
+	with ESMTP id S1754016AbaA0UQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:09 -0500
+	Mon, 27 Jan 2014 15:16:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [PATCH 3.13 00/10] 3.13.1-stable review
-Date: Mon, 27 Jan 2014 12:17:03 -0800
-Message-Id: <20140127201535.350372282@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.13 04/10] staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
+Date: Mon, 27 Jan 2014 12:17:07 -0800
+Message-Id: <20140127201535.654133011@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
+References: <20140127201535.350372282@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.13.1 release.
-There are 10 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Jan 29 20:15:25 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.1-rc1.gz
-and the diffstat can be found below.
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-thanks,
+commit 48108fe3daa0d142f9b97178fdb23704ea3a407b upstream.
 
-greg k-h
+The dev->irq passed to request_irq() will always be 0 when the auto_attach
+function is called. The pcidev->irq should be used instead to get the correct
+irq number.
 
--------------
-Pseudo-Shortlog of commits:
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.13.1-rc1
+---
+ drivers/staging/comedi/drivers/adl_pci9111.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-NeilBrown <neilb@suse.de>
-    md/raid5: close recently introduced race in stripe_head management.
-
-NeilBrown <neilb@suse.de>
-    md/raid5: fix long-standing problem with bitmap handling on write failure.
-
-David Henningsson <david.henningsson@canonical.com>
-    ALSA: hda - Explicitly keep codec powered up in hdmi_present_sense
-
-Guenter Roeck <linux@roeck-us.net>
-    extcon: gpio: Request gpio pin before modifying its state
-
-Jon Medhurst <tixy@linaro.org>
-    serial: amba-pl011: use port lock to guard control register access
-
-Geert Uytterhoeven <geert@linux-m68k.org>
-    mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-
-H Hartley Sweeten <hsweeten@visionengravers.com>
-    staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
-
-H Hartley Sweeten <hsweeten@visionengravers.com>
-    staging: comedi: addi_apci_1032: fix subdevice type/flags bug
-
-Bernd Porr <mail@berndporr.me.uk>
-    staging: comedi: fix result of memdup_user for user chanlist
-
-Bob Peterson <rpeterso@redhat.com>
-    GFS2: Increase i_writecount during gfs2_setattr_chown
-
-
--------------
-
-Diffstat:
-
- Makefile                                        |  4 ++--
- drivers/extcon/extcon-gpio.c                    | 11 ++++++-----
- drivers/md/raid5.c                              |  9 +++++----
- drivers/staging/comedi/comedi_fops.c            |  2 ++
- drivers/staging/comedi/drivers/addi_apci_1032.c |  4 ++--
- drivers/staging/comedi/drivers/adl_pci9111.c    |  2 +-
- drivers/tty/serial/amba-pl011.c                 |  6 ++++++
- fs/gfs2/inode.c                                 | 16 +++++++++++++++-
- include/linux/mm.h                              | 13 ++++++++-----
- sound/pci/hda/patch_hdmi.c                      |  6 +++++-
- 10 files changed, 52 insertions(+), 21 deletions(-)
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -859,7 +859,7 @@ static int pci9111_auto_attach(struct co
+ 	pci9111_reset(dev);
+ 
+ 	if (pcidev->irq > 0) {
+-		ret = request_irq(dev->irq, pci9111_interrupt,
++		ret = request_irq(pcidev->irq, pci9111_interrupt,
+ 				  IRQF_SHARED, dev->board_name, dev);
+ 		if (ret)
+ 			return ret;
 
 
