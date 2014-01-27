@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaA0SVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 13:21:45 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:50725 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628AbaA0SVn (ORCPT
+	id S1754100AbaA0SXB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 13:23:01 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:52132 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869AbaA0SW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 13:21:43 -0500
-Message-ID: <52E6A3B2.6060301@gmail.com>
-Date: Mon, 27 Jan 2014 19:21:38 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140127153908.4f6f46c2@skate>
-In-Reply-To: <20140127153908.4f6f46c2@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Jan 2014 13:22:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <52E6A307.7060602@redhat.com>
+References: <CA+5PVA7ceNpHdh6zO2p1Xg+wSyoA8RTzspOOTrT0yRBW7LdE0g@mail.gmail.com>
+	<52E6A307.7060602@redhat.com>
+Date: Mon, 27 Jan 2014 13:22:58 -0500
+X-Google-Sender-Auth: -n9ydIaZaspLL1eaDhm5YHQWoR4
+Message-ID: <CA+5PVA5zg8s-W-=Tt9UVm9qtQqJ2FJXX2oLGj2a9z89rpd+Hkw@mail.gmail.com>
+Subject: Re: perf build failure on ARM with v3.13-8330-g4ba9920
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Francesco Fusco <ffusco@redhat.com>, Thomas Graf <tgraf@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/14 15:39, Thomas Petazzoni wrote:
-> On Sat, 25 Jan 2014 19:19:06 +0100, Sebastian Hesselbarth wrote:
->> This patch set fixes clk init order that went upside-down with
->> v3.14. I haven't really investigated what caused this, but I assume
->> it is related with DT node reordering by addresses.
+On Mon, Jan 27, 2014 at 1:18 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 01/27/2014 07:17 PM, Josh Boyer wrote:
 >>
->> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
->> registered before core clocks driver. Unfortunately, we cannot
->> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
->> init order for our drivers is always core clocks before clock gating,
->> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
->> init function that will register core clocks before clock gating
->> driver.
+>> Hi All,
 >>
->> This patch is based on pre-v3.14-rc1 mainline and should go in as
->> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
->> I suggest Jason picks it up as a topic branch.
+>> When building perf on ARM, we get a build failure because it can't
+>> find #include <asm/hash.h> from the linux/hash.h file:
+>>
+>> gcc -o builtin-kvm.o -c  -Wbad-function-cast
+>> -Wdeclaration-after-statement -Wformat-security -Wformat-y2k
+>> -Winit-self -Wmissing-declarations -Wmissing-prototypes
+>> -Wnested-externs -Wno-system-headers -Wold-style-definition -Wpacked
+>> -Wredundant-decls -Wshadow -Wstrict-aliasing=3 -Wstrict-prototypes
+>> -Wswitch-default -Wswitch-enum -Wundef -Wwrite-strings -Wformat
+>> -DHAVE_PERF_REGS_SUPPORT -O6 -fno-omit-frame-pointer -ggdb3
+>> -funwind-tables -Wall -Wextra -std=gnu99 -fstack-protector-all
+>> -D_FORTIFY_SOURCE=2
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util/include
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/arch/arm/include
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/include/
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/arch/arm/include/uapi
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/arch/arm/include
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/include/uapi
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/include
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf
+>>
+>> -I/builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/lib/
+>> -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+>> -DHAVE_LIBELF_SUPPORT -DHAVE_LIBELF_MMAP_SUPPORT
+>> -DHAVE_ELF_GETPHDRNUM_SUPPORT -DHAVE_DWARF_SUPPORT
+>> -DHAVE_LIBAUDIT_SUPPORT -I/usr/include/slang -DHAVE_SLANG_SUPPORT
+>> -DHAVE_TIMERFD_SUPPORT -DHAVE_LIBBFD_SUPPORT -DHAVE_ON_EXIT_SUPPORT
+>> -DHAVE_BACKTRACE_SUPPORT builtin-kvm.c
+>> In file included from
+>>
+>> /builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util/include/linux/hash.h:1:0,
+>>                   from builtin-lock.c:28:
+>>
+>> /builddir/build/BUILD/kernel-3.13.fc21/linux-3.14.0-0.rc0.git10.1.fc21.armv7hl/tools/perf/util/include/../../../../include/linux/hash.h:18:22:
+>> fatal error: asm/hash.h: No such file or directory
+>>   #include <asm/hash.h>
+>>                        ^
+>> compilation terminated.
+>>
+>> It looks like commit 71ae8aac3e19 ("lib: introduce arch optimized hash
+>> library") added the asm/hash.h include, and then commit e3fec2f74f7f
+>> ("lib: Add missing arch generic-y entries for asm-generic/hash.h")
+>> added the asm-generic plumbing for arches that don't have that file in
+>> asm/.  However, perf doesn't seem to be picking this up for some
+>> reason.
+>>
+>> Does anyone have any ideas as to what could be going wrong here?
 >
-> I'm not sure I really like the solution you're proposing here. I'd very
-> much prefer to keep one CLK_OF_DECLARE() per clock type, associated to
-> one function registering only this clock type.
-
-Have you ever had a look at e.g. clk-imx28.c? Not that I really like
-the approach, but it is common practice to do so.
-
-> Instead, shouldn't the clock framework be improved to *not* register a
-> clock until its parent have been registered? If the DT you have the
-> gatable clocks that depend on the core clocks, then the gatable clocks
-> should not be registered if the core clocks have not yet been
-> registered.
 >
-> Do you think this is possible? Am I missing something here?
+> (Patch was already submitted by Francesco to LKML today.)
 
-As I said, clk_of_init does not care about return values from the
-clock init functions. Without it, it cannot decide if a clock
-driver failed horribly, failed because of missing dependencies, or
-successfully installed all clocks. Also, it is early stuff and I guess
-clk_of_init will have to build its own "defered_list" and loop over
-until done.
+So it was!  Thanks, I missed that in the sea of LKML.  Sorry for the noise.
 
-BTW, this is a fix not an improvement. We should find an acceptable
-solution soon. But I am still open for suggestions, too.
-
-Sebastian
-
+josh
