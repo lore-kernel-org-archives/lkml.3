@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaA0URH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:17:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36186 "EHLO
+	id S1754132AbaA0UQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:16:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36166 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209AbaA0UQW (ORCPT
+	with ESMTP id S1753728AbaA0UQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:22 -0500
+	Mon, 27 Jan 2014 15:16:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 05/10] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-Date: Mon, 27 Jan 2014 12:17:08 -0800
-Message-Id: <20140127201535.720240118@linuxfoundation.org>
+        Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.13 01/10] GFS2: Increase i_writecount during gfs2_setattr_chown
+Date: Mon, 27 Jan 2014 12:17:04 -0800
+Message-Id: <20140127201535.454532256@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -31,58 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Bob Peterson <rpeterso@redhat.com>
 
-commit f92f455f67fef27929e6043499414605b0c94872 upstream.
+commit 62e96cf81988101fe9e086b2877307b6adda5197 upstream.
 
-{,set}page_address() are macros if WANT_PAGE_VIRTUAL.  If
-!WANT_PAGE_VIRTUAL, they're plain C functions.
+This patch calls get_write_access in function gfs2_setattr_chown,
+which merely increases inode->i_writecount for the duration of the
+function. That will ensure that any file closes won't delete the
+inode's multi-block reservation while the function is running.
+It also ensures that a multi-block reservation exists when needed
+for quota change operations during the chown.
 
-If someone calls them with a void *, this pointer is auto-converted to
-struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
-architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc64):
-
-  drivers/md/bcache/bset.c: In function `__btree_sort':
-  drivers/md/bcache/bset.c:1190: warning: dereferencing `void *' pointer
-  drivers/md/bcache/bset.c:1190: error: request for member `virtual' in something not a structure or union
-
-Convert them to static inline functions to fix this.  There are already
-plenty of users of struct page members inside <linux/mm.h>, so there's
-no reason to keep them as macros.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mm.h |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ fs/gfs2/inode.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -846,11 +846,14 @@ static __always_inline void *lowmem_page
- #endif
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -1607,10 +1607,22 @@ static int setattr_chown(struct inode *i
+ 	if (!(attr->ia_valid & ATTR_GID) || gid_eq(ogid, ngid))
+ 		ogid = ngid = NO_GID_QUOTA_CHANGE;
  
- #if defined(WANT_PAGE_VIRTUAL)
--#define page_address(page) ((page)->virtual)
--#define set_page_address(page, address)			\
--	do {						\
--		(page)->virtual = (address);		\
--	} while(0)
-+static inline void *page_address(const struct page *page)
-+{
-+	return page->virtual;
-+}
-+static inline void set_page_address(struct page *page, void *address)
-+{
-+	page->virtual = address;
-+}
- #define page_address_init()  do { } while(0)
- #endif
+-	error = gfs2_quota_lock(ip, nuid, ngid);
++	error = get_write_access(inode);
+ 	if (error)
+ 		return error;
+ 
++	error = gfs2_rs_alloc(ip);
++	if (error)
++		goto out;
++
++	error = gfs2_rindex_update(sdp);
++	if (error)
++		goto out;
++
++	error = gfs2_quota_lock(ip, nuid, ngid);
++	if (error)
++		goto out;
++
+ 	if (!uid_eq(ouid, NO_UID_QUOTA_CHANGE) ||
+ 	    !gid_eq(ogid, NO_GID_QUOTA_CHANGE)) {
+ 		error = gfs2_quota_check(ip, nuid, ngid);
+@@ -1637,6 +1649,8 @@ out_end_trans:
+ 	gfs2_trans_end(sdp);
+ out_gunlock_q:
+ 	gfs2_quota_unlock(ip);
++out:
++	put_write_access(inode);
+ 	return error;
+ }
  
 
 
