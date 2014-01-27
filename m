@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaA0QUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:20:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60299 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726AbaA0QUI (ORCPT
+	id S1753990AbaA0QVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:21:03 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:54614 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628AbaA0QVB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:20:08 -0500
-Date: Mon, 27 Jan 2014 17:19:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        crash-utility@redhat.com, linux-kernel@vger.kernel.org,
-        Dave Anderson <anderson@redhat.com>, Andrew Honig <ahonig@google.com>,
-        Eugene Surovegin <surovegin@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH v2] x86, kaslr: export offset in VMCOREINFO ELF notes
-Message-ID: <20140127161959.GD4941@twins.programming.kicks-ass.net>
-References: <20140123173120.GA25474@www.outflux.net>
- <20140125074738.GB10565@gmail.com>
- <52E669F1.9080603@intel.com>
- <20140127152557.GA27792@gmail.com>
- <52E681B6.7020501@intel.com>
+	Mon, 27 Jan 2014 11:21:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E681B6.7020501@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAMuHMdVNLYoWD=Q+utHUgEBJ1619Q5x=DsZEtmeEbogrQM2a0Q@mail.gmail.com>
+References: <1390731668-904-1-git-send-email-geert@linux-m68k.org>
+	<CAL_JsqLq+3Ehns0QaPajzLQCYUL+k+vx3j2vHTCdKMt948h6-g@mail.gmail.com>
+	<CAMuHMdVNLYoWD=Q+utHUgEBJ1619Q5x=DsZEtmeEbogrQM2a0Q@mail.gmail.com>
+Date: Mon, 27 Jan 2014 10:21:00 -0600
+Message-ID: <CAL_JsqJyaMDkj6jE+qk6AuUNB0-TOLdqeYDBdjH+1YJFu2V0DQ@mail.gmail.com>
+Subject: Re: [PATCH] of: Fix uninitialized child warning in
+ for_each_child_of_node() if !OF
+From: Rob Herring <robherring2@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 05:56:38PM +0200, Adrian Hunter wrote:
-> No. In fact annotation works now with kcore.  Linus' problem was with vmlinux.
-> 
-> Kcore won't be used with kaslr in the case:
-> 	1. record data with 'perf record'
-> 	2. reboot
-> 	3. use annotation on the previously recorded data
-> 
-> As I noted in the commit message, you can still use kcore if you made a copy
-> (with perf buildid-cache) at the time the data was recorded.
+On Mon, Jan 27, 2014 at 8:52 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Mon, Jan 27, 2014 at 3:16 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> On Sun, Jan 26, 2014 at 4:21 AM, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>>> If CONFIG_OF=n:
+>>>
+>>> drivers/i2c/i2c-mux.c: In function ‘i2c_add_mux_adapter’:
+>>> drivers/i2c/i2c-mux.c:158: warning: ‘child’ is used uninitialized in this function
+>>> drivers/leds/leds-lp55xx-common.c: In function ‘lp55xx_of_populate_pdata’:
+>>> drivers/leds/leds-lp55xx-common.c:560: warning: ‘child’ is used uninitialized in this function
+>>> drivers/leds/leds-pwm.c: In function ‘led_pwm_probe’:
+>>> drivers/leds/leds-pwm.c:89: warning: ‘child’ is used uninitialized in this function
+>>> drivers/mfd/stmpe.c: In function ‘stmpe_of_probe’:
+>>> drivers/mfd/stmpe.c:1112: warning: ‘child’ is used uninitialized in this function
+>>> drivers/mfd/tc3589x.c: In function ‘tc3589x_probe’:
+>>> drivers/mfd/tc3589x.c:324: warning: ‘child’ is used uninitialized in this function
+>>> drivers/power/charger-manager.c: In function ‘of_cm_parse_desc’:
+>>> drivers/power/charger-manager.c:1606: warning: ‘child’ is used uninitialized in this function
+>>>
+>>> Introduced by commit 00b2c76a6abbe082bb5afb89ee49ec325e9cd4d2
+>    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> ("include/linux/of.h: make for_each_child_of_node() reference its args when
+>>> CONFIG_OF=n").
+>>>
+>>> Instead of dropping the "__of_use_dn(child)" again, explicitly set child
+>>> to NULL, to protect against code using child after the loop (child == NULL
+>>> is the loop termination condition if CONFIG_OF=y).
+>>>
+>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>
+>> Just got fixed in mainline:
+>>
+>> commit 00b2c76a6abbe082bb5afb89ee49ec325e9cd4d2
+>
+> Nope, this is the one that introduced new warnings.
 
-Not that I care much about this particular case; but you could also save
-the offset at record time and do double offset correction assuming its
-still the same kernel you booted into but at a different location.
+Oh right, sorry. Read that too fast.
 
+Won't your change trigger warnings from -Wunused-but-set-variable in
+cases where child is not used? That would only be enabled for "W=1"
+though.
 
+I think the right fix here is all the for_each_X macros should not be
+conditional on CONFIG_OF and we should rely on the functions they call
+like of_get_next_child to do the right thing for !OF.
+
+Rob
