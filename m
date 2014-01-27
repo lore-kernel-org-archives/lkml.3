@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501AbaA0InQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 03:43:16 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:61356 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947AbaA0InN (ORCPT
+	id S1753534AbaA0IoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 03:44:08 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37279 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145AbaA0IoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 03:43:13 -0500
-Message-ID: <52E61C20.50804@linaro.org>
-Date: Mon, 27 Jan 2014 09:43:12 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 27 Jan 2014 03:44:06 -0500
+Message-ID: <52E61C52.6070104@linutronix.de>
+Date: Mon, 27 Jan 2014 09:44:02 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 8/9] X86: remove redundant cpuidle_idle_call()
-References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org> <1390802904-28399-9-git-send-email-nicolas.pitre@linaro.org>
-In-Reply-To: <1390802904-28399-9-git-send-email-nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: pavel@pavlinux.ru
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.8-rt11
+References: <20140125134519.GA9845@linutronix.de> <52E57D42.60206@pavlinux.ru>
+In-Reply-To: <52E57D42.60206@pavlinux.ru>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 07:08 AM, Nicolas Pitre wrote:
-> The core idle loop now takes care of it.
->
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+On 01/26/2014 10:25 PM, Pavel Vasilyev wrote:
+> 25.01.2014 17:45, Sebastian Andrzej Siewior пишет:
+>> Dear RT folks!
+> 
+> 
+> Gentlemen, let's have a month of stress testing! Divide tasks
+> testing subsystem: USB, NET, MM, ACPI, AUDIO, VIDEO By CPUs:
+> ARM/PPC/X86/X86_64...
+> 
+> Purely on observations noted that in September 2013, the quality
+> and stability of the code has deteriorated dramatically.
 
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+By September 2k13, do you mean a specific v3.10-RT release?
 
-> ---
->   arch/x86/kernel/process.c | 5 +----
->   1 file changed, 1 insertion(+), 4 deletions(-)
->
-> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> index 3fb8d95ab8..4505e2a950 100644
-> --- a/arch/x86/kernel/process.c
-> +++ b/arch/x86/kernel/process.c
-> @@ -298,10 +298,7 @@ void arch_cpu_idle_dead(void)
->    */
->   void arch_cpu_idle(void)
->   {
-> -	if (cpuidle_idle_call())
-> -		x86_idle();
-> -	else
-> -		local_irq_enable();
-
-For the record, it was pointless to enable the local irq here because it 
-is handled by the cpuidle framework when exiting the idle state.
-
-> +	x86_idle();
->   }
->
->   /*
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Sebastian
