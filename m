@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaA0L0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 06:26:50 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40751 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751321AbaA0L0t (ORCPT
+	id S1753500AbaA0LbS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 06:31:18 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:48858 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275AbaA0LbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 06:26:49 -0500
-Date: Mon, 27 Jan 2014 11:26:47 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH 17/20] clocksource / arch_timer: Use ACPI GTDT table to
- initialize arch timer
-Message-ID: <20140127112647.GC16516@e106331-lin.cambridge.arm.com>
-References: <1389961514-13562-1-git-send-email-hanjun.guo@linaro.org>
- <1389961514-13562-18-git-send-email-hanjun.guo@linaro.org>
+	Mon, 27 Jan 2014 06:31:17 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: rui.zhang@intel.com, eduardo.valentin@ti.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, horms@verge.net.au
+Subject: Re: [PATCH v2] thermal,rcar_thermal: Add dependency on HAS_IOMEM
+Date: Mon, 27 Jan 2014 12:32:04 +0100
+Message-ID: <2789122.Lrp2LJzQED@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1390812058-9002-1-git-send-email-richard@nod.at>
+References: <1390812058-9002-1-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389961514-13562-18-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 12:25:11PM +0000, Hanjun Guo wrote:
-> ACPI GTDT (Generic Timer Description Table) contains information for
-> arch timer initialization, this patch use this table to probe arm timer.
+Hi Richard,
+
+Thank you for the patch.
+
+On Monday 27 January 2014 09:40:58 Richard Weinberger wrote:
+> Commit beeb5a1e (thermal: rcar-thermal: Enable driver compilation with
+> COMPILE_TEST) broke build on archs wihout io memory.
 > 
-> GTDT table is used for ARM/ARM64 only, please refer to chapter 5.2.24
-> of ACPI 5.0 spec for detailed inforamtion
+> On archs like S390 or um this driver cannot build nor work.
+> Make it depend on HAS_IOMEM to bypass build failures.
 > 
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> drivers/thermal/rcar_thermal.c:404: undefined reference to
+> `devm_ioremap_resource' drivers/thermal/rcar_thermal.c:426: undefined
+> reference to `devm_ioremap_resource'
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+I'm not the driver maintainer so I won't take this patch in my tree. Could you 
+please keep an eye on it to make sure it gets picked by the maintainers ?
+
 > ---
->  drivers/clocksource/arm_arch_timer.c |  100 +++++++++++++++++++++++++++++-----
->  1 file changed, 85 insertions(+), 15 deletions(-)
+>  drivers/thermal/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index 35c0664..88efa8f 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -136,6 +136,7 @@ config SPEAR_THERMAL
+>  config RCAR_THERMAL
+>  	tristate "Renesas R-Car thermal driver"
+>  	depends on ARCH_SHMOBILE || COMPILE_TEST
+> +	depends on HAS_IOMEM
+>  	help
+>  	  Enable this to plug the R-Car thermal sensor driver into the Linux
+>  	  thermal framework.
 
-[...]
+-- 
+Regards,
 
-> +static void __init register_arch_interrupt(u32 interrupt, u32 flags,
-> +					int *arch_timer_ppi)
-> +{
-> +	int trigger, polarity;
-> +
-> +	if (!interrupt || !arch_timer_ppi)
-> +		return;
-> +
-> +	trigger = (flags & ACPI_GTDT_INTERRUPT_MODE) ? ACPI_EDGE_SENSITIVE
-> +			: ACPI_LEVEL_SENSITIVE;
-> +
-> +	polarity = (flags & ACPI_GTDT_INTERRUPT_POLARITY) ? ACPI_ACTIVE_LOW
-> +			: ACPI_ACTIVE_HIGH;
-> +
-> +	*arch_timer_ppi = acpi_register_gsi(NULL, interrupt, trigger,
-> +						polarity);
-> +}
+Laurent Pinchart
 
-Why does this take a pointer to the irq rather than returning the irq
-(as with irq_of_parse_and_map)?
-
-This looks awfully generic. Are the timer interrupts encoded specially
-or is this useful for parsing other interrupts?
-
-> +
-> +static int __init acpi_parse_gtdt(struct acpi_table_header *table)
-> +{
-> +	struct acpi_table_gtdt *gtdt;
-> +
-> +	gtdt = (struct acpi_table_gtdt *)table;
-> +	if (!gtdt)
-> +		return -EINVAL;
-> +
-> +	arch_timer_rate = arch_timer_get_cntfrq();
-> +
-> +	if (!arch_timer_rate) {
-> +		pr_warn("arch_timer: Could not get frequency from CNTFREG\n");
-
-s/CNTFREG/CNTFREQ/
-
-This is probably worth a pr_err at least, the system is unlikely to get
-very far if the timers don't work.
-
-Thanks,
-Mark.
