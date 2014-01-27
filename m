@@ -1,270 +1,849 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaA0Rb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 12:31:58 -0500
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:38365 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753861AbaA0Rb5 (ORCPT
+	id S1754028AbaA0Reh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 12:34:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33821 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473AbaA0Ref (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 12:31:57 -0500
-X-Yandex-Uniq: cd5e6c8c-e4ba-40b7-bebe-a136b567d7cf
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Mon, 27 Jan 2014 21:31:49 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: dan.j.williams@intel.com, dave.jiang@intel.com, vinod.koul@intel.com,
-        alexander.h.duyck@intel.com, whipple@securedatainnovations.ch
-Cc: linux-kernel@vger.kernel.org
-Subject: [REGRESSION][BISECTED] 3.10.26: net_dma: mark broken (b69ec589136c)
-Message-ID: <20140127173149.GA8099@stfomichev-desktop>
+	Mon, 27 Jan 2014 12:34:35 -0500
+Date: Mon, 27 Jan 2014 18:34:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Li Zefan <lizefan@huawei.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/4] x86: Add Cache QoS Monitoring (CQM) support
+Message-ID: <20140127173420.GA9636@twins.programming.kicks-ass.net>
+References: <20140106212623.GH30183@twins.programming.kicks-ass.net>
+ <1389044899.32504.43.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140106221251.GJ30183@twins.programming.kicks-ass.net>
+ <1389048315.32504.57.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140107083440.GL30183@twins.programming.kicks-ass.net>
+ <1389107743.32504.69.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140107211229.GF2480@laptop.programming.kicks-ass.net>
+ <1389380100.32504.172.camel@ppwaskie-mobl.amr.corp.intel.com>
+ <20140113075528.GR7572@laptop.programming.kicks-ass.net>
+ <52D57AC2.3090109@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D57AC2.3090109@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Xeon machines in config we have:
-CONFIG_NET_DMA=y
-# CONFIG_ASYNC_TX_DMA is not set
-# CONFIG_DMATEST is not set
-CONFIG_DCA=m
+On Tue, Jan 14, 2014 at 09:58:26AM -0800, H. Peter Anvin wrote:
+> On 01/12/2014 11:55 PM, Peter Zijlstra wrote:
+> > 
+> > The problem is, since there's a limited number of RMIDs we have to
+> > rotate at some point, but since changing RMIDs is nondeterministic we
+> > can't.
+> > 
+> 
+> This is fundamentally the crux here.  RMIDs are quite expensive for the
+> hardware to implement, so they are limited - but recycling them is
+> *very* expensive because you literally have to touch every line in the
+> cache.
 
-"net_dma: mark broken" changed it to (no CONFIG_NET_DMA):
-# CONFIG_ASYNC_TX_DMA is not set
-# CONFIG_DMATEST is not set
-CONFIG_DMA_ENGINE_RAID=y
-CONFIG_DCA=m
+Its not a problem that changing the task:RMID map is expensive, what is
+a problem is that there's no deterministic fashion of doing it.
 
-Since this commit, we started to observe that after machine reboots there
-is some change (1 out of 10) that ksoftirqd/0 will eat 100% CPU#0.
-In this case I see huge number of tasklets executed on CPU#0 (about a million
-each second).
+That said; I think I've got a sort-of workaround for that. See the
+largish comment near cache_pmu_rotate().
 
-To reproduce I just reboot machine and check ksoftirqd/0 CPU usage, if it's <5%,
-reboot machine again.
+I've also illustrated how to use perf-cgroup for this.
 
-I added trace_printk into tasklet_action and I see the same tasklet
-"executed" (it's disabled) over and over:
-     ksoftirqd/0-3     [000] ..s.    65.281375: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281377: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281377: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281377: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281378: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281378: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281378: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281379: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281379: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281379: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
+The below is a rough draft, most if not all XXXs should be
+fixed/finished. But given I don't actually have hardware that supports
+this stuff (afaik) I couldn't be arsed.
 
-Then I added more printk's and got the following (correct) trace for the case
-when ksoftirqd/0 doesn't consume 100% CPU:
-        modprobe-650   [005] ....     9.553511: ioat_init_channel: tasklet_init(ffff880c13d72500)
-     migration/3-71    [003] d...     9.554049: complete: x=ffff88061a6f9df0 ret=cpu_stop_signal_done
-    migration/15-132   [015] d...     9.554790: complete: x=ffff880c15fe3df0 ret=cpu_stop_signal_done
-        modprobe-650   [005] ..s.     9.556690: ioat_dma_self_test: init_completion(ffff88061c2bfa18) ret=ioat3_dma_self_test [ioatdma]
-        modprobe-650   [005] ....     9.556693: ioat_dma_self_test: wait_for_completion(ffff88061c2bfa18, 750)
-           mount-620   [000] d.h.     9.556694: ioat_dma_do_interrupt_msix: tasklet_schedule(ffff880c13d72500)
-           mount-620   [000] d.h.     9.556695: __tasklet_schedule: t=ffff880c13d72500 ret=ioat_dma_do_interrupt_msix [ioatdma]
-           mount-620   [000] ..s.     9.556696: tasklet_action: t=ffff880627c03e98 func=ioat3_cleanup_event [ioatdma] count=0
-           mount-620   [000] ..s.     9.556699: ioat_dma_test_callback: complete(ffff88061c2bfa18) ret=__cleanup [ioatdma]
-           mount-620   [000] d.s.     9.556700: complete: x=ffff88061c2bfa18 ret=ioat_dma_test_callback [ioatdma]
-           mount-620   [000] d.H.     9.556704: ioat_dma_do_interrupt_msix: tasklet_schedule(ffff880c13d72500)
-           mount-620   [000] d.H.     9.556705: __tasklet_schedule: t=ffff880c13d72500 ret=ioat_dma_do_interrupt_msix [ioatdma]
-           mount-620   [000] ..s.     9.556705: tasklet_action: t=ffff880627c03e98 func=ioat3_cleanup_event [ioatdma] count=0
-    migration/10-107   [010] d...     9.558487: complete: x=ffff880c15f4fdf0 ret=cpu_stop_signal_done
-        modprobe-650   [011] ....     9.560545: ioat_dma_self_test: wait_for_completion returned tmo=750
-
-And really weird trace when ksoftirqd/0 consumes 100% CPU:
-        modprobe-689   [014] ....     9.490260: ioat_init_channel: tasklet_init(ffff880c13c8b568)
-     migration/3-71    [003] d...     9.491727: complete: x=ffff88061a761df0 ret=cpu_stop_signal_done
-    migration/13-122   [013] d...     9.492212: complete: x=ffff880c15567df0 ret=cpu_stop_signal_done
-     migration/3-71    [003] d...     9.493098: complete: x=ffff880c15565df0 ret=cpu_stop_signal_done
-        modprobe-689   [014] ..s.     9.493655: ioat_dma_self_test: init_completion(ffff88061a503a18) ret=ioat3_dma_self_test [ioatdma]
-        modprobe-689   [014] ....     9.493657: ioat_dma_self_test: wait_for_completion(ffff88061a503a18, 750)
-        modprobe-689   [014] ....     9.494250: ioat_dma_self_test: wait_for_completion returned tmo=750
-        kthreadd-736   [002] d...     9.496220: complete: x=ffff880c143cfbe0 ret=kthread
-     migration/2-66    [002] d...     9.499974: complete: x=ffff880619c59df0 ret=cpu_stop_signal_done
-    migration/11-112   [011] d...     9.500705: complete: x=ffff880c15589df0 ret=cpu_stop_signal_done
-     migration/1-61    [001] d...     9.501807: complete: x=ffff88061a48ddf0 ret=cpu_stop_signal_done
-        modprobe-689   [014] ....     9.506554: ioat_init_channel: tasklet_init(ffff880c1363e358)
-     migration/3-71    [003] d...     9.506737: complete: x=ffff88061a7b1df0 ret=cpu_stop_signal_done
-    migration/13-122   [013] d...     9.508612: complete: x=ffff880c1570fdf0 ret=cpu_stop_signal_done
-        modprobe-689   [014] ..s.     9.508988: ioat_dma_self_test: init_completion(ffff88061a503a18) ret=ioat3_dma_self_test [ioatdma]
-        modprobe-689   [014] ....     9.508990: ioat_dma_self_test: wait_for_completion(ffff88061a503a18, 750)
-    migration/11-112   [011] d...     9.509157: complete: x=ffff88061a76ddf0 ret=cpu_stop_signal_done
-    migration/11-112   [011] d...     9.509998: complete: x=ffff880c14385df0 ret=cpu_stop_signal_done
-     migration/4-76    [004] d...     9.512649: complete: x=ffff880c155b1df0 ret=cpu_stop_signal_done
-    migration/10-107   [010] d...     9.513768: complete: x=ffff88061a773df0 ret=cpu_stop_signal_done
-     migration/8-97    [008] d...     9.515415: complete: x=ffff880c155b3df0 ret=cpu_stop_signal_done
-     migration/6-87    [006] d...     9.515475: complete: x=ffff880c155a5df0 ret=cpu_stop_signal_done
-    migration/11-112   [011] d...     9.515650: complete: x=ffff880c155a7df0 ret=cpu_stop_signal_done
-     migration/4-76    [004] d...     9.516355: complete: x=ffff880619c5bdf0 ret=cpu_stop_signal_done
-     migration/4-76    [004] d...     9.516492: complete: x=ffff880619c4bdf0 ret=cpu_stop_signal_done
-     migration/4-76    [004] d...     9.516882: complete: x=ffff880c1576ddf0 ret=cpu_stop_signal_done
-     migration/3-71    [003] d...     9.518353: complete: x=ffff880c15763df0 ret=cpu_stop_signal_done
-    migration/14-127   [014] d...     9.518737: complete: x=ffff880c15785df0 ret=cpu_stop_signal_done
-     migration/3-71    [003] d...     9.518947: complete: x=ffff880c15761df0 ret=cpu_stop_signal_done
-     migration/8-97    [008] d...     9.519121: complete: x=ffff88061ab03df0 ret=cpu_stop_signal_done
-     migration/8-97    [008] d...     9.519492: complete: x=ffff880c15b15df0 ret=cpu_stop_signal_done
-     migration/1-61    [001] d...     9.523569: complete: x=ffff880c15b2fdf0 ret=cpu_stop_signal_done
-     migration/3-71    [003] d...     9.524123: complete: x=ffff880619fc9df0 ret=cpu_stop_signal_done
-        modprobe-689   [008] ..s.     9.524370: ioat_dma_self_test: init_completion(ffff88061a503a18) ret=ioat3_dma_self_test [ioatdma]
-        modprobe-689   [008] ....     9.524372: ioat_dma_self_test: wait_for_completion(ffff88061a503a18, 750)
-     migration/1-61    [001] d...     9.524835: complete: x=ffff880c13e51df0 ret=cpu_stop_signal_done
-    ksoftirqd/14-128   [014] d.s.     9.525102: complete: x=ffff88061a7b1b20 ret=blk_end_sync_rq
-     ksoftirqd/3-72    [003] d.s.     9.526560: complete: x=ffff880c155b1b20 ret=blk_end_sync_rq
-     migration/9-102   [009] d...     9.526669: complete: x=ffff880c157e7df0 ret=cpu_stop_signal_done
-        kthreadd-768   [003] d...     9.526770: complete: x=ffff88061dbcfd00 ret=kthread
-        kthreadd-769   [012] d...     9.526833: complete: x=ffff88061dd29d00 ret=kthread
-     ksoftirqd/7-93    [007] d.s.     9.527077: complete: x=ffff880c1570fb20 ret=blk_end_sync_rq
-        kthreadd-771   [007] d...     9.527799: complete: x=ffff880c17403d00 ret=kthread
-     migration/7-92    [007] d...     9.527916: complete: x=ffff880c13e47df0 ret=cpu_stop_signal_done
-        modprobe-689   [003] ....     9.527917: ioat_dma_self_test: wait_for_completion returned tmo=750
-
-.. later
-
-     ksoftirqd/0-3     [000] ..s.    65.281375: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
-     ... and forever
-
-So nobody is completing the work (but wait_for_completion_timeout returns
-without a timeout) and nobody schedules tasklet, but it somehow ends up
-in the CPU#0 tasklet vector (disabled).
-Any ideas what could be wrong and how I can further debug it?
-
-If I put something like udelay(1000) in ioat_dma_self_test before
-wait_for_completion_timeout I never see this issue.
-
-Probably because we had NET_DMA=y, our NIC driver used DMA and somehow
-masked the issue prior to this 'bad' commit.
-
-This behavior also occurs on 3.13, I assume the reason is the same.
-
-Here is where I placed trace_printk, just in case:
 ---
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index 17a2393b3e25..646f5f9da9e3 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -93,6 +93,7 @@ static irqreturn_t ioat_dma_do_interrupt_msix(int irq, void *data)
- {
- 	struct ioat_chan_common *chan = data;
+ include/linux/perf_event.h              |   33 +
+ kernel/events/core.c                    |   22 -
+ x86/kernel/cpu/perf_event_intel_cache.c |  687 ++++++++++++++++++++++++++++++++
+ 3 files changed, 725 insertions(+), 17 deletions(-)
+
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -126,6 +126,14 @@ struct hw_perf_event {
+ 			/* for tp_event->class */
+ 			struct list_head	tp_list;
+ 		};
++		struct { /* cache_pmu */
++			struct task_struct	*cache_target;
++			int			cache_state;
++			int			cache_rmid;
++			struct list_head	cache_events_entry;
++			struct list_head	cache_groups_entry;
++			struct list_head	cache_group_entry;
++		};
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 		struct { /* breakpoint */
+ 			/*
+@@ -526,6 +534,31 @@ struct perf_output_handle {
+ 	int				page;
+ };
  
-+	trace_printk("tasklet_schedule(%p)\n", &chan->cleanup_task);
- 	tasklet_schedule(&chan->cleanup_task);
- 
- 	return IRQ_HANDLED;
-@@ -115,6 +116,7 @@ void ioat_init_channel(struct ioatdma_device *device, struct ioat_chan_common *c
- 	init_timer(&chan->timer);
- 	chan->timer.function = device->timer_fn;
- 	chan->timer.data = data;
-+	trace_printk("tasklet_init(%p)\n", &chan->cleanup_task);
- 	tasklet_init(&chan->cleanup_task, device->cleanup_fn, data);
- 	tasklet_disable(&chan->cleanup_task);
- }
-@@ -786,6 +788,7 @@ static void ioat_dma_test_callback(void *dma_async_param)
- {
- 	struct completion *cmp = dma_async_param;
- 
-+	trace_printk("complete(%p) ret=%pf\n", cmp, (void *)_RET_IP_);
- 	complete(cmp);
- }
- 
-@@ -844,6 +847,7 @@ int ioat_dma_self_test(struct ioatdma_device *device)
- 	}
- 
- 	async_tx_ack(tx);
-+	trace_printk("init_completion(%p) ret=%pf\n", &cmp, (void *)_RET_IP_);
- 	init_completion(&cmp);
- 	tx->callback = ioat_dma_test_callback;
- 	tx->callback_param = &cmp;
-@@ -855,7 +859,9 @@ int ioat_dma_self_test(struct ioatdma_device *device)
- 	}
- 	dma->device_issue_pending(dma_chan);
- 
-+	trace_printk("wait_for_completion(%p, %lu)\n", &cmp, msecs_to_jiffies(3000));
- 	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
-+	trace_printk("wait_for_completion returned tmo=%lu\n", msecs_to_jiffies(3000));
- 
- 	if (tmo == 0 ||
- 	    dma->device_tx_status(dma_chan, cookie, NULL)
-diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-index b925e1b1d139..5483645ab83a 100644
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -191,6 +191,8 @@ void ioat2_cleanup_event(unsigned long data)
- {
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan((void *) data);
- 
-+	trace_printk("%pF\n", (void*)_RET_IP_);
++#ifdef CONFIG_CGROUP_PERF
 +
- 	ioat2_cleanup(ioat);
- 	writew(IOAT_CHANCTRL_RUN, ioat->base.reg_base + IOAT_CHANCTRL_OFFSET);
- }
-@@ -303,6 +305,7 @@ void ioat2_timer_event(unsigned long data)
- 	u64 status;
- 
- 	status = ioat_chansts(chan);
-+	trace_printk("tasklet=%p\n", &chan->cleanup_task);
- 
- 	/* when halted due to errors check for channel
- 	 * programming errors before advancing the completion state
-@@ -885,6 +888,8 @@ int ioat2_dma_probe(struct ioatdma_device *device, int dca)
- 	struct ioat_chan_common *chan;
- 	int err;
- 
-+	trace_printk("%pF\n", (void*)_RET_IP_);
++struct perf_cgroup_info;
 +
- 	device->enumerate_channels = ioat2_enumerate_channels;
- 	device->reset_hw = ioat2_reset_hw;
- 	device->cleanup_fn = ioat2_cleanup_event;
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index fa43a42ccc86..3e4e810ded12 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -748,6 +748,8 @@ static void ioat3_timer_event(unsigned long data)
- 	dma_addr_t phys_complete;
- 	u64 status;
- 
-+	trace_printk("tasklet=%p\n", &chan->cleanup_task);
++struct perf_cgroup {
++	struct cgroup_subsys_state	css;
++	struct perf_cgroup_info	__percpu *info;
++};
 +
- 	status = ioat_chansts(chan);
++/*
++ * Must ensure cgroup is pinned (css_get) before calling
++ * this function. In other words, we cannot call this function
++ * if there is no cgroup event for the current CPU context.
++ *
++ * XXX: its not safe to use this thing!!!
++ */
++static inline struct perf_cgroup *
++perf_cgroup_from_task(struct task_struct *task)
++{
++	return container_of(task_css(task, perf_subsys_id),
++			    struct perf_cgroup, css);
++}
++
++#endif /* CONFIG_CGROUP_PERF */
++
+ #ifdef CONFIG_PERF_EVENTS
  
- 	/* when halted due to errors check for channel
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e8b335016c52..b4e27cf0d983 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3267,6 +3267,7 @@ void complete(struct completion *x)
- 	unsigned long flags;
+ extern int perf_pmu_register(struct pmu *pmu, const char *name, int type);
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -329,23 +329,6 @@ struct perf_cgroup_info {
+ 	u64				timestamp;
+ };
  
- 	spin_lock_irqsave(&x->wait.lock, flags);
-+	trace_printk("x=%p ret=%pf\n", x, (void *)_RET_IP_);
- 	x->done++;
- 	__wake_up_common(&x->wait, TASK_NORMAL, 1, 0, NULL);
- 	spin_unlock_irqrestore(&x->wait.lock, flags);
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 787b3a032429..a4792c68ccd4 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -436,6 +436,7 @@ void __tasklet_schedule(struct tasklet_struct *t)
- 	unsigned long flags;
+-struct perf_cgroup {
+-	struct cgroup_subsys_state	css;
+-	struct perf_cgroup_info	__percpu *info;
+-};
+-
+-/*
+- * Must ensure cgroup is pinned (css_get) before calling
+- * this function. In other words, we cannot call this function
+- * if there is no cgroup event for the current CPU context.
+- */
+-static inline struct perf_cgroup *
+-perf_cgroup_from_task(struct task_struct *task)
+-{
+-	return container_of(task_css(task, perf_subsys_id),
+-			    struct perf_cgroup, css);
+-}
+-
+ static inline bool
+ perf_cgroup_match(struct perf_event *event)
+ {
+@@ -6711,6 +6694,11 @@ perf_event_alloc(struct perf_event_attr
+ 	if (task) {
+ 		event->attach_state = PERF_ATTACH_TASK;
  
- 	local_irq_save(flags);
-+	trace_printk("t=%p ret=%pf\n", t, (void *)_RET_IP_);
- 	t->next = NULL;
- 	*__this_cpu_read(tasklet_vec.tail) = t;
- 	__this_cpu_write(tasklet_vec.tail, &(t->next));
-@@ -486,6 +487,7 @@ static void tasklet_action(struct softirq_action *a)
- 		list = list->next;
- 
- 		if (tasklet_trylock(t)) {
-+			trace_printk("t=%p func=%pf count=%d\n", &t, t->func, atomic_read(&t->count));
- 			if (!atomic_read(&t->count)) {
- 				if (!test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
- 					BUG();
++		/*
++		 * XXX fix for cache_target, dynamic type won't have an easy test,
++		 * maybe move target crap into generic event.
++		 */
++
+ 		if (attr->type == PERF_TYPE_TRACEPOINT)
+ 			event->hw.tp_target = task;
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+--- /dev/null
++++ b/x86/kernel/cpu/perf_event_intel_cache.c
+@@ -0,0 +1,687 @@
++#include <asm/processor.h>
++#include <linux/idr.h>
++#include <linux/raw_spinlock.h>
++#include <linux/perf_event.h>
++
++
++#define MSR_IA32_PQR_ASSOC	0x0c8f
++#define MSR_IA32_QM_CTR		0x0c8e
++#define MSR_IA32_QM_EVTSEL	0x0c8d
++
++unsigned int max_rmid;
++
++unsigned int l3_scale; /* supposedly cacheline size */
++unsigned int l3_max_rmid;
++
++
++struct cache_pmu_state {
++	raw_spin_lock		lock;
++	int			rmid;
++	int 			cnt;
++};
++
++static DEFINE_PER_CPU(struct cache_pmu_state, state);
++
++/*
++ * Protects the global state, hold both for modification, hold either for
++ * stability.
++ *
++ * XXX we modify RMID with only cache_mutex held, racy!
++ */
++static DEFINE_MUTEX(cache_mutex);
++static DEFINE_RAW_SPINLOCK(cache_lock);
++
++static unsigned long *cache_rmid_bitmap;
++
++/*
++ * All events
++ */
++static LIST_HEAD(cache_events);
++
++/*
++ * Groups of events that have the same target(s), one RMID per group.
++ */
++static LIST_HEAD(cache_groups);
++
++/*
++ * The new RMID we must not use until cache_pmu_stable().
++ * See cache_pmu_rotate().
++ */
++static unsigned long *cache_limbo_bitmap;
++
++/*
++ * The spare RMID that make rotation possible; keep out of the
++ * cache_rmid_bitmap to avoid it getting used for new events.
++ */
++static int cache_rotation_rmid;
++
++/*
++ * The freed RMIDs, see cache_pmu_rotate().
++ */
++static int cache_freed_nr;
++static int *cache_freed_rmid;
++
++/*
++ * One online cpu per package, for cache_pmu_stable().
++ */
++static cpumask_t cache_cpus;
++
++/*
++ * Returns < 0 on fail.
++ */
++static int __get_rmid(void)
++{
++	return bitmap_find_free_region(cache_rmid_bitmap, max_rmid, 0);
++}
++
++static void __put_rmid(int rmid)
++{
++	bitmap_release_region(cache_rmid_bitmap, rmid, 0);
++}
++
++/*
++ * Needs a quesent state before __put, see cache_pmu_stabilize().
++ */
++static void __free_rmid(int rmid)
++{
++	cache_freed_rmid[cache_freed_nr++] = rmid;
++}
++
++#define RMID_VAL_ERROR		(1ULL << 63)
++#define RMID_VAL_UNAVAIL	(1ULL << 62)
++
++static u64 __rmid_read(unsigned long rmid)
++{
++	u64 val;
++
++	/*
++	 * Ignore the SDM, this thing is _NOTHING_ like a regular perfcnt,
++	 * it just says that to increase confusion.
++	 */
++	wrmsr(MSR_IA32_QM_EVTSEL, 1 | (rmid << 32));
++	rdmsr(MSR_IA32_QM_CTR, val);
++
++	/*
++	 * Aside from the ERROR and UNAVAIL bits, assume this thing returns
++	 * the number of cachelines tagged with @rmid.
++	 */
++	return val;
++}
++
++static void smp_test_stable(void *info)
++{
++	bool *used = info;
++	int i;
++
++	for (i = 0; i < cache_freed_nr; i++) {
++		if (__rmid_read(cache_freed_rmid[i]))
++			*used = false;
++	}
++}
++
++/*
++ * Test if the rotation_rmid is unused; see the comment near
++ * cache_pmu_rotate().
++ */
++static bool cache_pmu_is_stable(void)
++{
++	bool used = true;
++
++	smp_call_function_many(&cache_cpus, smp_test_stable, &used, true);
++
++	return used;
++}
++
++/*
++ * Quescent state; wait for all the 'freed' RMIDs to become unused.  After this
++ * we can can reuse them and know that the current set of active RMIDs is
++ * stable.
++ */
++static void cache_pmu_stabilize(void)
++{
++	int i = 0;
++
++	if (!cache_freed_nr)
++		return;
++
++	/*
++	 * Now wait until the old RMID drops back to 0 again, this means all
++	 * cachelines have acquired a new tag and the new RMID is now stable.
++	 */
++	while (!cache_pmu_is_stable()) {
++		/*
++		 * XXX adaptive timeout? Ideally the hardware would get us an
++		 * interrupt :/
++		 */
++		schedule_timeout_uninterruptible(1);
++	}
++
++	bitmap_clear(cache_limbo_bitmap, 0, max_rmid);
++
++	if (cache_rotation_rmid <= 0) {
++		cache_rotation_rmid = cache_freed_rmid[0];
++		i++;
++	}
++
++	for (; i < cache_freed_nr; i++)
++		__put_rmid(cache_freed_rmid[i]);
++
++	cache_freed_nr = 0;
++}
++
++/*
++ * Exchange the RMID of a group of events.
++ */
++static unsigned long cache_group_xchg_rmid(struct perf_event *group, unsigned long rmid)
++{
++	struct perf_event *event;
++	unsigned long old_rmid = group->hw.cache_rmid;
++
++	group->hw.cache_rmid = rmid;
++	list_for_each_entry(event, &group->hw.cache_group_entry, hw.cache_group_entry)
++		event->hw.cache_rmid = rmid;
++
++	return old_rmid;
++}
++
++/*
++ * Determine if @a and @b measure the same set of tasks.
++ */
++static bool __match_event(struct perf_event *a, struct perf_event *b)
++{
++	if ((a->attach_state & PERF_ATTACH_TASK) !=
++	    (b->attach_state & PERF_ATTACH_TASK))
++		return false;
++
++	if (a->attach_state & PERF_ATTACH_TASK) {
++		if (a->hw.cache_target != b->hw.cache_target)
++			return false;
++
++		return true;
++	}
++
++	/* not task */
++
++#ifdef CONFIG_CGROUP_PERF
++	if ((a->cgrp == b->cgrp) && a->cgrp)
++		return true;
++#endif
++
++	return true; /* if not task or cgroup, we're machine wide */
++}
++
++static struct perf_cgroup *event_to_cgroup(struct perf_event *event)
++{
++	if (event->cgrp)
++		return event->cgrp;
++
++	if (event->attach_state & PERF_ATTACH_TASK) /* XXX */
++		return perf_cgroup_from_task(event->hw.cache_target);
++
++	return NULL;
++}
++
++/*
++ * Determine if @na's tasks intersect with @b's tasks
++ */
++static bool __conflict_event(struct perf_event *a, struct perf_event *b)
++{
++#ifdef CONFIG_CGROUP_PERF
++	struct perf_cb *ac, *bc;
++
++	ac = event_to_cgroup(a);
++	bc = event_to_cgroup(b);
++
++	if (!ac || !bc) {
++		/*
++		 * If either is NULL, its a system wide event and that
++		 * always conflicts with a cgroup one.
++		 *
++		 * If both are system wide, __match_event() should've
++		 * been true and we'll never get here, if we did fail.
++		 */
++		return true;
++	}
++
++	/*
++	 * If one is a parent of the other, we've got an intersection.
++	 */
++	if (cgroup_is_descendant(ac->css.cgroup, bc->css.cgroup) ||
++	    cgroup_is_descendant(bc->css.cgroup, ac->css.cgroup))
++		return true;
++#endif
++
++	/*
++	 * If one of them is not a task, same story as above with cgroups.
++	 */
++	if (!(a->attach_state & PERF_ATTACH_TASK) ||
++	    !(b->attach_state & PERF_ATTACH_TASK))
++		return true;
++
++	/*
++	 * Again, if they're the same __match_event() should've caught us, if not fail.
++	 */
++	if (a->hw.cache_target == b->hw.cache_target)
++		return true;
++
++	/*
++	 * Must be non-overlapping.
++	 */
++	return false;
++}
++
++/*
++ * Attempt to rotate the groups and assign new RMIDs, ought to run from an
++ * delayed work or somesuch.
++ *
++ * Rotating RMIDs is complicated; firstly because the hardware doesn't give us
++ * any clues; secondly because of cgroups.
++ *
++ * There's problems with the hardware interface; when you change the task:RMID
++ * map cachelines retain their 'old' tags, giving a skewed picture. In order to
++ * work around this, we must always keep one free RMID.
++ *
++ * Rotation works by taking away an RMID from a group (the old RMID), and
++ * assigning the free RMID to another group (the new RMID). We must then wait
++ * for the old RMID to not be used (no cachelines tagged). This ensure that all
++ * cachelines are tagged with 'active' RMIDs. At this point we can start
++ * reading values for the new RMID and treat the old RMID as the free RMID for
++ * the next rotation.
++ *
++ * Secondly, since cgroups can nest, we must make sure to not program
++ * conflicting cgroups at the same time. A conflicting cgroup is one that has a
++ * parent<->child relation. After all, a task of the child cgroup will also be
++ * covered by the parent cgroup.
++ *
++ * Therefore, when selecting a new group, we must invalidate all conflicting
++ * groups. Rotations allows us to measure all (conflicting) groups
++ * sequentially.
++ *
++ * XXX there's a further problem in that because we do our own rotation and
++ * cheat with schedulability the event {enabled,running} times are incorrect.
++ */
++static bool cache_pmu_rotate(void)
++{
++	struct perf_event *rotor;
++	int rmid;
++
++	mutex_lock(&cache_mutex);
++
++	if (list_empty(&cache_groups))
++		goto unlock_mutex;
++
++	rotor = list_first_entry(&cache_groups, struct perf_event, hw.cache_groups_entry);
++
++	raw_spin_lock_irq(&cache_lock);
++	list_del(&rotor->hw.cache_groups_entry);
++	rmid = cache_group_xchg_rmid(rotor, -1);
++	WARN_ON_ONCE(rmid <= 0); /* first entry must always have an RMID */
++	__free_rmid(rmid);
++	raw_spin_unlock_irq(&cache_loc);
++
++	/*
++	 * XXX O(n^2) schedulability
++	 */
++
++	list_for_each_entry(group, &cache_groups, hw.cache_groups_entry) {
++		bool conflicts = false;
++		struct perf_event *iter;
++
++		list_for_each_entry(iter, &cache_groups, hw.cache_groups_entry) {
++			if (iter == group)
++				break;
++			if (__conflict_event(group, iter)) {
++				conflicts = true;
++				break;
++			}
++		}
++
++		if (conflicts && group->hw.cache_rmid > 0) {
++			rmid = cache_group_xchg_rmid(group, -1);
++			WARN_ON_ONCE(rmid <= 0);
++			__free_rmid(rmid);
++			continue;
++		}
++
++		if (!conflicts && group->hw.cache_rmid <= 0) {
++			rmid = __get_rmid();
++			if (rmid <= 0) {
++				rmid = cache_rotation_rmid;
++				cache_rotation_rmid = -1;
++			}
++			set_bit(rmid, cache_limbo_rmid);
++			if (rmid <= 0)
++				break; /* we're out of RMIDs, more next time */
++
++			rmid = cache_group_xchg_rmid(group, rmid);
++			WARM_ON_ONCE(rmid > 0);
++			continue;
++		}
++
++		/*
++		 * either we conflict and do not have an RMID -> good,
++		 * or we do not conflict and have an RMID -> also good.
++		 */
++	}
++
++	raw_spin_lock_irq(&cache_lock);
++	list_add_tail(&rotor->hw.cache_groups_entry, &cache_groups);
++	raw_spin_unlock_irq(&cache_lock);
++
++	/*
++	 * XXX force a PMU reprogram here such that the new RMIDs are in
++	 * effect.
++	 */
++
++	cache_pmu_stabilize();
++
++unlock_mutex:
++	mutex_unlock(&cache_mutex);
++
++	/*
++	 * XXX reschedule work.
++	 */
++}
++
++/*
++ * Find a group and setup RMID
++ */
++static struct perf_event *cache_pmu_setup_event(struct perf_event *event)
++{
++	struct perf_event *iter;
++	int rmid = 0; /* unset */
++
++	list_for_each_entry(iter, &cache_groups, hw.cache_groups_entry) {
++		if (__match_event(iter, event)) {
++			event->hw.cache_rmid = iter->hw.cache_rmid;
++			return iter;
++		}
++		if (__conflict_event(iter, event))
++			rmid = -1; /* conflicting rmid */
++	}
++
++	if (!rmid) {
++		/* XXX lacks stabilization */
++		event->hw.cache_rmid = __get_rmid();
++	}
++
++	return NULL;
++}
++
++static void cache_pmu_event_read(struct perf_event *event)
++{
++	unsigned long rmid = event->hw.cache_rmid;
++	u64 val = RMID_VAL_UNAVAIL;
++
++	if (!test_bit(rmid, cache_limbo_bitmap))
++		val = __rmid_read(rmid);
++
++	/*
++	 * Ignore this reading on error states and do not update the value.
++	 */
++	if (val & (RMID_VAL_ERROR | RMID_VAL_UNAVAIL))
++		return;
++
++	val *= l3_scale; /* cachelines -> bytes */
++
++	local64_set(&event->count, val);
++}
++
++static void cache_pmu_event_start(struct perf_event *event, int mode)
++{
++	struct cache_pmu_state *state = &__get_cpu_var(&state);
++	unsigned long flags;
++
++	if (!(event->hw.cache_state & PERF_HES_STOPPED))
++		return;
++
++	event->hw.cache_state &= ~PERF_HES_STOPPED;
++
++	raw_spin_lock_irqsave(&state->lock, flags);
++	if (state->cnt++)
++		WARN_ON_ONCE(state->rmid != rmid);
++	else
++		WARN_ON_ONCE(state->rmid);
++	state->rmid = rmid;
++	wrmsr(MSR_IA32_PQR_ASSOC, state->rmid);
++	raw_spin_unlock_irqrestore(&state->lock, flags);
++}
++
++static void cache_pmu_event_stop(struct perf_event *event, int mode)
++{
++	struct cache_pmu_state *state = &__get_cpu_var(&state);
++	unsigned long flags;
++
++	if (event->hw.cache_state & PERF_HES_STOPPED)
++		return;
++
++	event->hw.cache_state |= PERF_HES_STOPPED;
++
++	raw_spin_lock_irqsave(&state->lock, flags);
++	cache_pmu_event_read(event);
++	if (!--state->cnt) {
++		state->rmid = 0;
++		wrmsr(MSR_IA32_PQR_ASSOC, 0);
++	} else {
++		WARN_ON_ONCE(!state->rmid);
++	raw_spin_unlock_irqrestore(&state->lock, flags);
++}
++
++static int cache_pmu_event_add(struct perf_event *event, int mode)
++{
++	struct cache_pmu_state *state = &__get_cpu_var(&state);
++	unsigned long flags;
++	int rmid;
++
++	raw_spin_lock_irqsave(&cache_lock, flags);
++
++	event->hw.cache_state = PERF_HES_STOPPED;
++	rmid = event->hw.cache_rmid;
++	if (rmid <= 0)
++		goto unlock;
++
++	if (mode & PERF_EF_START)
++		cache_pmu_event_start(event, mode);
++
++unlock:
++	raw_spin_unlock_irqrestore(&cache_lock, flags);
++
++	return 0;
++}
++
++static void cache_pmu_event_del(struct perf_event *event, int mode)
++{
++	struct cache_pmu_state *state = &__get_cpu_var(&state);
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&cache_lock, flags);
++	cache_pmu_event_stop(event, mode);
++	raw_spin_unlock_irqrestore(&cache_lock, flags);
++
++	return 0;
++}
++
++static void cache_pmu_event_destroy(struct perf_event *event)
++{
++	struct perf_event *group_other = NULL;
++
++	mutex_lock(&cache_mutex);
++	raw_spin_lock_irq(&cache_lock);
++
++	list_del(&event->hw.cache_events_entry);
++
++	/*
++	 * If there's another event in this group...
++	 */
++	if (!list_empty(&event->hw.cache_group_entry)) {
++		group_other = list_first_entry(&event->hw.cache_group_entry,
++					       struct perf_event,
++					       hw.cache_group_entry);
++		list_del(&event->hw.cache_group_entry);
++	}
++	/*
++	 * And we're the group leader..
++	 */
++	if (!list_empty(&event->hw.cache_groups_entry)) {
++		/*
++		 * If there was a group_other, make that leader, otherwise
++		 * destroy the group and return the RMID.
++		 */
++		if (group_other) {
++			list_replace(&event->hw.cache_groups_entry,
++				     &group_other->hw.cache_groups_entry);
++		} else {
++			int rmid = event->hw.cache_rmid;
++			if (rmid > 0)
++				__put_rmid(rmid);
++			list_del(&event->hw.cache_groups_entry);
++		}
++	}
++
++	raw_spin_unlock_irq(&cache_lock);
++	mutex_unlock(&cache_mutex);
++}
++
++static struct pmu cache_pmu;
++
++/*
++ * Takes non-sampling task,cgroup or machine wide events.
++ *
++ * XXX there's a bit of a problem in that we cannot simply do the one event per
++ * node as one would want, since that one event would one get scheduled on the
++ * one cpu. But we want to 'schedule' the RMID on all CPUs.
++ *
++ * This means we want events for each CPU, however, that generates a lot of
++ * duplicate values out to userspace -- this is not to be helped unless we want
++ * to change the core code in some way.
++ */
++static int cache_pmu_event_init(struct perf_event *event)
++{
++	struct perf_event *group;
++
++	if (event->attr.type != cache_pmu.type)
++		return -ENOENT;
++
++	if (event->attr.config != 0)
++		return -EINVAL;
++
++	if (event->cpu == -1) /* must have per-cpu events; see above */
++		return -EINVAL;
++
++	/* unsupported modes and filters */
++	if (event->attr.exclude_user   ||
++	    event->attr.exclude_kernel ||
++	    event->attr.exclude_hv     ||
++	    event->attr.exclude_idle   ||
++	    event->attr.exclude_host   ||
++	    event->attr.exclude_guest  ||
++	    event->attr.sample_period) /* no sampling */
++		return -EINVAL;
++
++	event->destroy = cache_pmu_event_destroy;
++
++	mutex_lock(&cache_mutex);
++
++	group = cache_pmu_setup_event(event); /* will also set rmid */
++
++	raw_spin_lock_irq(&cache_lock);
++	if (group) {
++		event->hw.cache_rmid = group->hw.cache_rmid;
++		list_add_tail(&event->hw.cache_group_entry,
++			      &group->hw.cache_group_entry);
++	} else {
++		list_add_tail(&event->hw.cache_groups_entry,
++			      &cache_groups);
++	}
++
++	list_add_tail(&event->hw.cache_events_entry, &cache_events);
++	raw_spin_unlock_irq(&cache_lock);
++
++	mutex_unlock(&cache_mutex);
++
++	return 0;
++}
++
++static struct pmu cache_pmu = {
++	.task_ctx_nr	= perf_sw_context, /* we cheat: our add will never fail */
++	.event_init	= cache_pmu_event_init,
++	.add		= cache_pmu_event_add,
++	.del		= cache_pmu_event_del,
++	.start		= cache_pmu_event_start,
++	.stop		= cache_pmu_event_stop,
++	.read		= cache_pmu_event_read,
++};
++
++static int __init cache_pmu_init(void)
++{
++	unsigned int eax, ebx, ecd, edx;
++	int i;
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
++		return 0;
++
++	if (boot_cpu_data.x86 != 6)
++		return 0;
++
++	cpuid_count(0x07, 0, &eax, &ebx, &ecx, &edx);
++
++	/* CPUID.(EAX=07H, ECX=0).EBX.QOS[bit12] */
++	if (!(ebx & (1 << 12)))
++		return 0;
++
++	cpuid_count(0x0f, 0, &eax, &ebx, &ecx, &edx);
++
++	max_rmid = ebx;
++
++	/*
++	 * We should iterate bits in CPUID(EAX=0FH, ECX=0).EDX
++	 * For now, only support L3 (bit 1).
++	 */
++	if (!(edx & (1 << 1)))
++		return 0;
++
++	cpuid_count(0x0f, 1, &eax, &ebx, &ecx, &edx);
++
++	l3_scale = ebx;
++	l3_max_rmid = ecx;
++
++	if (l3_max_rmid != max_rmid)
++		return 0;
++
++	cache_rmid_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(max_rmid), GFP_KERNEL);
++	if (!cache_rmid_bitmap)
++		return -ENOMEM;
++
++	cache_limbo_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(max_rmid), GFP_KERNEL);
++	if (!cache_limbo_bitmap)
++		return -ENOMEM; /* XXX frees */
++
++	cache_freed_rmid = kmalloc(sizeof(int) * max_rmid, GFP_KERNEL);
++	if (!cache_freed_rmid)
++		return -ENOMEM; /* XXX free bitmaps */
++
++	bitmap_zero(cache_rmid_bitmap, max_rmid);
++	bitmap_set(cache_rmid_bitmap, 0, 1); /* RMID 0 is special */
++	cache_rotation_rmid = __get_rmid(); /* keep one free RMID for rotation */
++	if (WARN_ON_ONCE(cache_rotation_rmid < 0))
++		return cache_rotation_rmid;
++
++	/*
++	 * XXX hotplug notifiers!
++	 */
++	for_each_possible_cpu(i) {
++		struct cache_pmu_state *state = &per_cpu(state, cpu);
++
++		raw_spin_lock_init(&state->lock);
++		state->rmid = 0;
++	}
++
++	ret = perf_pmu_register(&cache_pmu, "cache_qos", -1);
++	if (WARN_ON(ret)) {
++		pr_info("Cache QoS detected, registration failed (%d), disabled\n", ret);
++		return -1;
++	}
++
++	return 0;
++}
++device_initcall(cache_pmu_init);
