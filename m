@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306AbaA0UZV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:25:21 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:37651 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763AbaA0UZT (ORCPT
+	id S1754362AbaA0UZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:25:36 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60300 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317AbaA0UZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:25:19 -0500
-Date: Mon, 27 Jan 2014 22:24:35 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Raghu Gandham <Raghu.Gandham@imgtec.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Input: i8042-io - Exclude mips platforms when
- allocating/deallocating IO regions.
-Message-ID: <20140127202435.GA589@drone.musicnaut.iki.fi>
-References: <1390676514-30880-1-git-send-email-raghu.gandham@imgtec.com>
- <20140126214952.GD18840@core.coreip.homeip.net>
- <E2EE47005FA75F44B80E1019FDD2EBBB6E38B06D@BADAG02.ba.imgtec.org>
- <20140127065638.GB11945@core.coreip.homeip.net>
+	Mon, 27 Jan 2014 15:25:32 -0500
+Date: Mon, 27 Jan 2014 20:25:24 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Message-ID: <20140127202524.GQ11841@sirena.org.uk>
+References: <1390570678-30686-1-git-send-email-k.kozlowski@samsung.com>
+ <1390570678-30686-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iRy0ocDzxpWaNtI5"
 Content-Disposition: inline
-In-Reply-To: <20140127065638.GB11945@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1390570678-30686-2-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/2] regulator: s5m8767: Use GPIO for controlling
+ Buck9/eMMC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Sun, Jan 26, 2014 at 10:56:38PM -0800, Dmitry Torokhov wrote:
-> On Mon, Jan 27, 2014 at 12:32:36AM +0000, Raghu Gandham wrote:
-> > > On Sat, Jan 25, 2014 at 11:01:54AM -0800, Raghu Gandham wrote:
-> > > > The standard IO regions are already reserved by the platform code on
-> > > > most MIPS devices(malta, cobalt, sni). The Commit
-> > > > 197a1e96c8be5b6005145af3a4c0e45e2d651444
-> > > > ("Input: i8042-io - fix up region handling on MIPS") introduced a bug
-> > > > on these MIPS platforms causing i8042 driver to fail when trying to
-> > > > reserve IO ports.
-> > > > Prior to the above mentioned commit request_region is skipped on MIPS
-> > > > but release_region is called.
-> > > >
-> > > > This patch reverts commit 197a1e96c8be5b6005145af3a4c0e45e2d651444
-> > > > and also avoids calling release_region for MIPS.
-> > > 
-> > > The problem is that IO regions are reserved on _most_, but not _all_
-> > > devices.
-> > > MIPS should figure out what they want to do with i8042 registers and be
-> > > consistent on all devices.
-> > 
-> > Please examine the attached patch which went upstream in April of 2004.
-> > Since then it had been a convention not to call request_region routine in
-> > i8042 for MIPS. The attached patch had a glitch that it guarded
-> > request_region in i8042-io.h but skipped guarding release_region in
-> > i8042-io.h. I believe that the issue Aaro saw was due to this 
-> > glitch. Below is the error quoted in Aaro's commit message.
-> > 
-> >     [    2.112000] Trying to free nonexistent resource <0000000000000060-000000000000006f>
-> > 
-> > My patch reinstates the convention followed on MIPS devices along with
-> > fixing Aaro's issue.
-> 
-> I assume that Aaro did test his patch and on his box request_region()
-> succeeds. That would indicate that various MIPS sub-arches still not
-> settled on the topic.
+--iRy0ocDzxpWaNtI5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-request_region() succeeds on Loongson and OCTEON.
+On Fri, Jan 24, 2014 at 02:37:57PM +0100, Krzysztof Kozlowski wrote:
+> Add support for GPIO control (enable/disable) over Buck9. The Buck9
+> Converter is used as a supply for eMMC Host Controller.
 
-On OCTEONs without PCI, request_region() will fail which is correct as
-there is no I/O space.
+Applied, thanks.
 
-I wasn't aware of that 2004 patch (it pre-dates GIT history of mainline
-Linux). Why the regions are already reserved by the platform code?
+--iRy0ocDzxpWaNtI5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-A.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS5sCxAAoJELSic+t+oim9W9oQAItQiAzCNH6gWaEf96M2PDXo
+Nsx3xif18vEbtcwNBWSOEgS0VoUN6Ipin1JsU07pasid7KKdg6MRpbX6lqRv+p8j
+1JWJBxImev9ukeX5kkpEdceUNu8nFeBE67ij6R5zSKfw6FIs3lYsIkyn5N5EhchJ
+fE4cOsXWh7ptMFqDOs9IpIFP5i7URImaInodely+vJaeQEafU2i23FWpm8FyflSn
+Rg6XNkpowK2erqmVS4x9I12MoBsf3z2bjvFCCHcgQTN1878sTx0QtHIOdrEa424D
+CLAw3YVjVF9Ns6tlQFiFs8Js9PWpxC+lTqa27oPsWID091RbjZQlOvIFk0MfAjY7
+Tk4pBgQcnOgC0Q6igLBiGTnASBSU0T636V4oBk7How2cz+wZ1S5FKQn1udkgiPR7
+zkNl0BF9S3DFjgn5XP63bfC0WtVF/lEH/eqg+ynvfq4LE8ULlxq5ltaUWoDqdlWY
+C3clwowALQPYtkr67V8Nev96wHah8zFSYW8elCpa1DS/pJiugnqvWmPR9emthfhO
+FtumJk/Q0A5bgjwoQcR6T3q6Mc8RMPWGmoKkOEezZPMVDq6iUk36XAhGTQ9YnYaV
+Z7/NqtPDpVXVq8asmlO7X6hOMyrIjJ6brWM4Zm3CYezG35rJAC7hqXUYq8JiUS7L
+Lo99wU+0RqdqQLVsIn9T
+=NDNs
+-----END PGP SIGNATURE-----
+
+--iRy0ocDzxpWaNtI5--
