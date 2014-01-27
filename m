@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaA0KRv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 05:17:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29804 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaA0KRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 05:17:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,728,1384329600"; 
-   d="scan'208";a="445115964"
-Message-ID: <1390817840.7619.102.camel@smile>
-Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
- DW_DMAC.
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Jan 2014 12:17:20 +0200
-In-Reply-To: <20140126111734.GA10628@intel.com>
-References: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
-	 <20131210101025.GF29580@intel.com> <1386676582.1871.137.camel@smile>
-	 <604BF5F4C5D71041942BC7E84ED659EA01520785@PGSMSX103.gar.corp.intel.com>
-	 <20131218154955.GF16227@intel.com> <1387450289.1871.240.camel@smile>
-	 <20140120092501.GS26823@intel.com> <1390222075.7619.29.camel@smile>
-	 <20140120120714.GF26823@intel.com> <1390226911.7619.41.camel@smile>
-	 <20140126111734.GA10628@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
+	id S1753616AbaA0KSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 05:18:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55205 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751741AbaA0KSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 05:18:36 -0500
+Message-ID: <1390817904.2735.127.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 1/3] net: ethoc: don't advertise gigabit speed on
+ attached PHY
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org, netdev@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Date: Mon, 27 Jan 2014 10:18:24 +0000
+In-Reply-To: <1390795167-6677-2-git-send-email-jcmvbkbc@gmail.com>
+References: <1390795167-6677-1-git-send-email-jcmvbkbc@gmail.com>
+	 <1390795167-6677-2-git-send-email-jcmvbkbc@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-tXMGAH4+qIyy6f7SGZ8a"
 X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.4.239
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-01-26 at 16:47 +0530, Vinod Koul wrote:
 
-> > > > > For these cases, I have been using suspend_late. Since the dmaengine driver is
-> > > > > providing service to other clients (SPI), it needs to esnure that it suspends
-> > > > > after SPI using suspend_late and resume using resume_early. That way dma is
-> > > > > availble whenever the client is active
-> > > > 
-> > > > suspend_late is working in context that interrupt handler may be
-> > > > invoked. Thus, to have DMA driver be properly shut down we have to
-> > > > wait / terminate possible ongoing transfer.
-> > > Well client is already suspended via .suspend. So where is the transaction :)
-> > 
-> > ...as I already wrote before we have no parent-child relationship
-> > between DMA and, for example, SPI. That means we may possible have the
-> > case when SPI's .suspend() will be called later than DMA's one.
-> > 
-> > > > It seems for me all DMA drivers that are using
-> > > > system .suspend()/.resume() are potentially buggy.
-> > > Yup!
-> > 
-> > So, we have to decide what to do with them. .suspend_late() still seems
-> > for me not the best approach. *Or* we have to check for ongoing
-> > transaction and do something with it. *Or* just shut down the device and
-> > rely on DMA transaction initiator that it handles the terminated
-> > transaction properly.
-> 
-> As you clearly said, we dont have a parent-child relatation though we have big
-> dependency. I think this is true for DMA clients, i ran into similar situation
-> with i2c few days back!
-> 
-> So only think which can give us a good system behaviour would be clients getting
-> suspended first and then then service providing subsystems.
+--=-tXMGAH4+qIyy6f7SGZ8a
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Agree.
+On Mon, 2014-01-27 at 07:59 +0400, Max Filippov wrote:
+> OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but doe=
+s
+> not disable advertisement when PHY supports them. This results in
+> non-functioning network when the MAC is connected to a gigabit PHY connec=
+ted
+> to a gigabit switch.
+>=20
+> The fix is to disable gigabit speed advertisement on attached PHY
+> unconditionally.
+>=20
+> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+> ---
+>  drivers/net/ethernet/ethoc.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>=20
+> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+> index 4de8cfd..0aa1a05 100644
+> --- a/drivers/net/ethernet/ethoc.c
+> +++ b/drivers/net/ethernet/ethoc.c
+> @@ -712,6 +712,8 @@ static int ethoc_open(struct net_device *dev)
+>  		netif_start_queue(dev);
+>  	}
+> =20
+> +	priv->phy->advertising &=3D ~(ADVERTISED_1000baseT_Full |
+> +				    ADVERTISED_1000baseT_Half);
+>  	phy_start(priv->phy);
+>  	napi_enable(&priv->napi);
+> =20
 
->  (same reason why we
-> do dma driver loading and init much before others drivers)
+This is not sufficient to disable gigabit speeds; the supported mask
+should also be limited.  And it should be done even before the net
+device is registered.
 
-Yes, it would be done via deferred probe.
+Rather than poking into the phy_device structure directly from this
+driver, I think you should add a function in phylib for this purpose.
 
-> So yes in the .suspend callback of the client, it needs to
-> 1) abort any transactions it has
-> 2) make the client quiscent
-> 
-> then the .late_suspend kicks in and suspend the core drivers like dma.
-> 
-> This is how it has worked reliably for me in production systems. I am all ears
-> if we have a better and cleaner apprach to this problem :)
+Ben.
 
-Yes, summarize everything we discussed we have to:
- - provide suspend_late, resume_early callbacks in the DMA driver
-instead of *_noirq versions
- - ensure that all clients on our platforms follow the described
-scenario
+--=20
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
 
-Chiau Ee, I think you may to change your patch accordingly.
+--=-tXMGAH4+qIyy6f7SGZ8a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+iQIVAwUAUuYycOe/yOyVhhEJAQp34Q//TPzwP4h/FhMmDjv9CRo03LRIzf5+qMZ1
+rkGc83qDljET4urKIkNrFkDKpx/v5lDdfpvdzsx5uWIe03dT6v+UerF9AoALqVYG
+dg3dJ4sDq1FPAkh+umLXUQt9P5K1i0d8HVw/m3mLXuadUuZgMdrUt3aIXFYADVES
+ZpskHcc/egMXmnkbBtn/JwLeO97OZDEsPWkLOkuEclP+E7N6ME/OxVz4H5XvWJrK
+YSmd29WnfYURwqjTETTp9fpAToTJZGG8glt1ffrh3AZvmuEnQDkYbbL0rrFSteYB
+I0qmlY8ZEb5XlsWe9kT87Ohp4SpwKAnZD3kv3ItOGWucuMBIyvsdkW7rJcQudH72
+dtffrLIUgFT30LUHK7/11R+cZNffWlUachCfJpz+nZjMDqVnvzyvKnxzjiHHOP8s
+YPvg0Jj+fMXdDdmNETmsgGpjjGlwlhXjGAlxVjVdvqdTaDaIZuHLrmB6pdcpuMoV
+ST6+UilrC8ZhGyqpZ3ZOqdl9w41yhGVMlPUcXtaliM0wXgnG65PM3xK/iXBoMSdP
+mvP4XX37HDB/1++Ba9WoxgN9UhMxXcKFS5Cql/ClcCknAd3Q15x8SSBQjHjE+Y6E
+CdIr/Z3x/2gKqtNsonaaXtqUdkpe0dhXBuSBWXhdTYIyLxn9J6RlAWd40elDH7aJ
+dXJSG6sQplg=
+=n2kR
+-----END PGP SIGNATURE-----
 
+--=-tXMGAH4+qIyy6f7SGZ8a--
