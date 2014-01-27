@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaA0VyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 16:54:06 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:64156 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaA0VyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 16:54:04 -0500
-Message-ID: <52E6D579.8040505@amacapital.net>
-Date: Mon, 27 Jan 2014 13:54:01 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754168AbaA0VyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 16:54:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47925 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508AbaA0VyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 16:54:10 -0500
+Message-ID: <52E6D579.7020303@suse.cz>
+Date: Mon, 27 Jan 2014 22:54:01 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ren Qiaowei <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v3 3/4] x86, mpx: add prctl commands PR_MPX_INIT, PR_MPX_RELEASE
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-4-git-send-email-qiaowei.ren@intel.com> <20140126082201.GB28831@gmail.com> <52E4C5F2.8070707@intel.com> <20140126083942.GB29339@gmail.com> <52E5BB66.8060104@zytor.com> <52E5BC9C.9070400@intel.com> <52E5C000.1050506@zytor.com>
-In-Reply-To: <52E5C000.1050506@zytor.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz
+Subject: Re: [PATCH 03/11] bin2c: Move bin2c in scripts/basic
+References: <1390849071-21989-1-git-send-email-vgoyal@redhat.com> <1390849071-21989-4-git-send-email-vgoyal@redhat.com> <52E6CBAA.1080405@suse.cz> <20140127211845.GD22256@redhat.com>
+In-Reply-To: <20140127211845.GD22256@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2014 06:10 PM, H. Peter Anvin wrote:
-> On 01/26/2014 05:55 PM, Ren Qiaowei wrote:
+Dne 27.1.2014 22:18, Vivek Goyal napsal(a):
+> On Mon, Jan 27, 2014 at 10:12:10PM +0100, Michal Marek wrote:
+>> Dne 27.1.2014 19:57, Vivek Goyal napsal(a):
+>>> Kexec wants to use bin2c and it wants to use it really early in the build
+>>> process. See arch/x86/purgatory/ code in later patches.
+>>>
+>>> So move bin2c in scripts/basic so that it can be built very early and
+>>> be usable by arch/x86/purgatory/
+>>>
+>>> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+>>> ---
+>> [...]
+>>> diff --git a/scripts/basic/Makefile b/scripts/basic/Makefile
+>>> index 4fcef87..afbc1cd 100644
+>>> --- a/scripts/basic/Makefile
+>>> +++ b/scripts/basic/Makefile
+>>> @@ -9,6 +9,7 @@
+>>>  # fixdep: 	 Used to generate dependency information during build process
+>>>  
+>>>  hostprogs-y	:= fixdep
+>>> +hostprogs-$(CONFIG_IKCONFIG)     += bin2c
 >>
->> Peter, you mean we should remove these two call and do what they do in
->> user-space, right?
->>
+>> Is the CONFIG_IKCONFIG dependency still correct, now that you found
+>> another use of bin2c?
 > 
-> Unless we think there is a benefit to the kernel to have a on/off switch
-> for the #BR exception (if disabled, all #BR exceptions are signals,
-> regardless of source.)
+> In the next patch I changed depedency too. (CONFIG_BUILD_BIN2C). And
+> now CONFIG_IKCONFIG and CONFIG_KEXEC will select CONFIG_BUILD_BIN2C.
 
-Yes.
+OK, then it's all fine. I only saw patch 03/11.
 
-For example, wouldn't UML want to have all of this stuff disabled?
-Presumably it would much prefer to receive the exception directly.
-
-The same goes for seccomp users -- as it currently stands, this code
-allows mmap without a system call.
-
-This probably means that the prctl should (optionally) take a parameter
-that fixes the address of the L1 table -- seccomp users would probably
-want that.  (Actually, everyone might -- this is going to have weird
-results if the L1 table moves.)
-
---Andy
-
-> 
-> There might be, would like other people's opinion.
-> 
-> 	-hpa
-> 
-> 
-
+Thanks,
+Michal
