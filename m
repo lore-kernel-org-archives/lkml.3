@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569AbaA0JSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 04:18:49 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:46967 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaA0JSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 04:18:05 -0500
-X-IronPort-AV: E=Sophos;i="4.95,728,1384272000"; 
-   d="scan'208";a="9457823"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, peterz@infradead.org
-Cc: raistlin@linux.it, juri.lelli@gmail.com, clark.williams@gmail.com,
-        mingo@redhat.com, rostedt@goodmis.org,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 0/3] sched: Collect the bits about priority into a new header file, include/linux/sched/prio.h.
-Date: Mon, 27 Jan 2014 17:15:36 -0500
-Message-Id: <cover.1390859827.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <20140123065204.4e0b6902@gandalf.local.home>
-References: <20140123065204.4e0b6902@gandalf.local.home>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/27 17:16:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/27 17:16:27,
-	Serialize complete at 2014/01/27 17:16:27
+	id S1753603AbaA0JTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 04:19:44 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:34235 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaA0JTl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 04:19:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com>
+References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com>
+	<1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com>
+Date: Mon, 27 Jan 2014 10:19:41 +0100
+Message-ID: <CADDKRnDZPpUgbRN6tJeXBAC9=M+5HN57ArL9yYA237ELkKMvCg@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: reduce log level for message "ACPI: \_PR_.CPU4:
+ failed to get CPU APIC ID"
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-    This patch set collect the bits about priority in linux/sched/prio.h and
-expose some macros about priority here. So that the other parts of core kernel
-can use the them without reimplementing it in an open way.
+2014-01-27 Jiang Liu <jiang.liu@linux.intel.com>:
+> Commit b981513f806d (ACPI / scan: bail out early if failed to parse
+> APIC ID for CPU) emits an error message if ACPI processor driver fails
+> to query APIC ID for the CPU.
+>
+> Originally it's designed to catch BIOS bugs for CPU hot-addition. But
+> it accidently reveals another type of BIOS bug that:
+> 1) BIOS implements ACPI objects for all possible instead of present
+>    CPUs. (It's legal per ACPI specification.)
+> 2) BIOS doesn't implement _STA method for CPU objects. OSPM assumes
+>    that all CPU objects are present and functioning and binds ACPI
+>    processor driver to those CPU objects, which then triggers the error
+>    message. According to ACPI spec, BIOS should implement _STA method
+>    for those absent CPUs at least.
+>
+> Though it's a BIOS bug in essential, there are some BIOSes in the fields
+> which are implmented in this way. So reduce the log level from ERR to
+> DEBUG to accommodate these existing BIOSes.
+>
+> Fixes: b981513f806d (ACPI / scan: bail out early if failed to parse APIC ID for CPU)
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/acpi/acpi_processor.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c9311be..c29c2c3 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -261,7 +261,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>
+>         apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
+>         if (apic_id < 0) {
+> -               acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
+> +               acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
+>                 return -ENODEV;
+>         }
+>         pr->apic_id = apic_id;
+> --
+> 1.7.10.4
+>
 
-Dongsheng Yang (3):
-  sched: Move the priority specific bits into a new header file.
-  sched: Expose some macros related with priority.
-  sched: Implement task_nice and task_prio as static inline functions.
+Thanks, the patch works for me.
 
- include/linux/sched.h      | 30 ++++++++++++++++++++++++++++--
- include/linux/sched/prio.h | 41 +++++++++++++++++++++++++++++++++++++++++
- include/linux/sched/rt.h   | 21 +++------------------
- kernel/sched/core.c        | 25 -------------------------
- kernel/sched/sched.h       | 18 ------------------
- 5 files changed, 72 insertions(+), 63 deletions(-)
- create mode 100644 include/linux/sched/prio.h
-
--- 
-1.8.2.1
-
+Jörg
