@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaA0GWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 01:22:46 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59215 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaA0GWp (ORCPT
+	id S1753542AbaA0GYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 01:24:21 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:51663 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470AbaA0GYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 01:22:45 -0500
-X-AuditID: 9c93017d-b7b51ae000000e33-1d-52e5fb33688c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 00/24] perf tools: Add support to accumulate hist periods (v7)
-References: <1390436045-16830-1-git-send-email-namhyung@kernel.org>
-	<20140123162248.GF1180@krava.brq.redhat.com>
-Date: Mon, 27 Jan 2014 15:22:43 +0900
-In-Reply-To: <20140123162248.GF1180@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Thu, 23 Jan 2014 17:22:48 +0100")
-Message-ID: <87k3dm54gc.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 27 Jan 2014 01:24:17 -0500
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jan 2014 01:24:12 EST
+Content-transfer-encoding: 7BIT
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: [PATCH 9/9] cpu/idle.c: move to sched/idle.c
+Date: Mon, 27 Jan 2014 01:08:24 -0500
+Message-id: <1390802904-28399-10-git-send-email-nicolas.pitre@linaro.org>
+X-Mailer: git-send-email 1.8.4.108.g55ea5f6
+In-reply-to: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org>
+References: <1390802904-28399-1-git-send-email-nicolas.pitre@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jan 2014 17:22:48 +0100, Jiri Olsa wrote:
-> On Thu, Jan 23, 2014 at 09:13:44AM +0900, Namhyung Kim wrote:
->> 
->>   $ perf report --no-call-graph --children --stdio
->> 
->>   #     Self  Children  Command      Shared Object                 Symbol
->>   # ........  ........  .......  .................  .....................
->>   #
->>        0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
->>        0.00%    91.50%      abc  abc                [.] main             
->>        0.00%    91.50%      abc  abc                [.] c                
->>        0.00%    91.50%      abc  abc                [.] b                
->>       91.50%    91.50%      abc  abc                [.] a                
->>        0.00%     8.18%      abc  ld-2.17.so         [.] _dl_sysdep_start 
->>        8.18%     8.18%      abc  ld-2.17.so         [.] strlen           
->>        0.01%     0.33%      abc  ld-2.17.so         [.] _start           
->>        0.31%     0.31%      abc  [kernel.kallsyms]  [k] page_fault       
->
-> I couldnt get this one working:
->
-> [jolsa@krava perf]$ ./perf report --no-call-graph --children --stdio
->
-> #
-> #     Self  Children  Command  Shared Object                      Symbol
-> # ........  ........  .......  .............  ..........................
-> #
->     94.47%    94.47%      abc  abc            [.] a                     
->      4.74%     4.74%      abc  ld-2.17.so     [.] _dl_map_object_from_fd
->      0.75%     0.75%      abc  ld-2.17.so     [.] _dl_start             
->      0.04%     0.04%      abc  ld-2.17.so     [.] _start                
->
-> I was looking for cumulated stdio output without callchain unwinded,
-> TUI shows it properly as default
+Integration of cpuidle with the scheduler requires that the idle loop be
+closely integrated with the scheduler proper. Moving cpu/idle.c into the
+sched directory will allow for a smoother integration, and eliminate a
+subdirectory which contained only one source file.
 
-Oops, I missed a change below, sorry.
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+---
+ kernel/Makefile              | 1 -
+ kernel/cpu/Makefile          | 1 -
+ kernel/sched/Makefile        | 2 +-
+ kernel/{cpu => sched}/idle.c | 0
+ 4 files changed, 1 insertion(+), 3 deletions(-)
+ delete mode 100644 kernel/cpu/Makefile
+ rename kernel/{cpu => sched}/idle.c (100%)
 
-
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index ac658135079f..c1d4ccd755ed 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -538,7 +538,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
- 	if (sample->callchain == NULL)
- 		return 0;
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bc010ee272..6f1c7e5cfc 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -22,7 +22,6 @@ obj-y += sched/
+ obj-y += locking/
+ obj-y += power/
+ obj-y += printk/
+-obj-y += cpu/
+ obj-y += irq/
+ obj-y += rcu/
  
--	if (symbol_conf.use_callchain || sort__has_parent) {
-+	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
-+	    sort__has_parent) {
- 		return machine__resolve_callchain(al->machine, evsel, al->thread,
- 						  sample, parent, al, max_stack);
- 	}
+diff --git a/kernel/cpu/Makefile b/kernel/cpu/Makefile
+deleted file mode 100644
+index 59ab052ef7..0000000000
+--- a/kernel/cpu/Makefile
++++ /dev/null
+@@ -1 +0,0 @@
+-obj-y	= idle.o
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 7b621409cf..ac3e0ea68f 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -11,7 +11,7 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
+ endif
+ 
+-obj-y += core.o proc.o clock.o cputime.o idle_task.o fair.o rt.o stop_task.o
++obj-y += core.o proc.o clock.o cputime.o idle_task.o idle.o fair.o rt.o stop_task.o
+ obj-y += wait.o completion.o
+ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+diff --git a/kernel/cpu/idle.c b/kernel/sched/idle.c
+similarity index 100%
+rename from kernel/cpu/idle.c
+rename to kernel/sched/idle.c
 -- 
-1.7.11.7
+1.8.4.108.g55ea5f6
 
