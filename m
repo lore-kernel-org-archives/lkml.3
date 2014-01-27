@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436AbaA0Xbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 18:31:37 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:52769 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679AbaA0Xbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 18:31:36 -0500
-Date: Mon, 27 Jan 2014 15:31:32 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mel Gorman <mgorman@suse.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch for-3.14] mm, mempolicy: fix mempolicy printing in
- numa_maps
-In-Reply-To: <20140127110330.GH4963@suse.de>
-Message-ID: <alpine.DEB.2.02.1401271526010.17114@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1401251902180.3140@chino.kir.corp.google.com> <20140127110330.GH4963@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754527AbaA0Xbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 18:31:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:40709 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753683AbaA0Xbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 18:31:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,732,1384329600"; 
+   d="scan'208";a="465634057"
+Date: Mon, 27 Jan 2014 16:32:07 -0700 (MST)
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+X-X-Sender: rzwisler@scrumpy
+To: Matthew Wilcox <willy@linux.intel.com>
+cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 22/22] XIP: Add support for unwritten extents
+In-Reply-To: <CF0C370C.235F1%willy@linux.intel.com>
+Message-ID: <alpine.OSX.2.00.1401271617570.9254@scrumpy>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CEFD7DAD.22F65%matthew.r.wilcox@intel.com> <alpine.OSX.2.00.1401221546240.70541@scrumpy> <CF0C370C.235F1%willy@linux.intel.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jan 2014, Mel Gorman wrote:
-
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index c2ccec0..c1a2573 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -120,6 +120,14 @@ static struct mempolicy default_policy = {
+On Thu, 23 Jan 2014, Matthew Wilcox wrote:
+> On Wed, Jan 22, 2014 at 03:51:56PM -0700, Ross Zwisler wrote:
+> > > +			if (hole) {
+> > >  				addr = NULL;
+> > > -				hole = true;
+> > >  				size = bh->b_size;
+> > > +			} else {
+> > > +				unsigned first;
+> > > +				retval = xip_get_addr(inode, bh, &addr);
+> > > +				if (retval < 0)
+> > > +					break;
+> > > +				size = retval;
+> > > +				first = offset - (block << inode->i_blkbits);
+> > > +				if (buffer_unwritten(bh))
+> > > +					memset(addr, 0, first);
+> > > +				addr += first;
+> > 
+> > +                               size -= first;
+> > 
+> > This is needed so that we don't overrun the XIP buffer we are given in the
+> > event that our user buffer >= our XIP buffer and the start of our I/O isn't
+> > block aligned.
+> 
+> You're right!  Thank you!  However, we also need it for the hole ==
+> true case, don't we?  So maybe something like this, incrementally on top of
+> patch 22/22:
+> 
+> P.S. Can someone come up with a better name for this variable than 'first'?
+> I'd usually use 'offset', but that's already taken.  'annoying_bit' seems a
+> bit judgemental.  'misaligned', maybe?  'skip' or 'seek' like dd uses?
+> 
+> diff --git a/fs/xip.c b/fs/xip.c
+> index 92157ff..1ae00db 100644
+> --- a/fs/xip.c
+> +++ b/fs/xip.c
+> @@ -103,6 +103,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const
+> struct iovec *iov,
 >  
->  static struct mempolicy preferred_node_policy[MAX_NUMNODES];
+>  		if (max == offset) {
+>  			sector_t block = offset >> inode->i_blkbits;
+> +			unsigned first = offset - (block << inode->i_blkbits);
+>  			long size;
+>  			memset(bh, 0, sizeof(*bh));
+>  			bh->b_size = ALIGN(end - offset, PAGE_SIZE);
+> @@ -121,14 +122,12 @@ static ssize_t xip_io(int rw, struct inode *inode,
+> const struct iovec *iov,
 >  
-> +/* Returns true if the policy is the default policy */
-> +static bool mpol_is_default(struct mempolicy *pol)
-> +{
-> +	return !pol ||
-> +		pol == &default_policy ||
-> +		pol == &preferred_node_policy[numa_node_id()];
-> +}
-> +
->  static struct mempolicy *get_task_policy(struct task_struct *p)
->  {
->  	struct mempolicy *pol = p->mempolicy;
+>  			if (hole) {
+>  				addr = NULL;
+> -				size = bh->b_size;
+> +				size = bh->b_size - first;
 
-I was trying to avoid doing this because numa_node_id() of process A 
-reading numa_maps for process B has nothing to do with the policy of the 
-process A and I thought MPOL_F_MORON's purpose was exactly for what it is 
-used for today.  It works today since you initialize preferred_node_policy 
-for all nodes, but could this ever change to only be valid for N_MEMORY 
-node states, for example?
+It looks like we have an additional bit of complexity with the hole case.  The
+issue is that for holes, bh->b_size is just the full size of the write as set
+earlier in the function:
 
-I'm not sure what the harm in updating mpol_to_str() would be if 
-MPOL_F_MORON is to change in the future?
+                        bh->b_size = ALIGN(end - offset, PAGE_SIZE);
+
+>From this code it seems like you hoped the call into get_block() would adjust
+bh->b_size to the size of the hole, allowing you to zero just the hole space
+in the user buffer.  It doesn't look like it does, though, at least for ext4.
+In looking at the direct I/O case (do_direct_IO()), they deal with holes on a
+per FS block basis, and don't ever look at bh->b_size once they've figured out
+the buffer is unmapped.
+
+The result of this is that when you get a read that starts at a hole but moves
+into real data, the read will just see a hole and return data of all zeros.
+
+To just assume the current FS block is a hole, we can do something like this:
+
+diff --git a/fs/xip.c b/fs/xip.c
+index 35e401e..e902593 100644
+--- a/fs/xip.c
++++ b/fs/xip.c
+@@ -122,7 +122,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
+ 
+                        if (hole) {
+                                addr = NULL;
+-                               size = bh->b_size - first;
++                               size = (1 << inode->i_blkbits) - first;
+                        } else {
+                                retval = xip_get_addr(inode, bh, &addr);
+                                if (retval < 0)
+
