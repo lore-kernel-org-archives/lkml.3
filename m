@@ -1,161 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaA0Q41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 11:56:27 -0500
-Received: from mail1.unitn.it ([193.205.206.20]:51342 "EHLO mail1.unitn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138AbaA0Q4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 11:56:24 -0500
-Date: Mon, 27 Jan 2014 17:56:07 +0100
-From: Luca Abeni <luca.abeni@unitn.it>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        bruce.ashfield@windriver.com, linux-doc@vger.kernel.org,
-        rob@landley.net
-Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
-Message-ID: <20140127175607.1f99491c@luca-1225C>
-In-Reply-To: <20140127103556.02d82e02@gandalf.local.home>
-References: <1390821615-23247-1-git-send-email-juri.lelli@gmail.com>
-	<20140127103556.02d82e02@gandalf.local.home>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753957AbaA0Q7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 11:59:17 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42706 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473AbaA0Q7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 11:59:16 -0500
+Date: Mon, 27 Jan 2014 08:59:12 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [rcu] c0f4dfd4f9: -53% perf-stat.cpu-migrations
+Message-ID: <20140127165912.GN9012@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140124123320.GC27801@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140124123320.GC27801@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012716-1542-0000-0000-0000058D819F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Fri, Jan 24, 2014 at 08:33:20PM +0800, Fengguang Wu wrote:
+> Hi Paul,
+> 
+> Just FYI, we noticed -53% perf-stat.cpu-migrations in dd write tests
+> on btrfs, which looks good. First good commit is
 
-On Mon, 27 Jan 2014 10:35:56 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
-[...]
-> > + to be executed first.  Thanks to this feature, also tasks that do
-> > not
-> > + strictly comply with the "traditional" real-time task model (see
-> > Section 3)
-> > + can effectively use the new policy.
-> > +
-> > + In more details, the CBS algorithm assigns scheduling deadlines to
-> > + tasks in the following way:
-> > +
-> > +  - Each SCHED_DEADLINE task is characterised by the "runtime",
-> > +    "deadline", and "period" parameters;
-> > +
-> > +  - The state of the task is described by a "scheduling deadline",
-> > and
-> > +    a "current runtime". These two parameters are initially set to
-> > 0; +
-> > +  - When a SCHED_DEADLINE task wakes up (becomes ready for
-> > execution),
-> > +    the scheduler checks if
-> > +
-> > +                    current runtime                runtime
-> > +         ---------------------------------- > ----------------
-> > +         scheduling deadline - current time         period
-> 
-> Just a nit on formatting above. I was confused at first because the
-> above looks more like a movement in time (the > being an arrow), then
-> after reading the below, I realized that the above is actually an
-> equation. This can be fixed by adding more spaces between the
-> fractions and the greater than sign:
-> 
->                  current runtime                      runtime
->       ----------------------------------    >    ----------------
->       scheduling deadline - current time               period
-Ok; I was not sure about how to add an equation in the document, and I
-did the first thing I could think about. I'll fix it.
+Nice!  ;-)
 
-> > +
-> > +    then, if the scheduling deadline is smaller than the current
-> > time, or
-> > +    this condition is verified, the scheduling deadline and the
-> > +    current budget are re-initialised as
-> > +
-> > +         scheduling deadline = current time + deadline
-> > +         current runtime = runtime
-> > +
-> > +    otherwise, the scheduling deadline and the current runtime are
-> > +    left unchanged;
-> 
-> I've been trying to wrap my head around this a bit. I started writing
-> an email about this when I first examined the patches and never sent
-> it out :-p
-> 
-> Lets take a case where deadline == period. It seems that the above
-> would be true any time there was any delay to starting the task or the
-> task was interrupted by another SCHED_DEADLINE task.
-Not sure about this... Notice that above only applies when a task wakes
-up (moving from a "sleeping" state to a "ready to run" state). Not when
-an already ready task is scheduled.
-Or did I misunderstand your comment?
+							Thanx, Paul
 
-
-> For example, lets say we have two SD tasks. One that has 50ms runtime
-> and a 100ms period. The other has a 1ms runtime and a 10ms period.
+> commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+> Author:     Paul E. McKenney <paul.mckenney@linaro.org>
+> AuthorDate: Fri Dec 28 11:30:36 2012 -0800
+> Commit:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> CommitDate: Tue Mar 26 08:04:51 2013 -0700
 > 
-> The above two should work perfectly fine together. The 10ms period
-> task will constantly schedule in on the 100ms task.
+>     rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
+>     
+>     Because RCU callbacks are now associated with the number of the grace
+>     period that they must wait for, CPUs can now take advance callbacks
+>     corresponding to grace periods that ended while a given CPU was in
+>     dyntick-idle mode.  This eliminates the need to try forcing the RCU
+>     state machine while entering idle, thus reducing the CPU intensiveness
+>     of RCU_FAST_NO_HZ, which should increase its energy efficiency.
+>     
+>     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > 
-> When the 100ms task runs, it could easily be delayed by 1ms due to the
-> 10ms task. Then lets look at the above equation
-See above: the check for the 100ms task is only performed when the task
-unblocks (at the beginning of its period), not when it's scheduled
-(after the 10ms taks).
-
-This check is designed to take care of the following situation:
-- consider a task with runtime 10ms and period equal to deadline equal
-  to 100ms
-- assume the task wakes up at time t, and is assigned "remaining
-  runtime" 10ms and "scheduling deadline" t+100ms
-- assume the task blocks after executing for 2ms. The "remaining
-  runtime" is now 8ms
-- can the task use "remaining runtime" 8ms and "scheduling deadline"
-  t+100ms when it wakes up again?
-  Answer: if it wakes up before t+20ms, it can. Otherwise, it cannot,
-  because it would consume a fraction of CPU time larger than 10%,
-  causing missed deadlines in other tasks.
-
-[...]
-> > + SCHED_DEADLINE can be used to schedule real-time tasks
-> > guaranteeing that
-> > + the jobs' deadlines of a task are respected. In order to do this,
-> > a task
-> > + must be scheduled by setting:
-> > +
-> > +  - runtime >= WCET
-> > +  - deadline = D
-> > +  - period <= P
-> > +
-> > + IOW, if runtime >= WCET and if period is >= P, then the
-> > scheduling deadlines
-> > + and the absolute deadlines (d_j) coincide, so a proper admission
-> > control
-> > + allows to respect the jobs' absolute deadlines for this task
-> > (this is what is
-> > + called "hard schedulability property" and is an extension of
-> > Lemma 1 of [2]).
+>  Documentation/kernel-parameters.txt |  28 ++-
+>  include/linux/rcupdate.h            |   1 +
+>  init/Kconfig                        |  17 +-
+>  kernel/rcutree.c                    |  28 +--
+>  kernel/rcutree.h                    |  12 +-
+>  kernel/rcutree_plugin.h             | 374 ++++++++++--------------------------
+>  kernel/rcutree_trace.c              |   2 -
+>  7 files changed, 149 insertions(+), 313 deletions(-)
 > 
-> I wonder if we should state the obvious (which is never obvious). That
-> is the user must also have the following.
+> b11cc5760a9c48c  c0f4dfd4f90f1667d234d21f1  
+> ---------------  -------------------------  
+>      86878 ~138%     -90.3%       8397 ~152%   cpuidle.POLL.time
+>        154 ~16%     -87.3%         19 ~55%   cpuidle.POLL.usage
+>   12177976 ~ 4%     -85.6%    1748244 ~20%   cpuidle.C1-NHM.time
+>     381439 ~ 3%     -68.4%     120538 ~ 2%   softirqs.RCU
+>       0.53 ~87%    +161.8%       1.40 ~16%   perf-profile.cpu-cycles.copy_user_generic_string.__btrfs_buffered_write.btrfs_file_aio_write.do_sync_write.vfs_write
+>    5227241 ~ 4%     -58.3%    2180928 ~ 7%   cpuidle.C1E-NHM.time
+>       0.67 ~88%     +88.6%       1.26 ~21%   perf-profile.cpu-cycles.calc_csum_metadata_size.btrfs_delalloc_release_metadata.btrfs_clear_bit_hook.clear_state_bit.clear_extent_bit
+>     231531 ~ 2%     -48.3%     119653 ~ 2%   interrupts.LOC
+>      91019 ~ 2%     -40.2%      54404 ~ 2%   cpuidle.C3-NHM.usage
+>  1.991e+08 ~ 3%     -36.7%   1.26e+08 ~ 7%   cpuidle.C3-NHM.time
+>       7.07 ~ 4%     -32.7%       4.76 ~ 8%   turbostat.%c3
+>      23380 ~33%     +41.2%      33024 ~ 6%   proc-vmstat.kswapd_low_wmark_hit_quickly
+>      62805 ~ 3%     -28.4%      44960 ~ 2%   softirqs.SCHED
+>      64678 ~ 1%     -30.1%      45195 ~ 1%   softirqs.TIMER
+>      55051 ~ 3%     -22.2%      42823 ~ 2%   interrupts.0:IO-APIC-edge.timer
+>        920 ~ 4%     +19.2%       1097 ~ 5%   slabinfo.kmalloc-512.active_objs
+>        920 ~ 4%     +19.2%       1097 ~ 5%   slabinfo.kmalloc-512.num_objs
+>     361987 ~ 2%      +9.9%     397730 ~ 0%   cpuidle.C6-NHM.usage
+>       5.30 ~ 1%      -9.7%       4.78 ~ 1%   turbostat.%c1
+>     178105 ~ 3%     -53.5%      82837 ~ 1%   perf-stat.cpu-migrations
+>       5763 ~ 8%     -44.7%       3186 ~22%   vmstat.system.cs
+>    3566268 ~ 8%     -44.8%    1968744 ~21%   perf-stat.context-switches
+>        658 ~ 2%     -30.4%        458 ~ 0%   vmstat.system.in
+>   53376814 ~12%     -24.2%   40482438 ~22%   perf-stat.node-load-misses
+>  2.996e+10 ~ 3%     -10.8%  2.672e+10 ~ 3%   perf-stat.L1-icache-load-misses
+>  1.998e+09 ~ 4%     -11.6%  1.766e+09 ~ 2%   perf-stat.branch-misses
+>  1.005e+12 ~ 5%     -11.9%  8.852e+11 ~ 6%   perf-stat.stalled-cycles-frontend
+>  6.344e+08 ~ 2%      -6.8%  5.915e+08 ~ 2%   perf-stat.LLC-store-misses
+>  2.892e+10 ~ 2%      +5.4%  3.047e+10 ~ 3%   perf-stat.bus-cycles
 > 
->   runtime < deadline <= period
 > 
-> Although it is fine for deadline = period, runtime should be less than
-> deadline, otherwise the task will take over the system.
-I think if "runtime < deadline <= period" is not respected, then the
-admission control will fail... But yes, repeating it here can be
-useful. If needed I'll add it to the document.
+>                               perf-stat.cpu-migrations
+> 
+>    90000 ++*----*----------*-*---*------*-----------------------------------+
+>          *   **   *.*.**.*     *  *.*.*   **.*.*.*.*   .*.                  |
+>    80000 ++                                         *.*   *                 |
+>          |                                                                  |
+>    70000 ++                                                                 |
+>          |                                                                  |
+>    60000 ++                                                                 |
+>          |                                                                  |
+>    50000 ++                                                                 |
+>          |                                                                  |
+>    40000 ++                                                                 |
+>          | O O                                                              |
+>    30000 O+     O O O OO O O O O OO O O O OO O O O OO O O O O OO O O O OO O O
+>          |    O                                                             |
+>    20000 ++-----------------------------------------------------------------+
+> 
 
-
-			Thanks,
-				Luca
