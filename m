@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaA0UBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:01:18 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50213 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753657AbaA0UBR (ORCPT
+	id S1754168AbaA0UCN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:02:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37467 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806AbaA0UCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:01:17 -0500
-Date: Mon, 27 Jan 2014 20:01:12 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 12/24] drm/i2c: tda998x: check the CEC device
-	creation
-Message-ID: <20140127200112.GX15937@n2100.arm.linux.org.uk>
-References: <cover.1390646891.git.moinejf@free.fr> <20140125181443.7981862e@armhf>
+	Mon, 27 Jan 2014 15:02:12 -0500
+Date: Mon, 27 Jan 2014 13:01:56 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Jose Alonso <joalonsof@gmail.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>,
+        Maciej Patelczyk <maciej.patelczyk@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] for_each macros correctness
+Message-ID: <20140127200156.GJ2782@kernel.dk>
+References: <1390733658.3059.10.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140125181443.7981862e@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1390733658.3059.10.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 06:14:43PM +0100, Jean-Francois Moine wrote:
-> This patch checks if the CEC device is well created at intialization
-> time.
+On Sun, Jan 26 2014, Jose Alonso wrote:
 > 
-> Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> I observed that there are for_each macros that do an extra memory access
+> beyond the defined area.
+> Normally this does not cause problems.
+> But, this can cause exceptions. For example: if the area is allocated at
+> the end of a page and the next page is not accessible.
+> 
+> For correctness, I suggest changing the arguments of the 'for loop' like
+> others 'for_each' do in the kernel.
+> 
+> files involved:
+>    drivers/s390/cio/qdio.h
+>    drivers/scsi/isci/host.h
+>    drivers/sh/clk/core.c
+>    include/linux/blk-mq.h
+>    include/linux/shdma-base.h
+>    sound/soc/sh/rcar/adg.c
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Thanks, I'll dig out the blk-mq bit.
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Jens Axboe
+
