@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaA0PY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 10:24:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:17351 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbaA0PY5 (ORCPT
+	id S1753939AbaA0P0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 10:26:03 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:57845 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaA0P0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 10:24:57 -0500
-Date: Mon, 27 Jan 2014 10:23:42 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, David Woodhouse <dwmw2@infradead.org>,
-        Don Dutile <ddutile@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH v2 1/5] x86: make dma_alloc_coherent() return zeroed
- memory if CMA is enabled
-Message-ID: <20140127152342.GC20968@phenom.dumpdata.com>
-References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
- <1389708830-5841-2-git-send-email-akinobu.mita@gmail.com>
- <52E66527.8010000@samsung.com>
+	Mon, 27 Jan 2014 10:26:01 -0500
+Date: Mon, 27 Jan 2014 16:25:57 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Kees Cook <keescook@chromium.org>, crash-utility@redhat.com,
+        linux-kernel@vger.kernel.org, Dave Anderson <anderson@redhat.com>,
+        Andrew Honig <ahonig@google.com>,
+        Eugene Surovegin <surovegin@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH v2] x86, kaslr: export offset in VMCOREINFO ELF notes
+Message-ID: <20140127152557.GA27792@gmail.com>
+References: <20140123173120.GA25474@www.outflux.net>
+ <20140125074738.GB10565@gmail.com>
+ <52E669F1.9080603@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52E66527.8010000@samsung.com>
+In-Reply-To: <52E669F1.9080603@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 02:54:47PM +0100, Marek Szyprowski wrote:
-> Hello,
-> 
-> On 2014-01-14 15:13, Akinobu Mita wrote:
-> >Calling dma_alloc_coherent() with __GFP_ZERO must return zeroed memory.
-> >
-> >But when the contiguous memory allocator (CMA) is enabled on x86 and
-> >the memory region is allocated by dma_alloc_from_contiguous(), it
-> >doesn't return zeroed memory.  Because dma_generic_alloc_coherent()
-> >forgot to fill the memory region with zero if it was allocated by
-> >dma_alloc_from_contiguous()
-> 
-> I just wonder how it will work with high mem? I've didn't check the x86
-> dma mapping code yet, but page_address() works only for pages, which comes
-> from low memory. In other patches you have added an option to place CMA
-> area anywhere in the memory. Is the x86 pci dma code ready for the case
-> when cma area is put into high mem and direct mappings are not available?
 
-Yes and no. The swiotbl_bounce does have the code to take that into account.
-But that is it - nothing else does - so I think you would run in the 
-possiblity of 'page_address' not providing an correct virtual address.
+* Adrian Hunter <adrian.hunter@intel.com> wrote:
 
+> On 25/01/14 09:47, Ingo Molnar wrote:
+> > 
+> > * Kees Cook <keescook@chromium.org> wrote:
+> > 
+> >> From: Eugene Surovegin <surovegin@google.com>
+> >>
+> >> Include kASLR offset in VMCOREINFO ELF notes to assist in debugging.
+> >>
+> >> Signed-off-by: Eugene Surovegin <surovegin@google.com>
+> >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> >> ---
+> >> v2:
+> >>  - make sure "From:" got sent correctly
+> >> ---
+> >>  arch/x86/kernel/machine_kexec_64.c |    2 ++
+> >>  1 file changed, 2 insertions(+)
+> >>
+> >> diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+> >> index 4eabc160696f..679cef0791cd 100644
+> >> --- a/arch/x86/kernel/machine_kexec_64.c
+> >> +++ b/arch/x86/kernel/machine_kexec_64.c
+> >> @@ -279,5 +279,7 @@ void arch_crash_save_vmcoreinfo(void)
+> >>  	VMCOREINFO_SYMBOL(node_data);
+> >>  	VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
+> >>  #endif
+> >> +	vmcoreinfo_append_str("KERNELOFFSET=%lx\n",
+> >> +			      (unsigned long)&_text - __START_KERNEL);
+> >>  }
+> > 
+> > I've Cc:-ed Adrian Hunter, who has sent the following kaslr fixes for 
+> > perf yesterday:
+> > 
+> >   http://lkml.org/lkml/2014/1/24/220
+> > 
+> > Adrian, is this patch the right solution from the perf tooling 
+> > perspective?
 > 
-> >Most implementations of dma_alloc_coherent() return zeroed memory
-> >regardless of whether __GFP_ZERO is specified.  So this fixes it by
-> >unconditionally zeroing the allocated memory region.
-> >
-> >Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> >Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >Cc: David Woodhouse <dwmw2@infradead.org>
-> >Cc: Don Dutile <ddutile@redhat.com>
-> >Cc: Thomas Gleixner <tglx@linutronix.de>
-> >Cc: Ingo Molnar <mingo@redhat.com>
-> >Cc: "H. Peter Anvin" <hpa@zytor.com>
-> >Cc: Andi Kleen <andi@firstfloor.org>
-> >Cc: x86@kernel.org
-> >Cc: iommu@lists.linux-foundation.org
-> >Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> >---
-> >New patch from this version
-> >
-> >  arch/x86/kernel/pci-dma.c | 3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> >
-> >diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-> >index 872079a..9644405 100644
-> >--- a/arch/x86/kernel/pci-dma.c
-> >+++ b/arch/x86/kernel/pci-dma.c
-> >@@ -97,7 +97,6 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
-> >  	dma_mask = dma_alloc_coherent_mask(dev, flag);
-> >-	flag |= __GFP_ZERO;
-> >  again:
-> >  	page = NULL;
-> >  	if (!(flag & GFP_ATOMIC))
-> >@@ -118,7 +117,7 @@ again:
-> >  		return NULL;
-> >  	}
-> >-
-> >+	memset(page_address(page), 0, size);
-> >  	*dma_addr = addr;
-> >  	return page_address(page);
-> >  }
-> 
-> Best regards
-> -- 
-> Marek Szyprowski, PhD
-> Samsung R&D Institute Poland
-> 
+> perf tools isn't a consumer of VMCOREINFO although I see VMCOREINFO 
+> already has _stext which would be enough for many purposes.
+
+Yes - but let me explain where I'm coming from: I'd like the recent 
+KASLR related perf /proc/kcore based annotation bug to be fixed 
+properly.
+
+Currently I'm not sure about the status of it. In your fixes 
+submission:
+
+  Date: Fri, 24 Jan 2014 17:10:10 +0200
+  From: Adrian Hunter <adrian.hunter@intel.com>
+  Subject: [PATCH 0/8] perf tools: kaslr fixes
+
+you mentioned the following:
+
+    "- mustn't use kcore if the kernel has moved"
+
+Does this that /proc/kcore annotation will not work if KASLR is 
+active?
+
+If yes then given that I expect most distros to turn on KASLR this 
+would essentially make /proc/kcore useless on a large set of Linux 
+systems. That would be suboptimal.
+
+Thanks,
+
+	Ingo
