@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaA0USn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:18:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36169 "EHLO
+	id S1754410AbaA0URH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:17:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016AbaA0UQK (ORCPT
+	with ESMTP id S1754209AbaA0UQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:16:10 -0500
+	Mon, 27 Jan 2014 15:16:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.13 04/10] staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
-Date: Mon, 27 Jan 2014 12:17:07 -0800
-Message-Id: <20140127201535.654133011@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 05/10] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
+Date: Mon, 27 Jan 2014 12:17:08 -0800
+Message-Id: <20140127201535.720240118@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -27,32 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 48108fe3daa0d142f9b97178fdb23704ea3a407b upstream.
+commit f92f455f67fef27929e6043499414605b0c94872 upstream.
 
-The dev->irq passed to request_irq() will always be 0 when the auto_attach
-function is called. The pcidev->irq should be used instead to get the correct
-irq number.
+{,set}page_address() are macros if WANT_PAGE_VIRTUAL.  If
+!WANT_PAGE_VIRTUAL, they're plain C functions.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+If someone calls them with a void *, this pointer is auto-converted to
+struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
+architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc64):
+
+  drivers/md/bcache/bset.c: In function `__btree_sort':
+  drivers/md/bcache/bset.c:1190: warning: dereferencing `void *' pointer
+  drivers/md/bcache/bset.c:1190: error: request for member `virtual' in something not a structure or union
+
+Convert them to static inline functions to fix this.  There are already
+plenty of users of struct page members inside <linux/mm.h>, so there's
+no reason to keep them as macros.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/adl_pci9111.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mm.h |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/staging/comedi/drivers/adl_pci9111.c
-+++ b/drivers/staging/comedi/drivers/adl_pci9111.c
-@@ -859,7 +859,7 @@ static int pci9111_auto_attach(struct co
- 	pci9111_reset(dev);
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -846,11 +846,14 @@ static __always_inline void *lowmem_page
+ #endif
  
- 	if (pcidev->irq > 0) {
--		ret = request_irq(dev->irq, pci9111_interrupt,
-+		ret = request_irq(pcidev->irq, pci9111_interrupt,
- 				  IRQF_SHARED, dev->board_name, dev);
- 		if (ret)
- 			return ret;
+ #if defined(WANT_PAGE_VIRTUAL)
+-#define page_address(page) ((page)->virtual)
+-#define set_page_address(page, address)			\
+-	do {						\
+-		(page)->virtual = (address);		\
+-	} while(0)
++static inline void *page_address(const struct page *page)
++{
++	return page->virtual;
++}
++static inline void set_page_address(struct page *page, void *address)
++{
++	page->virtual = address;
++}
+ #define page_address_init()  do { } while(0)
+ #endif
+ 
 
 
