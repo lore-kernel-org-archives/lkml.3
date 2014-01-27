@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299AbaA0UQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 15:16:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36179 "EHLO
+	id S1754255AbaA0UQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 15:16:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36183 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981AbaA0UQU (ORCPT
+	with ESMTP id S1754198AbaA0UQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Jan 2014 15:16:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Medhurst <tixy@linaro.org>
-Subject: [PATCH 3.13 06/10] serial: amba-pl011: use port lock to guard control register access
-Date: Mon, 27 Jan 2014 12:17:09 -0800
-Message-Id: <20140127201535.805714682@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 3.13 07/10] extcon: gpio: Request gpio pin before modifying its state
+Date: Mon, 27 Jan 2014 12:17:10 -0800
+Message-Id: <20140127201535.871457088@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <20140127201535.350372282@linuxfoundation.org>
 References: <20140127201535.350372282@linuxfoundation.org>
@@ -26,71 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Medhurst <tixy@linaro.org>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit fe43390702a1b5741fdf217063b05c7612b38303 upstream.
+commit 4288d9b8edcec7289e00eecdad44f14c9ea1ba0e upstream.
 
-When the pl011 is being used for a console, pl011_console_write forces
-the control register (CR) to enable the UART for transmission and then
-restores this to the original value afterwards. It does this while
-holding the port lock.
+Commit 338de0ca (extcon: gpio: Use gpio driver/chip debounce if supported)
+introduced a call to gpio_set_debounce() before actually requesting the
+respective gpio pin from the gpio subsystem.
 
-Unfortunately, when the uart is started or shutdown - say in response to
-userland using the serial device for a terminal - then this updates the
-control register without any locking.
+The gpio subsystem expects that a gpio pin was requested before modifying its
+state. Not doing so results in a warning from gpiolib, and the gpio pin is
+auto-requested. This in turn causes the subsequent devm_gpio_request_one()
+to fail. So devm_gpio_request_one() must be called prior to calling
+gpio_set_debounce().
 
-This means we can have
-
-  pl011_console_write   Save CR
-  pl011_startup         Initialise CR, e.g. enable receive
-  pl011_console_write   Restore old CR with receive not enabled
-
-this result is a serial port which doesn't respond to any input.
-
-A similar race in reverse could happen when the device is shutdown.
-
-We can fix these problems by taking the port lock when updating CR.
-
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/extcon/extcon-gpio.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1537,6 +1537,8 @@ static int pl011_startup(struct uart_por
- 	/*
- 	 * Provoke TX FIFO interrupt into asserting.
- 	 */
-+	spin_lock_irq(&uap->port.lock);
+--- a/drivers/extcon/extcon-gpio.c
++++ b/drivers/extcon/extcon-gpio.c
+@@ -105,6 +105,12 @@ static int gpio_extcon_probe(struct plat
+ 	extcon_data->state_off = pdata->state_off;
+ 	if (pdata->state_on && pdata->state_off)
+ 		extcon_data->edev.print_state = extcon_gpio_print_state;
 +
- 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 	writew(0, uap->port.membase + UART011_FBRD);
-@@ -1561,6 +1563,8 @@ static int pl011_startup(struct uart_por
- 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
- 
-+	spin_unlock_irq(&uap->port.lock);
++	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
++				    pdev->name);
++	if (ret < 0)
++		return ret;
 +
- 	/*
- 	 * initialise the old status of the modem signals
- 	 */
-@@ -1629,11 +1633,13 @@ static void pl011_shutdown(struct uart_p
- 	 * it during startup().
- 	 */
- 	uap->autorts = false;
-+	spin_lock_irq(&uap->port.lock);
- 	cr = readw(uap->port.membase + UART011_CR);
- 	uap->old_cr = cr;
- 	cr &= UART011_CR_RTS | UART011_CR_DTR;
- 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
- 	writew(cr, uap->port.membase + UART011_CR);
-+	spin_unlock_irq(&uap->port.lock);
+ 	if (pdata->debounce) {
+ 		ret = gpio_set_debounce(extcon_data->gpio,
+ 					pdata->debounce * 1000);
+@@ -117,11 +123,6 @@ static int gpio_extcon_probe(struct plat
+ 	if (ret < 0)
+ 		return ret;
  
- 	/*
- 	 * disable break condition and fifos
+-	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
+-				    pdev->name);
+-	if (ret < 0)
+-		goto err;
+-
+ 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
+ 
+ 	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
 
 
