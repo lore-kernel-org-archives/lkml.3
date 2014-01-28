@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbaA1RxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:53:18 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60698 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191AbaA1RxQ (ORCPT
+	id S1755398AbaA1R4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:56:23 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:38686 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497AbaA1R4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:53:16 -0500
-Date: Tue, 28 Jan 2014 17:53:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Daniel Santos <daniel.santos@pobox.com>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Message-ID: <20140128175303.GT11841@sirena.org.uk>
-References: <1390901583-32359-1-git-send-email-geert@linux-m68k.org>
+	Tue, 28 Jan 2014 12:56:21 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r3Mh/mGWsojp83Sz"
-Content-Disposition: inline
-In-Reply-To: <1390901583-32359-1-git-send-email-geert@linux-m68k.org>
-X-Cookie: O.K., fine.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Revert "spidev: fix hang when transfer_one_message fails"
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <52E7EE54.8030408@nod.at>
+References: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
+	<52E6954F.2060303@nod.at>
+	<CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>
+	<20140128062806.GA20750@gmail.com>
+	<52E76997.40303@nod.at>
+	<52E7D2E5.8090208@linux.intel.com>
+	<52E7D9FF.1080506@nod.at>
+	<52E7DB15.3090808@zytor.com>
+	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+	<20140128170507.GA16279@gmail.com>
+	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+	<52E7E7D8.2050605@nod.at>
+	<CA+55aFyYoi_KW5h=RxvjXHe89ZgCifAiS=5DqRnvS=K=Rbitsg@mail.gmail.com>
+	<52E7EE54.8030408@nod.at>
+Date: Tue, 28 Jan 2014 09:56:20 -0800
+X-Google-Sender-Auth: GgIeChH_AL9ULRtN469BS9eDKOQ
+Message-ID: <CA+55aFwm7KQNmWJEQedempzEZHr9jJ7UdS3SBcCY9xteQ16-hw@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 28, 2014 at 9:52 AM, Richard Weinberger <richard@nod.at> wrote:
+>
+> x/10i schedule+0x45 works.
 
---r3Mh/mGWsojp83Sz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, so it's just list that is braindamaged. Maybe it wants a
+*(schedule+0x45) or something. I dunno. You can obviously get the hex
+number from just doing "p schedule+0x45" and then do that.
 
-On Tue, Jan 28, 2014 at 10:33:03AM +0100, Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->=20
-> This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
->=20
-> It causes a NULL pointer dereference with drivers using the generic
-> spi_transfer_one_message(), which always calls
-> spi_finalize_current_message(), which zeroes master->cur_msg.
+Whatever. I still claim that the hex numbers in the oopses are
+worthless noise. The fact that gdb has "UI issues" is an unrelated
+issue and perhaps not surprising.
 
-Applied, thanks.
-
---r3Mh/mGWsojp83Sz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS5+58AAoJELSic+t+oim9y/cP/RTR1S8jHdE4lUjyYPyxNU4F
-vqujjtGrEOo2YXKlOHsVhS2qF8fXpjTmfSs+mC5VUKo1M70aQZSiGO7k8qOBFGCA
-tlkAxdZq0zrqrTzrLek88NslIA7pO/rkR/u3/IPB7ogL1cPSihCKM92tlUhVJ5qQ
-DcE4jybP6UD3hstmA3VI694IivFmQQrvWDjPtEJCZsfcSllw8hWV+c7oFB8ZF1vJ
-GrHy2RSSD6j5/pM5vUMXSsWtRpSKxpAefCdcwIuqiXjSXoK3NSYNTE6bGyq3sSAE
-9CiNXgdtPp9PduxBAHmKPRXyItHlSP1Z4JVtZr4EQJFnpyGRjuTrBYocMpnFtSUQ
-/M8+rHkxcWOjyIe/hUz9Qco/gunVY1WFNJ8mBR+Y7kGhVr2FjkxaiM47+I4/dZQ1
-ej2m3SYY9em7MaCVSX6/It2JFhoiWvmvs+nHtW62HAUhgTaBiAinVRvUS6xy5J6f
-tJaY1SSsO9Uv8WddqsBdX3bEvRF9nos/RQUg4YRq1wRNbhQqmvcp8tqQxJmcjrzH
-Epsw4v84bMWHGk0s31F+gawQ3451kWD731iecLmzFlAAYsKhrJculnpqukbeaTTv
-MWvzW6vCO1er4hTfao7YL+5R71vjES9QZs4dI3oeDVaSEib/GseNi3nH98p3NKLK
-uPt6K2vyjM0uHlFDLfxf
-=f4AT
------END PGP SIGNATURE-----
-
---r3Mh/mGWsojp83Sz--
+                Linus
