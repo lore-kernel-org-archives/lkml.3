@@ -1,164 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaA1Syf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:54:35 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:65081 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167AbaA1Sye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:54:34 -0500
-From: Julien Grall <julien.grall@linaro.org>
-To: linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com
-Cc: linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, ian.campbell@citrix.com,
-        xen-devel@lists.xenproject.org, patches@linaro.org,
-        david.vrabel@citrix.com, Julien Grall <julien.grall@linaro.org>
-Subject: [PATCH v2] arm/xen: Initialize event channels earlier
-Date: Tue, 28 Jan 2014 18:54:23 +0000
-Message-Id: <1390935264-23155-1-git-send-email-julien.grall@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755489AbaA1SzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:55:07 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755167AbaA1SzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 13:55:05 -0500
+Message-ID: <52E7FCFB.90504@nod.at>
+Date: Tue, 28 Jan 2014 19:54:51 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>	<52E6954F.2060303@nod.at>	<CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>	<20140128062806.GA20750@gmail.com>	<52E76997.40303@nod.at>	<52E7D2E5.8090208@linux.intel.com>	<52E7D9FF.1080506@nod.at>	<52E7DB15.3090808@zytor.com>	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>	<20140128170507.GA16279@gmail.com>	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>	<52E7E7D8.2050605@nod.at>	<CA+55aFyYoi_KW5h=RxvjXHe89ZgCifAiS=5DqRnvS=K=Rbitsg@mail.gmail.com>	<52E7EE54.8030408@nod.at> <CA+55aFwm7KQNmWJEQedempzEZHr9jJ7UdS3SBcCY9xteQ16-hw@mail.gmail.com>
+In-Reply-To: <CA+55aFwm7KQNmWJEQedempzEZHr9jJ7UdS3SBcCY9xteQ16-hw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Event channels driver needs to be initialized very early. Until now, Xen
-initialization was done after all CPUs was bring up.
 
-We can safely move the initialization to an early initcall.
 
-Also use a cpu notifier to:
-    - Register the VCPU when the CPU is prepared
-    - Enable event channel IRQ when the CPU is running
+Am 28.01.2014 18:56, schrieb Linus Torvalds:
+> On Tue, Jan 28, 2014 at 9:52 AM, Richard Weinberger <richard@nod.at> wrote:
+>>
+>> x/10i schedule+0x45 works.
+> 
+> Ok, so it's just list that is braindamaged. Maybe it wants a
+> *(schedule+0x45) or something. I dunno. You can obviously get the hex
+> number from just doing "p schedule+0x45" and then do that.
 
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
+Ah, "list *(schedule+0x45)" works.
+This reminds my why I never use gdb and like addr2line so much. ;D
 
----
-    Changes in v2:
-        - Check earlier if the event IRQ is valid
-        - We can safely register the VCPU when the cpu is booting
----
- arch/arm/xen/enlighten.c |   71 ++++++++++++++++++++++++++++------------------
- 1 file changed, 44 insertions(+), 27 deletions(-)
-
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 293eeea..b96723e 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -23,6 +23,7 @@
- #include <linux/of_address.h>
- #include <linux/cpuidle.h>
- #include <linux/cpufreq.h>
-+#include <linux/cpu.h>
- 
- #include <linux/mm.h>
- 
-@@ -154,7 +155,7 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
- 
--static void __init xen_percpu_init(void *unused)
-+static void xen_percpu_init(void)
- {
- 	struct vcpu_register_vcpu_info info;
- 	struct vcpu_info *vcpup;
-@@ -193,6 +194,31 @@ static void xen_power_off(void)
- 		BUG();
- }
- 
-+static int xen_cpu_notification(struct notifier_block *self,
-+				unsigned long action,
-+				void *hcpu)
-+{
-+	switch (action) {
-+	case CPU_STARTING:
-+		xen_percpu_init();
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block xen_cpu_notifier = {
-+	.notifier_call = xen_cpu_notification,
-+};
-+
-+static irqreturn_t xen_arm_callback(int irq, void *arg)
-+{
-+	xen_hvm_evtchn_do_upcall();
-+	return IRQ_HANDLED;
-+}
-+
- /*
-  * see Documentation/devicetree/bindings/arm/xen.txt for the
-  * documentation of the Xen Device Tree format.
-@@ -229,6 +255,10 @@ static int __init xen_guest_init(void)
- 	xen_events_irq = irq_of_parse_and_map(node, 0);
- 	pr_info("Xen %s support found, events_irq=%d gnttab_frame=%pa\n",
- 			version, xen_events_irq, &grant_frames);
-+
-+	if (xen_events_irq < 0)
-+		return -ENODEV;
-+
- 	xen_domain_type = XEN_HVM_DOMAIN;
- 
- 	xen_setup_features();
-@@ -281,9 +311,21 @@ static int __init xen_guest_init(void)
- 	disable_cpuidle();
- 	disable_cpufreq();
- 
-+	xen_init_IRQ();
-+
-+	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
-+			       "events", &xen_vcpu)) {
-+		pr_err("Error request IRQ %d\n", xen_events_irq);
-+		return -EINVAL;
-+	}
-+
-+	xen_percpu_init();
-+
-+	register_cpu_notifier(&xen_cpu_notifier);
-+
- 	return 0;
- }
--core_initcall(xen_guest_init);
-+early_initcall(xen_guest_init);
- 
- static int __init xen_pm_init(void)
- {
-@@ -297,31 +339,6 @@ static int __init xen_pm_init(void)
- }
- late_initcall(xen_pm_init);
- 
--static irqreturn_t xen_arm_callback(int irq, void *arg)
--{
--	xen_hvm_evtchn_do_upcall();
--	return IRQ_HANDLED;
--}
--
--static int __init xen_init_events(void)
--{
--	if (!xen_domain() || xen_events_irq < 0)
--		return -ENODEV;
--
--	xen_init_IRQ();
--
--	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
--			"events", &xen_vcpu)) {
--		pr_err("Error requesting IRQ %d\n", xen_events_irq);
--		return -EINVAL;
--	}
--
--	on_each_cpu(xen_percpu_init, NULL, 0);
--
--	return 0;
--}
--postcore_initcall(xen_init_events);
--
- /* In the hypervisor.S file. */
- EXPORT_SYMBOL_GPL(HYPERVISOR_event_channel_op);
- EXPORT_SYMBOL_GPL(HYPERVISOR_grant_table_op);
--- 
-1.7.10.4
-
+Thanks,
+//richard
