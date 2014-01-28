@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201AbaA1Q36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:29:58 -0500
-Received: from mx.ungleich.ch ([77.109.138.221]:35489 "EHLO mx.ungleich.ch"
+	id S1755264AbaA1QbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:31:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60609 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754599AbaA1Q34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:29:56 -0500
-X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jan 2014 11:29:56 EST
-Date: Tue, 28 Jan 2014 17:19:49 +0100
-From: Nico Schottelius <nico-linux-20140128@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Nico Schottelius <nico-linux-20140128@schottelius.org>
-Subject: Keycodes missing / wrong on Lenovo Yoga 2 Pro
-Message-ID: <20140128161949.GI2902@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20140128@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1754736AbaA1QbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 11:31:07 -0500
+Message-ID: <52E7DB15.3090808@zytor.com>
+Date: Tue, 28 Jan 2014 08:30:13 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: artist (Linux 3.12.7-2-ARCH x86_64)
+To: Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <keescook@chromium.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org> <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com> <52E5EFAF.3060609@linux.intel.com> <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com> <CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com> <52E6954F.2060303@nod.at> <CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com> <20140128062806.GA20750@gmail.com> <52E76997.40303@nod.at> <52E7D2E5.8090208@linux.intel.com> <52E7D9FF.1080506@nod.at>
+In-Reply-To: <52E7D9FF.1080506@nod.at>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day kernel hackers,
+On 01/28/2014 08:25 AM, Richard Weinberger wrote:
+> 
+> I fear both solutions will break various scripts.
+> For example scripts/markup_oops.pl looks for \[\<([a-z0-9]+)\>\].
+> 
 
-when trying out which events are recognised by xev
-to adjust my xbindkeysrc, I noticed that various keys
-are incorrectly recognised on this machine:
+I don't think there is any way to not break anything... we're
+introducing a new kind of object ("normalized kernel pointer") here.
 
-    - mute button on the side returns "f", should be xf86audiomute
+	-hpa
 
-    - fn + f4 returns f4, should be "Lock" (if we have such a symbol)
-    - fn + f5 returns f5, should be ? (has to arrows on it)
-    - fn + f6 returns nothing, should be "toggletouchpad" (or whatever
-      the name of it is)
-      dmesg returns
-      [93762.432649] atkbd serio0: Unknown key released (translated set
-      2, code 0xbf on isa0060/serio0).
-      [93762.432653] atkbd serio0: Use 'setkeycodes e03f <keycode>' to
-      make it known.
 
-    - fn + f8 returns tab, should be ?
-    - fn + f10 returns Super_L and q, should be "Switchmonitor" 
-    - fn + home returns pause (correct)
-    - fn + end returns pause (is there a key for break?)
 
-I am wondering how to fix those keys (xorg, kernel?).
-I used 3.12.7 and X 1.15.0 for testing.
-
-Other interesting keys:
-
-    - fn + f9 turns of the screen (seems to be hardware wise)
-
-Furthermore I am wondering if there is a sensible way to change
-the event I get from the Windows Logo below the touchscreen (currently
-reported as Super_L). It would be awesome to be able to able to
-distinguish the key between the touchscreen and the windows key.
-Also, the "key" below the touchscreen cannot be pressed and combined
-with keys on the keyboard.
-
-I have uploaded pictures of the keyboard at
-    http://home.schottelius.org/~nico/lenovo_yoga_2_pro/
-
-Cheers,
-
-Nico
-
-p.s.: Please cc me on reply.
-pps: The kernel fonts are (almost) unreadable when booting this
-     device - the 3200x1800 resolution is definitely requiring 
-     another font.
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
