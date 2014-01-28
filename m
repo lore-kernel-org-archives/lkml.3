@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaA1Fp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 00:45:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:15665 "EHLO mga09.intel.com"
+	id S1752903AbaA1Fse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 00:48:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:17358 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747AbaA1FpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 00:45:25 -0500
+	id S1750944AbaA1Fsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 00:48:32 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,734,1384329600"; 
-   d="scan'208";a="445628524"
-Message-ID: <52E742A0.8000209@intel.com>
-Date: Tue, 28 Jan 2014 13:39:44 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+   d="scan'208";a="471847422"
+Message-ID: <52E744AC.2050606@intel.com>
+Date: Tue, 28 Jan 2014 13:48:28 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/4] x86, mpx: hook #BR exception handler to allocate
- bound tables
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-3-git-send-email-qiaowei.ren@intel.com> <52E6C33C.8050706@amacapital.net> <52E72573.9090108@intel.com> <CALCETrW0L79gjXRD5J5RZQTiZT+MYDYHQ0u7hoeKP=XVqDT5HA@mail.gmail.com>
-In-Reply-To: <CALCETrW0L79gjXRD5J5RZQTiZT+MYDYHQ0u7hoeKP=XVqDT5HA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org
+CC: linux-i2c@vger.kernel.org, wsa@the-dreams.de,
+        mika.westerberg@linux.intel.com, andriy.shevchenko@linux.intel.com,
+        yanmin_zhang@linux.intel.com, bo.he@intel.com
+Subject: [PATCH] i2c-designware-pcidrv: fix the incorrect return of idle callback
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 01:21 PM, Andy Lutomirski wrote:
-> On Mon, Jan 27, 2014 at 7:35 PM, Ren Qiaowei <qiaowei.ren@intel.com> wrote:
->> On 01/28/2014 04:36 AM, Andy Lutomirski wrote:
->>>>
->>>> +       bd_entry = status & MPX_BNDSTA_ADDR_MASK;
->>>> +       if ((bd_entry >= bd_base) && (bd_entry < bd_base + bd_size))
->>>> +               allocate_bt(bd_entry);
->>>
->>>
->>> What happens if this fails?  Retrying forever isn't very nice.
->>>
->> If allocation of the bound table fail, the related entry in the bound
->> directory is still invalid. The following access to this entry still produce
->> #BR fault.
->>
->
-> By the "following access" I think you mean the same instruction that
-> just trapped -- it will trap again because the exception hasn't been
-> fixed up.  Then mmap will fail again, and you'll retry again, leading
-> to an infinite loop.
->
-I don't mean the same instruction that just trapped.
+From: "xinhui.pan" <xinhuix.pan@intel.com>
 
-> I think that failure to fix up the exception should either let the
-> normal bounds error through or should raise SIGBUS.
->
-Maybe we need HPA help answer this question. Peter, what do you think 
-about it? If allocation of the bound table fail, what should we do?
+i2c_dw_pci_runtime_idle should return -EBUSY rather than zero if it do success.
+Otherwise rpm_idle will call pm_suspend again and that may cause pm_schedule_suspend delay invalidate.
+	
+Signed-off-by: bo.he <bo.he@intel.com>
+Signed-off-by: xinhui.pan <xinhuix.pan@intel.com>
+---
+ drivers/i2c/busses/i2c-designware-pcidrv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->>
->>>> +       if (!user_mode(regs)) {
->>>> +               if (!fixup_exception(regs)) {
->>>> +                       tsk->thread.error_code = error_code;
->>>> +                       tsk->thread.trap_nr = X86_TRAP_BR;
->>>> +                       die("bounds", regs, error_code);
->>>> +               }
->>>
->>>
->>> Why the fixup?  Unless I'm missing something, the kernel has no business
->>> getting #BR on access to a user address.
->>>
->>> Or are you adding code to allow the kernel to use MPX itself?  If so,
->>> shouldn't this use an MPX-specific fixup to allow normal C code to use
->>> this stuff?
->>>
->> It checks whether #BR come from user-space. You can see do_trap_no_signal().
->
-> Wasn't #BR using do_trap before?  do_trap doesn't call
-> fixup_exception.  I don't see why it should do it now.  (I also don't
-> think it should come from kernel space until someone adds kernel-mode
-> MPX support.)
->
-do_trap() -> do_trap_no_signal() call similar code to check if the fault 
-occurred in userspace or kernel space. You can see previous discussion 
-for the first version of this patchset.
-
-Thanks,
-Qiaowei
+diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+index f6ed06c..96e81f6 100644
+--- a/drivers/i2c/busses/i2c-designware-pcidrv.c
++++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+@@ -190,8 +190,8 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
+ 	int err = pm_schedule_suspend(dev, 500);
+ 	dev_dbg(dev, "runtime_idle called\n");
+ 
+-	if (err != 0)
+-		return 0;
++	if (err)
++		return err;
+ 	return -EBUSY;
+ }
+ 
+-- 
+1.7.9.5
