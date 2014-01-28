@@ -1,174 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbaA1R7W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:59:22 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:56747 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239AbaA1R7S (ORCPT
+	id S1755508AbaA1SAQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:00:16 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:36501 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970AbaA1SAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:59:18 -0500
-From: William Roberts <bill.c.roberts@gmail.com>
-To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        sds@tycho.nsa.gov
-Cc: William Roberts <wroberts@tresys.com>
-Subject: [PATCH v6 3/3] audit: Audit proc cmdline value
-Date: Tue, 28 Jan 2014 09:59:14 -0800
-Message-Id: <1390931954-7874-3-git-send-email-wroberts@tresys.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390931954-7874-1-git-send-email-wroberts@tresys.com>
-References: <1390931954-7874-1-git-send-email-wroberts@tresys.com>
+	Tue, 28 Jan 2014 13:00:14 -0500
+Message-ID: <52E7F02A.7010508@linaro.org>
+Date: Tue, 28 Jan 2014 18:00:10 +0000
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+MIME-Version: 1.0
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "patches@linaro.org" <patches@linaro.org>,
+        xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Xen-devel] [PATCH] arm/xen: Initialize event channels earlier
+References: <1390920842-21886-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1401281651400.4373@kaball.uk.xensource.com> <52E7EA78.5020305@linaro.org> <alpine.DEB.2.02.1401281742080.4373@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1401281742080.4373@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During an audit event, cache and print the value of the process's
-cmdline value (proc/<pid>/cmdline). This is useful in situations
-where processes are started via fork'd virtual machines where the
-comm field is incorrect. Often times, setting the comm field still
-is insufficient as the comm width is not very wide and most
-virtual machine "package names" do not fit. Also, during execution,
-many threads have their comm field set as well. By tying it back to
-the global cmdline value for the process, audit records will be more
-complete in systems with these properties. An example of where this
-is useful and applicable is in the realm of Android. With Android,
-their is no fork/exec for VM instances. The bare, preloaded Dalvik
-VM listens for a fork and specialize request. When this request comes
-in, the VM forks, and the loads the specific application (specializing).
-This was done to take advantage of COW and to not require a load of
-basic packages by the VM on very app spawn. When this spawn occurs,
-the package name is set via setproctitle() and shows up in procfs.
-Many of these package names are longer then 16 bytes, the historical
-width of task->comm. Having the cmdline in the audit records will
-couple the application back to the record directly. Also, on my
-Debian development box, some audit records were more useful then
-what was printed under comm.
+On 01/28/2014 05:46 PM, Stefano Stabellini wrote:
+> On Tue, 28 Jan 2014, Julien Grall wrote:
+>>>> +static int xen_cpu_notification(struct notifier_block *self,
+>>>> +				unsigned long action,
+>>>> +				void *hcpu)
+>>>> +{
+>>>> +	int cpu = (long)hcpu;
+>>>> +
+>>>> +	switch (action) {
+>>>> +	case CPU_UP_PREPARE:
+>>>> +		xen_percpu_init(cpu);
+>>>> +		break;
+>>>> +	case CPU_STARTING:
+>>>> +		xen_interrupt_init();
+>>>> +		break;
+>>>
+>>> Is CPU_STARTING guaranteed to be called on the new cpu only?
+>>
+>> Yes.
+>>
+>>> If so, why not call both xen_percpu_init and xen_interrupt_init on
+>>> CPU_STARTING?
+>>
+>> Just in case that xen_vcpu is used somewhere else by a cpu notifier
+>> callback CPU_STARTING. We don't know which callback is called first.
+> 
+> Could you please elaborate a bit more on the problem you are trying to
+> describe?
 
-The cached cmdline is tied to the life-cycle of the audit_context
-structure and is built on demand.
+We want to make sure that the vcpu is registered correctly. If not, we
+can't skip it and avoid xen to have a "dead" VCPU to schedule due to BUG_ON.
 
-Example denial prior to patch (Ubuntu):
-CALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
+I agree that now we have a BUG_ON in the middle of xen_percpu_init, but
+it's possible to return an error. In this case Linux will skip this cpu
+and continue to boot.
 
-After Patches (Ubuntu):
-type=SYSCALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null) cmdline="/usr/lib/dbus-1.0/dbus-daemon-launch-helper"
+>>> As it stands I think you introduced a subtle change (that might be OK
+>>> but I think is unintentional): xen_percpu_init might not be called from
+>>> the same cpu as its target anymore.
+>>
+>> No, xen_percpu_init and xen_interrupt_init are called on the boot cpu at
+>> the end of xen_guest_init.
+>  
+> Is CPU_UP_PREPARE guaranteed to be called on the target cpu? I think
+> not, therefore you would be executing xen_percpu_init for cpu1 on cpu0.
+>
 
-Example denial prior to patch (Android):
-type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" subj=u:r:bluetooth:s0 key=(null)
+I don't see any issue to execute xen_percpu_init for cpu1 on cpu0, all
+the code is taking directly the vcpu ID to initialize.
 
-After Patches (Android):
-type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" subj=u:r:bluetooth:s0 key=(null) cmdline="com.android.bluetooth"
-
-Signed-off-by: William Roberts <wroberts@tresys.com>
----
- kernel/audit.h   |    6 ++++++
- kernel/auditsc.c |   41 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 47 insertions(+)
-
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 57cc64d..aae1b21 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -106,6 +106,11 @@ struct audit_names {
- 	bool			should_free;
- };
- 
-+struct audit_cmdline {
-+	int	len;	/* length of the cmdline field. */
-+	char	*value;	/* the cmdline field */
-+};
-+
- /* The per-task audit context. */
- struct audit_context {
- 	int		    dummy;	/* must be the first element */
-@@ -202,6 +207,7 @@ struct audit_context {
- 		} execve;
- 	};
- 	int fds[2];
-+	struct audit_cmdline cmdline;
- 
- #if AUDIT_DEBUG
- 	int		    put_count;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 10176cd..dc62c01 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -79,6 +79,9 @@
- /* no execve audit message should be longer than this (userspace limits) */
- #define MAX_EXECVE_AUDIT_LEN 7500
- 
-+/* max length to print of cmdline value during audit */
-+#define MAX_CMDLINE_AUDIT_LEN 128
-+
- /* number of audit rules */
- int audit_n_rules;
- 
-@@ -842,6 +845,13 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
- 	return context;
- }
- 
-+static inline void audit_cmdline_free(struct audit_context *context)
-+{
-+	kfree(context->cmdline.value);
-+	context->cmdline.value = NULL;
-+	context->cmdline.len = 0;
-+}
-+
- static inline void audit_free_names(struct audit_context *context)
- {
- 	struct audit_names *n, *next;
-@@ -955,6 +965,7 @@ static inline void audit_free_context(struct audit_context *context)
- 	audit_free_aux(context);
- 	kfree(context->filterkey);
- 	kfree(context->sockaddr);
-+	audit_cmdline_free(context);
- 	kfree(context);
- }
- 
-@@ -1271,6 +1282,35 @@ static void show_special(struct audit_context *context, int *call_panic)
- 	audit_log_end(ab);
- }
- 
-+static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
-+			 struct audit_context *context)
-+{
-+	int res;
-+	char *buf;
-+	char *msg = "(null)";
-+	int len = strlen(msg);
-+
-+	audit_log_format(ab, " cmdline=");
-+
-+	/* Not  cached */
-+	if (!context->cmdline.value) {
-+		buf = kmalloc(MAX_CMDLINE_AUDIT_LEN, GFP_KERNEL);
-+		if (!buf)
-+			goto out;
-+		res = get_cmdline(tsk, buf, MAX_CMDLINE_AUDIT_LEN);
-+		if (res == 0) {
-+			kfree(buf);
-+			goto out;
-+		}
-+		context->cmdline.value = buf;
-+		context->cmdline.len = res;
-+	}
-+	msg = context->cmdline.value;
-+	len = context->cmdline.len;
-+out:
-+	audit_log_n_untrustedstring(ab, msg, len);
-+}
-+
- static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
- {
- 	int i, call_panic = 0;
-@@ -1303,6 +1343,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
- 
- 	audit_log_task_info(ab, tsk);
- 	audit_log_key(ab, context->filterkey);
-+	audit_log_cmdline(ab, tsk, context);
- 	audit_log_end(ab);
- 
- 	for (aux = context->aux; aux; aux = aux->next) {
 -- 
-1.7.9.5
-
+Julien Grall
