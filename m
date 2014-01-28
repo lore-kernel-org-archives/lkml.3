@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419AbaA1WI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 17:08:56 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:35603 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaA1WIy (ORCPT
+	id S1755752AbaA1WKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 17:10:45 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:46632 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755205AbaA1WKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 17:08:54 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:c52e:4525:dc55:16f2]
-In-Reply-To: <1390946665-2967-1-git-send-email-yinghai@kernel.org>
-References: <1390946665-2967-1-git-send-email-yinghai@kernel.org>
-Date: Tue, 28 Jan 2014 14:08:54 -0800
-Message-ID: <CAOesGMifCTzHaK4TqKeGJ+Kup2XmcL7UGxZuQWB2V9dHboBr9A@mail.gmail.com>
-Subject: Re: [PATCH] memblock: Add limit checking to memblock_virt_alloc
-From: Olof Johansson <olof@lixom.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 28 Jan 2014 17:10:44 -0500
+Message-ID: <1390947041.2807.28.camel@j-VirtualBox>
+Subject: Re: [PATCH v2 2/5] mutex: Modify the way optimistic spinners are
+ queued
+From: Jason Low <jason.low2@hp.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Tue, 28 Jan 2014 14:10:41 -0800
+In-Reply-To: <20140128202334.GO9012@linux.vnet.ibm.com>
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+	 <1390936396-3962-3-git-send-email-jason.low2@hp.com>
+	 <20140128202334.GO9012@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 2:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> In original bootmem wrapper for memblock, we have limit checking.
->
-> Add it to memblock_virt_alloc, to address arm and x86 booting crash.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Tue, 2014-01-28 at 12:23 -0800, Paul E. McKenney wrote:
+> On Tue, Jan 28, 2014 at 11:13:13AM -0800, Jason Low wrote:
+> >  		/*
+> >  		 * The cpu_relax() call is a compiler barrier which forces
+> > @@ -514,6 +511,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  		 */
+> >  		arch_mutex_cpu_relax();
+> >  	}
+> > +	mspin_unlock(MLOCK(lock), &node);
+> >  slowpath:
+> 
+> Are there any remaining goto statements to slowpath?  If so, they need
+> to release the lock.  If not, this label should be removed.
 
-Tested-by: Olof Johansson <olof@lixom.net>
+Yes, if the mutex_can_spin_on_owner() returns false, then the thread
+goes to directly slowpath, bypassing the optimistic spinning loop. In
+that case, the thread avoids acquiring the MCS lock, and doesn't unlock
+the MCS lock.
 
-Verified to resolve the crashes on boot on ARM.
+Thanks,
+Jason
 
-
--Olof
