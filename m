@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785AbaA1JJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:09:20 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:36722 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750855AbaA1JJQ (ORCPT
+	id S1754828AbaA1JKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:10:55 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38564 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaA1JKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:09:16 -0500
-Date: Tue, 28 Jan 2014 11:08:41 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Daniel Jeong <gshark.jeong@gmail.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [RFCv2,1/2] v4l2-controls.h: add addtional Flash fault bits
-Message-ID: <20140128090841.GG13820@valkosipuli.retiisi.org.uk>
-References: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com>
+	Tue, 28 Jan 2014 04:10:51 -0500
+Date: Tue, 28 Jan 2014 01:10:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Tang Chen <tangchen@cn.fujitsu.com>
+cc: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        Andrew Morton <akpm@linux-foundation.org>, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] numa, mem-hotplug: Initialize numa_kernel_nodes in
+ numa_clear_kernel_node_hotplug().
+In-Reply-To: <1390899916-23566-2-git-send-email-tangchen@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.02.1401280109360.4244@chino.kir.corp.google.com>
+References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com> <1390899916-23566-2-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Tue, 28 Jan 2014, Tang Chen wrote:
 
-On Tue, Jan 28, 2014 at 03:55:57PM +0900, Daniel Jeong wrote:
-> Add additional FLASH Fault bits to dectect faults from chip.
-> Some Flash drivers support UVLO, IVFM, NTC Trip faults.
-> UVLO : 	Under Voltage Lock Out Threshold crossed
-> IVFM : 	IVFM block reported and/or adjusted LED current Input Voltage Flash Monitor trip threshold
-> NTC  : 	NTC Threshold crossed. Many Flash drivers have a pin and the fault bit to 
-> serves as a threshold detector for negative temperature coefficient (NTC) thermistors.
+> On-stack variable numa_kernel_nodes in numa_clear_kernel_node_hotplug()
+> was not initialized. So we need to initialize it.
 > 
-> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+Reported-by: David Rientjes <rientjes@google.com>
+
 > ---
->  include/uapi/linux/v4l2-controls.h |    3 +++
->  1 file changed, 3 insertions(+)
+>  arch/x86/mm/numa.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-> index 1666aab..01d730c 100644
-> --- a/include/uapi/linux/v4l2-controls.h
-> +++ b/include/uapi/linux/v4l2-controls.h
-> @@ -803,6 +803,9 @@ enum v4l2_flash_strobe_source {
->  #define V4L2_FLASH_FAULT_SHORT_CIRCUIT		(1 << 3)
->  #define V4L2_FLASH_FAULT_OVER_CURRENT		(1 << 4)
->  #define V4L2_FLASH_FAULT_INDICATOR		(1 << 5)
-> +#define V4L2_FLASH_FAULT_UVLO			(1 << 6)
-> +#define V4L2_FLASH_FAULT_IVFM			(1 << 7)
-> +#define V4L2_FLASH_FAULT_NTC_TRIP		(1 << 8)
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 81b2750..00c9f09 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -569,6 +569,8 @@ static void __init numa_clear_kernel_node_hotplug(void)
+>  	unsigned long start, end;
+>  	struct memblock_type *type = &memblock.reserved;
+>  
+> +	nodes_clear(numa_kernel_nodes)
 
-I object adding a new fault which is essentially the same as an existing
-fault, V4L2_FLASH_FAULT_OVER_TEMPERATURE.
+Just initialize it with NODE_MASK_NONE.
 
-As the practice has been to use human-readable names for the faults, I'd
-also suggest using V4L2_FLASH_FAULT_UNDER_VOLTAGE instead of
-V4L2_FLASH_FAULT_UVLO.
-
-What's the IVFM block and what does it do?
-
->  #define V4L2_CID_FLASH_CHARGE			(V4L2_CID_FLASH_CLASS_BASE + 11)
->  #define V4L2_CID_FLASH_READY			(V4L2_CID_FLASH_CLASS_BASE + 12)
-
--- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+> +
+>  	/* Mark all kernel nodes. */
+>  	for (i = 0; i < type->cnt; i++)
+>  		node_set(type->regions[i].nid, numa_kernel_nodes);
