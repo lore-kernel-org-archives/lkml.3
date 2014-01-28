@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbaA1VKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:10:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315AbaA1VJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:09:58 -0500
-Date: Tue, 28 Jan 2014 16:08:57 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140128210857.GA1377@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Richard Weinberger <richard@nod.at>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-	Ingo Molnar <mingo@elte.hu>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Mathias Krause <minipli@googlemail.com>,
-	Michael Davidson <md@google.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-References: <52E7D2E5.8090208@linux.intel.com>
- <52E7D9FF.1080506@nod.at>
- <52E7DB15.3090808@zytor.com>
- <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
- <20140128170507.GA16279@gmail.com>
- <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
- <20140128194823.GA18702@gmail.com>
- <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
- <20140128201536.GB5178@pd.tnic>
- <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755947AbaA1VKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:10:23 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:40778 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755927AbaA1VKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 16:10:19 -0500
+Content-Type: multipart/signed; boundary="Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2"; protocol="application/pgp-signature"; micalg=pgp-sha1
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20140128122623.26029.qmail@science.horizon.com>
+Date: Tue, 28 Jan 2014 14:09:15 -0700
+Cc: T Makphaibulchoke <tmac@hp.com>, Andi Kleen <andi@firstfloor.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-Id: <848E47EB-5FDF-4DB9-9800-4B1F4B1FA71C@dilger.ca>
+References: <20140128122623.26029.qmail@science.horizon.com>
+To: George Spelvin <linux@horizon.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:25:15PM -0800, Linus Torvalds wrote:
- > On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
- > >
- > > Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
- > > Something like:
- > >
- > > "You don't need to enable this if you want symbolic names for kernel
- > > objects. Enable CONFIG_KALLSYMS instead."
- > 
- > Probably. And then we should make sure that allyesconfig/allmodconfig
- > don't pick it.
- > 
- > There *are* reasonable uses for DEBUG_INFO:
- > 
- >  - if you very actively and extensively use kgdb, DEBUG_INFO is very useful.
- > 
- >  - distros might want to build distro kernels with DEBUG_INFO for the
- > kernel debug package
 
-- objdump -S is kind of useful. I find myself using that quite often.
-  (like at least a dozen times each merge window)
+--Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-pretty sure it works with DEBUG_INFO_REDUCED though, which is somewhat
-faster than full DEBUG_INFO
+On Jan 28, 2014, at 5:26 AM, George Spelvin <linux@horizon.com> wrote:
+>> The third part of the patch further increases the scalablity of an =
+ext4
+>> filesystem by having each ext4 fielsystem allocate and use its own =
+private
+>> mbcache structure, instead of sharing a single mcache structures =
+across all
+>> ext4 filesystems, and increases the size of its mbcache hash tables.
+>=20
+> Are you sure this helps?  The idea behind having one large mbcache is
+> that one large hash table will always be at least as well balanced as
+> multiple separate tables, if the total size is the same.
+>=20
+> If you have two size 2^n hash tables, the chance of collision is equal =
+to
+> one size  2^(n+1) table if they're equally busy, and if they're =
+unequally
+> busy. the latter is better.  The busier file system will take less =
+time
+> per search, and since it's searched more often than the less-busy one,
+> net win.
+>=20
+> How does it compare with just increasing the hash table size but =
+leaving
+> them combined?
 
-	Dave
+Except that having one mbcache per block device would avoid the need
+to store the e_bdev pointer in thousands/millions of entries.  Since
+the blocks are never shared between different block devices, there
+is no caching benefit even if the same block is on two block devices.
 
+Cheers, Andreas
+
+
+
+
+
+
+--Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIVAwUBUugce3Kl2rkXzB/gAQK5eBAAg8vPhCVJKZN55Mj55y9CiA9M9OyVsiG+
+LwXLw7HxsDoMfDW0K0SKMzPn93LKtDQpVFi23Ot4//t4PYJXkuDo0JS6v9u9ftN1
+cuuuzpvPiWx1lxBA/S1tOfrmhfdYzAbkSzhnGZJYem+VVdkSF9e4j5ETfWwKZUcV
+EtpAcCH7N8maMuEoffwn69MKngwJjSREayYsFwgxOCNvYGJalPSFj1K5Kl9OEkry
+JJoxlGCrfVG988lbX+0qqHiCizAZUSi6QclwANNJKtaHD0FlwWNzBS3jbh6fDTue
+f8wYyjGrYlSO3XaqSqL9xvk3icTdLxvwsC1mp37svBXOuDbnvwkLIO3GSoCtN143
+v70qe7PPFdszAiOsAtXVjY95jNYbAA05CO+UzjVTloBvaQnTWwDzsCjaHaldBxFI
+9eBjqbxcWbL7uaYst2nw3NYsCc5pDF26ir3zu70Igdf6+5GO8BhoseDz5V8zMnY2
+tvdOFUTn0g7A01mjDIeYwbAelAjFugpujyxhgkIVULSlYd84aoczwEM6pk9F/A6E
+W//6fybj0Xg8cI3I6Rsuppfno4Bgqh807bRj/d02yRVHzY9Vc88vSjSEiZdZo8j8
+hg5eK7zdCyQiaYlRr+EcGwAMtNz6GEGy8vX2CJQ3xOpARtH9MITcPXFyzVL91fye
+gU2o67Vk0Lk=
+=agJf
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2--
