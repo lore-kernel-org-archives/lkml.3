@@ -1,181 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaA1Xgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:36:47 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19778 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294AbaA1Xgo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:36:44 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 28 Jan 2014 15:35:25 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH v3 1/6] ARM: tegra: export apb dma readl/writel
-Date: Wed, 29 Jan 2014 01:36:11 +0200
-Message-ID: <1390952176-30402-2-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	id S1756075AbaA1Xhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:37:35 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50736 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755767AbaA1Xhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 18:37:34 -0500
+Date: Wed, 29 Jan 2014 00:37:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140128233723.GP815@pd.tnic>
+References: <52E7D9FF.1080506@nod.at>
+ <52E7DB15.3090808@zytor.com>
+ <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+ <20140128170507.GA16279@gmail.com>
+ <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+ <20140128194823.GA18702@gmail.com>
+ <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
+ <20140128201536.GB5178@pd.tnic>
+ <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
+ <20140128204906.GK815@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140128204906.GK815@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export APB DMA readl and writel. These are needed because we can't access
-the fuses directly on Tegra20 without potentially causing a system hang.
-Also have the APB DMA readl and writel return an error in case of a read
-failure instead of just returning zero or ignore write failures.
+On Tue, Jan 28, 2014 at 09:49:06PM +0100, Borislav Petkov wrote:
+> On Tue, Jan 28, 2014 at 12:25:15PM -0800, Linus Torvalds wrote:
+> > Probably. And then we should make sure that allyesconfig/allmodconfig
+> > don't pick it.
+> 
+> I'd need to think about that a bit longer as scripts/kconfig/conf.c goes
+> and sets those. Unless someone has a better idea...
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Maybe we can do something simple like this, it works here. We could
+even generate a random name for the all.config file so that there are
+no conflicts with existing stuff and even test for its presence. Or we
+could hide all that in a script and so on and so on...
+
 ---
- arch/arm/mach-tegra/apbio.c |   51 ++++++++++++++++++++++++++----------------
- include/linux/tegra-soc.h   |   14 +++++++++++
- 2 files changed, 45 insertions(+), 20 deletions(-)
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 844bc9da08da..76e889fc6384 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -77,7 +77,9 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
+ 
+ allnoconfig allyesconfig allmodconfig alldefconfig randconfig: $(obj)/conf
+-	$< --$@ $(Kconfig)
++	$(shell echo "# CONFIG_DEBUG_INFO is not set" > /tmp/all.config)
++	$(Q)KCONFIG_ALLCONFIG=/tmp/all.config $< --$@ $(Kconfig)
++	$(Q)rm -rf /tmp/all.config
+ 
+ PHONY += listnewconfig olddefconfig oldnoconfig savedefconfig defconfig
+ 
 
-diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
-index bc47197..e0bf49d 100644
---- a/arch/arm/mach-tegra/apbio.c
-+++ b/arch/arm/mach-tegra/apbio.c
-@@ -32,8 +32,8 @@ static u32 *tegra_apb_bb;
- static dma_addr_t tegra_apb_bb_phys;
- static DECLARE_COMPLETION(tegra_apb_wait);
- 
--static u32 tegra_apb_readl_direct(unsigned long offset);
--static void tegra_apb_writel_direct(u32 value, unsigned long offset);
-+static int tegra_apb_readl_direct(unsigned long offset, u32 *value);
-+static int tegra_apb_writel_direct(u32 value, unsigned long offset);
- 
- static struct dma_chan *tegra_apb_dma_chan;
- static struct dma_slave_config dma_sconfig;
-@@ -128,58 +128,64 @@ static int do_dma_transfer(unsigned long apb_add,
- 	return 0;
- }
- 
--static u32 tegra_apb_readl_using_dma(unsigned long offset)
-+int tegra_apb_readl_using_dma(unsigned long offset, u32 *value)
- {
- 	int ret;
- 
- 	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
--		return tegra_apb_readl_direct(offset);
-+		return tegra_apb_readl_direct(offset, value);
- 
- 	mutex_lock(&tegra_apb_dma_lock);
- 	ret = do_dma_transfer(offset, DMA_DEV_TO_MEM);
--	if (ret < 0) {
-+	if (ret < 0)
- 		pr_err("error in reading offset 0x%08lx using dma\n", offset);
--		*(u32 *)tegra_apb_bb = 0;
--	}
-+	else
-+		*value = *tegra_apb_bb;
-+
- 	mutex_unlock(&tegra_apb_dma_lock);
--	return *((u32 *)tegra_apb_bb);
-+
-+	return ret;
- }
- 
--static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
-+int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
- {
- 	int ret;
- 
--	if (!tegra_apb_dma_chan && !tegra_apb_dma_init()) {
--		tegra_apb_writel_direct(value, offset);
--		return;
--	}
-+	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
-+		return tegra_apb_writel_direct(value, offset);
- 
- 	mutex_lock(&tegra_apb_dma_lock);
- 	*((u32 *)tegra_apb_bb) = value;
- 	ret = do_dma_transfer(offset, DMA_MEM_TO_DEV);
-+	mutex_unlock(&tegra_apb_dma_lock);
- 	if (ret < 0)
- 		pr_err("error in writing offset 0x%08lx using dma\n", offset);
--	mutex_unlock(&tegra_apb_dma_lock);
-+
-+	return ret;
- }
- #else
- #define tegra_apb_readl_using_dma tegra_apb_readl_direct
- #define tegra_apb_writel_using_dma tegra_apb_writel_direct
- #endif
- 
--typedef u32 (*apbio_read_fptr)(unsigned long offset);
--typedef void (*apbio_write_fptr)(u32 value, unsigned long offset);
-+typedef int (*apbio_read_fptr)(unsigned long offset, u32 *value);
-+typedef int (*apbio_write_fptr)(u32 value, unsigned long offset);
- 
- static apbio_read_fptr apbio_read;
- static apbio_write_fptr apbio_write;
- 
--static u32 tegra_apb_readl_direct(unsigned long offset)
-+static int tegra_apb_readl_direct(unsigned long offset, u32 *value)
- {
--	return readl(IO_ADDRESS(offset));
-+	*value = readl(IO_ADDRESS(offset));
-+
-+	return 0;
- }
- 
--static void tegra_apb_writel_direct(u32 value, unsigned long offset)
-+static int tegra_apb_writel_direct(u32 value, unsigned long offset)
- {
- 	writel(value, IO_ADDRESS(offset));
-+
-+	return 0;
- }
- 
- void tegra_apb_io_init(void)
-@@ -197,7 +203,12 @@ void tegra_apb_io_init(void)
- 
- u32 tegra_apb_readl(unsigned long offset)
- {
--	return apbio_read(offset);
-+	u32 val;
-+
-+	if (apbio_read(offset, &val) < 0)
-+		return 0;
-+	else
-+		return val;
- }
- 
- void tegra_apb_writel(u32 value, unsigned long offset)
-diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
-index 95f611d..b02d73b 100644
---- a/include/linux/tegra-soc.h
-+++ b/include/linux/tegra-soc.h
-@@ -19,4 +19,18 @@
- 
- u32 tegra_read_chipid(void);
- 
-+
-+#if defined(CONFIG_TEGRA20_APB_DMA)
-+int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
-+int tegra_apb_writel_using_dma(u32 value, unsigned long offset);
-+#else
-+static inline int tegra_apb_readl_using_dma(unsigned long offset, u32 *value)
-+{
-+	return -EINVAL;
-+}
-+static inline int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
-+{
-+	return -EINVAL;
-+}
-+#endif
- #endif /* __LINUX_TEGRA_SOC_H_ */
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
