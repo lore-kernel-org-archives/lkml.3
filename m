@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208AbaA1Xeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:34:50 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:38652 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801AbaA1XdF (ORCPT
+	id S932255AbaA1XfG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:35:06 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:58538 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901AbaA1XdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:33:05 -0500
+	Tue, 28 Jan 2014 18:33:03 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/9] kernfs: allow nodes to be created in the deactivated state
-Date: Tue, 28 Jan 2014 18:32:47 -0500
-Message-Id: <1390951971-15671-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/9] kernfs: implement kernfs_syscall_ops->remount_fs() and ->show_options()
+Date: Tue, 28 Jan 2014 18:32:45 -0500
+Message-Id: <1390951971-15671-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390951971-15671-1-git-send-email-tj@kernel.org>
 References: <1390951971-15671-1-git-send-email-tj@kernel.org>
@@ -20,239 +20,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kernfs_nodes are made visible to userland on creation,
-which makes it difficult for kernfs users to atomically succeed or
-fail creation of multiple nodes.  In addition, if something fails
-after creating some nodes, the created nodes might already be in use
-and their active refs need to be drained for removal, which has the
-potential to introduce tricky reverse locking dependency on active_ref
-depending on how the error path is synchronized.
-
-This patch introduces per-root flag KERNFS_ROOT_CREATE_DEACTIVATED.
-If set, all nodes under the root are created in the deactivated state
-and stay invisible to userland until explicitly enabled by the new
-kernfs_activate() API.  Also, nodes which have never been activated
-are guaranteed to bypass draining on removal thus allowing error paths
-to not worry about lockding dependency on active_ref draining.
+Add two super_block related syscall callbacks ->remount_fs() and
+->show_options() to kernfs_syscall_ops.  These simply forward the
+matching super_operations.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c        | 71 +++++++++++++++++++++++++++++++++++++++++++++-----
- fs/sysfs/mount.c       |  2 +-
- include/linux/kernfs.h | 15 +++++++++--
- 3 files changed, 78 insertions(+), 10 deletions(-)
+ fs/kernfs/mount.c      | 23 +++++++++++++++++++++++
+ include/linux/kernfs.h |  3 +++
+ 2 files changed, 26 insertions(+)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 89f8462..3cff0a2 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -435,7 +435,7 @@ int kernfs_add_one(struct kernfs_node *kn)
- 		goto out_unlock;
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+index 0d6ce89..70cc698 100644
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -19,10 +19,33 @@
  
- 	ret = -ENOENT;
--	if (!kernfs_active(parent))
-+	if ((parent->flags & KERNFS_ACTIVATED) && !kernfs_active(parent))
- 		goto out_unlock;
+ struct kmem_cache *kernfs_node_cache;
  
- 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
-@@ -451,9 +451,19 @@ int kernfs_add_one(struct kernfs_node *kn)
- 		ps_iattrs->ia_ctime = ps_iattrs->ia_mtime = CURRENT_TIME;
- 	}
- 
--	/* Mark the entry added into directory tree */
--	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
--	ret = 0;
-+	mutex_unlock(&kernfs_mutex);
-+
-+	/*
-+	 * Activate the new node unless CREATE_DEACTIVATED is requested.
-+	 * If not activated here, the kernfs user is responsible for
-+	 * activating the node with kernfs_activate().  A node which hasn't
-+	 * been activated is not visible to userland and its removal won't
-+	 * trigger deactivation.
-+	 */
-+	if (!(kernfs_root(kn)->flags & KERNFS_ROOT_CREATE_DEACTIVATED))
-+		kernfs_activate(kn);
-+	return 0;
-+
- out_unlock:
- 	mutex_unlock(&kernfs_mutex);
- 	return ret;
-@@ -528,13 +538,14 @@ EXPORT_SYMBOL_GPL(kernfs_find_and_get_ns);
- /**
-  * kernfs_create_root - create a new kernfs hierarchy
-  * @scops: optional syscall operations for the hierarchy
-+ * @flags: KERNFS_ROOT_* flags
-  * @priv: opaque data associated with the new directory
-  *
-  * Returns the root of the new hierarchy on success, ERR_PTR() value on
-  * failure.
-  */
- struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
--				       void *priv)
-+				       unsigned int flags, void *priv)
- {
- 	struct kernfs_root *root;
- 	struct kernfs_node *kn;
-@@ -553,14 +564,17 @@ struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
- 		return ERR_PTR(-ENOMEM);
- 	}
- 
--	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
- 	kn->priv = priv;
- 	kn->dir.root = root;
- 
- 	root->syscall_ops = scops;
-+	root->flags = flags;
- 	root->kn = kn;
- 	init_waitqueue_head(&root->deactivate_waitq);
- 
-+	if (!(root->flags & KERNFS_ROOT_CREATE_DEACTIVATED))
-+		kernfs_activate(kn);
-+
- 	return root;
- }
- 
-@@ -783,6 +797,40 @@ static struct kernfs_node *kernfs_next_descendant_post(struct kernfs_node *pos,
- 	return pos->parent;
- }
- 
-+/**
-+ * kernfs_activate - activate a node which started deactivated
-+ * @kn: kernfs_node whose subtree is to be activated
-+ *
-+ * If the root has KERNFS_ROOT_CREATE_DEACTIVATED set, a newly created node
-+ * needs to be explicitly activated.  A node which hasn't been activated
-+ * isn't visible to userland and deactivation is skipped during its
-+ * removal.  This is useful to construct atomic init sequences where
-+ * creation of multiple nodes should either succeed or fail atomically.
-+ *
-+ * The caller is responsible for ensuring that this function is not called
-+ * after kernfs_remove*() is invoked on @kn.
-+ */
-+void kernfs_activate(struct kernfs_node *kn)
++static int kernfs_sop_remount_fs(struct super_block *sb, int *flags, char *data)
 +{
-+	struct kernfs_node *pos;
++	struct kernfs_root *root = kernfs_info(sb)->root;
++	struct kernfs_syscall_ops *scops = root->syscall_ops;
 +
-+	mutex_lock(&kernfs_mutex);
-+
-+	pos = NULL;
-+	while ((pos = kernfs_next_descendant_post(pos, kn))) {
-+		if (!pos || (pos->flags & KERNFS_ACTIVATED))
-+			continue;
-+
-+		WARN_ON_ONCE(pos->parent && RB_EMPTY_NODE(&pos->rb));
-+		WARN_ON_ONCE(atomic_read(&pos->active) != KN_DEACTIVATED_BIAS);
-+
-+		atomic_sub(KN_DEACTIVATED_BIAS, &pos->active);
-+		pos->flags |= KERNFS_ACTIVATED;
-+	}
-+
-+	mutex_unlock(&kernfs_mutex);
++	if (scops && scops->remount_fs)
++		return scops->remount_fs(root, flags, data);
++	return 0;
 +}
 +
- static void __kernfs_remove(struct kernfs_node *kn)
- {
- 	struct kernfs_node *pos;
-@@ -817,7 +865,16 @@ static void __kernfs_remove(struct kernfs_node *kn)
- 		 */
- 		kernfs_get(pos);
- 
--		kernfs_drain(pos);
-+		/*
-+		 * Drain iff @kn was activated.  This avoids draining and
-+		 * its lockdep annotations for nodes which have never been
-+		 * activated and allows embedding kernfs_remove() in create
-+		 * error paths without worrying about draining.
-+		 */
-+		if (kn->flags & KERNFS_ACTIVATED)
-+			kernfs_drain(pos);
-+		else
-+			WARN_ON_ONCE(atomic_read(&kn->active) != KN_DEACTIVATED_BIAS);
- 
- 		/*
- 		 * kernfs_unlink_sibling() succeeds once per node.  Use it
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 6211230..5c7fdd9 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -62,7 +62,7 @@ int __init sysfs_init(void)
- {
- 	int err;
- 
--	sysfs_root = kernfs_create_root(NULL, NULL);
-+	sysfs_root = kernfs_create_root(NULL, 0, NULL);
- 	if (IS_ERR(sysfs_root))
- 		return PTR_ERR(sysfs_root);
- 
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 5d5b7e9..4520c86 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -38,6 +38,7 @@ enum kernfs_node_type {
- #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
- 
- enum kernfs_node_flag {
-+	KERNFS_ACTIVATED	= 0x0010,
- 	KERNFS_NS		= 0x0020,
- 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
- 	KERNFS_HAS_MMAP		= 0x0080,
-@@ -47,6 +48,11 @@ enum kernfs_node_flag {
- 	KERNFS_SUICIDED		= 0x0800,
++static int kernfs_sop_show_options(struct seq_file *sf, struct dentry *dentry)
++{
++	struct kernfs_root *root = kernfs_root(dentry->d_fsdata);
++	struct kernfs_syscall_ops *scops = root->syscall_ops;
++
++	if (scops && scops->show_options)
++		return scops->show_options(sf, root);
++	return 0;
++}
++
+ static const struct super_operations kernfs_sops = {
+ 	.statfs		= simple_statfs,
+ 	.drop_inode	= generic_delete_inode,
+ 	.evict_inode	= kernfs_evict_inode,
++
++	.remount_fs	= kernfs_sop_remount_fs,
++	.show_options	= kernfs_sop_show_options,
  };
  
-+/* @flags for kernfs_create_root() */
-+enum kernfs_root_flag {
-+	KERNFS_ROOT_CREATE_DEACTIVATED = 0x0001,
-+};
+ static int kernfs_fill_super(struct super_block *sb)
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 5ddc474..5d5b7e9 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -115,6 +115,9 @@ struct kernfs_node {
+  * kernfs_node parameter.
+  */
+ struct kernfs_syscall_ops {
++	int (*remount_fs)(struct kernfs_root *root, int *flags, char *data);
++	int (*show_options)(struct seq_file *sf, struct kernfs_root *root);
 +
- /* type-specific structures for kernfs_node union members */
- struct kernfs_elem_dir {
- 	unsigned long		subdirs;
-@@ -128,6 +134,7 @@ struct kernfs_syscall_ops {
- struct kernfs_root {
- 	/* published fields */
- 	struct kernfs_node	*kn;
-+	unsigned int		flags;	/* KERNFS_ROOT_* flags */
- 
- 	/* private fields, do not use outside kernfs proper */
- 	struct ida		ino_ida;
-@@ -223,7 +230,7 @@ void kernfs_get(struct kernfs_node *kn);
- void kernfs_put(struct kernfs_node *kn);
- 
- struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
--				       void *priv);
-+				       unsigned int flags, void *priv);
- void kernfs_destroy_root(struct kernfs_root *root);
- 
- struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
-@@ -239,6 +246,7 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
- struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 				       const char *name,
- 				       struct kernfs_node *target);
-+void kernfs_activate(struct kernfs_node *kn);
- void kernfs_remove(struct kernfs_node *kn);
- void kernfs_break_active_protection(struct kernfs_node *kn);
- void kernfs_unbreak_active_protection(struct kernfs_node *kn);
-@@ -276,7 +284,8 @@ static inline void kernfs_get(struct kernfs_node *kn) { }
- static inline void kernfs_put(struct kernfs_node *kn) { }
- 
- static inline struct kernfs_root *
--kernfs_create_root(struct kernfs_syscall_ops *scops, void *priv)
-+kernfs_create_root(struct kernfs_syscall_ops *scops, unsigned int flags,
-+		   void *priv)
- { return ERR_PTR(-ENOSYS); }
- 
- static inline void kernfs_destroy_root(struct kernfs_root *root) { }
-@@ -298,6 +307,8 @@ kernfs_create_link(struct kernfs_node *parent, const char *name,
- 		   struct kernfs_node *target)
- { return ERR_PTR(-ENOSYS); }
- 
-+static inline void kernfs_activate(struct kernfs_node *kn) { }
-+
- static inline void kernfs_remove(struct kernfs_node *kn) { }
- 
- static inline bool kernfs_remove_self(struct kernfs_node *kn)
+ 	int (*mkdir)(struct kernfs_node *parent, const char *name,
+ 		     umode_t mode);
+ 	int (*rmdir)(struct kernfs_node *kn);
 -- 
 1.8.5.3
 
