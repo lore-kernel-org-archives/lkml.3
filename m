@@ -1,318 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaA1X5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:57:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36708 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbaA1X5l (ORCPT
+	id S932448AbaA1X6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:58:20 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:59635 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756116AbaA1XzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:57:41 -0500
-Date: Tue, 28 Jan 2014 15:57:14 -0800
-Message-Id: <201401282357.s0SNvEBA031682@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x32 additional bits for v3.14
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 28 Jan 2014 15:57:20 -0800 (PST)
+	Tue, 28 Jan 2014 18:55:00 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 05/13] cgroup: factor out cgroup_setup_root() from cgroup_mount()
+Date: Tue, 28 Jan 2014 18:54:37 -0500
+Message-Id: <1390953285-16360-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
+References: <1390953285-16360-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Factor out new root initialization into cgroup_setup_root() from
+cgroup_mount().  This makes it easier to follow and will ease kernfs
+conversion.
 
-Despite the branch name, **most of these changes are to generic
-code**.  They change types so that they make an increasing amount of
-the exported uapi kernel headers usable for libc.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 211 ++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 113 insertions(+), 98 deletions(-)
 
-The ARM64 people are also interested in these changes for their ILP32
-ABI.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 2349698..bdbd9ad 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1446,17 +1446,126 @@ static int cgroup_get_rootdir(struct super_block *sb)
+ 	return 0;
+ }
+ 
++static int cgroup_setup_root(struct cgroupfs_root *root)
++{
++	LIST_HEAD(tmp_links);
++	struct super_block *sb = root->sb;
++	struct cgroup *root_cgrp = &root->top_cgroup;
++	struct cgroupfs_root *existing_root;
++	struct css_set *cset;
++	struct inode *inode;
++	const struct cred *cred;
++	int i, ret;
++
++	lockdep_assert_held(&cgroup_tree_mutex);
++	lockdep_assert_held(&cgroup_mutex);
++	BUG_ON(sb->s_root != NULL);
++
++	mutex_unlock(&cgroup_mutex);
++	mutex_unlock(&cgroup_tree_mutex);
++
++	ret = cgroup_get_rootdir(sb);
++	if (ret) {
++		mutex_lock(&cgroup_tree_mutex);
++		mutex_lock(&cgroup_mutex);
++		return ret;
++	}
++	inode = sb->s_root->d_inode;
++
++	mutex_lock(&inode->i_mutex);
++	mutex_lock(&cgroup_tree_mutex);
++	mutex_lock(&cgroup_mutex);
++
++	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
++	if (ret < 0)
++		goto out_unlock;
++	root_cgrp->id = ret;
++
++	/* check for name clashes with existing mounts */
++	ret = -EBUSY;
++	if (strlen(root->name))
++		for_each_active_root(existing_root)
++			if (!strcmp(existing_root->name, root->name))
++				goto out_unlock;
++
++	/*
++	 * We're accessing css_set_count without locking css_set_lock here,
++	 * but that's OK - it can only be increased by someone holding
++	 * cgroup_lock, and that's us. The worst that can happen is that we
++	 * have some link structures left over
++	 */
++	ret = allocate_cgrp_cset_links(css_set_count, &tmp_links);
++	if (ret)
++		goto out_unlock;
++
++	/* ID 0 is reserved for dummy root, 1 for unified hierarchy */
++	ret = cgroup_init_root_id(root, 2, 0);
++	if (ret)
++		goto out_unlock;
++
++	sb->s_root->d_fsdata = root_cgrp;
++	root_cgrp->dentry = sb->s_root;
++
++	/*
++	 * We're inside get_sb() and will call lookup_one_len() to create
++	 * the root files, which doesn't work if SELinux is in use.  The
++	 * following cred dancing somehow works around it.  See 2ce9738ba
++	 * ("cgroupfs: use init_cred when populating new cgroupfs mount")
++	 * for more details.
++	 */
++	cred = override_creds(&init_cred);
++
++	ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
++	if (ret)
++		goto rm_base_files;
++
++	ret = rebind_subsystems(root, root->subsys_mask, 0);
++	if (ret)
++		goto rm_base_files;
++
++	revert_creds(cred);
++
++	/*
++	 * There must be no failure case after here, since rebinding takes
++	 * care of subsystems' refcounts, which are explicitly dropped in
++	 * the failure exit path.
++	 */
++	list_add(&root->root_list, &cgroup_roots);
++	cgroup_root_count++;
++
++	/*
++	 * Link the top cgroup in this hierarchy into all the css_set
++	 * objects.
++	 */
++	write_lock(&css_set_lock);
++	hash_for_each(css_set_table, i, cset, hlist)
++		link_css_set(&tmp_links, cset, root_cgrp);
++	write_unlock(&css_set_lock);
++
++	BUG_ON(!list_empty(&root_cgrp->children));
++	BUG_ON(root->number_of_cgroups != 1);
++
++	ret = 0;
++	goto out_unlock;
++
++rm_base_files:
++	cgroup_addrm_files(&root->top_cgroup, cgroup_base_files, false);
++	revert_creds(cred);
++	cgroup_exit_root_id(root);
++out_unlock:
++	mutex_unlock(&inode->i_mutex);
++	free_cgrp_cset_links(&tmp_links);
++	return ret;
++}
++
+ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 			 int flags, const char *unused_dev_name,
+ 			 void *data)
+ {
+-	LIST_HEAD(tmp_links);
+ 	struct super_block *sb = NULL;
+-	struct inode *inode = NULL;
+ 	struct cgroupfs_root *root = NULL;
+ 	struct cgroup_sb_opts opts;
+ 	struct cgroupfs_root *new_root;
+-	const struct cred *cred;
+ 	int ret;
+ 
+ 	mutex_lock(&cgroup_tree_mutex);
+@@ -1493,94 +1602,9 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	root = sb->s_fs_info;
+ 	BUG_ON(!root);
+ 	if (root == opts.new_root) {
+-		/* We used the new root structure, so this is a new hierarchy */
+-		struct cgroup *root_cgrp = &root->top_cgroup;
+-		struct cgroupfs_root *existing_root;
+-		int i;
+-		struct css_set *cset;
+-
+-		BUG_ON(sb->s_root != NULL);
+-
+-		mutex_unlock(&cgroup_mutex);
+-		mutex_unlock(&cgroup_tree_mutex);
+-
+-		ret = cgroup_get_rootdir(sb);
++		ret = cgroup_setup_root(root);
+ 		if (ret)
+ 			goto out_unlock;
+-		inode = sb->s_root->d_inode;
+-
+-		mutex_lock(&inode->i_mutex);
+-		mutex_lock(&cgroup_tree_mutex);
+-		mutex_lock(&cgroup_mutex);
+-
+-		ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
+-		if (ret < 0)
+-			goto out_unlock;
+-		root_cgrp->id = ret;
+-
+-		/* Check for name clashes with existing mounts */
+-		ret = -EBUSY;
+-		if (strlen(root->name))
+-			for_each_active_root(existing_root)
+-				if (!strcmp(existing_root->name, root->name))
+-					goto out_unlock;
+-
+-		/*
+-		 * We're accessing css_set_count without locking
+-		 * css_set_lock here, but that's OK - it can only be
+-		 * increased by someone holding cgroup_lock, and
+-		 * that's us. The worst that can happen is that we
+-		 * have some link structures left over
+-		 */
+-		ret = allocate_cgrp_cset_links(css_set_count, &tmp_links);
+-		if (ret)
+-			goto out_unlock;
+-
+-		/* ID 0 is reserved for dummy root, 1 for unified hierarchy */
+-		ret = cgroup_init_root_id(root, 2, 0);
+-		if (ret)
+-			goto out_unlock;
+-
+-		sb->s_root->d_fsdata = root_cgrp;
+-		root_cgrp->dentry = sb->s_root;
+-
+-		/*
+-		 * We're inside get_sb() and will call lookup_one_len() to
+-		 * create the root files, which doesn't work if SELinux is
+-		 * in use.  The following cred dancing somehow works around
+-		 * it.  See 2ce9738ba ("cgroupfs: use init_cred when
+-		 * populating new cgroupfs mount") for more details.
+-		 */
+-		cred = override_creds(&init_cred);
+-
+-		ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
+-		if (ret)
+-			goto rm_base_files;
+-
+-		ret = rebind_subsystems(root, root->subsys_mask, 0);
+-		if (ret)
+-			goto rm_base_files;
+-
+-		revert_creds(cred);
+-
+-		/*
+-		 * There must be no failure case after here, since rebinding
+-		 * takes care of subsystems' refcounts, which are explicitly
+-		 * dropped in the failure exit path.
+-		 */
+-
+-		list_add(&root->root_list, &cgroup_roots);
+-		cgroup_root_count++;
+-
+-		/* Link the top cgroup in this hierarchy into all
+-		 * the css_set objects */
+-		write_lock(&css_set_lock);
+-		hash_for_each(css_set_table, i, cset, hlist)
+-			link_css_set(&tmp_links, cset, root_cgrp);
+-		write_unlock(&css_set_lock);
+-
+-		BUG_ON(!list_empty(&root_cgrp->children));
+-		BUG_ON(root->number_of_cgroups != 1);
+ 	} else {
+ 		/*
+ 		 * We re-used an existing hierarchy - the new root (if
+@@ -1600,22 +1624,13 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	}
+ 
+ 	ret = 0;
+-	goto out_unlock;
+-
+-rm_base_files:
+-	cgroup_addrm_files(&root->top_cgroup, cgroup_base_files, false);
+-	revert_creds(cred);
+-	cgroup_exit_root_id(root);
+ out_unlock:
+ 	mutex_unlock(&cgroup_mutex);
+ 	mutex_unlock(&cgroup_tree_mutex);
+-	if (inode)
+-		mutex_unlock(&inode->i_mutex);
+ 
+ 	if (ret && !IS_ERR_OR_NULL(sb))
+ 		deactivate_locked_super(sb);
+ 
+-	free_cgrp_cset_links(&tmp_links);
+ 	kfree(opts.release_agent);
+ 	kfree(opts.name);
+ 
+-- 
+1.8.5.3
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-
-The following changes since commit 79dbbc60493f357912d5f1da5a23147ba0c01c7a:
-
-  x86, x32: Use __kernel_long_t for __statfs_word (2013-12-20 16:06:21 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-x32-for-linus
-
-for you to fetch changes up to 63159f5dcccb3858d88aaef800c4ee0eb4cc8577:
-
-  uapi: Use __kernel_long_t in struct mq_attr (2014-01-20 14:45:33 -0800)
-
-----------------------------------------------------------------
-H.J. Lu (8):
-      uapi: Use __kernel_long_t in struct timex
-      uapi: Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
-      uapi, asm-generic: Use __kernel_ulong_t in uapi struct ipc64_perm
-      uapi: Use __kernel_long_t in struct msgbuf
-      uapi: Use __kernel_ulong_t in struct msqid64_ds
-      x86, uapi, x32: Use __kernel_ulong_t in x86 struct semid64_ds
-      uapi: Use __kernel_ulong_t in shmid64_ds/shminfo64/shm_info
-      uapi: Use __kernel_long_t in struct mq_attr
-
- arch/x86/include/uapi/asm/sembuf.h | 10 +++++-----
- include/uapi/asm-generic/ipcbuf.h  |  4 ++--
- include/uapi/asm-generic/msgbuf.h  | 10 +++++-----
- include/uapi/asm-generic/shmbuf.h  | 24 ++++++++++++------------
- include/uapi/linux/mqueue.h        | 10 +++++-----
- include/uapi/linux/msg.h           |  4 ++--
- include/uapi/linux/resource.h      | 32 ++++++++++++++++----------------
- include/uapi/linux/shm.h           | 10 +++++-----
- include/uapi/linux/timex.h         | 34 +++++++++++++++++-----------------
- 9 files changed, 69 insertions(+), 69 deletions(-)
-
-diff --git a/arch/x86/include/uapi/asm/sembuf.h b/arch/x86/include/uapi/asm/sembuf.h
-index ee50c801f7b7..cc2d6a3aeae7 100644
---- a/arch/x86/include/uapi/asm/sembuf.h
-+++ b/arch/x86/include/uapi/asm/sembuf.h
-@@ -13,12 +13,12 @@
- struct semid64_ds {
- 	struct ipc64_perm sem_perm;	/* permissions .. see ipc.h */
- 	__kernel_time_t	sem_otime;	/* last semop time */
--	unsigned long	__unused1;
-+	__kernel_ulong_t __unused1;
- 	__kernel_time_t	sem_ctime;	/* last change time */
--	unsigned long	__unused2;
--	unsigned long	sem_nsems;	/* no. of semaphores in array */
--	unsigned long	__unused3;
--	unsigned long	__unused4;
-+	__kernel_ulong_t __unused2;
-+	__kernel_ulong_t sem_nsems;	/* no. of semaphores in array */
-+	__kernel_ulong_t __unused3;
-+	__kernel_ulong_t __unused4;
- };
- 
- #endif /* _ASM_X86_SEMBUF_H */
-diff --git a/include/uapi/asm-generic/ipcbuf.h b/include/uapi/asm-generic/ipcbuf.h
-index 76982b2a1b58..3dbcc1e771c0 100644
---- a/include/uapi/asm-generic/ipcbuf.h
-+++ b/include/uapi/asm-generic/ipcbuf.h
-@@ -27,8 +27,8 @@ struct ipc64_perm {
- 	unsigned char		__pad1[4 - sizeof(__kernel_mode_t)];
- 	unsigned short		seq;
- 	unsigned short		__pad2;
--	unsigned long		__unused1;
--	unsigned long		__unused2;
-+	__kernel_ulong_t	__unused1;
-+	__kernel_ulong_t	__unused2;
- };
- 
- #endif /* __ASM_GENERIC_IPCBUF_H */
-diff --git a/include/uapi/asm-generic/msgbuf.h b/include/uapi/asm-generic/msgbuf.h
-index aec850d9159e..f55ecc43c60f 100644
---- a/include/uapi/asm-generic/msgbuf.h
-+++ b/include/uapi/asm-generic/msgbuf.h
-@@ -35,13 +35,13 @@ struct msqid64_ds {
- #if __BITS_PER_LONG != 64
- 	unsigned long	__unused3;
- #endif
--	unsigned long  msg_cbytes;	/* current number of bytes on queue */
--	unsigned long  msg_qnum;	/* number of messages in queue */
--	unsigned long  msg_qbytes;	/* max number of bytes on queue */
-+	__kernel_ulong_t msg_cbytes;	/* current number of bytes on queue */
-+	__kernel_ulong_t msg_qnum;	/* number of messages in queue */
-+	__kernel_ulong_t msg_qbytes;	/* max number of bytes on queue */
- 	__kernel_pid_t msg_lspid;	/* pid of last msgsnd */
- 	__kernel_pid_t msg_lrpid;	/* last receive pid */
--	unsigned long  __unused4;
--	unsigned long  __unused5;
-+	__kernel_ulong_t __unused4;
-+	__kernel_ulong_t __unused5;
- };
- 
- #endif /* __ASM_GENERIC_MSGBUF_H */
-diff --git a/include/uapi/asm-generic/shmbuf.h b/include/uapi/asm-generic/shmbuf.h
-index 5768fa60ac82..7e9fb2f0853b 100644
---- a/include/uapi/asm-generic/shmbuf.h
-+++ b/include/uapi/asm-generic/shmbuf.h
-@@ -39,21 +39,21 @@ struct shmid64_ds {
- #endif
- 	__kernel_pid_t		shm_cpid;	/* pid of creator */
- 	__kernel_pid_t		shm_lpid;	/* pid of last operator */
--	unsigned long		shm_nattch;	/* no. of current attaches */
--	unsigned long		__unused4;
--	unsigned long		__unused5;
-+	__kernel_ulong_t	shm_nattch;	/* no. of current attaches */
-+	__kernel_ulong_t	__unused4;
-+	__kernel_ulong_t	__unused5;
- };
- 
- struct shminfo64 {
--	unsigned long	shmmax;
--	unsigned long	shmmin;
--	unsigned long	shmmni;
--	unsigned long	shmseg;
--	unsigned long	shmall;
--	unsigned long	__unused1;
--	unsigned long	__unused2;
--	unsigned long	__unused3;
--	unsigned long	__unused4;
-+	__kernel_ulong_t	shmmax;
-+	__kernel_ulong_t	shmmin;
-+	__kernel_ulong_t	shmmni;
-+	__kernel_ulong_t	shmseg;
-+	__kernel_ulong_t	shmall;
-+	__kernel_ulong_t	__unused1;
-+	__kernel_ulong_t	__unused2;
-+	__kernel_ulong_t	__unused3;
-+	__kernel_ulong_t	__unused4;
- };
- 
- #endif /* __ASM_GENERIC_SHMBUF_H */
-diff --git a/include/uapi/linux/mqueue.h b/include/uapi/linux/mqueue.h
-index 8b5a79615fbf..d0a2b8e89813 100644
---- a/include/uapi/linux/mqueue.h
-+++ b/include/uapi/linux/mqueue.h
-@@ -23,11 +23,11 @@
- #define MQ_BYTES_MAX	819200
- 
- struct mq_attr {
--	long	mq_flags;	/* message queue flags			*/
--	long	mq_maxmsg;	/* maximum number of messages		*/
--	long	mq_msgsize;	/* maximum message size			*/
--	long	mq_curmsgs;	/* number of messages currently queued	*/
--	long	__reserved[4];	/* ignored for input, zeroed for output */
-+	__kernel_long_t	mq_flags;	/* message queue flags			*/
-+	__kernel_long_t	mq_maxmsg;	/* maximum number of messages		*/
-+	__kernel_long_t	mq_msgsize;	/* maximum message size			*/
-+	__kernel_long_t	mq_curmsgs;	/* number of messages currently queued	*/
-+	__kernel_long_t	__reserved[4];	/* ignored for input, zeroed for output */
- };
- 
- /*
-diff --git a/include/uapi/linux/msg.h b/include/uapi/linux/msg.h
-index 22d95c6854e0..a70375526578 100644
---- a/include/uapi/linux/msg.h
-+++ b/include/uapi/linux/msg.h
-@@ -34,8 +34,8 @@ struct msqid_ds {
- 
- /* message buffer for msgsnd and msgrcv calls */
- struct msgbuf {
--	long mtype;         /* type of message */
--	char mtext[1];      /* message text */
-+	__kernel_long_t mtype;          /* type of message */
-+	char mtext[1];                  /* message text */
- };
- 
- /* buffer for msgctl calls IPC_INFO, MSG_INFO */
-diff --git a/include/uapi/linux/resource.h b/include/uapi/linux/resource.h
-index e0ed28477f48..36fb3b5fb181 100644
---- a/include/uapi/linux/resource.h
-+++ b/include/uapi/linux/resource.h
-@@ -23,25 +23,25 @@
- struct	rusage {
- 	struct timeval ru_utime;	/* user time used */
- 	struct timeval ru_stime;	/* system time used */
--	long	ru_maxrss;		/* maximum resident set size */
--	long	ru_ixrss;		/* integral shared memory size */
--	long	ru_idrss;		/* integral unshared data size */
--	long	ru_isrss;		/* integral unshared stack size */
--	long	ru_minflt;		/* page reclaims */
--	long	ru_majflt;		/* page faults */
--	long	ru_nswap;		/* swaps */
--	long	ru_inblock;		/* block input operations */
--	long	ru_oublock;		/* block output operations */
--	long	ru_msgsnd;		/* messages sent */
--	long	ru_msgrcv;		/* messages received */
--	long	ru_nsignals;		/* signals received */
--	long	ru_nvcsw;		/* voluntary context switches */
--	long	ru_nivcsw;		/* involuntary " */
-+	__kernel_long_t	ru_maxrss;	/* maximum resident set size */
-+	__kernel_long_t	ru_ixrss;	/* integral shared memory size */
-+	__kernel_long_t	ru_idrss;	/* integral unshared data size */
-+	__kernel_long_t	ru_isrss;	/* integral unshared stack size */
-+	__kernel_long_t	ru_minflt;	/* page reclaims */
-+	__kernel_long_t	ru_majflt;	/* page faults */
-+	__kernel_long_t	ru_nswap;	/* swaps */
-+	__kernel_long_t	ru_inblock;	/* block input operations */
-+	__kernel_long_t	ru_oublock;	/* block output operations */
-+	__kernel_long_t	ru_msgsnd;	/* messages sent */
-+	__kernel_long_t	ru_msgrcv;	/* messages received */
-+	__kernel_long_t	ru_nsignals;	/* signals received */
-+	__kernel_long_t	ru_nvcsw;	/* voluntary context switches */
-+	__kernel_long_t	ru_nivcsw;	/* involuntary " */
- };
- 
- struct rlimit {
--	unsigned long	rlim_cur;
--	unsigned long	rlim_max;
-+	__kernel_ulong_t	rlim_cur;
-+	__kernel_ulong_t	rlim_max;
- };
- 
- #define RLIM64_INFINITY		(~0ULL)
-diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-index ec36fa1a83a4..78b69413f582 100644
---- a/include/uapi/linux/shm.h
-+++ b/include/uapi/linux/shm.h
-@@ -68,11 +68,11 @@ struct	shminfo {
- 
- struct shm_info {
- 	int used_ids;
--	unsigned long shm_tot;	/* total allocated shm */
--	unsigned long shm_rss;	/* total resident shm */
--	unsigned long shm_swp;	/* total swapped shm */
--	unsigned long swap_attempts;
--	unsigned long swap_successes;
-+	__kernel_ulong_t shm_tot;	/* total allocated shm */
-+	__kernel_ulong_t shm_rss;	/* total resident shm */
-+	__kernel_ulong_t shm_swp;	/* total swapped shm */
-+	__kernel_ulong_t swap_attempts;
-+	__kernel_ulong_t swap_successes;
- };
- 
- 
-diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
-index a7ea81f13711..92685d826444 100644
---- a/include/uapi/linux/timex.h
-+++ b/include/uapi/linux/timex.h
-@@ -63,27 +63,27 @@
-  */
- struct timex {
- 	unsigned int modes;	/* mode selector */
--	long offset;		/* time offset (usec) */
--	long freq;		/* frequency offset (scaled ppm) */
--	long maxerror;		/* maximum error (usec) */
--	long esterror;		/* estimated error (usec) */
-+	__kernel_long_t offset;	/* time offset (usec) */
-+	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
-+	__kernel_long_t maxerror;/* maximum error (usec) */
-+	__kernel_long_t esterror;/* estimated error (usec) */
- 	int status;		/* clock command/status */
--	long constant;		/* pll time constant */
--	long precision;		/* clock precision (usec) (read only) */
--	long tolerance;		/* clock frequency tolerance (ppm)
--				 * (read only)
--				 */
-+	__kernel_long_t constant;/* pll time constant */
-+	__kernel_long_t precision;/* clock precision (usec) (read only) */
-+	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
-+				   * (read only)
-+				   */
- 	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
--	long tick;		/* (modified) usecs between clock ticks */
-+	__kernel_long_t tick;	/* (modified) usecs between clock ticks */
- 
--	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
--	long jitter;            /* pps jitter (us) (ro) */
-+	__kernel_long_t ppsfreq;/* pps frequency (scaled ppm) (ro) */
-+	__kernel_long_t jitter; /* pps jitter (us) (ro) */
- 	int shift;              /* interval duration (s) (shift) (ro) */
--	long stabil;            /* pps stability (scaled ppm) (ro) */
--	long jitcnt;            /* jitter limit exceeded (ro) */
--	long calcnt;            /* calibration intervals (ro) */
--	long errcnt;            /* calibration errors (ro) */
--	long stbcnt;            /* stability limit exceeded (ro) */
-+	__kernel_long_t stabil;            /* pps stability (scaled ppm) (ro) */
-+	__kernel_long_t jitcnt; /* jitter limit exceeded (ro) */
-+	__kernel_long_t calcnt; /* calibration intervals (ro) */
-+	__kernel_long_t errcnt; /* calibration errors (ro) */
-+	__kernel_long_t stbcnt; /* stability limit exceeded (ro) */
- 
- 	int tai;		/* TAI offset (ro) */
- 
