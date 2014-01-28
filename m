@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaA1NCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 08:02:11 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50849 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754574AbaA1NCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 08:02:06 -0500
-Date: Tue, 28 Jan 2014 13:01:54 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Gross <agross@codeaurora.org>,
-        dmaengine@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Patch v3 2/2] dmaengine: qcom_bam_dma: Add device tree binding
-Message-ID: <20140128130153.GI15937@n2100.arm.linux.org.uk>
-References: <1390890471-14882-1-git-send-email-agross@codeaurora.org> <20140128111756.GE15937@n2100.arm.linux.org.uk> <20140128113242.GJ10628@intel.com> <4916428.f0GtxdkWKj@wuerfel>
+	id S1755005AbaA1NEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 08:04:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61289 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855AbaA1NEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 08:04:35 -0500
+Date: Tue, 28 Jan 2014 14:04:08 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>
+Subject: Re: [PATCH 00/16] perf tools: Add libdw DWARF unwind support
+Message-ID: <20140128130408.GF1229@krava.brq.redhat.com>
+References: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
+ <20140117122431.GC1130@krava.brq.redhat.com>
+ <CAFrcx1nadiFDq1hyha83Y9GEJmKvXDeW-+7mLA+zj3jE9H5iWA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4916428.f0GtxdkWKj@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAFrcx1nadiFDq1hyha83Y9GEJmKvXDeW-+7mLA+zj3jE9H5iWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 01:05:10PM +0100, Arnd Bergmann wrote:
-> Ok, thanks for clearing up my mistake. However, the argument remains:
-> the direction doesn't need to be in the DT DMA descriptor since it
-> gets set by software anyway.
+On Fri, Jan 17, 2014 at 01:27:53PM +0100, Jean Pihet wrote:
+> Hi Jiri,
+> 
+> Let me start on it next week. Is that OK?
+> 
+> Thx for the reminder, I had not entirely forgotten it though ;p
+hi,
+rebased patchset to latest acme's perf/core is in:
+  https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/
+  perf/core_libdw_unwind
 
-Yes - for full-duplex, it's implied, since you have one DMA request
-(and therefore virtual channel) for memory-to-device and another for
-device-to-memory.
+aaand ping ;-)
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+thanks,
+jirka
