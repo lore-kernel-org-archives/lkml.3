@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaA1QFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:05:40 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44378 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaA1QFh (ORCPT
+	id S1755330AbaA1QG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:06:28 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:12914 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754970AbaA1QG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:05:37 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] net: Fix warning on make htmldocs caused by skbuff.c
-Date: Wed, 29 Jan 2014 01:05:28 +0900
-Message-Id: <1390925128-20768-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.rc1
+	Tue, 28 Jan 2014 11:06:27 -0500
+Date: Tue, 28 Jan 2014 11:06:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dongsheng Yang <dongsheng081251@gmail.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, raistlin@linux.it, juri.lelli@gmail.com,
+        clark.williams@gmail.com, mingo@redhat.com
+Subject: Re: [PATCH 0/3] sched: Collect the bits about priority into a new
+ header file, include/linux/sched/prio.h.
+Message-ID: <20140128110623.3dba0eca@gandalf.local.home>
+In-Reply-To: <CA+qeAOqW58894hGvCP0N0E-EUESfFPeqMmXUuhqxEZrRjDV97A@mail.gmail.com>
+References: <20140123065204.4e0b6902@gandalf.local.home>
+	<cover.1390859827.git.yangds.fnst@cn.fujitsu.com>
+	<20140127104532.6a0926e9@gandalf.local.home>
+	<CA+qeAOqW58894hGvCP0N0E-EUESfFPeqMmXUuhqxEZrRjDV97A@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixed following Warning while executing "make htmldocs".
+On Tue, 28 Jan 2014 23:59:06 +0800
+Dongsheng Yang <dongsheng081251@gmail.com> wrote:
 
-Warning(/net/core/skbuff.c:2164): No description found for parameter 'from'
-Warning(/net/core/skbuff.c:2164): Excess function parameter 'source'
-description in 'skb_zerocopy'
-Replace "@source" with "@from" fixed the warning.
+> Hi Steve,
+> 
+> Sorry for the late reply, I have been vacation for Chinese Spring Festival.
+> 
+> Aha, yes, it looks strange a mail from future.
+> 
+> Could you help to figure out which timezone is the standard one for LKML?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- net/core/skbuff.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It should just be your own timezone. I think you had the wrong timezone
+before as it was "Date: Mon, 27 Jan 2014 17:15:36 -0500". You had the
+same timezone as I have (-0500). But this email is correct:
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 15057d2..16a7c78 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2149,7 +2149,7 @@ EXPORT_SYMBOL_GPL(skb_zerocopy_headlen);
- /**
-  *	skb_zerocopy - Zero copy skb to skb
-  *	@to: destination buffer
-- *	@source: source buffer
-+ *	@from: source buffer
-  *	@len: number of bytes to copy from source buffer
-  *	@hlen: size of linear headroom in destination buffer
-  *
--- 
-1.9.rc1
+ Date: Tue, 28 Jan 2014 23:59:06 +0800
 
+Basically, whatever you use to send email, make sure that it is set up
+to send with your own timezone. There's no standard one for LKML. The
+mail clients will do the conversion.
+
+-- Steve
