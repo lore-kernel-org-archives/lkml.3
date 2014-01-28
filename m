@@ -1,52 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238AbaA1WDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 17:03:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32788 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742AbaA1WDp (ORCPT
+	id S932307AbaA1WFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 17:05:40 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60114 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932184AbaA1WFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 17:03:45 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Dave Hansen <dave.hansen@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] memblock: Add limit checking to memblock_virt_alloc
-Date: Tue, 28 Jan 2014 14:04:25 -0800
-Message-Id: <1390946665-2967-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 28 Jan 2014 17:05:33 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 5/5][RFT] ACPI / hotplug: Dispach hotplug notifications from acpi_bus_notify()
+Date: Tue, 28 Jan 2014 23:16:44 +0100
+Message-ID: <5444171.vsYCTAB6nQ@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1508034.JFmpIOzjVZ@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <1508034.JFmpIOzjVZ@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In original bootmem wrapper for memblock, we have limit checking.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Add it to memblock_virt_alloc, to address arm and x86 booting crash.
+Since acpi_bus_notify() is executed on all notifications for all
+devices anyway, rename acpi_hotplug_notify_cb() to acpi_system_notify()
+and call it directly from acpi_bus_notify() instead of installing
+notify handlers pointing to it for all hotplug devices.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+This change reduces both the size and complexity of ACPI-base device
+hotplug code.  Moreover, since acpi_system_notify() only does
+significant things for devices that either have an ACPI scan handler,
+or have a hotplug context with .eject() defined, and those devices
+had notify handlers pointing to acpi_hotplug_notify_cb() installed
+before anyway, this change shouldn't modify functionality, except for
+executing _OST with the ACPI_OST_SC_NON_SPECIFIC_FAILURE status code
+for devices that were not handled at all previously.
 
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- mm/memblock.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/acpi/bus.c                 |   42 -----------------------------------
+ drivers/acpi/internal.h            |    1 
+ drivers/acpi/scan.c                |   44 -------------------------------------
+ drivers/pci/hotplug/acpiphp.h      |    1 
+ drivers/pci/hotplug/acpiphp_glue.c |   16 +++++--------
+ include/acpi/acpi_bus.h            |    2 -
+ 6 files changed, 10 insertions(+), 96 deletions(-)
 
-Index: linux-2.6/mm/memblock.c
+Index: linux-pm/drivers/acpi/bus.c
 ===================================================================
---- linux-2.6.orig/mm/memblock.c
-+++ linux-2.6/mm/memblock.c
-@@ -1077,6 +1077,9 @@ static void * __init memblock_virt_alloc
- 	if (!align)
- 		align = SMP_CACHE_BYTES;
+--- linux-pm.orig/drivers/acpi/bus.c
++++ linux-pm/drivers/acpi/bus.c
+@@ -345,47 +345,7 @@ static void acpi_bus_notify(acpi_handle
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Notification %#02x to handle %p\n",
+ 			  type, handle));
  
-+	if (max_addr > memblock.current_limit)
-+		max_addr = memblock.current_limit;
+-	switch (type) {
+-
+-	case ACPI_NOTIFY_BUS_CHECK:
+-		/* TBD */
+-		break;
+-
+-	case ACPI_NOTIFY_DEVICE_CHECK:
+-		/* TBD */
+-		break;
+-
+-	case ACPI_NOTIFY_DEVICE_WAKE:
+-		/* TBD */
+-		break;
+-
+-	case ACPI_NOTIFY_EJECT_REQUEST:
+-		/* TBD */
+-		break;
+-
+-	case ACPI_NOTIFY_DEVICE_CHECK_LIGHT:
+-		/* TBD: Exactly what does 'light' mean? */
+-		break;
+-
+-	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
+-		/* TBD */
+-		break;
+-
+-	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
+-		/* TBD */
+-		break;
+-
+-	case ACPI_NOTIFY_POWER_FAULT:
+-		/* TBD */
+-		break;
+-
+-	default:
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "Received unknown/unsupported notification [%08x]\n",
+-				  type));
+-		break;
+-	}
+-
++	acpi_system_notify(handle, type);
+ 	acpi_bus_get_device(handle, &device);
+ 	if (device) {
+ 		driver = device->driver;
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -74,6 +74,7 @@ static inline void acpi_lpss_init(void)
+ 
+ bool acpi_queue_hotplug_work(struct work_struct *work);
+ bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
++void acpi_system_notify(acpi_handle handle, u32 type);
+ 
+ /* --------------------------------------------------------------------------
+                      Device Node Initialization / Removal
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -485,7 +485,7 @@ static void acpi_device_hotplug(void *da
+ 	unlock_device_hotplug();
+ }
+ 
+-static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
++void acpi_system_notify(acpi_handle handle, u32 type)
+ {
+ 	u32 ost_code = ACPI_OST_SC_SUCCESS;
+ 	struct acpi_device *adev;
+@@ -551,18 +551,6 @@ static void acpi_hotplug_notify_cb(acpi_
+ 	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+ }
+ 
+-void acpi_install_hotplug_notify_handler(acpi_handle handle)
+-{
+-	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-				    acpi_hotplug_notify_cb, NULL);
+-}
+-
+-void acpi_remove_hotplug_notify_handler(acpi_handle handle)
+-{
+-	acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-				   acpi_hotplug_notify_cb);
+-}
+-
+ static ssize_t real_power_state_show(struct device *dev,
+ 				     struct device_attribute *attr, char *buf)
+ {
+@@ -1982,34 +1970,6 @@ void acpi_scan_hotplug_enabled(struct ac
+ 	mutex_unlock(&acpi_scan_lock);
+ }
+ 
+-static void acpi_scan_init_hotplug(acpi_handle handle, int type)
+-{
+-	struct acpi_device_pnp pnp = {};
+-	struct acpi_hardware_id *hwid;
+-	struct acpi_scan_handler *handler;
+-
+-	INIT_LIST_HEAD(&pnp.ids);
+-	acpi_set_pnp_ids(handle, &pnp, type);
+-
+-	if (!pnp.type.hardware_id)
+-		goto out;
+-
+-	/*
+-	 * This relies on the fact that acpi_install_notify_handler() will not
+-	 * install the same notify handler routine twice for the same handle.
+-	 */
+-	list_for_each_entry(hwid, &pnp.ids, list) {
+-		handler = acpi_scan_match_handler(hwid->id, NULL);
+-		if (handler) {
+-			acpi_install_hotplug_notify_handler(handle);
+-			break;
+-		}
+-	}
+-
+-out:
+-	acpi_free_pnp_ids(&pnp);
+-}
+-
+ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+ 				      void *not_used, void **return_value)
+ {
+@@ -2031,8 +1991,6 @@ static acpi_status acpi_bus_check_add(ac
+ 		return AE_OK;
+ 	}
+ 
+-	acpi_scan_init_hotplug(handle, type);
+-
+ 	acpi_add_single_object(&device, handle, type, sta);
+ 	if (!device)
+ 		return AE_CTRL_DEPTH;
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -292,7 +292,6 @@ static acpi_status register_slot(acpi_ha
+ 	newfunc = &context->func;
+ 	newfunc->function = function;
+ 	newfunc->parent = bridge;
+-	mutex_unlock(&acpiphp_context_lock);
+ 
+ 	if (acpi_has_method(handle, "_EJ0"))
+ 		newfunc->flags = FUNC_HAS_EJ0;
+@@ -300,8 +299,14 @@ static acpi_status register_slot(acpi_ha
+ 	if (acpi_has_method(handle, "_STA"))
+ 		newfunc->flags |= FUNC_HAS_STA;
+ 
++	/*
++	 * Dock stations' notify handler should be used for dock devices instead
++	 * of the common one, so clear hp.event in their contexts.
++	 */
+ 	if (acpi_has_method(handle, "_DCK"))
+-		newfunc->flags |= FUNC_HAS_DCK;
++		context->hp.event = NULL;
 +
- again:
- 	alloc = memblock_find_in_range_node(size, align, min_addr, max_addr,
- 					    nid);
++	mutex_unlock(&acpiphp_context_lock);
+ 
+ 	/* search for objects that share the same slot */
+ 	list_for_each_entry(slot, &bridge->slots, node)
+@@ -369,10 +374,6 @@ static acpi_status register_slot(acpi_ha
+ 			pr_debug("failed to register dock device\n");
+ 	}
+ 
+-	/* install notify handler */
+-	if (!(newfunc->flags & FUNC_HAS_DCK))
+-		acpi_install_hotplug_notify_handler(handle);
+-
+ 	return AE_OK;
+ }
+ 
+@@ -409,9 +410,6 @@ static void cleanup_bridge(struct acpiph
+ 
+ 			if (is_dock_device(handle))
+ 				unregister_hotplug_dock_device(handle);
+-
+-			if (!(func->flags & FUNC_HAS_DCK))
+-				acpi_remove_hotplug_notify_handler(handle);
+ 		}
+ 		slot->flags |= SLOT_IS_GOING_AWAY;
+ 		if (slot->slot)
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -435,8 +435,6 @@ static inline bool acpi_device_enumerate
+ typedef void (*acpi_hp_callback)(void *data, u32 src);
+ 
+ acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
+-void acpi_install_hotplug_notify_handler(acpi_handle handle);
+-void acpi_remove_hotplug_notify_handler(acpi_handle handle);
+ 
+ /**
+  * module_acpi_driver(acpi_driver) - Helper macro for registering an ACPI driver
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -167,7 +167,6 @@ struct acpiphp_attention_info
+ 
+ #define FUNC_HAS_STA		(0x00000001)
+ #define FUNC_HAS_EJ0		(0x00000002)
+-#define FUNC_HAS_DCK            (0x00000004)
+ 
+ /* function prototypes */
+ 
+
