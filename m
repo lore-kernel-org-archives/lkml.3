@@ -1,240 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaA1XWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:22:14 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:64506 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888AbaA1XWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:22:12 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/11] sysfs, driver-core: remove unused {sysfs|device}_schedule_callback_owner()
-Date: Tue, 28 Jan 2014 18:21:51 -0500
-Message-Id: <1390951311-15325-12-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390951311-15325-1-git-send-email-tj@kernel.org>
-References: <1390951311-15325-1-git-send-email-tj@kernel.org>
+	id S1755966AbaA1XWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:22:35 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34713 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755837AbaA1XWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 18:22:30 -0500
+Date: Wed, 29 Jan 2014 00:22:19 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: AMD microcode loading broken on 32 bit
+Message-ID: <20140128232219.GO815@pd.tnic>
+References: <52E15AAE.4090106@oracle.com>
+ <20140123192939.GB11190@pd.tnic>
+ <52E17087.2060301@oracle.com>
+ <20140128162431.GH815@pd.tnic>
+ <52E8168D.9060805@oracle.com>
+ <20140128205246.GL815@pd.tnic>
+ <52E81B90.8040604@oracle.com>
+ <20140128213030.GM815@pd.tnic>
+ <52E8230F.7080300@oracle.com>
+ <52E83903.5040908@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52E83903.5040908@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All device_schedule_callback_owner() users are converted to use
-device_remove_file_self().  Remove now unused
-{sysfs|device}_schedule_callback_owner().
+On Tue, Jan 28, 2014 at 06:10:59PM -0500, Boris Ostrovsky wrote:
+> The patch seems to have fixed the problem.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/base/core.c    | 33 ------------------
- fs/sysfs/file.c        | 92 --------------------------------------------------
- include/linux/device.h | 11 +-----
- include/linux/sysfs.h  |  9 -----
- 4 files changed, 1 insertion(+), 144 deletions(-)
+Thanks, I'll add your Reported-and-tested-by.
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 9db57af..4195364 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -615,39 +615,6 @@ void device_remove_bin_file(struct device *dev,
- }
- EXPORT_SYMBOL_GPL(device_remove_bin_file);
- 
--/**
-- * device_schedule_callback_owner - helper to schedule a callback for a device
-- * @dev: device.
-- * @func: callback function to invoke later.
-- * @owner: module owning the callback routine
-- *
-- * Attribute methods must not unregister themselves or their parent device
-- * (which would amount to the same thing).  Attempts to do so will deadlock,
-- * since unregistration is mutually exclusive with driver callbacks.
-- *
-- * Instead methods can call this routine, which will attempt to allocate
-- * and schedule a workqueue request to call back @func with @dev as its
-- * argument in the workqueue's process context.  @dev will be pinned until
-- * @func returns.
-- *
-- * This routine is usually called via the inline device_schedule_callback(),
-- * which automatically sets @owner to THIS_MODULE.
-- *
-- * Returns 0 if the request was submitted, -ENOMEM if storage could not
-- * be allocated, -ENODEV if a reference to @owner isn't available.
-- *
-- * NOTE: This routine won't work if CONFIG_SYSFS isn't set!  It uses an
-- * underlying sysfs routine (since it is intended for use by attribute
-- * methods), and if sysfs isn't available you'll get nothing but -ENOSYS.
-- */
--int device_schedule_callback_owner(struct device *dev,
--		void (*func)(struct device *), struct module *owner)
--{
--	return sysfs_schedule_callback(&dev->kobj,
--			(void (*)(void *)) func, dev, owner);
--}
--EXPORT_SYMBOL_GPL(device_schedule_callback_owner);
--
- static void klist_children_get(struct klist_node *n)
- {
- 	struct device_private *p = to_device_private_parent(n);
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 1b8b91b..28cc1acd 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -453,95 +453,3 @@ void sysfs_remove_bin_file(struct kobject *kobj,
- 	kernfs_remove_by_name(kobj->sd, attr->attr.name);
- }
- EXPORT_SYMBOL_GPL(sysfs_remove_bin_file);
--
--struct sysfs_schedule_callback_struct {
--	struct list_head	workq_list;
--	struct kobject		*kobj;
--	void			(*func)(void *);
--	void			*data;
--	struct module		*owner;
--	struct work_struct	work;
--};
--
--static struct workqueue_struct *sysfs_workqueue;
--static DEFINE_MUTEX(sysfs_workq_mutex);
--static LIST_HEAD(sysfs_workq);
--static void sysfs_schedule_callback_work(struct work_struct *work)
--{
--	struct sysfs_schedule_callback_struct *ss = container_of(work,
--			struct sysfs_schedule_callback_struct, work);
--
--	(ss->func)(ss->data);
--	kobject_put(ss->kobj);
--	module_put(ss->owner);
--	mutex_lock(&sysfs_workq_mutex);
--	list_del(&ss->workq_list);
--	mutex_unlock(&sysfs_workq_mutex);
--	kfree(ss);
--}
--
--/**
-- * sysfs_schedule_callback - helper to schedule a callback for a kobject
-- * @kobj: object we're acting for.
-- * @func: callback function to invoke later.
-- * @data: argument to pass to @func.
-- * @owner: module owning the callback code
-- *
-- * sysfs attribute methods must not unregister themselves or their parent
-- * kobject (which would amount to the same thing).  Attempts to do so will
-- * deadlock, since unregistration is mutually exclusive with driver
-- * callbacks.
-- *
-- * Instead methods can call this routine, which will attempt to allocate
-- * and schedule a workqueue request to call back @func with @data as its
-- * argument in the workqueue's process context.  @kobj will be pinned
-- * until @func returns.
-- *
-- * Returns 0 if the request was submitted, -ENOMEM if storage could not
-- * be allocated, -ENODEV if a reference to @owner isn't available,
-- * -EAGAIN if a callback has already been scheduled for @kobj.
-- */
--int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
--		void *data, struct module *owner)
--{
--	struct sysfs_schedule_callback_struct *ss, *tmp;
--
--	if (!try_module_get(owner))
--		return -ENODEV;
--
--	mutex_lock(&sysfs_workq_mutex);
--	list_for_each_entry_safe(ss, tmp, &sysfs_workq, workq_list)
--		if (ss->kobj == kobj) {
--			module_put(owner);
--			mutex_unlock(&sysfs_workq_mutex);
--			return -EAGAIN;
--		}
--	mutex_unlock(&sysfs_workq_mutex);
--
--	if (sysfs_workqueue == NULL) {
--		sysfs_workqueue = create_singlethread_workqueue("sysfsd");
--		if (sysfs_workqueue == NULL) {
--			module_put(owner);
--			return -ENOMEM;
--		}
--	}
--
--	ss = kmalloc(sizeof(*ss), GFP_KERNEL);
--	if (!ss) {
--		module_put(owner);
--		return -ENOMEM;
--	}
--	kobject_get(kobj);
--	ss->kobj = kobj;
--	ss->func = func;
--	ss->data = data;
--	ss->owner = owner;
--	INIT_WORK(&ss->work, sysfs_schedule_callback_work);
--	INIT_LIST_HEAD(&ss->workq_list);
--	mutex_lock(&sysfs_workq_mutex);
--	list_add_tail(&ss->workq_list, &sysfs_workq);
--	mutex_unlock(&sysfs_workq_mutex);
--	queue_work(sysfs_workqueue, &ss->work);
--	return 0;
--}
--EXPORT_SYMBOL_GPL(sysfs_schedule_callback);
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 1ff3f16..fb1ba13 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -566,12 +566,6 @@ extern int __must_check device_create_bin_file(struct device *dev,
- 					const struct bin_attribute *attr);
- extern void device_remove_bin_file(struct device *dev,
- 				   const struct bin_attribute *attr);
--extern int device_schedule_callback_owner(struct device *dev,
--		void (*func)(struct device *dev), struct module *owner);
--
--/* This is a macro to avoid include problems with THIS_MODULE */
--#define device_schedule_callback(dev, func)			\
--	device_schedule_callback_owner(dev, func, THIS_MODULE)
- 
- /* device resource management */
- typedef void (*dr_release_t)(struct device *dev, void *res);
-@@ -931,10 +925,7 @@ extern int device_online(struct device *dev);
- extern struct device *__root_device_register(const char *name,
- 					     struct module *owner);
- 
--/*
-- * This is a macro to avoid include problems with THIS_MODULE,
-- * just as per what is done for device_schedule_callback() above.
-- */
-+/* This is a macro to avoid include problems with THIS_MODULE */
- #define root_device_register(name) \
- 	__root_device_register(name, THIS_MODULE)
- 
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index bd96c60..14df054 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -178,9 +178,6 @@ struct sysfs_ops {
- 
- #ifdef CONFIG_SYSFS
- 
--int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
--			    void *data, struct module *owner);
--
- int __must_check sysfs_create_dir_ns(struct kobject *kobj, const void *ns);
- void sysfs_remove_dir(struct kobject *kobj);
- int __must_check sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
-@@ -249,12 +246,6 @@ int __must_check sysfs_init(void);
- 
- #else /* CONFIG_SYSFS */
- 
--static inline int sysfs_schedule_callback(struct kobject *kobj,
--		void (*func)(void *), void *data, struct module *owner)
--{
--	return -ENOSYS;
--}
--
- static inline int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
- {
- 	return 0;
+>> I'll give it a spin. Apparently the problem is currently in
+>> install_equiv_cpu_table() when we are trying to index into buf and
+>> buf (which is container) doesn't appear to be there.
+
+Yes.
+
+> >Are you sure that
+> >
+> >    container = (u8 *)(__va((u32)relocated_ramdisk) +
+> >                           ((u32)container -
+> >boot_params.hdr.ramdisk_image));
+> >
+> >in save_microcode_in_initrd_amd() always results in a valid
+> >pointer? It is non-NULL but it
+> >points to address that looks to be not mapped.
+
+Well, we unconditionally relocate the ramdisk to direct-mapped memory,
+see relocate_initrd(). I'll take a look at this tomorrow though, it is
+late here.
+
+The good thing is, I can reproduce the initial crash you reported in
+qemu+kvm which makes everything very easy to play with. :)
+
 -- 
-1.8.5.3
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
