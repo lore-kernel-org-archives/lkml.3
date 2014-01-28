@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaA1Gxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 01:53:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569AbaA1Gxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 01:53:38 -0500
-Date: Tue, 28 Jan 2014 01:53:16 -0500
-From: Dave Jones <davej@redhat.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when
- seting kernel nodes to unhotpluggable.
-Message-ID: <20140128065316.GB27636@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Tang Chen <tangchen@cn.fujitsu.com>,
-	David Rientjes <rientjes@google.com>, tglx@linutronix.de,
-	mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-	zhangyanfei@cn.fujitsu.com, guz.fnst@cn.fujitsu.com, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com>
- <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
- <52E70165.8070709@cn.fujitsu.com>
- <20140128025537.GA21730@redhat.com>
- <52E722F5.9010505@cn.fujitsu.com>
- <20140128035518.GA25386@redhat.com>
- <52E7364F.5010700@cn.fujitsu.com>
- <20140128044749.GA27164@redhat.com>
- <52E73D61.8000304@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E73D61.8000304@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754648AbaA1G4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 01:56:13 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:48188 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaA1G4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 01:56:11 -0500
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Daniel Jeong <gshark.jeong@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-media@vger.kernel.org>
+Subject: [RFCv2,1/2] v4l2-controls.h: add addtional Flash fault bits 
+Date: Tue, 28 Jan 2014 15:55:57 +0900
+Message-Id: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 01:17:21PM +0800, Tang Chen wrote:
+Add additional FLASH Fault bits to dectect faults from chip.
+Some Flash drivers support UVLO, IVFM, NTC Trip faults.
+UVLO : 	Under Voltage Lock Out Threshold crossed
+IVFM : 	IVFM block reported and/or adjusted LED current Input Voltage Flash Monitor trip threshold
+NTC  : 	NTC Threshold crossed. Many Flash drivers have a pin and the fault bit to 
+serves as a threshold detector for negative temperature coefficient (NTC) thermistors.
 
- > Seeing from your earlier mail, it crashed at:
- > 
- >                  while (zonelist_zone_idx(z) > highest_zoneidx)
- >    de:   3b 77 08                cmp    0x8(%rdi),%esi
- > 
- > 
- > 	I stuck this at the top of the function..
- > 
- > 	printk(KERN_ERR "z:%p nodes:%p highest:%d\n", z, nodes, highest_zoneidx);
- > 
- > 	and got
- > 
- > 	z: 1d08   nodes: (null)  highest:3
- > 
- > 
- > nodes=null and highest=3, they are correct. When looking into 
- > next_zones_zonelist(),
- > I cannot see why it crashed. So, can you print the zone id in the
- > for_each_zone_zonelist() loop in nr_free_zone_pages() ?
- > I want to know why it crashed. A NULL pointer ?  Which one ?
+Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+---
+ include/uapi/linux/v4l2-controls.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
-It's not so easy further in the function, because the oops scrolls off
-any useful printks, there's no scrollback, and no logging..
-I even tried adding some udelays to slow things down (and using boot_delay)
-but that makes things just hang seemingly indefinitly.
-
-What about that 'z' ptr though ? 0x1d08 seems like a strange address
-for us to have a structure at, though I'm not too familiar with the early
-boot code, so maybe we do have something down there ?
-
-	Dave 
+diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+index 1666aab..01d730c 100644
+--- a/include/uapi/linux/v4l2-controls.h
++++ b/include/uapi/linux/v4l2-controls.h
+@@ -803,6 +803,9 @@ enum v4l2_flash_strobe_source {
+ #define V4L2_FLASH_FAULT_SHORT_CIRCUIT		(1 << 3)
+ #define V4L2_FLASH_FAULT_OVER_CURRENT		(1 << 4)
+ #define V4L2_FLASH_FAULT_INDICATOR		(1 << 5)
++#define V4L2_FLASH_FAULT_UVLO			(1 << 6)
++#define V4L2_FLASH_FAULT_IVFM			(1 << 7)
++#define V4L2_FLASH_FAULT_NTC_TRIP		(1 << 8)
+ 
+ #define V4L2_CID_FLASH_CHARGE			(V4L2_CID_FLASH_CLASS_BASE + 11)
+ #define V4L2_CID_FLASH_READY			(V4L2_CID_FLASH_CLASS_BASE + 12)
+-- 
+1.7.9.5
 
