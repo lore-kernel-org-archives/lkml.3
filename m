@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaA1Ihw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:37:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754764AbaA1Ihu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:37:50 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org
-Subject: [PATCH 03/14] NVMe: Cleanup nvme_create_queue() and nvme_disable_queue()
-Date: Tue, 28 Jan 2014 09:38:49 +0100
-Message-Id: <7960acc850c15928afe22bd093c100a5dd10880f.1390897693.git.agordeev@redhat.com>
-In-Reply-To: <cover.1390897693.git.agordeev@redhat.com>
-References: <cover.1390897693.git.agordeev@redhat.com>
+	id S932077AbaA1Ijt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:39:49 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:62095 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbaA1Ijr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 03:39:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140126202509.GA10275@gmail.com>
+References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+	<CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
+	<20140126201928.GA8224@gmail.com>
+	<20140126202509.GA10275@gmail.com>
+Date: Tue, 28 Jan 2014 09:39:46 +0100
+X-Google-Sender-Auth: f-9AcvsvnPXIph7A1Kw0ChTSaG0
+Message-ID: <CAMuHMdUzGhpa0Bxa2X69-+5jFE3Y3+Kqyof5Te3Y+aUeRPzCWg@mail.gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A queue structure contains both a pointer to the device it
-belongs to and the queue ID - there is no need to drag these
-parameters around.
+On Sun, Jan 26, 2014 at 9:25 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> * Ingo Molnar <mingo@kernel.org> wrote:
+>> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>> > On Sun, Jan 26, 2014 at 4:27 AM, David Howells <dhowells@redhat.com> wrote:
+>> > > -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
+>> > > +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+>> > > -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
+>> > > +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
+>> >
+>> > So the S_IFREG isn't necessary.
+>> >
+>> > And quite frankly, I personally think S_IRUGO | S_IWUSR is _less_
+>> > readable than 0644. It's damn hard to parse those random letter
+>> > combinations, and at least I have to really think about it, in a way
+>> > that the octal representation does *not* make me go "I have to think
+>> > about that".
+>> >
+>> > So my personal preference would be to just see that simple 0644 in
+>> > proc_create. Hmm?
+>>
+>> Perhaps we could also generate the most common variants as:
+>>
+>>  #define PERM__rw_r__r__              0644
+>>  #define PERM__r________              0400
+>>  #define PERM__r__r__r__              0444
+>>  #define PERM__r_xr_xr_x              0555
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/block/nvme-core.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+I like it (also without the PERM prefix, cfr. Alexey's old patch).
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 60c6c05..606a2e1 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1197,9 +1197,10 @@ static void nvme_clear_queue(struct nvme_queue *nvmeq)
- 	spin_unlock_irq(&nvmeq->q_lock);
- }
- 
--static void nvme_disable_queue(struct nvme_dev *dev, int qid)
-+static void nvme_disable_queue(struct nvme_queue *nvmeq)
- {
--	struct nvme_queue *nvmeq = dev->queues[qid];
-+	struct nvme_dev *dev = nvmeq->dev;
-+	int qid = nvmeq->qid;
- 
- 	if (!nvmeq)
- 		return;
-@@ -1288,9 +1289,10 @@ static void nvme_init_queue(struct nvme_queue *nvmeq, u16 qid)
- 	nvmeq->q_suspended = 0;
- }
- 
--static int nvme_create_queue(struct nvme_queue *nvmeq, int qid)
-+static int nvme_create_queue(struct nvme_queue *nvmeq)
- {
- 	struct nvme_dev *dev = nvmeq->dev;
-+	int qid = nvmeq->qid;
- 	int result;
- 
- 	result = adapter_alloc_cq(dev, qid, nvmeq);
-@@ -1974,10 +1976,10 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
- 	}
- 
- 	for (i = 1; i < dev->queue_count; i++) {
--		result = nvme_create_queue(dev->queues[i], i);
-+		result = nvme_create_queue(dev->queues[i]);
- 		if (result) {
- 			for (--i; i > 0; i--)
--				nvme_disable_queue(dev, i);
-+				nvme_disable_queue(dev->queues[i]);
- 			goto free_queues;
- 		}
- 	}
-@@ -2140,7 +2142,7 @@ static void nvme_wait_dq(struct nvme_delq_ctx *dq, struct nvme_dev *dev)
- 			set_current_state(TASK_RUNNING);
- 
- 			nvme_disable_ctrl(dev, readq(&dev->bar->cap));
--			nvme_disable_queue(dev, 0);
-+			nvme_disable_queue(dev->queues[0]);
- 
- 			send_sig(SIGKILL, dq->worker->task, 1);
- 			flush_kthread_worker(dq->worker);
-@@ -2236,7 +2238,7 @@ static void nvme_disable_io_queues(struct nvme_dev *dev)
- 		dev_err(&dev->pci_dev->dev,
- 			"Failed to create queue del task\n");
- 		for (i = dev->queue_count - 1; i > 0; i--)
--			nvme_disable_queue(dev, i);
-+			nvme_disable_queue(dev->queues[i]);
- 		return;
- 	}
- 
-@@ -2276,7 +2278,7 @@ static void nvme_dev_shutdown(struct nvme_dev *dev)
- 	} else {
- 		nvme_disable_io_queues(dev);
- 		nvme_shutdown_ctrl(dev);
--		nvme_disable_queue(dev, 0);
-+		nvme_disable_queue(dev->queues[0]);
- 	}
- 	nvme_dev_unmap(dev);
- }
-@@ -2411,7 +2413,7 @@ static int nvme_dev_start(struct nvme_dev *dev)
- 	return result;
- 
-  disable:
--	nvme_disable_queue(dev, 0);
-+	nvme_disable_queue(dev->queues[0]);
- 	spin_lock(&dev_list_lock);
- 	list_del_init(&dev->node);
- 	spin_unlock(&dev_list_lock);
--- 
-1.7.7.6
+>> or something similar, more or less matching the output of 'ls -l'?
+>
+> Another variant of this would be to do the following macro:
+>
+>         PERM(R_X, R_X, R_X)
+>         PERM(R__, R__, R__)
+>         PERM(RW_, R__, R__)
 
+IMHO, this is again less outstanding.
+
+> With the advantage of separating the groups better and reducing the
+> number of constants needed.
+
+Only a limited number of combinations is in active use, right?
+It should be difficult to create e.g. world-writable files that are
+not accessable
+by the owner.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
