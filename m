@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaA1IvE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:51:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29797 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773AbaA1IvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:51:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,735,1384329600"; 
-   d="scan'208";a="471910823"
-Message-ID: <52E76F71.4080304@intel.com>
-Date: Tue, 28 Jan 2014 16:50:57 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-gpio@vger.kernel.org, david.a.cohen@linux.intel.com,
-        linus.walleij@linaro.org, gnurou@gmail.com,
-        yanmin_zhang@linux.intel.com
-Subject: [PATCH] gpio-intel-mid: fix the incorrect return of idle callback
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	id S1754956AbaA1IwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:52:14 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:55248 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674AbaA1IwL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 03:52:11 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-6e-52e76fb92b91
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <000101cf1bd0$d1f6be70$75e43b50$@samsung.com>
+ <1390888811.25542.54.camel@kjgkr>
+In-reply-to: <1390888811.25542.54.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: use inode mutex to keep atomicity of
+ f2fs_falloc
+Date: Tue, 28 Jan 2014 16:51:13 +0800
+Message-id: <000001cf1c06$3ac9a9f0$b05cfdd0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQLn+/8NyoY1LRC/kHMBJ/XOIJINvgIZpkFfmFcZ1dA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd1d+c+DDF6qWFzf9ZfJ4tIid4s9
+	e0+yWFzeNYfNgcVj94LPTB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CV0fyssGCBQMXbfz/Y
+	Gxh/83QxcnJICJhIdC1+xQhhi0lcuLeerYuRi0NIYDqjxJML+1kgnB+MEhs/nGYDqWITUJFY
+	3vGfCcQWEZCWmPVpHguIzSyQKTHn9WRWEFtIIFZi5dM1YDangJ7E/v272bsYOTiEBSIkdi6t
+	AAmzCKhK/NuyEKyVV8BSouXzFyhbUOLH5HtQI9UlJs1bxAxha0s8eXeBFeJQBYkdZ18zQpxg
+	JdH6/DBUjbjExiO3WCYwCs1CMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS9
+	5PzcTYzgoH8mtYNxZYPFIUYBDkYlHt6OzmdBQqyJZcWVuYcYJTiYlUR4g/OeBwnxpiRWVqUW
+	5ccXleakFh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgTDS7quJaxLvnw3FeK5n2
+	vsyQHE/H+ffZbqxKEHt49Ejwsf32l8WtUpfKN+yeePJzQfeX/V1BTo3Pls4vMHzZrXvs03uN
+	FRl+U9gMMvwi6n66Se3M3psY79ndpiy3pfqb7fa+Fj7J6Gmnly95nlYkUNOpfvq6sM/Mf832
+	yo/Knf+eEX8yc0aqEktxRqKhFnNRcSIAc+1p/3YCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "xinhui.pan" <xinhuiX.pan@intel.com>
+Hi,
 
-intel_gpio_runtime_idle should return correct error code if it do fail.
-make it more correct even though -EBUSY is the most possible return value.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Tuesday, January 28, 2014 2:00 PM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: use inode mutex to keep atomicity of f2fs_falloc
+> 
+> Hi,
+> 
+> 2014-01-28 (화), 10:29 +0800, Chao Yu:
+> > Previously without protection of inode mutex, f2fs_falloc and other data
+> > correlated operations will interfere with each other.
+> 
+> Could you explain a little bit more what kind of scenarios wrt this?
 
-Signed-off-by: bo.he <bo.he@intel.com>
-Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
----
- drivers/gpio/gpio-intel-mid.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+1. Without protection of i_mutex, status(e.g. i_size) of inode could be changed
+by other operation(e.g. vfs_write()/vfs_truncate()) when we fallocate a file, it
+may cause us walk into wrong branch code after we check these status of inode,
+and vice versa.
+2. i_size_write()/inode_newsize_ok() is called in f2fs_fallocate(), usually we
+use i_mutex to protect these functions.
 
-diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
-index d1b50ef..05749a3 100644
---- a/drivers/gpio/gpio-intel-mid.c
-+++ b/drivers/gpio/gpio-intel-mid.c
-@@ -394,7 +394,9 @@ static const struct irq_domain_ops intel_gpio_irq_ops = {
- 
- static int intel_gpio_runtime_idle(struct device *dev)
- {
--	pm_schedule_suspend(dev, 500);
-+	int err = pm_schedule_suspend(dev, 500);
-+	if (err)
-+		return err;
- 	return -EBUSY;
- }
- 
--- 
-1.7.9.5
+> 
+> 
+> > So let's use inode mutex to keep atomicity of f2fs_falloc.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/file.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> > index 85e91ca..ece380f 100644
+> > --- a/fs/f2fs/file.c
+> > +++ b/fs/f2fs/file.c
+> > @@ -559,6 +559,8 @@ static long f2fs_fallocate(struct file *file, int mode,
+> >  	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+> >  		return -EOPNOTSUPP;
+> >
+> > +	mutex_lock(&inode->i_mutex);
+> > +
+> >  	if (mode & FALLOC_FL_PUNCH_HOLE)
+> >  		ret = punch_hole(inode, offset, len);
+> >  	else
+> > @@ -568,6 +570,9 @@ static long f2fs_fallocate(struct file *file, int mode,
+> >  		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+> >  		mark_inode_dirty(inode);
+> >  	}
+> > +
+> > +	mutex_unlock(&inode->i_mutex);
+> > +
+> >  	trace_f2fs_fallocate(inode, mode, offset, len, ret);
+> >  	return ret;
+> >  }
+> 
+> --
+> Jaegeuk Kim
+> Samsung
+
