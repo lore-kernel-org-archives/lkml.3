@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749AbaA1XKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:10:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:16842 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574AbaA1XKQ (ORCPT
+	id S1755845AbaA1XL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:11:27 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:6162 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574AbaA1XLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:10:16 -0500
-Message-ID: <52E83903.5040908@oracle.com>
-Date: Tue, 28 Jan 2014 18:10:59 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: AMD microcode loading broken on 32 bit
-References: <20140121161438.GD9004@pd.tnic> <52DEB4A9.4070707@oracle.com> <20140121182554.GE9004@pd.tnic> <52E15AAE.4090106@oracle.com> <20140123192939.GB11190@pd.tnic> <52E17087.2060301@oracle.com> <20140128162431.GH815@pd.tnic> <52E8168D.9060805@oracle.com> <20140128205246.GL815@pd.tnic> <52E81B90.8040604@oracle.com> <20140128213030.GM815@pd.tnic> <52E8230F.7080300@oracle.com>
-In-Reply-To: <52E8230F.7080300@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 28 Jan 2014 18:11:25 -0500
+Message-ID: <1390950683.2807.58.camel@j-VirtualBox>
+Subject: Re: [PATCH v2 0/5] mutex: Mutex scalability patches
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Date: Tue, 28 Jan 2014 15:11:23 -0800
+In-Reply-To: <1390943313.11839.7.camel@buesod1.americas.hpqcorp.net>
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+	 <1390943313.11839.7.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 04:37 PM, Boris Ostrovsky wrote:
-> On 01/28/2014 04:30 PM, Borislav Petkov wrote:
->> On Tue, Jan 28, 2014 at 04:05:20PM -0500, Boris Ostrovsky wrote:
->>> Yes. This was a bug in our build environment. It is fixed now but I
->>> put this bug back when I was testing your patch.
->> Right, that was the deal. Oh well, we'd need to verify the container
->> too, I guess:
+On Tue, 2014-01-28 at 13:08 -0800, Davidlohr Bueso wrote:
+> On Tue, 2014-01-28 at 11:13 -0800, Jason Low wrote:
+> > v1->v2:
+> > - Replace the previous patch that limits the # of times a thread can spin with
+> >   !lock->owner with a patch that releases the mutex before holding the wait_lock
+> >   in the __mutex_unlock_common_slowpath() function.
+> > - Add a patch which allows a thread to attempt 1 mutex_spin_on_owner() without
+> >   checking need_resched() if need_resched() triggered while in the MCS queue.
+> > - Add a patch which disables preemption between modifying lock->owner and
+> >   acquiring/releasing the mutex.
+> > 
+> > This patchset addresses a few scalability issues with mutexes.
+> > 
+> > Patch 1 has the mutex_can_spin_on_owner() funtion check for need_resched()
+> > before being added to MCS queue. 
+> > 
+> > Patches 2, 3 are to fix issues with threads spinning when
+> > there is no lock owner when the mutex is under high contention.
+> > 
+> > Patch 4 and 5 are RFC patches. Patch 4 disables preemption between modifying
+> > lock->owner and locking/unlocking the mutex. Patch 5 addresses the situation
+> > where spinners can potentially wait a long time in the MCS queue for a chance
+> > to spin on mutex owner (not checking for need_resched()), yet ends up not
+> > getting to spin.
+> > 
+> > These changes benefit the AIM7 fserver and high_systime workloads (run on disk)
+> > on an 8 socket, 80 core box. The table below shows the performance
+> > improvements with 3.13 + patches 1, 2, 3 when compared to the 3.13 baseline,
+> > and the performance improvements with 3.13 + all 5 patches compared to
+> > the 3.13 baseline.
+> 
+> A lot of these changes are quite subtle. It would be good to see how
+> smaller systems are impacted with other workloads, not only big servers.
+> Since you see improvement in fserver, perhaps similar workloads could
+> also be of use: fio, filebench, postmark, fstress, etc.
 
-The patch seems to have fixed the problem.
+Okay, I will include the numbers I collect on smaller systems next time
+(even if the % difference is small).
 
--boris
-
->
-> I'll give it a spin. Apparently the problem is currently in 
-> install_equiv_cpu_table()
-> when we are trying to index into buf and buf (which is container) 
-> doesn't appear
-> to be there.
->
-> Are you sure that
->
->     container = (u8 *)(__va((u32)relocated_ramdisk) +
->                            ((u32)container - 
-> boot_params.hdr.ramdisk_image));
->
-> in save_microcode_in_initrd_amd() always results in a valid pointer? 
-> It is non-NULL but it
-> points to address that looks to be not mapped.
->
-> -boris
->
->>
->> ---
->> diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c 
->> b/arch/x86/kernel/cpu/microcode/amd_early.c
->> index 8384c0fa206f..c568b6c9af95 100644
->> --- a/arch/x86/kernel/cpu/microcode/amd_early.c
->> +++ b/arch/x86/kernel/cpu/microcode/amd_early.c
->> @@ -37,10 +37,12 @@ static __initdata char ucode_path[] = 
->> "kernel/x86/microcode/AuthenticAMD.bin";
->>     static struct cpio_data __init find_ucode_in_initrd(void)
->>   {
->> +    struct cpio_data ret;
->>       long offset = 0;
->>       char *path;
->>       void *start;
->>       size_t size;
->> +    u32 *hdr;
->>     #ifdef CONFIG_X86_32
->>       struct boot_params *p;
->> @@ -59,7 +61,18 @@ static struct cpio_data __init 
->> find_ucode_in_initrd(void)
->>       size    = boot_params.hdr.ramdisk_size;
->>   #endif
->>   -    return find_cpio_data(path, start, size, &offset);
->> +    ret = find_cpio_data(path, start, size, &offset);
->> +
->> +    /* Verify we didn't get some garbage from the initrd. */
->> +    hdr = (u32 *)ret.data;
->> +
->> +    if (hdr[0] != UCODE_MAGIC ||
->> +        hdr[1] != UCODE_EQUIV_CPU_TABLE_TYPE ||
->> +        hdr[2] == 0) {
->> +        ret.data = NULL;
->> +        ret.size = 0;
->> +    }
->> +    return ret;
->>   }
->>     static size_t compute_container_size(u8 *data, u32 total_size)
->> @@ -359,7 +372,7 @@ int __init save_microcode_in_initrd_amd(void)
->>           pr_info("microcode: updated early to new 
->> patch_level=0x%08x\n",
->>               ucode_new_rev);
->>   -    if (!container)
->> +    if (!container || !ucode_cpio.data)
->>           return -EINVAL;
->>         eax   = cpuid_eax(0x00000001);
->> -- 
->>
->
+Thanks,
+Jason
 
