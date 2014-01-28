@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaA1EiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 23:38:10 -0500
-Received: from gate.crashing.org ([63.228.1.57]:46483 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753455AbaA1EiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 23:38:09 -0500
-Message-ID: <1390883877.3872.78.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 28 Jan 2014 15:37:57 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754064AbaA1Eom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 23:44:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:39868 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753455AbaA1Eol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 23:44:41 -0500
+X-IronPort-AV: E=Sophos;i="4.95,733,1384272000"; 
+   d="scan'208";a="9460397"
+Message-ID: <52E7364F.5010700@cn.fujitsu.com>
+Date: Tue, 28 Jan 2014 12:47:11 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
+ kernel nodes to unhotpluggable.
+References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com> <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com> <52E70165.8070709@cn.fujitsu.com> <20140128025537.GA21730@redhat.com> <52E722F5.9010505@cn.fujitsu.com> <20140128035518.GA25386@redhat.com>
+In-Reply-To: <20140128035518.GA25386@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/28 12:43:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/28 12:43:05,
+	Serialize complete at 2014/01/28 12:43:05
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On 01/28/2014 11:55 AM, Dave Jones wrote:
+> On Tue, Jan 28, 2014 at 11:24:37AM +0800, Tang Chen wrote:
+>
+>   >  >  I did a bisect with the patch above applied each step of the way.
+>   >  >  This time I got a plausible looking result....
+>   >
+>   >  I cannot reproduce this. Would you please share how to reproduce it ?
+>   >  Or does it just happen during the booting ?
+>
+> Just during boot. Very early. So early in fact, I have no logging facilities
+> like usb-serial, just what is on vga console.
+>
+> If you want me to add some printk's, I can add a while (1); before
+> the part that oopses so we can diagnose further..
 
-This is the patch that I had sent after -rc8 and which we decided
-to wait before merging. It's based on a different tree than my
--next branch (it needs some pre-reqs that were in -rc4 or so while
-my -next is based on -rc1) so I left it as a separate branch for
-your to pull. It's identical to the request I did 2 or 3 weeks back.
+Sure. Would you please do that for me ? Maybe we can find something in 
+the early log.
 
-This fixes crashes in mremap with THP on powerpc.
+Thanks.
 
-The fix however requires a small change in the generic code. It moves a
-condition into a helper we can override from the arch which is harmless,
-but it *also* slightly changes the order of the set_pmd and the withdraw
-& deposit, which should be fine according to Kirill (who wrote that
-code) but I agree -rc8 is a bit late...
-
-It was acked by Kirill and Andrew told me to just merge it via powerpc.
-
-Cheers,
-Ben.
-
-The following changes since commit a6da83f98267bc8ee4e34aa899169991eb0ceb93:
-
-  Merge branch 'merge' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2014-01-13 10:59:05 +0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to b3084f4db3aeb991c507ca774337c7e7893ed04f:
-
-  powerpc/thp: Fix crash on mremap (2014-01-15 15:46:38 +1100)
-
-----------------------------------------------------------------
-Aneesh Kumar K.V (1):
-      powerpc/thp: Fix crash on mremap
-
- arch/powerpc/include/asm/pgtable-ppc64.h | 14 ++++++++++++++
- include/asm-generic/pgtable.h            | 12 ++++++++++++
- mm/huge_memory.c                         | 14 +++++---------
- 3 files changed, 31 insertions(+), 9 deletions(-)
-
-
-
+>
+> 	Dave
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
