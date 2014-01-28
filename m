@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaA1Iga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:36:30 -0500
-Received: from ns.omicron.at ([212.183.10.25]:41269 "EHLO ns.omicron.at"
+	id S1754845AbaA1Ihx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:37:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754624AbaA1IgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:36:08 -0500
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jan 2014 03:36:06 EST
-From: Christian Riesch <christian.riesch@omicron.at>
-To: <linux-mtd@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Amul Kumar Saha <amul.saha@samsung.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH v2 RESEND 0/2] mtd: Harmonize implementations of OTP write and _get_{fact,user}_prot_info
-Date: Tue, 28 Jan 2014 09:29:43 +0100
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-Message-ID: <acc2341a-fbbe-4508-a8e0-00e94a28d01c@mary.at.omicron.at>
+	id S1754796AbaA1Iht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 03:37:49 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org
+Subject: [PATCH 01/14] NVMe: Fix setup of affinity hint for unallocated queues
+Date: Tue, 28 Jan 2014 09:38:47 +0100
+Message-Id: <514969a133311cb142d6f80de92db89511aded7f.1390897693.git.agordeev@redhat.com>
+In-Reply-To: <cover.1390897693.git.agordeev@redhat.com>
+References: <cover.1390897693.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+IRQ affinity hints are attempted to setup for some or all
+queues which have not yet been allocated: either on device
+probe or resume. This update moves the setup after all
+queues are successfully created.
 
-In the discussion on my patchset for the OTP support for
-drivers/mtd/chips/cfi_cmdset_0002.c [1-5], Artem requested two changes in the
-current code of the OTP write functions and the _get_{fact,user}_prot_info
-code.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/block/nvme-core.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-These two patches are an attempt to make the requested changes.
-
-The first patch adds a retlen parameter to the _get_fact_prot_info and
-_get_user_prot_info functions and thus harmonizes the implementation
-with those of the write and read functions.
-
-The second patch fixes a problem that I earlier addressed in [1]. After
-the discussion about this patch on the mtd mailing list, I think that the
-correct behavior of the write function should be the one specified in [6]:
-Try to write as many bytes as possible and return the number of bytes
-that were written. If no data could be written due to lack of OTP memory,
-return -ENOSPC.
-
-Artem, would you please have a look at these patches? I would like to know
-if I understood you correctly, or if I missed something here. Please note
-that I cannot test these patches since I do not have the hardware. The
-patches are compile tested only. If these patches are ok, I will also
-respin the OTP support patches for cfi_cmdset_0002.
-
-Changes for v2:
-- Fixed buggy cfi_intelext_get_fact_prot_info
-
-Thank you!
-
-Best regards,
-Christian
-
-[1] http://patchwork.ozlabs.org/patch/239897/
-[2] http://patchwork.ozlabs.org/patch/240010/
-[3] http://patchwork.ozlabs.org/patch/240007/
-[4] http://patchwork.ozlabs.org/patch/240008/
-[5] http://patchwork.ozlabs.org/patch/240009/
-[6] http://pubs.opengroup.org/onlinepubs/9699919799/functions/write.html
-
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Amul Kumar Saha <amul.saha@samsung.com>
-Cc: Brian Norris <computersforpeace@gmail.com>
-
-Christian Riesch (2):
-  mtd: Add a retlen parameter to _get_{fact,user}_prot_info
-  mtd: Fix the behavior of otp write if there is not enough room for
-    data
-
- drivers/mtd/chips/cfi_cmdset_0001.c |   44 +++++++++++++++++++----------------
- drivers/mtd/devices/mtd_dataflash.c |   20 +++++++---------
- drivers/mtd/mtdchar.c               |   18 ++++++++++----
- drivers/mtd/mtdcore.c               |   12 +++++-----
- drivers/mtd/mtdpart.c               |   14 ++++++-----
- drivers/mtd/onenand/onenand_base.c  |   40 ++++++++++++++++---------------
- include/linux/mtd/mtd.h             |   16 ++++++-------
- 7 files changed, 89 insertions(+), 75 deletions(-)
-
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index b59a93a..3dfb0d4 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1956,12 +1956,6 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
+ 	}
+ 	spin_unlock(&dev_list_lock);
+ 
+-	cpu = cpumask_first(cpu_online_mask);
+-	for (i = 0; i < nr_io_queues; i++) {
+-		irq_set_affinity_hint(dev->entry[i].vector, get_cpu_mask(cpu));
+-		cpu = cpumask_next(cpu, cpu_online_mask);
+-	}
+-
+ 	q_depth = min_t(int, NVME_CAP_MQES(readq(&dev->bar->cap)) + 1,
+ 								NVME_Q_DEPTH);
+ 	for (i = dev->queue_count - 1; i < nr_io_queues; i++) {
+@@ -1986,6 +1980,12 @@ static int nvme_setup_io_queues(struct nvme_dev *dev)
+ 		}
+ 	}
+ 
++	cpu = cpumask_first(cpu_online_mask);
++	for (i = 0; i < nr_io_queues; i++) {
++		irq_set_affinity_hint(dev->entry[i].vector, get_cpu_mask(cpu));
++		cpu = cpumask_next(cpu, cpu_online_mask);
++	}
++
+ 	return 0;
+ 
+  free_queues:
 -- 
-1.7.9.5
+1.7.7.6
 
