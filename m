@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaA1MRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 07:17:08 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50810 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754620AbaA1MRG (ORCPT
+	id S1755053AbaA1MR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 07:17:26 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:57318 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948AbaA1MRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 07:17:06 -0500
-Date: Tue, 28 Jan 2014 12:16:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andy Gross <agross@codeaurora.org>,
-        dmaengine@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Patch v3 2/2] dmaengine: qcom_bam_dma: Add device tree binding
-Message-ID: <20140128121656.GH15937@n2100.arm.linux.org.uk>
-References: <1390890471-14882-1-git-send-email-agross@codeaurora.org> <20140128113242.GJ10628@intel.com> <4916428.f0GtxdkWKj@wuerfel> <9156959.vu4XdoKglI@wuerfel>
+	Tue, 28 Jan 2014 07:17:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9156959.vu4XdoKglI@wuerfel>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140128120432.GA26347@gmail.com>
+References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+	<CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
+	<20140126201928.GA8224@gmail.com>
+	<20140126202509.GA10275@gmail.com>
+	<CAMuHMdUzGhpa0Bxa2X69-+5jFE3Y3+Kqyof5Te3Y+aUeRPzCWg@mail.gmail.com>
+	<20140128120432.GA26347@gmail.com>
+Date: Tue, 28 Jan 2014 13:17:22 +0100
+X-Google-Sender-Auth: Y3w1RlLosdziZTlwbm1rz7DcIKw
+Message-ID: <CAMuHMdXciS54ZZA2TV3+JZP7szHyGOhbrdQ_1rEYUwx2YSO+Qg@mail.gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ingo Molnar <mingo@kernel.org>, Joe Perches <joe@perches.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 01:08:47PM +0100, Arnd Bergmann wrote:
-> On a related note, should we try to remove the slave_id field from
-> the slave config structure as well? I believe it is still used by
-> the shmobile dma engine in non-DT mode, but that is inconsistent with
-> how all the others work, and with what the same driver does for DT.
+On Tue, Jan 28, 2014 at 1:04 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> * Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Sun, Jan 26, 2014 at 9:25 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> > * Ingo Molnar <mingo@kernel.org> wrote:
+>> >> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>> >> > On Sun, Jan 26, 2014 at 4:27 AM, David Howells <dhowells@redhat.com> wrote:
+>> >> > > -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
+>> >> > > +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+>> >> > > -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
+>> >> > > +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
+>> >> >
+>> >> > So the S_IFREG isn't necessary.
+>> >> >
+>> >> > And quite frankly, I personally think S_IRUGO | S_IWUSR is _less_
+>> >> > readable than 0644. It's damn hard to parse those random letter
+>> >> > combinations, and at least I have to really think about it, in a way
+>> >> > that the octal representation does *not* make me go "I have to think
+>> >> > about that".
+>> >> >
+>> >> > So my personal preference would be to just see that simple 0644 in
+>> >> > proc_create. Hmm?
+>> >>
+>> >> Perhaps we could also generate the most common variants as:
+>> >>
+>> >>  #define PERM__rw_r__r__              0644
+>> >>  #define PERM__r________              0400
+>> >>  #define PERM__r__r__r__              0444
+>> >>  #define PERM__r_xr_xr_x              0555
+>>
+>> I like it (also without the PERM prefix, cfr. Alexey's old patch).
+>>
+>> >> or something similar, more or less matching the output of 'ls -l'?
+>> >
+>> > Another variant of this would be to do the following macro:
+>> >
+>> >         PERM(R_X, R_X, R_X)
+>> >         PERM(R__, R__, R__)
+>> >         PERM(RW_, R__, R__)
+>>
+>> IMHO, this is again less outstanding.
+>>
+>> > With the advantage of separating the groups better and reducing the
+>> > number of constants needed.
+>>
+>> Only a limited number of combinations is in active use, right?
+>
+> Correct - and in fact that kind of limitation is also a security
+> feature: using patterns _outside_ of the typical, already defined
+> group of permission patterns would in itself be a 'is that really
+> justified?' red flag during review.
 
-I didn't see that appear, but now that it is there, I'm in two minds
-about it.
+Then Joe (CCed :-) can write a checkpatch rule to flag all new users of the
+I_S[RWX}* flags..,
 
-The first is that the virtual channel approach is more flexible (one
-virtual channel per DMA request line) since it allows users to hold on
-to a DMA engine virtual channel and don't have the overhead of getting
-that.  It also means that they have access to the DMA engine struct
-device, which should be used with the DMA API for mapping/unmapping etc.
+> I'm fine with Alexey's shorter variant as well.
+>
+> Would someone be interested in sending a real patch for it, defining a
+> usable set of initial flags such as 0644, 0444, 0555 and 0600?
 
-Another advantage is that it is possible (though we don't really do this
-at present) to schedule a number of virtual channels onto the underlying
-physical channels according to whatever algorithm(s) we decide.
+Gr{oetje,eeting}s,
 
-The second point is that requesting a physical channel and then
-configuring it seems more elegant from the DMA engine point of view - but
-has the down-side that clients have to release the DMA engine channel
-(and thus forget the struct device) as soon as possible to avoid starving
-the system of physical DMA channels.
+                        Geert
 
-On balance, I think the virtual channel approach makes client drivers
-more elegant and simpler, and makes the DMA engine API easier to use,
-and gives greater flexibility for future improvements.  So, I wouldn't
-miss the slave_id being removed.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
