@@ -1,142 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496AbaA1X73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:59:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36725 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468AbaA1X7L (ORCPT
+	id S932544AbaA2AAE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 19:00:04 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:51281 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932298AbaA1X76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:59:11 -0500
-Date: Tue, 28 Jan 2014 15:58:48 -0800
-Message-Id: <201401282358.s0SNwmhb031834@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/intel-mid cleanups for v3.14
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Fei Yang <fei.yang@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        kbuild test robot <fengguang.wu@intel.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 28 Jan 2014 15:58:53 -0800 (PST)
+	Tue, 28 Jan 2014 18:59:58 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/8] cgroup: make cgroup hold onto its kernfs_node
+Date: Tue, 28 Jan 2014 18:59:42 -0500
+Message-Id: <1390953585-16554-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1390953585-16554-1-git-send-email-tj@kernel.org>
+References: <1390953585-16554-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+cgroup currently releases its kernfs_node when it gets removed.  While
+not buggy, this makes cgroup->kn access rules complicated than
+necessary and leads to things like get/put protection around
+kernfs_remove() in cgroup_destroy_locked().  In addition, we want to
+use kernfs_name/path() and friends but also want to be able to
+determine a cgroup's name between removal and release.
 
-Miscellaneous cleanups to the intel-mid code merged earlier in this
-merge window.
+This patch makes cgroup hold onto its kernfs_node until freed so that
+cgroup->kn is always accessible.
 
-The following changes since commit 4500cf60dbe4b7f514d11b24c3e1edfda2a6d69d:
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-  Merge branch 'x86-intel-mid-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2014-01-20 12:06:50 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-intel-mid-for-linus
-
-for you to fetch changes up to 790ed7421a973d9773dda8b4e5300c3f7f6fbcf7:
-
-  x86, intel-mid: Cleanup some platform code's header files (2014-01-28 15:13:40 -0800)
-
-----------------------------------------------------------------
-David Cohen (2):
-      x86, intel-mid: Add missing 'void' to functions without arguments
-      x86, intel-mid: Cleanup some platform code's header files
-
-Paul Gortmaker (2):
-      x86: Don't introduce more __cpuinit users in intel_mid_weak_decls.h
-      x86: Don't add new __cpuinit users to Merrifield platform code
-
- arch/x86/platform/intel-mid/device_libs/platform_ipc.h  | 5 +++--
- arch/x86/platform/intel-mid/device_libs/platform_msic.h | 4 ++--
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h      | 6 +++---
- arch/x86/platform/intel-mid/mfld.c                      | 6 +++---
- arch/x86/platform/intel-mid/mrfl.c                      | 2 +-
- 5 files changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_ipc.h b/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
-index 8f568dd79605..79bb09d4f718 100644
---- a/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_ipc.h
-@@ -12,6 +12,7 @@
- #ifndef _PLATFORM_IPC_H_
- #define _PLATFORM_IPC_H_
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 5d015c1..3e4df3c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -957,6 +957,8 @@ static void cgroup_free_fn(struct work_struct *work)
  
--extern void __init ipc_device_handler(struct sfi_device_table_entry *pentry,
--			struct devs_id *dev) __attribute__((weak));
-+void __init
-+ipc_device_handler(struct sfi_device_table_entry *pentry, struct devs_id *dev);
+ 	cgroup_pidlist_destroy_all(cgrp);
+ 
++	kernfs_put(cgrp->kn);
 +
- #endif
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_msic.h b/arch/x86/platform/intel-mid/device_libs/platform_msic.h
-index 917eb56d77da..b7be1d041da2 100644
---- a/arch/x86/platform/intel-mid/device_libs/platform_msic.h
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_msic.h
-@@ -14,6 +14,6 @@
+ 	kfree(rcu_dereference_raw(cgrp->name));
+ 	kfree(cgrp);
+ }
+@@ -3768,6 +3770,12 @@ static long cgroup_create(struct cgroup *parent, const char *name_str,
+ 	}
+ 	cgrp->kn = kn;
  
- extern struct intel_msic_platform_data msic_pdata;
- 
--extern void *msic_generic_platform_data(void *info,
--			enum intel_msic_block block) __attribute__((weak));
-+void *msic_generic_platform_data(void *info, enum intel_msic_block block);
++	/*
++	 * This extra ref will be put in cgroup_free_fn() and guarantees
++	 * that @cgrp->kn is always accessible.
++	 */
++	kernfs_get(kn);
 +
- #endif
-diff --git a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-index a537ffc16299..46aa25c8ce06 100644
---- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-+++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-@@ -14,6 +14,6 @@
- /* For every CPU addition a new get_<cpuname>_ops interface needs
-  * to be added.
-  */
--extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
--extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
--extern void * __init get_tangier_ops(void) __attribute__((weak));
-+extern void *get_penwell_ops(void) __attribute__((weak));
-+extern void *get_cloverview_ops(void) __attribute__((weak));
-+extern void *get_tangier_ops(void) __attribute__((weak));
-diff --git a/arch/x86/platform/intel-mid/mfld.c b/arch/x86/platform/intel-mid/mfld.c
-index 4f7884eebc14..23381d2174ae 100644
---- a/arch/x86/platform/intel-mid/mfld.c
-+++ b/arch/x86/platform/intel-mid/mfld.c
-@@ -58,18 +58,18 @@ static unsigned long __init mfld_calibrate_tsc(void)
- 	return 0;
- }
+ 	cgrp->serial_nr = cgroup_serial_nr_next++;
  
--static void __init penwell_arch_setup()
-+static void __init penwell_arch_setup(void)
+ 	/* allocation complete, commit to creation */
+@@ -3948,7 +3956,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
  {
- 	x86_platform.calibrate_tsc = mfld_calibrate_tsc;
- 	pm_power_off = mfld_power_off;
- }
+ 	struct cgroup *child;
+ 	struct cgroup_subsys_state *css;
+-	struct kernfs_node *kn;
+ 	bool empty;
+ 	int ssid;
  
--void * __cpuinit get_penwell_ops()
-+void *get_penwell_ops(void)
- {
- 	return &penwell_ops;
- }
+@@ -4026,13 +4033,8 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	 * cgrp->kn->priv backpointer, which should be cleared after all
+ 	 * files under it have been removed.
+ 	 */
+-	kn = cgrp->kn;
+-	kernfs_get(kn);
+-
+-	kernfs_remove(cgrp->kn);
+-
++	kernfs_remove(cgrp->kn);	/* @cgrp has an extra ref on its kn */
+ 	RCU_INIT_POINTER(cgrp->kn->priv, NULL);
+-	kernfs_put(kn);
  
--void * __cpuinit get_cloverview_ops()
-+void *get_cloverview_ops(void)
- {
- 	return &penwell_ops;
- }
-diff --git a/arch/x86/platform/intel-mid/mrfl.c b/arch/x86/platform/intel-mid/mrfl.c
-index 09d10159e7b7..aaca91753d32 100644
---- a/arch/x86/platform/intel-mid/mrfl.c
-+++ b/arch/x86/platform/intel-mid/mrfl.c
-@@ -97,7 +97,7 @@ static struct intel_mid_ops tangier_ops = {
- 	.arch_setup = tangier_arch_setup,
- };
+ 	mutex_lock(&cgroup_mutex);
  
--void * __cpuinit get_tangier_ops()
-+void *get_tangier_ops(void)
- {
- 	return &tangier_ops;
- }
+-- 
+1.8.5.3
+
