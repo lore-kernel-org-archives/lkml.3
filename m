@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaA1UUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:20:25 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:45172 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779AbaA1UUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:20:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFx8QkcWdq7hqi+nypZ5ePFBHO5NhBsnTG+AgJLhWodVYg@mail.gmail.com>
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org>
-	<1390590670-25901-4-git-send-email-yinghai@kernel.org>
-	<CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com>
-	<CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com>
-	<CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com>
-	<52E7E776.30909@ti.com>
-	<20140128182230.GO15937@n2100.arm.linux.org.uk>
-	<CA+55aFx8QkcWdq7hqi+nypZ5ePFBHO5NhBsnTG+AgJLhWodVYg@mail.gmail.com>
-Date: Tue, 28 Jan 2014 12:20:22 -0800
-X-Google-Sender-Auth: rRe7bWgG_8-WOWz2stGW17fLoyg
-Message-ID: <CAE9FiQXCcAbo_qy3a1A3D_Vd2f0-__aPBjPAy9Gz-T_rvK9S2A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932247AbaA1UUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:20:36 -0500
+Received: from gate.crashing.org ([63.228.1.57]:54927 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755299AbaA1UUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:20:35 -0500
+Message-ID: <1390940395.8524.25.camel@pasglop>
+Subject: Re: [git pull] Please pull powerpc.git next branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Alistair Popple <alistair@popple.id.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Wed, 29 Jan 2014 07:19:55 +1100
+In-Reply-To: <20140128150309.GA7428@aepfle.de>
+References: <1390883744.3872.76.camel@pasglop>
+	 <20140128091607.GA24288@aepfle.de> <20140128150309.GA7428@aepfle.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:17 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jan 28, 2014 at 10:22 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->>
->> Hence, having ARCH_LOW_ADDRESS_LIMIT set to 4GB-1 by default seems to be
->> completely rediculous - and presumably this also fails on x86_32 if it
->> returns memory up at 4GB.
->
-> Agreed. That looks broken even on x86-32. The low address limit is not
-> even *close* to 4GB in general on 32-bit, since you not only have the
-> TASK_SIZE, you have the kmap and the vmalloc area. On x86-32,
-> ARCH_LOW_ADDRESS_LIMIT should be MAXMEM, which iirc is somewhere
-> around 890MB or so. Not 4G.
->
+On Tue, 2014-01-28 at 16:03 +0100, Olaf Hering wrote:
+> 
+> d084775738b746648d4102337163a04534a02982 is the first bad commit
+> commit d084775738b746648d4102337163a04534a02982
+> Author: Alistair Popple <alistair@popple.id.au>
+> Date:   Mon Dec 9 18:17:03 2013 +1100
+> 
+>     powerpc/iommu: Update the generic code to use dynamic iommu page sizes
+> 
+>     This patch updates the generic iommu backend code to use the
+>     it_page_shift field to determine the iommu page size instead of
+>     using hardcoded values.
 
-yeah, Please check the patch that one minute ago.
+Interesting. This is new infrastructure but a nop in functionality, ie,
+we support different page sizes for DMA but we still set it to 4k,
+unless we somewhat failed to initialize something...
 
-Subject: [PATCH] memblock: Add limit checking to memblock_virt_alloc
+I'll have a look, I actually have one of those G5s here still. Thanks !
 
-In original bootmem wrapper for memblock, we have limit checking.
+Cheers,
+Ben.
 
-Add it to memblock_virt_alloc, to address arm and x86 booting crash.
+>     Signed-off-by: Alistair Popple <alistair@popple.id.au>
+>     Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> :040000 040000 52a8e1ca3166e3c916f8cdc1df5c1f42c76b2359 3d4915e416b28501ff502305bd4f76d64153dbc4 M      arch
+> :040000 040000 e9a9020abbef5622ffa1be381e0ff845e3741fa9 d6fc206dd372c1a8deded826cc5de8b05f71c614 M      drivers
+> 
+> # git bisect log
+> git bisect start
+> # good: [b2e448eca1a52fea181905845728ae00a138d84e] Merge branch 'ipmi' (ipmi patches from Corey Minyard)
+> git bisect good b2e448eca1a52fea181905845728ae00a138d84e
+> # bad: [54c0a4b46150db1571d955d598cd342c9f1d9657] Merge branch 'akpm' (incoming from Andrew)
+> git bisect bad 54c0a4b46150db1571d955d598cd342c9f1d9657
+> # good: [403227641533c4227d44d14f25c8f3676f6e7436] softirq: convert printks to pr_<level>
+> git bisect good 403227641533c4227d44d14f25c8f3676f6e7436
+> # bad: [8b52312880ecbc5beb40b313600f2903c16a59ed] powerpc/p1010rdb-pa: modify phy interrupt.
+> git bisect bad 8b52312880ecbc5beb40b313600f2903c16a59ed
+> # good: [2c49195b6aedd21ff1cd1e095fab9866fba3411b] powernv: Remove get/set_rtc_time when they are not present
+> git bisect good 2c49195b6aedd21ff1cd1e095fab9866fba3411b
+> # bad: [a68c33f3592eef63304a5f5ab68466539ccac56c] powerpc: Fix endian issues in power7/8 machine check handler
+> git bisect bad a68c33f3592eef63304a5f5ab68466539ccac56c
+> # good: [c34a51ce49b40b9667cd7f5cc2e40475af8b4c3d] powerpc/mm: Enable _PAGE_NUMA for book3s
+> git bisect good c34a51ce49b40b9667cd7f5cc2e40475af8b4c3d
+> # good: [fee26f6d5d68a8815b20c32d15dd70d5384eb937] powerpc: Remove unused REDBOOT Kconfig parameter
+> git bisect good fee26f6d5d68a8815b20c32d15dd70d5384eb937
+> # good: [3a553170d35d69bea3877bffa508489dfa6f133d] powerpc/iommu: Add it_page_shift field to determine iommu page size
+> git bisect good 3a553170d35d69bea3877bffa508489dfa6f133d
+> # bad: [d084775738b746648d4102337163a04534a02982] powerpc/iommu: Update the generic code to use dynamic iommu page sizes
+> git bisect bad d084775738b746648d4102337163a04534a02982
+> # first bad commit: [d084775738b746648d4102337163a04534a02982] powerpc/iommu: Update the generic code to use dynamic iommu page sizes
+> 
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
----
- mm/memblock.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-Index: linux-2.6/mm/memblock.c
-===================================================================
---- linux-2.6.orig/mm/memblock.c
-+++ linux-2.6/mm/memblock.c
-@@ -1077,6 +1077,9 @@ static void * __init memblock_virt_alloc
-     if (!align)
-         align = SMP_CACHE_BYTES;
-
-+    if (max_addr > memblock.current_limit)
-+        max_addr = memblock.current_limit;
-+
- again:
-     alloc = memblock_find_in_range_node(size, align, min_addr, max_addr,
-                         nid);
-
-Thanks
-
-Yinghai
