@@ -1,165 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaA1VsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:48:10 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:35863 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205AbaA1VsH (ORCPT
+	id S932210AbaA1VxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:53:20 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:35516 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174AbaA1VxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:48:07 -0500
+	Tue, 28 Jan 2014 16:53:19 -0500
+Date: Tue, 28 Jan 2014 22:53:17 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Li Zefan <lizefan@huawei.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com
+Subject: Re: Please revert 4fd466eb46a6 ("HWPOISON: add memory cgroup
+ filter")
+Message-ID: <20140128215317.GC11821@two.firstfloor.org>
+References: <20140128214524.GA16060@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20140128211021.GB1377@redhat.com>
-References: <alpine.DEB.2.00.1401281032560.16427@cobra.newdream.net>
-	<20140128211021.GB1377@redhat.com>
-Date: Tue, 28 Jan 2014 13:48:05 -0800
-X-Google-Sender-Auth: WSqAfJ_mQr91WV32fcjWxlEDWj4
-Message-ID: <CA+55aFxmQZ+sAC+_a=QXUSVQ1e=cSVkeZVL4d8kawFp9N5eS-w@mail.gmail.com>
-Subject: Re: [GIT PULL] Ceph updates for -rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Sage Weil <sage@inktank.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>
-Content-Type: multipart/mixed; boundary=001a11c3227483ecaa04f10ec7bd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140128214524.GA16060@mtj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c3227483ecaa04f10ec7bd
-Content-Type: text/plain; charset=UTF-8
+On Tue, Jan 28, 2014 at 04:45:24PM -0500, Tejun Heo wrote:
+> Hello, Andi, Wu.
+> 
+> Can you guys please revert 4fd466eb46a6 ("HWPOISON: add memory cgroup
+> filter"), which reaches into cgroup to extract the inode number and
+> uses that for filtering?  Nobody outside cgroup proper should be
 
-On Tue, Jan 28, 2014 at 1:10 PM, Dave Jones <davej@redhat.com> wrote:
->
-> This breaks the build for me.
+Our test suite relies on it.
 
-It is my merge (Christoph's ACL changes came in today through the VFS
-tree from Al).
-
-I was doing the merges today on my laptop (I had jury duty yesterday
-and today), and so I didn't do the allmodconfig build I would normally
-do on my (much faster) desktop. Well, actually I did do the full fs
-builds for the earlier pulls that actually had some conflicts, but not
-for the ceph pull. The conflict was hidden by the fact that the whole
-cifs ACL support is new, so there was no data conflict, just a silent
-semantic conflict between the new smarter ACL helpers and the new ACL
-use in CIFS.
-
-I'm back home now (yay, all the afternoon cases got settled), and I
-see the problem now. I should have done an allmodconfig build
-immediately after coming home, but I never even thought of it.
-
-Anyway, here's an *untested* conversion to the new posix acl helper
-infrastructure. I do wonder if ceph_init_acl() could be converted to
-posix_acl_create(), right now that part is a "non-conversion" - it's
-just made to use __posix_acl_create() that implements the old
-interface.
-
-Al, Christoph, can you please check my conversion for sanity from a
-generic posix-acl standpoint?
-
-Sage, Guangliang, Li, can you check the actual cifs usage/sanity of
-the attached patch?
-
-Sorry about the messed-up merge. Although I also blame Al, because
-he's horrible about having his changes in linux-next, so nobody was
-ever really aware of this semantic conflict.
-
-Al. Bad, bad boy. Consider yourself hit with a rolled-up newspaper.
-
-                 Linus
-
---001a11c3227483ecaa04f10ec7bd
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqzp3f6z0
-
-IGZzL2NlcGgvYWNsLmMgICB8IDEwMyArLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogZnMvY2VwaC9pbm9kZS5jIHwgICAzICstCiBmcy9jZXBo
-L3N1cGVyLmggfCAgIDMgLS0KIGZzL2NlcGgveGF0dHIuYyB8ICAgNSArLS0KIDQgZmlsZXMgY2hh
-bmdlZCwgNiBpbnNlcnRpb25zKCspLCAxMDggZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMv
-Y2VwaC9hY2wuYyBiL2ZzL2NlcGgvYWNsLmMKaW5kZXggNjRmZGRiYzFkMTdiLi5mNjkxMTI4NGM5
-YmQgMTAwNjQ0Ci0tLSBhL2ZzL2NlcGgvYWNsLmMKKysrIGIvZnMvY2VwaC9hY2wuYwpAQCAtMjEz
-LDcgKzIxMyw3IEBAIGludCBjZXBoX2luaXRfYWNsKHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgc3Ry
-dWN0IGlub2RlICppbm9kZSwgc3RydWN0IGlub2RlICpkaXIpCiAJCQlpZiAocmV0KQogCQkJCWdv
-dG8gb3V0X3JlbGVhc2U7CiAJCX0KLQkJcmV0ID0gcG9zaXhfYWNsX2NyZWF0ZSgmYWNsLCBHRlBf
-Tk9GUywgJmlub2RlLT5pX21vZGUpOworCQlyZXQgPSBfX3Bvc2l4X2FjbF9jcmVhdGUoJmFjbCwg
-R0ZQX05PRlMsICZpbm9kZS0+aV9tb2RlKTsKIAkJaWYgKHJldCA8IDApCiAJCQlnb3RvIG91dDsK
-IAkJZWxzZSBpZiAocmV0ID4gMCkKQEAgLTIyOSwxMDQgKzIyOSwzIEBAIG91dF9yZWxlYXNlOgog
-b3V0OgogCXJldHVybiByZXQ7CiB9Ci0KLWludCBjZXBoX2FjbF9jaG1vZChzdHJ1Y3QgZGVudHJ5
-ICpkZW50cnksIHN0cnVjdCBpbm9kZSAqaW5vZGUpCi17Ci0Jc3RydWN0IHBvc2l4X2FjbCAqYWNs
-OwotCWludCByZXQgPSAwOwotCi0JaWYgKFNfSVNMTksoaW5vZGUtPmlfbW9kZSkpIHsKLQkJcmV0
-ID0gLUVPUE5PVFNVUFA7Ci0JCWdvdG8gb3V0OwotCX0KLQotCWlmICghSVNfUE9TSVhBQ0woaW5v
-ZGUpKQotCQlnb3RvIG91dDsKLQotCWFjbCA9IGNlcGhfZ2V0X2FjbChpbm9kZSwgQUNMX1RZUEVf
-QUNDRVNTKTsKLQlpZiAoSVNfRVJSX09SX05VTEwoYWNsKSkgewotCQlyZXQgPSBQVFJfRVJSKGFj
-bCk7Ci0JCWdvdG8gb3V0OwotCX0KLQotCXJldCA9IHBvc2l4X2FjbF9jaG1vZCgmYWNsLCBHRlBf
-S0VSTkVMLCBpbm9kZS0+aV9tb2RlKTsKLQlpZiAocmV0KQotCQlnb3RvIG91dDsKLQlyZXQgPSBj
-ZXBoX3NldF9hY2woZGVudHJ5LCBpbm9kZSwgYWNsLCBBQ0xfVFlQRV9BQ0NFU1MpOwotCXBvc2l4
-X2FjbF9yZWxlYXNlKGFjbCk7Ci1vdXQ6Ci0JcmV0dXJuIHJldDsKLX0KLQotc3RhdGljIGludCBj
-ZXBoX3hhdHRyX2FjbF9nZXQoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBjb25zdCBjaGFyICpuYW1l
-LAotCQkJCXZvaWQgKnZhbHVlLCBzaXplX3Qgc2l6ZSwgaW50IHR5cGUpCi17Ci0Jc3RydWN0IHBv
-c2l4X2FjbCAqYWNsOwotCWludCByZXQgPSAwOwotCi0JaWYgKCFJU19QT1NJWEFDTChkZW50cnkt
-PmRfaW5vZGUpKQotCQlyZXR1cm4gLUVPUE5PVFNVUFA7Ci0KLQlhY2wgPSBjZXBoX2dldF9hY2wo
-ZGVudHJ5LT5kX2lub2RlLCB0eXBlKTsKLQlpZiAoSVNfRVJSKGFjbCkpCi0JCXJldHVybiBQVFJf
-RVJSKGFjbCk7Ci0JaWYgKGFjbCA9PSBOVUxMKQotCQlyZXR1cm4gLUVOT0RBVEE7Ci0KLQlyZXQg
-PSBwb3NpeF9hY2xfdG9feGF0dHIoJmluaXRfdXNlcl9ucywgYWNsLCB2YWx1ZSwgc2l6ZSk7Ci0J
-cG9zaXhfYWNsX3JlbGVhc2UoYWNsKTsKLQotCXJldHVybiByZXQ7Ci19Ci0KLXN0YXRpYyBpbnQg
-Y2VwaF94YXR0cl9hY2xfc2V0KHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgY29uc3QgY2hhciAqbmFt
-ZSwKLQkJCWNvbnN0IHZvaWQgKnZhbHVlLCBzaXplX3Qgc2l6ZSwgaW50IGZsYWdzLCBpbnQgdHlw
-ZSkKLXsKLQlpbnQgcmV0ID0gMDsKLQlzdHJ1Y3QgcG9zaXhfYWNsICphY2wgPSBOVUxMOwotCi0J
-aWYgKCFpbm9kZV9vd25lcl9vcl9jYXBhYmxlKGRlbnRyeS0+ZF9pbm9kZSkpIHsKLQkJcmV0ID0g
-LUVQRVJNOwotCQlnb3RvIG91dDsKLQl9Ci0KLQlpZiAoIUlTX1BPU0lYQUNMKGRlbnRyeS0+ZF9p
-bm9kZSkpIHsKLQkJcmV0ID0gLUVPUE5PVFNVUFA7Ci0JCWdvdG8gb3V0OwotCX0KLQotCWlmICh2
-YWx1ZSkgewotCQlhY2wgPSBwb3NpeF9hY2xfZnJvbV94YXR0cigmaW5pdF91c2VyX25zLCB2YWx1
-ZSwgc2l6ZSk7Ci0JCWlmIChJU19FUlIoYWNsKSkgewotCQkJcmV0ID0gUFRSX0VSUihhY2wpOwot
-CQkJZ290byBvdXQ7Ci0JCX0KLQotCQlpZiAoYWNsKSB7Ci0JCQlyZXQgPSBwb3NpeF9hY2xfdmFs
-aWQoYWNsKTsKLQkJCWlmIChyZXQpCi0JCQkJZ290byBvdXRfcmVsZWFzZTsKLQkJfQotCX0KLQot
-CXJldCA9IGNlcGhfc2V0X2FjbChkZW50cnksIGRlbnRyeS0+ZF9pbm9kZSwgYWNsLCB0eXBlKTsK
-LQotb3V0X3JlbGVhc2U6Ci0JcG9zaXhfYWNsX3JlbGVhc2UoYWNsKTsKLW91dDoKLQlyZXR1cm4g
-cmV0OwotfQotCi1jb25zdCBzdHJ1Y3QgeGF0dHJfaGFuZGxlciBjZXBoX3hhdHRyX2FjbF9kZWZh
-dWx0X2hhbmRsZXIgPSB7Ci0JLnByZWZpeCA9IFBPU0lYX0FDTF9YQVRUUl9ERUZBVUxULAotCS5m
-bGFncyAgPSBBQ0xfVFlQRV9ERUZBVUxULAotCS5nZXQgICAgPSBjZXBoX3hhdHRyX2FjbF9nZXQs
-Ci0JLnNldCAgICA9IGNlcGhfeGF0dHJfYWNsX3NldCwKLX07Ci0KLWNvbnN0IHN0cnVjdCB4YXR0
-cl9oYW5kbGVyIGNlcGhfeGF0dHJfYWNsX2FjY2Vzc19oYW5kbGVyID0gewotCS5wcmVmaXggPSBQ
-T1NJWF9BQ0xfWEFUVFJfQUNDRVNTLAotCS5mbGFncyAgPSBBQ0xfVFlQRV9BQ0NFU1MsCi0JLmdl
-dCAgICA9IGNlcGhfeGF0dHJfYWNsX2dldCwKLQkuc2V0ICAgID0gY2VwaF94YXR0cl9hY2xfc2V0
-LAotfTsKZGlmZiAtLWdpdCBhL2ZzL2NlcGgvaW5vZGUuYyBiL2ZzL2NlcGgvaW5vZGUuYwppbmRl
-eCA2ZmMxMGE3ZDdjNTkuLjhiOGI1MDY2MzZjYyAxMDA2NDQKLS0tIGEvZnMvY2VwaC9pbm9kZS5j
-CisrKyBiL2ZzL2NlcGgvaW5vZGUuYwpAQCAtOSw2ICs5LDcgQEAKICNpbmNsdWRlIDxsaW51eC9u
-YW1laS5oPgogI2luY2x1ZGUgPGxpbnV4L3dyaXRlYmFjay5oPgogI2luY2x1ZGUgPGxpbnV4L3Zt
-YWxsb2MuaD4KKyNpbmNsdWRlIDxsaW51eC9wb3NpeF9hY2wuaD4KIAogI2luY2x1ZGUgInN1cGVy
-LmgiCiAjaW5jbHVkZSAibWRzX2NsaWVudC5oIgpAQCAtMTgwNSw3ICsxODA2LDcgQEAgaW50IGNl
-cGhfc2V0YXR0cihzdHJ1Y3QgZGVudHJ5ICpkZW50cnksIHN0cnVjdCBpYXR0ciAqYXR0cikKIAkJ
-X19tYXJrX2lub2RlX2RpcnR5KGlub2RlLCBpbm9kZV9kaXJ0eV9mbGFncyk7CiAKIAlpZiAoaWFf
-dmFsaWQgJiBBVFRSX01PREUpIHsKLQkJZXJyID0gY2VwaF9hY2xfY2htb2QoZGVudHJ5LCBpbm9k
-ZSk7CisJCWVyciA9IHBvc2l4X2FjbF9jaG1vZChpbm9kZSwgYXR0ci0+aWFfbW9kZSk7CiAJCWlm
-IChlcnIpCiAJCQlnb3RvIG91dF9wdXQ7CiAJfQpkaWZmIC0tZ2l0IGEvZnMvY2VwaC9zdXBlci5o
-IGIvZnMvY2VwaC9zdXBlci5oCmluZGV4IGMyOTlmN2QxOWJmMy4uMzQ1OTMzOTQ4YjZlIDEwMDY0
-NAotLS0gYS9mcy9jZXBoL3N1cGVyLmgKKysrIGIvZnMvY2VwaC9zdXBlci5oCkBAIC03MzYsMTUg
-KzczNiwxMiBAQCBleHRlcm4gdm9pZCBfX2luaXQgY2VwaF94YXR0cl9pbml0KHZvaWQpOwogZXh0
-ZXJuIHZvaWQgY2VwaF94YXR0cl9leGl0KHZvaWQpOwogCiAvKiBhY2wuYyAqLwotZXh0ZXJuIGNv
-bnN0IHN0cnVjdCB4YXR0cl9oYW5kbGVyIGNlcGhfeGF0dHJfYWNsX2FjY2Vzc19oYW5kbGVyOwot
-ZXh0ZXJuIGNvbnN0IHN0cnVjdCB4YXR0cl9oYW5kbGVyIGNlcGhfeGF0dHJfYWNsX2RlZmF1bHRf
-aGFuZGxlcjsKIGV4dGVybiBjb25zdCBzdHJ1Y3QgeGF0dHJfaGFuZGxlciAqY2VwaF94YXR0cl9o
-YW5kbGVyc1tdOwogCiAjaWZkZWYgQ09ORklHX0NFUEhfRlNfUE9TSVhfQUNMCiAKIHN0cnVjdCBw
-b3NpeF9hY2wgKmNlcGhfZ2V0X2FjbChzdHJ1Y3QgaW5vZGUgKiwgaW50KTsKIGludCBjZXBoX2lu
-aXRfYWNsKHN0cnVjdCBkZW50cnkgKiwgc3RydWN0IGlub2RlICosIHN0cnVjdCBpbm9kZSAqKTsK
-LWludCBjZXBoX2FjbF9jaG1vZChzdHJ1Y3QgZGVudHJ5ICosIHN0cnVjdCBpbm9kZSAqKTsKIHZv
-aWQgY2VwaF9mb3JnZXRfYWxsX2NhY2hlZF9hY2xzKHN0cnVjdCBpbm9kZSAqaW5vZGUpOwogCiAj
-ZWxzZQpkaWZmIC0tZ2l0IGEvZnMvY2VwaC94YXR0ci5jIGIvZnMvY2VwaC94YXR0ci5jCmluZGV4
-IGM3NTgxZjM3MzNjMS4uODk4YjY1NjVhZDNlIDEwMDY0NAotLS0gYS9mcy9jZXBoL3hhdHRyLmMK
-KysrIGIvZnMvY2VwaC94YXR0ci5jCkBAIC02LDYgKzYsNyBAQAogI2luY2x1ZGUgPGxpbnV4L2Nl
-cGgvZGVjb2RlLmg+CiAKICNpbmNsdWRlIDxsaW51eC94YXR0ci5oPgorI2luY2x1ZGUgPGxpbnV4
-L3Bvc2l4X2FjbF94YXR0ci5oPgogI2luY2x1ZGUgPGxpbnV4L3NsYWIuaD4KIAogI2RlZmluZSBY
-QVRUUl9DRVBIX1BSRUZJWCAiY2VwaC4iCkBAIC0xNyw4ICsxOCw4IEBACiAgKi8KIGNvbnN0IHN0
-cnVjdCB4YXR0cl9oYW5kbGVyICpjZXBoX3hhdHRyX2hhbmRsZXJzW10gPSB7CiAjaWZkZWYgQ09O
-RklHX0NFUEhfRlNfUE9TSVhfQUNMCi0JJmNlcGhfeGF0dHJfYWNsX2FjY2Vzc19oYW5kbGVyLAot
-CSZjZXBoX3hhdHRyX2FjbF9kZWZhdWx0X2hhbmRsZXIsCisJJnBvc2l4X2FjbF9hY2Nlc3NfeGF0
-dHJfaGFuZGxlciwKKwkmcG9zaXhfYWNsX2RlZmF1bHRfeGF0dHJfaGFuZGxlciwKICNlbmRpZgog
-CU5VTEwsCiB9Owo=
---001a11c3227483ecaa04f10ec7bd--
+-Andi
