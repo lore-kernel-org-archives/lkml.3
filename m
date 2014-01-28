@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825AbaA1WBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 17:01:04 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:14360 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497AbaA1WBC (ORCPT
+	id S932238AbaA1WDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 17:03:47 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32788 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755742AbaA1WDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 17:01:02 -0500
-Message-ID: <1390946460.2807.19.camel@j-VirtualBox>
-Subject: Re: [PATCH v2 1/5] mutex: In mutex_can_spin_on_owner(), return
- false if task need_resched()
-From: Jason Low <jason.low2@hp.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Tue, 28 Jan 2014 14:01:00 -0800
-In-Reply-To: <20140128202042.GN9012@linux.vnet.ibm.com>
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
-	 <1390936396-3962-2-git-send-email-jason.low2@hp.com>
-	 <20140128202042.GN9012@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 28 Jan 2014 17:03:45 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] memblock: Add limit checking to memblock_virt_alloc
+Date: Tue, 28 Jan 2014 14:04:25 -0800
+Message-Id: <1390946665-2967-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-28 at 12:20 -0800, Paul E. McKenney wrote:
-> On Tue, Jan 28, 2014 at 11:13:12AM -0800, Jason Low wrote:
-> > The mutex_can_spin_on_owner() function should also return false if the
-> > task needs to be rescheduled to avoid entering the MCS queue when it
-> > needs to reschedule.
-> > 
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
-> 
-> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> But I cannot help asking how this affects performance.  (My guess is
-> "not much", but always good to know.)
+In original bootmem wrapper for memblock, we have limit checking.
 
-Hi Paul,
+Add it to memblock_virt_alloc, to address arm and x86 booting crash.
 
-In the past, when I tested this particular patch, I did not see any
-noticeable performance gains. Patch 1 is really more of a "correctness"
-change which was why I didn't retest this by itself. I can be sure to
-include the benchmarks numbers on this particular patch though next
-time.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Thanks.
+---
+ mm/memblock.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -1077,6 +1077,9 @@ static void * __init memblock_virt_alloc
+ 	if (!align)
+ 		align = SMP_CACHE_BYTES;
+ 
++	if (max_addr > memblock.current_limit)
++		max_addr = memblock.current_limit;
++
+ again:
+ 	alloc = memblock_find_in_range_node(size, align, min_addr, max_addr,
+ 					    nid);
