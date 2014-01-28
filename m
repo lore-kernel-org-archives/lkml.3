@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaA1A7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:59:00 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:15648 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753310AbaA1A66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:58:58 -0500
-X-IronPort-AV: E=Sophos;i="4.95,732,1384272000"; 
-   d="scan'208";a="9459268"
-Message-ID: <52E70165.8070709@cn.fujitsu.com>
-Date: Tue, 28 Jan 2014 09:01:25 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
- kernel nodes to unhotpluggable.
-References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com> <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 08:57:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 08:57:22,
-	Serialize complete at 2014/01/28 08:57:22
+	id S1754622AbaA1BAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 20:00:01 -0500
+Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:59996 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753534AbaA1A77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 19:59:59 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2894:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:4321:5007:6119:7652:8603:10004:10400:10848:11026:11473:11658:11914:12517:12519:12555:12740:13069:13311:13357:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mark13_73f81be37fb45
+X-Filterd-Recvd-Size: 2575
+Message-ID: <1390870794.20150.75.camel@joe-AO722>
+Subject: Re: [PATCH] vsprintf: ignore arguments to %n
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Ryan Mallon <rmallon@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Date: Mon, 27 Jan 2014 16:59:54 -0800
+In-Reply-To: <20140128003927.GA27319@www.outflux.net>
+References: <20140128003927.GA27319@www.outflux.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 08:32 AM, David Rientjes wrote:
-> On Wed, 22 Jan 2014, David Rientjes wrote:
->
->>>   arch/x86/mm/numa.c | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
->>> index 81b2750..ebefeb7 100644
->>> --- a/arch/x86/mm/numa.c
->>> +++ b/arch/x86/mm/numa.c
->>> @@ -562,10 +562,10 @@ static void __init numa_init_array(void)
->>>   	}
->>>   }
->>>
->>> +static nodemask_t numa_kernel_nodes __initdata;
->>>   static void __init numa_clear_kernel_node_hotplug(void)
->>>   {
->>>   	int i, nid;
->>> -	nodemask_t numa_kernel_nodes;
->>>   	unsigned long start, end;
->>>   	struct memblock_type *type =&memblock.reserved;
->>>
->>
->> Isn't this also a bugfix since you never initialize numa_kernel_nodes when
->> it's allocated on the stack with NODE_MASK_NONE?
->>
->
-> This hasn't been answered and the patch still isn't in linux-kernel yet
-> Dave tested it as good.  I'm suspicious of the changelog that indicates
-> this nodemask is the result of a stack overflow itself which only manages
-> to reproduce itself in the init patch slightly more than 50% of the time.
-> How is that possible?
->
-> I think the changelog should indicate this also fixes an uninitialized
-> nodemask issue.
+On Mon, 2014-01-27 at 16:39 -0800, Kees Cook wrote:
 
-Hi David,
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+[]
+> @@ -1735,14 +1735,10 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+>  		case FORMAT_TYPE_NRCHARS: {
+>  			/*
+>  			 * Since %n poses a greater security risk than
+> -			 * utility, ignore %n and skip its argument.
+> +			 * utility, it should not be implemented. Instead,
+> +			 * when encountering %n, ignore the arguments.
+>  			 */
+> -			void *skip_arg;
+> -
+> -			WARN_ONCE(1, "Please remove ignored %%n in '%s'\n",
+> -					old_fmt);
+> -
+> -			skip_arg = va_arg(args, void *);
+> +			WARN_ONCE(1, "Ignored %%n in '%s'\n", old_fmt);
+>  			break;
+>  		}
 
-I'm still working on this problem, but unfortunately nothing new for now.
-And the test till now shows no more problem here.
+I don't think this is better either.
 
-I'm digging into it, but need more time.
+Why not tell people to fix the code?
+checkpatch isn't run on quite a lot of patches.
 
-I'll resend a new patch and modify the changelog soon. Before we find the
-root cause, I think we can use this patch as a temporary solution.
+anyway, here's a possible checkpatch test too.
+---
+ scripts/checkpatch.pl | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Thanks.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 1dbd6d1..95c3264 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4069,6 +4069,15 @@ sub process {
+ 			}
+ 		}
+ 
++# check for unsupported uses of %n in what appear to be formats
++		if ($sline =~ /\b$logFunctions\s*\(.*"/) {
++			my $fmt = get_quoted_string($line, $rawline);
++			if ($fmt ne "" && $fmt =~ /[^\%]\%n/) {
++				WARN("PRINTF_CONTROL_N",
++				     "printf style use of \%n is not supported\n" . $herecurr);
++			}
++		}
++
+ # Check for misused memsets
+ 		if ($^V && $^V ge 5.10.0 &&
+ 		    defined $stat &&
 
 
