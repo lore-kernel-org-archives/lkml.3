@@ -1,126 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015AbaA1KDQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:03:16 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47938 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595AbaA1KDN (ORCPT
+	id S1755079AbaA1KD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:03:29 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:45874 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735AbaA1KDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:03:13 -0500
-Message-ID: <52E7805B.5050909@monstr.eu>
-Date: Tue, 28 Jan 2014 11:03:07 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 28 Jan 2014 05:03:14 -0500
+Message-ID: <52E7805C.8050907@gmail.com>
+Date: Tue, 28 Jan 2014 11:03:08 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze changes for 3.14
-References: <5280F58F.4060900@monstr.eu>
-In-Reply-To: <5280F58F.4060900@monstr.eu>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="ldeK93jceUQL7gdH1KIiXVjRCoIkj3HVp"
+To: Luca Abeni <luca.abeni@unitn.it>, Steven Rostedt <rostedt@goodmis.org>
+CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
+        linux-doc@vger.kernel.org, rob@landley.net
+Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
+References: <1390821615-23247-1-git-send-email-juri.lelli@gmail.com>	<20140127103556.02d82e02@gandalf.local.home>	<20140127175607.1f99491c@luca-1225C>	<20140127120938.3a8d40fb@gandalf.local.home> <20140127232922.667593ca@luca-1225C>
+In-Reply-To: <20140127232922.667593ca@luca-1225C>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ldeK93jceUQL7gdH1KIiXVjRCoIkj3HVp
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 01/27/2014 11:29 PM, Luca Abeni wrote:
+> Hi Steven,
+> 
+> On Mon, 27 Jan 2014 12:09:38 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> [...]
+>>>> Lets take a case where deadline == period. It seems that the above
+>>>> would be true any time there was any delay to starting the task
+>>>> or the task was interrupted by another SCHED_DEADLINE task.
+>>> Not sure about this... Notice that above only applies when a task
+>>> wakes up (moving from a "sleeping" state to a "ready to run"
+>>> state). Not when an already ready task is scheduled.
+>>> Or did I misunderstand your comment?
+>>
+>> No no, you understood, I missed that this only happens on wakeup. But
+>> then I have to ask, what happens if the task blocks on a mutex? Would
+>> that cause this check to happen then?
+> Well, in theory, this check has to be performed every time the task
+> wakes up from any kind of sleeping (mutex, or anything else).
+> I think this is what happens in practice with the current
+> implementation, but maybe I am missing something in the implementation
+> details.
+> 
 
-Hi Linus,
+Yes. The call graph looks like:
 
-please pull these Microblaze patches to your tree.
+ enqueue_task_dl()
+  -> enqueue_dl_entity()
+   -> update_dl_entity() <-- this does the check through dl_entity_overflow()
+
+and enqueue_task_dl() gets called every time the task wakes up and is enqueued
+back in the dl_rq (e.g., it was waiting on a mutex).
 
 Thanks,
-Michal
 
-The following changes since commit d8ec26d7f8287f5788a494f56e8814210f0e64=
-be:
+- Juri
 
-  Linux 3.13 (2014-01-19 18:40:07 -0800)
-
-are available in the git repository at:
-
-  git://git.monstr.eu/linux-2.6-microblaze.git tags/microblaze-3.14-rc1
-
-for you to fetch changes up to c0d68cea2db34a510f4d67b90aab1c48bc47461e:
-
-  microblaze: Add missing v8.50.a version (2014-01-27 11:31:37 +0100)
-
-----------------------------------------------------------------
-Microblaze patches for 3.14-rc1
-
-- Add CCF support
-- Fix BS=3D0 compilation
-- Wire up defconfig
-- Some minor cleanups and fixes
-
-----------------------------------------------------------------
-Geert Uytterhoeven (4):
-      microblaze: Wire up defconfig to mmu_defconfig
-      microblaze: Remove _fdt_start casts
-      microblaze: Remove duplicate declarations of _stext[] and _etext[]
-      microblaze/uapi: Use Kbuild logic to include <asm-generic/types.h>
-
-Michal Simek (10):
-      microblaze: Simplify fcpu helper function
-      microblaze: Add support for CCF
-      microblaze: Add NOTES section to linker script
-      microblaze: timer: Use generic sched_clock implementation
-      microblaze: timer: Do not initialized system timer twice
-      microblaze: Define read/write{b,w,l}_relaxed MMIO
-      microblaze: Disable stack protection from bootloader
-      microblaze: Fix compilation error for BS=3D0
-      microblaze: Fix missing bracket in printk
-      microblaze: Add missing v8.50.a version
-
- arch/microblaze/Kconfig                       |  2 ++
- arch/microblaze/Makefile                      |  2 ++
- arch/microblaze/include/asm/cpuinfo.h         |  9 ++++++---
- arch/microblaze/include/asm/io.h              |  8 ++++++++
- arch/microblaze/include/asm/sections.h        |  1 -
- arch/microblaze/include/uapi/asm/Kbuild       |  3 ++-
- arch/microblaze/include/uapi/asm/types.h      |  1 -
- arch/microblaze/kernel/cpu/cpuinfo-pvr-full.c |  3 ---
- arch/microblaze/kernel/cpu/cpuinfo-static.c   |  2 --
- arch/microblaze/kernel/cpu/cpuinfo.c          | 24 +++++++++++++++++++++=
-+--
- arch/microblaze/kernel/head.S                 |  4 ++++
- arch/microblaze/kernel/hw_exception_handler.S | 49 +++++++++++++++++++++=
-++++++++++++++++------------
- arch/microblaze/kernel/setup.c                | 10 ++++++----
- arch/microblaze/kernel/timer.c                | 51 +++++++++++++++++++++=
-+++++++-----------------------
- arch/microblaze/kernel/vmlinux.lds.S          |  1 +
- 15 files changed, 118 insertions(+), 52 deletions(-)
- delete mode 100644 arch/microblaze/include/uapi/asm/types.h
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---ldeK93jceUQL7gdH1KIiXVjRCoIkj3HVp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlLngFsACgkQykllyylKDCF1FQCgl5EdgSUCNy9cAqUW4ylLYEV/
-ZVQAn3FGhBLLzk7NFgjdRvtP5W7SNwF0
-=ss5v
------END PGP SIGNATURE-----
-
---ldeK93jceUQL7gdH1KIiXVjRCoIkj3HVp--
+>> It may be nice to add some comments about exactly when this check is
+>> performed.
+> Well, maybe "wake-up" is not the right term according to the
+> terminology used in the Linux kernel... The check should be performed
+> every time the task changes its state from sleeping (TASK_INTERRUPTIBLE
+> or TASK_UNINTERRUPTIBLE, I think) to "ready to execute" (TASK_RUNNING,
+> I think) and enters the ready queue (well, RB tree :). If someone can
+> suggest a more appropriate wording, I'll fix the document accordingly.
+> 
+> 
+>>>> For example, lets say we have two SD tasks. One that has 50ms
+>>>> runtime and a 100ms period. The other has a 1ms runtime and a
+>>>> 10ms period.
+>>>>
+>>>> The above two should work perfectly fine together. The 10ms period
+>>>> task will constantly schedule in on the 100ms task.
+>>>>
+>>>> When the 100ms task runs, it could easily be delayed by 1ms due
+>>>> to the 10ms task. Then lets look at the above equation
+>>> See above: the check for the 100ms task is only performed when the
+>>> task unblocks (at the beginning of its period), not when it's
+>>> scheduled (after the 10ms taks).
+>>>
+>>> This check is designed to take care of the following situation:
+>>> - consider a task with runtime 10ms and period equal to deadline
+>>> equal to 100ms
+>>> - assume the task wakes up at time t, and is assigned "remaining
+>>>   runtime" 10ms and "scheduling deadline" t+100ms
+>>> - assume the task blocks after executing for 2ms. The "remaining
+>>>   runtime" is now 8ms
+>>> - can the task use "remaining runtime" 8ms and "scheduling deadline"
+>>>   t+100ms when it wakes up again?
+>>>   Answer: if it wakes up before t+20ms, it can. Otherwise, it
+>>> cannot, because it would consume a fraction of CPU time larger than
+>>> 10%, causing missed deadlines in other tasks.
+>>
+>> Ah, you answered my question here. The check happens every time the
+>> task blocks as well. I still need to read the papers, and even more
+>> importantly, start running more tests with tracing on to review what
+>> exactly happens in the implementation.
+> If you read the original CBS paper, you'll see that it does not talk
+> about "wake-up" and "sleep", because it always considers a wake-up as a
+> job arrival, and a task blocking as a job end. This is because the
+> original paper only considers a simplified task model, without
+> "self-suspending jobs".
+> In SCHED_DEADLINE, things are not so simple, because it has to consider
+> real situations with real tasks not using the simplified original
+> real-time task model...
+> 
+>>>>> + SCHED_DEADLINE can be used to schedule real-time tasks
+>>>>> guaranteeing that
+>>>>> + the jobs' deadlines of a task are respected. In order to do
+>>>>> this, a task
+>>>>> + must be scheduled by setting:
+>>>>> +
+>>>>> +  - runtime >= WCET
+>>>>> +  - deadline = D
+>>>>> +  - period <= P
+>>>>> +
+>>>>> + IOW, if runtime >= WCET and if period is >= P, then the
+>>>>> scheduling deadlines
+>>>>> + and the absolute deadlines (d_j) coincide, so a proper
+>>>>> admission control
+>>>>> + allows to respect the jobs' absolute deadlines for this task
+>>>>> (this is what is
+>>>>> + called "hard schedulability property" and is an extension of
+>>>>> Lemma 1 of [2]).
+>>>>
+>>>> I wonder if we should state the obvious (which is never obvious).
+>>>> That is the user must also have the following.
+>>>>
+>>>>   runtime < deadline <= period
+>>>>
+>>>> Although it is fine for deadline = period, runtime should be less
+>>>> than deadline, otherwise the task will take over the system.
+>>> I think if "runtime < deadline <= period" is not respected, then the
+>>> admission control will fail... But yes, repeating it here can be
+>>> useful. If needed I'll add it to the document.
+>>
+>> Yeah, it's one of those things that you should know, but I can see
+>> users screwing it up ;-)
+> Ok...
+> What about presenting this as an example of the admission test failing?
+> Something like: 'notice that if "runtime" > "deadine" the admission
+> test will surely fail.'
+> (BTW, I am not sure if the "deadline <= period" condition is really
+> needed... Maybe not respecting it does not make too much sense, but I
+> think it is not strictly needed for schedulability purposes).
+> 
+> 
+> 
+> 			Thanks,
+> 				Luca
+> 
