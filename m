@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaA1K0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:26:07 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57246 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775AbaA1K0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:26:05 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140128093701.GC2221@dhcp22.suse.cz>
-References: <20140127163758.GC6839@pd.tnic> <52E68C25.1070804@zytor.com> <20140127164544.GE6839@pd.tnic> <20140128093701.GC2221@dhcp22.suse.cz>
+	id S1754913AbaA1K0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:26:34 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:53894 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753775AbaA1K0c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 05:26:32 -0500
+X-Sasl-enc: ZP/k3fAKuRqUyDfHnRxs0CvH4WcKed+CRV89nDNvnmiu 1390904790
+Date: Tue, 28 Jan 2014 08:26:27 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] x86, microcode: Add option to allow downgrading of
+ microcode
+Message-ID: <20140128102626.GA32249@khazad-dum.debian.net>
+References: <1390598339-18740-1-git-send-email-andi@firstfloor.org>
+ <1390598339-18740-2-git-send-email-andi@firstfloor.org>
+ <20140125163558.GC25531@khazad-dum.debian.net>
+ <20140125181409.GE20765@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [RFC] x86: Disable traditional FPU instructions too
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 28 Jan 2014 02:25:09 -0800
-To: Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Kosina <jkosina@suse.cz>, Michael Matz <matz@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Message-ID: <30d5350d-2f0d-4103-a28d-cb9b796fd8ce@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140125181409.GE20765@two.firstfloor.org>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If that is intentional it needs a big huge freaking comment recording why it is not a bug.  I would expect that to generate a FP multiply.
+On Sat, 25 Jan 2014, Andi Kleen wrote:
+> On Sat, Jan 25, 2014 at 02:35:58PM -0200, Henrique de Moraes Holschuh wrote:
+> > On Fri, 24 Jan 2014, Andi Kleen wrote:
+> > > For testing purposes it can be useful to downgrade microcode.
+> > > Normally the driver only allows upgrading.
+> > 
+> > The code is not prepared to work correctly when downgrading is allowed, in
+> > the presence of shadowed microcode.  When a firmware request results in more
+> 
+> As I wrote it's only for testing purposes when you know what you're doing
+> (typically with a special micro code file)
+> 
+> Your whole argument is irrelevant, as it only applies to normal users
+> who should never use this option.
 
-On January 28, 2014 1:37:01 AM PST, Michal Hocko <mhocko@suse.cz> wrote:
->[CCing Ralf for MIPS.]
->
->On Mon 27-01-14 17:45:44, Borislav Petkov wrote:
->> On Mon, Jan 27, 2014 at 08:41:09AM -0800, H. Peter Anvin wrote:
->> > I don't think it'd hurt... although I think the above pretty much
->> > requires that the code contain actual floating-point types to ever
->be
->> > generated.
->> 
->> Yes, that is supposed to catch usage of the 'E' floating constant,
->for
->> example, in definitions. It is a build-time assertion, if you want.
->:)
->
->And git grep says that mips abuses this notation:
->arch/mips/include/asm/kvm_host.h:#define MS_TO_NS(x) (x * 1E6L)
->
->I do not have cross-compiler set up to check whether this is a real
->issue because include/media/rc-core.h defines the same macro correctly
->so the real code might end up using the right variant.
+It certainly could become a lot less relevant if any indication is given to
+normal users that they should never enable the feature unless they really
+know what they're doing.
+
+It is NOT "only for testing purposes" when that fact is written nowhere an
+user would see.
+
+> > Also, since you're going to mess with this, why don't you implement the
+> > correct semanthics for microcode with the sign bit set?  Making it signed
+> > actually makes the current code behaviour worse.
+> > 
+> > Refer to: http://lkml.org/lkml/2011/3/21/522
+> 
+> I don't think it makes it worse. In fact I'm essentially implementing
+> Burt's request "for explicit user action" with the new override option.
+
+You're correct.  It doesn't make it worse, it makes it better.  Your change
+effectively forbids loading pre-release microcode on a box which has
+production microcode, unless "downgrade mode" is enabled.
+
+This is different from what Burt requested, but if you're implementing a
+downgrade mode, it is certainly a much better behavior.
+
+> Anyways I suppose your rant killed the patch anyways. Congratulations!
+
+You decided to ignore feedback you got weeks ago that required just adding a
+comment to the code or to the commit log to address.  Whether or not you
+consider said feedback particularly interesting or relevant does NOT give
+you the right to just handwave it away only to later blame others should the
+patch not get accepted.
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
