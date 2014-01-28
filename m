@@ -1,40 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaA1PJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 10:09:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63894 "EHLO mx1.redhat.com"
+	id S1755221AbaA1PLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 10:11:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60398 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631AbaA1PJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 10:09:42 -0500
-Date: Tue, 28 Jan 2014 16:08:49 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ben Guthro <benjamin.guthro@citrix.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [BUG?] Interrupts enabled after xen_acpi_processor_resume+0x0/0x34
- [xen_acpi_processor]
-Message-ID: <20140128150848.GA1428@redhat.com>
+	id S1755191AbaA1PLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 10:11:47 -0500
+Date: Tue, 28 Jan 2014 16:11:43 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Yufeng Shen <miletus@chromium.org>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, adlr@chromium.org
+Subject: Re: [PATCH] HID: usbhid: quirk for CY-TM75 75 inch Touch Overlay
+In-Reply-To: <1390863766-14491-1-git-send-email-miletus@chromium.org>
+Message-ID: <alpine.LNX.2.00.1401281611320.3763@pobox.suse.cz>
+References: <1390863766-14491-1-git-send-email-miletus@chromium.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 27 Jan 2014, Yufeng Shen wrote:
 
-We have this bug report on our bugzilla:
-https://bugzilla.redhat.com/show_bug.cgi?id=1058268
+> There is timeout error during initialization:
+> kernel: [   11.733104] hid-multitouch 0003:1870:0110.0001: usb_submit_urb(ctrl) failed: -1
+> kernel: [   11.734093] hid-multitouch 0003:1870:0110.0001: timeout initializing reports
+> 
+> Adding quirk HID_QUIRK_NO_INIT_REPORTS can solve the problem.
+> 
+> Signed-off-by: Yufeng Shen <miletus@chromium.org>
 
-In short:
-WARNING: CPU: 0 PID: 6733 at drivers/base/syscore.c:104 syscore_resume+0x9a/0xe0()
-Interrupts enabled after xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+Applied.
 
-Perhaps I'm wrong, but I think sysops->resume() callback should be
-atomic i.e. can not use mutexes or kmalloc(,GFP_KERNEL), what is not
-true regarding xen_acpi_processor_resume(). That callback was introduced
-by commit 3fac10145b766a2244422788f62dc35978613fd8. Fixing that will
-not be easy IMHO, but maybe you have some ideas ? :-)
+> ---
+>  drivers/hid/hid-ids.h           | 1 +
+>  drivers/hid/usbhid/hid-quirks.c | 1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index f9304cb..ece2997 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -636,6 +636,7 @@
+>  
+>  #define USB_VENDOR_ID_NEXIO		0x1870
+>  #define USB_DEVICE_ID_NEXIO_MULTITOUCH_420	0x010d
+> +#define USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750	0x0110
+>  
+>  #define USB_VENDOR_ID_NEXTWINDOW	0x1926
+>  #define USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN	0x0003
+> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+> index 0db9a67..be5270a 100644
+> --- a/drivers/hid/usbhid/hid-quirks.c
+> +++ b/drivers/hid/usbhid/hid-quirks.c
+> @@ -74,6 +74,7 @@ static const struct hid_blacklist {
+>  	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+>  	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+>  	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
+> +	{ USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+>  	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
+> -- 
+> 1.8.5.3
+> 
 
-Stanislaw
+-- 
+Jiri Kosina
+SUSE Labs
