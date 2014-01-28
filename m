@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516AbaA1SlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:41:21 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:37698 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970AbaA1SlS (ORCPT
+	id S932094AbaA1Sly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:41:54 -0500
+Received: from smtprelay0212.hostedemail.com ([216.40.44.212]:59091 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755172AbaA1Slx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:41:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140128013013.GA31626@psi-dev26.jf.intel.com>
-References: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
- <1387224459-25746-4-git-send-email-david.a.cohen@linux.intel.com>
- <CAErSpo4ymfSdZ5an4zt+C=5asUW=vz000d32mPZkF-S5N_uynA@mail.gmail.com> <20140128013013.GA31626@psi-dev26.jf.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 28 Jan 2014 11:40:57 -0700
-Message-ID: <CAErSpo52sXXKkJZ=bMMZw4G0Z0AJ=-u+Ov14+qp=S+y9LCP=Rg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] x86: intel-mid: add Merrifield platform support
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Fei Yang <fei.yang@intel.com>,
-        "Mark F. Brown" <mark.f.brown@intel.com>,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Jan 2014 13:41:53 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3871:4384:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pets76_4a620af4ac15e
+X-Filterd-Recvd-Size: 1394
+Message-ID: <1390934510.11756.14.camel@joe-AO722>
+Subject: [PATCH] fmc: Fix decimal permissions
+From: Joe Perches <joe@perches.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 28 Jan 2014 10:41:50 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 6:30 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
-> Hi Bjorn,
->
-> On Mon, Jan 27, 2014 at 05:52:30PM -0700, Bjorn Helgaas wrote:
->> On Mon, Dec 16, 2013 at 1:07 PM, David Cohen
->> <david.a.cohen@linux.intel.com> wrote:
->> > This code was partially based on Mark Brown's previous work.
->> >
->> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
->> > Signed-off-by: Fei Yang <fei.yang@intel.com>
->> > Cc: Mark F. Brown <mark.f.brown@intel.com>
->> > Cc: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
->>
->> I know this has already been merged to Linus' tree, but it looks funny to me.
->>
->> > --- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
->> > +++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
->> > @@ -16,3 +16,4 @@
->> >   */
->> >  extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
->> >  extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
->> > +extern void * __init get_tangier_ops(void) __attribute__((weak));
->>
->> We should use "__weak" instead of the gcc-specific "__attribute__((weak))".
->>
->> I don't think it's a good idea to use __weak on a declaration in a
->> header file.  If there are ever multiple definitions of the symbol,
->> they are *all* made weak symbols, and one is chosen based on link
->> order, which is error-prone.  I only see one definition now, but the
->> whole point of weak is to allow multiple definitions, so this looks
->> like a problem waiting to happen.  See 10629d711ed, for example.
->>
->> It look me a bit to figure out that these get_*_ops() functions are
->> used by INTEL_MID_OPS_INIT, which constructs the name using a macro,
->> so grep/cscope/etc. don't see any users.  A comment pointing to
->> INTEL_MID_OPS_INIT would be helpful.
->>
->> What's the reason for making these symbols weak?  Normally we use weak
->> to make a generic default version of a function, while allowing
->> architectures to replace the default with their own version if
->> necessary.  But I don't see that happening here.  Maybe I'm just
->> missing it, like I missed the uses of get_tangier_ops(), et al.
->
-> Intel mid was implemented in such way that we should select which soc to
-> be used in compilation time. Depending on the selection, mfld.c or
-> mrfl.c could not be compiled then some symbols wouldn't be available.
->
-> But IMHO this is a bad legacy design that exists in there, so I started
-> to rework it as you can see in this commit:
->
-> commit 4cb9b00f42e07830310319a07e6c91413ee8153e
-> Author: David Cohen <david.a.cohen@linux.intel.com>
-> Date:   Mon Dec 16 17:37:26 2013 -0800
->
->     x86, intel-mid: Remove deprecated X86_MDFLD and X86_WANT_INTEL_MID
->     configs
->
-> I'm sending more patches soon and getting rid of intel_mid_weak_decls.h
-> file is in my TODO list.
+This 444 should have been octal.
 
-Sounds good.  While you're looking at it, I have similar questions
-about ipc_device_handler() and msic_generic_platform_data().  It's not
-clear to me why they should be weak.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/fmc/fmc-write-eeprom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Bjorn
+diff --git a/drivers/fmc/fmc-write-eeprom.c b/drivers/fmc/fmc-write-eeprom.c
+index 30e451e..1f107fb 100644
+--- a/drivers/fmc/fmc-write-eeprom.c
++++ b/drivers/fmc/fmc-write-eeprom.c
+@@ -26,7 +26,7 @@ FMC_PARAM_BUSID(fwe_drv);
+ /* The "file=" is like the generic "gateware=" used elsewhere */
+ static char *fwe_file[FMC_MAX_CARDS];
+ static int fwe_file_n;
+-module_param_array_named(file, fwe_file, charp, &fwe_file_n, 444);
++module_param_array_named(file, fwe_file, charp, &fwe_file_n, 0444);
+ 
+ static int fwe_run_tlv(struct fmc_device *fmc, const struct firmware *fw,
+ 	int write)
+
+
