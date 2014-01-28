@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523AbaA1SUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:20:42 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:35953 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321AbaA1SUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:20:37 -0500
-X-IronPort-AV: E=Sophos;i="4.95,737,1384300800"; 
-   d="scan'208";a="97371312"
-Date: Tue, 28 Jan 2014 18:11:57 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH] arm/xen: Initialize event channels earlier
-In-Reply-To: <52E7F02A.7010508@linaro.org>
-Message-ID: <alpine.DEB.2.02.1401281809560.4373@kaball.uk.xensource.com>
-References: <1390920842-21886-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1401281651400.4373@kaball.uk.xensource.com> <52E7EA78.5020305@linaro.org> <alpine.DEB.2.02.1401281742080.4373@kaball.uk.xensource.com> <52E7F02A.7010508@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	id S1755532AbaA1SVL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:21:11 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:12955 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755416AbaA1SUH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 13:20:07 -0500
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v3 2/2] qspinlock, x86: Enable x86-64 to use queue spinlock
+Date: Tue, 28 Jan 2014 13:19:11 -0500
+Message-Id: <1390933151-1797-3-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014, Julien Grall wrote:
-> On 01/28/2014 05:46 PM, Stefano Stabellini wrote:
-> > On Tue, 28 Jan 2014, Julien Grall wrote:
-> >>>> +static int xen_cpu_notification(struct notifier_block *self,
-> >>>> +				unsigned long action,
-> >>>> +				void *hcpu)
-> >>>> +{
-> >>>> +	int cpu = (long)hcpu;
-> >>>> +
-> >>>> +	switch (action) {
-> >>>> +	case CPU_UP_PREPARE:
-> >>>> +		xen_percpu_init(cpu);
-> >>>> +		break;
-> >>>> +	case CPU_STARTING:
-> >>>> +		xen_interrupt_init();
-> >>>> +		break;
-> >>>
-> >>> Is CPU_STARTING guaranteed to be called on the new cpu only?
-> >>
-> >> Yes.
-> >>
-> >>> If so, why not call both xen_percpu_init and xen_interrupt_init on
-> >>> CPU_STARTING?
-> >>
-> >> Just in case that xen_vcpu is used somewhere else by a cpu notifier
-> >> callback CPU_STARTING. We don't know which callback is called first.
-> > 
-> > Could you please elaborate a bit more on the problem you are trying to
-> > describe?
-> 
-> We want to make sure that the vcpu is registered correctly. If not, we
-> can't skip it and avoid xen to have a "dead" VCPU to schedule due to BUG_ON.
-> 
-> I agree that now we have a BUG_ON in the middle of xen_percpu_init, but
-> it's possible to return an error. In this case Linux will skip this cpu
-> and continue to boot.
+This patch makes the necessary changes at the x86 architecture
+specific layer to enable the use of queue spinlock for x86-64. As
+x86-32 machines are typically not multi-socket. The benefit of queue
+spinlock may not be apparent. So queue spinlock is not enabled.
 
-I think there are no benefits in having two separate functions
-(xen_percpu_init and xen_interrupt_init) called at two different points
-(CPU_UP_PREPARE and CPU_STARTING).
-I would simply have one. Simpler is better.
+Currently, there is some incompatibilities between the para-virtualized
+spinlock code (which hard-codes the use of ticket spinlock) and the
+queue spinlock. Therefore, the use of queue spinlock is disabled when
+the para-virtualized spinlock is enabled.
 
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/spinlock.h       |    2 ++
+ arch/x86/include/asm/spinlock_types.h |    4 ++++
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-> >>> As it stands I think you introduced a subtle change (that might be OK
-> >>> but I think is unintentional): xen_percpu_init might not be called from
-> >>> the same cpu as its target anymore.
-> >>
-> >> No, xen_percpu_init and xen_interrupt_init are called on the boot cpu at
-> >> the end of xen_guest_init.
-> >  
-> > Is CPU_UP_PREPARE guaranteed to be called on the target cpu? I think
-> > not, therefore you would be executing xen_percpu_init for cpu1 on cpu0.
-> >
-> 
-> I don't see any issue to execute xen_percpu_init for cpu1 on cpu0, all
-> the code is taking directly the vcpu ID to initialize.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 03db714..50692b4 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -17,6 +17,7 @@ config X86_64
+ 	depends on 64BIT
+ 	select X86_DEV_DMA_OPS
+ 	select ARCH_USE_CMPXCHG_LOCKREF
++	select ARCH_USE_QUEUE_SPINLOCK
+ 
+ ### Arch settings
+ config X86
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index bf156de..cfe51a6 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -43,6 +43,7 @@
+ extern struct static_key paravirt_ticketlocks_enabled;
+ static __always_inline bool static_key_false(struct static_key *key);
+ 
++#ifndef CONFIG_QUEUE_SPINLOCK
+ #ifdef CONFIG_PARAVIRT_SPINLOCKS
+ 
+ static inline void __ticket_enter_slowpath(arch_spinlock_t *lock)
+@@ -181,6 +182,7 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
+ {
+ 	arch_spin_lock(lock);
+ }
++#endif /* !CONFIG_QUEUE_SPINLOCK */
+ 
+ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+ {
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index 4f1bea1..f501a2a 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -11,6 +11,9 @@
+ #define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
+ #endif
+ 
++#ifdef CONFIG_QUEUE_SPINLOCK
++#include <asm-generic/qspinlock.h>
++#else
+ #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+ typedef u8  __ticket_t;
+ typedef u16 __ticketpair_t;
+@@ -33,6 +36,7 @@ typedef struct arch_spinlock {
+ } arch_spinlock_t;
+ 
+ #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
++#endif /* CONFIG_QUEUE_SPINLOCK */
+ 
+ #include <asm/rwlock.h>
+ 
+-- 
+1.7.1
 
-Me neither, I was simply pointing out that you made this change without
-writing it in the commit message (therefore I assume it might be
-unintended).
