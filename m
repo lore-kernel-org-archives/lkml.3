@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966AbaA1XWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:22:35 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34713 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837AbaA1XWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:22:30 -0500
-Date: Wed, 29 Jan 2014 00:22:19 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: AMD microcode loading broken on 32 bit
-Message-ID: <20140128232219.GO815@pd.tnic>
-References: <52E15AAE.4090106@oracle.com>
- <20140123192939.GB11190@pd.tnic>
- <52E17087.2060301@oracle.com>
- <20140128162431.GH815@pd.tnic>
- <52E8168D.9060805@oracle.com>
- <20140128205246.GL815@pd.tnic>
- <52E81B90.8040604@oracle.com>
- <20140128213030.GM815@pd.tnic>
- <52E8230F.7080300@oracle.com>
- <52E83903.5040908@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52E83903.5040908@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755927AbaA1XWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:22:11 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:44291 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888AbaA1XWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 18:22:07 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
+        JBottomley@parallels.com, bhelgaas@google.com,
+        Tejun Heo <tj@kernel.org>, linux-pci@vger.kernel.org
+Subject: [PATCH 08/11] pci: use device_remove_file_self() instead of device_schedule_callback()
+Date: Tue, 28 Jan 2014 18:21:48 -0500
+Message-Id: <1390951311-15325-9-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1390951311-15325-1-git-send-email-tj@kernel.org>
+References: <1390951311-15325-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 06:10:59PM -0500, Boris Ostrovsky wrote:
-> The patch seems to have fixed the problem.
+driver-core now supports synchrnous self-deletion of attributes and
+the asynchrnous removal mechanism is scheduled for removal.  Use it
+instead of device_schedule_callback().  This makes "remove" behave
+synchronously.
 
-Thanks, I'll add your Reported-and-tested-by.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/pci/pci-sysfs.c | 17 +++--------------
+ 1 file changed, 3 insertions(+), 14 deletions(-)
 
->> I'll give it a spin. Apparently the problem is currently in
->> install_equiv_cpu_table() when we are trying to index into buf and
->> buf (which is container) doesn't appear to be there.
-
-Yes.
-
-> >Are you sure that
-> >
-> >    container = (u8 *)(__va((u32)relocated_ramdisk) +
-> >                           ((u32)container -
-> >boot_params.hdr.ramdisk_image));
-> >
-> >in save_microcode_in_initrd_amd() always results in a valid
-> >pointer? It is non-NULL but it
-> >points to address that looks to be not mapped.
-
-Well, we unconditionally relocate the ramdisk to direct-mapped memory,
-see relocate_initrd(). I'll take a look at this tomorrow though, it is
-late here.
-
-The good thing is, I can reproduce the initial crash you reported in
-qemu+kvm which makes everything very easy to play with. :)
-
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 276ef9c..4e0acef 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -351,28 +351,17 @@ static struct device_attribute dev_rescan_attr = __ATTR(rescan,
+ 							(S_IWUSR|S_IWGRP),
+ 							NULL, dev_rescan_store);
+ 
+-static void remove_callback(struct device *dev)
+-{
+-	pci_stop_and_remove_bus_device_locked(to_pci_dev(dev));
+-}
+-
+ static ssize_t
+-remove_store(struct device *dev, struct device_attribute *dummy,
++remove_store(struct device *dev, struct device_attribute *attr,
+ 	     const char *buf, size_t count)
+ {
+-	int ret = 0;
+ 	unsigned long val;
+ 
+ 	if (kstrtoul(buf, 0, &val) < 0)
+ 		return -EINVAL;
+ 
+-	/* An attribute cannot be unregistered by one of its own methods,
+-	 * so we have to use this roundabout approach.
+-	 */
+-	if (val)
+-		ret = device_schedule_callback(dev, remove_callback);
+-	if (ret)
+-		count = ret;
++	if (val && device_remove_file_self(dev, attr))
++		pci_stop_and_remove_bus_device_locked(to_pci_dev(dev));
+ 	return count;
+ }
+ static struct device_attribute dev_remove_attr = __ATTR(remove,
 -- 
-Regards/Gruss,
-    Boris.
+1.8.5.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
