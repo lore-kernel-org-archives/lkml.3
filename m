@@ -1,109 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbaA1Huu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 02:50:50 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53361 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092AbaA1Hus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 02:50:48 -0500
-Message-ID: <52E7614E.8010903@ti.com>
-Date: Tue, 28 Jan 2014 09:50:38 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+	id S1754760AbaA1HyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 02:54:00 -0500
+Received: from gerolde.archlinux.org ([66.211.214.132]:40278 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985AbaA1Hx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 02:53:59 -0500
+Message-ID: <52E76205.4080903@archlinux.org>
+Date: Tue, 28 Jan 2014 08:53:41 +0100
+From: =?UTF-8?B?VGhvbWFzIELDpGNobGVy?= <thomas@archlinux.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>
-Subject: Re: [BISECTED] OMAP: DSS: clk rate mismatch
-References: <52E697C0.6000202@gmail.com>
-In-Reply-To: <52E697C0.6000202@gmail.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, thomas@archlinux.org,
+        ak@linux.intel.com
+CC: viro@ZenIV.linux.org.uk, geert@linux-m68k.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        tpowa@archlinux.org
+Subject: Re: 3.13: <module> disagrees about version of symbol <symbol>
+References: <52E4CF03.8030208@archlinux.org> <201401262322.DDF78613.FVSFOLOOJFHtQM@I-love.SAKURA.ne.jp>
+In-Reply-To: <201401262322.DDF78613.FVSFOLOOJFHtQM@I-love.SAKURA.ne.jp>
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="pCIia1f2wkOdMp1h5t0Gj0gRFEppCWOVo"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="FBpTJ0p1gQ6oL3GOn5op5qANvJNF2R8Wp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pCIia1f2wkOdMp1h5t0Gj0gRFEppCWOVo
-Content-Type: text/plain; charset=ISO-8859-1
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--FBpTJ0p1gQ6oL3GOn5op5qANvJNF2R8Wp
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On 2014-01-27 19:30, Ivaylo Dimitrov wrote:
-> Hi Tomi,
+Am 26.01.2014 15:22, schrieb Tetsuo Handa:
+> Thomas B=E8=87=98hler wrote:
+>> This looks exactly like the problem experienced by Tetsuo Handa in [1]=
+=2E
+>> However, for me, his solution, i.e. setting
+>>  CONFIG_PHYSICAL_ALIGN=3D0x1000000
+>> instead of
+>>  CONFIG_PHYSICAL_ALIGN=3D0x100000
+>> doesn't help and the symptoms stay the same (and, according to the
+>> documentation and to Kbuild, both are valid values on i686).
 >=20
-> linux-next-20140124 DSS is broken on N900  - display stays black (there=
+> I tried your config with "make localmodconfig" and saw the symptoms. I =
+changed
+> CONFIG_PHYSICAL_ALIGN from 0x100000 to 0x1000000 and no longer see the =
+symptoms.
 
-> is some noise though). I booted the kernel with qemu and it gives the
-> following warning:
->=20
-> [    0.623779] DSS: set fck to 172800000
-> [    0.624237] ------------[ cut here ]------------
-> [    0.624298] WARNING: CPU: 0 PID: 1 at
-> drivers/video/omap2/dss/dss.c:497 dss_set_fck_rate+0x68/0x8c()
-> [    0.624359] clk rate mismatch: 288000000 !=3D 172800000
+No idea why this worked for you. Anyway, if
+CONFIG_PHYSICAL_ALIGN=3D0x1000000 is necessary, then Kconfig should
+enforce it.
 
-That says that the omapdss tries to set the func clock to 172.8 MHz, but
-after setting the rate, the clock is at 288 MHz.
+And none of this changes that symbols without CRC are a bug.
 
-I just hit the same warning with beagle-xm yesterday, with v3.13-rc6 +
-DSS device tree patches, although it might be a different thing. I see
-that the actual clock is lower than what omapdss tries to set, you have
-the other way around.
+> Did you save your config after changing CONFIG_PHYSICAL_ALIGN ?
 
-The beagle-xm issue is related to a clk-divider fix I have sent some
-time ago:
-
-http://mid.gmane.org/1383736008-22764-1-git-send-email-tomi.valkeinen@ti.=
-com
-
-Basically the issue is that omapdss needs to produce very precise pixel
-clocks, derived from fck, but the fck rate options are quite limited. So
-omapdss tries to find out what kind of rates it could get for the fck,
-i.e. it does the clock divider calculations itself that would normally
-be left to the clock framework.
-
-That means the omapdss should do rounding the same way as the clock
-framework does. But clock framework has no rules about the rounding, so
-omapdss easily gets it wrong. And when you add the bug for which I
-posted the patch above, it seems the omapdss clock calculations are not
-very functional at the moment with fractional clock rates.
-
-However, I think the issue I see with beagle-xm should always result in
-lower actual fck than requested, but you see the other way around. So I
-wonder if it's something else... N900 clock calculations do initiate
-from sdi.c, instead of dpi.c for beagle, but they do look rather
-similar, and use the same helper functions from dss.c and dispc.c.
-
-How is the dss clock calculated on n900? Can you attach
-debug/clk/clk_summary output?
-
- Tomi
+Well, of course.
 
 
 
---pCIia1f2wkOdMp1h5t0Gj0gRFEppCWOVo
+--FBpTJ0p1gQ6oL3GOn5op5qANvJNF2R8Wp
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJS52FRAAoJEPo9qoy8lh71xAcP/A7Wq7phKz2s7611nubBgd6O
-Uvotnb9896BTPaefhunHHudUdergZb5iZVAeHrOMgT6Nhemppn0BcT25T7nr/4ba
-AEtvJOFlMcXbQeTXpoUrDAsTZsLSLPpBNw3jZDuLKciCE4WpYVLWBpR88DyYIblr
-z0hgfQmojViUNT+uPs04G02eXHMQQmEbQ28q4+sD16ZAmscH7N2WAj/2YSZgr0BS
-Fa34q3D6DoTQ7XBM3oLcrDBdUqkmkdot2fTg/NXT5sFpK6fwk3fURy8D36bSsfJJ
-NPFpkYl1BJdklwH7DryAQOXSjIWE8dpqowiKMm7+O42+tZ1eEvbo96yDLKKpMmsU
-W0QGI+SUbLyiy5lkrD/8TNz0YrSsqi7RT+o3NrfXJGDxdOfgNciYSZblEG9NRTdK
-dg8o228QDeND38tZ/s2PrPrI3TbKUULOe1+BPDYoepei6Ovf/FOkjixqLabeEyQN
-2eBoy0nT83rOIAk2rGeWqgoBM37aWHY1BzNmmLa3KiCPdYMe6eTMVhcoaotnmNIt
-2wI3N/cmuRPlmU6Tqg3/NypSCFIJgBO/fA464V2VOwPpNMZfwf5Umh4XguVEeqes
-r28/CAnPaMLh7c6Vz6sF0Ohq86368v/VVoCKjdtEPJgr32Jh8FtrdfQKn7mupCGC
-T+mQ6f7BPlucbc00Swel
-=uDYS
+iQIcBAEBCAAGBQJS52IIAAoJEChPw0yOSxolAcsP/iB/gWqUi/gjMzhB+G0o/n05
+Q+CbhJlZhWrzd5DtI/Ofit6EeXwlrvNrt891X14pGYODBF26ItKepbnklXESpuqK
+ZQFHUxxNgWG4QD78Vp6fdMlie3jUXb6R4Soie9s6rjPhYZUVo9yJarFxESMvSHCY
+SQYSdr8sFJWU8NKoPDrgf7+A2eg5xRYnZdlpUpdhaEJx+IRG84Jx2f4hr4zRkTJL
+lN1H3GHEBSLHMscZb4kQNIoDs+hroZvpWqCbEyUjSKwXYyA1LJVwupRggoobc+oa
+V8fyjGt1/X6inAQhRzQSeWCqHKY9t/8S1jE8dF75rPqUwk3It0SdYLxo7NSka19x
+5KIf8i8tavhq3hcBWLdr3MWTy9A1LXoCiYGa1UDQlTnrfQCs0aODCB/eHq75xXez
+k7kivDJSmtAzUf/lPKSCQsiqkzlFwnGthSuL0euhUVrMAdgNEXARhByk0nCyF7s/
+SB9gyYNgQ0WbIYztSWoklJm3MCtwPJiaq4OmW7taa1Tq/jSetuHajID+LlSu22lj
+7OFlGtiMSddsjD7Re6XoyK9iNt9+HtVyi15nHzolF55OpPGwwXZuhBX0nRUyfUxl
+gmOTxTOJ7QBJpSGiWoXjwgpBUX7C9/syQfExCrLdnhA+HGJ/8GfJxJjH6N7g+ROH
+fD5jqCKNki8EUcxNG+hB
+=D3Gs
 -----END PGP SIGNATURE-----
 
---pCIia1f2wkOdMp1h5t0Gj0gRFEppCWOVo--
+--FBpTJ0p1gQ6oL3GOn5op5qANvJNF2R8Wp--
