@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaA1SUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:20:10 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:32001 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205AbaA1SUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:20:07 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v3 0/2] qspinlock: Introducing a 4-byte queue spinlock
-Date: Tue, 28 Jan 2014 13:19:09 -0500
-Message-Id: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755523AbaA1SUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:20:42 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:35953 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754321AbaA1SUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 13:20:37 -0500
+X-IronPort-AV: E=Sophos;i="4.95,737,1384300800"; 
+   d="scan'208";a="97371312"
+Date: Tue, 28 Jan 2014 18:11:57 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Julien Grall <julien.grall@linaro.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "patches@linaro.org" <patches@linaro.org>,
+        <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH] arm/xen: Initialize event channels earlier
+In-Reply-To: <52E7F02A.7010508@linaro.org>
+Message-ID: <alpine.DEB.2.02.1401281809560.4373@kaball.uk.xensource.com>
+References: <1390920842-21886-1-git-send-email-julien.grall@linaro.org> <alpine.DEB.2.02.1401281651400.4373@kaball.uk.xensource.com> <52E7EA78.5020305@linaro.org> <alpine.DEB.2.02.1401281742080.4373@kaball.uk.xensource.com> <52E7F02A.7010508@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2->v3:
- - Simplify the code by using numerous mode only without an unfair option.
- - Use the latest smp_load_acquire()/smp_store_release() barriers.
- - Move the queue spinlock code to kernel/locking.
- - Make the use of queue spinlock the default for x86-64 without user
-   configuration.
- - Additional performance tuning.
+On Tue, 28 Jan 2014, Julien Grall wrote:
+> On 01/28/2014 05:46 PM, Stefano Stabellini wrote:
+> > On Tue, 28 Jan 2014, Julien Grall wrote:
+> >>>> +static int xen_cpu_notification(struct notifier_block *self,
+> >>>> +				unsigned long action,
+> >>>> +				void *hcpu)
+> >>>> +{
+> >>>> +	int cpu = (long)hcpu;
+> >>>> +
+> >>>> +	switch (action) {
+> >>>> +	case CPU_UP_PREPARE:
+> >>>> +		xen_percpu_init(cpu);
+> >>>> +		break;
+> >>>> +	case CPU_STARTING:
+> >>>> +		xen_interrupt_init();
+> >>>> +		break;
+> >>>
+> >>> Is CPU_STARTING guaranteed to be called on the new cpu only?
+> >>
+> >> Yes.
+> >>
+> >>> If so, why not call both xen_percpu_init and xen_interrupt_init on
+> >>> CPU_STARTING?
+> >>
+> >> Just in case that xen_vcpu is used somewhere else by a cpu notifier
+> >> callback CPU_STARTING. We don't know which callback is called first.
+> > 
+> > Could you please elaborate a bit more on the problem you are trying to
+> > describe?
+> 
+> We want to make sure that the vcpu is registered correctly. If not, we
+> can't skip it and avoid xen to have a "dead" VCPU to schedule due to BUG_ON.
+> 
+> I agree that now we have a BUG_ON in the middle of xen_percpu_init, but
+> it's possible to return an error. In this case Linux will skip this cpu
+> and continue to boot.
 
-v1->v2:
- - Add some more comments to document what the code does.
- - Add a numerous CPU mode to support >= 16K CPUs
- - Add a configuration option to allow lock stealing which can further
-   improve performance in many cases.
- - Enable wakeup of queue head CPU at unlock time for non-numerous
-   CPU mode.
+I think there are no benefits in having two separate functions
+(xen_percpu_init and xen_interrupt_init) called at two different points
+(CPU_UP_PREPARE and CPU_STARTING).
+I would simply have one. Simpler is better.
 
-This patch set introduces a queue-based spinlock implementation that
-can replace the default ticket spinlock without increasing the size
-of the spinlock data structure. As a result, critical kernel data
-structures that embed spinlock won't increase in size and breaking
-data alignments.
 
-The queue spinlock has slight better performance than the ticket
-spinlock in uncontended case. Its performance can be much better
-with moderate to heavy contention.  This patch has the potential of
-improving the performance of all the workloads that have moderate to
-heavy spinlock contention.
+> >>> As it stands I think you introduced a subtle change (that might be OK
+> >>> but I think is unintentional): xen_percpu_init might not be called from
+> >>> the same cpu as its target anymore.
+> >>
+> >> No, xen_percpu_init and xen_interrupt_init are called on the boot cpu at
+> >> the end of xen_guest_init.
+> >  
+> > Is CPU_UP_PREPARE guaranteed to be called on the target cpu? I think
+> > not, therefore you would be executing xen_percpu_init for cpu1 on cpu0.
+> >
+> 
+> I don't see any issue to execute xen_percpu_init for cpu1 on cpu0, all
+> the code is taking directly the vcpu ID to initialize.
 
-The queue spinlock is especially suitable for NUMA machines with at
-least 2 sockets, though noticeable performance benefit probably won't
-show up in machines with less than 4 sockets.
-
-The purpose of this patch set is not to solve any particular spinlock
-contention problems. Those need to be solved by refactoring the code
-to make more efficient use of the lock or finer granularity ones. The
-main purpose is to make the lock contention problems more tolerable
-until someone can spend the time and effort to fix them.
-
-Waiman Long (2):
-  qspinlock: Introducing a 4-byte queue spinlock implementation
-  qspinlock, x86: Enable x86-64 to use queue spinlock
-
- arch/x86/Kconfig                      |    1 +
- arch/x86/include/asm/spinlock.h       |    2 +
- arch/x86/include/asm/spinlock_types.h |    4 +
- include/asm-generic/qspinlock.h       |  156 +++++++++++++
- kernel/Kconfig.locks                  |    7 +
- kernel/locking/Makefile               |    1 +
- kernel/locking/qspinlock.c            |  398 +++++++++++++++++++++++++++++++++
- 7 files changed, 569 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/qspinlock.h
- create mode 100644 kernel/locking/qspinlock.c
-
+Me neither, I was simply pointing out that you made this change without
+writing it in the commit message (therefore I assume it might be
+unintended).
