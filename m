@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaA1C2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 21:28:32 -0500
-Received: from ozlabs.org ([203.10.76.45]:54309 "EHLO ozlabs.org"
+	id S1753996AbaA1C2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 21:28:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:60838 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425AbaA1C2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753347AbaA1C2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Jan 2014 21:28:23 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tom Gundersen <teg@jklm.no>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org, kay@vrfy.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tom Gundersen <teg@jklm.no>, linux-kernel@vger.kernel.org
+Cc: linux-input@vger.kernel.org, kay@vrfy.org, Tom Gundersen <teg@jklm.no>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Subject: Re: [RFC][PATCH] module: allow multiple calls to MODULE_DEVICE_TABLE() per module
-In-Reply-To: <20140127195422.GB21018@kroah.com>
-References: <1390849795-2155-1-git-send-email-teg@jklm.no> <20140127195422.GB21018@kroah.com>
+In-Reply-To: <1390849795-2155-1-git-send-email-teg@jklm.no>
+References: <1390849795-2155-1-git-send-email-teg@jklm.no>
 User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Tue, 28 Jan 2014 12:04:53 +1030
-Message-ID: <87mwigzy6a.fsf@rustcorp.com.au>
+Date: Tue, 28 Jan 2014 12:05:46 +1030
+Message-ID: <87k3dkzy4t.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> On Mon, Jan 27, 2014 at 08:09:55PM +0100, Tom Gundersen wrote:
->> Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
->> second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
->> the modaliases being exposed.
->> 
->> This fixes the problem by including the name of the device_id table in the
->> __mod_*_device_table alias, allowing us to export several device_id tables
->> per module.
->> 
->> Suggested-by: Kay Sievers <kay@vrfy.org>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> ---
->>  include/linux/module.h   |  2 +-
->>  scripts/mod/file2alias.c | 14 +++++++++-----
->>  2 files changed, 10 insertions(+), 6 deletions(-)
->
-> Ah, very nice, I've wanted this for a while now, it would make a number
-> of different drivers much smaller and simpler to add new device ids to
-> (no multiple lists of ids, one for the module loader and one for the
-> sub-driver that is in the single file.)
+Tom Gundersen <teg@jklm.no> writes:
+> Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
+> second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
+> the modaliases being exposed.
 
-You never asked :(
+No Signed-off-by?
 
-I've applied, this, but I'm actually amazed this patch works.  C is
-weird sometimes.  It changes declarations of the form:
-
-extern const struct pci_device_id __mod_pci_device_id_table
-        __attribute__ ((unused, alias("e1000_pci_tbl"));
-
-Into:
-
-extern const struct pci__e1000_pci_tbl_device_id __mod_pci__e1000_pci_tbl_device_id_table
-        __attribute__ ((unused, alias("e1000_pci_tbl"));
-
-Now, that's a completely unknown type, but gcc doesn't care because it's
-just an extern declaration.  It does insert the alias, which is all we
-care about.
-
-We would normally use a special section for this, so it's mainly
-historical.  Now we have DEFINE_PCI_DEVICE_TABLE etc, we should
-use those to put it in a special section (eg. "pci_ids") and
-grab that directly.
-
-Volunteers welcome :)
+Thanks,
 Rusty.
+
+>
+> This fixes the problem by including the name of the device_id table in the
+> __mod_*_device_table alias, allowing us to export several device_id tables
+> per module.
+>
+> Suggested-by: Kay Sievers <kay@vrfy.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+>  include/linux/module.h   |  2 +-
+>  scripts/mod/file2alias.c | 14 +++++++++-----
+>  2 files changed, 10 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index 15cd6b1..7732d76 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -143,7 +143,7 @@ extern const struct gtype##_id __mod_##gtype##_table		\
+>  #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
+>  
+>  #define MODULE_DEVICE_TABLE(type,name)		\
+> -  MODULE_GENERIC_TABLE(type##_device,name)
+> +  MODULE_GENERIC_TABLE(type##__##name##_device,name)
+>  
+>  /* Version of form [<epoch>:]<version>[-<extra-version>].
+>     Or for CVS/RCS ID version, everything but the number is stripped.
+> diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+> index 2370863..6778381 100644
+> --- a/scripts/mod/file2alias.c
+> +++ b/scripts/mod/file2alias.c
+> @@ -42,7 +42,7 @@ typedef unsigned char	__u8;
+>  
+>  /* This array collects all instances that use the generic do_table */
+>  struct devtable {
+> -	const char *device_id; /* name of table, __mod_<name>_device_table. */
+> +	const char *device_id; /* name of table, __mod_<name>__*_device_table. */
+>  	unsigned long id_size;
+>  	void *function;
+>  };
+> @@ -146,7 +146,8 @@ static void device_id_check(const char *modname, const char *device_id,
+>  
+>  	if (size % id_size || size < id_size) {
+>  		fatal("%s: sizeof(struct %s_device_id)=%lu is not a modulo "
+> -		      "of the size of section __mod_%s_device_table=%lu.\n"
+> +		      "of the size of "
+> +		      "section __mod_%s__<identifier>_device_table=%lu.\n"
+>  		      "Fix definition of struct %s_device_id "
+>  		      "in mod_devicetable.h\n",
+>  		      modname, device_id, id_size, device_id, size, device_id);
+> @@ -1206,7 +1207,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+>  {
+>  	void *symval;
+>  	char *zeros = NULL;
+> -	const char *name;
+> +	const char *name, *identifier;
+>  	unsigned int namelen;
+>  
+>  	/* We're looking for a section relative symbol */
+> @@ -1217,7 +1218,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+>  	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
+>  		return;
+>  
+> -	/* All our symbols are of form <prefix>__mod_XXX_device_table. */
+> +	/* All our symbols are of form <prefix>__mod_<name>__<identifier>_device_table. */
+>  	name = strstr(symname, "__mod_");
+>  	if (!name)
+>  		return;
+> @@ -1227,7 +1228,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+>  		return;
+>  	if (strcmp(name + namelen - strlen("_device_table"), "_device_table"))
+>  		return;
+> -	namelen -= strlen("_device_table");
+> +	identifier = strstr(name, "__");
+> +	if (!identifier)
+> +		return;
+> +	namelen = identifier - name;
+>  
+>  	/* Handle all-NULL symbols allocated into .bss */
+>  	if (info->sechdrs[get_secindex(info, sym)].sh_type & SHT_NOBITS) {
+> -- 
+> 1.8.5.3
