@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaA1Uy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:54:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36279 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128AbaA1Uy0 (ORCPT
+	id S932198AbaA1Uyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:54:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46576 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128AbaA1Uyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:54:26 -0500
-Date: Tue, 28 Jan 2014 21:54:06 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 4/5] mutex: Disable preemtion between modifying
- lock->owner and locking/unlocking mutex
-Message-ID: <20140128205406.GI11314@laptop.programming.kicks-ass.net>
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-5-git-send-email-jason.low2@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390936396-3962-5-git-send-email-jason.low2@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 28 Jan 2014 15:54:44 -0500
+Date: Tue, 28 Jan 2014 12:54:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, "Pavel Machek" <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        "Serge Hallyn" <serge.hallyn@canonical.com>,
+        "Stephen Warren" <swarren@nvidia.com>, "Jens Axboe" <axboe@kernel.dk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Al Viro" <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v3 1/2] init/do_mounts.c: ignore final \n in
+ name_to_dev_t
+Message-Id: <20140128125442.4bac748945b404179deb58ba@linux-foundation.org>
+In-Reply-To: <20140128185926.5312.36635@capellas-linux>
+References: <1380834638-24035-1-git-send-email-sebastian.capella@linaro.org>
+	<1380834638-24035-2-git-send-email-sebastian.capella@linaro.org>
+	<20131003141523.8b60ab988799af7e2b2c338b@linux-foundation.org>
+	<20131003214246.24540.99218@capellas-linux>
+	<20131003234735.19051.84583@capellas-linux>
+	<20131010175010.17870.58060@capellas-linux>
+	<20131022175414.14753.58063@capellas-linux>
+	<20140128185926.5312.36635@capellas-linux>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:13:15AM -0800, Jason Low wrote:
-> This RFC patch disables preemption between modifying lock->owner and
-> locking/unlocking the mutex lock. This prevents situations where the owner
-> can preempt between those 2 operations, which causes optimistic spinners to
-> be unable to check if lock->owner is not on CPU. As mentioned in the
-> thread for this v1 patchset, disabling preemption is a cheap operation.
+On Tue, 28 Jan 2014 10:59:26 -0800 Sebastian Capella <sebastian.capella@linaro.org> wrote:
 
-In that same thread it was also said that this wasn't really an issue at
-all. So what is the justification?
+> > Do you have any feedback for me on this?
+> > 
+> > I'm happy do make any changes you think are correct, but I'm unsure if
+> > you're asking me for option #3 above.  It's quite an intrusive change,
+> > and changes old, established code and I'd like confirmation that's what
+> > you'd like before proceeding down that path.
+> > 
+> > I've submitted patches with both options #1 and #2 above.
+> > 
+> > Thanks,
+> > 
+> > Sebastian
+> 
+> Ping.
+> 
+> Sorry for the lapse in attention to this.
+> 
+> Could you please clarify what is needed for this to be acceptable?
+> I'm a little confused about what is being asked of me.
 
-The patch is rather hideous.
+The problem is that kernel/power/hibernate.c:resume_store() is handed a
+newline-terminated string, yes?  And if it blindly hands that string
+over to name_to_dev_t(), name_to_dev_t() fails because the string is
+wrong.
+
+This is an oddity of the sysfs->kernel interface and altering
+name_to_dev_t doesn't really seem appropriate for this problem - it
+would be better to fix the caller to pass in the correct string.
+
+Something like...
+
+/*
+ * Clean up a string which may have leading and/or trailing whitespace (as
+ * defined by isspace()) by trimming off that whitespace.  Returns an address
+ * which the caller must kfree(), or NULL on error.
+ */
+char *strim_copy(const char *s, gfp_t gfp)
+{
+	char *ret = kstrdup(skip_spaces(s), gfp);
+
+	if (ret)
+		strim(ret);
+	return ret;
+}
+EXPORT_SYMBOL(strim_copy);
