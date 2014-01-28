@@ -1,187 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399AbaA1X5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:57:13 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:56396 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986AbaA1XzE (ORCPT
+	id S932434AbaA1X5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:57:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36708 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146AbaA1X5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:55:04 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/13] cgroup: update the meaning of cftype->max_write_len
-Date: Tue, 28 Jan 2014 18:54:40 -0500
-Message-Id: <1390953285-16360-9-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
-References: <1390953285-16360-1-git-send-email-tj@kernel.org>
+	Tue, 28 Jan 2014 18:57:41 -0500
+Date: Tue, 28 Jan 2014 15:57:14 -0800
+Message-Id: <201401282357.s0SNvEBA031682@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x32 additional bits for v3.14
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 28 Jan 2014 15:57:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cftype->max_write_len is used to extend the maximum size of writes.
-It's interpreted in such a way that the actual maximum size is one
-less than the specified value.  The default size is defined by
-CGROUP_LOCAL_BUFFER_SIZE.  Its interpretation is quite confusing - its
-value is decremented by 1 and then compared for equality with max
-size, which means that the actual default size is
-CGROUP_LOCAL_BUFFER_SIZE - 2, which is 62 chars.
+Hi Linus,
 
-There's no point in having a limit that low.  Update its definition so
-that it means the actual string length sans termination and anything
-below PAGE_SIZE-1 is treated as PAGE_SIZE-1.
+Despite the branch name, **most of these changes are to generic
+code**.  They change types so that they make an increasing amount of
+the exported uapi kernel headers usable for libc.
 
-.max_write_len for "release_agent" is updated to PATH_MAX-1 and
-cgroup_release_agent_write() is updated so that the redundant strlen()
-check is removed and it uses strlcpy() instead of strcpy().
-.max_write_len initializations in blk-throttle.c and cfq-iosched.c are
-no longer necessary and removed.  The one in cpuset is kept unchanged
-as it's an approximated value to begin with.
+The ARM64 people are also interested in these changes for their ILP32
+ABI.
 
-This will also make transition to kernfs smoother.
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-throttle.c   |  4 ----
- block/cfq-iosched.c    |  3 ---
- include/linux/cgroup.h |  5 +++--
- kernel/cgroup.c        | 18 ++++++++----------
- 4 files changed, 11 insertions(+), 19 deletions(-)
+The following changes since commit 79dbbc60493f357912d5f1da5a23147ba0c01c7a:
 
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index a760857..ed1c1c3 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -1425,28 +1425,24 @@ static struct cftype throtl_files[] = {
- 		.private = offsetof(struct throtl_grp, bps[READ]),
- 		.seq_show = tg_print_conf_u64,
- 		.write_string = tg_set_conf_u64,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "throttle.write_bps_device",
- 		.private = offsetof(struct throtl_grp, bps[WRITE]),
- 		.seq_show = tg_print_conf_u64,
- 		.write_string = tg_set_conf_u64,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "throttle.read_iops_device",
- 		.private = offsetof(struct throtl_grp, iops[READ]),
- 		.seq_show = tg_print_conf_uint,
- 		.write_string = tg_set_conf_uint,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "throttle.write_iops_device",
- 		.private = offsetof(struct throtl_grp, iops[WRITE]),
- 		.seq_show = tg_print_conf_uint,
- 		.write_string = tg_set_conf_uint,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "throttle.io_service_bytes",
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 744833b..4611879 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1838,7 +1838,6 @@ static struct cftype cfq_blkcg_files[] = {
- 		.flags = CFTYPE_ONLY_ON_ROOT,
- 		.seq_show = cfqg_print_leaf_weight_device,
- 		.write_string = cfqg_set_leaf_weight_device,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "weight",
-@@ -1853,7 +1852,6 @@ static struct cftype cfq_blkcg_files[] = {
- 		.flags = CFTYPE_NOT_ON_ROOT,
- 		.seq_show = cfqg_print_weight_device,
- 		.write_string = cfqg_set_weight_device,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "weight",
-@@ -1866,7 +1864,6 @@ static struct cftype cfq_blkcg_files[] = {
- 		.name = "leaf_weight_device",
- 		.seq_show = cfqg_print_leaf_weight_device,
- 		.write_string = cfqg_set_leaf_weight_device,
--		.max_write_len = 256,
- 	},
- 	{
- 		.name = "leaf_weight",
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 884d367..1e4f9e2 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -398,8 +398,9 @@ struct cftype {
- 	umode_t mode;
- 
- 	/*
--	 * If non-zero, defines the maximum length of string that can
--	 * be passed to write_string; defaults to 64
-+	 * The maximum length of string, excluding trailing nul, that can
-+	 * be passed to write_string.  If < PAGE_SIZE-1, PAGE_SIZE-1 is
-+	 * assumed.
- 	 */
- 	size_t max_write_len;
- 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index ab5344d..a800e56 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2204,13 +2204,14 @@ static int cgroup_procs_write(struct cgroup_subsys_state *css,
- static int cgroup_release_agent_write(struct cgroup_subsys_state *css,
- 				      struct cftype *cft, const char *buffer)
- {
--	BUILD_BUG_ON(sizeof(css->cgroup->root->release_agent_path) < PATH_MAX);
--	if (strlen(buffer) >= PATH_MAX)
--		return -EINVAL;
-+	struct cgroupfs_root *root = css->cgroup->root;
-+
-+	BUILD_BUG_ON(sizeof(root->release_agent_path) < PATH_MAX);
- 	if (!cgroup_lock_live_group(css->cgroup))
- 		return -ENODEV;
- 	spin_lock(&release_agent_path_lock);
--	strcpy(css->cgroup->root->release_agent_path, buffer);
-+	strlcpy(root->release_agent_path, buffer,
-+		sizeof(root->release_agent_path));
- 	spin_unlock(&release_agent_path_lock);
- 	mutex_unlock(&cgroup_mutex);
- 	return 0;
-@@ -2236,20 +2237,17 @@ static int cgroup_sane_behavior_show(struct seq_file *seq, void *v)
- 	return 0;
- }
- 
--/* A buffer size big enough for numbers or short strings */
--#define CGROUP_LOCAL_BUFFER_SIZE 64
--
- static ssize_t cgroup_file_write(struct file *file, const char __user *userbuf,
- 				 size_t nbytes, loff_t *ppos)
- {
- 	struct cfent *cfe = __d_cfe(file->f_dentry);
- 	struct cftype *cft = __d_cft(file->f_dentry);
- 	struct cgroup_subsys_state *css = cfe->css;
--	size_t max_bytes = cft->max_write_len ?: CGROUP_LOCAL_BUFFER_SIZE - 1;
-+	size_t max_bytes = max(cft->max_write_len, PAGE_SIZE);
- 	char *buf;
- 	int ret;
- 
--	if (nbytes >= max_bytes)
-+	if (nbytes > max_bytes)
- 		return -E2BIG;
- 
- 	buf = kmalloc(nbytes + 1, GFP_KERNEL);
-@@ -3910,7 +3908,7 @@ static struct cftype cgroup_base_files[] = {
- 		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
- 		.seq_show = cgroup_release_agent_show,
- 		.write_string = cgroup_release_agent_write,
--		.max_write_len = PATH_MAX,
-+		.max_write_len = PATH_MAX - 1,
- 	},
- 	{ }	/* terminate */
+  x86, x32: Use __kernel_long_t for __statfs_word (2013-12-20 16:06:21 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-x32-for-linus
+
+for you to fetch changes up to 63159f5dcccb3858d88aaef800c4ee0eb4cc8577:
+
+  uapi: Use __kernel_long_t in struct mq_attr (2014-01-20 14:45:33 -0800)
+
+----------------------------------------------------------------
+H.J. Lu (8):
+      uapi: Use __kernel_long_t in struct timex
+      uapi: Use __kernel_long_t/__kernel_ulong_t in <linux/resource.h>
+      uapi, asm-generic: Use __kernel_ulong_t in uapi struct ipc64_perm
+      uapi: Use __kernel_long_t in struct msgbuf
+      uapi: Use __kernel_ulong_t in struct msqid64_ds
+      x86, uapi, x32: Use __kernel_ulong_t in x86 struct semid64_ds
+      uapi: Use __kernel_ulong_t in shmid64_ds/shminfo64/shm_info
+      uapi: Use __kernel_long_t in struct mq_attr
+
+ arch/x86/include/uapi/asm/sembuf.h | 10 +++++-----
+ include/uapi/asm-generic/ipcbuf.h  |  4 ++--
+ include/uapi/asm-generic/msgbuf.h  | 10 +++++-----
+ include/uapi/asm-generic/shmbuf.h  | 24 ++++++++++++------------
+ include/uapi/linux/mqueue.h        | 10 +++++-----
+ include/uapi/linux/msg.h           |  4 ++--
+ include/uapi/linux/resource.h      | 32 ++++++++++++++++----------------
+ include/uapi/linux/shm.h           | 10 +++++-----
+ include/uapi/linux/timex.h         | 34 +++++++++++++++++-----------------
+ 9 files changed, 69 insertions(+), 69 deletions(-)
+
+diff --git a/arch/x86/include/uapi/asm/sembuf.h b/arch/x86/include/uapi/asm/sembuf.h
+index ee50c801f7b7..cc2d6a3aeae7 100644
+--- a/arch/x86/include/uapi/asm/sembuf.h
++++ b/arch/x86/include/uapi/asm/sembuf.h
+@@ -13,12 +13,12 @@
+ struct semid64_ds {
+ 	struct ipc64_perm sem_perm;	/* permissions .. see ipc.h */
+ 	__kernel_time_t	sem_otime;	/* last semop time */
+-	unsigned long	__unused1;
++	__kernel_ulong_t __unused1;
+ 	__kernel_time_t	sem_ctime;	/* last change time */
+-	unsigned long	__unused2;
+-	unsigned long	sem_nsems;	/* no. of semaphores in array */
+-	unsigned long	__unused3;
+-	unsigned long	__unused4;
++	__kernel_ulong_t __unused2;
++	__kernel_ulong_t sem_nsems;	/* no. of semaphores in array */
++	__kernel_ulong_t __unused3;
++	__kernel_ulong_t __unused4;
  };
--- 
-1.8.5.3
-
+ 
+ #endif /* _ASM_X86_SEMBUF_H */
+diff --git a/include/uapi/asm-generic/ipcbuf.h b/include/uapi/asm-generic/ipcbuf.h
+index 76982b2a1b58..3dbcc1e771c0 100644
+--- a/include/uapi/asm-generic/ipcbuf.h
++++ b/include/uapi/asm-generic/ipcbuf.h
+@@ -27,8 +27,8 @@ struct ipc64_perm {
+ 	unsigned char		__pad1[4 - sizeof(__kernel_mode_t)];
+ 	unsigned short		seq;
+ 	unsigned short		__pad2;
+-	unsigned long		__unused1;
+-	unsigned long		__unused2;
++	__kernel_ulong_t	__unused1;
++	__kernel_ulong_t	__unused2;
+ };
+ 
+ #endif /* __ASM_GENERIC_IPCBUF_H */
+diff --git a/include/uapi/asm-generic/msgbuf.h b/include/uapi/asm-generic/msgbuf.h
+index aec850d9159e..f55ecc43c60f 100644
+--- a/include/uapi/asm-generic/msgbuf.h
++++ b/include/uapi/asm-generic/msgbuf.h
+@@ -35,13 +35,13 @@ struct msqid64_ds {
+ #if __BITS_PER_LONG != 64
+ 	unsigned long	__unused3;
+ #endif
+-	unsigned long  msg_cbytes;	/* current number of bytes on queue */
+-	unsigned long  msg_qnum;	/* number of messages in queue */
+-	unsigned long  msg_qbytes;	/* max number of bytes on queue */
++	__kernel_ulong_t msg_cbytes;	/* current number of bytes on queue */
++	__kernel_ulong_t msg_qnum;	/* number of messages in queue */
++	__kernel_ulong_t msg_qbytes;	/* max number of bytes on queue */
+ 	__kernel_pid_t msg_lspid;	/* pid of last msgsnd */
+ 	__kernel_pid_t msg_lrpid;	/* last receive pid */
+-	unsigned long  __unused4;
+-	unsigned long  __unused5;
++	__kernel_ulong_t __unused4;
++	__kernel_ulong_t __unused5;
+ };
+ 
+ #endif /* __ASM_GENERIC_MSGBUF_H */
+diff --git a/include/uapi/asm-generic/shmbuf.h b/include/uapi/asm-generic/shmbuf.h
+index 5768fa60ac82..7e9fb2f0853b 100644
+--- a/include/uapi/asm-generic/shmbuf.h
++++ b/include/uapi/asm-generic/shmbuf.h
+@@ -39,21 +39,21 @@ struct shmid64_ds {
+ #endif
+ 	__kernel_pid_t		shm_cpid;	/* pid of creator */
+ 	__kernel_pid_t		shm_lpid;	/* pid of last operator */
+-	unsigned long		shm_nattch;	/* no. of current attaches */
+-	unsigned long		__unused4;
+-	unsigned long		__unused5;
++	__kernel_ulong_t	shm_nattch;	/* no. of current attaches */
++	__kernel_ulong_t	__unused4;
++	__kernel_ulong_t	__unused5;
+ };
+ 
+ struct shminfo64 {
+-	unsigned long	shmmax;
+-	unsigned long	shmmin;
+-	unsigned long	shmmni;
+-	unsigned long	shmseg;
+-	unsigned long	shmall;
+-	unsigned long	__unused1;
+-	unsigned long	__unused2;
+-	unsigned long	__unused3;
+-	unsigned long	__unused4;
++	__kernel_ulong_t	shmmax;
++	__kernel_ulong_t	shmmin;
++	__kernel_ulong_t	shmmni;
++	__kernel_ulong_t	shmseg;
++	__kernel_ulong_t	shmall;
++	__kernel_ulong_t	__unused1;
++	__kernel_ulong_t	__unused2;
++	__kernel_ulong_t	__unused3;
++	__kernel_ulong_t	__unused4;
+ };
+ 
+ #endif /* __ASM_GENERIC_SHMBUF_H */
+diff --git a/include/uapi/linux/mqueue.h b/include/uapi/linux/mqueue.h
+index 8b5a79615fbf..d0a2b8e89813 100644
+--- a/include/uapi/linux/mqueue.h
++++ b/include/uapi/linux/mqueue.h
+@@ -23,11 +23,11 @@
+ #define MQ_BYTES_MAX	819200
+ 
+ struct mq_attr {
+-	long	mq_flags;	/* message queue flags			*/
+-	long	mq_maxmsg;	/* maximum number of messages		*/
+-	long	mq_msgsize;	/* maximum message size			*/
+-	long	mq_curmsgs;	/* number of messages currently queued	*/
+-	long	__reserved[4];	/* ignored for input, zeroed for output */
++	__kernel_long_t	mq_flags;	/* message queue flags			*/
++	__kernel_long_t	mq_maxmsg;	/* maximum number of messages		*/
++	__kernel_long_t	mq_msgsize;	/* maximum message size			*/
++	__kernel_long_t	mq_curmsgs;	/* number of messages currently queued	*/
++	__kernel_long_t	__reserved[4];	/* ignored for input, zeroed for output */
+ };
+ 
+ /*
+diff --git a/include/uapi/linux/msg.h b/include/uapi/linux/msg.h
+index 22d95c6854e0..a70375526578 100644
+--- a/include/uapi/linux/msg.h
++++ b/include/uapi/linux/msg.h
+@@ -34,8 +34,8 @@ struct msqid_ds {
+ 
+ /* message buffer for msgsnd and msgrcv calls */
+ struct msgbuf {
+-	long mtype;         /* type of message */
+-	char mtext[1];      /* message text */
++	__kernel_long_t mtype;          /* type of message */
++	char mtext[1];                  /* message text */
+ };
+ 
+ /* buffer for msgctl calls IPC_INFO, MSG_INFO */
+diff --git a/include/uapi/linux/resource.h b/include/uapi/linux/resource.h
+index e0ed28477f48..36fb3b5fb181 100644
+--- a/include/uapi/linux/resource.h
++++ b/include/uapi/linux/resource.h
+@@ -23,25 +23,25 @@
+ struct	rusage {
+ 	struct timeval ru_utime;	/* user time used */
+ 	struct timeval ru_stime;	/* system time used */
+-	long	ru_maxrss;		/* maximum resident set size */
+-	long	ru_ixrss;		/* integral shared memory size */
+-	long	ru_idrss;		/* integral unshared data size */
+-	long	ru_isrss;		/* integral unshared stack size */
+-	long	ru_minflt;		/* page reclaims */
+-	long	ru_majflt;		/* page faults */
+-	long	ru_nswap;		/* swaps */
+-	long	ru_inblock;		/* block input operations */
+-	long	ru_oublock;		/* block output operations */
+-	long	ru_msgsnd;		/* messages sent */
+-	long	ru_msgrcv;		/* messages received */
+-	long	ru_nsignals;		/* signals received */
+-	long	ru_nvcsw;		/* voluntary context switches */
+-	long	ru_nivcsw;		/* involuntary " */
++	__kernel_long_t	ru_maxrss;	/* maximum resident set size */
++	__kernel_long_t	ru_ixrss;	/* integral shared memory size */
++	__kernel_long_t	ru_idrss;	/* integral unshared data size */
++	__kernel_long_t	ru_isrss;	/* integral unshared stack size */
++	__kernel_long_t	ru_minflt;	/* page reclaims */
++	__kernel_long_t	ru_majflt;	/* page faults */
++	__kernel_long_t	ru_nswap;	/* swaps */
++	__kernel_long_t	ru_inblock;	/* block input operations */
++	__kernel_long_t	ru_oublock;	/* block output operations */
++	__kernel_long_t	ru_msgsnd;	/* messages sent */
++	__kernel_long_t	ru_msgrcv;	/* messages received */
++	__kernel_long_t	ru_nsignals;	/* signals received */
++	__kernel_long_t	ru_nvcsw;	/* voluntary context switches */
++	__kernel_long_t	ru_nivcsw;	/* involuntary " */
+ };
+ 
+ struct rlimit {
+-	unsigned long	rlim_cur;
+-	unsigned long	rlim_max;
++	__kernel_ulong_t	rlim_cur;
++	__kernel_ulong_t	rlim_max;
+ };
+ 
+ #define RLIM64_INFINITY		(~0ULL)
+diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+index ec36fa1a83a4..78b69413f582 100644
+--- a/include/uapi/linux/shm.h
++++ b/include/uapi/linux/shm.h
+@@ -68,11 +68,11 @@ struct	shminfo {
+ 
+ struct shm_info {
+ 	int used_ids;
+-	unsigned long shm_tot;	/* total allocated shm */
+-	unsigned long shm_rss;	/* total resident shm */
+-	unsigned long shm_swp;	/* total swapped shm */
+-	unsigned long swap_attempts;
+-	unsigned long swap_successes;
++	__kernel_ulong_t shm_tot;	/* total allocated shm */
++	__kernel_ulong_t shm_rss;	/* total resident shm */
++	__kernel_ulong_t shm_swp;	/* total swapped shm */
++	__kernel_ulong_t swap_attempts;
++	__kernel_ulong_t swap_successes;
+ };
+ 
+ 
+diff --git a/include/uapi/linux/timex.h b/include/uapi/linux/timex.h
+index a7ea81f13711..92685d826444 100644
+--- a/include/uapi/linux/timex.h
++++ b/include/uapi/linux/timex.h
+@@ -63,27 +63,27 @@
+  */
+ struct timex {
+ 	unsigned int modes;	/* mode selector */
+-	long offset;		/* time offset (usec) */
+-	long freq;		/* frequency offset (scaled ppm) */
+-	long maxerror;		/* maximum error (usec) */
+-	long esterror;		/* estimated error (usec) */
++	__kernel_long_t offset;	/* time offset (usec) */
++	__kernel_long_t freq;	/* frequency offset (scaled ppm) */
++	__kernel_long_t maxerror;/* maximum error (usec) */
++	__kernel_long_t esterror;/* estimated error (usec) */
+ 	int status;		/* clock command/status */
+-	long constant;		/* pll time constant */
+-	long precision;		/* clock precision (usec) (read only) */
+-	long tolerance;		/* clock frequency tolerance (ppm)
+-				 * (read only)
+-				 */
++	__kernel_long_t constant;/* pll time constant */
++	__kernel_long_t precision;/* clock precision (usec) (read only) */
++	__kernel_long_t tolerance;/* clock frequency tolerance (ppm)
++				   * (read only)
++				   */
+ 	struct timeval time;	/* (read only, except for ADJ_SETOFFSET) */
+-	long tick;		/* (modified) usecs between clock ticks */
++	__kernel_long_t tick;	/* (modified) usecs between clock ticks */
+ 
+-	long ppsfreq;           /* pps frequency (scaled ppm) (ro) */
+-	long jitter;            /* pps jitter (us) (ro) */
++	__kernel_long_t ppsfreq;/* pps frequency (scaled ppm) (ro) */
++	__kernel_long_t jitter; /* pps jitter (us) (ro) */
+ 	int shift;              /* interval duration (s) (shift) (ro) */
+-	long stabil;            /* pps stability (scaled ppm) (ro) */
+-	long jitcnt;            /* jitter limit exceeded (ro) */
+-	long calcnt;            /* calibration intervals (ro) */
+-	long errcnt;            /* calibration errors (ro) */
+-	long stbcnt;            /* stability limit exceeded (ro) */
++	__kernel_long_t stabil;            /* pps stability (scaled ppm) (ro) */
++	__kernel_long_t jitcnt; /* jitter limit exceeded (ro) */
++	__kernel_long_t calcnt; /* calibration intervals (ro) */
++	__kernel_long_t errcnt; /* calibration errors (ro) */
++	__kernel_long_t stbcnt; /* stability limit exceeded (ro) */
+ 
+ 	int tai;		/* TAI offset (ro) */
+ 
