@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684AbaA1LBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 06:01:15 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60540 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaA1LBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 06:01:13 -0500
-Date: Tue, 28 Jan 2014 11:00:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140128110051.GI11841@sirena.org.uk>
-References: <cover.1390813480.git.moinejf@free.fr>
- <d99e90932aad1a644fa32ff22fd2cb56b830341b.1390813481.git.moinejf@free.fr>
- <20140127204441.GZ11841@sirena.org.uk>
- <20140127204915.GC15937@n2100.arm.linux.org.uk>
- <20140127205437.GC11841@sirena.org.uk>
- <s5hppncihn6.wl%tiwai@suse.de>
+	id S1754716AbaA1LH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 06:07:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55802 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816AbaA1LHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 06:07:55 -0500
+Date: Tue, 28 Jan 2014 12:07:51 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jan Kara <jack@suse.cz>
+cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: fanotify use after free.
+In-Reply-To: <20140128080201.GA13676@quack.suse.cz>
+Message-ID: <alpine.LNX.2.00.1401281207140.3763@pobox.suse.cz>
+References: <CA+55aFxnv050RqhhLBbsvV4=dcu-_ZXokbhmuO8Y4zVcvVJ6OQ@mail.gmail.com> <20140122233622.GB27916@quack.suse.cz> <CA+55aFwzb7rJate=r0Sgi_N7FStNtJS_PvfgPSGaczPPgeUZvg@mail.gmail.com> <alpine.LNX.2.00.1401231120360.581@pobox.suse.cz>
+ <20140123150540.GD28796@quack.suse.cz> <alpine.LNX.2.00.1401231607120.581@pobox.suse.cz> <20140123235549.GA7363@quack.suse.cz> <alpine.LNX.2.00.1401240825470.581@pobox.suse.cz> <20140127234017.GA7868@quack.suse.cz> <20140128061037.GA27636@redhat.com>
+ <20140128080201.GA13676@quack.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nPae/vprxxBmi7c6"
-Content-Disposition: inline
-In-Reply-To: <s5hppncihn6.wl%tiwai@suse.de>
-X-Cookie: O.K., fine.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH 4/4] ASoC: tda998x: adjust the audio hw
- parameters from EDID
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 28 Jan 2014, Jan Kara wrote:
 
---nPae/vprxxBmi7c6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> >   2b:*	4d 8b 64 c6 08       	mov    0x8(%r14,%rax,8),%r12     <-- trapping instruction
+> > 
+> > R14 is 0x6b6b6b6b6b6b6c03, which looks like a use-after-free.
+>   Yup. But I'm somewhat puzzled by the trace. We crash when calling
+> fsnotify_destroy_event() from fanotify_handle_event(). The fsnotify code
+> has been called from do_sys_open() so the event was a 'FS_OPEN' which fails
+> the fsn_event->mask & FAN_ALL_PERM_EVENTS test.
+> 
+> Slapping my forehead, that's a really stupid bug. The event
+> fsnotify_add_notify_event() returns may be freed by the time we return
+> because we already dropped the notification mutex. And then fsn_event->mask
+> & FAN_ALL_PERM_EVENTS test will pass because FAN_ALL_PERM_EVENTS matches
+> with the poison pattern 0x6b6b6b6b. So yet another hacked up version of
+> fanotify fix is attached. And I have to seriously think about use counts
+> for fanotify version of that struct.
 
-On Tue, Jan 28, 2014 at 10:23:57AM +0100, Takashi Iwai wrote:
-> Mark Brown wrote:
-> > On Mon, Jan 27, 2014 at 08:49:15PM +0000, Russell King - ARM Linux wrote:
+With the fixed version of the patch, all the fanotify-related oopses are 
+gone on my system.
 
-> > > Yes, preferably as a generic ALSA helper rather than an ASoC helper -
-> > > I don't see any need for this to be ASoC specific (I have a pure ALSA
-> > > driver which has very similar code in it.)
-
-> > Indeed, definitely ALSA generic - ideally we could factor a lot of the
-> > integration with the video side out.
-
-> Yes, indeed.
-
-> OTOH, as discussed recently, we're heading to move from ELD parsing to
-> more direct communication between video and audio drivers for
-> HD-audio.  ELD will be still provided to user-space, but not evaluated
-> any longer in the new scenario.
-
-That sort of refactoring being one of the best reasons to keep things
-out of individual drivers!  Having said all this I don't know if it's
-worth blocking Jean-Francois' work on that, it's an improvement in
-itself.  Splitting the code out a bit would be good to help prepare but
-having the full refactoring done might be too much of a blocker.
-
---nPae/vprxxBmi7c6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS543gAAoJELSic+t+oim9030QAIxNMZp0qBNi1Cw63gVJ3Frd
-2otQ0B+K49gjJCyQnVflvkX0kyK3wki1NQILYl/9dLIPL44MykJLR17km33n8iFw
-BbmYv16ZvUR2YzfZe1N3SKnyP61oG1Xr4p5GMK+9EG76oB6td4ygAKaAisO38iVR
-+zqyFasyaaWL7NFPPYrx7K/b3jDGbwKgaJK0rLfvEzQ+qQyt7Vpd2F1zHEV+pKLW
-Qj0V0wsXRNT+fFMoskPcE+MinfWWe+jmqLADfXrhOLt+M6CXxoQceceEloCopB+R
-lS1iN2tZgQE/RGNecMoAq4Ckzyd0zGIfNa/Zm5oHjBBpIQJAPM/wyDPX46bPHPOf
-BfP4/KHbA5SdItiPLUZAEPS3llkGSOtvEkRZp4abV9j7epqBHjd2N1RZpLHO5lJp
-N13u3Cwe/ggy+8fhFnIXAvH3f9qirGmSr5X7Fj1ppsb+A3PY8ZrihiRvzw/JWbVB
-NR5iqZPCueLoaMeQ0T7HmZQ9kZIwcJX6mLPziqfRh+AKWMJ9pPtLplVnxNLX1DIi
-pqmniLQMueIjtDQxBX2dwrVm4i5mf+ym7lDS1CwViLkj3FGtXREdq+Z6RUrYY597
-RgvAwcfks5fFbnG71YmHFWeUZKxHwb8+cRexRy0TDvEH36FfFp4QrE3bsKV3He7e
-RIuYdfK/MRvagJBstuI7
-=bRji
------END PGP SIGNATURE-----
-
---nPae/vprxxBmi7c6--
+-- 
+Jiri Kosina
+SUSE Labs
