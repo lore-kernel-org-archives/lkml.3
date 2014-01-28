@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaA1S1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:27:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33629 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755298AbaA1S1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:27:04 -0500
-Message-ID: <52E7F65D.4040503@zytor.com>
-Date: Tue, 28 Jan 2014 10:26:37 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755506AbaA1S15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:27:57 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46071 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817AbaA1S1y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 13:27:54 -0500
 MIME-Version: 1.0
-To: Ren Qiaowei <qiaowei.ren@intel.com>, Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH v3 0/4] Intel MPX support
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <20140126081912.GA28831@gmail.com> <52E4C551.7020402@intel.com> <20140128064202.GA20869@gmail.com> <52E755BB.9000201@intel.com>
-In-Reply-To: <52E755BB.9000201@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL_JsqLi0QKeeUkGMKmYZ1ki02mzk=L1gDxTJyXFGiOe_aHiVw@mail.gmail.com>
+References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
+	<1390823503-24087-1-git-send-email-alchark@gmail.com>
+	<1390823503-24087-4-git-send-email-alchark@gmail.com>
+	<CAL_JsqLi0QKeeUkGMKmYZ1ki02mzk=L1gDxTJyXFGiOe_aHiVw@mail.gmail.com>
+Date: Tue, 28 Jan 2014 22:27:53 +0400
+Message-ID: <CABjd4Yxo0Pp+QtTuXhKBT9KdVhUk12x2L8+FBL_ZWmPYopG2JQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
+From: Alexey Charkov <alchark@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, Tony Prisk <linux@prisktech.co.nz>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Roger Luethi <rl@hellgate.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 11:01 PM, Ren Qiaowei wrote:
-> 
-> Yes. Though all non-MPX threads are slowed down, the whole process
-> benefit from MPX.
-> 
-> Anyway, HPA suggest these syscalls, which use MMU notifier, should be
-> not needed, we can do what they do in userspace runtime. What do you
-> think about it? I guess that I should remove the third patch which adds
-> new prctl() syscalls in next version of this patchset.
-> 
+2014/1/27 Rob Herring <robherring2@gmail.com>:
+> On Mon, Jan 27, 2014 at 5:51 AM, Alexey Charkov <alchark@gmail.com> wrote:
+>> This should make the driver usable with VIA/WonderMedia ARM-based
+>> Systems-on-Chip integrated Rhine III adapters. Note that these
+>> are always in MMIO mode, and don't have any known EEPROM.
+>>
+>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
+>> Signed-off-by: Roger Luethi <rl@hellgate.ch>
+>> ---
+>>  .../devicetree/bindings/net/via-rhine.txt          |  18 ++
+>>  drivers/net/ethernet/via/Kconfig                   |   2 +-
+>>  drivers/net/ethernet/via/via-rhine.c               | 293 +++++++++++++--------
+>>  3 files changed, 200 insertions(+), 113 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/net/via-rhine.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/net/via-rhine.txt b/Documentation/devicetree/bindings/net/via-rhine.txt
+>> new file mode 100644
+>> index 0000000..684dd3a
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/net/via-rhine.txt
+>> @@ -0,0 +1,18 @@
+>> +* VIA Rhine 10/100 Network Controller
+>> +
+>> +Required properties:
+>> +- compatible : Should be "via,rhine"
+>
+> This should be more specific rather than...
+>
+>> +- reg : Address and length of the io space
+>> +- interrupts : Should contain the controller interrupt line
+>> +- rhine,revision : Rhine core revision, used to inform the
+>> +       driver of quirks and capabilities to expect from
+>> +       the device. Mimics the respective PCI attribute.
+>
+> having this property. The OF match table can then have the quirks set
+> based on compatible strings.
 
-The syscalls is one thing, managing the bounds map in kernel space is
-another.
+Sounds fair. Do you think something like the following would fly?
 
-We could manage the bounds map entirely in user space in a signal
-handler, but that has both ABI issues (#BR currently turns into SIGSEGV
-which is commonly hooked by applications; we could switch to a different
-signal but there aren't many unclaimed ones) and performance issues.
+Required properties:
+- compatible : Should be "via,rhine-soc-vt8500" for integrated Rhine
+cores found in SoC's such as VIA VT8500, WonderMedia WM8950 and
+possibly others. These are listed as 1106:3106 rev. 0x84 on the
+virtual PCI bus under vendor-provided kernels.
 
-I would think it would be extremely unusual for an application to have
-some MPX and some non-MPX threads, since they would share the same
-address space and the non-MPX threads would mess up the bounds.
-
-	-hpa
-
-
+Thanks,
+Alexey
