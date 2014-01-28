@@ -1,40 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbaA1Cst (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 21:48:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56517 "EHLO mga02.intel.com"
+	id S1754188AbaA1C4G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 21:56:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3934 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347AbaA1Css (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 21:48:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,733,1384329600"; 
-   d="scan'208";a="445581533"
-Message-ID: <52E7193C.8050801@intel.com>
-Date: Tue, 28 Jan 2014 10:43:08 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1753572AbaA1C4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 21:56:04 -0500
+Date: Mon, 27 Jan 2014 21:55:37 -0500
+From: Dave Jones <davej@redhat.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when
+ seting kernel nodes to unhotpluggable.
+Message-ID: <20140128025537.GA21730@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Tang Chen <tangchen@cn.fujitsu.com>,
+	David Rientjes <rientjes@google.com>, tglx@linutronix.de,
+	mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+	zhangyanfei@cn.fujitsu.com, guz.fnst@cn.fujitsu.com, x86@kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com>
+ <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
+ <52E70165.8070709@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] x86, mpx: extend siginfo structure to include
- bound violation information
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-5-git-send-email-qiaowei.ren@intel.com> <52E6D67A.8050409@amacapital.net>
-In-Reply-To: <52E6D67A.8050409@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E70165.8070709@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 05:58 AM, Andy Lutomirski wrote:
-> On 01/26/2014 01:08 AM, Qiaowei Ren wrote:
-> (Why on earth does Intel not expose this stuff in cr2 or an MSR or
-> something?)
->
+On Tue, Jan 28, 2014 at 09:01:25AM +0800, Tang Chen wrote:
+ > On 01/28/2014 08:32 AM, David Rientjes wrote:
+ > > On Wed, 22 Jan 2014, David Rientjes wrote:
+ > >
+ > >>>   arch/x86/mm/numa.c | 2 +-
+ > >>>   1 file changed, 1 insertion(+), 1 deletion(-)
+ > >>>
+ > >>> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+ > >>> index 81b2750..ebefeb7 100644
+ > >>> --- a/arch/x86/mm/numa.c
+ > >>> +++ b/arch/x86/mm/numa.c
+ > >>> @@ -562,10 +562,10 @@ static void __init numa_init_array(void)
+ > >>>   	}
+ > >>>   }
+ > >>>
+ > >>> +static nodemask_t numa_kernel_nodes __initdata;
+ > >>>   static void __init numa_clear_kernel_node_hotplug(void)
+ > >>>   {
+ > >>>   	int i, nid;
+ > >>> -	nodemask_t numa_kernel_nodes;
+ > >>>   	unsigned long start, end;
+ > >>>   	struct memblock_type *type =&memblock.reserved;
+ > >>>
+ > >>
+ > >> Isn't this also a bugfix since you never initialize numa_kernel_nodes when
+ > >> it's allocated on the stack with NODE_MASK_NONE?
+ > >>
+ > >
+ > > This hasn't been answered and the patch still isn't in linux-kernel yet
+ > > Dave tested it as good.  I'm suspicious of the changelog that indicates
+ > > this nodemask is the result of a stack overflow itself which only manages
+ > > to reproduce itself in the init patch slightly more than 50% of the time.
+ > > How is that possible?
+ > >
+ > > I think the changelog should indicate this also fixes an uninitialized
+ > > nodemask issue.
+ > 
+ > Hi David,
+ > 
+ > I'm still working on this problem, but unfortunately nothing new for now.
+ > And the test till now shows no more problem here.
+ > 
+ > I'm digging into it, but need more time.
+ > 
+ > I'll resend a new patch and modify the changelog soon. Before we find the
+ > root cause, I think we can use this patch as a temporary solution.
 
-I guess it is due to some design reason.
+Ok, I hit the 2nd bug again (oops in next_zones_zonelist...)
 
-Thanks,
-Qiaowei
+I did a bisect with the patch above applied each step of the way.
+This time I got a plausible looking result....
+
+
+a0acda917284183f9b71e2d08b0aa0aea722b321 is the first bad commit
+commit a0acda917284183f9b71e2d08b0aa0aea722b321
+Author: Tang Chen <tangchen@cn.fujitsu.com>
+Date:   Tue Jan 21 15:49:32 2014 -0800
+
+    acpi, numa, mem_hotplug: mark all nodes the kernel resides un-hotpluggable
+    
+
+Reverting this commit of course removes the whole function from above,
+so we haven't really learned anything new, other than that commit is broken,
+even after the above fix-up.
+
+	Dave
 
