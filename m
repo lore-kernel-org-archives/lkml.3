@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464AbaA1X6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:58:44 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:43824 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984AbaA1Xy7 (ORCPT
+	id S932480AbaA1X7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:59:12 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:39510 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734AbaA1Xyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:54:59 -0500
+	Tue, 28 Jan 2014 18:54:55 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/13] cgroup: restructure locking and error handling in cgroup_mount()
-Date: Tue, 28 Jan 2014 18:54:36 -0500
-Message-Id: <1390953285-16360-5-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 01/13] cgroup: improve css_from_dir() into css_tryget_from_dir()
+Date: Tue, 28 Jan 2014 18:54:33 -0500
+Message-Id: <1390953285-16360-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
 References: <1390953285-16360-1-git-send-email-tj@kernel.org>
@@ -21,200 +26,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup is scheduled to be converted to kernfs.  After conversion,
-cgroup_mount() won't use the sget() machinery for finding out existing
-super_blocks but instead would do that directly.  It'll search the
-existing cgroupfs_roots for a matching one and create a new one iff a
-match doesn't exist.  To ease such conversion, this patch restructures
-locking and error handling of the function.
+css_from_dir() returns the matching css (cgroup_subsys_state) given a
+dentry and subsystem.  The function doesn't pin the css before
+returning and requires the caller to be holding RCU read lock or
+cgroup_mutex and handling pinning on the caller side.
 
-cgroup_tree_mutex and cgroup_mutex are grabbed from the get-go and
-held until return.  For now, due to the way vfs locks nest outside
-cgroup mutexes, the two cgroup mutexes are temporarily dropped across
-sget() and inode mutex locking, which looks quite ridiculous; however,
-these will be removed through kernfs conversion and structuring the
-code this way makes the conversion less painful.
+Given that users of the function are likely to want to pin the
+returned css (both existing users do) and that getting and putting
+css's are very cheap, there's no reason for the interface to be tricky
+like this.
 
-The error goto labels are consolidated to two.  This looks unwieldy
-now but the next patch will factor out creation of new root into a
-separate function with accompanying error handling and it'll look a
-lot better.
+Rename css_from_dir() to css_tryget_from_dir() and make it try to pin
+the found css and return it only if pinning succeeded.  The callers
+are updated so that they no longer do RCU locking and pinning around
+the function and just use the returned css.
+
+This will also ease converting cgroup to kernfs.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- kernel/cgroup.c | 73 +++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 40 insertions(+), 33 deletions(-)
+ include/linux/cgroup.h |  4 ++--
+ kernel/cgroup.c        | 25 ++++++++++++++++---------
+ kernel/events/core.c   | 17 +----------------
+ mm/memcontrol.c        | 16 +++++++---------
+ 4 files changed, 26 insertions(+), 36 deletions(-)
 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 198c7fc..2255639 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -823,8 +823,8 @@ int css_scan_tasks(struct cgroup_subsys_state *css,
+ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
+ int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from);
+ 
+-struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
+-					 struct cgroup_subsys *ss);
++struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
++						struct cgroup_subsys *ss);
+ 
+ #else /* !CONFIG_CGROUPS */
+ 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index bff7d64..2349698 100644
+index 3d92fd0..823e250 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1450,21 +1450,22 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			 int flags, const char *unused_dev_name,
- 			 void *data)
+@@ -4964,28 +4964,35 @@ static int __init cgroup_disable(char *str)
+ __setup("cgroup_disable=", cgroup_disable);
+ 
+ /**
+- * css_from_dir - get corresponding css from the dentry of a cgroup dir
++ * css_tryget_from_dir - get corresponding css from the dentry of a cgroup dir
+  * @dentry: directory dentry of interest
+  * @ss: subsystem of interest
+  *
+- * Must be called under cgroup_mutex or RCU read lock.  The caller is
+- * responsible for pinning the returned css if it needs to be accessed
+- * outside the critical section.
++ * If @dentry is a directory for a cgroup which has @ss enabled on it, try
++ * to get the corresponding css and return it.  If such css doesn't exist
++ * or can't be pinned, an ERR_PTR value is returned.
+  */
+-struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
+-					 struct cgroup_subsys *ss)
++struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
++						struct cgroup_subsys *ss)
  {
-+	LIST_HEAD(tmp_links);
-+	struct super_block *sb = NULL;
-+	struct inode *inode = NULL;
-+	struct cgroupfs_root *root = NULL;
- 	struct cgroup_sb_opts opts;
--	struct cgroupfs_root *root;
--	int ret = 0;
--	struct super_block *sb;
- 	struct cgroupfs_root *new_root;
--	struct list_head tmp_links;
--	struct inode *inode;
- 	const struct cred *cred;
-+	int ret;
- 
--	/* First find the desired set of subsystems */
-+	mutex_lock(&cgroup_tree_mutex);
- 	mutex_lock(&cgroup_mutex);
-+
-+	/* First find the desired set of subsystems */
- 	ret = parse_cgroupfs_options(data, &opts);
--	mutex_unlock(&cgroup_mutex);
- 	if (ret)
--		goto out_err;
-+		goto out_unlock;
- 
- 	/*
- 	 * Allocate a new cgroup root. We may not need it if we're
-@@ -1473,16 +1474,20 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	new_root = cgroup_root_from_opts(&opts);
- 	if (!new_root) {
- 		ret = -ENOMEM;
--		goto out_err;
-+		goto out_unlock;
- 	}
- 	opts.new_root = new_root;
- 
- 	/* Locate an existing or new sb for this hierarchy */
-+	mutex_unlock(&cgroup_mutex);
-+	mutex_unlock(&cgroup_tree_mutex);
- 	sb = sget(fs_type, cgroup_test_super, cgroup_set_super, 0, &opts);
-+	mutex_lock(&cgroup_tree_mutex);
-+	mutex_lock(&cgroup_mutex);
- 	if (IS_ERR(sb)) {
- 		ret = PTR_ERR(sb);
- 		cgroup_free_root(opts.new_root);
--		goto out_err;
-+		goto out_unlock;
- 	}
- 
- 	root = sb->s_fs_info;
-@@ -1496,9 +1501,12 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 
- 		BUG_ON(sb->s_root != NULL);
- 
-+		mutex_unlock(&cgroup_mutex);
-+		mutex_unlock(&cgroup_tree_mutex);
-+
- 		ret = cgroup_get_rootdir(sb);
- 		if (ret)
--			goto drop_new_super;
-+			goto out_unlock;
- 		inode = sb->s_root->d_inode;
- 
- 		mutex_lock(&inode->i_mutex);
-@@ -1507,7 +1515,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 
- 		ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
- 		if (ret < 0)
--			goto unlock_drop;
-+			goto out_unlock;
- 		root_cgrp->id = ret;
- 
- 		/* Check for name clashes with existing mounts */
-@@ -1515,7 +1523,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 		if (strlen(root->name))
- 			for_each_active_root(existing_root)
- 				if (!strcmp(existing_root->name, root->name))
--					goto unlock_drop;
-+					goto out_unlock;
- 
- 		/*
- 		 * We're accessing css_set_count without locking
-@@ -1526,12 +1534,12 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 		 */
- 		ret = allocate_cgrp_cset_links(css_set_count, &tmp_links);
- 		if (ret)
--			goto unlock_drop;
-+			goto out_unlock;
- 
- 		/* ID 0 is reserved for dummy root, 1 for unified hierarchy */
- 		ret = cgroup_init_root_id(root, 2, 0);
- 		if (ret)
--			goto unlock_drop;
-+			goto out_unlock;
- 
- 		sb->s_root->d_fsdata = root_cgrp;
- 		root_cgrp->dentry = sb->s_root;
-@@ -1571,14 +1579,8 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			link_css_set(&tmp_links, cset, root_cgrp);
- 		write_unlock(&css_set_lock);
- 
--		free_cgrp_cset_links(&tmp_links);
+ 	struct cgroup *cgrp;
 -
- 		BUG_ON(!list_empty(&root_cgrp->children));
- 		BUG_ON(root->number_of_cgroups != 1);
--
--		mutex_unlock(&cgroup_mutex);
--		mutex_unlock(&cgroup_tree_mutex);
--		mutex_unlock(&inode->i_mutex);
- 	} else {
- 		/*
- 		 * We re-used an existing hierarchy - the new root (if
-@@ -1590,32 +1592,37 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			if ((root->flags | opts.flags) & CGRP_ROOT_SANE_BEHAVIOR) {
- 				pr_err("cgroup: sane_behavior: new mount options should match the existing superblock\n");
- 				ret = -EINVAL;
--				goto drop_new_super;
-+				goto out_unlock;
- 			} else {
- 				pr_warning("cgroup: new mount options do not match the existing superblock, will be ignored\n");
- 			}
- 		}
- 	}
+-	cgroup_assert_mutex_or_rcu_locked();
++	struct cgroup_subsys_state *css;
  
--	kfree(opts.release_agent);
--	kfree(opts.name);
--	return dget(sb->s_root);
-+	ret = 0;
-+	goto out_unlock;
+ 	/* is @dentry a cgroup dir? */
+ 	if (!dentry->d_inode ||
+ 	    dentry->d_inode->i_op != &cgroup_dir_inode_operations)
+ 		return ERR_PTR(-EBADF);
  
-- rm_base_files:
--	free_cgrp_cset_links(&tmp_links);
-+rm_base_files:
- 	cgroup_addrm_files(&root->top_cgroup, cgroup_base_files, false);
- 	revert_creds(cred);
-- unlock_drop:
- 	cgroup_exit_root_id(root);
-+out_unlock:
- 	mutex_unlock(&cgroup_mutex);
- 	mutex_unlock(&cgroup_tree_mutex);
--	mutex_unlock(&inode->i_mutex);
-- drop_new_super:
--	deactivate_locked_super(sb);
-- out_err:
-+	if (inode)
-+		mutex_unlock(&inode->i_mutex);
++	rcu_read_lock();
 +
-+	if (ret && !IS_ERR_OR_NULL(sb))
-+		deactivate_locked_super(sb);
+ 	cgrp = __d_cgrp(dentry);
+-	return cgroup_css(cgrp, ss) ?: ERR_PTR(-ENOENT);
++	css = cgroup_css(cgrp, ss);
 +
-+	free_cgrp_cset_links(&tmp_links);
- 	kfree(opts.release_agent);
- 	kfree(opts.name);
--	return ERR_PTR(ret);
++	if (!css || !css_tryget(css))
++		css = ERR_PTR(-ENOENT);
 +
-+	if (!ret)
-+		return dget(sb->s_root);
-+	else
-+		return ERR_PTR(ret);
++	rcu_read_unlock();
++	return css;
  }
  
- static void cgroup_kill_sb(struct super_block *sb)
+ /**
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 6490373..a3c3ab5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -370,11 +370,6 @@ perf_cgroup_match(struct perf_event *event)
+ 				    event->cgrp->css.cgroup);
+ }
+ 
+-static inline bool perf_tryget_cgroup(struct perf_event *event)
+-{
+-	return css_tryget(&event->cgrp->css);
+-}
+-
+ static inline void perf_put_cgroup(struct perf_event *event)
+ {
+ 	css_put(&event->cgrp->css);
+@@ -593,9 +588,7 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	if (!f.file)
+ 		return -EBADF;
+ 
+-	rcu_read_lock();
+-
+-	css = css_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
++	css = css_tryget_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
+ 	if (IS_ERR(css)) {
+ 		ret = PTR_ERR(css);
+ 		goto out;
+@@ -604,13 +597,6 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	cgrp = container_of(css, struct perf_cgroup, css);
+ 	event->cgrp = cgrp;
+ 
+-	/* must be done before we fput() the file */
+-	if (!perf_tryget_cgroup(event)) {
+-		event->cgrp = NULL;
+-		ret = -ENOENT;
+-		goto out;
+-	}
+-
+ 	/*
+ 	 * all events in a group must monitor
+ 	 * the same cgroup because a task belongs
+@@ -621,7 +607,6 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 		ret = -EINVAL;
+ 	}
+ out:
+-	rcu_read_unlock();
+ 	fdput(f);
+ 	return ret;
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d4a8c40..ab4e412 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6184,17 +6184,15 @@ static int memcg_write_event_control(struct cgroup_subsys_state *css,
+ 	 * automatically removed on cgroup destruction but the removal is
+ 	 * asynchronous, so take an extra ref on @css.
+ 	 */
+-	rcu_read_lock();
+-
++	cfile_css = css_tryget_from_dir(cfile.file->f_dentry->d_parent,
++					&memory_cgrp_subsys);
+ 	ret = -EINVAL;
+-	cfile_css = css_from_dir(cfile.file->f_dentry->d_parent,
+-				 &memory_cgrp_subsys);
+-	if (cfile_css == css && css_tryget(css))
+-		ret = 0;
+-
+-	rcu_read_unlock();
+-	if (ret)
++	if (IS_ERR(cfile_css))
+ 		goto out_put_cfile;
++	if (cfile_css != css) {
++		css_put(cfile_css);
++		goto out_put_cfile;
++	}
+ 
+ 	ret = event->register_event(memcg, event->eventfd, buffer);
+ 	if (ret)
 -- 
 1.8.5.3
 
