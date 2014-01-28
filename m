@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374AbaA1X4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:56:09 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:55005 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266AbaA1XzL (ORCPT
+	id S932257AbaA1XzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:55:09 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:55150 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755977AbaA1XzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:55:11 -0500
+	Tue, 28 Jan 2014 18:55:05 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/13] cgroup: relocate functions in preparation of kernfs conversion
-Date: Tue, 28 Jan 2014 18:54:44 -0500
-Message-Id: <1390953285-16360-13-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/13] cgroup: introduce cgroup_init/exit_cftypes()
+Date: Tue, 28 Jan 2014 18:54:41 -0500
+Message-Id: <1390953285-16360-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
 References: <1390953285-16360-1-git-send-email-tj@kernel.org>
@@ -21,309 +21,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relocate cgroup_init/exit_root_id(), cgroup_free_root(),
-cgroup_kill_sb() and cgroup_file_name() in preparation of kernfs
-conversion.
+Factor out cft->ss initialization into cgroup_init_cftypes() from
+cgroup_add_cftypes() and add cft->ss clearing to cgroup_rm_cftypes()
+through cgroup_exit_cftypes().
 
-These are pure relocations to make kernfs conversion easier to follow.
+This doesn't make any meaningful difference now but the two new
+functions will be expanded during kernfs transition.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 232 ++++++++++++++++++++++++++++----------------------------
- 1 file changed, 117 insertions(+), 115 deletions(-)
+ kernel/cgroup.c | 32 +++++++++++++++++++++++++-------
+ 1 file changed, 25 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 0c5d1d1..228ed88 100644
+index a800e56..5c35f00 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -170,6 +170,8 @@ static int need_forkexit_callback __read_mostly;
- static struct cftype cgroup_base_files[];
- 
- static void cgroup_put(struct cgroup *cgrp);
-+static int rebind_subsystems(struct cgroupfs_root *root,
-+			     unsigned long added_mask, unsigned removed_mask);
- static void cgroup_destroy_css_killed(struct cgroup *cgrp);
- static int cgroup_destroy_locked(struct cgroup *cgrp);
- static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
-@@ -690,6 +692,42 @@ static struct css_set *find_css_set(struct css_set *old_cset,
- 	return cset;
+@@ -2761,6 +2761,22 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 	return ret;
  }
  
-+static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
++static void cgroup_exit_cftypes(struct cftype *cfts)
 +{
-+	int id;
++	struct cftype *cft;
 +
-+	lockdep_assert_held(&cgroup_mutex);
-+
-+	id = idr_alloc_cyclic(&cgroup_hierarchy_idr, root, start, end,
-+			      GFP_KERNEL);
-+	if (id < 0)
-+		return id;
-+
-+	root->hierarchy_id = id;
-+	return 0;
++	for (cft = cfts; cft->name[0] != '\0'; cft++)
++		cft->ss = NULL;
 +}
 +
-+static void cgroup_exit_root_id(struct cgroupfs_root *root)
++static void cgroup_init_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
 +{
-+	lockdep_assert_held(&cgroup_mutex);
++	struct cftype *cft;
 +
-+	if (root->hierarchy_id) {
-+		idr_remove(&cgroup_hierarchy_idr, root->hierarchy_id);
-+		root->hierarchy_id = 0;
-+	}
++	for (cft = cfts; cft->name[0] != '\0'; cft++)
++		cft->ss = ss;
 +}
 +
-+static void cgroup_free_root(struct cgroupfs_root *root)
-+{
-+	if (root) {
-+		/* hierarhcy ID shoulid already have been released */
-+		WARN_ON_ONCE(root->hierarchy_id);
-+
-+		idr_destroy(&root->cgroup_idr);
-+		kfree(root);
-+	}
-+}
-+
- static void cgroup_get_root(struct cgroupfs_root *root)
+ /**
+  * cgroup_add_cftypes - add an array of cftypes to a subsystem
+  * @ss: target cgroup subsystem
+@@ -2778,15 +2794,13 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
  {
- 	atomic_inc(&root->sb->s_active);
-@@ -700,6 +738,59 @@ static void cgroup_put_root(struct cgroupfs_root *root)
- 	deactivate_super(root->sb);
- }
- 
-+static void cgroup_kill_sb(struct super_block *sb)
-+{
-+	struct cgroupfs_root *root = sb->s_fs_info;
-+	struct cgroup *cgrp = &root->top_cgroup;
-+	struct cgrp_cset_link *link, *tmp_link;
-+	int ret;
-+
-+	BUG_ON(!root);
-+
-+	BUG_ON(root->number_of_cgroups != 1);
-+	BUG_ON(!list_empty(&cgrp->children));
-+
-+	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
-+	mutex_lock(&cgroup_tree_mutex);
-+	mutex_lock(&cgroup_mutex);
-+
-+	/* Rebind all subsystems back to the default hierarchy */
-+	if (root->flags & CGRP_ROOT_SUBSYS_BOUND) {
-+		ret = rebind_subsystems(root, 0, root->subsys_mask);
-+		/* Shouldn't be able to fail ... */
-+		BUG_ON(ret);
-+	}
-+
-+	/*
-+	 * Release all the links from cset_links to this hierarchy's
-+	 * root cgroup
-+	 */
-+	write_lock(&css_set_lock);
-+
-+	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
-+		list_del(&link->cset_link);
-+		list_del(&link->cgrp_link);
-+		kfree(link);
-+	}
-+	write_unlock(&css_set_lock);
-+
-+	if (!list_empty(&root->root_list)) {
-+		list_del(&root->root_list);
-+		cgroup_root_count--;
-+	}
-+
-+	cgroup_exit_root_id(root);
-+
-+	mutex_unlock(&cgroup_mutex);
-+	mutex_unlock(&cgroup_tree_mutex);
-+	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
-+
-+	simple_xattrs_free(&cgrp->xattrs);
-+
-+	kill_litter_super(sb);
-+	cgroup_free_root(root);
-+}
-+
- /*
-  * Return the cgroup for "task" from the given hierarchy. Must be
-  * called with cgroup_mutex held.
-@@ -846,6 +937,32 @@ static char *cgroup_file_name(struct cgroup *cgrp, const struct cftype *cft,
- 	return buf;
- }
- 
-+/**
-+ * cgroup_file_mode - deduce file mode of a control file
-+ * @cft: the control file in question
-+ *
-+ * returns cft->mode if ->mode is not 0
-+ * returns S_IRUGO|S_IWUSR if it has both a read and a write handler
-+ * returns S_IRUGO if it has only a read handler
-+ * returns S_IWUSR if it has only a write hander
-+ */
-+static umode_t cgroup_file_mode(const struct cftype *cft)
-+{
-+	umode_t mode = 0;
-+
-+	if (cft->mode)
-+		return cft->mode;
-+
-+	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
-+		mode |= S_IRUGO;
-+
-+	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
-+	    cft->trigger)
-+		mode |= S_IWUSR;
-+
-+	return mode;
-+}
-+
- static void cgroup_free_fn(struct work_struct *work)
- {
- 	struct cgroup *cgrp = container_of(work, struct cgroup, destroy_work);
-@@ -1356,31 +1473,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
- 	idr_init(&root->cgroup_idr);
- }
- 
--static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
--{
--	int id;
--
--	lockdep_assert_held(&cgroup_mutex);
--
--	id = idr_alloc_cyclic(&cgroup_hierarchy_idr, root, start, end,
--			      GFP_KERNEL);
--	if (id < 0)
--		return id;
--
--	root->hierarchy_id = id;
--	return 0;
--}
--
--static void cgroup_exit_root_id(struct cgroupfs_root *root)
--{
--	lockdep_assert_held(&cgroup_mutex);
--
--	if (root->hierarchy_id) {
--		idr_remove(&cgroup_hierarchy_idr, root->hierarchy_id);
--		root->hierarchy_id = 0;
--	}
--}
--
- static int cgroup_test_super(struct super_block *sb, void *data)
- {
- 	struct cgroup_sb_opts *opts = data;
-@@ -1430,17 +1522,6 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
- 	return root;
- }
- 
--static void cgroup_free_root(struct cgroupfs_root *root)
--{
--	if (root) {
--		/* hierarhcy ID shoulid already have been released */
--		WARN_ON_ONCE(root->hierarchy_id);
--
--		idr_destroy(&root->cgroup_idr);
--		kfree(root);
--	}
--}
--
- static int cgroup_set_super(struct super_block *sb, void *data)
- {
+ 	struct cftype_set *set;
+-	struct cftype *cft;
  	int ret;
-@@ -1682,59 +1763,6 @@ out_unlock:
- 		return ERR_PTR(ret);
- }
  
--static void cgroup_kill_sb(struct super_block *sb)
--{
--	struct cgroupfs_root *root = sb->s_fs_info;
--	struct cgroup *cgrp = &root->top_cgroup;
--	struct cgrp_cset_link *link, *tmp_link;
--	int ret;
--
--	BUG_ON(!root);
--
--	BUG_ON(root->number_of_cgroups != 1);
--	BUG_ON(!list_empty(&cgrp->children));
--
--	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
--	mutex_lock(&cgroup_tree_mutex);
--	mutex_lock(&cgroup_mutex);
--
--	/* Rebind all subsystems back to the default hierarchy */
--	if (root->flags & CGRP_ROOT_SUBSYS_BOUND) {
--		ret = rebind_subsystems(root, 0, root->subsys_mask);
--		/* Shouldn't be able to fail ... */
--		BUG_ON(ret);
--	}
--
--	/*
--	 * Release all the links from cset_links to this hierarchy's
--	 * root cgroup
--	 */
--	write_lock(&css_set_lock);
--
--	list_for_each_entry_safe(link, tmp_link, &cgrp->cset_links, cset_link) {
--		list_del(&link->cset_link);
--		list_del(&link->cgrp_link);
--		kfree(link);
--	}
--	write_unlock(&css_set_lock);
--
--	if (!list_empty(&root->root_list)) {
--		list_del(&root->root_list);
--		cgroup_root_count--;
--	}
--
--	cgroup_exit_root_id(root);
--
--	mutex_unlock(&cgroup_mutex);
--	mutex_unlock(&cgroup_tree_mutex);
--	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
--
--	simple_xattrs_free(&cgrp->xattrs);
--
--	kill_litter_super(sb);
--	cgroup_free_root(root);
--}
--
- static struct file_system_type cgroup_fs_type = {
- 	.name = "cgroup",
- 	.mount = cgroup_mount,
-@@ -2610,32 +2638,6 @@ static int cgroup_create_file(struct dentry *dentry, umode_t mode,
- 	return 0;
- }
+ 	set = kzalloc(sizeof(*set), GFP_KERNEL);
+ 	if (!set)
+ 		return -ENOMEM;
  
--/**
-- * cgroup_file_mode - deduce file mode of a control file
-- * @cft: the control file in question
-- *
-- * returns cft->mode if ->mode is not 0
-- * returns S_IRUGO|S_IWUSR if it has both a read and a write handler
-- * returns S_IRUGO if it has only a read handler
-- * returns S_IWUSR if it has only a write hander
-- */
--static umode_t cgroup_file_mode(const struct cftype *cft)
--{
--	umode_t mode = 0;
--
--	if (cft->mode)
--		return cft->mode;
--
--	if (cft->read_u64 || cft->read_s64 || cft->seq_show)
--		mode |= S_IRUGO;
--
--	if (cft->write_u64 || cft->write_s64 || cft->write_string ||
--	    cft->trigger)
--		mode |= S_IWUSR;
--
--	return mode;
--}
--
- static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
+-	for (cft = cfts; cft->name[0] != '\0'; cft++)
+-		cft->ss = ss;
++	cgroup_init_cftypes(ss, cfts);
+ 
+ 	cgroup_cfts_prepare();
+ 	set->cfts = cfts;
+@@ -2811,6 +2825,7 @@ EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
+  */
+ int cgroup_rm_cftypes(struct cftype *cfts)
  {
- 	struct dentry *dir = cgrp->dentry;
++	struct cftype *found = NULL;
+ 	struct cftype_set *set;
+ 
+ 	if (!cfts || !cfts[0].ss)
+@@ -2822,13 +2837,14 @@ int cgroup_rm_cftypes(struct cftype *cfts)
+ 		if (set->cfts == cfts) {
+ 			list_del(&set->node);
+ 			kfree(set);
+-			cgroup_cfts_commit(cfts, false);
+-			return 0;
++			found = cfts;
++			break;
+ 		}
+ 	}
+ 
+-	cgroup_cfts_commit(NULL, false);
+-	return -ENOENT;
++	cgroup_cfts_commit(found, false);
++	cgroup_exit_cftypes(cfts);
++	return found ? 0 : -ENOENT;
+ }
+ 
+ /**
+@@ -4587,6 +4603,8 @@ int __init cgroup_init(void)
+ 	if (err)
+ 		return err;
+ 
++	cgroup_init_cftypes(NULL, cgroup_base_files);
++
+ 	for_each_subsys(ss, i) {
+ 		if (!ss->early_init)
+ 			cgroup_init_subsys(ss);
 -- 
 1.8.5.3
 
