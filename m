@@ -1,50 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaA1D3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 22:29:23 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:59365 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347AbaA1D3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 22:29:21 -0500
-Message-ID: <52E72405.7070402@huawei.com>
-Date: Tue, 28 Jan 2014 11:29:09 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1754494AbaA1DbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 22:31:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:12085 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754351AbaA1DbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 22:31:20 -0500
+X-IronPort-AV: E=Sophos;i="4.95,733,1384272000"; 
+   d="scan'208";a="9460148"
+Message-ID: <52E72083.4090703@cn.fujitsu.com>
+Date: Tue, 28 Jan 2014 11:14:11 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH] cpuset: update MAINTAINERS entry
-Content-Type: text/plain; charset="GB2312"
+To: Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
+ kernel nodes to unhotpluggable.
+References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com> <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com> <52E70165.8070709@cn.fujitsu.com> <20140128025537.GA21730@redhat.com>
+In-Reply-To: <20140128025537.GA21730@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/28 11:10:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/28 11:10:54,
+	Serialize complete at 2014/01/28 11:10:54
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add mailing list and tree tag to the entry.
+On 01/28/2014 10:55 AM, Dave Jones wrote:
+> On Tue, Jan 28, 2014 at 09:01:25AM +0800, Tang Chen wrote:
+>   >  On 01/28/2014 08:32 AM, David Rientjes wrote:
+>   >  >  On Wed, 22 Jan 2014, David Rientjes wrote:
+>   >  >
+>   >  >>>    arch/x86/mm/numa.c | 2 +-
+>   >  >>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>   >  >>>
+>   >  >>>  diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+>   >  >>>  index 81b2750..ebefeb7 100644
+>   >  >>>  --- a/arch/x86/mm/numa.c
+>   >  >>>  +++ b/arch/x86/mm/numa.c
+>   >  >>>  @@ -562,10 +562,10 @@ static void __init numa_init_array(void)
+>   >  >>>    	}
+>   >  >>>    }
+>   >  >>>
+>   >  >>>  +static nodemask_t numa_kernel_nodes __initdata;
+>   >  >>>    static void __init numa_clear_kernel_node_hotplug(void)
+>   >  >>>    {
+>   >  >>>    	int i, nid;
+>   >  >>>  -	nodemask_t numa_kernel_nodes;
+>   >  >>>    	unsigned long start, end;
+>   >  >>>    	struct memblock_type *type =&memblock.reserved;
+>   >  >>>
+>   >  >>
+>   >  >>  Isn't this also a bugfix since you never initialize numa_kernel_nodes when
+>   >  >>  it's allocated on the stack with NODE_MASK_NONE?
+>   >  >>
+>   >  >
+>   >  >  This hasn't been answered and the patch still isn't in linux-kernel yet
+>   >  >  Dave tested it as good.  I'm suspicious of the changelog that indicates
+>   >  >  this nodemask is the result of a stack overflow itself which only manages
+>   >  >  to reproduce itself in the init patch slightly more than 50% of the time.
+>   >  >  How is that possible?
+>   >  >
+>   >  >  I think the changelog should indicate this also fixes an uninitialized
+>   >  >  nodemask issue.
+>   >
+>   >  Hi David,
+>   >
+>   >  I'm still working on this problem, but unfortunately nothing new for now.
+>   >  And the test till now shows no more problem here.
+>   >
+>   >  I'm digging into it, but need more time.
+>   >
+>   >  I'll resend a new patch and modify the changelog soon. Before we find the
+>   >  root cause, I think we can use this patch as a temporary solution.
+>
+> Ok, I hit the 2nd bug again (oops in next_zones_zonelist...)
+>
+> I did a bisect with the patch above applied each step of the way.
+> This time I got a plausible looking result....
+>
+>
+> a0acda917284183f9b71e2d08b0aa0aea722b321 is the first bad commit
+> commit a0acda917284183f9b71e2d08b0aa0aea722b321
+> Author: Tang Chen<tangchen@cn.fujitsu.com>
+> Date:   Tue Jan 21 15:49:32 2014 -0800
+>
+>      acpi, numa, mem_hotplug: mark all nodes the kernel resides un-hotpluggable
+>
+>
+> Reverting this commit of course removes the whole function from above,
+> so we haven't really learned anything new, other than that commit is broken,
+> even after the above fix-up.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- MAINTAINERS | 2 ++
- 1 file changed, 2 insertions(+)
+If we revert this commit, memory hot-remove won't be able to work.
+Let's try to fix it before the merge window is close.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8285ed4..81bcbe0 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2376,8 +2376,10 @@ F:	tools/power/cpupower/
- 
- CPUSETS
- M:	Li Zefan <lizefan@huawei.com>
-+L:	cgroups@vger.kernel.org
- W:	http://www.bullopensource.org/cpuset/
- W:	http://oss.sgi.com/projects/cpusets/
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git
- S:	Maintained
- F:	Documentation/cgroups/cpusets.txt
- F:	include/linux/cpuset.h
--- 
-1.8.0.2
-
+>
+> 	Dave
+>
+>
