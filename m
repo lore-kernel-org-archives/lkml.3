@@ -1,122 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaA1XRw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:17:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:46339 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932190AbaA1XRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:17:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,739,1384329600"; 
-   d="scan'208";a="474042904"
-Subject: [PATCH] mm: slub: fix page->_count corruption (again)
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>,
-        cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        akpm@linux-foundation.org, pshelar@nicira.com
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 28 Jan 2014 15:17:22 -0800
-Message-Id: <20140128231722.E7387E6B@viggo.jf.intel.com>
+	id S1755701AbaA1XUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:20:47 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:50882 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045AbaA1XUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 18:20:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140127152342.GC20968@phenom.dumpdata.com>
+References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
+	<1389708830-5841-2-git-send-email-akinobu.mita@gmail.com>
+	<52E66527.8010000@samsung.com>
+	<20140127152342.GC20968@phenom.dumpdata.com>
+Date: Wed, 29 Jan 2014 08:20:45 +0900
+Message-ID: <CAC5umyjJfO9UyAkoG-bEX-vdO+X0fM_YD2dwj2AHT6T7hKgv0A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] x86: make dma_alloc_coherent() return zeroed
+ memory if CMA is enabled
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-01-28 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
+> On Mon, Jan 27, 2014 at 02:54:47PM +0100, Marek Szyprowski wrote:
+>> Hello,
+>>
+>> On 2014-01-14 15:13, Akinobu Mita wrote:
+>> >Calling dma_alloc_coherent() with __GFP_ZERO must return zeroed memory.
+>> >
+>> >But when the contiguous memory allocator (CMA) is enabled on x86 and
+>> >the memory region is allocated by dma_alloc_from_contiguous(), it
+>> >doesn't return zeroed memory.  Because dma_generic_alloc_coherent()
+>> >forgot to fill the memory region with zero if it was allocated by
+>> >dma_alloc_from_contiguous()
+>>
+>> I just wonder how it will work with high mem? I've didn't check the x86
+>> dma mapping code yet, but page_address() works only for pages, which comes
+>> from low memory. In other patches you have added an option to place CMA
+>> area anywhere in the memory. Is the x86 pci dma code ready for the case
+>> when cma area is put into high mem and direct mappings are not available?
+>
+> Yes and no. The swiotbl_bounce does have the code to take that into account.
+> But that is it - nothing else does - so I think you would run in the
+> possiblity of 'page_address' not providing an correct virtual address.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Thanks for spotting the issue.  I haven't much tested on x86_32.
+I'll go through it and try to find the solution.
 
-Commit abca7c496 notes that we can not _set_ a page->counters
-directly, except when using a real double-cmpxchg.  Doing so can
-lose updates to ->_count.
-
-That an absolute rule:
-
-        You may not *set* page->counters except via a cmpxchg.
-
-Commit abca7c496 fixed this for the folks who have the slub
-cmpxchg_double code turned off at compile time, but it left the
-bad alone.  It can still be reached, and the same bug triggered
-in two cases:
-1. Turning on slub debugging at runtime, which is available on
-   the distro kernels that I looked at.
-2. On 64-bit CPUs with no CMPXCHG16B (some early AMD x86-64
-   cpus, evidently)
-
-There are at least 3 ways we could fix this:
-
-1. Take all of the exising calls to cmpxchg_double_slab() and
-   __cmpxchg_double_slab() and convert them to take an old, new
-   and target 'struct page'.
-2. Do (1), but with the newly-introduced 'slub_data'.
-3. Do some magic inside the two cmpxchg...slab() functions to
-   pull the counters out of new_counters and only set those
-   fields in page->{inuse,frozen,objects}.
-
-I've done (2) as well, but it's a bunch more code.  This patch
-is an attempt at (3).  This was the most straightforward and
-foolproof way that I could think to do this.
-
-This would also technically allow us to get rid of the ugly
-
-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-       defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
-
-in 'struct page', but leaving it alone has the added benefit that
-'counters' stays 'unsigned' instead of 'unsigned long', so all
-the copies that the slub code does stay a bit smaller.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-
----
-
- b/mm/slub.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
-
-diff -puN mm/slub.c~slub-never-set-counters-except-via-cmpxchg mm/slub.c
---- a/mm/slub.c~slub-never-set-counters-except-via-cmpxchg	2014-01-28 14:48:26.420339269 -0800
-+++ b/mm/slub.c	2014-01-28 15:09:37.410864843 -0800
-@@ -355,6 +355,21 @@ static __always_inline void slab_unlock(
- 	__bit_spin_unlock(PG_locked, &page->flags);
- }
- 
-+static inline void set_page_slub_counters(struct page *page, unsigned long counters_new)
-+{
-+	struct page tmp;
-+	tmp.counters = counters_new;
-+	/*
-+	 * page->counters can cover frozen/inuse/objects as well
-+	 * as page->_count.  If we assign to ->counters directly
-+	 * we run the risk of losing updates to page->_count, so
-+	 * be careful and only assign to the fields we need.
-+	 */
-+	page->frozen  = tmp.frozen;
-+	page->inuse   = tmp.inuse;
-+	page->objects = tmp.objects;
-+}
-+
- /* Interrupts must be disabled (for the fallback code to work right) */
- static inline bool __cmpxchg_double_slab(struct kmem_cache *s, struct page *page,
- 		void *freelist_old, unsigned long counters_old,
-@@ -376,7 +391,7 @@ static inline bool __cmpxchg_double_slab
- 		if (page->freelist == freelist_old &&
- 					page->counters == counters_old) {
- 			page->freelist = freelist_new;
--			page->counters = counters_new;
-+			set_page_slub_counters(page, counters_new);
- 			slab_unlock(page);
- 			return 1;
- 		}
-@@ -415,7 +430,7 @@ static inline bool cmpxchg_double_slab(s
- 		if (page->freelist == freelist_old &&
- 					page->counters == counters_old) {
- 			page->freelist = freelist_new;
--			page->counters = counters_new;
-+			set_page_slub_counters(page, counters_new);
- 			slab_unlock(page);
- 			local_irq_restore(flags);
- 			return 1;
-_
+>>
+>> >Most implementations of dma_alloc_coherent() return zeroed memory
+>> >regardless of whether __GFP_ZERO is specified.  So this fixes it by
+>> >unconditionally zeroing the allocated memory region.
+>> >
+>> >Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+>> >Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> >Cc: David Woodhouse <dwmw2@infradead.org>
+>> >Cc: Don Dutile <ddutile@redhat.com>
+>> >Cc: Thomas Gleixner <tglx@linutronix.de>
+>> >Cc: Ingo Molnar <mingo@redhat.com>
+>> >Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> >Cc: Andi Kleen <andi@firstfloor.org>
+>> >Cc: x86@kernel.org
+>> >Cc: iommu@lists.linux-foundation.org
+>> >Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> >---
+>> >New patch from this version
+>> >
+>> >  arch/x86/kernel/pci-dma.c | 3 +--
+>> >  1 file changed, 1 insertion(+), 2 deletions(-)
+>> >
+>> >diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+>> >index 872079a..9644405 100644
+>> >--- a/arch/x86/kernel/pci-dma.c
+>> >+++ b/arch/x86/kernel/pci-dma.c
+>> >@@ -97,7 +97,6 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+>> >     dma_mask = dma_alloc_coherent_mask(dev, flag);
+>> >-    flag |= __GFP_ZERO;
+>> >  again:
+>> >     page = NULL;
+>> >     if (!(flag & GFP_ATOMIC))
+>> >@@ -118,7 +117,7 @@ again:
+>> >             return NULL;
+>> >     }
+>> >-
+>> >+    memset(page_address(page), 0, size);
+>> >     *dma_addr = addr;
+>> >     return page_address(page);
+>> >  }
+>>
+>> Best regards
+>> --
+>> Marek Szyprowski, PhD
+>> Samsung R&D Institute Poland
+>>
