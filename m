@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172AbaA1Qi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:38:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24252 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753572AbaA1QiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:38:24 -0500
-Date: Tue, 28 Jan 2014 17:38:08 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-Message-ID: <20140128163730.GA7596@redhat.com>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com> <20140127102759.GY11314@laptop.programming.kicks-ass.net> <20140127113627.GC10323@ZenIV.linux.org.uk> <20140127173931.GB32450@redhat.com> <20140128011841.GG10323@ZenIV.linux.org.uk>
+	id S1755249AbaA1QlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:41:22 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37964 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599AbaA1QlU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 11:41:20 -0500
+Message-ID: <52E7DDAD.1030309@wwwdotorg.org>
+Date: Tue, 28 Jan 2014 09:41:17 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140128011841.GG10323@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Manish Badarkhe <badarkhe.manish@gmail.com>, linux-omap@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: broonie@kernel.org, lgirdwood@gmail.com
+Subject: Re: [PATCH V2] regulator: fixed: update to devm_* API
+References: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
+In-Reply-To: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28, Al Viro wrote:
->
-> On Mon, Jan 27, 2014 at 06:39:31PM +0100, Oleg Nesterov wrote:
-> > On 01/27, Al Viro wrote:
-> > >
-> > > Why is _TIF_UPROBE *not* a part
-> > > of _TIF_DO_NOTIFY_MASK, for example?
-> >
-> > Yes, please see another email. That is why uprobe_deny_signal()
-> > sets TIF_NOTIFY_RESUME along with TIF_UPROBE.
->
-> *grumble* Can it end up modifying *regs?  From very cursory reading of
-> kernel/events/uprobe.c it seems to do so, so we probably want to leave
-> via iretq if that has hit, right?
+On 01/27/2014 08:12 PM, Manish Badarkhe wrote:
+> Update the code to use devm_* API so that driver core will manage
+> resources.
 
-But we do this anyway, restore_args path does iretq?
-
-I mean, uprobe_notify_resume() is called from do_notify_resume(), it
-should be fine to modify*regs there?
-
-Oleg.
-
+I'm not sure why this patch is sent to linux-tegra@vger.kernel.org; it
+seems nothing to do with Tegra (or Samsung or OMAP for that matter).
