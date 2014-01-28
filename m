@@ -1,226 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaA1LJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 06:09:37 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:39158 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733AbaA1LJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 06:09:34 -0500
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arm@kernel.org, mark.rutland@arm.com,
-        tomasz.figa@gmail.com, adam.jaremko@gmail.com,
-        sylvester.nawrocki@gmail.com, Sudeep.Holla@arm.com,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v11] clk: add MOXA ART SoCs clock driver
-Date: Tue, 28 Jan 2014 12:09:11 +0100
-Message-Id: <1390907351-28426-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
-References: <1390308261-4026-1-git-send-email-jonas.jensen@gmail.com>
+	id S1755009AbaA1LKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 06:10:07 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47089 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754858AbaA1LKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 06:10:03 -0500
+Message-ID: <52E78F35.2090106@linux.vnet.ibm.com>
+Date: Tue, 28 Jan 2014 16:36:29 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: paulmck@linux.vnet.ibm.com, linux-pm@vger.kernel.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, tuukka.tikkanen@linaro.org
+Subject: Re: [PATCH V2] cpuidle/governors: Fix logic in selection of idle
+ states
+References: <20140117043351.21531.14192.stgit@preeti.in.ibm.com> <52DF815D.50104@linaro.org> <52E0F9ED.2010506@linux.vnet.ibm.com> <52E22D8A.5000305@linaro.org> <52E23EA0.7010803@linux.vnet.ibm.com> <52E76E6F.4000101@linaro.org>
+In-Reply-To: <52E76E6F.4000101@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012811-0320-0000-0000-0000024CF2FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MOXA ART SoCs allow to determine PLL output and APB frequencies
-by reading registers holding multiplier and divisor information.
+Hi Daniel,
 
-Add a clock driver for this SoC.
+On 01/28/2014 02:16 PM, Daniel Lezcano wrote:
+> On 01/24/2014 11:21 AM, Preeti U Murthy wrote:
+>> On 01/24/2014 02:38 PM, Daniel Lezcano wrote:
+>>> On 01/23/2014 12:15 PM, Preeti U Murthy wrote:
+>>>> Hi Daniel,
+>>>>
+>>>> Thank you for the review.
+> 
+> [ ... ]
+> 
+>>>> ---
+>>>>    drivers/cpuidle/cpuidle.c          |   15 +++++
+>>>>    drivers/cpuidle/governors/ladder.c |  101
+>>>> ++++++++++++++++++++++++++----------
+>>>>    drivers/cpuidle/governors/menu.c   |    7 +-
+>>>>    3 files changed, 90 insertions(+), 33 deletions(-)
+>>>>
+>>>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>>>> index a55e68f..19d17e8 100644
+>>>> --- a/drivers/cpuidle/cpuidle.c
+>>>> +++ b/drivers/cpuidle/cpuidle.c
+>>>> @@ -131,8 +131,9 @@ int cpuidle_idle_call(void)
+>>>>
+>>>>        /* ask the governor for the next state */
+>>>>        next_state = cpuidle_curr_governor->select(drv, dev);
+>>>> +
+>>>> +    dev->last_residency = 0;
+>>>>        if (need_resched()) {
+>>>
+>>> What about if (need_resched() || next_state < 0) ?
+>>
+>> Hmm.. I feel we need to distinguish between the need_resched() scenario
+>> and the scenario when no idle state was suitable through the trace
+>> points at-least.
+> 
+> Well, I don't think so as soon as we don't care about the return value
+> of cpuidle_idle_call in both cases.
+> 
+> The traces are following a specific format. That is if the state is -1
+> (PWR_EVENT_EXIT), it means exiting the current idle state.
+> 
+> The idlestat tool [1] is using this traces to open - close transitions.
+> 
+> IMO, if the cpu is not entering idle, it should just exit without any
+> idle traces.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+Yes I see your point here.
+> 
+> This portion of code is a bit confusing because it is introduced by the
+> menu governor updates post-poned when entering the next idle state (not
+> exiting the current idle state with good reasons).
 
-Notes:
-    Thanks for the replies,
-    
-    Changes since v10:
-    
-    1. add clock-specifier to DT binding description
-    2. remove local variable "rate"
-    3. add local variable "parent_name"
-    4. use clk_register_fixed_factor() instead of clk_register_fixed_rate()
-    5. remove flag CLK_IS_ROOT
-    
-    Applies to next-20140128
+I am sorry but I don't understand this part. Which is the portion of the
+code you refer to here? Also can you please elaborate on the above
+statement?
 
- .../bindings/clock/moxa,moxart-clock.txt           | 48 +++++++++++
- drivers/clk/Makefile                               |  1 +
- drivers/clk/clk-moxart.c                           | 97 ++++++++++++++++++++++
- 3 files changed, 146 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
- create mode 100644 drivers/clk/clk-moxart.c
+Thanks
 
-diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-new file mode 100644
-index 0000000..fedea84
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-@@ -0,0 +1,48 @@
-+Device Tree Clock bindings for arch-moxart
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+MOXA ART SoCs allow to determine PLL output and APB frequencies
-+by reading registers holding multiplier and divisor information.
-+
-+
-+PLL:
-+
-+Required properties:
-+- compatible : Must be "moxa,moxart-pll-clock"
-+- #clock-cells : Should be 0
-+- reg : Should contain registers location and length
-+- clocks : Should contain phandle + clock-specifier for the parent clock
-+
-+Optional properties:
-+- clock-output-names : Should contain clock name
-+
-+
-+APB:
-+
-+Required properties:
-+- compatible : Must be "moxa,moxart-apb-clock"
-+- #clock-cells : Should be 0
-+- reg : Should contain registers location and length
-+- clocks : Should contain phandle + clock-specifier for the parent clock
-+
-+Optional properties:
-+- clock-output-names : Should contain clock name
-+
-+
-+For example:
-+
-+	clk_pll: clk_pll@98100000 {
-+		compatible = "moxa,moxart-pll-clock";
-+		#clock-cells = <0>;
-+		reg = <0x98100000 0x34>;
-+	};
-+
-+	clk_apb: clk_apb@98100000 {
-+		compatible = "moxa,moxart-apb-clock";
-+		#clock-cells = <0>;
-+		reg = <0x98100000 0x34>;
-+		clocks = <&clk_pll>;
-+	};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 0faf730..7940d0c 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
- obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
-+obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
- obj-$(CONFIG_ARCH_HI3xxx)	+= hisilicon/
-diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-new file mode 100644
-index 0000000..30a3b69
---- /dev/null
-+++ b/drivers/clk/clk-moxart.c
-@@ -0,0 +1,97 @@
-+/*
-+ * MOXA ART SoCs clock driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+
-+void __init moxart_of_pll_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct clk *clk, *ref_clk;
-+	unsigned int mul;
-+	const char *name = node->name;
-+	const char *parent_name;
-+
-+	of_property_read_string(node, "clock-output-names", &name);
-+	parent_name = of_clk_get_parent_name(node, 0);
-+
-+	base = of_iomap(node, 0);
-+	if (!base) {
-+		pr_err("%s: of_iomap failed\n", node->full_name);
-+		return;
-+	}
-+
-+	mul = readl(base + 0x30) >> 3 & 0x3f;
-+	iounmap(base);
-+
-+	ref_clk = of_clk_get(node, 0);
-+	if (IS_ERR(ref_clk)) {
-+		pr_err("%s: of_clk_get failed\n", node->full_name);
-+		return;
-+	}
-+
-+	clk = clk_register_fixed_factor(NULL, name, parent_name, 0, mul, 1);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: failed to register clock\n", node->full_name);
-+		return;
-+	}
-+
-+	clk_register_clkdev(clk, NULL, name);
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
-+	       moxart_of_pll_clk_init);
-+
-+void __init moxart_of_apb_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct clk *clk, *pll_clk;
-+	unsigned int div, val;
-+	unsigned int div_idx[] = { 2, 3, 4, 6, 8};
-+	const char *name = node->name;
-+	const char *parent_name;
-+
-+	of_property_read_string(node, "clock-output-names", &name);
-+	parent_name = of_clk_get_parent_name(node, 0);
-+
-+	base = of_iomap(node, 0);
-+	if (!base) {
-+		pr_err("%s: of_iomap failed\n", node->full_name);
-+		return;
-+	}
-+
-+	val = readl(base + 0xc) >> 4 & 0x7;
-+	iounmap(base);
-+
-+	if (val > 4)
-+		val = 0;
-+	div = div_idx[val] * 2;
-+
-+	pll_clk = of_clk_get(node, 0);
-+	if (IS_ERR(pll_clk)) {
-+		pr_err("%s: of_clk_get failed\n", node->full_name);
-+		return;
-+	}
-+
-+	clk = clk_register_fixed_factor(NULL, name, parent_name, 0, 1, div);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: failed to register clock\n", node->full_name);
-+		return;
-+	}
-+
-+	clk_register_clkdev(clk, NULL, name);
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+CLK_OF_DECLARE(moxart_apb_clock, "moxa,moxart-apb-clock",
-+	       moxart_of_apb_clk_init);
--- 
-1.8.2.1
+Regards
+Preeti U Murthy
+> 
+>   -- Daniel
+> 
+> [1] http://git.linaro.org/power/idlestat.git
+> 
+>> This could help while debugging when we could find situations where
+>> there are no tasks to run, yet the cpu is not entering any idle state.
+>> The traces could help clearly point that no idle state was thought
+>> suitable by the governor. Of course there are many other means to find
+>> this out, but this seems rather straightforward. Hence having the
+>> condition next_state < 0 between trace_cpu_idle*() would be apt IMHO.
+>>
+>> Regards
+>> Preeti U Murthy
+>>
+>>>
+>>>> -        dev->last_residency = 0;
+>>>>            /* give the governor an opportunity to reflect on the
+>>>> outcome */
+>>>>            if (cpuidle_curr_governor->reflect)
+>>>>                cpuidle_curr_governor->reflect(dev, next_state);
+>>>> @@ -141,6 +142,16 @@ int cpuidle_idle_call(void)
+>>>>        }
+>>>>
+>>>>        trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>>>> +    /*
+>>>> +     * NOTE: The return code should still be success, since the
+>>>> verdict of
+>>>> +     * this call is "do not enter any idle state". It is not a failed
+>>>> call
+>>>> +     * due to errors.
+>>>> +     */
+>>>> +    if (next_state < 0) {
+>>>> +        entered_state = next_state;
+>>>> +        local_irq_enable();
+>>>> +        goto out;
+>>>> +    }
+>>>>
+>>>>        broadcast = !!(drv->states[next_state].flags &
+>>>> CPUIDLE_FLAG_TIMER_STOP);
+>>>>
+>>>> @@ -156,7 +167,7 @@ int cpuidle_idle_call(void)
+>>>>        if (broadcast)
+>>>>            clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+>>>> &dev->cpu);
+>>>>
+>>>> -    trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>>>> +out:    trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>>>>
+>>>>        /* give the governor an opportunity to reflect on the outcome */
+>>>>        if (cpuidle_curr_governor->reflect)
+>>
+> 
+> 
 
