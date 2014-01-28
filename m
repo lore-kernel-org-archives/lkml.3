@@ -1,205 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658AbaA1Mon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 07:44:43 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:56567 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaA1Mom (ORCPT
+	id S1754818AbaA1Mql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 07:46:41 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52074 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaA1Mqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 07:44:42 -0500
-X-IronPort-AV: E=Sophos;i="4.95,736,1384300800"; 
-   d="scan'208";a="95208687"
-Message-ID: <52E7A635.2090108@citrix.com>
-Date: Tue, 28 Jan 2014 13:44:37 +0100
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 28 Jan 2014 07:46:40 -0500
+Message-ID: <52E7A6AA.2050300@parallels.com>
+Date: Tue, 28 Jan 2014 16:46:34 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH] xen-blkback: fix memory leaks
-References: <1390817621-12031-1-git-send-email-roger.pau@citrix.com> <20140127212146.GA32007@phenom.dumpdata.com>
-In-Reply-To: <20140127212146.GA32007@phenom.dumpdata.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ipc: Fix 2 bugs in msgrcv() MSG_COPY implementation
+References: <52E11F9D.7040205@gmail.com>
+In-Reply-To: <52E11F9D.7040205@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8bit
-X-DLP: MIA2
+X-Originating-IP: [10.30.24.12]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/01/14 22:21, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jan 27, 2014 at 11:13:41AM +0100, Roger Pau Monne wrote:
->> I've at least identified two possible memory leaks in blkback, both
->> related to the shutdown path of a VBD:
->>
->> - We don't wait for any pending purge work to finish before cleaning
->>   the list of free_pages. The purge work will call put_free_pages and
->>   thus we might end up with pages being added to the free_pages list
->>   after we have emptied it.
->> - We don't wait for pending requests to end before cleaning persistent
->>   grants and the list of free_pages. Again this can add pages to the
->>   free_pages lists or persistent grants to the persistent_gnts
->>   red-black tree.
->>
->> Also, add some checks in xen_blkif_free to make sure we are cleaning
->> everything.
->>
->> Signed-off-by: Roger Pau Monn� <roger.pau@citrix.com>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Cc: David Vrabel <david.vrabel@citrix.com>
->> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> Cc: Matt Rushton <mrushton@amazon.com>
->> Cc: Matt Wilson <msw@amazon.com>
->> Cc: Ian Campbell <Ian.Campbell@citrix.com>
->> ---
->> This should be applied after the patch:
->>
->> xen-blkback: fix memory leak when persistent grants are used
->>
->> >From Matt Rushton & Matt Wilson and backported to stable.
->>
->> I've been able to create and destroy ~4000 guests while doing heavy IO
->> operations with this patch on a 512M Dom0 without problems.
->> ---
->>  drivers/block/xen-blkback/blkback.c |   29 +++++++++++++++++++----------
->>  drivers/block/xen-blkback/xenbus.c  |    9 +++++++++
->>  2 files changed, 28 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
->> index 30ef7b3..19925b7 100644
->> --- a/drivers/block/xen-blkback/blkback.c
->> +++ b/drivers/block/xen-blkback/blkback.c
->> @@ -169,6 +169,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->>  				struct pending_req *pending_req);
->>  static void make_response(struct xen_blkif *blkif, u64 id,
->>  			  unsigned short op, int st);
->> +static void xen_blk_drain_io(struct xen_blkif *blkif, bool force);
->>  
->>  #define foreach_grant_safe(pos, n, rbtree, node) \
->>  	for ((pos) = container_of(rb_first((rbtree)), typeof(*(pos)), node), \
->> @@ -625,6 +626,12 @@ purge_gnt_list:
->>  			print_stats(blkif);
->>  	}
->>  
->> +	/* Drain pending IO */
->> +	xen_blk_drain_io(blkif, true);
->> +
->> +	/* Drain pending purge work */
->> +	flush_work(&blkif->persistent_purge_work);
->> +
-> 
-> I think this means we can eliminate the refcnt usage - at least when
-> it comes to xen_blkif_disconnect where if we would initiate the shutdown, and
-> there is
-> 
-> 239         atomic_dec(&blkif->refcnt);                                             
-> 240         wait_event(blkif->waiting_to_free, atomic_read(&blkif->refcnt) == 0);   
-> 241         atomic_inc(&blkif->refcnt);                                             
-> 242                                                                                 
-> 
-> which is done _after_ the thread is done executing. That check won't
-> be needed anymore as the xen_blk_drain_io, flush_work, and free_persistent_gnts
-> has pretty much drained every I/O out - so the moment the thread exits
-> there should be no need for waiting_to_free. I think.
+Hello Michael.
 
-I've reworked this patch a bit, so we don't drain the in-flight requests
-here, and instead moved all the cleanup code to xen_blkif_free. I've
-also split the xen_blkif_put race fix into a separate patch.
+Thanks you for your careful explanation of the problem.
+All is true and I like your solution.
 
-> 
->>  	/* Free all persistent grant pages */
->>  	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
->>  		free_persistent_gnts(blkif, &blkif->persistent_gnts,
->> @@ -930,7 +937,7 @@ static int dispatch_other_io(struct xen_blkif *blkif,
->>  	return -EIO;
->>  }
->>  
->> -static void xen_blk_drain_io(struct xen_blkif *blkif)
->> +static void xen_blk_drain_io(struct xen_blkif *blkif, bool force)
->>  {
->>  	atomic_set(&blkif->drain, 1);
->>  	do {
->> @@ -943,7 +950,7 @@ static void xen_blk_drain_io(struct xen_blkif *blkif)
->>  
->>  		if (!atomic_read(&blkif->drain))
->>  			break;
->> -	} while (!kthread_should_stop());
->> +	} while (!kthread_should_stop() || force);
->>  	atomic_set(&blkif->drain, 0);
->>  }
->>  
->> @@ -976,17 +983,19 @@ static void __end_block_io_op(struct pending_req *pending_req, int error)
->>  	 * the proper response on the ring.
->>  	 */
->>  	if (atomic_dec_and_test(&pending_req->pendcnt)) {
->> -		xen_blkbk_unmap(pending_req->blkif,
->> +		struct xen_blkif *blkif = pending_req->blkif;
->> +
->> +		xen_blkbk_unmap(blkif,
->>  		                pending_req->segments,
->>  		                pending_req->nr_pages);
->> -		make_response(pending_req->blkif, pending_req->id,
->> +		make_response(blkif, pending_req->id,
->>  			      pending_req->operation, pending_req->status);
->> -		xen_blkif_put(pending_req->blkif);
->> -		if (atomic_read(&pending_req->blkif->refcnt) <= 2) {
->> -			if (atomic_read(&pending_req->blkif->drain))
->> -				complete(&pending_req->blkif->drain_complete);
->> +		free_req(blkif, pending_req);
->> +		xen_blkif_put(blkif);
->> +		if (atomic_read(&blkif->refcnt) <= 2) {
->> +			if (atomic_read(&blkif->drain))
->> +				complete(&blkif->drain_complete);
->>  		}
->> -		free_req(pending_req->blkif, pending_req);
-> 
-> I keep coming back to this and I am not sure what to think - especially
-> in the context of WRITE_BARRIER and disconnecting the vbd.
-> 
-> You moved the 'free_req' to be done before you do atomic_read/dec.
-> 
-> Which means that we do:
-> 
-> 	list_add(&req->free_list, &blkif->pending_free);
-> 	wake_up(&blkif->pending_free_wq);
-> 
-> 	atomic_dec
-> 	if atomic_read <= 2 poke thread that is waiting for drain.
-> 
-> 
-> while in the past we did:
-> 
-> 	atomic_dec
-> 	if atomic_read <= 2 poke thread that is waiting for drain.
-> 
-> 	list_add(&req->free_list, &blkif->pending_free);
-> 	wake_up(&blkif->pending_free_wq);
-> 
-> which means that we are giving the 'req' _before_ we decrement
-> the refcnts.
-> 
-> Could that mean that __do_block_io_op takes it for a spin - oh
-> wait it won't as it is sitting on a WRITE_BARRIER and waiting:
-> 
-> 1226         if (drain)                                                              
-> 1227                 xen_blk_drain_io(pending_req->blkif);  
-> 
-> But still that feels 'wrong'?
+Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Mmmm, the wake_up call in free_req in the context of WRITE_BARRIER is
-harmless since the thread is waiting on drain_complete as you say, but I
-take your point that it's all confusing. Do you think it will feel
-better if we gate the call to wake_up in free_req with this condition:
 
-if (was_empty && !atomic_read(&blkif->drain))
+3.01.2014 17:56, Michael Kerrisk (man-pages) пишет:
+> Hello Stanislav, Pavel,
+>
+> While documenting the msgrcv() MSG_COPY flag that you (Stanislaw) added
+> in commit 4a674f34ba04a002244edaf891b5da7fc1473ae8 (==> kernel 3.8),
+> I've come across a  couple of bugs in the implementation.
+>
+> Could you please review/ack/nack my patch to resolve these bugs, and
+> then I'll resubmit, probably also tagging the patch for -stable.
+>
+> The two bugs concern MSG_COPY interactions with other flags, namely:
+>
+> (A) MSG_COPY + MSG_EXCEPT
+> (B) MSG_COPY + !IPC_NOWAIT
+>
+> The bugs are distinct (and the fix for the first one is obvious),
+> however my proposed fix for both is a single-line patch, which
+> is why I'm combining them in a single mail, rather than writing
+> two mails+patches. (If the fix for the second problem should be
+> something other than I propose, then two patches might be needed...)
+>
+> ===== (A) MSG_COPY + MSG_EXCEPT =====
+>
+> With the addition of the MSG_COPY flag, there are now two msgrcv() flags,
+> MSG_COPY and MSG_EXCEPT, that modify the meaning of the 'msgtyp' argument
+> in unrelated ways. Specifying both in the same call is a logical error
+> that is currently permitted, with the effect that MSG_COPY has priority
+> and MSG_EXCEPT is ignored. The call should give an error for this case.
+> The patch below implements that behavior.
+>
+> ===== (B) (B) MSG_COPY + !IPC_NOWAIT =====
+>
+> The test code that was submitted in commit
+> 3a665531a3b7c2ad2c87903b24646be6916340e4 shows MSG_COPY being used in
+> conjunction with IPC_NOWAIT. In other words, if there is no message
+> at the position 'msgtyp'. return immediately with the error in ENOMSG.
+>
+> What was not (fully) tested is the behavior if MSG_COPY is specified
+> *without* IPC_NOWAIT, and there is an odd behavior. If the queue contains
+> less than 'msgtyp' messages, then the call blocks until the next message
+> is written to the queue. At that point, the msgrcv() call returns a copy
+> of the newly added message, regardless of whether that message is at the
+> ordinal position 'msgtyp'. This is clearly bogus, and problematic for
+> applications that might want to make use of the MSG_COPY flag.
+>
+> I see the following possible solutions to this problem:
+>
+> (1) Force the call to block until a message *does* appear at the position
+>      'msgtyp'.
+>
+> (2) If the MSG_COPY flag is specified, the kernel should implicitly add
+>      IPC_NOWAIT, so that the call fails with ENOMSG for this case.
+>
+> (3) If the MSG_COPY flag is specified, but IPC_NOWAIT is not, generate an
+>      error (probably, EINVAL is the right one).
+>
+> I do not know if any application would really want to have the functionality
+> of solution (1), especially since an application can determine in advance
+> the number of messages in the queue using msgctl() IPC_STAT. Obviously, this
+> solution would be the most work to implement.
+>
+> Solution (2) would have the effect of silently fixing any applications that
+> tried to employ broken behavior. However, it would mean that if we later
+> decided to implement solution (1), then user-space could not easily detect
+> what the kernel supports (but, since I'm somewhat doubtful that solution (1)
+> is needed, I'm not sure that this is much of a problem).
+>
+> Solution (3) would have the effect of informing broken applications that
+> they are doing something broken. The downside is that this would cause a
+> ABI breakage for any applications that are currently employing the broken
+> behavior. However:
+>
+> a) Those applications are almost certainly not getting the results they
+>     expect.
+> b) Probably, those applications don't even exist, because MSG_COPY is
+>      currently hidden behind CONFIG_CHECKPOINT_RESTORE.
+>
+> The upside of solution (3) is that if we later decided to implement
+> solution (1), user-space could determine what the kernel supports,
+> via the error return.
+>
+> I think solution (3) is mildly preferable to solution (2), and
+> solution (1) could still be done later if anyone really cares.
+> The patch below implements solution (3).
+>
+> Cheers,
+>
+> Michael
+>
+> PS For anyone out there still listening, it's the usual story:
+> documenting an API (and the thinking about, and the testing of the API,
+> that documentation  entails) is the one of the single best ways of
+> finding bugs in the API, as  I've learned from a lot of experience.
+> Best to do that documentation before releasing the API.
+>
+> Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+>
+> ---
+>
+> diff -ruNp linux-3.13/ipc/msg.c linux-3.13-msg_copy-fix/ipc/msg.c
+> --- linux-3.13/ipc/msg.c	2014-01-23 14:13:22.989383573 +0100
+> +++ linux-3.13-msg_copy-fix/ipc/msg.c	2014-01-23 13:03:09.600538370 +0100
+> @@ -885,6 +885,8 @@ long do_msgrcv(int msqid, void __user *b
+>   		return -EINVAL;
+>
+>   	if (msgflg & MSG_COPY) {
+> +		if ((msgflg & MSG_EXCEPT) || !(msgflg & IPC_NOWAIT))
+> +			return -EINVAL;
+>   		copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax));
+>   		if (IS_ERR(copy))
+>   			return PTR_ERR(copy);
+>
+>
 
-Or is this just going to make it even messier?
 
-Maybe just adding a comment in free_req saying that the wake_up call is
-going to be ignored in the context of a WRITE_BARRIER, since the thread
-is already waiting on drain_complete is enough.
-
+-- 
+Best regards,
+Stanislav Kinsbursky
