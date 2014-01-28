@@ -1,163 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833AbaA1XV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:21:59 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:39159 "EHLO
+	id S1755945AbaA1XWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:22:14 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:64506 "EHLO
 	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaA1XV5 (ORCPT
+	with ESMTP id S1755888AbaA1XWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:21:57 -0500
+	Tue, 28 Jan 2014 18:22:12 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: [PATCHSET v4 driver-core-next] kernfs, sysfs, driver-core: implement synchronous self-removal
-Date: Tue, 28 Jan 2014 18:21:40 -0500
-Message-Id: <1390951311-15325-1-git-send-email-tj@kernel.org>
+        JBottomley@parallels.com, bhelgaas@google.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 11/11] sysfs, driver-core: remove unused {sysfs|device}_schedule_callback_owner()
+Date: Tue, 28 Jan 2014 18:21:51 -0500
+Message-Id: <1390951311-15325-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1390951311-15325-1-git-send-email-tj@kernel.org>
+References: <1390951311-15325-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+All device_schedule_callback_owner() users are converted to use
+device_remove_file_self().  Remove now unused
+{sysfs|device}_schedule_callback_owner().
 
-This is v4 of kernfs self-removal patchset.  Unfortunately, this
-series has a somewhat turbulent history.  After sending out the first
-iteration[1], I realized that cgroup's use case would need more
-flexibility so I called it off and after a while posted the second
-version[2] which contained patches which were slightly stale by
-mistake, so soon after v3[3] was posted, which got applied to the
-driver-core-next for 3.14-rc1 inclusion; unfortunately, while working
-on it later, I realized that the new more flexible scheme was
-fundamentally broken and the first approach in v1 was actually the
-correct one.  So, the whole series got reverted and this is the fourth
-trial aiming for the 3.15-rc1 window.  This time, the whole cgroup
-conversion is completed on top and verified to work properly, so
-hopefully this take is the last for this series.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ drivers/base/core.c    | 33 ------------------
+ fs/sysfs/file.c        | 92 --------------------------------------------------
+ include/linux/device.h | 11 +-----
+ include/linux/sysfs.h  |  9 -----
+ 4 files changed, 1 insertion(+), 144 deletions(-)
 
-As described above, the approach used in the first iteration was the
-correct one, so this patchset is an updated version of v1.  The only
-necessary addition was exposing breaking out of s_active protection as
-a separate API.
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 9db57af..4195364 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -615,39 +615,6 @@ void device_remove_bin_file(struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(device_remove_bin_file);
+ 
+-/**
+- * device_schedule_callback_owner - helper to schedule a callback for a device
+- * @dev: device.
+- * @func: callback function to invoke later.
+- * @owner: module owning the callback routine
+- *
+- * Attribute methods must not unregister themselves or their parent device
+- * (which would amount to the same thing).  Attempts to do so will deadlock,
+- * since unregistration is mutually exclusive with driver callbacks.
+- *
+- * Instead methods can call this routine, which will attempt to allocate
+- * and schedule a workqueue request to call back @func with @dev as its
+- * argument in the workqueue's process context.  @dev will be pinned until
+- * @func returns.
+- *
+- * This routine is usually called via the inline device_schedule_callback(),
+- * which automatically sets @owner to THIS_MODULE.
+- *
+- * Returns 0 if the request was submitted, -ENOMEM if storage could not
+- * be allocated, -ENODEV if a reference to @owner isn't available.
+- *
+- * NOTE: This routine won't work if CONFIG_SYSFS isn't set!  It uses an
+- * underlying sysfs routine (since it is intended for use by attribute
+- * methods), and if sysfs isn't available you'll get nothing but -ENOSYS.
+- */
+-int device_schedule_callback_owner(struct device *dev,
+-		void (*func)(struct device *), struct module *owner)
+-{
+-	return sysfs_schedule_callback(&dev->kobj,
+-			(void (*)(void *)) func, dev, owner);
+-}
+-EXPORT_SYMBOL_GPL(device_schedule_callback_owner);
+-
+ static void klist_children_get(struct klist_node *n)
+ {
+ 	struct device_private *p = to_device_private_parent(n);
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 1b8b91b..28cc1acd 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -453,95 +453,3 @@ void sysfs_remove_bin_file(struct kobject *kobj,
+ 	kernfs_remove_by_name(kobj->sd, attr->attr.name);
+ }
+ EXPORT_SYMBOL_GPL(sysfs_remove_bin_file);
+-
+-struct sysfs_schedule_callback_struct {
+-	struct list_head	workq_list;
+-	struct kobject		*kobj;
+-	void			(*func)(void *);
+-	void			*data;
+-	struct module		*owner;
+-	struct work_struct	work;
+-};
+-
+-static struct workqueue_struct *sysfs_workqueue;
+-static DEFINE_MUTEX(sysfs_workq_mutex);
+-static LIST_HEAD(sysfs_workq);
+-static void sysfs_schedule_callback_work(struct work_struct *work)
+-{
+-	struct sysfs_schedule_callback_struct *ss = container_of(work,
+-			struct sysfs_schedule_callback_struct, work);
+-
+-	(ss->func)(ss->data);
+-	kobject_put(ss->kobj);
+-	module_put(ss->owner);
+-	mutex_lock(&sysfs_workq_mutex);
+-	list_del(&ss->workq_list);
+-	mutex_unlock(&sysfs_workq_mutex);
+-	kfree(ss);
+-}
+-
+-/**
+- * sysfs_schedule_callback - helper to schedule a callback for a kobject
+- * @kobj: object we're acting for.
+- * @func: callback function to invoke later.
+- * @data: argument to pass to @func.
+- * @owner: module owning the callback code
+- *
+- * sysfs attribute methods must not unregister themselves or their parent
+- * kobject (which would amount to the same thing).  Attempts to do so will
+- * deadlock, since unregistration is mutually exclusive with driver
+- * callbacks.
+- *
+- * Instead methods can call this routine, which will attempt to allocate
+- * and schedule a workqueue request to call back @func with @data as its
+- * argument in the workqueue's process context.  @kobj will be pinned
+- * until @func returns.
+- *
+- * Returns 0 if the request was submitted, -ENOMEM if storage could not
+- * be allocated, -ENODEV if a reference to @owner isn't available,
+- * -EAGAIN if a callback has already been scheduled for @kobj.
+- */
+-int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+-		void *data, struct module *owner)
+-{
+-	struct sysfs_schedule_callback_struct *ss, *tmp;
+-
+-	if (!try_module_get(owner))
+-		return -ENODEV;
+-
+-	mutex_lock(&sysfs_workq_mutex);
+-	list_for_each_entry_safe(ss, tmp, &sysfs_workq, workq_list)
+-		if (ss->kobj == kobj) {
+-			module_put(owner);
+-			mutex_unlock(&sysfs_workq_mutex);
+-			return -EAGAIN;
+-		}
+-	mutex_unlock(&sysfs_workq_mutex);
+-
+-	if (sysfs_workqueue == NULL) {
+-		sysfs_workqueue = create_singlethread_workqueue("sysfsd");
+-		if (sysfs_workqueue == NULL) {
+-			module_put(owner);
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	ss = kmalloc(sizeof(*ss), GFP_KERNEL);
+-	if (!ss) {
+-		module_put(owner);
+-		return -ENOMEM;
+-	}
+-	kobject_get(kobj);
+-	ss->kobj = kobj;
+-	ss->func = func;
+-	ss->data = data;
+-	ss->owner = owner;
+-	INIT_WORK(&ss->work, sysfs_schedule_callback_work);
+-	INIT_LIST_HEAD(&ss->workq_list);
+-	mutex_lock(&sysfs_workq_mutex);
+-	list_add_tail(&ss->workq_list, &sysfs_workq);
+-	mutex_unlock(&sysfs_workq_mutex);
+-	queue_work(sysfs_workqueue, &ss->work);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(sysfs_schedule_callback);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 1ff3f16..fb1ba13 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -566,12 +566,6 @@ extern int __must_check device_create_bin_file(struct device *dev,
+ 					const struct bin_attribute *attr);
+ extern void device_remove_bin_file(struct device *dev,
+ 				   const struct bin_attribute *attr);
+-extern int device_schedule_callback_owner(struct device *dev,
+-		void (*func)(struct device *dev), struct module *owner);
+-
+-/* This is a macro to avoid include problems with THIS_MODULE */
+-#define device_schedule_callback(dev, func)			\
+-	device_schedule_callback_owner(dev, func, THIS_MODULE)
+ 
+ /* device resource management */
+ typedef void (*dr_release_t)(struct device *dev, void *res);
+@@ -931,10 +925,7 @@ extern int device_online(struct device *dev);
+ extern struct device *__root_device_register(const char *name,
+ 					     struct module *owner);
+ 
+-/*
+- * This is a macro to avoid include problems with THIS_MODULE,
+- * just as per what is done for device_schedule_callback() above.
+- */
++/* This is a macro to avoid include problems with THIS_MODULE */
+ #define root_device_register(name) \
+ 	__root_device_register(name, THIS_MODULE)
+ 
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index bd96c60..14df054 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -178,9 +178,6 @@ struct sysfs_ops {
+ 
+ #ifdef CONFIG_SYSFS
+ 
+-int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+-			    void *data, struct module *owner);
+-
+ int __must_check sysfs_create_dir_ns(struct kobject *kobj, const void *ns);
+ void sysfs_remove_dir(struct kobject *kobj);
+ int __must_check sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
+@@ -249,12 +246,6 @@ int __must_check sysfs_init(void);
+ 
+ #else /* CONFIG_SYSFS */
+ 
+-static inline int sysfs_schedule_callback(struct kobject *kobj,
+-		void (*func)(void *), void *data, struct module *owner)
+-{
+-	return -ENOSYS;
+-}
+-
+ static inline int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ {
+ 	return 0;
+-- 
+1.8.5.3
 
-* Incorporate fixes from v3 of the patchset.
-
-* kernfs_[un]break_active_protection() added.  "break" puts the active
-  reference while "unbreak" undoes it so that the refcnt is balanced;
-  however, unbreaking doesn't and can't restore active reference
-  protection itself.  Once broken, active ref protection is gone for
-  the full duration of the method invocation.  This allows more
-  complex implementation of self-removal where self-removal attempts
-  may be rejected by shifting the responsibility of ensuring object
-  accessbility to the kernfs user.
-
-  This API is a bit cumbersome to use but the simpler
-  kernfs_remove_self() is still provided and built on top of the above
-  API.
-
-Original patch description follows.
-
-kernfs / sysfs implement the "sever" semantic for userland accesses.
-When a node is removed, no further userland operations are allowed and
-the in-flight ones are drained before removal is finished.  This makes
-policing post-mortem userland accesses trivial for its users;
-unfortunately, this comes with a drawback - a node which tries to
-delete oneself through one of its userland operations deadlocks.
-Removal wants to drain the active access that the operation itself is
-running on top of.
-
-This currently is worked around in the sysfs layer using
-sysfs_schedule_callback() which punts the actual removal to a work
-item.  While making the operation asynchronous kinda works, it's a bit
-cumbersome to use and its behavior isn't quite correct as the caller
-has no way of telling when or even whether the operation is actually
-complete.  If such self-removal is followed by another operation which
-expects the removed name to be available, there's no way to make the
-second operation reliable - e.g. something like "echo 1 > asdf/delete;
-echo asdf > create_new_child" can't work properly.
-
-This patchset improves kernfs removal path and implements
-kernfs_remove_self() which is to be called from an on-going kernfs
-operation and removes the self node.  The function can be called
-concurrently and only one will return %true and all others will wait
-until the winner's file operation is complete (not the
-kernfs_remove_self() call itself but the enclosing file operation
-which invoked the function).  This ensures that if there are multiple
-concurrent "echo 1 > asdf/delete", all of them would finish only after
-the whole store_delete() method is complete.
-
-kernfs_remove_self() is exposed to upper layers through
-sysfs_remove_file_self() and device_remove_file_self().  The existing
-users of device_schedule_callback() are converted to use remove_self
-and the unused async mechanism is removed.
-
-This patchset contains the following eleven patches.
-
- 0001-kernfs-replace-kernfs_node-u.completion-with-kernfs_.patch
- 0002-kernfs-restructure-removal-path-to-fix-possible-prem.patch
- 0003-kernfs-invoke-kernfs_unmap_bin_file-directly-from-ke.patch
- 0004-kernfs-remove-kernfs_addrm_cxt.patch
- 0005-kernfs-remove-KERNFS_ACTIVE_REF-and-add-kernfs_lockd.patch
- 0006-kernfs-remove-KERNFS_REMOVED.patch
- 0007-kernfs-sysfs-driver-core-implement-kernfs_remove_sel.patch
- 0008-pci-use-device_remove_file_self-instead-of-device_sc.patch
- 0009-scsi-use-device_remove_file_self-instead-of-device_s.patch
- 0010-s390-use-device_remove_file_self-instead-of-device_s.patch
- 0011-sysfs-driver-core-remove-unused-sysfs-device-_schedu.patch
-
-0001 replaces kernfs_node->u.completion with a hierarchy-wide
-wait_queue_head.  This will be used to fix concurrent removal
-behavior.
-
-0002 fixes premature completion of node removal when multiple removers
-are competing.  This shouldn't matter for the existing sysfs users.
-
-0003-0006 clean up removal path.  The size of kernfs_node is reduced
-by one pointer in the process.
-
-0007 implements kernfs_remove_self() and friends.
-
-0008-0011 convert the existing users of device_schedule_callback() to
-device_remove_file_self() and removes now unused async mechanism.
-
-After the changes, kernfs_node is shrunken by a pointer and LOC goes
-down a bit too.
-
-The patchset is on top of the current linus#master 54c0a4b46150
-("Merge branch 'akpm' (incoming from Andrew)").  While 3.14-rc1 hasn't
-been tagged yet, it's unlikely that the affected code area would
-receive any significant updates in the meantime.  If the patchset
-doesn't apply cleanly on -rc1, I'll post the refreshed version.
-
-The patchset is also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-suicide
-
-diffstat follows.
-
- arch/s390/include/asm/ccwgroup.h |    1
- arch/s390/pci/pci_sysfs.c        |   18 -
- drivers/base/core.c              |   50 +---
- drivers/pci/pci-sysfs.c          |   17 -
- drivers/s390/block/dcssblk.c     |   14 -
- drivers/s390/cio/ccwgroup.c      |   26 +-
- drivers/scsi/scsi_sysfs.c        |   15 -
- fs/kernfs/dir.c                  |  447 +++++++++++++++++++++++----------------
- fs/kernfs/file.c                 |    6
- fs/kernfs/kernfs-internal.h      |   14 -
- fs/kernfs/symlink.c              |    6
- fs/sysfs/file.c                  |  115 ++--------
- include/linux/device.h           |   13 -
- include/linux/kernfs.h           |   18 -
- include/linux/sysfs.h            |   16 -
- 15 files changed, 373 insertions(+), 403 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/<1389117590-25705-1-git-send-email-tj@kernel.org>
-[2] http://lkml.kernel.org/g/<1389361620-5086-1-git-send-email-tj@kernel.org>
-[3] http://lkml.kernel.org/g/<1389362251-8128-1-git-send-email-tj@kernel.org>
