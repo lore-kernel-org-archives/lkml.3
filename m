@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbaA1QWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:22:05 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:65010 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685AbaA1QWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:22:01 -0500
-Message-ID: <52E7D918.5020704@windriver.com>
-Date: Tue, 28 Jan 2014 11:21:44 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755278AbaA1QYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:24:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57873 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753572AbaA1QYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 11:24:42 -0500
+Date: Tue, 28 Jan 2014 17:24:31 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: AMD microcode loading broken on 32 bit
+Message-ID: <20140128162431.GH815@pd.tnic>
+References: <52DE94A9.9060505@oracle.com>
+ <20140121161438.GD9004@pd.tnic>
+ <52DEB4A9.4070707@oracle.com>
+ <20140121182554.GE9004@pd.tnic>
+ <52E15AAE.4090106@oracle.com>
+ <20140123192939.GB11190@pd.tnic>
+ <52E17087.2060301@oracle.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-arch@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linux-m68k@vger.kernel.org>,
-        <rusty@rustcorp.com.au>, <linux-ia64@vger.kernel.org>,
-        <kvm@vger.kernel.org>, <linux-s390@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <torvalds@linux-foundation.org>,
-        <gregkh@linuxfoundation.org>, <linux-alpha@vger.kernel.org>,
-        <sparclinux@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC 00/73] tree-wide: clean up some no longer required
- #include <linux/init.h>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>	 <20140122180023.dd90d34cba38d9f9ac516349@canb.auug.org.au>	 <20140123003838.GA10182@windriver.com> <1390878783.3872.63.camel@pasglop>
-In-Reply-To: <1390878783.3872.63.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52E17087.2060301@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-27 10:13 PM, Benjamin Herrenschmidt wrote:
-> On Wed, 2014-01-22 at 19:38 -0500, Paul Gortmaker wrote:
-> 
->> Thanks, it was a great help as it uncovered a few issues in fringe arch
->> that I didn't have toolchains for, and I've fixed all of those up.
->>
->> I've noticed that powerpc has been un-buildable for a while now; I have
->> used this hack patch locally so I could run the ppc defconfigs to check
->> that I didn't break anything.  Maybe useful for linux-next in the
->> interim?  It is a hack patch -- Not-Signed-off-by: Paul Gortmaker.  :)
-> 
-> Can you and/or Aneesh submit that as a proper patch (with S-O-B
-> etc...) ?
+On Thu, Jan 23, 2014 at 02:41:59PM -0500, Boris Ostrovsky wrote:
+> 32-bit only.
 
-I'd updated toolchains and didn't realize it was still broken.  Patch sent.
+Ok, I think I know what happens. Can you try this one (I missed doing
+this on 32-bit and 64-bit does it, which would explain why it didn't
+explode there):
 
-http://patchwork.ozlabs.org/patch/314749/
+---
+diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+index 8384c0fa206f..03b759401bc1 100644
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -359,7 +359,7 @@ int __init save_microcode_in_initrd_amd(void)
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+ 			ucode_new_rev);
+ 
+-	if (!container)
++	if (!container || !ucode_cpio.data)
+ 		return -EINVAL;
+ 
+ 	eax   = cpuid_eax(0x00000001);
 
-Paul.
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-
-> 
-> Thanks !
-> 
-> Cheers,
-> Ben.
-> 
->> Paul.
->> --
->>
->> diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
->> index d27960c89a71..d0f070a2b395 100644
->> --- a/arch/powerpc/include/asm/pgtable-ppc64.h
->> +++ b/arch/powerpc/include/asm/pgtable-ppc64.h
->> @@ -560,9 +560,9 @@ extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
->>  			    pmd_t *pmdp);
->>  
->>  #define pmd_move_must_withdraw pmd_move_must_withdraw
->> -typedef struct spinlock spinlock_t;
->> -static inline int pmd_move_must_withdraw(spinlock_t *new_pmd_ptl,
->> -					 spinlock_t *old_pmd_ptl)
->> +struct spinlock;
->> +static inline int pmd_move_must_withdraw(struct spinlock *new_pmd_ptl,
->> +					 struct spinlock *old_pmd_ptl)
->>  {
->>  	/*
->>  	 * Archs like ppc64 use pgtable to store per pmd
->>
->> _______________________________________________
->> Linuxppc-dev mailing list
->> Linuxppc-dev@lists.ozlabs.org
->> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
-> 
