@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaA1Kfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:35:43 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:30651 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754571AbaA1Kfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:35:41 -0500
-X-IronPort-AV: E=Sophos;i="4.95,735,1384300800"; 
-   d="scan'208";a="97177002"
-Message-ID: <52E787FA.3080105@citrix.com>
-Date: Tue, 28 Jan 2014 10:35:38 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1754732AbaA1Ki1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:38:27 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:48662 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbaA1KiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 05:38:25 -0500
+Message-ID: <52E7889E.9030706@gmail.com>
+Date: Tue, 28 Jan 2014 11:38:22 +0100
+From: Juri Lelli <juri.lelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Julien Grall <julien.grall@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <patches@linaro.org>
-Subject: Re: [PATCH] xen/events: xen_evtchn_fifo_init can be called very late
-References: <1390869269-12502-1-git-send-email-julien.grall@linaro.org>
-In-Reply-To: <1390869269-12502-1-git-send-email-julien.grall@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org
+CC: peterz@infradead.org, mingo@kernel.org, devel@openvz.org
+Subject: Re: [PATCH v2 -tip] sched/deadline: switched_to_dl() -- skip if task
+ is current
+References: <20140128072421.32315.25300.stgit@tkhai>
+In-Reply-To: <20140128072421.32315.25300.stgit@tkhai>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/14 00:34, Julien Grall wrote:
-> On ARM, xen_init_IRQ (which calls xen_evtchn_fifo_init) is called after
-> all CPUs are online. It would mean that the notifier will never be called.
-
-Why does ARM call xen_init_IRQ() so late?  Is it possible to call it
-earlier when only the boot CPU is online?  There are problems with
-attempting to init FIFO event channels after all CPUs are online.
-
-If evtchn_fifo_init_control_block(cpu) fails on anything other than the
-first CPU, that CPU will be unable to receive any events.  Xen will have
-been switched to FIFO mode and it is not possible to revert back to
-2-level mode.
-
-> Therefore, when a secondary CPU will receive an interrupt, Linux will segfault
-> because the event channel structure for this processor is not initialized.
+On 01/28/2014 08:26 AM, Kirill Tkhai wrote:
+> v2: Changed comment
 > 
-> This can be fixed by calling the init function on every online cpu when the
-> event channel fifo driver is initialized.
+> When p is current and it's not of dl class, then there are no other
+> dl taks in the rq. If we had had pushable tasks in some other rq,
+       ^ tasks
+
+> they would have been pushed earlier. So, skip "p == rq->curr" case.
 > 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+> [This is confirmed by Juri Lelli and LKML was CC'ed, but
+>  unfotunately I can't find direct link on lkml.org]
+> 
+
+This was the story:
+
+> On 01/08/2014 10:00 AM, Juri Lelli wrote:
+>> On 12/18/2013 04:00 PM, Kirill Tkhai wrote:
+>>> 17.12.2013, 16:48, "Peter Zijlstra" <peterz@infradead.org>:
+>>> From: Dario Faggioli <raistlin@linux.it>
+>>>
+>>> Introduces the data structures, constants and symbols needed for
+>>> SCHED_DEADLINE implementation.
+>>
+>> [snipped]
+>>
+>>> +static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>>> +{
+>>> +	/*
+>>> +	 * If p is throttled, don't consider the possibility
+>>> +	 * of preempting rq->curr, the check will be done right
+>>> +	 * after its runtime will get replenished.
+>>> +	 */
+>>> +	if (unlikely(p->dl.dl_throttled))
+>>> +		return;
+>>> +
+>>> +	if (!p->on_rq || rq->curr != p) {
+>>> +		if (task_has_dl_policy(rq->curr))
+>>> +			check_preempt_curr_dl(rq, p, 0);
+>>> +		else
+>>> +			resched_task(rq->curr);
+>>> +	}
+>>> +}
+>>
+>> The second if() looks a little strange. Why is "!p->on_rq ||" here? RT class
+>> has another logic.
+>>
+>
+> You are right, good catch! :)
+>
+> This has to be changed in
+>
+>   if (p->on_rq && rq->curr != p)
+>
+> as in RT.
+>
+> Thanks,
+>
+> - Juri
+
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+> CC: Juri Lelli <juri.lelli@gmail.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Ingo Molnar <mingo@kernel.org>
 > ---
->  drivers/xen/events/events_fifo.c |   11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
+>  kernel/sched/deadline.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/xen/events/events_fifo.c b/drivers/xen/events/events_fifo.c
-> index 1de2a19..15498ab 100644
-> --- a/drivers/xen/events/events_fifo.c
-> +++ b/drivers/xen/events/events_fifo.c
-> @@ -410,12 +410,14 @@ static struct notifier_block evtchn_fifo_cpu_notifier = {
+> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> index 0de2482..dd19d6d 100644
+> --- a/kernel/sched/deadline.c
+> +++ b/kernel/sched/deadline.c
+> @@ -1559,7 +1559,7 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>  	if (unlikely(p->dl.dl_throttled))
+>  		return;
 >  
->  int __init xen_evtchn_fifo_init(void)
->  {
-> -	int cpu = get_cpu();
-> +	int cpu;
->  	int ret;
->  
-> -	ret = evtchn_fifo_init_control_block(cpu);
-> -	if (ret < 0)
-> -		goto out;
-> +	for_each_online_cpu(cpu) {
-> +		ret = evtchn_fifo_init_control_block(cpu);
-> +		if (ret < 0)
-> +			goto out;
+> -	if (p->on_rq || rq->curr != p) {
+> +	if (p->on_rq && rq->curr != p) {
+>  #ifdef CONFIG_SMP
+>  		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
+>  			/* Only reschedule if pushing failed */
+> 
 
-You need to handle this error differently depending on whether the first
-call fails or not.
+So the patch looks good. Not sure about the changelog, though :).
 
-Failure on first CPU: return an error and the caller will fallback to
-using 2-level mode.
+Thanks,
 
-Failure on second or later CPU: you need to offline that CPU.  It may
-not be possible to offline a CPU with standard calls (e.g., cpu_down())
-as it won't have working interrupts.
-
-David
+- Juri
