@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaA1VRC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:17:02 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:53507 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923AbaA1VRA (ORCPT
+	id S1755755AbaA1VRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:17:48 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:47930 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671AbaA1VRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:17:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <52E7FCF1.10705@gmail.com>
-References: <20140128003927.GA27319@www.outflux.net>
-	<52E701BF.9040306@gmail.com>
-	<CAGXu5jLbsx+H5NBY25XxH+cRSejJWZ2-v1fa2-GQ-y3VJa-h0A@mail.gmail.com>
-	<52E7FCF1.10705@gmail.com>
-Date: Tue, 28 Jan 2014 13:16:59 -0800
-X-Google-Sender-Auth: UzWu3nEPZ5U3S59y22kAsUaoOx4
-Message-ID: <CAGXu5jKKMim0M1cpvt4XP5YYzYvBqaSRR8k47zPDkWJCaj4FBw@mail.gmail.com>
-Subject: Re: [PATCH] vsprintf: ignore arguments to %n
-From: Kees Cook <keescook@chromium.org>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Daniel Borkmann <dborkman@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Jan 2014 16:17:22 -0500
+Message-ID: <1390943840.11839.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 2/5] mutex: Modify the way optimistic spinners are
+ queued
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Jason Low <jason.low2@hp.com>, mingo@redhat.com, peterz@infradead.org,
+        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Date: Tue, 28 Jan 2014 13:17:20 -0800
+In-Reply-To: <20140128202334.GO9012@linux.vnet.ibm.com>
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+	 <1390936396-3962-3-git-send-email-jason.low2@hp.com>
+	 <20140128202334.GO9012@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 10:54 AM, Ryan Mallon <rmallon@gmail.com> wrote:
-> On 29/01/14 09:51, Kees Cook wrote:
->
->> On Mon, Jan 27, 2014 at 5:02 PM, Ryan Mallon <rmallon@gmail.com> wrote:
->>> On 28/01/14 11:39, Kees Cook wrote:
->>>> If arguments are consumed without output when encountering %n, it
->>>> could be used to benefit or improve information leak attacks that were
->>>> exposed via a limited size buffer. Since %n is not used by the kernel,
->>>> there is no reason to make an info leak attack any easier.
->>>
->>> I was thinking more like the following. Print the warning if %n is
->>> detected in format_decode(), but otherwise just remove the handling of
->>> %n outright and treat it like any other invalid format specifier.
->>> Something like this completely untested patch. Thoughts?
->>
->> I'd be totally fine with it. Minor typo in the comment before the
->> WARN_ONCE (should be "its" instead of "it"), but otherwise looks good.
->> Consider it:
->>
->> Acked-by: Kees Cook <keescook@chromium.org>
->>
->> It builds and boots fine for me, FWIW.
->>
->> -Kees
->>
->
->
-> It looks like your second version already got added to Andrew's mm tree.
-> I'm happy to repost mine with a fixed typo and proper signed-off by if
-> you'd rather use that version.
+On Tue, 2014-01-28 at 12:23 -0800, Paul E. McKenney wrote:
+> On Tue, Jan 28, 2014 at 11:13:13AM -0800, Jason Low wrote:
+> > ...
+> >  		if (!owner && (need_resched() || rt_task(task)))
+> > -			goto slowpath;
+> > +			break;
+> > 
+> >  		/*
+> >  		 * The cpu_relax() call is a compiler barrier which forces
+> > @@ -514,6 +511,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  		 */
+> >  		arch_mutex_cpu_relax();
+> >  	}
+> > +	mspin_unlock(MLOCK(lock), &node);
+> >  slowpath:
+> 
+> Are there any remaining goto statements to slowpath?  If so, they need
+> to release the lock.  If not, this label should be removed.
 
-I think yours is much cleaner: it entirely removes the %n processing logic.
+We still have the !mutex_can_spin_on_owner case.
 
--Kees
+Thanks,
+Davidlohr
 
--- 
-Kees Cook
-Chrome OS Security
