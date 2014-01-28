@@ -1,108 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564AbaA1TzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 14:55:09 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:43596 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779AbaA1TzH (ORCPT
+	id S1755645AbaA1TzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 14:55:24 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44660 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817AbaA1TzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 14:55:07 -0500
+	Tue, 28 Jan 2014 14:55:21 -0500
+X-IronPort-AV: E=Sophos;i="4.95,737,1384300800"; 
+   d="scan'208";a="95416572"
+Date: Tue, 28 Jan 2014 19:55:14 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Julien Grall <julien.grall@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <patches@linaro.org>,
+        <david.vrabel@citrix.com>
+Subject: Re: [PATCH v2] arm/xen: Initialize event channels earlier
+In-Reply-To: <1390935264-23155-1-git-send-email-julien.grall@linaro.org>
+Message-ID: <alpine.DEB.2.02.1401281954560.4373@kaball.uk.xensource.com>
+References: <1390935264-23155-1-git-send-email-julien.grall@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140128194739.GP15937@n2100.arm.linux.org.uk>
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org>
-	<1390590670-25901-4-git-send-email-yinghai@kernel.org>
-	<CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com>
-	<CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com>
-	<CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com>
-	<20140128171823.GN15937@n2100.arm.linux.org.uk>
-	<CAE9FiQUa3uKZNc=5fiuvcR4bjEeQ3=RuhFVxUyKyMsJwe2YurA@mail.gmail.com>
-	<20140128194739.GP15937@n2100.arm.linux.org.uk>
-Date: Tue, 28 Jan 2014 11:55:05 -0800
-X-Google-Sender-Auth: 3IM4EnERp-Y0hp2qgvQ0js4xQiA
-Message-ID: <CAE9FiQXc5GYK2EnZ3j3STYLy_t8FeUkqeJb+3=bJ7hT9vtORMQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:47 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Jan 28, 2014 at 11:43:02AM -0800, Yinghai Lu wrote:
->> On Tue, Jan 28, 2014 at 9:18 AM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > On Tue, Jan 28, 2014 at 09:12:27AM -0800, Yinghai Lu wrote:
->> >> On Tue, Jan 28, 2014 at 7:30 AM, Kevin Hilman <khilman@linaro.org> wrote:
->> >> > Like Olof, I noticed multiple boot failures on various ARM boards.
->> >> > I've confirmed that reverting the arch/arm part of this patch makes
->> >> > them all happily booting again.
->> >>
->> >> please try attached patch.
->> >
->> > Maybe I'm missing something, but there is no ARCH_LOW_ADDRESS_LIMIT
->> > defined in the ARM header files, so I don't see how adding that
->> > additional include changes anything.
->>
->> there is one for arm64 and s390.
->>
->> arch/arm64/include/asm/processor.h:#define ARCH_LOW_ADDRESS_LIMIT       PHYS_MAS
->> arch/s390/include/asm/processor.h:#define ARCH_LOW_ADDRESS_LIMIT        0x7fffff
->
-> Forgive me being difficult, but how exactly does your patch come anywhere
-> close to sortting out the reported regression by Kevin and Olof, and now
-> myself which is on ARM?
->
-> Your patch adds asm/processor.h to a header file, to allow architectures
-> to override ARCH_LOW_ADDRESS_LIMIT, but there is /no/ override for ARM,
-> so your patch has _zero_ effect there - we still end up with this being
-> 0xffffffff, and we still end up with the thing being unable to boot.
->
-> Maybe you could describe what this ARCH_LOW_ADDRESS_LIMIT is, and what
-> it should be set to - I'm less than clear on how to set this given that
-> we have a multitude of different physical memory layouts - where memory
-> can start at almost any physical address.
+On Tue, 28 Jan 2014, Julien Grall wrote:
+> Event channels driver needs to be initialized very early. Until now, Xen
+> initialization was done after all CPUs was bring up.
+> 
+> We can safely move the initialization to an early initcall.
+> 
+> Also use a cpu notifier to:
+>     - Register the VCPU when the CPU is prepared
+>     - Enable event channel IRQ when the CPU is running
+> 
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
 
-well, I just want to restore the alloc_bootmem_low by following patch.
+Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 9233d2be108f573caa21eb450411bf8fa68cadbb
-Author: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Date:   Tue Jan 21 15:50:47 2014 -0800
 
-    arch/arm/kernel/: use memblock apis for early memory allocations
-
-    Switch to memblock interfaces for early memory allocator instead of
-    bootmem allocator.  No functional change in beahvior than what it is in
-    current code from bootmem users points of view.
-
-    Archs already converted to NO_BOOTMEM now directly use memblock
-    interfaces instead of bootmem wrappers build on top of memblock.  And
-    the archs which still uses bootmem, these new apis just fallback to
-    exiting bootmem APIs.
-
-    Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-...
-@@ -717,7 +717,7 @@ static void __init
-request_standard_resources(const struct machine_desc *mdesc)
-        kernel_data.end     = virt_to_phys(_end - 1);
-
-        for_each_memblock(memory, region) {
--               res = alloc_bootmem_low(sizeof(*res));
-+               res = memblock_virt_alloc(sizeof(*res), 0);
-                res->name  = "System RAM";
-
-but looks like memblock_virt_alloc_low is not the same as alloc_bootmem_low yet.
-
-Let's me check further.
-
-Thanks
-
-Yinghai
+> ---
+>     Changes in v2:
+>         - Check earlier if the event IRQ is valid
+>         - We can safely register the VCPU when the cpu is booting
+> ---
+>  arch/arm/xen/enlighten.c |   71 ++++++++++++++++++++++++++++------------------
+>  1 file changed, 44 insertions(+), 27 deletions(-)
+> 
+> diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> index 293eeea..b96723e 100644
+> --- a/arch/arm/xen/enlighten.c
+> +++ b/arch/arm/xen/enlighten.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/of_address.h>
+>  #include <linux/cpuidle.h>
+>  #include <linux/cpufreq.h>
+> +#include <linux/cpu.h>
+>  
+>  #include <linux/mm.h>
+>  
+> @@ -154,7 +155,7 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+>  }
+>  EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+>  
+> -static void __init xen_percpu_init(void *unused)
+> +static void xen_percpu_init(void)
+>  {
+>  	struct vcpu_register_vcpu_info info;
+>  	struct vcpu_info *vcpup;
+> @@ -193,6 +194,31 @@ static void xen_power_off(void)
+>  		BUG();
+>  }
+>  
+> +static int xen_cpu_notification(struct notifier_block *self,
+> +				unsigned long action,
+> +				void *hcpu)
+> +{
+> +	switch (action) {
+> +	case CPU_STARTING:
+> +		xen_percpu_init();
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block xen_cpu_notifier = {
+> +	.notifier_call = xen_cpu_notification,
+> +};
+> +
+> +static irqreturn_t xen_arm_callback(int irq, void *arg)
+> +{
+> +	xen_hvm_evtchn_do_upcall();
+> +	return IRQ_HANDLED;
+> +}
+> +
+>  /*
+>   * see Documentation/devicetree/bindings/arm/xen.txt for the
+>   * documentation of the Xen Device Tree format.
+> @@ -229,6 +255,10 @@ static int __init xen_guest_init(void)
+>  	xen_events_irq = irq_of_parse_and_map(node, 0);
+>  	pr_info("Xen %s support found, events_irq=%d gnttab_frame=%pa\n",
+>  			version, xen_events_irq, &grant_frames);
+> +
+> +	if (xen_events_irq < 0)
+> +		return -ENODEV;
+> +
+>  	xen_domain_type = XEN_HVM_DOMAIN;
+>  
+>  	xen_setup_features();
+> @@ -281,9 +311,21 @@ static int __init xen_guest_init(void)
+>  	disable_cpuidle();
+>  	disable_cpufreq();
+>  
+> +	xen_init_IRQ();
+> +
+> +	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
+> +			       "events", &xen_vcpu)) {
+> +		pr_err("Error request IRQ %d\n", xen_events_irq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	xen_percpu_init();
+> +
+> +	register_cpu_notifier(&xen_cpu_notifier);
+> +
+>  	return 0;
+>  }
+> -core_initcall(xen_guest_init);
+> +early_initcall(xen_guest_init);
+>  
+>  static int __init xen_pm_init(void)
+>  {
+> @@ -297,31 +339,6 @@ static int __init xen_pm_init(void)
+>  }
+>  late_initcall(xen_pm_init);
+>  
+> -static irqreturn_t xen_arm_callback(int irq, void *arg)
+> -{
+> -	xen_hvm_evtchn_do_upcall();
+> -	return IRQ_HANDLED;
+> -}
+> -
+> -static int __init xen_init_events(void)
+> -{
+> -	if (!xen_domain() || xen_events_irq < 0)
+> -		return -ENODEV;
+> -
+> -	xen_init_IRQ();
+> -
+> -	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
+> -			"events", &xen_vcpu)) {
+> -		pr_err("Error requesting IRQ %d\n", xen_events_irq);
+> -		return -EINVAL;
+> -	}
+> -
+> -	on_each_cpu(xen_percpu_init, NULL, 0);
+> -
+> -	return 0;
+> -}
+> -postcore_initcall(xen_init_events);
+> -
+>  /* In the hypervisor.S file. */
+>  EXPORT_SYMBOL_GPL(HYPERVISOR_event_channel_op);
+>  EXPORT_SYMBOL_GPL(HYPERVISOR_grant_table_op);
+> -- 
+> 1.7.10.4
+> 
