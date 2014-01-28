@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143AbaA1Rw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:52:26 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753894AbaA1RwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:52:25 -0500
-Message-ID: <52E7EE54.8030408@nod.at>
-Date: Tue, 28 Jan 2014 18:52:20 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755353AbaA1RxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:53:18 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60698 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755191AbaA1RxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 12:53:16 -0500
+Date: Tue, 28 Jan 2014 17:53:03 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Daniel Santos <daniel.santos@pobox.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140128175303.GT11841@sirena.org.uk>
+References: <1390901583-32359-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-References: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>	<52E6954F.2060303@nod.at>	<CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>	<20140128062806.GA20750@gmail.com>	<52E76997.40303@nod.at>	<52E7D2E5.8090208@linux.intel.com>	<52E7D9FF.1080506@nod.at>	<52E7DB15.3090808@zytor.com>	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>	<20140128170507.GA16279@gmail.com>	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>	<52E7E7D8.2050605@nod.at> <CA+55aFyYoi_KW5h=RxvjXHe89ZgCifAiS=5DqRnvS=K=Rbitsg@mail.gmail.com>
-In-Reply-To: <CA+55aFyYoi_KW5h=RxvjXHe89ZgCifAiS=5DqRnvS=K=Rbitsg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r3Mh/mGWsojp83Sz"
+Content-Disposition: inline
+In-Reply-To: <1390901583-32359-1-git-send-email-geert@linux-m68k.org>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] Revert "spidev: fix hang when transfer_one_message fails"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.01.2014 18:35, schrieb Linus Torvalds:
-> On Tue, Jan 28, 2014 at 9:24 AM, Richard Weinberger <richard@nod.at> wrote:
->>
->> Hmm, my gdb does not like that notion.
->>
->> (gdb) list schedule+0x45
->> Function "schedule+0x45" not defined.
-> 
-> I don't have a debug build, so maybe it's something specific to gdb
-> actually seeing type information and then being confused..
-> 
-> Can you do "x/10i schedule+0x45" because that definitely works for me.
-> But I literally detest DBUG_INFO builds, because it's useless crap.
-> 99% of everything I debug is from people reporting problems on their
-> kernels, so it's not like my local debug info would match that anyway.
 
-x/10i schedule+0x45 works.
+--r3Mh/mGWsojp83Sz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Anyway, if it's a type information thing due to DEBUG_INFO that
-> confuses gdb and makes it think that the "+0x45" part doesn't make
-> sense, you may need to add a cast to get gdb to ignore the type
-> information. IOW, does
-> 
->   list (void *)schedule + 0x45
-> 
-> work for you?
+On Tue, Jan 28, 2014 at 10:33:03AM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>=20
+> This reverts commit e120cc0dcf2880a4c5c0a6cb27b655600a1cfa1d.
+>=20
+> It causes a NULL pointer dereference with drivers using the generic
+> spi_transfer_one_message(), which always calls
+> spi_finalize_current_message(), which zeroes master->cur_msg.
 
-Nope.
+Applied, thanks.
 
-(gdb) list (void *)schedule + 0x45
-Function "(void *)schedule + 0x45" not defined.
+--r3Mh/mGWsojp83Sz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> I happen to have gdb-7.6.50 here that I tested with, but I've used
-> "symbol+offset" forever afaik, so it's definitely not something new.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-I'm on 7.5.1.
+iQIcBAEBAgAGBQJS5+58AAoJELSic+t+oim9y/cP/RTR1S8jHdE4lUjyYPyxNU4F
+vqujjtGrEOo2YXKlOHsVhS2qF8fXpjTmfSs+mC5VUKo1M70aQZSiGO7k8qOBFGCA
+tlkAxdZq0zrqrTzrLek88NslIA7pO/rkR/u3/IPB7ogL1cPSihCKM92tlUhVJ5qQ
+DcE4jybP6UD3hstmA3VI694IivFmQQrvWDjPtEJCZsfcSllw8hWV+c7oFB8ZF1vJ
+GrHy2RSSD6j5/pM5vUMXSsWtRpSKxpAefCdcwIuqiXjSXoK3NSYNTE6bGyq3sSAE
+9CiNXgdtPp9PduxBAHmKPRXyItHlSP1Z4JVtZr4EQJFnpyGRjuTrBYocMpnFtSUQ
+/M8+rHkxcWOjyIe/hUz9Qco/gunVY1WFNJ8mBR+Y7kGhVr2FjkxaiM47+I4/dZQ1
+ej2m3SYY9em7MaCVSX6/It2JFhoiWvmvs+nHtW62HAUhgTaBiAinVRvUS6xy5J6f
+tJaY1SSsO9Uv8WddqsBdX3bEvRF9nos/RQUg4YRq1wRNbhQqmvcp8tqQxJmcjrzH
+Epsw4v84bMWHGk0s31F+gawQ3451kWD731iecLmzFlAAYsKhrJculnpqukbeaTTv
+MWvzW6vCO1er4hTfao7YL+5R71vjES9QZs4dI3oeDVaSEib/GseNi3nH98p3NKLK
+uPt6K2vyjM0uHlFDLfxf
+=f4AT
+-----END PGP SIGNATURE-----
 
-Thanks,
-//richard
+--r3Mh/mGWsojp83Sz--
