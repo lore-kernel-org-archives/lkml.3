@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321AbaA1AqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:46:17 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:41805 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaA1AqP (ORCPT
+	id S1754669AbaA1AqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:46:24 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:51745 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754337AbaA1AqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:46:15 -0500
+	Mon, 27 Jan 2014 19:46:17 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
@@ -14,9 +14,9 @@ Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 21/21] pinctrl: mvebu: dove: consolidate auto-numbered pmu mpp ranges
-Date: Tue, 28 Jan 2014 01:39:33 +0100
-Message-Id: <1390869573-27624-22-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v2 14/21] pinctrl: mvebu: remove base address from common driver
+Date: Tue, 28 Jan 2014 01:39:26 +0100
+Message-Id: <1390869573-27624-15-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
  <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -24,9 +24,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing a NULL name for pin ranges will auto-generate standard names
-for each pin. With common pinctrl driver now checking NULL name correctly,
-consolidate mpp pins 0-15.
+Common pinctrl driver does not need to know about any addresses now,
+so remove anything related to it from our pinctrl drivers.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -38,37 +37,120 @@ Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pinctrl/mvebu/pinctrl-dove.c | 17 +----------------
- 1 file changed, 1 insertion(+), 16 deletions(-)
+ drivers/pinctrl/mvebu/pinctrl-armada-370.c | 2 +-
+ drivers/pinctrl/mvebu/pinctrl-armada-xp.c  | 2 +-
+ drivers/pinctrl/mvebu/pinctrl-dove.c       | 2 +-
+ drivers/pinctrl/mvebu/pinctrl-kirkwood.c   | 2 +-
+ drivers/pinctrl/mvebu/pinctrl-mvebu.c      | 9 +--------
+ drivers/pinctrl/mvebu/pinctrl-mvebu.h      | 2 +-
+ 6 files changed, 6 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
-index 1823a1a7ec45..3bfea6ccb39d 100644
---- a/drivers/pinctrl/mvebu/pinctrl-dove.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
-@@ -387,22 +387,7 @@ static int dove_twsi_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-370.c b/drivers/pinctrl/mvebu/pinctrl-armada-370.c
+index 5e8e83f57b8e..7e2f0f694210 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-370.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-370.c
+@@ -428,7 +428,7 @@ static int armada_370_pinctrl_probe(struct platform_device *pdev)
+ 
+ 	pdev->dev.platform_data = soc;
+ 
+-	return mvebu_pinctrl_probe(pdev, mpp_base);
++	return mvebu_pinctrl_probe(pdev);
  }
  
- static struct mvebu_mpp_ctrl dove_mpp_controls[] = {
--	MPP_FUNC_CTRL(0, 0, "mpp0", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(1, 1, "mpp1", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(2, 2, "mpp2", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(3, 3, "mpp3", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(4, 4, "mpp4", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(5, 5, "mpp5", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(6, 6, "mpp6", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(7, 7, "mpp7", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(8, 8, "mpp8", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(9, 9, "mpp9", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(10, 10, "mpp10", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(11, 11, "mpp11", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(12, 12, "mpp12", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(13, 13, "mpp13", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(14, 14, "mpp14", dove_pmu_mpp_ctrl),
--	MPP_FUNC_CTRL(15, 15, "mpp15", dove_pmu_mpp_ctrl),
-+	MPP_FUNC_CTRL(0, 15, NULL, dove_pmu_mpp_ctrl),
- 	MPP_FUNC_CTRL(16, 23, NULL, dove_mpp_ctrl),
- 	MPP_FUNC_CTRL(24, 39, "mpp_camera", dove_mpp4_ctrl),
- 	MPP_FUNC_CTRL(40, 45, "mpp_sdio0", dove_mpp4_ctrl),
+ static int armada_370_pinctrl_remove(struct platform_device *pdev)
+diff --git a/drivers/pinctrl/mvebu/pinctrl-armada-xp.c b/drivers/pinctrl/mvebu/pinctrl-armada-xp.c
+index 5cfa00cae490..678a8078d100 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-armada-xp.c
++++ b/drivers/pinctrl/mvebu/pinctrl-armada-xp.c
+@@ -475,7 +475,7 @@ static int armada_xp_pinctrl_probe(struct platform_device *pdev)
+ 
+ 	pdev->dev.platform_data = soc;
+ 
+-	return mvebu_pinctrl_probe(pdev, mpp_base);
++	return mvebu_pinctrl_probe(pdev);
+ }
+ 
+ static int armada_xp_pinctrl_remove(struct platform_device *pdev)
+diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
+index cd55f2ca4e8a..98f8cae72ace 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-dove.c
++++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+@@ -822,7 +822,7 @@ static int dove_pinctrl_probe(struct platform_device *pdev)
+ 	}
+ 	clk_prepare_enable(clk);
+ 
+-	return mvebu_pinctrl_probe(pdev, mpp_base);
++	return mvebu_pinctrl_probe(pdev);
+ }
+ 
+ static int dove_pinctrl_remove(struct platform_device *pdev)
+diff --git a/drivers/pinctrl/mvebu/pinctrl-kirkwood.c b/drivers/pinctrl/mvebu/pinctrl-kirkwood.c
+index 2872f28057fb..9e80e2fe0bda 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-kirkwood.c
++++ b/drivers/pinctrl/mvebu/pinctrl-kirkwood.c
+@@ -492,7 +492,7 @@ static int kirkwood_pinctrl_probe(struct platform_device *pdev)
+ 		return PTR_ERR(mpp_base);
+ 
+ 	pdev->dev.platform_data = (void *)match->data;
+-	return mvebu_pinctrl_probe(pdev, mpp_base);
++	return mvebu_pinctrl_probe(pdev);
+ }
+ 
+ static int kirkwood_pinctrl_remove(struct platform_device *pdev)
+diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+index dd65b8c44b26..7c9533b8b527 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
++++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
+@@ -50,7 +50,6 @@ struct mvebu_pinctrl {
+ 	struct device *dev;
+ 	struct pinctrl_dev *pctldev;
+ 	struct pinctrl_desc desc;
+-	void __iomem *base;
+ 	struct mvebu_pinctrl_group *groups;
+ 	unsigned num_groups;
+ 	struct mvebu_pinctrl_function *functions;
+@@ -546,7 +545,7 @@ static int mvebu_pinctrl_build_functions(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
+-int mvebu_pinctrl_probe(struct platform_device *pdev, void __iomem *base)
++int mvebu_pinctrl_probe(struct platform_device *pdev)
+ {
+ 	struct mvebu_pinctrl_soc_info *soc = dev_get_platdata(&pdev->dev);
+ 	struct mvebu_pinctrl *pctl;
+@@ -554,11 +553,6 @@ int mvebu_pinctrl_probe(struct platform_device *pdev, void __iomem *base)
+ 	unsigned gid, n, k;
+ 	int ret;
+ 
+-	if (!base) {
+-		dev_err(&pdev->dev, "missing base address\n");
+-		return -EINVAL;
+-	}
+-
+ 	if (!soc || !soc->controls || !soc->modes) {
+ 		dev_err(&pdev->dev, "wrong pinctrl soc info\n");
+ 		return -EINVAL;
+@@ -577,7 +571,6 @@ int mvebu_pinctrl_probe(struct platform_device *pdev, void __iomem *base)
+ 	pctl->desc.pmxops = &mvebu_pinmux_ops;
+ 	pctl->desc.confops = &mvebu_pinconf_ops;
+ 	pctl->variant = soc->variant;
+-	pctl->base = base;
+ 	pctl->dev = &pdev->dev;
+ 	platform_set_drvdata(pdev, pctl);
+ 
+diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.h b/drivers/pinctrl/mvebu/pinctrl-mvebu.h
+index 6c8451af95b6..5d3093673e48 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-mvebu.h
++++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.h
+@@ -178,7 +178,7 @@ struct mvebu_pinctrl_soc_info {
+ #define MVEBU_MPP_BITS		4
+ #define MVEBU_MPP_MASK		0xf
+ 
+-int mvebu_pinctrl_probe(struct platform_device *pdev, void __iomem *base);
++int mvebu_pinctrl_probe(struct platform_device *pdev);
+ int mvebu_pinctrl_remove(struct platform_device *pdev);
+ 
+ #endif
 -- 
 1.8.5.2
 
