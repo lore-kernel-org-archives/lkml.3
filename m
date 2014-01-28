@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaA1H0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 02:26:03 -0500
-Received: from relay.parallels.com ([195.214.232.42]:48206 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaA1H0B (ORCPT
+	id S1754651AbaA1HdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 02:33:04 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:60826 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaA1HdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 02:26:01 -0500
-Subject: [PATCH v2 -tip] sched/deadline: switched_to_dl() -- skip if task is
- current
-To: <linux-kernel@vger.kernel.org>
-From: Kirill Tkhai <ktkhai@parallels.com>
-CC: <peterz@infradead.org>, <mingo@kernel.org>, <devel@openvz.org>,
-        <juri.lelli@gmail.com>
-Date: Tue, 28 Jan 2014 11:26:14 +0400
-Message-ID: <20140128072421.32315.25300.stgit@tkhai>
-User-Agent: StGit/0.15
+	Tue, 28 Jan 2014 02:33:02 -0500
+Message-ID: <52E75D23.10909@gmail.com>
+Date: Tue, 28 Jan 2014 15:32:51 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+To: nicolas.dichtel@6wind.com, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, linux-kernel@vger.kernel.org
+Subject: Re: How to identify 6to4 and 6in4 tunnels
+References: <52E63779.5090101@gmail.com> <52E65817.1090904@6wind.com>
+In-Reply-To: <52E65817.1090904@6wind.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: Changed comment
+On 01/27/2014 08:59 PM, Nicolas Dichtel wrote:
+> Le 27/01/2014 11:39, zhuyj a écrit :
+>> Hi, Maintainers
+>>
+>> In our scene, we will create the 6in4/6to4 tunnel firstly and need to 
+>> check the
+>> tunnel type, secondly, we will configure the ip address on it. So, 
+>> Could we have
+>> any way to get the actual tunnel for 6in4 and 6to4 from current linux 
+>> version?
+>>
+>> Both 6in4 and 6to4 have the same protocol “IPPROTO_IPV6” in Linux 
+>> kernel. The
+>> only difference is the ip address on the tunnel. Can we distinguish 
+>> them in
+>> Linux kernel?
+> Just check the prefix, like it is done in check_6rd().
+>
+>
+> Regards,
+> Nicolas
+>
+Hi, Nicolas
 
-When p is current and it's not of dl class, then there are no other
-dl taks in the rq. If we had had pushable tasks in some other rq,
-they would have been pushed earlier. So, skip "p == rq->curr" case.
+Thanks for your reply. Maybe I can configure 6to4 tunnel by the 
+following commands:
 
-[This is confirmed by Juri Lelli and LKML was CC'ed, but
- unfotunately I can't find direct link on lkml.org]
+  ip tunnel add tun6to4 mode sit remote any local 1.202.252.122 ttl 64
+  ip link set dev tun6to4 up
+  ip -6 addr add 2002:01ca:fc7a::0012:0225:2122/128 dev tun6to4
+  ip -6 route add 2000::/3 via ::192.88.99.1 dev tun6to4 metric 1
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-CC: Juri Lelli <juri.lelli@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/deadline.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+But the kernel can not identify the tunnel is 6to4 tunnel or 6in4 tunnel 
+immediately. After the packets travel through this tunnel, the kernel 
+can identify the type of the tunnel by check_6rd.
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 0de2482..dd19d6d 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1559,7 +1559,7 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- 	if (unlikely(p->dl.dl_throttled))
- 		return;
- 
--	if (p->on_rq || rq->curr != p) {
-+	if (p->on_rq && rq->curr != p) {
- #ifdef CONFIG_SMP
- 		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
- 			/* Only reschedule if pushing failed */
+Is it right?
 
+Best Regards!
+Zhu Yanjun
