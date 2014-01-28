@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198AbaA1Uyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:54:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46576 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128AbaA1Uyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:54:44 -0500
-Date: Tue, 28 Jan 2014 12:54:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, "Pavel Machek" <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        "Serge Hallyn" <serge.hallyn@canonical.com>,
-        "Stephen Warren" <swarren@nvidia.com>, "Jens Axboe" <axboe@kernel.dk>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Al Viro" <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v3 1/2] init/do_mounts.c: ignore final \n in
- name_to_dev_t
-Message-Id: <20140128125442.4bac748945b404179deb58ba@linux-foundation.org>
-In-Reply-To: <20140128185926.5312.36635@capellas-linux>
-References: <1380834638-24035-1-git-send-email-sebastian.capella@linaro.org>
-	<1380834638-24035-2-git-send-email-sebastian.capella@linaro.org>
-	<20131003141523.8b60ab988799af7e2b2c338b@linux-foundation.org>
-	<20131003214246.24540.99218@capellas-linux>
-	<20131003234735.19051.84583@capellas-linux>
-	<20131010175010.17870.58060@capellas-linux>
-	<20131022175414.14753.58063@capellas-linux>
-	<20140128185926.5312.36635@capellas-linux>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932219AbaA1U5O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:57:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932128AbaA1U5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:57:13 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140128202754.GI10323@ZenIV.linux.org.uk>
+References: <20140128202754.GI10323@ZenIV.linux.org.uk> <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> <10828.1390940412@warthog.procyon.org.uk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org, Pali Roh??r <pali.rohar@gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+Date: Tue, 28 Jan 2014 20:56:44 +0000
+Message-ID: <28052.1390942604@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014 10:59:26 -0800 Sebastian Capella <sebastian.capella@linaro.org> wrote:
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-> > Do you have any feedback for me on this?
-> > 
-> > I'm happy do make any changes you think are correct, but I'm unsure if
-> > you're asking me for option #3 above.  It's quite an intrusive change,
-> > and changes old, established code and I'd like confirmation that's what
-> > you'd like before proceeding down that path.
-> > 
-> > I've submitted patches with both options #1 and #2 above.
-> > 
-> > Thanks,
-> > 
-> > Sebastian
+> > ... and then making proc_create() only permit regular files (and complain
+> > if the S_IFMT field is not zero)?
 > 
-> Ping.
+> We already do: in proc_create_data() we have
+>         struct proc_dir_entry *pde;
+>         if ((mode & S_IFMT) == 0)
+>                 mode |= S_IFREG;
 > 
-> Sorry for the lapse in attention to this.
+>         if (!S_ISREG(mode)) {
+>                 WARN_ON(1);     /* use proc_mkdir() */
+>                 return NULL;
+>         }
 > 
-> Could you please clarify what is needed for this to be acceptable?
-> I'm a little confused about what is being asked of me.
+> proc_mkdir{,_data,_mode} are there for purpose.  Nobody had been insane
+> enough to put FIFOs or sockets in procfs and anything else would need
+> additional data anyway.  proc_symlink() is there, proc_mknod() isn't and
+> nobody has complained yet.  Let's keep it that way, plese...
 
-The problem is that kernel/power/hibernate.c:resume_store() is handed a
-newline-terminated string, yes?  And if it blindly hands that string
-over to name_to_dev_t(), name_to_dev_t() fails because the string is
-wrong.
+Should we then change the proc_create_data() to do:
 
-This is an oddity of the sysfs->kernel interface and altering
-name_to_dev_t doesn't really seem appropriate for this problem - it
-would be better to fix the caller to pass in the correct string.
+	struct proc_dir_entry *pde;
 
-Something like...
+	if (mode & S_IFMT) {
+		WARN_ON(1);     /* use proc_mkdir() */
+		return NULL;
+	}
+	mode |= S_IFREG;
 
-/*
- * Clean up a string which may have leading and/or trailing whitespace (as
- * defined by isspace()) by trimming off that whitespace.  Returns an address
- * which the caller must kfree(), or NULL on error.
- */
-char *strim_copy(const char *s, gfp_t gfp)
-{
-	char *ret = kstrdup(skip_spaces(s), gfp);
+and stop passing S_IFREG into it?
 
-	if (ret)
-		strim(ret);
-	return ret;
-}
-EXPORT_SYMBOL(strim_copy);
+David
