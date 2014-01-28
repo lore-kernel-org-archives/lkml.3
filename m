@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaA1RXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:23:38 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52136 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790AbaA1RXg (ORCPT
+	id S1755393AbaA1RX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:23:57 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.141]:10735 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755298AbaA1RX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:23:36 -0500
-Message-ID: <52E7E776.30909@ti.com>
-Date: Tue, 28 Jan 2014 12:23:02 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 28 Jan 2014 12:23:56 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-6.tower-179.messagelabs.com!1390929832!36491848!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201401281723.s0SHNmLa041140@swsrvapps-02.lan>
+From: "Anthony Olech <anthony.olech.opensource@diasemi.com>" 
+	<Anthony.Olech.OpenSource@diasemi.com>
+Date: Tue, 28 Jan 2014 16:45:49 +0000
+Subject: [PATCH V1] fix da9052 volatile register definition ommissions
+To: Mark Brown <broonie@kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org> <1390590670-25901-4-git-send-email-yinghai@kernel.org> <CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com> <CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com> <CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com>
-In-Reply-To: <CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 January 2014 12:12 PM, Yinghai Lu wrote:
-> On Tue, Jan 28, 2014 at 7:30 AM, Kevin Hilman <khilman@linaro.org> wrote:
->> > On Tue, Jan 28, 2014 at 12:02 AM, Olof Johansson <olof@lixom.net> wrote:
->>> >> Hi,
->>> >>
->>> >> On Fri, Jan 24, 2014 at 11:11 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>> >>> The new memblock_virt APIs are used to replaced old bootmem API.
->>>> >>>
->>>> >>> We need to allocate page below 4G for swiotlb.
->>>> >>>
->>>> >>> That should fix regression on Andrew's system that is using swiotlb.
->>>> >>>
->>>> >>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>> >>> Cc: Russell King <linux@arm.linux.org.uk>
->>>> >>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> >>
->>> >> This seems to have been merged by Linus tonight as ad6492b80f, and it
->>> >> had fallout on ARM systems (boot failures with no console output on
->>> >> all but 5 of my machine/config combos).
->>> >>
->>> >> Seems like it didn't have a chance to sit in -next, which is somewhat
->>> >> understandable given that it's considered a bugfix and it indeed fixed
->>> >> the bug it was meant to.
->>> >>
->>> >> i'm out of time to debug this tonight (I noticed the failures as I was
->>> >> heading to bed and figured I'd at least bisect them), so I wouldn't
->>> >> mind seeing a revert of the ARM side change of ad6492b80f until it's
->>> >> been sorted out so we keep bisectabilty intact for the rest of the
->>> >> kernel.
->> >
->> > Like Olof, I noticed multiple boot failures on various ARM boards.
->> > I've confirmed that reverting the arch/arm part of this patch makes
->> > them all happily booting again.
-> please try attached patch.
-> 
-> Index: linux-2.6/include/linux/bootmem.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/bootmem.h
-> +++ linux-2.6/include/linux/bootmem.h
-> @@ -179,6 +179,9 @@ static inline void * __init memblock_vir
->                                                     NUMA_NO_NODE);
->  }
-> 
-> +/* Take arch's ARCH_LOW_ADDRESS_LIMIT at first*/
-> +#include <asm/processor.h>
-> +
->  #ifndef ARCH_LOW_ADDRESS_LIMIT
->  #define ARCH_LOW_ADDRESS_LIMIT  0xffffffffUL
->  #endif
+Three of the PMIC registers have some bits that are changed
+autonomously by the PMIC itself (some time) after being set
+by some component driver of the DA9052 PMIC and hence they
+need to be marked as volatile so that the regmap API will
+not cache their values.
 
-This won't help mostly since the ARM 32 arch don't set ARCH_LOW_ADDRESS_LIMIT.
-Sorry i couldn't respond to the thread earlier because of travel and
-don't have access to my board to try out the patches.
-The issue is mostly because on ARM the allocations needs to be limited lowmem and
-that has been ensured using BOOTMEM_ALLOC_ACCESSIBLE in bootmem case and
-MEMBLOCK_ALLOC_ACCESSIBLE in memblock case.
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
+This patch is relative to linux-next repository tag next-20140128
 
-Even though ARM change done to use alloc_low() is correct, it has undesired
-side effect of allocating memory from highmem because of non-use of
-ARCH_LOW_ADDRESS_LIMIT. Setting ARCH_LOW_ADDRESS_LIMIT to MEMBLOCK_ALLOC_ACCESSIBLE
-in ARM case also doesn't seem right.
+The bug that this patch fixes affects two components of DA9052 namely:
 
-Unless you have better idea, backing out the arch/arm change from the
-subject patch seems to be most safe.
+WATCHDOG - the first kick will work but sebsequent ones will not
+           thus the will timeout at 2 x interval.
 
-Regards,
-Ssantosh
+REGULATORS - the first change to any DA9052 BUCK voltage will be
+             actioned, but sebsequent ones will not.
 
+ drivers/mfd/da9052-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-
-
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index 25838f1..e8af816 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -279,6 +279,9 @@ static bool da9052_reg_volatile(struct device *dev, unsigned int reg)
+ 	case DA9052_EVENT_B_REG:
+ 	case DA9052_EVENT_C_REG:
+ 	case DA9052_EVENT_D_REG:
++	case DA9052_CONTROL_B_REG:
++	case DA9052_CONTROL_D_REG:
++	case DA9052_SUPPLY_REG:
+ 	case DA9052_FAULTLOG_REG:
+ 	case DA9052_CHG_TIME_REG:
+ 	case DA9052_ADC_RES_L_REG:
+-- 
+end-of-patch for fix da9052 volatile register definition ommissions V1
 
