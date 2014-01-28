@@ -1,131 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaA1Vxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:53:37 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:34019 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215AbaA1Vxb (ORCPT
+	id S932244AbaA1Vxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:53:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18984 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174AbaA1Vx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:53:31 -0500
-Message-ID: <52E826D4.8020008@gmail.com>
-Date: Wed, 29 Jan 2014 08:53:24 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: kees Cook <keescook@chromium.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
-        Joe Perches <joe@perches.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] vsprintf: Remove %n handling
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jan 2014 16:53:26 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3] x86, irq: get correct available vectors for cpu disable
+Date: Tue, 28 Jan 2014 13:54:05 -0800
+Message-Id: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All in kernel users of %n in format strings have now been removed and
-the %n directive is ignored. Remove the handling of %n so that it is
-treated the same as any other invalid format string directive. Keep a
-warning in place to deter new instances of %n in format strings.
+used_vectors is a bitmap for vectors that are not tracked in per_cpu
+vector_irq.
+used_vectors contains information on the first 32 exceptions, the system vectors.
+the IA32_SYSCALL_VECTOR (0x80), and the IRQ_MOVE_CLEANUP_VECTOR (0x20).
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
+assign_irq_vectors() assigns vectors up to first_system_vector and
+it will not use vectors that are set used_vectors.
+
+This patch modifies the code to scan up to first_system_vector
+and do a test on the used_vectors bitmap.
+
+So count avaiable vectors correctly.
+
+-v2: fix compiling problem.
+-v3: update changelog and commets
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
+ arch/x86/kernel/irq.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 10909c5..7c4c207 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -364,7 +364,6 @@ enum format_type {
- 	FORMAT_TYPE_SHORT,
- 	FORMAT_TYPE_UINT,
- 	FORMAT_TYPE_INT,
--	FORMAT_TYPE_NRCHARS,
- 	FORMAT_TYPE_SIZE_T,
- 	FORMAT_TYPE_PTRDIFF
- };
-@@ -1512,10 +1511,6 @@ qualifier:
- 		return fmt - start;
- 		/* skip alnum */
+Index: linux-2.6/arch/x86/kernel/irq.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/irq.c
++++ linux-2.6/arch/x86/kernel/irq.c
+@@ -17,6 +17,7 @@
+ #include <asm/idle.h>
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
++#include <asm/desc.h>
  
--	case 'n':
--		spec->type = FORMAT_TYPE_NRCHARS;
--		return ++fmt - start;
--
- 	case '%':
- 		spec->type = FORMAT_TYPE_PERCENT_CHAR;
- 		return ++fmt - start;
-@@ -1538,6 +1533,15 @@ qualifier:
- 	case 'u':
- 		break;
- 
-+	case 'n':
-+		/*
-+		 * Since %n poses a greater security risk than utility, treat
-+		 * it as an invalid format specifier. Warn about its use so
-+		 * that new instances don't get added.
-+		 */
-+		WARN_ONCE(1, "Please remove ignored %%n in '%s'\n", fmt);
-+		/* Fall-through */
+ #define CREATE_TRACE_POINTS
+ #include <asm/trace/irq_vectors.h>
+@@ -321,8 +322,21 @@ int check_irq_vectors_for_cpu_disable(vo
+ 	for_each_online_cpu(cpu) {
+ 		if (cpu == this_cpu)
+ 			continue;
+-		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+-		     vector++) {
 +
- 	default:
- 		spec->type = FORMAT_TYPE_INVALID;
- 		return fmt - start;
-@@ -1711,20 +1715,6 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
- 			++str;
- 			break;
- 
--		case FORMAT_TYPE_NRCHARS: {
--			/*
--			 * Since %n poses a greater security risk than
--			 * utility, ignore %n and skip its argument.
--			 */
--			void *skip_arg;
--
--			WARN_ONCE(1, "Please remove ignored %%n in '%s'\n",
--					old_fmt);
--
--			skip_arg = va_arg(args, void *);
--			break;
--		}
--
- 		default:
- 			switch (spec.type) {
- 			case FORMAT_TYPE_LONG_LONG:
-@@ -1999,19 +1989,6 @@ do {									\
- 				fmt++;
- 			break;
- 
--		case FORMAT_TYPE_NRCHARS: {
--			/* skip %n 's argument */
--			u8 qualifier = spec.qualifier;
--			void *skip_arg;
--			if (qualifier == 'l')
--				skip_arg = va_arg(args, long *);
--			else if (_tolower(qualifier) == 'z')
--				skip_arg = va_arg(args, size_t *);
--			else
--				skip_arg = va_arg(args, int *);
--			break;
--		}
--
- 		default:
- 			switch (spec.type) {
- 
-@@ -2170,10 +2147,6 @@ int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf)
- 			++str;
- 			break;
- 
--		case FORMAT_TYPE_NRCHARS:
--			/* skip */
--			break;
--
- 		default: {
- 			unsigned long long num;
- 
-
++		/*
++		 * assign_irq_vector() only scan per_cpu vectors from
++		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
++		 * It aslo skip vectors that are set in used_vectors bitmask.
++		 * used_vectors could have bits set for
++		 *	IA32_SYSCALL_VECTOR (0x80)
++		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
++		 * Don't count those as available vectors.
++		 */
++		for (vector = FIRST_EXTERNAL_VECTOR;
++		     vector < first_system_vector; vector++) {
++			if (test_bit(vector, used_vectors))
++				continue;
++
+ 			if (per_cpu(vector_irq, cpu)[vector] < 0)
+ 				count++;
+ 		}
