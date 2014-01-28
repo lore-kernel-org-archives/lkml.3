@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaA1U2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:28:42 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755299AbaA1U2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:28:41 -0500
-Message-ID: <52E812F4.50906@nod.at>
-Date: Tue, 28 Jan 2014 21:28:36 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1755650AbaA1UeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:34:20 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25834 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755478AbaA1UeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:34:19 -0500
+Message-ID: <52E81474.8020304@oracle.com>
+Date: Tue, 28 Jan 2014 15:35:00 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-References: <20140128062806.GA20750@gmail.com>	<52E76997.40303@nod.at>	<52E7D2E5.8090208@linux.intel.com>	<52E7D9FF.1080506@nod.at>	<52E7DB15.3090808@zytor.com>	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>	<20140128170507.GA16279@gmail.com>	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>	<20140128194823.GA18702@gmail.com>	<CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>	<20140128201536.GB5178@pd.tnic> <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] xen-blkback: bug fixes
+References: <1390931015-5490-1-git-send-email-roger.pau@citrix.com> <20140128193837.GA32072@andromeda.dapyr.net>
+In-Reply-To: <20140128193837.GA32072@andromeda.dapyr.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.01.2014 21:25, schrieb Linus Torvalds:
-> On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
->>
->> Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
->> Something like:
->>
->> "You don't need to enable this if you want symbolic names for kernel
->> objects. Enable CONFIG_KALLSYMS instead."
-> 
-> Probably. And then we should make sure that allyesconfig/allmodconfig
-> don't pick it.
+On 01/28/2014 02:38 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jan 28, 2014 at 06:43:32PM +0100, Roger Pau Monne wrote:
+>> blkback bug fixes for memory leaks (patches 1 and 2) and a race
+>> (patch 3).
+> They all look OK to me. I've stuck them in my 'stable/for-jens-3.14'
+> branch and are testing them now (hadn't pushed it yet).
+>
+> Matt and Matt,
+>
+> Could you take a look at the other two patches as well?
+>
+> David, Boris,
+>
+> Are you OK with pushing those patches out to Jens Axboe if nobody
+> gives an NACK by Friday?
 
-Let's make it depend on CONFIG_EXPERT.
+The patches look reasonable to me so I don't have any objections (but
+I am not particularly familiar with this code.)
 
-Thanks,
-//richard
+-boris
