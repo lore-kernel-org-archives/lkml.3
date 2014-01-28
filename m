@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaA1RX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:23:57 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.141]:10735 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755298AbaA1RX4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:23:56 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-6.tower-179.messagelabs.com!1390929832!36491848!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201401281723.s0SHNmLa041140@swsrvapps-02.lan>
-From: "Anthony Olech <anthony.olech.opensource@diasemi.com>" 
-	<Anthony.Olech.OpenSource@diasemi.com>
-Date: Tue, 28 Jan 2014 16:45:49 +0000
-Subject: [PATCH V1] fix da9052 volatile register definition ommissions
-To: Mark Brown <broonie@kernel.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
+	id S1755432AbaA1RYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:24:05 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:32869 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755298AbaA1RYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 12:24:01 -0500
+Message-ID: <52E7E79D.30709@ti.com>
+Date: Tue, 28 Jan 2014 12:23:41 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Yinghai Lu <yinghai@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
+References: <1390590670-25901-1-git-send-email-yinghai@kernel.org> <1390590670-25901-4-git-send-email-yinghai@kernel.org> <CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com> <CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com> <CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com> <20140128171823.GN15937@n2100.arm.linux.org.uk>
+In-Reply-To: <20140128171823.GN15937@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Three of the PMIC registers have some bits that are changed
-autonomously by the PMIC itself (some time) after being set
-by some component driver of the DA9052 PMIC and hence they
-need to be marked as volatile so that the regmap API will
-not cache their values.
+On Tuesday 28 January 2014 12:18 PM, Russell King - ARM Linux wrote:
+> On Tue, Jan 28, 2014 at 09:12:27AM -0800, Yinghai Lu wrote:
+>> On Tue, Jan 28, 2014 at 7:30 AM, Kevin Hilman <khilman@linaro.org> wrote:
+>>> Like Olof, I noticed multiple boot failures on various ARM boards.
+>>> I've confirmed that reverting the arch/arm part of this patch makes
+>>> them all happily booting again.
+>>
+>> please try attached patch.
+> 
+> Maybe I'm missing something, but there is no ARCH_LOW_ADDRESS_LIMIT
+> defined in the ARM header files, so I don't see how adding that
+> additional include changes anything.
+> 
+Our emails crossed... You are right. It won't help.
 
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
----
-This patch is relative to linux-next repository tag next-20140128
-
-The bug that this patch fixes affects two components of DA9052 namely:
-
-WATCHDOG - the first kick will work but sebsequent ones will not
-           thus the will timeout at 2 x interval.
-
-REGULATORS - the first change to any DA9052 BUCK voltage will be
-             actioned, but sebsequent ones will not.
-
- drivers/mfd/da9052-core.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-index 25838f1..e8af816 100644
---- a/drivers/mfd/da9052-core.c
-+++ b/drivers/mfd/da9052-core.c
-@@ -279,6 +279,9 @@ static bool da9052_reg_volatile(struct device *dev, unsigned int reg)
- 	case DA9052_EVENT_B_REG:
- 	case DA9052_EVENT_C_REG:
- 	case DA9052_EVENT_D_REG:
-+	case DA9052_CONTROL_B_REG:
-+	case DA9052_CONTROL_D_REG:
-+	case DA9052_SUPPLY_REG:
- 	case DA9052_FAULTLOG_REG:
- 	case DA9052_CHG_TIME_REG:
- 	case DA9052_ADC_RES_L_REG:
--- 
-end-of-patch for fix da9052 volatile register definition ommissions V1
-
+Regards,
+Santosh
