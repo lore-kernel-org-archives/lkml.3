@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaA1UXn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:23:43 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:49487 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671AbaA1UXm (ORCPT
+	id S1755762AbaA1UYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:24:12 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39982 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719AbaA1UYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:23:42 -0500
-Date: Tue, 28 Jan 2014 12:23:34 -0800
+	Tue, 28 Jan 2014 15:24:11 -0500
+Date: Tue, 28 Jan 2014 12:24:07 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Jason Low <jason.low2@hp.com>
 Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
@@ -18,124 +18,128 @@ Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
         chegu_vinod@hp.com
 Subject: Re: [PATCH v2 2/5] mutex: Modify the way optimistic spinners are
  queued
-Message-ID: <20140128202334.GO9012@linux.vnet.ibm.com>
+Message-ID: <20140128202407.GA26416@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
  <1390936396-3962-3-git-send-email-jason.low2@hp.com>
+ <20140128202334.GO9012@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390936396-3962-3-git-send-email-jason.low2@hp.com>
+In-Reply-To: <20140128202334.GO9012@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012820-1344-0000-0000-0000054718D5
+x-cbid: 14012820-0928-0000-0000-000005CA59ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:13:13AM -0800, Jason Low wrote:
-> The mutex->spin_mlock was introduced in order to ensure that only 1 thread
-> spins for lock acquisition at a time to reduce cache line contention. When
-> lock->owner is NULL and the lock->count is still not 1, the spinner(s) will
-> continually release and obtain the lock->spin_mlock. This can generate
-> quite a bit of overhead/contention, and also might just delay the spinner
-> from getting the lock.
+On Tue, Jan 28, 2014 at 12:23:34PM -0800, Paul E. McKenney wrote:
+> On Tue, Jan 28, 2014 at 11:13:13AM -0800, Jason Low wrote:
+> > The mutex->spin_mlock was introduced in order to ensure that only 1 thread
+> > spins for lock acquisition at a time to reduce cache line contention. When
+> > lock->owner is NULL and the lock->count is still not 1, the spinner(s) will
+> > continually release and obtain the lock->spin_mlock. This can generate
+> > quite a bit of overhead/contention, and also might just delay the spinner
+> > from getting the lock.
+> > 
+> > This patch modifies the way optimistic spinners are queued by queuing before
+> > entering the optimistic spinning loop as oppose to acquiring before every
+> > call to mutex_spin_on_owner(). So in situations where the spinner requires
+> > a few extra spins before obtaining the lock, then there will only be 1 spinner
+> > trying to get the lock and it will avoid the overhead from unnecessarily
+> > unlocking and locking the spin_mlock.
+> > 
+> > Signed-off-by: Jason Low <jason.low2@hp.com>
 > 
-> This patch modifies the way optimistic spinners are queued by queuing before
-> entering the optimistic spinning loop as oppose to acquiring before every
-> call to mutex_spin_on_owner(). So in situations where the spinner requires
-> a few extra spins before obtaining the lock, then there will only be 1 spinner
-> trying to get the lock and it will avoid the overhead from unnecessarily
-> unlocking and locking the spin_mlock.
-> 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
+> One question below.  Also, this might well have a visible effect on
+> performance, so would be good to see the numbers.
 
-One question below.  Also, this might well have a visible effect on
-performance, so would be good to see the numbers.
+Never mind, I see the numbers in your patch 0.  :-/
 
 							Thanx, Paul
 
-> ---
->  kernel/locking/mutex.c |   16 +++++++---------
->  1 files changed, 7 insertions(+), 9 deletions(-)
+> > ---
+> >  kernel/locking/mutex.c |   16 +++++++---------
+> >  1 files changed, 7 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> > index 85c6be1..7519d27 100644
+> > --- a/kernel/locking/mutex.c
+> > +++ b/kernel/locking/mutex.c
+> > @@ -419,6 +419,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  	struct mutex_waiter waiter;
+> >  	unsigned long flags;
+> >  	int ret;
+> > +	struct mspin_node node;
+> > 
+> >  	preempt_disable();
+> >  	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+> > @@ -449,9 +450,9 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  	if (!mutex_can_spin_on_owner(lock))
+> >  		goto slowpath;
+> > 
+> > +	mspin_lock(MLOCK(lock), &node);
+> >  	for (;;) {
+> >  		struct task_struct *owner;
+> > -		struct mspin_node  node;
+> > 
+> >  		if (use_ww_ctx && ww_ctx->acquired > 0) {
+> >  			struct ww_mutex *ww;
+> > @@ -466,19 +467,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  			 * performed the optimistic spinning cannot be done.
+> >  			 */
+> >  			if (ACCESS_ONCE(ww->ctx))
+> > -				goto slowpath;
+> > +				break;
+> >  		}
+> > 
+> >  		/*
+> >  		 * If there's an owner, wait for it to either
+> >  		 * release the lock or go to sleep.
+> >  		 */
+> > -		mspin_lock(MLOCK(lock), &node);
+> >  		owner = ACCESS_ONCE(lock->owner);
+> > -		if (owner && !mutex_spin_on_owner(lock, owner)) {
+> > -			mspin_unlock(MLOCK(lock), &node);
+> > -			goto slowpath;
+> > -		}
+> > +		if (owner && !mutex_spin_on_owner(lock, owner))
+> > +			break;
+> > 
+> >  		if ((atomic_read(&lock->count) == 1) &&
+> >  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+> > @@ -495,7 +493,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  			preempt_enable();
+> >  			return 0;
+> >  		}
+> > -		mspin_unlock(MLOCK(lock), &node);
+> > 
+> >  		/*
+> >  		 * When there's no owner, we might have preempted between the
+> > @@ -504,7 +501,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  		 * the owner complete.
+> >  		 */
+> >  		if (!owner && (need_resched() || rt_task(task)))
+> > -			goto slowpath;
+> > +			break;
+> > 
+> >  		/*
+> >  		 * The cpu_relax() call is a compiler barrier which forces
+> > @@ -514,6 +511,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+> >  		 */
+> >  		arch_mutex_cpu_relax();
+> >  	}
+> > +	mspin_unlock(MLOCK(lock), &node);
+> >  slowpath:
 > 
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index 85c6be1..7519d27 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -419,6 +419,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  	struct mutex_waiter waiter;
->  	unsigned long flags;
->  	int ret;
-> +	struct mspin_node node;
+> Are there any remaining goto statements to slowpath?  If so, they need
+> to release the lock.  If not, this label should be removed.
 > 
->  	preempt_disable();
->  	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
-> @@ -449,9 +450,9 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  	if (!mutex_can_spin_on_owner(lock))
->  		goto slowpath;
-> 
-> +	mspin_lock(MLOCK(lock), &node);
->  	for (;;) {
->  		struct task_struct *owner;
-> -		struct mspin_node  node;
-> 
->  		if (use_ww_ctx && ww_ctx->acquired > 0) {
->  			struct ww_mutex *ww;
-> @@ -466,19 +467,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  			 * performed the optimistic spinning cannot be done.
->  			 */
->  			if (ACCESS_ONCE(ww->ctx))
-> -				goto slowpath;
-> +				break;
->  		}
-> 
->  		/*
->  		 * If there's an owner, wait for it to either
->  		 * release the lock or go to sleep.
->  		 */
-> -		mspin_lock(MLOCK(lock), &node);
->  		owner = ACCESS_ONCE(lock->owner);
-> -		if (owner && !mutex_spin_on_owner(lock, owner)) {
-> -			mspin_unlock(MLOCK(lock), &node);
-> -			goto slowpath;
-> -		}
-> +		if (owner && !mutex_spin_on_owner(lock, owner))
-> +			break;
-> 
->  		if ((atomic_read(&lock->count) == 1) &&
->  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
-> @@ -495,7 +493,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  			preempt_enable();
->  			return 0;
->  		}
-> -		mspin_unlock(MLOCK(lock), &node);
-> 
->  		/*
->  		 * When there's no owner, we might have preempted between the
-> @@ -504,7 +501,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		 * the owner complete.
->  		 */
->  		if (!owner && (need_resched() || rt_task(task)))
-> -			goto slowpath;
-> +			break;
-> 
->  		/*
->  		 * The cpu_relax() call is a compiler barrier which forces
-> @@ -514,6 +511,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		 */
->  		arch_mutex_cpu_relax();
->  	}
-> +	mspin_unlock(MLOCK(lock), &node);
->  slowpath:
-
-Are there any remaining goto statements to slowpath?  If so, they need
-to release the lock.  If not, this label should be removed.
-
->  #endif
->  	spin_lock_mutex(&lock->wait_lock, flags);
-> -- 
-> 1.7.1
-> 
+> >  #endif
+> >  	spin_lock_mutex(&lock->wait_lock, flags);
+> > -- 
+> > 1.7.1
+> > 
 
