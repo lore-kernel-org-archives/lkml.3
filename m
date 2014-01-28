@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbaA1UjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:39:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35087 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754497AbaA1UjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:39:12 -0500
-Message-ID: <52E8153A.2000208@zytor.com>
-Date: Tue, 28 Jan 2014 12:38:18 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755508AbaA1UnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:43:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21256 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497AbaA1UnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:43:18 -0500
+Message-ID: <52E8168D.9060805@oracle.com>
+Date: Tue, 28 Jan 2014 15:43:57 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-References: <20140128062806.GA20750@gmail.com>	<52E76997.40303@nod.at>	<52E7D2E5.8090208@linux.intel.com>	<52E7D9FF.1080506@nod.at>	<52E7DB15.3090808@zytor.com>	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>	<20140128170507.GA16279@gmail.com>	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>	<20140128194823.GA18702@gmail.com>	<CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>	<20140128201536.GB5178@pd.tnic> <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com> <52E812F4.50906@nod.at>
-In-Reply-To: <52E812F4.50906@nod.at>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: AMD microcode loading broken on 32 bit
+References: <52DE94A9.9060505@oracle.com> <20140121161438.GD9004@pd.tnic> <52DEB4A9.4070707@oracle.com> <20140121182554.GE9004@pd.tnic> <52E15AAE.4090106@oracle.com> <20140123192939.GB11190@pd.tnic> <52E17087.2060301@oracle.com> <20140128162431.GH815@pd.tnic>
+In-Reply-To: <20140128162431.GH815@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 12:28 PM, Richard Weinberger wrote:
-> Am 28.01.2014 21:25, schrieb Linus Torvalds:
->> On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
->>>
->>> Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
->>> Something like:
->>>
->>> "You don't need to enable this if you want symbolic names for kernel
->>> objects. Enable CONFIG_KALLSYMS instead."
->>
->> Probably. And then we should make sure that allyesconfig/allmodconfig
->> don't pick it.
-> 
-> Let's make it depend on CONFIG_EXPERT.
-> 
+On 01/28/2014 11:24 AM, Borislav Petkov wrote:
+> On Thu, Jan 23, 2014 at 02:41:59PM -0500, Boris Ostrovsky wrote:
+>> 32-bit only.
+> Ok, I think I know what happens. Can you try this one (I missed doing
+> this on 32-bit and 64-bit does it, which would explain why it didn't
+> explode there):
+>
+> ---
+> diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+> index 8384c0fa206f..03b759401bc1 100644
+> --- a/arch/x86/kernel/cpu/microcode/amd_early.c
+> +++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+> @@ -359,7 +359,7 @@ int __init save_microcode_in_initrd_amd(void)
+>   		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+>   			ucode_new_rev);
+>   
+> -	if (!container)
+> +	if (!container || !ucode_cpio.data)
+>   		return -EINVAL;
+>   
+>   	eax   = cpuid_eax(0x00000001);
 
-That doesn't solve all*config.  My scripts for all*config just overrides
-it, maybe we need to do something like that by default?
 
-	-hpa
+It fixes the case when there is no microcode in initrd but when 
+microcode is corrupted (as was the case when we were pointing to Intel 
+binary) we still die. Neither container nor ucode_cpio.data is NULL in 
+this case.
 
-
+-boris
