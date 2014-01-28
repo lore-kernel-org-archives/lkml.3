@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828AbaA1JKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:10:55 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38564 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaA1JKv (ORCPT
+	id S1754810AbaA1JQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:16:17 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:14140 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbaA1JQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:10:51 -0500
-Date: Tue, 28 Jan 2014 01:10:45 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tang Chen <tangchen@cn.fujitsu.com>
-cc: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        Andrew Morton <akpm@linux-foundation.org>, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] numa, mem-hotplug: Initialize numa_kernel_nodes in
- numa_clear_kernel_node_hotplug().
-In-Reply-To: <1390899916-23566-2-git-send-email-tangchen@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1401280109360.4244@chino.kir.corp.google.com>
-References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com> <1390899916-23566-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 28 Jan 2014 04:16:13 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfstAo5SQMel8AXawDOUvwr8pxjMon91SD6m7JJcBA==
+X-RZG-CLASS-ID: mo00
+Date: Tue, 28 Jan 2014 10:16:07 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Please pull powerpc.git next branch
+Message-ID: <20140128091607.GA24288@aepfle.de>
+References: <1390883744.3872.76.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1390883744.3872.76.camel@pasglop>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014, Tang Chen wrote:
+On Tue, Jan 28, Benjamin Herrenschmidt wrote:
 
-> On-stack variable numa_kernel_nodes in numa_clear_kernel_node_hotplug()
-> was not initialized. So we need to initialize it.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> So here's my next branch for powerpc. A bit late as I was on vacation
 
-Reported-by: David Rientjes <rientjes@google.com>
+This breaks booting on G5 11,2, the nouveau driver prints errors and as
+result the kernel hangs, fans kick in. This is what I did:
 
-> ---
->  arch/x86/mm/numa.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index 81b2750..00c9f09 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -569,6 +569,8 @@ static void __init numa_clear_kernel_node_hotplug(void)
->  	unsigned long start, end;
->  	struct memblock_type *type = &memblock.reserved;
->  
-> +	nodes_clear(numa_kernel_nodes)
+# Rebase 54c0a4b..b2e448e onto 54c0a4b
 
-Just initialize it with NODE_MASK_NONE.
+I will try to bisect it.
 
-> +
->  	/* Mark all kernel nodes. */
->  	for (i = 0; i < type->cnt; i++)
->  		node_set(type->regions[i].nid, numa_kernel_nodes);
+Olaf
