@@ -1,69 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaA1TsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 14:48:04 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51253 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755466AbaA1TsC (ORCPT
+	id S1755625AbaA1Ts3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 14:48:29 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:40718 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299AbaA1Ts1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 14:48:02 -0500
-Date: Tue, 28 Jan 2014 19:47:40 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-Message-ID: <20140128194739.GP15937@n2100.arm.linux.org.uk>
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org> <1390590670-25901-4-git-send-email-yinghai@kernel.org> <CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com> <CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com> <CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com> <20140128171823.GN15937@n2100.arm.linux.org.uk> <CAE9FiQUa3uKZNc=5fiuvcR4bjEeQ3=RuhFVxUyKyMsJwe2YurA@mail.gmail.com>
+	Tue, 28 Jan 2014 14:48:27 -0500
+Date: Tue, 28 Jan 2014 20:48:23 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140128194823.GA18702@gmail.com>
+References: <52E6954F.2060303@nod.at>
+ <CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>
+ <20140128062806.GA20750@gmail.com>
+ <52E76997.40303@nod.at>
+ <52E7D2E5.8090208@linux.intel.com>
+ <52E7D9FF.1080506@nod.at>
+ <52E7DB15.3090808@zytor.com>
+ <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+ <20140128170507.GA16279@gmail.com>
+ <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUa3uKZNc=5fiuvcR4bjEeQ3=RuhFVxUyKyMsJwe2YurA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:43:02AM -0800, Yinghai Lu wrote:
-> On Tue, Jan 28, 2014 at 9:18 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Tue, Jan 28, 2014 at 09:12:27AM -0800, Yinghai Lu wrote:
-> >> On Tue, Jan 28, 2014 at 7:30 AM, Kevin Hilman <khilman@linaro.org> wrote:
-> >> > Like Olof, I noticed multiple boot failures on various ARM boards.
-> >> > I've confirmed that reverting the arch/arm part of this patch makes
-> >> > them all happily booting again.
-> >>
-> >> please try attached patch.
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Tue, Jan 28, 2014 at 9:05 AM, Ingo Molnar <mingo@kernel.org> wrote:
 > >
-> > Maybe I'm missing something, but there is no ARCH_LOW_ADDRESS_LIMIT
-> > defined in the ARM header files, so I don't see how adding that
-> > additional include changes anything.
+> > Well, I often use the hex numbers to look them up and disassemble them
+> > in a vmlinux via gdb and 'list *0x1234123412341234' - where the
+> > vmlinux has no debuginfo. (Debuginfo takes longer to build so I
+> > generally build without it.)
 > 
-> there is one for arm64 and s390.
+> Why the heck wouldn't you do that? Just do
 > 
-> arch/arm64/include/asm/processor.h:#define ARCH_LOW_ADDRESS_LIMIT       PHYS_MAS
-> arch/s390/include/asm/processor.h:#define ARCH_LOW_ADDRESS_LIMIT        0x7fffff
+>    list schedule+0x45
+> 
+> instead.
+> 
+> > AFAICS this won't work in a symbol-less vmlinux. Is there some trick
+> > to do it with gdb?
+> 
+> Why would you have a symbol-less vmlinux? The only reason to strip 
+> vmlinux is because you were crazy enough to build with 
 
-Forgive me being difficult, but how exactly does your patch come anywhere
-close to sortting out the reported regression by Kevin and Olof, and now
-myself which is on ARM?
+I don't think I ever stripped a vmlinux in my life, and I definitely 
+didn't strip this one:
 
-Your patch adds asm/processor.h to a header file, to allow architectures
-to override ARCH_LOW_ADDRESS_LIMIT, but there is /no/ override for ARM,
-so your patch has _zero_ effect there - we still end up with this being
-0xffffffff, and we still end up with the thing being unable to boot.
+  phoenix:~/linux/linux> file vmlinux
+  vmlinux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=0x239d56b40bb654ddd2dd704e6b585d5c90de4e12, not stripped
 
-Maybe you could describe what this ARCH_LOW_ADDRESS_LIMIT is, and what
-it should be set to - I'm less than clear on how to set this given that
-we have a multitude of different physical memory layouts - where memory
-can start at almost any physical address.
+> CONFIG_DEBUG_INFO and the damn debug info is so large that it won't 
+> fit on your root partition. But dammit, if you build with debug_info 
+> and then strip the end result, you're just insane. [...]
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+So, to quote myself from 2 sentences ago:
+
+> > vmlinux has no debuginfo. (Debuginfo takes longer to build so I 
+> > generally build without it.)
+
+I really meant it when I said I build without debuginfo! :)
+
+So, when I build a kernel, such as with a regular 'make defconfig', 
+the following happens in gdb:
+
+  Reading symbols from /home/mingo/tip/vmlinux...(no debugging symbols found)...done.
+  (gdb) list schedule+0x45
+  No symbol table is loaded.  Use the "file" command.
+
+Is there a way to resolve schedule+0x45 in a regular vmlinux? It was 
+an honest question.
+
+> [...] You made your build take ten times longer, use ten times more 
+> diskspace, and then you throw it all away. Crazy.
+
+It's so crazy that I in fact try to force off debuginfo for all my 
+builds, even randconfig ones:
+
+  config DEBUG_INFO
+        bool "Compile the kernel with debug info"
+        depends on DEBUG_KERNEL
+        # too slow build in QA
+        depends on 0
+
+> So I don't think the symbol-less version is worth even worrying 
+> about. You do want to build with KALLSYMS (or whatever the config 
+> option is called), so that the symbolic name is worth something, but 
+> once you have the symbolc name, you're good unless you did something 
+> terminally stupid.
+
+Hm, I have kallsyms on - it's a regular 'make defconfig':
+
+  phoenix:~/linux/linux> grep KALL .config
+  CONFIG_KALLSYMS=y
+
+I might be doing something terminally stupid.
+
+> Btw, we should make it harder to enable CONFIG_DEBUG_INFO. [...]
+
+It's really not set:
+
+  phoenix:~/linux/linux> grep DEBUG_INFO .config
+  # CONFIG_DEBUG_INFO is not set
+
+> [...] It's a f*cking pain. It's particularly nasty when you do "make 
+> allmodconfig" and it enables debug-info and makes the build take 
+> forever and waste diskspace - but nobody sane actually *boots* the 
+> end result, so that debug info is all pointless.
+
+I actually boot (almost-)allmod and allyesconfigs - still I disable 
+DEBUG_INFO because it's such a strain on our planet's climate.
+
+Thanks,
+
+	Ingo
