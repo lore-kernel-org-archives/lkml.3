@@ -1,105 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949AbaA1Xy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:54:56 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:48667 "EHLO
+	id S932310AbaA1XzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:55:13 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:36501 "EHLO
 	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaA1Xyx (ORCPT
+	with ESMTP id S1756139AbaA1XzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:54:53 -0500
+	Tue, 28 Jan 2014 18:55:09 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.15] cgroup: convert to kernfs
-Date: Tue, 28 Jan 2014 18:54:32 -0500
-Message-Id: <1390953285-16360-1-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 11/13] cgroup: misc preps for kernfs conversion
+Date: Tue, 28 Jan 2014 18:54:43 -0500
+Message-Id: <1390953285-16360-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
+References: <1390953285-16360-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Un-inline seq_css().  After kernfs conversion, the function will
+  need to dereference internal data structures.
 
-cgroup filesystem code was derived from the original sysfs
-implementation which was heavily intertwined with vfs objects and
-locking with the goal of re-using the existing vfs infrastructure.
-That experiment turned out rather disastrous and sysfs switched, a
-long time ago, to distributed filesystem model where a separate
-representation is maintained which is queried by vfs.  Unfortunately,
-cgroup stuck with the failed experiment all these years and
-accumulated even more problems over time.
+* Add cgroup_get/put_root() and replace direct super_block->s_active
+  manipulatinos with them.  These will be converted to kernfs_root
+  refcnting.
 
-Locking and object lifetime management being entangled with vfs is
-probably the most egregious.  vfs was never designed to be misused
-like this and cgroup ends up jumping through various convoluted
-dancing to make things work.  Even then, operations across multiple
-cgroups can't be done safely as it'll deadlock with rename locking.
+* Add cgroup_get/put() and replace dget/put() on cgrp->dentry with
+  them.  These will be converted to kernfs refcnting.
 
-Recently, kernfs is separated out from sysfs so that it can be used by
-users other than sysfs.  This patchset converts cgroup to use kernfs.
-This simplifies code base quite a bit and allows further cleanups and
-implementation of features which depend on operating across multiple
-nodes.
+* Update current_css_set_cg_links_read() to use cgroup_name() instead
+  of reaching into the dentry name.  The end result is the same.
 
-This patchset contains the following 13 patches.
+These changes don't make functional differences but will make
+transition to kernfs easier.
 
- 0001-cgroup-improve-css_from_dir-into-css_tryget_from_dir.patch
- 0002-cgroup-introduce-cgroup_tree_mutex.patch
- 0003-cgroup-release-cgroup_mutex-over-file-removals.patch
- 0004-cgroup-restructure-locking-and-error-handling-in-cgr.patch
- 0005-cgroup-factor-out-cgroup_setup_root-from-cgroup_moun.patch
- 0006-cgroup-update-cgroup-name-handling.patch
- 0007-cgroup-make-cgroup_subsys-base_cftypes-use-cgroup_ad.patch
- 0008-cgroup-update-the-meaning-of-cftype-max_write_len.patch
- 0009-cgroup-introduce-cgroup_init-exit_cftypes.patch
- 0010-cgroup-introduce-cgroup_ino.patch
- 0011-cgroup-misc-preps-for-kernfs-conversion.patch
- 0012-cgroup-relocate-functions-in-preparation-of-kernfs-c.patch
- 0013-cgroup-convert-to-kernfs.patch
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/cgroup.h |  8 ++---
+ kernel/cgroup.c        | 85 +++++++++++++++++++++++++++++++-------------------
+ 2 files changed, 55 insertions(+), 38 deletions(-)
 
-0001 updates css_from_dir() into css_tryget_from_dir() so that the
-caller doesn't have to worry about RCU locking.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 15b7839..4740cba 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -514,18 +514,14 @@ static inline ino_t cgroup_ino(struct cgroup *cgrp)
+ 		return 0;
+ }
+ 
+-static inline struct cgroup_subsys_state *seq_css(struct seq_file *seq)
+-{
+-	struct cgroup_open_file *of = seq->private;
+-	return of->cfe->css;
+-}
+-
+ static inline struct cftype *seq_cft(struct seq_file *seq)
+ {
+ 	struct cgroup_open_file *of = seq->private;
+ 	return of->cfe->type;
+ }
+ 
++struct cgroup_subsys_state *seq_css(struct seq_file *seq);
++
+ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
+ int cgroup_rm_cftypes(struct cftype *cfts);
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a8a1adc..0c5d1d1 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -169,6 +169,7 @@ static int need_forkexit_callback __read_mostly;
+ 
+ static struct cftype cgroup_base_files[];
+ 
++static void cgroup_put(struct cgroup *cgrp);
+ static void cgroup_destroy_css_killed(struct cgroup *cgrp);
+ static int cgroup_destroy_locked(struct cgroup *cgrp);
+ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
+@@ -204,6 +205,13 @@ static inline bool cgroup_is_dead(const struct cgroup *cgrp)
+ 	return test_bit(CGRP_DEAD, &cgrp->flags);
+ }
+ 
++struct cgroup_subsys_state *seq_css(struct seq_file *seq)
++{
++	struct cgroup_open_file *of = seq->private;
++	return of->cfe->css;
++}
++EXPORT_SYMBOL_GPL(seq_css);
++
+ /**
+  * cgroup_is_descendant - test ancestry
+  * @cgrp: the cgroup to be tested
+@@ -682,6 +690,16 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 	return cset;
+ }
+ 
++static void cgroup_get_root(struct cgroupfs_root *root)
++{
++	atomic_inc(&root->sb->s_active);
++}
++
++static void cgroup_put_root(struct cgroupfs_root *root)
++{
++	deactivate_super(root->sb);
++}
++
+ /*
+  * Return the cgroup for "task" from the given hierarchy. Must be
+  * called with cgroup_mutex held.
+@@ -837,18 +855,14 @@ static void cgroup_free_fn(struct work_struct *work)
+ 	mutex_unlock(&cgroup_mutex);
+ 
+ 	/*
+-	 * We get a ref to the parent's dentry, and put the ref when
+-	 * this cgroup is being freed, so it's guaranteed that the
+-	 * parent won't be destroyed before its children.
++	 * We get a ref to the parent, and put the ref when this cgroup is
++	 * being freed, so it's guaranteed that the parent won't be
++	 * destroyed before its children.
+ 	 */
+-	dput(cgrp->parent->dentry);
++	cgroup_put(cgrp->parent);
+ 
+-	/*
+-	 * Drop the active superblock reference that we took when we
+-	 * created the cgroup. This will free cgrp->root, if we are
+-	 * holding the last reference to @sb.
+-	 */
+-	deactivate_super(cgrp->root->sb);
++	/* put the root reference that we took when we created the cgroup */
++	cgroup_put_root(cgrp->root);
+ 
+ 	cgroup_pidlist_destroy_all(cgrp);
+ 
+@@ -866,6 +880,11 @@ static void cgroup_free_rcu(struct rcu_head *head)
+ 	queue_work(cgroup_destroy_wq, &cgrp->destroy_work);
+ }
+ 
++static void cgroup_get(struct cgroup *cgrp)
++{
++	dget(cgrp->dentry);
++}
++
+ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ {
+ 	/* is dentry a directory ? if so, kfree() associated cgroup */
+@@ -897,6 +916,11 @@ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+ 	iput(inode);
+ }
+ 
++static void cgroup_put(struct cgroup *cgrp)
++{
++	dput(cgrp->dentry);
++}
++
+ static void remove_dir(struct dentry *d)
+ {
+ 	struct dentry *parent = dget(d->d_parent);
+@@ -2715,7 +2739,7 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 	struct cgroup_subsys *ss = cfts[0].ss;
+ 	struct cgroup *root = &ss->root->top_cgroup;
+ 	struct super_block *sb = ss->root->sb;
+-	struct dentry *prev = NULL;
++	struct cgroup *prev = NULL;
+ 	struct inode *inode;
+ 	struct cgroup_subsys_state *css;
+ 	u64 update_before;
+@@ -2745,9 +2769,10 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 			continue;
+ 
+ 		inode = cgrp->dentry->d_inode;
+-		dget(cgrp->dentry);
+-		dput(prev);
+-		prev = cgrp->dentry;
++		cgroup_get(cgrp);
++		if (prev)
++			cgroup_put(prev);
++		prev = cgrp;
+ 
+ 		mutex_unlock(&cgroup_tree_mutex);
+ 		mutex_lock(&inode->i_mutex);
+@@ -2759,8 +2784,8 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
+ 			break;
+ 	}
+ 	mutex_unlock(&cgroup_tree_mutex);
+-	dput(prev);
+-	deactivate_super(sb);
++	cgroup_put(prev);
++	cgroup_put_root(ss->root);
+ 	return ret;
+ }
+ 
+@@ -3854,11 +3879,9 @@ static int cgroup_write_notify_on_release(struct cgroup_subsys_state *css,
+  */
+ static void cgroup_dput(struct cgroup *cgrp)
+ {
+-	struct super_block *sb = cgrp->root->sb;
+-
+-	atomic_inc(&sb->s_active);
+-	dput(cgrp->dentry);
+-	deactivate_super(sb);
++	cgroup_get_root(cgrp->root);
++	cgroup_put(cgrp);
++	cgroup_put_root(cgrp->root);
+ }
+ 
+ static u64 cgroup_clone_children_read(struct cgroup_subsys_state *css,
+@@ -4109,7 +4132,7 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	if (err)
+ 		goto err_free;
+ 
+-	dget(cgrp->dentry);
++	cgroup_get(cgrp);
+ 	css_get(css->parent);
+ 
+ 	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+@@ -4188,7 +4211,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	 * can be done outside cgroup_mutex, since the sb can't
+ 	 * disappear while someone has an open control file on the
+ 	 * fs */
+-	atomic_inc(&sb->s_active);
++	cgroup_get_root(root);
+ 
+ 	init_cgroup_housekeeping(cgrp);
+ 
+@@ -4222,7 +4245,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	root->number_of_cgroups++;
+ 
+ 	/* hold a ref to the parent's dentry */
+-	dget(parent->dentry);
++	cgroup_get(parent);
+ 
+ 	/*
+ 	 * @cgrp is now fully operational.  If something fails after this
+@@ -4252,7 +4275,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ err_unlock:
+ 	mutex_unlock(&cgroup_mutex);
+ 	/* Release the reference count that we took on the superblock */
+-	deactivate_super(sb);
++	cgroup_put_root(root);
+ err_unlock_tree:
+ 	mutex_unlock(&cgroup_tree_mutex);
+ 	idr_remove(&root->cgroup_idr, cgrp->id);
+@@ -4484,7 +4507,6 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
+ {
+ 	struct cgroup *parent = cgrp->parent;
+-	struct dentry *d = cgrp->dentry;
+ 
+ 	lockdep_assert_held(&cgroup_tree_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+@@ -4492,7 +4514,7 @@ static void cgroup_destroy_css_killed(struct cgroup *cgrp)
+ 	/* delete this cgroup from parent->children */
+ 	list_del_rcu(&cgrp->sibling);
+ 
+-	dput(d);
++	cgroup_put(cgrp);
+ 
+ 	set_bit(CGRP_RELEASABLE, &parent->flags);
+ 	check_for_release(parent);
+@@ -5147,12 +5169,11 @@ static int current_css_set_cg_links_read(struct seq_file *seq, void *v)
+ 	cset = rcu_dereference(current->cgroups);
+ 	list_for_each_entry(link, &cset->cgrp_links, cgrp_link) {
+ 		struct cgroup *c = link->cgrp;
+-		const char *name;
++		const char *name = "?";
++
++		if (c != cgroup_dummy_top)
++			name = cgroup_name(c);
+ 
+-		if (c->dentry)
+-			name = c->dentry->d_name.name;
+-		else
+-			name = "?";
+ 		seq_printf(seq, "Root %d group %s\n",
+ 			   c->root->hierarchy_id, name);
+ 	}
+-- 
+1.8.5.3
 
-0002-0004 introduce cgroup_tree_mutex and prepare locking.
-
-0005-0006 are misc preps.
-
-0007-0008 update cftype handling in preparation.
-
-0009-0012 are misc preps.
-
-0013 converts cgroup to kernfs.
-
-This patchset is on top of
-
-  linus#master 54c0a4b46150 ("Merge branch 'akpm' (incoming from Andrew)")
-+ [1] [PATCHSET cgroup/for-3.14-fixes] cgroup: four misc fixes
-+ [2] [PATCH] arm, pm, vmpressure: add missing slab.h includes
-+ [3] [PATCHSET v2 cgroup/for-3.15] cgroup: drop module support and cgroup_root_mutex
-+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-cgroup-prep
-
-and also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kernfs-conversion
-
-diffstat follows.
-
- block/blk-throttle.c   |    4
- block/cfq-iosched.c    |    3
- include/linux/cgroup.h |   71 --
- kernel/cgroup.c        | 1712 ++++++++++++++++++++-----------------------------
- kernel/events/core.c   |   17
- mm/memcontrol.c        |   16
- mm/memory-failure.c    |    8
- 7 files changed, 754 insertions(+), 1077 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] http://lkml.kernel.org/g/<1389982317-22225-1-git-send-email-tj@kernel.org>
-[1] http://lkml.kernel.org/g/<1390923125-4369-1-git-send-email-tj@kernel.org>
-[2] http://lkml.kernel.org/g/<20140128221922.GC16060@mtj.dyndns.org>
-[3] http://lkml.kernel.org/g/<1390952641-15950-1-git-send-email-tj@kernel.org>
