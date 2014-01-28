@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818AbaA1Olt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 09:41:49 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:50164 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620AbaA1Ols (ORCPT
+	id S1755162AbaA1Oqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 09:46:30 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:59917 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631AbaA1Oq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 09:41:48 -0500
-Message-ID: <52E7C072.80704@linux.vnet.ibm.com>
-Date: Tue, 28 Jan 2014 20:06:34 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 28 Jan 2014 09:46:28 -0500
+From: Mikael Pettersson <mikpelinux@gmail.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Michel Lespinasse <walken@google.com>,
-        ego@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: Deadlock between cpu_hotplug_begin and cpu_add_remove_lock
-References: <20140122055239.GA29418@iris.ozlabs.ibm.com> <52DF81B0.7020700@linux.vnet.ibm.com> <52DF8C59.1090702@linux.vnet.ibm.com> <87r47z2zxu.fsf@rustcorp.com.au> <52E0AA5D.6070908@linux.vnet.ibm.com> <87wqhq1ewm.fsf@rustcorp.com.au>
-In-Reply-To: <87wqhq1ewm.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012814-9574-0000-0000-00000BB02D0B
+Message-ID: <21223.49853.281661.425847@gargle.gargle.HOWL>
+Date: Tue, 28 Jan 2014 15:46:21 +0100
+To: Mikael Pettersson <mikpelinux@gmail.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ia64 ski emulator patches
+In-Reply-To: <21220.10175.311714.796806@gargle.gargle.HOWL>
+References: <alpine.LRH.2.02.1401232041520.16873@file01.intranet.prod.int.rdu2.redhat.com>
+	<21218.28095.779306.523187@gargle.gargle.HOWL>
+	<alpine.LRH.2.02.1401240937020.28468@file01.intranet.prod.int.rdu2.redhat.com>
+	<21219.63903.326798.277717@gargle.gargle.HOWL>
+	<alpine.LRH.2.02.1401251536550.27200@file01.intranet.prod.int.rdu2.redhat.com>
+	<21220.10175.311714.796806@gargle.gargle.HOWL>
+X-Mailer: VM 8.1.2 under 24.1.1 (x86_64-redhat-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2014 04:31 AM, Rusty Russell wrote:
-> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
->> On 01/23/2014 07:59 AM, Rusty Russell wrote:
->>> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
->>>> On 01/22/2014 02:00 PM, Srivatsa S. Bhat wrote:
->>>>> Hi Paul,
->>>
->>> I find an old patch for register_allcpu_notifier(), but the "bool
->>> replay_history" should be eliminated (always true): it's too weird.
->>>
->>
->> Sorry, I didn't get this part. Why do you say that replay_history
->> will always be true?
-> 
-> OK, let me start again and try to explain myself properly:
-> 
-> register_cpu_notifier is a bad API.  It's hard to get right because:
-> 1) You need to loop over online (or present) cpus once before you call
->    it.
-> 2) You have to beware the race between the loop and registration, but
->    much example code happens at boot time where it doesn't matter,
->    so random author is likely to copy that and have a race.
-> 3) You have two paths doing the same thing: the loop which is run on
->    every machine (cpu hotplug or not), and the notifier callback which
->    is run far less rarely.
-> 
-> What we actually *want* is a routine which will reliably call for every
-> current and future CPU, and then there are very few places which should
-> use the current register_cpu_notifier().
-> 
-> ie. halfway between register_cpu_notifier() (too racy) and
-> register_allcpu_notifier() (too simplified).
-> 
-> Let's call it register_cpu_callback / unregister_cpu_callback?
-> 
+Mikael Pettersson writes:
+ > Mikulas Patocka writes:
+ >  > 
+ >  > 
+ >  > On Sat, 25 Jan 2014, Mikael Pettersson wrote:
+ >  > 
+ >  > > My ski patches are in <http://user.it.uu.se/~mikpe/linux/patches/ia64/ski-1.3.2/>
+ >  > > for now.  I'll post the kernel patches to linux-ia64 @ vger in a few minutes.
+ >  > > 
+ >  > > /Mikael
+ >  > 
+ >  > Thanks for the patches.
+ >  > 
+ >  > Isn't this subject to races? - could it lock up if the signal happens just 
+ >  > before the pause syscall?
+ >  > 
+ >  > +    case SSC_HALT_LIGHT:
+ >  > +      /* Sleep until SIGIO or SIGALRM is received; this relies on
+ >  > +        keyboard/ethernet input being detected via SIGIO, and the
+ >  > +        ITC now being emulated via setitimer() and SIGALRM.  */
+ >  > +      pause ();
+ >  > +      break;
+ >  > +
+ > 
+ > Thanks for the review. You're right, the pause mustn't happen if
+ > itc_itimer_fired == 1.  Let me ponder this for a while...
 
-Thanks a lot for the detailed and profound explanation! It makes perfect
-sense to me now.
+Ok, I've fixed this in two different ways: one patch which uses pselect,
+and one patch which uses plain select + the self-pipe trick.  Both work
+in limited testing, but the pselect one is much nicer and appears to have
+a little less host CPU overhead, so that's the one I'm stress-testing now.
 
->> By the way, I'm still tempted to try out the simpler-looking alternative
->> idea of exporting cpu_maps_update_begin() and cpu_maps_update_done()
->> and then mandating that the callers do:
->>
->> cpu_maps_update_begin();
->> for_each_online_cpu(cpu) {
->> 	...
->> }
->>
->> __register_cpu_notifier(); // this doesn't take the add_remove_lock
->> cpu_maps_update_done();
-> 
-> Sure, fix this one for -stable.  But let's create an idiom we can be
-> proud of for the longer term.
-> 
+Both patches have been uploaded to the same place as before.
 
-Ok, that sounds good, will work on that.
-
-Thank you very much!
- 
-Regards,
-Srivatsa S. Bhat
-
+/Mikael
