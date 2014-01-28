@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273AbaA1Qm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:42:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11505 "EHLO mga11.intel.com"
+	id S1755315AbaA1QnL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:43:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754685AbaA1Qmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:42:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,736,1384329600"; 
-   d="scan'208";a="466028006"
-Date: Tue, 28 Jan 2014 08:48:00 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: "xinhui.pan" <xinhuix.pan@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linus.walleij@linaro.org, gnurou@gmail.com,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [PATCH] gpio-intel-mid: fix the incorrect return of idle callback
-Message-ID: <20140128164800.GA28816@psi-dev26.jf.intel.com>
-References: <52E76F71.4080304@intel.com>
+	id S1754685AbaA1QnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 11:43:08 -0500
+Date: Tue, 28 Jan 2014 17:43:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Do we really need curr_target in signal_struct ?
+Message-ID: <20140128164320.GB7596@redhat.com>
+References: <1390895840.8373.2.camel@beeld>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52E76F71.4080304@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1390895840.8373.2.camel@beeld>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/28, Rakib Mullick wrote:
+>
+> As an alternative of using curr_target we can use get_nr_thread() count
 
-Thanks for the patch :)
+We do not even need get_nr_thread() if we want to kill curr_target,
 
-On Tue, Jan 28, 2014 at 04:50:57PM +0800, xinhui.pan wrote:
-> From: "xinhui.pan" <xinhuiX.pan@intel.com>
-> 
-> intel_gpio_runtime_idle should return correct error code if it do fail.
-> make it more correct even though -EBUSY is the most possible return value.
-> 
-> Signed-off-by: bo.he <bo.he@intel.com>
-> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+> @@ -961,21 +962,16 @@ static void complete_signal(int sig, struct task_struct *p, int group)
+>  		 */
+>  		return;
+>  	else {
+> -		/*
+> -		 * Otherwise try to find a suitable thread.
+> -		 */
+> -		t = signal->curr_target;
+> -		while (!wants_signal(sig, t)) {
+> +		i = get_nr_threads(p);
+> +		t = p;
+> +		do {
+> +			--i;
+>  			t = next_thread(t);
+> -			if (t == signal->curr_target)
+> -				/*
+> -				 * No thread needs to be woken.
+> -				 * Any eligible threads will see
+> -				 * the signal in the queue soon.
+> -				 */
+> +			if (!i)
+>  				return;
+> -		}
+> -		signal->curr_target = t;
+> +		} while (!wants_signal(sig, t));
 
-Acked-by: David Cohen <david.a.cohen@linux.intel.com>
+You could simply do while_each_thread(p, t) to find a thread which
+wants_signal(..).
+
+But I guess ->curr_target was added exactly to avoid this loop if
+possible, assuming that wants_signal(->current_targer) should be
+likely true. Although perhaps this optimization is too simple.
+
+Oleg.
+
