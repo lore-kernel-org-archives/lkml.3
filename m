@@ -1,80 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483AbaA1VBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:01:33 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:33948 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755043AbaA1VBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:01:32 -0500
-Date: Tue, 28 Jan 2014 23:01:26 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: readahead: fix do_readahead for no readpage(s)
-Message-ID: <20140128210126.GA27556@node.dhcp.inet.fi>
-References: <1390907659-11675-1-git-send-email-mark.rutland@arm.com>
- <20140128120301.581c90caeb1c49e346b6aa66@linux-foundation.org>
+	id S1755625AbaA1VC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:02:26 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:63352 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043AbaA1VCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 16:02:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140128120301.581c90caeb1c49e346b6aa66@linux-foundation.org>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <52DF93D3.6030509@dev.mellanox.co.il>
+References: <CAJZOPZ+4yQ-sT=ks7+eiJjkxOjy5w=BmG16JVcUPiuVsof7qEA@mail.gmail.com>
+	<CAG4TOxOMmvFWnkU3DBn33rscEKh2_YfbUCKY=iY8PCVN3+nEsA@mail.gmail.com>
+	<52CD1C68.4050406@mellanox.com>
+	<1389645171.5567.459.camel@haakon3.risingtidesystems.com>
+	<1389820541.5567.543.camel@haakon3.risingtidesystems.com>
+	<CAG4TOxNa32sLxifPx_f8sW04B_qSh01WWfWjRvam6fjvFLDXSQ@mail.gmail.com>
+	<1389906852.5567.668.camel@haakon3.risingtidesystems.com>
+	<CAG4TOxPeYQ=e5LdJft1Hkx8donUQjJaKDEAv3iRLGxPYJQ_b9w@mail.gmail.com>
+	<1390102949.5567.749.camel@haakon3.risingtidesystems.com>
+	<52DBB4F1.4020400@mellanox.com>
+	<CAJZOPZJFbcTh2zO8mos0M+gv0LW-Gmh877Vxe4tLvfPX19oqTw@mail.gmail.com>
+	<CAJZOPZLuz-Z59agBd0Q9J2=sSG-F+Y8MrJkoGbtiF5M+CnKU1g@mail.gmail.com>
+	<CAG4TOxPLEfyWsUDf4_371u=_=tOgW2v5J4zSz8xx73DfziZOZg@mail.gmail.com>
+	<52DF93D3.6030509@dev.mellanox.co.il>
+Date: Tue, 28 Jan 2014 23:02:23 +0200
+Message-ID: <CAJZOPZLBECYXrpp0GY0uUvyf+XbiLHhXdVukniPXD4AWZObymg@mail.gmail.com>
+Subject: Re: linux rdma 3.14 merge plans
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hefty Sean <sean.hefty@intel.com>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>, Oren Duer <oren@mellanox.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sagi Grimberg <sagig@dev.mellanox.co.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:03:01PM -0800, Andrew Morton wrote:
-> On Tue, 28 Jan 2014 11:14:19 +0000 Mark Rutland <mark.rutland@arm.com> wrote:
-> 
-> > Commit 63d0f0a3c7e1 (mm/readahead.c:do_readhead(): don't check for
-> > ->readpage) unintentionally made do_readahead return 0 for all valid
-> > files regardless of whether readahead was supported, rather than the
-> > expected -EINVAL. This gets forwarded on to userspace, and results in
-> > sys_readahead appearing to succeed in cases that don't make sense (e.g.
-> > when called on pipes or sockets). This issue is detected by the LTP
-> > readahead01 testcase.
-> 
-> How can this be?
-> 
-> : static ssize_t
-> : do_readahead(struct address_space *mapping, struct file *filp,
-> : 	     pgoff_t index, unsigned long nr)
-> : {
-> : 	if (!mapping || !mapping->a_ops)
-> : 		return -EINVAL;
-> : 
-> : 	return force_page_cache_readahead(mapping, filp, index, nr);
+On Wed, Jan 22, 2014, Sagi Grimberg <sagig@dev.mellanox.co.il> wrote:
+> On 1/22/2014 2:43 AM, Roland Dreier wrote:
+>> On Tue, Jan 21, 2014, Or Gerlitz <or.gerlitz@gmail.com> wrote:
 
-It's not what we have in Linus' tree. force_page_cache_readahead() return
-code is unused:
+>>> Roland, ping! the signature patches were posted > three months ago. We
+>>> deserve a response from the maintainer that goes beyond "I need to
+>>> think on that". Responsiveness was stated by Linus to be the #1 requirement
+>>> from kernel maintainers.
 
-	force_page_cache_readahead(mapping, filp, index, nr);
-	return 0;
+> Hi Roland, I'll try to respond here. removing LKML and adding Linux-scsi.
 
-> : }
-> 
-> and
-> 
-> : int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
-> : 		pgoff_t offset, unsigned long nr_to_read)
-> : {
-> : 	if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
-> : 		return -EINVAL;
-> 
-> Clearly, do_readahead() will return -EINVAL if neither ->readpage or
-> ->readpages are implemented.
-> 
-> I can see that the behaviour would change if the address_space
-> implements only one of ->readpage and ->readpages, but that doesn't
-> appear to match your description and the new behaviour is correct - we
-> can now perform readahead for address_spaces which implement
-> ->readpages and not ->readpage (which would be odd and might not work
-> for other reasons..).
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sorry, it seems we will not getting responses unless coping LKML, so
+lets do that again -- Roland, below is the detailed response Sagi
+wrote you following your "adds a bunch of complexity to support a
+feature no one really cares about" comment, can we get you to respond
+on that?
 
--- 
- Kirill A. Shutemov
+>> Or, I'm not sure what response you're after from me.  Linus has also
+>> said that maintainers should say "no" a lot more
+>> (http://lwn.net/Articles/571995/) so maybe you want me to say, "No, I
+>> won't merge this patch set, since it adds a bunch of complexity to
+>> support a feature no one really cares about."
+
+> 1. I disagree about no-one cares about DIF/DIX. We are witnessing growing
+> interests in this especially for RDMA.
+> 2. We put a lot of efforts to avoid complexity here and plug-in as simple as
+> possible.
+> Application that will choose to use DIF will implement only 3 steps:
+> a. allocate signature enabled MR.
+> b. register signature enabled MR with DIF attributes (via post_send) and
+> then do RDMA.
+> c. check MR status after transaction is completed (_lightweight_ verb that
+> can be called from interrupt context).
+
+>> Is that it?  (And yes I am skeptical about this stuff -- I work at an enterprise
+>> storage company and even here it's hard to find anyone who cares about
+>> DIF/DIX, especially offload features that stop it from being end-to-end)
+
+
+> 1. RDMA verbs are _NOT_ stopping DIF from being end-to-end.
+> OS (or SCSI in our specific case) passes LLD 2 scatterlists: data {block1,
+> block2, block3,...}, and protection {DIF1, DIF2, DIF3}.
+> LLD is required to verify the data integrity (block guards) and to
+> interleave over the wire {block1, DIF1, block2, DIF2....}.
+> You must support that in HW, you rather iSER/SRP will use giant copy's to
+> interleave by itself? or in case OS asked LLD
+> to INSERT DIF iSER/SRP will compute CRC for each data-block? RDMA storage
+> ULPs are transports - they should have no business with
+> data processing.
+
+> 2. HW DIF offload also gives you protection across the PCI. the
+> data-validation is done (hopefully offloaded) also
+> when data+protection are written to the back-end device. end-to-end is
+> preserved.
+
+> 3. SAS & FC have T10-PI offload. This is just adding RDMA into the game.
+> With this set of verbs iSER, SRP, FCoE Initiators and targets will be able
+> to support T10-PI.
+
+
+>> I'm sure you're not expecting me to say, "Sure, I'll merge it without
+>> understanding the problem it's solving
+
+> Problem: T10-PI offload support for RDMA based initiators. Supporting
+> end-to-end data integrity while sustaining high RDMA performance.
+
+
+>>   or how it's doing that,"
+
+> How it's doing that:
+> - We introduce a new type of memory region that posses protection attributes
+> suited for data integrity offload.
+> - We Introduce a new fast registration method that can bind all the relevant
+> info for verify/generate of protection information:
+>   * describe if/how to interleave data with protection.
+>   * describe what method of data integrity is used (DIF type X, CRC, XOR...)
+> and the seeds that HW should start calculation from.
+>   * describe how to verify the data.
+> - We Introduce a new lightweight check of the data-integrity status to check
+> if there were any integrity errors and get information on them.
+
+> Note: We made MR allocation routine generic enough to lay a framework to
+> unite all MR allocation
+> methods (get_dma_mr, alloc_fast_reg_mr, reg_phys, reg_user_mr, fmrs, and
+> probably more in the future...).
+> We defined ib_create_mr that can actually get mr_init_attr which can be
+> easily extended as opposed to the specific calls exists today.
+> So I would say this even reduces complexity.
+
+> Hope this helps,
+> Sagi.
