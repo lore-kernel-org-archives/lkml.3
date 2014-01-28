@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaA1PNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 10:13:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60411 "EHLO mx2.suse.de"
+	id S1755187AbaA1PQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 10:16:01 -0500
+Received: from ra.se.axis.com ([195.60.68.10]:38367 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645AbaA1PND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 10:13:03 -0500
-Date: Tue, 28 Jan 2014 16:12:59 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-cc: Yufeng Shen <miletus@chromium.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Andrew de los Reyes <adlr@chromium.org>
-Subject: Re: [PATCH] HID: usbhid: quirk for CY-TM75 75 inch Touch Overlay
-In-Reply-To: <CAN+gG=F3EQ4o99HW3Qid52_Kp1g-yziW1yeNetP5mE9DmEmS2w@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1401281612020.3763@pobox.suse.cz>
-References: <1390863766-14491-1-git-send-email-miletus@chromium.org> <CAN+gG=F3EQ4o99HW3Qid52_Kp1g-yziW1yeNetP5mE9DmEmS2w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754631AbaA1PQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 10:16:00 -0500
+Date: Tue, 28 Jan 2014 16:15:55 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel@axis.com
+Subject: [GIT PULL] CRIS correction for 3.14
+Message-ID: <20140128151555.GA17210@axis.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jan 2014, Benjamin Tissoires wrote:
+Hi Linus!
 
-> > There is timeout error during initialization:
-> > kernel: [   11.733104] hid-multitouch 0003:1870:0110.0001: usb_submit_urb(ctrl) failed: -1
-> > kernel: [   11.734093] hid-multitouch 0003:1870:0110.0001: timeout initializing reports
-> >
-> > Adding quirk HID_QUIRK_NO_INIT_REPORTS can solve the problem.
-> 
-> Could you please test the quirk HID_QUIRK_NO_INIT_INPUT_REPORTS instead?
-> The patch is perfectly fine, but usually when it fails, only the input
-> reports are non-readable, whereas features should. This way, you will
-> still get the value of the features, which _may_ be sensible for the
-> maxcontact information.
-> 
-> BTW, HID_QUIRK_NO_INIT_INPUT_REPORTS has been introduced in v3.12 and
-> is the default for Win 8 certified devices.
+Please pull for a correction of the CRIS commits for 3.14.
+One include too much was removed.
 
-Ah, I have noticed this only after pushing the patch out. Good point.
+Thanks!
 
-Yufeng, if you test with HID_QUIRK_NO_INIT_INPUT_REPORTS successfully, 
-please let me know, and I'll apply a followup patch on top.
+The following changes since commit 54c0a4b46150db1571d955d598cd342c9f1d9657:
+
+  Merge branch 'akpm' (incoming from Andrew) (2014-01-27 21:17:55 -0800)
+
+are available in the git repository at:
+
+
+  git://jni.nu/cris tags/cris-correction-for-3.14
+
+for you to fetch changes up to cd065a010a97e3c330d1ded9af551664c9689b19:
+
+  CRISv10: Readd missing header (2014-01-28 15:14:35 +0100)
+
+----------------------------------------------------------------
+CRIS correction for 3.14
+
+----------------------------------------------------------------
+Jesper Nilsson (1):
+      CRISv10: Readd missing header
+
+ arch/cris/arch-v10/kernel/process.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+/^JN - Jesper Nilsson
 -- 
-Jiri Kosina
-SUSE Labs
+               Jesper Nilsson -- jesper.nilsson@axis.com
