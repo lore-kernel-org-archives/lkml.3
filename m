@@ -1,247 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaA1ALO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:11:14 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52136 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaA1ALM (ORCPT
+	id S1753733AbaA1ALZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:11:25 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48189 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaA1ALX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:11:12 -0500
-X-AuditID: 9c93016f-b7b7aae0000036de-84-52e6f59d9bea
-Date: Tue, 28 Jan 2014 09:12:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, Rob Clark <robdclark@gmail.com>,
-        Jason Evans <je@fb.com>, pliard@google.com
-Subject: Re: [PATCH v10 00/16] Volatile Ranges v10
-Message-ID: <20140128001244.GB25066@bbox>
-References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
- <CAHGf_=qiQtG_7W=SfKfGHgV6p6aT3==Wnj65UAegejeoS6fLBA@mail.gmail.com>
+	Mon, 27 Jan 2014 19:11:23 -0500
+Message-ID: <52E6F5A4.7070307@gmail.com>
+Date: Tue, 28 Jan 2014 11:11:16 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=qiQtG_7W=SfKfGHgV6p6aT3==Wnj65UAegejeoS6fLBA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: Re: [PATCH] vsprintf: BUG on %n
+References: <20140127230326.GA877@www.outflux.net>	<52E6E786.80301@gmail.com> <CAGXu5j+nyRM+4JbPwtnWpdO9mKTL15FTn0c0+8xK-kr0hJpgag@mail.gmail.com>
+In-Reply-To: <CAGXu5j+nyRM+4JbPwtnWpdO9mKTL15FTn0c0+8xK-kr0hJpgag@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey KOSAKI,
-
-On Mon, Jan 27, 2014 at 05:23:17PM -0500, KOSAKI Motohiro wrote:
-> Hi Minchan,
+On 28/01/14 10:56, Kees Cook wrote:
+> On Mon, Jan 27, 2014 at 3:11 PM, Ryan Mallon <rmallon@gmail.com> wrote:
+>> On 28/01/14 10:03, Kees Cook wrote:
+>>> Now that there has been a full release of the kernel, and all users
+>>> of %n have been dropped, switch to %n use triggering a BUG. Ignoring
+>>> arguments could be used to assist in information leaks if an arbitrary
+>>> format string was under the control of an attacker.
+>>
+>> Not sure I follow the reasoning. %n no longer does anything in the
+>> kernel, so there is no risk if it does manage to find its way into a
+>> printed string. BUG() is for unrecoverable errors, which this clearly isn't.
+>>
+>> Information leaks via injectable strings are still possible if an
+>> attacker can insert %x, %d, etc. %n is more problematic since it allows
+>> for code injection, which is why it got removed. %n is not however,
+>> required to get an infoleak via a format string, so I think the summary
+>> is also a bit misleading.
 > 
-> 
-> On Thu, Jan 2, 2014 at 2:12 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > Hey all,
-> >
-> > Happy New Year!
-> >
-> > I know it's bad timing to send this unfamiliar large patchset for
-> > review but hope there are some guys with freshed-brain in new year
-> > all over the world. :)
-> > And most important thing is that before I dive into lots of testing,
-> > I'd like to make an agreement on design issues and others
-> >
-> > o Syscall interface
-> > o Not bind with vma split/merge logic to prevent mmap_sem cost and
-> > o Not bind with vma split/merge logic to avoid vm_area_struct memory
-> >   footprint.
-> > o Purging logic - when we trigger purging volatile pages to prevent
-> >   working set and stop to prevent too excessive purging of volatile
-> >   pages
-> > o How to test
-> >   Currently, we have a patched jemalloc allocator by Jason's help
-> >   although it's not perfect and more rooms to be enhanced but IMO,
-> >   it's enough to prove vrange-anonymous. The problem is that
-> >   lack of benchmark for testing vrange-file side. I hope that
-> >   Mozilla folks can help.
-> >
-> > So its been a while since the last release of the volatile ranges
-> > patches, again. I and John have been busy with other things.
-> > Still, we have been slowly chipping away at issues and differences
-> > trying to get a patchset that we both agree on.
-> >
-> > There's still a few issues, but we figured any further polishing of
-> > the patch series in private would be unproductive and it would be much
-> > better to send the patches out for review and comment and get some wider
-> > opinions.
-> >
-> > You could get full patchset by git
-> >
-> > git clone -b vrange-v10-rc5 --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/minchan/linux.git
-> 
-> Brief comments.
-> 
-> - You should provide jemalloc patch too. Otherwise we cannot
+> Yeah, I'm a bit uncomfortable with the BUG() too. The issue with %n is
+> that it would produce no output at all to skip arguments. With other
+> things, you have to take up output space, which may be limited. How
+> about just not skipping the argument? Leave the warn_on, etc?
 
-I did. :) It seems you missed below in this description.
-You could see it via following URL in Dhaval's test suite.
+If you are trying to catch in kernel users of %n, then the warning is
+probably fine. I don't think the presense of a %n in a format string,
+without any injection vulnerability is going to cause a problem.
 
-https://github.com/volatile-ranges-test/vranges-test/blob/master/0001-Implement-experimental-mvolatile-2-mnovolatile-2-sup.patch
+If you are trying to catch %n being injected by a malicious user into a
+vulnerable string then a warning is fine as long as the string doesn't
+allow code injection through some other means. I don't think you can
+easily prevent infoleaks at runtime, since any vulnerable can have %x,
+%s, or whatever injected to leak information on the stack. There was
+some work on detecting potentially vulnerable strings at compile time I
+think?
 
-Dhaval: Pz, could you merge patches John sent in your test suite?
-        I just pinged you.
+The reason to get rid of %n is to remove the ability to escalate an
+infoleak on a vulnerable format string into code execution. Vulnerable
+strings and infoleaks via them are really a separate issue, and
+detecting %n does nothing to solve them.
 
-But KOSAKI, pz, don't focus on jemalloc's implementaion.
-It's not how jemalloc uses volatile ranges efficiently but just
-one of example how to use volatile ranges.
-I think volatile ranges could be really useful for garbage collection
-of custom allocators(ex, In-memory DB, JVM, Dalvik, v8) as well as
-general allocators.
+%n should probably just be treated the same as any other %FOO which is
+not a valid format string directive. Keeping the warning might be useful
+for kernel developers who don't know that they shouldn't be using it.
+Then again, sparse, checkpatch or code review might be the better place
+to do that.
 
-> understand what the your mesurement mean.
+~Ryan
 
-> - Your number only claimed the effectiveness anon vrange, but not file vrange.
-
-Yes. It's really problem as I said.
->From the beginning, John Stultz wanted to promote vrange-file to replace
-android's ashmem and when I heard usecase of vrange-file, it does make sense
-to me so that's why I'd like to unify them in a same interface.
-
-But the problem is lack of interesting from others and lack of time to
-test/evaluate it. I'm not an expert of userspace so actually I need a bit
-help from them who require the feature but at a moment,
-but I don't know who really want or/and help it.
-
-Even, Android folks didn't have any interest on vrange-file.
-So, we might drop vrange-file part in this patchset if it's really headache.
-But let's discuss further because still I believe it's valuable feature to
-keep instead of dropping.
-
-I want that drop of vrange-file is really last resort to make forward
-progress of vrange-anon.
-
-> - Still, Nobody likes file vrange. At least nobody said explicitly on
-> the list. I don't ack file vrange part until
->   I fully convinced Pros/Cons. You need to persuade other MM guys if
-> you really think anon vrange is not
->   sufficient. (Maybe LSF is the best place)
-> - I wrote you need to put a mesurement current implementation vs
-> VMA-based implementation at several
->   previous iteration. Because You claimed fast, but no number and you
-> haven't yet. I guess the reason is
-
-I did. :) Look at the number.
-https://lkml.org/lkml/2013/10/8/63
-
-The point is we need an mmap_sem's readside lock for vma handling(ex,
-merge/split) and it's really bottlenect point for ebizzy which another
-thread want to malloc(ie, mmap with new chunk requires mmap_sem's
-write-side lock).
-
-Additionally, some of user want to handle vrange fine-granularity(ex,
-as worst case, PAGE_SIZE) so VMA handling would be really overhead
-for us.
-
->   you don't have any access to large machine. If so, I'll offer it.
-> Plz collaborate with us.
-
-Yes, Yes, Yes. That's what I want and you're really proper person to
-collaborate. Pz, ping me if you're ready. :)
-
-> 
-> Unfortunately, I'm very busy and I didn't have a chance to review your
-> latest patch yet. But I'll finish it until
-> mm summit. And, I'll show you guys how much this patch improve glibc malloc too.
-
-Cool! It's really helpful for the work which I believe it's really
-helpful feature for the Linux so I never want to drop this feature by just
-lack of interesting of other MM guys who are very busy with NUMA/memcg stuff. :(
-
-> 
-> I and glibc folks agreed we push vrange into glibc malloc.
-> 
-> https://sourceware.org/ml/libc-alpha/2013-12/msg00343.html
-
-Thanks for the info and recenlty ChromeOS people is looking into
-volatile ranges so it seems there are so many interesting these days
-so it would a good chance to make it work.
-
-> 
-> Even though, I still dislike some aspect of this patch. I'd like to
-
-That's true I need an many comment from MM commmuity so your input would
-be really helpful.
-
-> discuss and make better design decision
-> with you.
-
-KOSAKI,
-Thanks for the your interest and suggestion for collaborating suggestion.
- 
-> Thanks.
-> 
-> 
-> >
-> > In v10, there are some notable changes following as
-> >
-> > Whats new in v10:
-> > * Fix several bugs and build break
-> > * Add shmem_purge_page to correct purging shmem/tmpfs
-> > * Replace slab shrinker with direct hooked reclaim path
-> > * Optimize pte scanning by caching previous place
-> > * Reorder patch and tidy up Cc-list
-> > * Rebased on v3.12
-> > * Add vrange-anon test with jemalloc in Dhaval's test suite
-> >   - https://github.com/volatile-ranges-test/vranges-test
-> >   so, you could test any application with vrange-patched jemalloc by
-> >   LD_PRELOAD but please keep in mind that it's just a prototype to
-> >   prove vrange syscall concept so it has more rooms to optimize.
-> >   So, please do not compare it with another allocator.
-> >
-> > Whats new in v9:
-> > * Updated to v3.11
-> > * Added vrange purging logic to purge anonymous pages on
-> >   swapless systems
-> > * Added logic to allocate the vroot structure dynamically
-> >   to avoid added overhead to mm and address_space structures
-> > * Lots of minor tweaks, changes and cleanups
-> >
-> > Still TODO:
-> > * Sort out better solution for clearing volatility on new mmaps
-> >         - Minchan has a different approach here
-> > * Agreement of systemcall interface
-> > * Better discarding trigger policy to prevent working set evction
-> > * Review, Review, Review.. Comment.
-> > * A ton of test
-> >
-> > Feedback or thoughts here would be particularly helpful!
-> >
-> > Also, thanks to Dhaval for his maintaining and vastly improving
-> > the volatile ranges test suite, which can be found here:
-> > [1]     https://github.com/volatile-ranges-test/vranges-test
-> >
-> > These patches can also be pulled from git here:
-> >     git://git.linaro.org/people/jstultz/android-dev.git dev/vrange-v9
-> >
-> > We'd really welcome any feedback and comments on the patch series.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
