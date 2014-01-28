@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaA1JCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:02:51 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:26391 "EHLO song.cn.fujitsu.com"
+	id S1754979AbaA1JD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:03:59 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:28048 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816AbaA1JCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:02:47 -0500
+	id S1750931AbaA1JCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 04:02:49 -0500
 X-IronPort-AV: E=Sophos;i="4.95,735,1384272000"; 
-   d="scan'208";a="9461133"
+   d="scan'208";a="9461135"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
         guz.fnst@cn.fujitsu.com
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] numa, mem-hotplug: Fix array out of boundary in numa initialization.
-Date: Tue, 28 Jan 2014 17:05:14 +0800
-Message-Id: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 2/2] numa, mem-hotplug: Fix array index overflow when synchronizing nid to memblock.reserved.
+Date: Tue, 28 Jan 2014 17:05:16 +0800
+Message-Id: <1390899916-23566-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2014/01/28 17:01:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 17:01:10,
-	Serialize complete at 2014/01/28 17:01:10
+ 2014/01/28 17:01:11,
+	Serialize complete at 2014/01/28 17:01:11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave found a kernel crash problem during boot. This is a problem of array out of boundary.
-These two patches fix this problem.
+The following path will cause array out of bound.
 
-Since I am in a hurry, if the changelog is not good enough, I'll resend a new version tomorrow.
+memblock_add_region() will always set nid in memblock.reserved to MAX_NUMNODES.
+In numa_register_memblks(), after we set all nid to correct valus in memblock.reserved,
+we called setup_node_data(), and used memblock_alloc_nid() to allocate memory, with
+nid set to MAX_NUMNODES.
 
-Tang Chen (2):
-  numa, mem-hotplug: Initialize numa_kernel_nodes in
-    numa_clear_kernel_node_hotplug().
-  numa, mem-hotplug: Fix array index overflow when synchronizing nid to
-    memblock.reserved.
+The nodemask_t type can be seen as a bit array. And the index is 0 ~ MAX_NUMNODES-1.
 
- arch/x86/mm/numa.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+After that, when we call node_set() in numa_clear_kernel_node_hotplug(), the nodemask_t
+got an index of value MAX_NUMNODES, which is out of [0 ~ MAX_NUMNODES-1].
 
+See below:
+
+numa_init()
+ |---> numa_register_memblks()
+ |      |---> memblock_set_node(memory)		set correct nid in memblock.memory
+ |      |---> memblock_set_node(reserved)	set correct nid in memblock.reserved
+ |      |......
+ |      |---> setup_node_data()
+ |             |---> memblock_alloc_nid()	here, nid is set to MAX_NUMNODES (1024)
+ |......
+ |---> numa_clear_kernel_node_hotplug()
+        |---> node_set()			here, we have an index 1024, and overflowed
+
+This patch moves nid setting to numa_clear_kernel_node_hotplug() to fix this problem.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 00c9f09..a183b43 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -493,14 +493,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 		struct numa_memblk *mb = &mi->blk[i];
+ 		memblock_set_node(mb->start, mb->end - mb->start,
+ 				  &memblock.memory, mb->nid);
+-
+-		/*
+-		 * At this time, all memory regions reserved by memblock are
+-		 * used by the kernel. Set the nid in memblock.reserved will
+-		 * mark out all the nodes the kernel resides in.
+-		 */
+-		memblock_set_node(mb->start, mb->end - mb->start,
+-				  &memblock.reserved, mb->nid);
+ 	}
+ 
+ 	/*
+@@ -571,6 +563,17 @@ static void __init numa_clear_kernel_node_hotplug(void)
+ 
+ 	nodes_clear(numa_kernel_nodes);
+ 
++	/*
++	 * At this time, all memory regions reserved by memblock are
++	 * used by the kernel. Set the nid in memblock.reserved will
++	 * mark out all the nodes the kernel resides in.
++	 */
++	for (i = 0; i < numa_meminfo.nr_blks; i++) {
++		struct numa_memblk *mb = &numa_meminfo.blk[i];
++		memblock_set_node(mb->start, mb->end - mb->start,
++				  &memblock.reserved, mb->nid);
++	}
++
+ 	/* Mark all kernel nodes. */
+ 	for (i = 0; i < type->cnt; i++)
+ 		node_set(type->regions[i].nid, numa_kernel_nodes);
 -- 
 1.8.3.1
 
