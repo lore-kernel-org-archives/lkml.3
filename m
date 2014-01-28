@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaA1SiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:38:21 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:56697 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866AbaA1SiU (ORCPT
+	id S1755450AbaA1Sj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:39:27 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45216 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755412AbaA1Sj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:38:20 -0500
-Date: Tue, 28 Jan 2014 10:38:08 -0800
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Anton Blanchard <anton@samba.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Jan Kara <jack@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH] kthread: ensure locality of task_struct allocations
-Message-ID: <20140128183808.GB9315@linux.vnet.ibm.com>
+	Tue, 28 Jan 2014 13:39:26 -0500
+Date: Tue, 28 Jan 2014 18:38:51 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: hw_breakpoint: Add ARMv8 support
+Message-ID: <20140128183851.GK2885@mudshark.cambridge.arm.com>
+References: <1390415365-17230-1-git-send-email-cov@codeaurora.org>
+ <1390933583-1278-1-git-send-email-cov@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Operating-System: Linux 3.11.0-15-generic (x86_64)
+In-Reply-To: <1390933583-1278-1-git-send-email-cov@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012818-9332-0000-0000-000002EA4945
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the presence of memoryless nodes, numa_node_id()/cpu_to_node() will
-return the current CPU's NUMA node, but that may not be where we expect
-to allocate from memory from. Instead, we should use
-numa_mem_id()/cpu_to_mem(). On one ppc64 system with a memoryless Node
-0, this ends up saving nearly 500M of slab due to less fragmentation.
+On Tue, Jan 28, 2014 at 06:26:23PM +0000, Christopher Covington wrote:
+> Add the trivial support necessary to get hardware breakpoints
+> working for GDB on ARMv8 simulators running in AArch32 mode.
+> 
+> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+> ---
+> 
+>  v2: modify debug_exception_updates_fsr
+> 
+>  arch/arm/include/asm/hw_breakpoint.h | 1 +
+>  arch/arm/kernel/hw_breakpoint.c      | 3 ++-
+>  2 files changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/include/asm/hw_breakpoint.h b/arch/arm/include/asm/hw_breakpoint.h
+> index eef55ea..8e427c7 100644
+> --- a/arch/arm/include/asm/hw_breakpoint.h
+> +++ b/arch/arm/include/asm/hw_breakpoint.h
+> @@ -51,6 +51,7 @@ static inline void decode_ctrl_reg(u32 reg,
+>  #define ARM_DEBUG_ARCH_V7_ECP14	3
+>  #define ARM_DEBUG_ARCH_V7_MM	4
+>  #define ARM_DEBUG_ARCH_V7_1	5
+> +#define ARM_DEBUG_ARCH_V8	6
+>  
+>  /* Breakpoint */
+>  #define ARM_BREAKPOINT_EXECUTE	0
+> diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+> index 3d44660..a711b27 100644
+> --- a/arch/arm/kernel/hw_breakpoint.c
+> +++ b/arch/arm/kernel/hw_breakpoint.c
+> @@ -167,7 +167,7 @@ static int debug_arch_supported(void)
+>  /* Can we determine the watchpoint access type from the fsr? */
+>  static int debug_exception_updates_fsr(void)
+>  {
+> -	return 0;
+> +	return get_debug_arch() == ARM_DEBUG_ARCH_V8;
 
-Signed-off-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+I'd probably make that >= to save on future changes.
 
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index b5ae3ee..8573e4e 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -217,7 +217,7 @@ int tsk_fork_get_node(struct task_struct *tsk)
- 	if (tsk == kthreadd_task)
- 		return tsk->pref_node_fork;
- #endif
--	return numa_node_id();
-+	return numa_mem_id();
- }
- 
- static void create_kthread(struct kthread_create_info *create)
-@@ -369,7 +369,7 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
- {
- 	struct task_struct *p;
- 
--	p = kthread_create_on_node(threadfn, data, cpu_to_node(cpu), namefmt,
-+	p = kthread_create_on_node(threadfn, data, cpu_to_mem(cpu), namefmt,
- 				   cpu);
- 	if (IS_ERR(p))
- 		return p;
+With that change:
 
+  Acked-by: Will Deacon <will.deacon@arm.com>
+
+Will
