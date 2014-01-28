@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588AbaA1Ups (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:45:48 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58631 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326AbaA1Upq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:45:46 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: dmaengine@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Joe Perches <joe@perches.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Daniel Mack <zonque@gmail.com>, Xiang Wang <wangx@marvell.com>,
-        Zhangfei Gao <zhangfei.gao@marvell.com>
-Subject: [PATCH] dmaengine: mmp_pdma: fix mismerge
-Date: Tue, 28 Jan 2014 21:45:38 +0100
-Message-ID: <3546714.4OTE6dW34L@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+	id S1755595AbaA1UtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:49:19 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39872 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754497AbaA1UtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:49:17 -0500
+Date: Tue, 28 Jan 2014 21:49:06 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140128204906.GK815@pd.tnic>
+References: <52E7D2E5.8090208@linux.intel.com>
+ <52E7D9FF.1080506@nod.at>
+ <52E7DB15.3090808@zytor.com>
+ <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+ <20140128170507.GA16279@gmail.com>
+ <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+ <20140128194823.GA18702@gmail.com>
+ <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
+ <20140128201536.GB5178@pd.tnic>
+ <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:PSX+okaYWkh5bIqMhVFTYR2dql1eNqWS7YGRj/dtuk1
- R4udZ7NmPUh19o4NimI8pQDP9RrqzhzYttq6xZI+WPvxL3GR0Y
- noLiGl7JqjXBtF3g/idh/WV3uJFBLKx21PA/Y6t4mRtRh40oaE
- T/UXV81yMIw0XVspyvfvGH5moJwOAGNr3F25+boSpanLvDkLRu
- YYyOUQ+IC/20OsZ8D0lElxuim9F39yxMZ/bSy8dE1dccc/YQck
- jprmN0u8NcfO7nDqeUt6UscTeIhKQmVp+L7gjxIW80Ysa25N6g
- TBQrIXwmlZO5b0eBAdrItcmO3sTCHpMa3Z4qXpeIny5UvUB+vm
- RxGhreBmxmpjbuJNo04A=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The merge between 2b7f65b11d87f "mmp_pdma: Style neatening" and
-8010dad55a0ab0 "dma: add dma_get_any_slave_channel(), for use in of_xlate()"
-caused a build error by leaving obsolete code in place:
+On Tue, Jan 28, 2014 at 12:25:15PM -0800, Linus Torvalds wrote:
+> Probably. And then we should make sure that allyesconfig/allmodconfig
+> don't pick it.
 
-  mmp_pdma.c: In function 'mmp_pdma_dma_xlate':
-  mmp_pdma.c:909:31: error: 'candidate' undeclared
-  mmp_pdma.c:912:3: error: label 'retry' used but not defined
-  mmp_pdma.c:901:24: warning: unused variable 'c' [-Wunused-variable]
+I'd need to think about that a bit longer as scripts/kconfig/conf.c goes
+and sets those. Unless someone has a better idea...
 
-This removes the extraneous lines.
+> There *are* reasonable uses for DEBUG_INFO:
+> 
+>  - if you very actively and extensively use kgdb, DEBUG_INFO is very useful.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Right, and at least KGDB depends on it. I was going to suggest to hide
+it and make only tools select it but...
 
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index 32e58ee..69c6a12 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -898,19 +898,11 @@ static struct dma_chan *mmp_pdma_dma_xlate(struct of_phandle_args *dma_spec,
- {
- 	struct mmp_pdma_device *d = ofdma->of_dma_data;
- 	struct dma_chan *chan;
--	struct mmp_pdma_chan *c;
+>  - distros might want to build distro kernels with DEBUG_INFO for the
+> kernel debug package
+
+Yes. SUSE uses crash to analyze dumps and for that it needs -g symbols
+and other distros I'm sure too in some fashion.
+
+> but for most kernel developers, DEBUG_INFO really just bloats things
+> and makes the build much *much* slower, for very little gain.
+
+Right, your discussion kinda made me aware of this - I hadn't realized
+that KALLSYMS is enough.
+
+> Sure, you get line numbers, but let's face it, it's not that hard
+> to just do "x/20i <address>" and trying to match it up with the
+> generated code instead. And since "just match it up" model works with
+> user-reported oopses of random kernels, you had better be able and
+> willing to do that *anyway*.
+
+Hohumm.
+
+> If most of the oopses you decode are on your own machine with your own
+> kernel, you might want to try to learn to be more careful when writing
+> code. And I'm not even kidding.
+
+Haha.
+
+Ok, here's the help text hunk:
+
+---
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index dbf94a7d25a8..73b36a1624ec 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -126,7 +126,11 @@ config DEBUG_INFO
+ 	  This adds debug symbols to the kernel and modules (gcc -g), and
+ 	  is needed if you intend to use kernel crashdump or binary object
+ 	  tools like crash, kgdb, LKCD, gdb, etc on the kernel.
+-	  Say Y here only if you plan to debug the kernel.
++
++	  If you only want to have symbols in kernel traces and are not
++	  going to need support for those tools above, you don't need
++	  to enable this as it is a huge bloat and build slowdown.
++	  Enable CONFIG_KALLSYMS instead.
  
- 	chan = dma_get_any_slave_channel(&d->device);
- 	if (!chan)
- 		return NULL;
+ 	  If unsure, say N.
  
--	/* dma_get_slave_channel will return NULL if we lost a race between
--	 * the lookup and the reservation */
--	chan = dma_get_slave_channel(candidate);
--
--	if (!chan)
--		goto retry;
--
- 	to_mmp_pdma_chan(chan)->drcmr = dma_spec->args[0];
- 
- 	return chan;
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
