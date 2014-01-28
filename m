@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaA1K0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:26:34 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:53894 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753775AbaA1K0c (ORCPT
+	id S1754946AbaA1KdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:33:01 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50657 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754712AbaA1KdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:26:32 -0500
-X-Sasl-enc: ZP/k3fAKuRqUyDfHnRxs0CvH4WcKed+CRV89nDNvnmiu 1390904790
-Date: Tue, 28 Jan 2014 08:26:27 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] x86, microcode: Add option to allow downgrading of
- microcode
-Message-ID: <20140128102626.GA32249@khazad-dum.debian.net>
-References: <1390598339-18740-1-git-send-email-andi@firstfloor.org>
- <1390598339-18740-2-git-send-email-andi@firstfloor.org>
- <20140125163558.GC25531@khazad-dum.debian.net>
- <20140125181409.GE20765@two.firstfloor.org>
+	Tue, 28 Jan 2014 05:33:00 -0500
+Date: Tue, 28 Jan 2014 10:32:53 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, "Kristo, Tero" <t-kristo@ti.com>
+Subject: Re: [PATCH] clk: divider: fix rate calculation for fractional rates
+Message-ID: <20140128103253.GD15937@n2100.arm.linux.org.uk>
+References: <1383736008-22764-1-git-send-email-tomi.valkeinen@ti.com> <20131106111534.GW16735@n2100.arm.linux.org.uk> <527A2C9C.4080409@ti.com> <20131106161911.GA16735@n2100.arm.linux.org.uk> <52E76E3A.8030807@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140125181409.GE20765@two.firstfloor.org>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52E76E3A.8030807@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Jan 2014, Andi Kleen wrote:
-> On Sat, Jan 25, 2014 at 02:35:58PM -0200, Henrique de Moraes Holschuh wrote:
-> > On Fri, 24 Jan 2014, Andi Kleen wrote:
-> > > For testing purposes it can be useful to downgrade microcode.
-> > > Normally the driver only allows upgrading.
-> > 
-> > The code is not prepared to work correctly when downgrading is allowed, in
-> > the presence of shadowed microcode.  When a firmware request results in more
+On Tue, Jan 28, 2014 at 10:45:46AM +0200, Tomi Valkeinen wrote:
+> Russell, I'd like to understand why you think the original example is bad:
 > 
-> As I wrote it's only for testing purposes when you know what you're doing
-> (typically with a special micro code file)
+> 	rate = clk_round_rate(clk, rate);
+> 	clk_set_rate(clk, rate);
+
+It's needlessly wasteful.  All the processing for setting the rate is
+repeated.
+
+> If the definition of clk_round_rate is basically "clk_set_rate without
+> actually setting the rate", I agree that the above code is not good as
+> it might not work correctly.
 > 
-> Your whole argument is irrelevant, as it only applies to normal users
-> who should never use this option.
-
-It certainly could become a lot less relevant if any indication is given to
-normal users that they should never enable the feature unless they really
-know what they're doing.
-
-It is NOT "only for testing purposes" when that fact is written nowhere an
-user would see.
-
-> > Also, since you're going to mess with this, why don't you implement the
-> > correct semanthics for microcode with the sign bit set?  Making it signed
-> > actually makes the current code behaviour worse.
-> > 
-> > Refer to: http://lkml.org/lkml/2011/3/21/522
+> However, if  the following code you gave should work:
 > 
-> I don't think it makes it worse. In fact I'm essentially implementing
-> Burt's request "for explicit user action" with the new override option.
+> 	rate = clk_get_rate(clk);
+> 	clk_set_rate(clk, rate);
+> 	assert(clk_get_rate(clk) == rate);
+> 
+> then the original example should also always work, as it's almost the
+> same as:
+> 
+> 	/* this is the "round" part */
+> 	clk_set_rate(clk, rate);
+> 	rate = clk_get_rate(clk);
+> 
+> 	clk_set_rate(clk, rate);
+> 	assert(clk_get_rate(clk) == rate);
 
-You're correct.  It doesn't make it worse, it makes it better.  Your change
-effectively forbids loading pre-release microcode on a box which has
-production microcode, unless "downgrade mode" is enabled.
+Okay, now ask yourself this - would you code the above into your driver
+with no processing between the two?  It seems that some people would!
 
-This is different from what Burt requested, but if you're implementing a
-downgrade mode, it is certainly a much better behavior.
+> Why I'm asking this is that for me (and probably for others also if
+> you've seen it used in the kernel code) it feels natural to have code like:
+> 
+> 	rate = clk_round_rate(clk, rate);
+> 	
+> 	/* Verify the rounded rate here to see it's ok for the IP etc */
+> 
+> 	/* The rate is ok, so set it */
+> 	clk_set_rate(clk, rate);
 
-> Anyways I suppose your rant killed the patch anyways. Congratulations!
+If you want to do something with the rounded rate, then that's fine,
+you have a reason to do it this way.  However, what I was referring to
+are drivers which literally do this:
 
-You decided to ignore feedback you got weeks ago that required just adding a
-comment to the code or to the commit log to address.  Whether or not you
-consider said feedback particularly interesting or relevant does NOT give
-you the right to just handwave it away only to later blame others should the
-patch not get accepted.
+	clk_set_rate(clk, clk_round_rate(clk, rate));
+
+In other words, they think that they must always round the rate before
+passing it into clk_set_rate() even though they make no other use of
+the rounded rate.  That is completely wasteful and unnecessary.  It
+might as well have clk_round_rate() replaced by a udelay() to waste
+some CPU cycles just for the hell of it.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
