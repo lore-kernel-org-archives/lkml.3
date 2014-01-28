@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaA1GKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 01:10:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43781 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747AbaA1GKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 01:10:54 -0500
-Date: Tue, 28 Jan 2014 01:10:37 -0500
-From: Dave Jones <davej@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: fanotify use after free.
-Message-ID: <20140128061037.GA27636@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
-	Jiri Kosina <jkosina@suse.cz>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140122062730.GA25601@redhat.com>
- <CA+55aFxnv050RqhhLBbsvV4=dcu-_ZXokbhmuO8Y4zVcvVJ6OQ@mail.gmail.com>
- <20140122233622.GB27916@quack.suse.cz>
- <CA+55aFwzb7rJate=r0Sgi_N7FStNtJS_PvfgPSGaczPPgeUZvg@mail.gmail.com>
- <alpine.LNX.2.00.1401231120360.581@pobox.suse.cz>
- <20140123150540.GD28796@quack.suse.cz>
- <alpine.LNX.2.00.1401231607120.581@pobox.suse.cz>
- <20140123235549.GA7363@quack.suse.cz>
- <alpine.LNX.2.00.1401240825470.581@pobox.suse.cz>
- <20140127234017.GA7868@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140127234017.GA7868@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754253AbaA1GNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 01:13:46 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:57698 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaA1GNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 01:13:45 -0500
+From: William Roberts <bill.c.roberts@gmail.com>
+To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        sds@tycho.nsa.gov
+Cc: William Roberts <wroberts@tresys.com>
+Subject: [PATCH v5 1/3] mm: Create utility function for accessing a tasks commandline value
+Date: Mon, 27 Jan 2014 22:13:46 -0800
+Message-Id: <1390889628-5543-1-git-send-email-wroberts@tresys.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:40:17AM +0100, Jan Kara wrote:
- > On Fri 24-01-14 08:26:45, Jiri Kosina wrote:
- > > On Fri, 24 Jan 2014, Jan Kara wrote:
- > > 
- > > >   Strange. I've installed systemd system (openSUSE 13.1) and it boots 
- > > > with the latest Linus' kernel just fine (and I have at least FANOTIFY 
- > > > and SLAB debugging set the same way as you). But it was only a KVM 
- > > > guest. I'll try tomorrow with a physical machine I guess.
- > > 
- > > FWIW the system I am reliably able to reproduce this on is opensuse 12.3 
- > > with this systemd version: 
- > > 
- > > Version     : 195
- > > Release     : 13.18.1
- >   Hum, still no luck with reproduction (either on physical machine or with
- > KVM). Anyway, I've looked at the code again and the previous patch had a
- > stupid bug (passing different pointer to fsnotify_destroy_event() than we
- > should have), plus also the merging function in fanotify was too
- > aggressive. Can you try the attached patch? It boots for me but that means
- > nothing since I cannot reproduce the issue... Thanks!
+introduce get_cmdline() for retreiving the value of a processes
+proc/self/cmdline value.
 
-still not good I'm afraid. I still see corruption very early on in boot
-and now it panics and locks up too.
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
 
-Again, this happens so early that I can't grab it over usb-serial.
-I stuck an mdelay(10000) in the slub corruption detector, and managed
-to grab a photo of the first trace.
+Signed-off-by: William Roberts <wroberts@tresys.com>
+---
+ include/linux/mm.h |    1 +
+ mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
-Trace:
-? preempt_schedule
-lock_acquire
-? lockref_put_or_lock
-_raw_spin_lock
-? lockref_put_or_lock
-dput
-path_put
-fanotify_free_event
-fsnotify_destroy_event
-fanotify_handle_event
-? mntput
-? path_openat
-? handle_mm_fault
-send_to_group
-? fsnotify
-fsnotify
-do_sys_open
-sys_open
-RIP: lock_acquire
-
-  2b:*	4d 8b 64 c6 08       	mov    0x8(%r14,%rax,8),%r12     <-- trapping instruction
-
-R14 is 0x6b6b6b6b6b6b6c03, which looks like a use-after-free.
-
-I also notice you mention SLAB above, but I've been using SLUB. I don't
-know if the choice of allocator makes a difference in reproducability.
-
-It's also worth noting that I have lockdep enabled, which may be perturbing things
-to some degree.
-
-	Dave
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f28f46e..db89a94 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1175,6 +1175,7 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int get_cmdline(struct task_struct *task, char *buffer, int buflen);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/util.c b/mm/util.c
+index a24aa22..8122710 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -445,6 +445,54 @@ unsigned long vm_commit_limit(void)
+ 	return allowed;
+ }
+ 
++/**
++ * get_cmdline() - copy the cmdline value to a buffer.
++ * @task:     the task whose cmdline value to copy.
++ * @buffer:   the buffer to copy to.
++ * @buflen:   the length of the buffer. Larger cmdline values are truncated
++ *            to this length.
++ * Returns the size of the cmdline field copied. Note that the copy does
++ * not guarantee an ending NULL byte.
++ */
++int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++{
++	int res = 0;
++	unsigned int len;
++	struct mm_struct *mm = get_task_mm(task);
++	if (!mm)
++		goto out;
++	if (!mm->arg_end)
++		goto out_mm;	/* Shh! No looking before we're done */
++
++	len = mm->arg_end - mm->arg_start;
++
++	if (len > buflen)
++		len = buflen;
++
++	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
++
++	/*
++	 * If the nul at the end of args has been overwritten, then
++	 * assume application is using setproctitle(3).
++	 */
++	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
++		len = strnlen(buffer, res);
++		if (len < res) {
++			res = len;
++		} else {
++			len = mm->env_end - mm->env_start;
++			if (len > buflen - res)
++				len = buflen - res;
++			res += access_process_vm(task, mm->env_start,
++						 buffer+res, len, 0);
++			res = strnlen(buffer, res);
++		}
++	}
++out_mm:
++	mmput(mm);
++out:
++	return res;
++}
+ 
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+-- 
+1.7.9.5
 
