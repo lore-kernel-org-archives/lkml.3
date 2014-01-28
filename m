@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459AbaA1Fzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 00:55:38 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:25279 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747AbaA1Fzf (ORCPT
+	id S1754510AbaA1F4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 00:56:25 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:44819 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaA1Fzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 00:55:35 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-b7f156d00000276c-2b-52e746565533
-Content-transfer-encoding: 8BIT
+	Tue, 28 Jan 2014 00:55:37 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-2a-52e74656d457
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 4/4] f2fs: fix a build warning
-Date: Tue, 28 Jan 2014 14:54:07 +0900
-Message-id: <1390888447-5258-4-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 3/4] f2fs: fix to recover xattr node block
+Date: Tue, 28 Jan 2014 14:54:06 +0900
+Message-id: <1390888447-5258-3-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
 In-reply-to: <1390888447-5258-1-git-send-email-jaegeuk.kim@samsung.com>
 References: <1390888447-5258-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t8zI90wt+dBBlt/Clhc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH76kvGgn6Biq6e
-	zUwNjBt5uxg5OSQETCTWzD3KCmGLSVy4t54NxBYSWMYo8fp1LUzN4pln2LsYuYDiixgl2mYf
-	ZwRJ8AoISvyYfI+li5GDg1lAXuLIpWyQMLOAusSkeYuYIeqbmCSO/13IClLDJqAtsXm/AUiN
-	iACzxIKp5xlBapgFJjBK/F/0ngUkISygJ3H8/TSwg1gEVCX2Pp3CArHLTWLbnzdsEAdpS2x7
-	PhHsBk4Bd4nLH3+yg8wXAqp5P9EQZKaEwCZ2icsL+9gg5ghIfJt8COxOCQFZiU0HmCHGSEoc
-	XHGDZQKj2Cwk38xC+GYWkm8WMDKvYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJnv4djHcP
-	WB9iTAbaOJFZSjQ5Hxh9eSXxhsZmRhamJqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRf
-	VJqTWnyIkYmDU6qBMeuJvLz6+U6TWap6Descvoa+nrIli9PC7O83kwPeEc2e7uxzotsvdzw7
-	I3M7XvNTwrb/Cjfs9kc0vXvoVq1610h7/6X+RWESQU4TfLYHvk6esVHlMXvjjkiD9JmVnnEN
-	VsEuCy8W7v3eOXGiSkn++rlTw9vYA7ymvHj2LOUky2pWnXvXIy20lViKMxINtZiLihMBHPos
-	17QCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t9jAd0wt+dBBg928lpc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ix++pLxoJ+gYquns1MDYwbebsYOTkkBEwkFs88ww5hi0lcuLeerYuRi0NI
-	YBGjRNvs44wgCV4BQYkfk++xdDFycDALyEscuZQNEmYWUJeYNG8RM0R9E5PE8b8LWUFq2AS0
-	JTbvNwCpERFgllgw9TwjSA2zwARGif+L3rOAJIQF9CSOv5/GCmKzCKhK7H06hQVil5vEtj9v
-	2CAO0pbY9nwi2A2cAu4Slz/+ZAeZLwRU836i4QRGgVlIrpuFcN0sJNctYGRexSiaWpBcUJyU
-	nmuoV5yYW1yal66XnJ+7iREcnc+kdjCubLA4xCjAwajEw9vR+SxIiDWxrLgy9xCjBAezkgjv
-	2SlAId6UxMqq1KL8+KLSnNTiQ4zJQHdPZJYSTc4HJo68knhDYxMzI0sjMwsjE3Nz0oSVxHkP
-	tFoHCgmkJ5akZqemFqQWwWxh4uCUamCMvZK8zSlJ9vNnBva7nszfzBLDnnx6V1C0K33et8mb
-	Pn969SryU1BIbp9T3w4Vu8J3SztUrr3/6iGyZfKNJu1vi34uW6AidpHX3vkl48f3i8Uabu88
-	K29bzB66ZVnspLlPPdeyr3x7eg6zzLlqxQfn397+FiZWqrpAKod9xl5JYwnF8s6Gr1NZlViK
-	MxINtZiLihMB3PaF4hIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zI90wt+dBBr/fcFpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbHuR03BTvmKnt0X
+	2BoYb0t1MXJySAiYSPw73c4GYYtJXLi3Hsjm4hASWMYo8XLeRNYuRg6wohvPAyDiixgl/py5
+	yArhNDFJHP+7EKyITUBbYvN+A5BBIgLMEgumnmcEqWEWmMAo8X/RexaQhLCAlcSlO7PBbBYB
+	VYm5B18zgdi8Am4Ss7/1MUNcoS2x7flERhCbU8Bd4vLHn+wg84WAat5PNASZKSHwnU3i6soW
+	Jog5AhLfJh9igThUVmLTAagxkhIHV9xgmcAovICRYRWjaGpBckFxUnqRsV5xYm5xaV66XnJ+
+	7iZGSLj272C8e8D6EGMy0LiJzFKiyfnAcM8riTc0NjOyMDUxNTYytzQjTVhJnPf+w6QgIYH0
+	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzZb5Q0jkZn/ln/uWLesm2vGJWMwqMj/M9cfhhiWPX5
+	dPguhmTekgkztu+stchb/TKB3cPrR/H+XYyOkfHPbiZ5yq8029tgICtzafNTFq1iU+kJNzd+
+	9l2q+HB67BW93zF9jh+vye672fvc4nT23W17fNnnHhR4vyvkbfenK89Vgyaa69zb+fOTEktx
+	RqKhFnNRcSIAaHkvLm0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAd0wt+dBBtt62Cyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8xY96OmYKd8Rc/uC2wNjLeluhg5OCQETCRuPA/oYuQEMsUkLtxbz9bFyMUh
+	JLCIUeLPmYusEE4Tk8TxvwtZQRrYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4AkhAWs
+	JC7dmQ1mswioSsw9+JoJxOYVcJOY/a2PGWKbtsS25xMZQWxOAXeJyx9/soPMFwKqeT/RcAIj
+	7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwdHwTGoH48oGi0OMAhyMSjy8HZ3PgoRY
+	E8uKK3MPMUpwMCuJ8J6dAhTiTUmsrEotyo8vKs1JLT7EmAx01ERmKdHkfGCk5pXEGxqbmBlZ
+	GplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QD46IPu+Z9e77jyvq5+6PdExaz
+	saZOWqbdy1m5WGVSnOnp5/XpBmdU/9V+uu2of+568Bm13R+0jhaFaJl4tD2w60m8f+86/+tl
+	UftTtdm/pfas85M3n+m0XU+y/dOOqkge3Zde4pH2Gp87tdYJ7Nnze43c87buDcURWWEXDDyN
+	D+llp1evSKvrUWIpzkg01GIuKk4EAG/iEWHKAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,62 +48,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies flow a little bit to avoid the following build warnings.
+If a new xattr node page was allocated and its inode is fsynced, we should
+recover the xattr node page during the roll-forward process after power-cut.
+But, previously, f2fs didn't handle that case, resulting in kernel panic as
+follows reported by Tom Li.
 
-src/fs/f2fs/recovery.c: In function ‘check_index_in_prev_nodes’:
-src/fs/f2fs/recovery.c:288:51: warning: ‘sum.<U5390>.<U52f8>.ofs_in_node’ may
-	be used uninitialized in this function [-Wmaybe-uninitialized]
-src/fs/f2fs/recovery.c:260:23: warning: ‘sum.nid’ may be used uninitialized
-	in this function [-Wmaybe-uninitialized]
+BUG: unable to handle kernel paging request at ffffc9001c861a98
+IP: [<ffffffffa0295236>] check_index_in_prev_nodes+0x86/0x2d0 [f2fs]
+Call Trace:
+ [<ffffffff815ece9b>] ? printk+0x48/0x4a
+ [<ffffffffa029626a>] recover_fsync_data+0xdca/0xf50 [f2fs]
+ [<ffffffffa02873ae>] f2fs_fill_super+0x92e/0x970 [f2fs]
+ [<ffffffff8112c9f8>] mount_bdev+0x1b8/0x200
+ [<ffffffffa0286a80>] ? f2fs_remount+0x130/0x130 [f2fs]
+ [<ffffffffa0285e40>] f2fs_mount+0x10/0x20 [f2fs]
+ [<ffffffff8112d4de>] mount_fs+0x3e/0x1b0
+ [<ffffffff810ef4eb>] ? __alloc_percpu+0xb/0x10
+ [<ffffffff8114761f>] vfs_kern_mount+0x6f/0x120
+ [<ffffffff811497b9>] do_mount+0x259/0xa90
+ [<ffffffff810ead1d>] ? memdup_user+0x3d/0x80
+ [<ffffffff810eadb3>] ? strndup_user+0x53/0x70
+ [<ffffffff8114a2c9>] SyS_mount+0x89/0xd0
+ [<ffffffff815feae2>] system_call_fastpath+0x16/0x1b
 
+This patch adds a recovery function of xattr node pages.
+
+Reported-by: Tom Li <biergaizi@members.fsf.org>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/recovery.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ fs/f2fs/f2fs.h     |  1 +
+ fs/f2fs/node.c     | 40 ++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/recovery.c |  3 +++
+ 3 files changed, 44 insertions(+)
 
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 6e9515d..80a64fd 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1117,6 +1117,7 @@ void alloc_nid_done(struct f2fs_sb_info *, nid_t);
+ void alloc_nid_failed(struct f2fs_sb_info *, nid_t);
+ void recover_node_page(struct f2fs_sb_info *, struct page *,
+ 		struct f2fs_summary *, struct node_info *, block_t);
++bool recover_xattr_data(struct inode *, struct page *, block_t);
+ int recover_inode_page(struct f2fs_sb_info *, struct page *);
+ int restore_node_summary(struct f2fs_sb_info *, unsigned int,
+ 				struct f2fs_summary_block *);
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index b0649b7..82f4753 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1535,6 +1535,46 @@ void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
+ 	clear_node_page_dirty(page);
+ }
+ 
++bool recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	nid_t prev_xnid = F2FS_I(inode)->i_xattr_nid;
++	nid_t new_xnid = nid_of_node(page);
++	struct node_info ni;
++
++	if (ofs_of_node(page) != XATTR_NODE_OFFSET)
++		return false;
++
++	/* 1: invalidate the previous xattr nid */
++	if (!prev_xnid)
++		goto recover_xnid;
++
++	/* Deallocate node address */
++	get_node_info(sbi, prev_xnid, &ni);
++	f2fs_bug_on(ni.blk_addr == NULL_ADDR);
++	invalidate_blocks(sbi, ni.blk_addr);
++	dec_valid_node_count(sbi, inode);
++	set_node_addr(sbi, &ni, NULL_ADDR);
++
++recover_xnid:
++	/* 2: allocate new xattr nid */
++	if (unlikely(!inc_valid_node_count(sbi, inode)))
++		f2fs_bug_on(1);
++
++	remove_free_nid(NM_I(sbi), new_xnid);
++	get_node_info(sbi, new_xnid, &ni);
++	ni.ino = inode->i_ino;
++	set_node_addr(sbi, &ni, NEW_ADDR);
++	F2FS_I(inode)->i_xattr_nid = new_xnid;
++
++	/* 3: update xattr blkaddr */
++	refresh_sit_entry(sbi, NEW_ADDR, blkaddr);
++	set_node_addr(sbi, &ni, blkaddr);
++
++	update_inode_page(inode);
++	return true;
++}
++
+ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+ {
+ 	struct f2fs_inode *src, *dst;
 diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index f1b0b89..cdc4bdd 100644
+index 976a7a9..f1b0b89 100644
 --- a/fs/f2fs/recovery.c
 +++ b/fs/f2fs/recovery.c
-@@ -220,11 +220,11 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
- 	unsigned int segno = GET_SEGNO(sbi, blkaddr);
- 	unsigned short blkoff = GET_SEGOFF_FROM_SEG0(sbi, blkaddr) &
- 					(sbi->blocks_per_seg - 1);
-+	struct f2fs_summary_block *sum_node;
- 	struct f2fs_summary sum;
-+	struct page *sum_page, *node_page;
- 	nid_t ino, nid;
--	void *kaddr;
- 	struct inode *inode;
--	struct page *node_page;
- 	unsigned int offset;
- 	block_t bidx;
- 	int i;
-@@ -238,18 +238,15 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
- 		struct curseg_info *curseg = CURSEG_I(sbi, i);
- 		if (curseg->segno == segno) {
- 			sum = curseg->sum_blk->entries[blkoff];
--			break;
-+			goto got_it;
- 		}
- 	}
--	if (i > CURSEG_COLD_DATA) {
--		struct page *sum_page = get_sum_page(sbi, segno);
--		struct f2fs_summary_block *sum_node;
--		kaddr = page_address(sum_page);
--		sum_node = (struct f2fs_summary_block *)kaddr;
--		sum = sum_node->entries[blkoff];
--		f2fs_put_page(sum_page, 1);
--	}
+@@ -301,6 +301,9 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 	if (recover_inline_data(inode, page))
+ 		goto out;
  
-+	sum_page = get_sum_page(sbi, segno);
-+	sum_node = (struct f2fs_summary_block *)page_address(sum_page);
-+	sum = sum_node->entries[blkoff];
-+	f2fs_put_page(sum_page, 1);
-+got_it:
- 	/* Use the locked dnode page and inode */
- 	nid = le32_to_cpu(sum.nid);
- 	if (dn->inode->i_ino == nid) {
++	if (recover_xattr_data(inode, page, blkaddr))
++		goto out;
++
+ 	start = start_bidx_of_node(ofs_of_node(page), fi);
+ 	if (IS_INODE(page))
+ 		end = start + ADDRS_PER_INODE(fi);
 -- 
 1.8.4.474.g128a96c
 
