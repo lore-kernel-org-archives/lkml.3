@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120AbaA1Uxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:53:33 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:56003 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212AbaA1Uxc (ORCPT
+	id S932172AbaA1Uy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:54:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36279 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128AbaA1Uy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:53:32 -0500
-Message-ID: <52E7FCF1.10705@gmail.com>
-Date: Wed, 29 Jan 2014 07:54:41 +1300
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Tue, 28 Jan 2014 15:54:26 -0500
+Date: Tue, 28 Jan 2014 21:54:06 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC][PATCH v2 4/5] mutex: Disable preemtion between modifying
+ lock->owner and locking/unlocking mutex
+Message-ID: <20140128205406.GI11314@laptop.programming.kicks-ass.net>
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+ <1390936396-3962-5-git-send-email-jason.low2@hp.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Daniel Borkmann <dborkman@redhat.com>
-Subject: Re: [PATCH] vsprintf: ignore arguments to %n
-References: <20140128003927.GA27319@www.outflux.net>	<52E701BF.9040306@gmail.com> <CAGXu5jLbsx+H5NBY25XxH+cRSejJWZ2-v1fa2-GQ-y3VJa-h0A@mail.gmail.com>
-In-Reply-To: <CAGXu5jLbsx+H5NBY25XxH+cRSejJWZ2-v1fa2-GQ-y3VJa-h0A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390936396-3962-5-git-send-email-jason.low2@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/01/14 09:51, Kees Cook wrote:
+On Tue, Jan 28, 2014 at 11:13:15AM -0800, Jason Low wrote:
+> This RFC patch disables preemption between modifying lock->owner and
+> locking/unlocking the mutex lock. This prevents situations where the owner
+> can preempt between those 2 operations, which causes optimistic spinners to
+> be unable to check if lock->owner is not on CPU. As mentioned in the
+> thread for this v1 patchset, disabling preemption is a cheap operation.
 
-> On Mon, Jan 27, 2014 at 5:02 PM, Ryan Mallon <rmallon@gmail.com> wrote:
->> On 28/01/14 11:39, Kees Cook wrote:
->>> If arguments are consumed without output when encountering %n, it
->>> could be used to benefit or improve information leak attacks that were
->>> exposed via a limited size buffer. Since %n is not used by the kernel,
->>> there is no reason to make an info leak attack any easier.
->>
->> I was thinking more like the following. Print the warning if %n is
->> detected in format_decode(), but otherwise just remove the handling of
->> %n outright and treat it like any other invalid format specifier.
->> Something like this completely untested patch. Thoughts?
-> 
-> I'd be totally fine with it. Minor typo in the comment before the
-> WARN_ONCE (should be "its" instead of "it"), but otherwise looks good.
-> Consider it:
-> 
-> Acked-by: Kees Cook <keescook@chromium.org>
-> 
-> It builds and boots fine for me, FWIW.
-> 
-> -Kees
-> 
+In that same thread it was also said that this wasn't really an issue at
+all. So what is the justification?
 
-
-It looks like your second version already got added to Andrew's mm tree.
-I'm happy to repost mine with a fixed typo and proper signed-off by if
-you'd rather use that version.
-
-~Ryan
- 
+The patch is rather hideous.
