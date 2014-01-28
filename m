@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130AbaA1RM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:12:59 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:58630 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113AbaA1RM5 (ORCPT
+	id S932277AbaA1ROo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:14:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47109 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143AbaA1ROl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:12:57 -0500
+	Tue, 28 Jan 2014 12:14:41 -0500
+Message-ID: <52E7E56D.9040302@oracle.com>
+Date: Tue, 28 Jan 2014 12:14:21 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140128170507.GA16279@gmail.com>
-References: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
-	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
-	<52E6954F.2060303@nod.at>
-	<CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>
-	<20140128062806.GA20750@gmail.com>
-	<52E76997.40303@nod.at>
-	<52E7D2E5.8090208@linux.intel.com>
-	<52E7D9FF.1080506@nod.at>
-	<52E7DB15.3090808@zytor.com>
-	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
-	<20140128170507.GA16279@gmail.com>
-Date: Tue, 28 Jan 2014 09:12:56 -0800
-X-Google-Sender-Auth: JkFCcVApvZnJjdVx1hdCa8n4mh8
-Message-ID: <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Content-Type: text/plain; charset=UTF-8
+To: Wang Nan <wangnan0@huawei.com>, linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>, Geng Hui <hui.geng@huawei.com>
+Subject: Re: [PATCH] Use realpath for srctree and objtree
+References: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1390730778-30366-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 9:05 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On 01/26/2014 05:06 AM, Wang Nan wrote:
+> When BUILD_SRC contains a tailing '/', the file name used in compiling command
+> will contain '//', and it then goes to .o's debuginfo, confuses debugedit:
 >
-> Well, I often use the hex numbers to look them up and disassemble them
-> in a vmlinux via gdb and 'list *0x1234123412341234' - where the
-> vmlinux has no debuginfo. (Debuginfo takes longer to build so I
-> generally build without it.)
+> https://bugzilla.redhat.com/show_bug.cgi?id=304121
+>
+> This patch uses realpath to makesure srctree and objtree don't have tailing '/'.
+>
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Geng Hui <hui.geng@huawei.com>
+>
+> ---
 
-Why the heck wouldn't you do that? Just do
+For the liblockdep changes:
 
-   list schedule+0x45
+	Acked-by: Sasha Levin <sasha.levin@oracle.com>
+	
 
-instead.
-
-> AFAICS this won't work in a symbol-less vmlinux. Is there some trick
-> to do it with gdb?
-
-Why would you have a symbol-less vmlinux? The only reason to strip
-vmlinux is because you were crazy enough to build with
-CONFIG_DEBUG_INFO and the damn debug info is so large that it won't
-fit on your root partition. But dammit, if you build with debug_info
-and then strip the end result, you're just insane. You made your build
-take ten times longer, use ten times more diskspace, and then you
-throw it all away. Crazy.
-
-So I don't think the symbol-less version is worth even worrying about.
-You do want to build with KALLSYMS (or whatever the config option is
-called), so that the symbolic name is worth something, but once you
-have the symbolc name, you're good unless you did something terminally
-stupid.
-
-Btw, we should make it harder to enable CONFIG_DEBUG_INFO. It's a
-f*cking pain. It's particularly nasty when you do "make allmodconfig"
-and it enables debug-info and makes the build take forever and waste
-diskspace - but nobody sane actually *boots* the end result, so that
-debug info is all pointless.
-
-                  Linus
+Thanks,
+Sasha
