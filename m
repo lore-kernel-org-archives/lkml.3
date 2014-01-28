@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaA1IPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:15:45 -0500
-Received: from mx11.pku.edu.cn ([162.105.129.174]:47682 "EHLO mail.pku.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754473AbaA1IPo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:15:44 -0500
-X-Greylist: delayed 632 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jan 2014 03:15:43 EST
-X-Spam-Flag: NO
-X-Spam-Score: -307.687
-Date: Tue, 28 Jan 2014 16:05:07 +0800 (CST)
-From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: xypron glpk <xypron.glpk@gmx.de>, gxt@mprc.pku.edu.cn,
-        paul gortmaker <paul.gortmaker@windriver.com>, vapier@gentoo.org,
-        totglx@linutronix.de, linux-kernel@vger.kernel.org
-Message-ID: <182670498.15705.1390896307427.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <20140127134959.72c65d0091554e36d1755ab0@linux-foundation.org>
-Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_Re:_[PATCH_1/?=
- =?utf-8?Q?1]_=5F=5Finit_setup=5Fe?=
- =?utf-8?Q?arly=5Fprintk:_missing_initialization?=
+	id S1754712AbaA1ISj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:18:39 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:42535 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711AbaA1ISi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 03:18:38 -0500
+Message-ID: <52E767C2.2090807@siemens.com>
+Date: Tue, 28 Jan 2014 09:18:10 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [162.105.129.95]
+To: Andi Kleen <andi@firstfloor.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
+References: <52E6AFFE.3030004@siemens.com> <20140127202252.GA11821@two.firstfloor.org>
+In-Reply-To: <20140127202252.GA11821@two.firstfloor.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.
+On 2014-01-27 21:22, Andi Kleen wrote:
+> On Mon, Jan 27, 2014 at 08:14:06PM +0100, Jan Kiszka wrote:
+>> apic_icr_write and its users in smpboot.c were apparently written under
+>> the assumption that this code would only run during early boot. But
+>> nowadays we also execute it when onlining a CPU later on while the
+>> system is fully running. That will make wakeup_cpu_via_init_nmi and,
+>> thus, also native_apic_icr_write run in plain process context. If we
+>> migrate the caller to a different CPU at the wrong time or interrupt it
+>> and write to ICR/ICR2 to send unrelated IPIs, we can end up sending
+>> INIT, SIPI or NMIs to wrong CPUs.
+>>
+>> Fix this by disabling interrupts during the write to the ICR halves and
+>> disable preemption around waiting for ICR availability and using it.
+> 
+> If you just want to disable migration use get_cpu()/put_cpu()
 
-Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Fine with me if that is now preferred. Will that be the upstream way of
+-rt's migrate_disable()?
 
------ Andrew Morton <akpm@linux-foundation.org> 写道：
-> On Mon, 27 Jan 2014 19:10:24 +0100 xypron.glpk@gmx.de wrote:
-> 
-> > From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-> > 
-> > If is based on uninitialized value keep_early.
-> > This leads to unpredictable result.
-> > 
-> > ...
-> >
-> > --- a/arch/unicore32/kernel/early_printk.c
-> > +++ b/arch/unicore32/kernel/early_printk.c
-> > @@ -35,7 +35,7 @@ static struct console early_ocd_console = {
-> >  
-> >  static int __init setup_early_printk(char *buf)
-> >  {
-> > -	int keep_early;
-> > +	int keep_early = 0;
-> >  
-> >  	if (!buf || early_console)
-> >  		return 0;
-> 
-> yup.
-> 
-> But that code is quite overcooked.  How about this?
-> 
-> --- a/arch/unicore32/kernel/early_printk.c~arch-unicore32-kernel-early_printkc-setup_early_printk-missing-initialization-fix
-> +++ a/arch/unicore32/kernel/early_printk.c
-> @@ -35,17 +35,11 @@ static struct console early_ocd_console
->  
->  static int __init setup_early_printk(char *buf)
->  {
-> -	int keep_early = 0;
-> -
->  	if (!buf || early_console)
->  		return 0;
->  
-> -	if (strstr(buf, "keep"))
-> -		keep_early = 1;
-> -
->  	early_console = &early_ocd_console;
-> -
-> -	if (keep_early)
-> +	if (strstr(buf, "keep"))
->  		early_console->flags &= ~CON_BOOT;
->  	else
->  		early_console->flags |= CON_BOOT;
-> _
-> 
+Jan
 
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
