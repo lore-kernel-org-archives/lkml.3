@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaA1C5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 21:57:38 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:56061 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428AbaA1C5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 21:57:35 -0500
+	id S1754384AbaA1C7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 21:59:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:7366 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753428AbaA1C7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 21:59:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,733,1384329600"; 
+   d="scan'208";a="465718459"
+Date: Tue, 28 Jan 2014 10:59:15 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [rcu] c0f4dfd4f9: -65% softirqs.RCU
+Message-ID: <20140128025915.GB15282@localhost>
+References: <20140119121608.GB2859@localhost>
+ <20140119231114.GE10038@linux.vnet.ibm.com>
+ <20140120122912.GA18137@localhost>
+ <20140121044100.GS10038@linux.vnet.ibm.com>
+ <20140124111130.GA24254@localhost>
+ <20140127170602.GO9012@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1390863766-14491-1-git-send-email-miletus@chromium.org>
-References: <1390863766-14491-1-git-send-email-miletus@chromium.org>
-Date: Mon, 27 Jan 2014 21:57:33 -0500
-Message-ID: <CAN+gG=F3EQ4o99HW3Qid52_Kp1g-yziW1yeNetP5mE9DmEmS2w@mail.gmail.com>
-Subject: Re: [PATCH] HID: usbhid: quirk for CY-TM75 75 inch Touch Overlay
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Yufeng Shen <miletus@chromium.org>
-Cc: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Andrew de los Reyes <adlr@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140127170602.GO9012@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 27, 2014 at 09:06:02AM -0800, Paul E. McKenney wrote:
+> On Fri, Jan 24, 2014 at 07:11:30PM +0800, Fengguang Wu wrote:
+> > On Mon, Jan 20, 2014 at 08:41:00PM -0800, Paul E. McKenney wrote:
+> > > On Mon, Jan 20, 2014 at 08:29:12PM +0800, Fengguang Wu wrote:
+> > > > On Sun, Jan 19, 2014 at 03:11:14PM -0800, Paul E. McKenney wrote:
+> > > > > On Sun, Jan 19, 2014 at 08:16:08PM +0800, Fengguang Wu wrote:
+> > > > > > Hi Paul,
+> > > > > > 
+> > > > > > Just FYI, we noticed the following changes (which looks good) on old commit
+> > > > > > c0f4dfd4f9 ("rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks") 
+> > > > > > in test case dd-write/4HDD-JBOD-cfq-btrfs-1dd:
+> > > > > > 
+> > > > > > b11cc5 (parent)  c0f4dfd4f90f1667d234d21f1  
+> > > > > > ---------------  -------------------------  
+> > > > > >     213757 ~ 4%     -65.4%      73929 ~ 3%  softirqs.RCU
+> > > > > >      21193 ~ 5%     -36.5%      13451 ~ 4%  softirqs.SCHED
+> > > > > >       2036 ~ 4%     -59.4%        825 ~ 3%  vmstat.system.cs
+> > > > > >    1304520 ~ 4%     -59.2%     532451 ~ 3%  perf-stat.context-switches
+> > > > > >      95685 ~ 4%     -44.0%      53598 ~ 2%  perf-stat.cpu-migrations
+> > > > > 
+> > > > > Glad it helped!  IIRC, this same commit increased latencies due to
+> > > > > synchronize_rcu() latency increasing.  So this is the good side of
+> > > > > that other not-so-good result.  ;-)
+> > > > 
+> > > > If you care it and there is a low cost way for user space to get that
+> > > > synchronize_rcu() latency, I'd be eager to collect it in my tests. :)
+> > > 
+> > > Would a kernel module that measured the latency be OK, or do you need
+> > > some system call that is exposed to synchronize_rcu() latency?
+> > 
+> > Kernel module should be good enough for me. Perhaps something like
+> > kernel/latencytop.c?
+> 
+> So you are looking for something that measures synchronize_rcu() latency
+> for the synchronize_rcu() calls that occur naturally in the kernel, rather
+> than having a focused microbenchmark?
 
-On Mon, Jan 27, 2014 at 6:02 PM, Yufeng Shen <miletus@chromium.org> wrote:
-> There is timeout error during initialization:
-> kernel: [   11.733104] hid-multitouch 0003:1870:0110.0001: usb_submit_urb(ctrl) failed: -1
-> kernel: [   11.734093] hid-multitouch 0003:1870:0110.0001: timeout initializing reports
->
-> Adding quirk HID_QUIRK_NO_INIT_REPORTS can solve the problem.
+Yes, then I can measure the synchronize_rcu() latency in all the tests
+I run, including the possible focused microbenchmarks on RCU. :)
 
-Could you please test the quirk HID_QUIRK_NO_INIT_INPUT_REPORTS instead?
-The patch is perfectly fine, but usually when it fails, only the input
-reports are non-readable, whereas features should. This way, you will
-still get the value of the features, which _may_ be sensible for the
-maxcontact information.
+btw, I've measured the overheads of CONFIG_SCHEDSTATS which is
+required for running latencytop, and it seems acceptable:
 
-BTW, HID_QUIRK_NO_INIT_INPUT_REPORTS has been introduced in v3.12 and
-is the default for Win 8 certified devices.
+     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
+---------------  -------------------------
+    174190 ~ 0%      -4.1%     167062 ~ 0%  lkp-snb01/micro/hackbench/1600%-threads-pipe
+    158995 ~ 1%      -3.1%     154094 ~ 0%  lkp-snb01/micro/hackbench/1600%-threads-socket
+    333186 ~ 1%      -3.6%     321156 ~ 0%  TOTAL hackbench.throughput
 
-Cheers,
-Benjamin
+     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
+---------------  -------------------------
+       278 ~ 0%      -3.4%        269 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_MAERTS
+       632 ~ 1%      -2.9%        613 ~ 1%  lkp-a04/micro/netperf/120s-200%-TCP_SENDFILE
+       280 ~ 1%      -3.7%        270 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_STREAM
+      1191 ~ 1%      -3.2%       1153 ~ 1%  TOTAL netperf.Throughput_Mbps
 
->
-> Signed-off-by: Yufeng Shen <miletus@chromium.org>
-> ---
->  drivers/hid/hid-ids.h           | 1 +
->  drivers/hid/usbhid/hid-quirks.c | 1 +
->  2 files changed, 2 insertions(+)
->
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index f9304cb..ece2997 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -636,6 +636,7 @@
->
->  #define USB_VENDOR_ID_NEXIO            0x1870
->  #define USB_DEVICE_ID_NEXIO_MULTITOUCH_420     0x010d
-> +#define USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750 0x0110
->
->  #define USB_VENDOR_ID_NEXTWINDOW       0x1926
->  #define USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN   0x0003
-> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-> index 0db9a67..be5270a 100644
-> --- a/drivers/hid/usbhid/hid-quirks.c
-> +++ b/drivers/hid/usbhid/hid-quirks.c
-> @@ -74,6 +74,7 @@ static const struct hid_blacklist {
->         { USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
->         { USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
->         { USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
-> +       { USB_VENDOR_ID_NEXIO, USB_DEVICE_ID_NEXIO_MULTITOUCH_PTI0750, HID_QUIRK_NO_INIT_REPORTS },
->         { USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
->         { USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
->         { USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
-> --
-> 1.8.5.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
+---------------  -------------------------
+       386 ~ 0%      -2.1%        378 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_CRR
+      2057 ~ 0%      -3.6%       1982 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_RR
+      2518 ~ 0%      -1.4%       2482 ~ 0%  lkp-a04/micro/netperf/120s-200%-UDP_RR
+      4962 ~ 0%      -2.4%       4843 ~ 0%  TOTAL netperf.Throughput_tps
+
+     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
+---------------  -------------------------
+  37316711 ~ 0%      -0.9%   36976450 ~ 0%  nhm-white/sysbench/oltp/600s-100%-1000000
+  37316711 ~ 0%      -0.9%   36976450 ~ 0%  TOTAL oltp.rw_requets
+                    
+     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
+---------------  -------------------------
+   2665479 ~ 0%      -0.9%    2641175 ~ 0%  nhm-white/sysbench/oltp/600s-100%-1000000
+   2665479 ~ 0%      -0.9%    2641175 ~ 0%  TOTAL oltp.transactions
+                    
+     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
+---------------  -------------------------
+     68.50 ~ 0%      -0.2%      68.39 ~ 0%  xps2/micro/pigz/100%
+     68.50 ~ 0%      -0.2%      68.39 ~ 0%  TOTAL pigz.throughput
+
+Thanks,
+Fengguang
