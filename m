@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaA1LMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 06:12:47 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:47045 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072AbaA1LMo (ORCPT
+	id S1755081AbaA1LO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 06:14:29 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36440 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754198AbaA1LO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 06:12:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <1390906213-7612-1-git-send-email-Vincent.Yang@tw.fujitsu.com>
-References: <1390906213-7612-1-git-send-email-Vincent.Yang@tw.fujitsu.com>
-Date: Tue, 28 Jan 2014 12:12:44 +0100
-Message-ID: <CAPDyKFpiNWsSmJyApdLEz1Z433EJ9XHALt4n0uWm7QujNWj-nQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: Prevent unexpected SD Clock gating during
- Signal Voltage Switch Procedure
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Vincent Yang <vincent.yang.fujitsu@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        andy.green@linaro.org, jaswinder.singh@linaro.org,
-        fujitsu@lists.linaro.org, nonaka.h@jp.fujitsu.com,
-        Vincent Yang <Vincent.Yang@tw.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 28 Jan 2014 06:14:28 -0500
+From: Mark Rutland <mark.rutland@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mm: readahead: fix do_readahead for no readpage(s)
+Date: Tue, 28 Jan 2014 11:14:19 +0000
+Message-Id: <1390907659-11675-1-git-send-email-mark.rutland@arm.com>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2014 11:50, Vincent Yang <vincent.yang.fujitsu@gmail.com> wrote:
-> When switching the signal voltage from 3.3V to 1.8V, there should be only
-> one SD Clock gating and un-gating operation. Between them the SD host
-> controller should switch signal level to 1.8V.
-> However, sometimes there is an additional gating and un-gating operation
-> immediately after CMD11. This operation can cause some UHS-I cards report
-> failure by holding DAT[3:0] low. It is because CONFIG_MMC_CLKGATE attempts
-> to aggressively gate the clock for power saving.
->
-> This patch is going to hold SD Clock before CMD11, therefore, the additional
-> gating and un-gating operation can be prevented. It has been verified on
-> some UHS-I SD memory cards and works correctly.
+Commit 63d0f0a3c7e1 (mm/readahead.c:do_readhead(): don't check for
+->readpage) unintentionally made do_readahead return 0 for all valid
+files regardless of whether readahead was supported, rather than the
+expected -EINVAL. This gets forwarded on to userspace, and results in
+sys_readahead appearing to succeed in cases that don't make sense (e.g.
+when called on pipes or sockets). This issue is detected by the LTP
+readahead01 testcase.
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+As the exact return value of force_page_cache_readahead is currently
+never used, we can simplify it to return only 0 or -EINVAL (when
+readpage or readpages is missing). With that in place we can simply
+forward on the return value of force_page_cache_readahead in
+do_readahead.
 
-> ---
->  drivers/mmc/core/core.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 098374b..86a35ef 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1432,6 +1432,8 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage, u32 ocr)
->                 pr_warning("%s: cannot verify signal voltage switch\n",
->                                 mmc_hostname(host));
->
-> +       mmc_host_clk_hold(host);
-> +
->         cmd.opcode = SD_SWITCH_VOLTAGE;
->         cmd.arg = 0;
->         cmd.flags = MMC_RSP_R1 | MMC_CMD_AC;
-> @@ -1442,8 +1444,6 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage, u32 ocr)
->
->         if (!mmc_host_is_spi(host) && (cmd.resp[0] & R1_ERROR))
->                 return -EIO;
-> -
-> -       mmc_host_clk_hold(host);
->         /*
->          * The card should drive cmd and dat[0:3] low immediately
->          * after the response of cmd11, but wait 1 ms to be sure
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This patch performs said change, restoring the expected semantics.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ mm/readahead.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
+
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 7cdbb44..0de2360d 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -211,8 +211,6 @@ out:
+ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+ 		pgoff_t offset, unsigned long nr_to_read)
+ {
+-	int ret = 0;
+-
+ 	if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
+ 		return -EINVAL;
+ 
+@@ -226,15 +224,13 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+ 			this_chunk = nr_to_read;
+ 		err = __do_page_cache_readahead(mapping, filp,
+ 						offset, this_chunk, 0);
+-		if (err < 0) {
+-			ret = err;
+-			break;
+-		}
+-		ret += err;
++		if (err < 0)
++			return err;
++
+ 		offset += this_chunk;
+ 		nr_to_read -= this_chunk;
+ 	}
+-	return ret;
++	return 0;
+ }
+ 
+ /*
+@@ -576,8 +572,7 @@ do_readahead(struct address_space *mapping, struct file *filp,
+ 	if (!mapping || !mapping->a_ops)
+ 		return -EINVAL;
+ 
+-	force_page_cache_readahead(mapping, filp, index, nr);
+-	return 0;
++	return force_page_cache_readahead(mapping, filp, index, nr);
+ }
+ 
+ SYSCALL_DEFINE3(readahead, int, fd, loff_t, offset, size_t, count)
+-- 
+1.8.1.1
+
