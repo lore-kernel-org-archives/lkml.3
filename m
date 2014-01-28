@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaA1KD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:03:29 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:45874 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735AbaA1KDO (ORCPT
+	id S1754747AbaA1KTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:19:11 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:49850 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485AbaA1KTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:03:14 -0500
-Message-ID: <52E7805C.8050907@gmail.com>
-Date: Tue, 28 Jan 2014 11:03:08 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 28 Jan 2014 05:19:08 -0500
+Message-ID: <52E78411.9040802@gmail.com>
+Date: Tue, 28 Jan 2014 18:18:57 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Luca Abeni <luca.abeni@unitn.it>, Steven Rostedt <rostedt@goodmis.org>
-CC: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@gmail.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, bruce.ashfield@windriver.com,
-        linux-doc@vger.kernel.org, rob@landley.net
-Subject: Re: [PATCH] sched/deadline: Add sched_dl documentation
-References: <1390821615-23247-1-git-send-email-juri.lelli@gmail.com>	<20140127103556.02d82e02@gandalf.local.home>	<20140127175607.1f99491c@luca-1225C>	<20140127120938.3a8d40fb@gandalf.local.home> <20140127232922.667593ca@luca-1225C>
-In-Reply-To: <20140127232922.667593ca@luca-1225C>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: nicolas.dichtel@6wind.com, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, linux-kernel@vger.kernel.org,
+        zhuyj <zyjzyj2000@gmail.com>
+Subject: Re: How to identify 6to4 and 6in4 tunnels
+References: <52E63779.5090101@gmail.com> <52E65817.1090904@6wind.com> <52E75D23.10909@gmail.com> <52E75EA5.4070102@gmail.com>
+In-Reply-To: <52E75EA5.4070102@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 11:29 PM, Luca Abeni wrote:
-> Hi Steven,
-> 
-> On Mon, 27 Jan 2014 12:09:38 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> [...]
->>>> Lets take a case where deadline == period. It seems that the above
->>>> would be true any time there was any delay to starting the task
->>>> or the task was interrupted by another SCHED_DEADLINE task.
->>> Not sure about this... Notice that above only applies when a task
->>> wakes up (moving from a "sleeping" state to a "ready to run"
->>> state). Not when an already ready task is scheduled.
->>> Or did I misunderstand your comment?
->>
->> No no, you understood, I missed that this only happens on wakeup. But
->> then I have to ask, what happens if the task blocks on a mutex? Would
->> that cause this check to happen then?
-> Well, in theory, this check has to be performed every time the task
-> wakes up from any kind of sleeping (mutex, or anything else).
-> I think this is what happens in practice with the current
-> implementation, but maybe I am missing something in the implementation
-> details.
-> 
-
-Yes. The call graph looks like:
-
- enqueue_task_dl()
-  -> enqueue_dl_entity()
-   -> update_dl_entity() <-- this does the check through dl_entity_overflow()
-
-and enqueue_task_dl() gets called every time the task wakes up and is enqueued
-back in the dl_rq (e.g., it was waiting on a mutex).
-
-Thanks,
-
-- Juri
-
->> It may be nice to add some comments about exactly when this check is
->> performed.
-> Well, maybe "wake-up" is not the right term according to the
-> terminology used in the Linux kernel... The check should be performed
-> every time the task changes its state from sleeping (TASK_INTERRUPTIBLE
-> or TASK_UNINTERRUPTIBLE, I think) to "ready to execute" (TASK_RUNNING,
-> I think) and enters the ready queue (well, RB tree :). If someone can
-> suggest a more appropriate wording, I'll fix the document accordingly.
-> 
-> 
->>>> For example, lets say we have two SD tasks. One that has 50ms
->>>> runtime and a 100ms period. The other has a 1ms runtime and a
->>>> 10ms period.
+On 01/28/2014 03:39 PM, zhuyj wrote:
+> On 01/28/2014 03:32 PM, zhuyj wrote:
+>> On 01/27/2014 08:59 PM, Nicolas Dichtel wrote:
+>>> Le 27/01/2014 11:39, zhuyj a écrit :
+>>>> Hi, Maintainers
 >>>>
->>>> The above two should work perfectly fine together. The 10ms period
->>>> task will constantly schedule in on the 100ms task.
+>>>> In our scene, we will create the 6in4/6to4 tunnel firstly and need 
+>>>> to check the
+>>>> tunnel type, secondly, we will configure the ip address on it. So, 
+>>>> Could we have
+>>>> any way to get the actual tunnel for 6in4 and 6to4 from current 
+>>>> linux version?
 >>>>
->>>> When the 100ms task runs, it could easily be delayed by 1ms due
->>>> to the 10ms task. Then lets look at the above equation
->>> See above: the check for the 100ms task is only performed when the
->>> task unblocks (at the beginning of its period), not when it's
->>> scheduled (after the 10ms taks).
+>>>> Both 6in4 and 6to4 have the same protocol “IPPROTO_IPV6” in Linux 
+>>>> kernel. The
+>>>> only difference is the ip address on the tunnel. Can we distinguish 
+>>>> them in
+>>>> Linux kernel?
+>>> Just check the prefix, like it is done in check_6rd().
 >>>
->>> This check is designed to take care of the following situation:
->>> - consider a task with runtime 10ms and period equal to deadline
->>> equal to 100ms
->>> - assume the task wakes up at time t, and is assigned "remaining
->>>   runtime" 10ms and "scheduling deadline" t+100ms
->>> - assume the task blocks after executing for 2ms. The "remaining
->>>   runtime" is now 8ms
->>> - can the task use "remaining runtime" 8ms and "scheduling deadline"
->>>   t+100ms when it wakes up again?
->>>   Answer: if it wakes up before t+20ms, it can. Otherwise, it
->>> cannot, because it would consume a fraction of CPU time larger than
->>> 10%, causing missed deadlines in other tasks.
->>
->> Ah, you answered my question here. The check happens every time the
->> task blocks as well. I still need to read the papers, and even more
->> importantly, start running more tests with tracing on to review what
->> exactly happens in the implementation.
-> If you read the original CBS paper, you'll see that it does not talk
-> about "wake-up" and "sleep", because it always considers a wake-up as a
-> job arrival, and a task blocking as a job end. This is because the
-> original paper only considers a simplified task model, without
-> "self-suspending jobs".
-> In SCHED_DEADLINE, things are not so simple, because it has to consider
-> real situations with real tasks not using the simplified original
-> real-time task model...
-> 
->>>>> + SCHED_DEADLINE can be used to schedule real-time tasks
->>>>> guaranteeing that
->>>>> + the jobs' deadlines of a task are respected. In order to do
->>>>> this, a task
->>>>> + must be scheduled by setting:
->>>>> +
->>>>> +  - runtime >= WCET
->>>>> +  - deadline = D
->>>>> +  - period <= P
->>>>> +
->>>>> + IOW, if runtime >= WCET and if period is >= P, then the
->>>>> scheduling deadlines
->>>>> + and the absolute deadlines (d_j) coincide, so a proper
->>>>> admission control
->>>>> + allows to respect the jobs' absolute deadlines for this task
->>>>> (this is what is
->>>>> + called "hard schedulability property" and is an extension of
->>>>> Lemma 1 of [2]).
->>>>
->>>> I wonder if we should state the obvious (which is never obvious).
->>>> That is the user must also have the following.
->>>>
->>>>   runtime < deadline <= period
->>>>
->>>> Although it is fine for deadline = period, runtime should be less
->>>> than deadline, otherwise the task will take over the system.
->>> I think if "runtime < deadline <= period" is not respected, then the
->>> admission control will fail... But yes, repeating it here can be
->>> useful. If needed I'll add it to the document.
->>
->> Yeah, it's one of those things that you should know, but I can see
->> users screwing it up ;-)
-> Ok...
-> What about presenting this as an example of the admission test failing?
-> Something like: 'notice that if "runtime" > "deadine" the admission
-> test will surely fail.'
-> (BTW, I am not sure if the "deadline <= period" condition is really
-> needed... Maybe not respecting it does not make too much sense, but I
-> think it is not strictly needed for schedulability purposes).
-> 
-> 
-> 
-> 			Thanks,
-> 				Luca
-> 
+>>>
+>>> Regards,
+>>> Nicolas
+> Hi, Nicolas
+> Thanks for your reply. Maybe I can configure 6to4 tunnel by the 
+> following commands:
+>
+>  ip tunnel add tun6to4 mode sit remote any local 1.202.252.122 ttl 64
+>  ip link set dev tun6to4 up
+>  ip -6 addr add 2002:01ca:fc7a::0012:0225:2122/128 dev tun6to4
+>  ip -6 route add 2000::/3 via ::192.88.99.1 dev tun6to4 metric 1
+>
+> But the kernel can not identify the tunnel is 6to4 tunnel or 6in4 
+> tunnel immediately. After the packets travel through this tunnel, the 
+> kernel can identify the type of the tunnel by check_6rd.
+>
+> Is it right?
+>
+> Best Regards!
+> Zhu Yanjun
+>
+>
+Hi, David
+
+I want to identify sit interface 6to4 or 6in4 with the following parameters.
+
+include/uapi/linux/if_tunnel.h
+...
+struct ip_tunnel_parm {
+         char                    name[IFNAMSIZ];
+         int                     link;
+         __be16                  i_flags;             <---------I want 
+to use this variable to identify the type of sit interface. Can I?
+         __be16                  o_flags;
+         __be32                  i_key;
+         __be32                  o_key;
+         struct iphdr            iph;
+};
+...
+
+Please comment on this ? Thanks a lot.
+
+Best Regards!
+Zhu Yanjun
