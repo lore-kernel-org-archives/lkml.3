@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308AbaA1Dq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 22:46:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24604 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347AbaA1Dq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 22:46:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,733,1384329600"; 
-   d="scan'208";a="445596692"
-Message-ID: <52E726BE.50401@intel.com>
-Date: Tue, 28 Jan 2014 11:40:46 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1754552AbaA1Dqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 22:46:45 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30102 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaA1Dqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 22:46:43 -0500
+Date: Mon, 27 Jan 2014 22:46:34 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V0 PATCH] pvh: Disable PSE feature for now
+Message-ID: <20140128034634.GC20680@pegasus.dumpdata.com>
+References: <1390875519-8667-1-git-send-email-mukesh.rathor@oracle.com>
+ <1390875519-8667-2-git-send-email-mukesh.rathor@oracle.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: X86 ML <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/4] x86, mpx: add documentation on Intel MPX
-References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-2-git-send-email-qiaowei.ren@intel.com> <52E6C134.3050608@mit.edu>
-In-Reply-To: <52E6C134.3050608@mit.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390875519-8667-2-git-send-email-mukesh.rathor@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 04:27 AM, Andy Lutomirski wrote:
-> On 01/26/2014 01:08 AM, Qiaowei Ren wrote:
->> +1) Providing handlers for bounds faults (#BR).
->> +
->> +When MPX is enabled, there are 2 new situations that can generate
->> +#BR faults. If a bounds overflow occurs then a #BR is generated.
->> +The fault handler will decode MPX instructions to get violation
->> +address and set this address into extended struct siginfo.
->
-> Can you document exactly where the insn address and pointer value end
-> up?  (If it's in the (IMO hideous) cr2 field in ucontext, this needs to
-> be documented.  If it's somewhere useful in siginfo, that should also be
-> documented to save people the time it takes to figure it out.)
->
-Ok. I will describe extended siginfo at this documentation.
+On Mon, Jan 27, 2014 at 06:18:39PM -0800, Mukesh Rathor wrote:
+> Until now, xen did not expose PSE to pvh guest, but a patch was submitted
+> to xen list to enable bunch of features for a pvh guest. PSE has not been
 
-Thanks,
-Qiaowei
+Which 'patch'?
+
+> looked into for PVH, so until we can do that and test it to make sure it
+> works, disable the feature to avoid flood of bugs.
+
+I think we want a flood of bugs, no?
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index a4d7b64..4e952046 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1497,6 +1497,11 @@ static void __init xen_pvh_early_guest_init(void)
+>  	xen_have_vector_callback = 1;
+>  	xen_pvh_set_cr_flags(0);
+>  
+> +        /* pvh guests are not quite ready for large pages yet */
+> +        setup_clear_cpu_cap(X86_FEATURE_PSE);
+> +        setup_clear_cpu_cap(X86_FEATURE_PSE36);
+> +
+> +
+>  #ifdef CONFIG_X86_32
+>  	BUG(); /* PVH: Implement proper support. */
+>  #endif
+> -- 
+> 1.7.2.3
+> 
