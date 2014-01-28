@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaA1Rge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:36:34 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:54142 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755510AbaA1Rgd convert rfc822-to-8bit (ORCPT
+	id S1755478AbaA1Rfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:35:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60577 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374AbaA1Rdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:36:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140128104503.GG11841@sirena.org.uk>
-References: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
-	<10462793.IYoAK2XtXv@phil>
-	<CAKDJKT4jPLmtrm6Ngp+nT5vf0H4zXwwAM=oURDF-DSAJodVN6A@mail.gmail.com>
-	<1939430.3DVPas1i8V@phil>
-	<CAKDJKT5z=-CmK+goocgdqy2eQMZN2tsoPgzOFk4KbFTTTiUNAA@mail.gmail.com>
-	<20140128104503.GG11841@sirena.org.uk>
-Date: Tue, 28 Jan 2014 23:06:32 +0530
-Message-ID: <CAKDJKT7a4j=vw3gwqus=TdnxPYnubAsWh3ThH_t3-ABj6b0B9A@mail.gmail.com>
-Subject: Re: [PATCH V2] regulator: fixed: update to devm_* API
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Jan 2014 12:33:49 -0500
+Message-Id: <20140128171948.217737555@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 28 Jan 2014 18:16:40 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
+        bsegall@google.com, Steven Rostedt <rostedt@goodmis.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 6/9] sched/fair: Clean up __clear_buddies_*
+References: <20140128171634.974847076@infradead.org>
+Content-Disposition: inline; filename=peter_zijlstra-sched-optimize_cgroup_pick_next_task_fair_3.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Slightly easier code flow, no functional changes.
 
-On Tue, Jan 28, 2014 at 4:15 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Jan 28, 2014 at 02:31:32PM +0530, Manish Badarkhe wrote:
->> On Tue, Jan 28, 2014 at 2:25 PM, Heiko Stübner <heiko@sntech.de> wrote:
->
->> > I don't have a strong opinion on this and others are most likely more qualified
->> > to have a definitive answer, I just found it strange to exchange one open-coded
->> > pattern against another open-coded one.
->> >
->> > So don't let me keep you from it ;-)
->
->> Okay.
->> @Mark, Dmitry: Please let me know your opinion on this.
->
-> How about implementing devm_kstrdup() and then using that?
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/fair.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2567,10 +2567,10 @@ static void __clear_buddies_last(struct
+ {
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+-		if (cfs_rq->last == se)
+-			cfs_rq->last = NULL;
+-		else
++		if (cfs_rq->last != se)
+ 			break;
++
++		cfs_rq->last = NULL;
+ 	}
+ }
+ 
+@@ -2578,10 +2578,10 @@ static void __clear_buddies_next(struct
+ {
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+-		if (cfs_rq->next == se)
+-			cfs_rq->next = NULL;
+-		else
++		if (cfs_rq->next != se)
+ 			break;
++
++		cfs_rq->next = NULL;
+ 	}
+ }
+ 
+@@ -2589,10 +2589,10 @@ static void __clear_buddies_skip(struct
+ {
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+-		if (cfs_rq->skip == se)
+-			cfs_rq->skip = NULL;
+-		else
++		if (cfs_rq->skip != se)
+ 			break;
++
++		cfs_rq->skip = NULL;
+ 	}
+ }
+ 
 
-Okay, I will update kstrdup()->devm_kstrdup() and post next version of patch.
 
-Thanks
-Manish Badarkhe
