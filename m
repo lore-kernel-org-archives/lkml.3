@@ -1,69 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869AbaA1JRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:17:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:53995 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321AbaA1JRJ (ORCPT
+	id S1754764AbaA1JV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:21:56 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:40422 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754436AbaA1JVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:17:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Andy Gross <agross@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [Patch v3 2/2] dmaengine: qcom_bam_dma: Add device tree binding
-Date: Tue, 28 Jan 2014 10:16:53 +0100
-Message-ID: <4697306.PPWWh8UGTE@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <52E772DF.6000604@metafoo.de>
-References: <1390890471-14882-1-git-send-email-agross@codeaurora.org> <1390890471-14882-3-git-send-email-agross@codeaurora.org> <52E772DF.6000604@metafoo.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:6oZlzt0yFtsdPfIvgvvUwaWUI11hO5aGoP9BXt3dLDh
- PC9rX8R+F/rxeEe1JxSxYolmrUS3oveurjxwjqWzm45tZqkX9J
- +AY9JM3Qb+I3c1T/umIY556M4z24VZQBjdDi8p1iuQqHlL62wd
- qygl15Yq+lbkzifSfSDIrzpdsa6Tb1rKEkHWgfGQ0fGBYVMo3T
- mSagbhuN2tE3POFRbxssCrK9Y+Esqq9X0076NOl1Zf67RKj/6I
- zRvsLJoGUHINvOp7Tw+p98J+q3nsCTAXFZ/4VFXH19sAS8UJho
- gZtiD4oBGYDc1xfgjo3wUJSX5ZPqo8IEjfgIF0gOOTB/Jivqhu
- QHKAwekUGUJj1htEStps=
+	Tue, 28 Jan 2014 04:21:49 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: devicetree@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH v5] spi: rspi: Add DT support
+Date: Tue, 28 Jan 2014 10:21:38 +0100
+Message-Id: <1390900898-31579-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 January 2014 10:05:35 Lars-Peter Clausen wrote:
-> > +
-> > +Clients must use the format described in the dma.txt file, using a three cell
-> > +specifier for each channel.
-> > +
-> > +The three cells in order are:
-> > +  1. A phandle pointing to the DMA controller
-> > +  2. The channel number
-> > +  3. Direction of the fixed unidirectional channel
-> > +     0 - Memory to Device
-> > +     1 - Device to Memory
-> > +     2 - Device to Device
-> > +
-> 
-> Why does the direction needs to be specified in specifier? I see two
-> options, either the direction per is fixed in hardware. In that case the DMA
-> controller node should describe which channel is which direction. Or the
-> direction is not fixed in hardware and can be changed at runtime in which
-> case it should be set on a per descriptor basis.
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Normally the direction is implied by dmaengine_slave_config().
-Note that neither the dma slave API nor the generic DT binding
-can actually support device-to-device transfers, since this
-normally implies using two dma-request lines rather than one.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v5:
+  - Define interrupts in terms of interrupt-names in bindings
+  - No code changes
+v4:
+  - Clarify SoCtype and interrupts
+  - Add clock property
+  - Add QSPI example
+  - Add interrupt-names
+  - Add link to Renesas pinctrl
+  - Rename "renesas,rspi-sh" to "renesas,rspi", to match platform device
+    naming
+  - spi-rspi.c:
+      - Remove Soc-specific matching from spi-rspi.c given the fallback is
+	mandatory
+      - Things became a lot simpler due to the replacement of platform_data
+        fields by the "rspi-rz" platform device binding.
+v3:
+  - Add renesas,rspi-sh
+  - Drop -rcar suffix for QSPI
+  - Clarify num-cs
+  - Implement DT support in driver
+  - Changed one-line summary from "Documentation: dt: Add Renesas RSPI/QSPI
+    bindings" to "spi: rspi: Add DT support"
+v2:
+  - Clarify RSPI/QSPI
+  - Add interrupt-parent
+  - s/should/must/ for #address-cells and #size-cells
 
-There might be a case where the direction is required in order
-to allocate a channel, because the engine has specialized channels
-per direction, and might connect any of them to any dma request
-line. This does not seem to be the case for "bam", because
-the DMA specifier already contains a specific channel number, not
-a request line or slave ID number.
+ Documentation/devicetree/bindings/spi/spi-rspi.txt |   59 +++++++++++
+ drivers/spi/spi-rspi.c                             |  106 ++++++++++++++------
+ 2 files changed, 136 insertions(+), 29 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-rspi.txt
 
-	Arnd
+diff --git a/Documentation/devicetree/bindings/spi/spi-rspi.txt b/Documentation/devicetree/bindings/spi/spi-rspi.txt
+new file mode 100644
+index 000000000000..95f9b21d239f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi-rspi.txt
+@@ -0,0 +1,59 @@
++Device tree configuration for Renesas RSPI/QSPI driver
++
++Required properties:
++- compatible       : For Renesas Serial Peripheral Interface on legacy SH:
++		     "renesas,rspi-<soctype>", "renesas,rspi" as fallback.
++		     For Renesas Serial Peripheral Interface on RZ/A1H:
++		     "renesas,rspi-<soctype>", "renesas,rspi-rz" as fallback.
++		     For Quad Serial Peripheral Interface on R-Car Gen2:
++		     "renesas,qspi-<soctype>", "renesas,qspi" as fallback.
++		     Examples of valid soctypes are "sh7757" (SH),
++		     "r7s72100" (RZ/A1H), "r8a7790" (R-Car H2), and
++		     "r8a7791" (R-Car M2).
++- reg              : Address start and address range size of the device
++- interrupts       : A list of interrupt-specifiers, one for each entry in
++		     interrupt-names.
++		     If interrupt-names is not present, an interrupt specifier
++		     for a single muxed interrupt.
++- interrupt-names  : A list of interrupt names. Should contain (if present):
++		       - "error" for SPEI,
++		       - "rx" for SPRI,
++		       - "tx" to SPTI,
++		       - "mux" for a single muxed interrupt.
++- interrupt-parent : The phandle for the interrupt controller that
++		     services interrupts for this device.
++- num-cs	   : Number of chip selects. Some RSPI cores have more than 1.
++- #address-cells   : Must be <1>
++- #size-cells      : Must be <0>
++
++Optional properties:
++- clocks:           : Must contain a reference to the functional clock.
++
++Pinctrl properties might be needed, too.  See
++Documentation/devicetree/bindings/pinctrl/renesas,*.
++
++Examples:
++
++	spi0: spi@e800c800 {
++		compatible = "renesas,rspi-r7s72100", "renesas,rspi-rz";
++		reg = <0xe800c800 0x24>;
++		interrupts = <0 238 IRQ_TYPE_LEVEL_HIGH>,
++			     <0 239 IRQ_TYPE_LEVEL_HIGH>,
++			     <0 240 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "error", "rx", "tx";
++		interrupt-parent = <&gic>;
++		num-cs = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++
++	spi: spi@e6b10000 {
++		compatible = "renesas,qspi-r8a7791", "renesas,qspi";
++		reg = <0 0xe6b10000 0 0x2c>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 184 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&mstp9_clks R8A7791_CLK_QSPI_MOD>;
++		num-cs = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
+diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+index d79a7ed9b92e..e56fcb5f7f99 100644
+--- a/drivers/spi/spi-rspi.c
++++ b/drivers/spi/spi-rspi.c
+@@ -31,6 +31,7 @@
+ #include <linux/clk.h>
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
++#include <linux/of_device.h>
+ #include <linux/sh_dma.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/rspi.h>
+@@ -985,6 +986,56 @@ static int rspi_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct spi_ops rspi_ops = {
++	.set_config_register =		rspi_set_config_register,
++	.transfer_one =			rspi_transfer_one,
++};
++
++static const struct spi_ops rspi_rz_ops = {
++	.set_config_register =		rspi_rz_set_config_register,
++	.transfer_one =			rspi_rz_transfer_one,
++};
++
++static const struct spi_ops qspi_ops = {
++	.set_config_register =		qspi_set_config_register,
++	.transfer_one =			qspi_transfer_one,
++};
++
++#ifdef CONFIG_OF
++static const struct of_device_id rspi_of_match[] = {
++	/* RSPI on legacy SH */
++	{ .compatible = "renesas,rspi", .data = &rspi_ops },
++	/* RSPI on RZ/A1H */
++	{ .compatible = "renesas,rspi-rz", .data = &rspi_rz_ops },
++	/* QSPI on R-Car Gen2 */
++	{ .compatible = "renesas,qspi", .data = &qspi_ops },
++	{ /* sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, rspi_of_match);
++
++static int rspi_parse_dt(struct device *dev, struct spi_master *master)
++{
++	u32 num_cs;
++	int error;
++
++	/* Parse DT properties */
++	error = of_property_read_u32(dev->of_node, "num-cs", &num_cs);
++	if (error) {
++		dev_err(dev, "of_property_read_u32 num-cs failed %d\n", error);
++		return error;
++	}
++
++	master->num_chipselect = num_cs;
++	return 0;
++}
++#else
++static inline int rspi_parse_dt(struct device *dev, struct spi_master *master)
++{
++	return -EINVAL;
++}
++#endif /* CONFIG_OF */
++
+ static int rspi_request_irq(struct device *dev, unsigned int irq,
+ 			    irq_handler_t handler, const char *suffix,
+ 			    void *dev_id)
+@@ -1004,16 +1055,9 @@ static int rspi_probe(struct platform_device *pdev)
+ 	struct spi_master *master;
+ 	struct rspi_data *rspi;
+ 	int ret;
+-	const struct rspi_plat_data *rspi_pd = dev_get_platdata(&pdev->dev);
++	const struct of_device_id *of_id;
++	const struct rspi_plat_data *rspi_pd;
+ 	const struct spi_ops *ops;
+-	const struct platform_device_id *id_entry = pdev->id_entry;
+-
+-	ops = (struct spi_ops *)id_entry->driver_data;
+-	/* ops parameter check */
+-	if (!ops->set_config_register) {
+-		dev_err(&pdev->dev, "there is no set_config_register\n");
+-		return -ENODEV;
+-	}
+ 
+ 	master = spi_alloc_master(&pdev->dev, sizeof(struct rspi_data));
+ 	if (master == NULL) {
+@@ -1021,6 +1065,28 @@ static int rspi_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	of_id = of_match_device(rspi_of_match, &pdev->dev);
++	if (of_id) {
++		ops = of_id->data;
++		ret = rspi_parse_dt(&pdev->dev, master);
++		if (ret)
++			goto error1;
++	} else {
++		ops = (struct spi_ops *)pdev->id_entry->driver_data;
++		rspi_pd = dev_get_platdata(&pdev->dev);
++		if (rspi_pd && rspi_pd->num_chipselect)
++			master->num_chipselect = rspi_pd->num_chipselect;
++		else
++			master->num_chipselect = 2; /* default */
++	};
++
++	/* ops parameter check */
++	if (!ops->set_config_register) {
++		dev_err(&pdev->dev, "there is no set_config_register\n");
++		ret = -ENODEV;
++		goto error1;
++	}
++
+ 	rspi = spi_master_get_devdata(master);
+ 	platform_set_drvdata(pdev, rspi);
+ 	rspi->ops = ops;
+@@ -1048,11 +1114,6 @@ static int rspi_probe(struct platform_device *pdev)
+ 
+ 	init_waitqueue_head(&rspi->wait);
+ 
+-	if (rspi_pd && rspi_pd->num_chipselect)
+-		master->num_chipselect = rspi_pd->num_chipselect;
+-	else
+-		master->num_chipselect = 2; /* default */
+-
+ 	master->bus_num = pdev->id;
+ 	master->setup = rspi_setup;
+ 	master->transfer_one = ops->transfer_one;
+@@ -1060,6 +1121,7 @@ static int rspi_probe(struct platform_device *pdev)
+ 	master->prepare_message = rspi_prepare_message;
+ 	master->unprepare_message = rspi_unprepare_message;
+ 	master->mode_bits = SPI_CPHA | SPI_CPOL | SPI_LOOP;
++	master->dev.of_node = pdev->dev.of_node;
+ 
+ 	ret = platform_get_irq_byname(pdev, "rx");
+ 	if (ret < 0) {
+@@ -1122,21 +1184,6 @@ error1:
+ 	return ret;
+ }
+ 
+-static struct spi_ops rspi_ops = {
+-	.set_config_register =		rspi_set_config_register,
+-	.transfer_one =			rspi_transfer_one,
+-};
+-
+-static struct spi_ops rspi_rz_ops = {
+-	.set_config_register =		rspi_rz_set_config_register,
+-	.transfer_one =			rspi_rz_transfer_one,
+-};
+-
+-static struct spi_ops qspi_ops = {
+-	.set_config_register =		qspi_set_config_register,
+-	.transfer_one =			qspi_transfer_one,
+-};
+-
+ static struct platform_device_id spi_driver_ids[] = {
+ 	{ "rspi",	(kernel_ulong_t)&rspi_ops },
+ 	{ "rspi-rz",	(kernel_ulong_t)&rspi_rz_ops },
+@@ -1153,6 +1200,7 @@ static struct platform_driver rspi_driver = {
+ 	.driver		= {
+ 		.name = "renesas_spi",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(rspi_of_match),
+ 	},
+ };
+ module_platform_driver(rspi_driver);
+-- 
+1.7.9.5
+
