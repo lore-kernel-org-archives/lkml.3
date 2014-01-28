@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaA1Aj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:39:58 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:40178 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876AbaA1Aju (ORCPT
+	id S1754295AbaA1Ajt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:39:49 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:58418 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876AbaA1Ajo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:39:50 -0500
+	Mon, 27 Jan 2014 19:39:44 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 13/21] pinctrl: mvebu: remove unused macros and functions
-Date: Tue, 28 Jan 2014 01:39:25 +0100
-Message-Id: <1390869573-27624-14-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v2 02/21] devicetree: bindings: update MVEBU pinctrl binding documentation
+Date: Tue, 28 Jan 2014 01:39:14 +0100
+Message-Id: <1390869573-27624-3-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
  <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -24,8 +24,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With each SoC providing callbacks for every mpp pin, we can now remove
-common set/get functions and unused MPP macro that cannot pass callbacks.
+Dove pinctrl binding now requires three different reg properties. This
+updates corresponding binding and example accordingly. While at it, also
+document reg property as required for the other MVEBU SoC pinctrl nodes.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -33,110 +34,79 @@ Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Gregory Clement <gregory.clement@free-electrons.com>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pinctrl/mvebu/pinctrl-mvebu.c | 48 ++---------------------------------
- drivers/pinctrl/mvebu/pinctrl-mvebu.h | 12 ---------
- 2 files changed, 2 insertions(+), 58 deletions(-)
+ .../devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt          | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt      | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt  | 1 +
+ Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt     | 2 +-
+ 5 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.c b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-index 2bec4ef30b48..dd65b8c44b26 100644
---- a/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-+++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.c
-@@ -138,43 +138,6 @@ static struct mvebu_pinctrl_function *mvebu_pinctrl_find_function_by_name(
- 	return NULL;
- }
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+index 01ef408e205f..adda2a8d1d52 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-370-pinctrl.txt
+@@ -5,6 +5,7 @@ part and usage.
  
--/*
-- * Common mpp pin configuration registers on MVEBU are
-- * registers of eight 4-bit values for each mpp setting.
-- * Register offset and bit mask are calculated accordingly below.
-- */
--static int mvebu_common_mpp_get(struct mvebu_pinctrl *pctl,
--				struct mvebu_pinctrl_group *grp,
--				unsigned long *config)
--{
--	unsigned pin = grp->gid;
--	unsigned off = (pin / MPPS_PER_REG) * MPP_BITS;
--	unsigned shift = (pin % MPPS_PER_REG) * MPP_BITS;
--
--	*config = readl(pctl->base + off);
--	*config >>= shift;
--	*config &= MPP_MASK;
--
--	return 0;
--}
--
--static int mvebu_common_mpp_set(struct mvebu_pinctrl *pctl,
--				struct mvebu_pinctrl_group *grp,
--				unsigned long config)
--{
--	unsigned pin = grp->gid;
--	unsigned off = (pin / MPPS_PER_REG) * MPP_BITS;
--	unsigned shift = (pin % MPPS_PER_REG) * MPP_BITS;
--	unsigned long reg;
--
--	reg = readl(pctl->base + off);
--	reg &= ~(MPP_MASK << shift);
--	reg |= (config << shift);
--	writel(reg, pctl->base + off);
--
--	return 0;
--}
--
- static int mvebu_pinconf_group_get(struct pinctrl_dev *pctldev,
- 				unsigned gid, unsigned long *config)
- {
-@@ -184,10 +147,7 @@ static int mvebu_pinconf_group_get(struct pinctrl_dev *pctldev,
- 	if (!grp->ctrl)
- 		return -EINVAL;
+ Required properties:
+ - compatible: "marvell,88f6710-pinctrl"
++- reg: register specifier of MPP registers
  
--	if (grp->ctrl->mpp_get)
--		return grp->ctrl->mpp_get(grp->ctrl, config);
--
--	return mvebu_common_mpp_get(pctl, grp, config);
-+	return grp->ctrl->mpp_get(grp->ctrl, config);
- }
+ Available mpp pins/groups and functions:
+ Note: brackets (x) are not part of the mpp name for marvell,function and given
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+index bfa0a2e5e0cb..373dbccd7ab0 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,armada-xp-pinctrl.txt
+@@ -6,6 +6,7 @@ part and usage.
+ Required properties:
+ - compatible: "marvell,mv78230-pinctrl", "marvell,mv78260-pinctrl",
+               "marvell,mv78460-pinctrl"
++- reg: register specifier of MPP registers
  
- static int mvebu_pinconf_group_set(struct pinctrl_dev *pctldev,
-@@ -202,11 +162,7 @@ static int mvebu_pinconf_group_set(struct pinctrl_dev *pctldev,
- 		return -EINVAL;
+ This driver supports all Armada XP variants, i.e. mv78230, mv78260, and mv78460.
  
- 	for (i = 0; i < num_configs; i++) {
--		if (grp->ctrl->mpp_set)
--			ret = grp->ctrl->mpp_set(grp->ctrl, configs[i]);
--		else
--			ret = mvebu_common_mpp_set(pctl, grp, configs[i]);
--
-+		ret = grp->ctrl->mpp_set(grp->ctrl, configs[i]);
- 		if (ret)
- 			return ret;
- 	} /* for each config */
-diff --git a/drivers/pinctrl/mvebu/pinctrl-mvebu.h b/drivers/pinctrl/mvebu/pinctrl-mvebu.h
-index e81caa964d83..6c8451af95b6 100644
---- a/drivers/pinctrl/mvebu/pinctrl-mvebu.h
-+++ b/drivers/pinctrl/mvebu/pinctrl-mvebu.h
-@@ -114,18 +114,6 @@ struct mvebu_pinctrl_soc_info {
- 	int ngpioranges;
- };
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+index 50ec3512a292..cf52477cc7ee 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,dove-pinctrl.txt
+@@ -6,6 +6,7 @@ part and usage.
+ Required properties:
+ - compatible: "marvell,dove-pinctrl"
+ - clocks: (optional) phandle of pdma clock
++- reg: register specifiers of MPP, MPP4, and PMU MPP registers
  
--#define MPP_REG_CTRL(_idl, _idh)				\
--	{							\
--		.name = NULL,					\
--		.pid = _idl,					\
--		.npins = _idh - _idl + 1,			\
--		.pins = (unsigned[_idh - _idl + 1]) { },	\
--		.mpp_get = NULL,				\
--		.mpp_set = NULL,				\
--		.mpp_gpio_req = NULL,				\
--		.mpp_gpio_dir = NULL,				\
--	}
--
- #define MPP_FUNC_CTRL(_idl, _idh, _name, _func)			\
- 	{							\
- 		.name = _name,					\
+ Available mpp pins/groups and functions:
+ Note: brackets (x) are not part of the mpp name for marvell,function and given
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+index 95daf6335c37..730444a9a4de 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,kirkwood-pinctrl.txt
+@@ -8,6 +8,7 @@ Required properties:
+               "marvell,88f6190-pinctrl", "marvell,88f6192-pinctrl",
+               "marvell,88f6281-pinctrl", "marvell,88f6282-pinctrl"
+               "marvell,98dx4122-pinctrl"
++- reg: register specifier of MPP registers
+ 
+ This driver supports all kirkwood variants, i.e. 88f6180, 88f619x, and 88f628x.
+ It also support the 88f6281-based variant in the 98dx412x Bobcat SoCs.
+diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+index 0a26c3aa4e6d..0c09f4eb2af0 100644
+--- a/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/marvell,mvebu-pinctrl.txt
+@@ -37,7 +37,7 @@ uart1: serial@12100 {
+ 
+ pinctrl: pinctrl@d0200 {
+ 	compatible = "marvell,dove-pinctrl";
+-	reg = <0xd0200 0x20>;
++	reg = <0xd0200 0x14>, <0xd0440 0x04>, <0xd802c 0x08>;
+ 
+ 	pmx_uart1_sw: pmx-uart1-sw {
+ 		marvell,pins = "mpp_uart1";
 -- 
 1.8.5.2
 
