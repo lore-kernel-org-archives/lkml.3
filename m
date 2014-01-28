@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaA1SwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:52:00 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47308 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779AbaA1Sv7 (ORCPT
+	id S1755296AbaA1SxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:53:18 -0500
+Received: from science.horizon.com ([71.41.210.146]:53009 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753894AbaA1SxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:51:59 -0500
-From: Christopher Covington <cov@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>
-Subject: [PATCH v3] ARM: hw_breakpoint: Add ARMv8 support
-Date: Tue, 28 Jan 2014 13:51:51 -0500
-Message-Id: <1390935112-28465-1-git-send-email-cov@codeaurora.org>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <20140128183851.GK2885@mudshark.cambridge.arm.com>
-References: <20140128183851.GK2885@mudshark.cambridge.arm.com>
+	Tue, 28 Jan 2014 13:53:17 -0500
+Date: 28 Jan 2014 13:53:15 -0500
+Message-ID: <20140128185315.9014.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, nate@thatsmathematics.com
+Subject: Re: math_state_restore and kernel_fpu_end disable interrupts?
+Cc: adilger@dilger.ca, arjan@linux.intel.com, jack@suse.cz,
+        linux-kernel@vger.kernel.org, maarten-baert@hotmail.com, mingo@elte.hu,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, viro@zeniv.linux.org.uk
+In-Reply-To: <20140119210228.9598.qmail@science.horizon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the trivial support necessary to get hardware breakpoints
-working for GDB on ARMv8 simulators running in AArch32 mode.
+> I'm trying it now.  But it takes a while for me to reproduce, and even
+> longer to be sure the problem has gone away.  So anything you hear from
+> me within a week will be bad news.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
----
+Well, it's been a week, and: good news!
 
- v3: assume for now that ARMv9 and later will update FSR
+I'd still wish for some review by someone who really understands this
+code; in particular it seems dangerous to just enable interrupts for
+a window without re-checking the condition afterward.
 
- v2: modify debug_exception_updates_fsr
+What if an interrupt hander wants to use the FPU and triggers the
+allocate itself?  Shouldn't it be:
+* Enable interrupts
+* Allocate
+* Disable interrupts
+* Check that tsk->thread.xstate is still NULL
+* (If it has been filled in, free and return.)
+* Fill in tsk->thread.xstate
 
- arch/arm/include/asm/hw_breakpoint.h | 1 +
- arch/arm/kernel/hw_breakpoint.c      | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+I don't feel I really understand the irq_fpu_usable() logic in
+arch/x86/i387.c.
 
-diff --git a/arch/arm/include/asm/hw_breakpoint.h b/arch/arm/include/asm/hw_breakpoint.h
-index eef55ea..8e427c7 100644
---- a/arch/arm/include/asm/hw_breakpoint.h
-+++ b/arch/arm/include/asm/hw_breakpoint.h
-@@ -51,6 +51,7 @@ static inline void decode_ctrl_reg(u32 reg,
- #define ARM_DEBUG_ARCH_V7_ECP14	3
- #define ARM_DEBUG_ARCH_V7_MM	4
- #define ARM_DEBUG_ARCH_V7_1	5
-+#define ARM_DEBUG_ARCH_V8	6
- 
- /* Breakpoint */
- #define ARM_BREAKPOINT_EXECUTE	0
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index 3d44660..9da35c6 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -167,7 +167,7 @@ static int debug_arch_supported(void)
- /* Can we determine the watchpoint access type from the fsr? */
- static int debug_exception_updates_fsr(void)
- {
--	return 0;
-+	return get_debug_arch() >= ARM_DEBUG_ARCH_V8;
- }
- 
- /* Determine number of WRP registers available. */
-@@ -257,6 +257,7 @@ static int enable_monitor_mode(void)
- 		break;
- 	case ARM_DEBUG_ARCH_V7_ECP14:
- 	case ARM_DEBUG_ARCH_V7_1:
-+	case ARM_DEBUG_ARCH_V8:
- 		ARM_DBG_WRITE(c0, c2, 2, (dscr | ARM_DSCR_MDBGEN));
- 		isb();
- 		break;
--- 
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by the Linux Foundation.
+But this patch clearly doesn't make these issues any *worse*, so
+these concerns are no reason to block it.
 
+
+Would you like add an appropriate commit message and send in the patch?
+
+Something like:
+
+Subject: arch/x86/kernel/traps.c: make math_state_restore preserve IRQ status.
+
+Commit aa283f4927 (in 2.6.26!) to add lazy FPU save are allocation did
+an local_irq_enable()/local_irq_disable() around the allocate.  However,
+that assumes that it is only called with interrupts disabled.
+
+math_state_restore() can also be called from kernel_fpu_end() with
+interrupts enabled.  Very occasionally, this triggers an FPU state
+allocation.  Disabling interrupts unconditionally is Bad.
+
+Not-yet-Signed-off-by: Nate Eldredge <nate@thatsmathematics.com>
+Tested-by: George Spelvin <linux@horizon.com>
+Cc: <stable@vger.kernel.org>
+Fixes: aa283f4927
