@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaA1Aww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:52:52 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:36680 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaA1Awu (ORCPT
+	id S1754141AbaA1Azv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:55:51 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:51679 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929AbaA1Azr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:52:50 -0500
+	Mon, 27 Jan 2014 19:55:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387224459-25746-4-git-send-email-david.a.cohen@linux.intel.com>
-References: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com> <1387224459-25746-4-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <5086198.ZOWZ5xuyna@wuerfel>
+References: <1389742458-7693-1-git-send-email-tinamdar@apm.com>
+ <CACoXjc=ZT9fEm_KdY4WFSoS8n5FmO+hn9LjsR4m8YZG2iBbt5A@mail.gmail.com>
+ <CACoXjc=-JtpiM3m4DSA_DeOxYr3sihGGf4FSaJ2yC08rpm6ANQ@mail.gmail.com> <5086198.ZOWZ5xuyna@wuerfel>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Jan 2014 17:52:30 -0700
-Message-ID: <CAErSpo4ymfSdZ5an4zt+C=5asUW=vz000d32mPZkF-S5N_uynA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] x86: intel-mid: add Merrifield platform support
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+Date: Mon, 27 Jan 2014 17:55:25 -0700
+Message-ID: <CAErSpo5zMd_k407tvzPS85Nub9p2KMQnHJLTqd3eyvjdgfVtLg@mail.gmail.com>
+Subject: Re: [RFC PATCH V2 1/4] pci: APM X-Gene PCIe controller driver
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Masters <jcm@redhat.com>, linux-doc@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>, patches <patches@apm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Fei Yang <fei.yang@intel.com>,
-        "Mark F. Brown" <mark.f.brown@intel.com>,
-        Kuppuswamy Sathyanarayanan 
-	<sathyanarayanan.kuppuswamy@linux.intel.com>
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 1:07 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
-> This code was partially based on Mark Brown's previous work.
+We're only seeing Arnd's side of the conversation on linux-pci.
+Tanmay, are your messages being rejected because they're too "fancy",
+per the definition here: http://vger.kernel.org/majordomo-info.html ?
+
+On Sat, Jan 25, 2014 at 1:11 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 24 January 2014 13:28:22 Tanmay Inamdar wrote:
+>> On Thu, Jan 16, 2014 at 5:10 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>> > On Wed, Jan 15, 2014 at 4:39 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> On Wednesday 15 January 2014, Tanmay Inamdar wrote:
 >
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> Signed-off-by: Fei Yang <fei.yang@intel.com>
-> Cc: Mark F. Brown <mark.f.brown@intel.com>
-> Cc: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
-
-I know this has already been merged to Linus' tree, but it looks funny to me.
-
-> --- a/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-> +++ b/arch/x86/platform/intel-mid/intel_mid_weak_decls.h
-> @@ -16,3 +16,4 @@
->   */
->  extern void * __cpuinit get_penwell_ops(void) __attribute__((weak));
->  extern void * __cpuinit get_cloverview_ops(void) __attribute__((weak));
-> +extern void * __init get_tangier_ops(void) __attribute__((weak));
-
-We should use "__weak" instead of the gcc-specific "__attribute__((weak))".
-
-I don't think it's a good idea to use __weak on a declaration in a
-header file.  If there are ever multiple definitions of the symbol,
-they are *all* made weak symbols, and one is chosen based on link
-order, which is error-prone.  I only see one definition now, but the
-whole point of weak is to allow multiple definitions, so this looks
-like a problem waiting to happen.  See 10629d711ed, for example.
-
-It look me a bit to figure out that these get_*_ops() functions are
-used by INTEL_MID_OPS_INIT, which constructs the name using a macro,
-so grep/cscope/etc. don't see any users.  A comment pointing to
-INTEL_MID_OPS_INIT would be helpful.
-
-What's the reason for making these symbols weak?  Normally we use weak
-to make a generic default version of a function, while allowing
-architectures to replace the default with their own version if
-necessary.  But I don't see that happening here.  Maybe I'm just
-missing it, like I missed the uses of get_tangier_ops(), et al.
-
-Bjorn
+>> >>
+>> >>> +static void xgene_pcie_poll_linkup(struct xgene_pcie_port *port, u32 *lanes)
+>> >>> +{
+>> >>> +     void *csr_base = port->csr_base;
+>> >>> +     u32 val32;
+>> >>> +     u64 start_time, time;
+>> >>> +
+>> >>> +     /*
+>> >>> +      * A component enters the LTSSM Detect state within
+>> >>> +      * 20ms of the end of fundamental core reset.
+>> >>> +      */
+>> >>> +     msleep(XGENE_LTSSM_DETECT_WAIT);
+>> >>> +     port->link_up = 0;
+>> >>> +     start_time = jiffies;
+>> >>> +     do {
+>> >>> +             val32 = readl(csr_base + PCIECORE_CTLANDSTATUS);
+>> >>> +             if (val32 & LINK_UP_MASK) {
+>> >>> +                     port->link_up = 1;
+>> >>> +                     port->link_speed = PIPE_PHY_RATE_RD(val32);
+>> >>> +                     val32 = readl(csr_base + BRIDGE_STATUS_0);
+>> >>> +                     *lanes = val32 >> 26;
+>> >>> +             }
+>> >>> +             time = jiffies_to_msecs(jiffies - start_time);
+>> >>> +     } while ((!port->link_up) || (time <= XGENE_LTSSM_L0_WAIT));
+>> >>> +}
+>> >>
+>> >> Maybe another msleep() in the loop? It seems weird to first do an
+>> >> unconditional sleep but then busy-wait for the result.
+>> >
+>> > ok.
+>>
+>> This loop can execute for maximum 4 msec. So putting msleep(1) won't
+>> get us much.
+>
+> 4 msec is still quite a long time for a busy loop that can be spent doing
+> useful work in another thread.
+>
+>> >>
+>> >> Another general note: Your "compatible" strings are rather unspecific.
+>> >> Do you have a version number for this IP block? I suppose that it's related
+>> >> to one that has been used in other chips before, or will be used in future
+>> >> chips, if it's not actually licensed from some other company.
+>> >
+>> > I will have to check this.
+>> >
+>>
+>> We have decided to stick with current compatible string for now.
+>
+> Can you elaborate on your reasoning? Does this mean X-Gene is a one-off
+> product and you won't be doing any new chips based on the same hardware
+> components?
+>
+>         Arnd
