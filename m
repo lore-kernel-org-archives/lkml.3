@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaA1JD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:03:59 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:28048 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931AbaA1JCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:02:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,735,1384272000"; 
-   d="scan'208";a="9461135"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] numa, mem-hotplug: Fix array index overflow when synchronizing nid to memblock.reserved.
-Date: Tue, 28 Jan 2014 17:05:16 +0800
-Message-Id: <1390899916-23566-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 17:01:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 17:01:11,
-	Serialize complete at 2014/01/28 17:01:11
+	id S1755007AbaA1JER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:04:17 -0500
+Received: from dehamd003.servertools24.de ([31.47.254.18]:36579 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754984AbaA1JEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 04:04:06 -0500
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <52E77282.4030303@ladisch.de>
+Date: Tue, 28 Jan 2014 10:04:02 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Network Nut <sillystack@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: WaitForMultipleObjects/etc. In Kernel
+References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com>
+In-Reply-To: <00d001cf1b99$026407d0$072c1770$@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following path will cause array out of bound.
+Network Nut wrote:
+> 5. I can simulate system-global named mutex using shared-memory for
+> underlying state of mutex (POCO NamedMutex)
+> 6. I can get named semaphore using POSIX sem_create
+>
+> It seems that the remaining problem is to get named mutex and named
+> semaphore to be accessible by file-descriptor.
 
-memblock_add_region() will always set nid in memblock.reserved to MAX_NUMNODES.
-In numa_register_memblks(), after we set all nid to correct valus in memblock.reserved,
-we called setup_node_data(), and used memblock_alloc_nid() to allocate memory, with
-nid set to MAX_NUMNODES.
+Forget about the POSIX stuff.  You can implement a mutex by using
+an eventfd that has the value 1 in the unlocked state; a read locks,
+a write of 1 unlocks.  You can implement a semaphore by using an eventfd
+with EFD_SEMAPHORE.
 
-The nodemask_t type can be seen as a bit array. And the index is 0 ~ MAX_NUMNODES-1.
 
-After that, when we call node_set() in numa_clear_kernel_node_hotplug(), the nodemask_t
-got an index of value MAX_NUMNODES, which is out of [0 ~ MAX_NUMNODES-1].
+And I should note that it is a common pattern to start a bunch of other
+processes from a helper process; this not only allows inheriting file
+descriptors, but also makes monitoring these processes easier from the
+parent.  Do all of your processes really need to be started
+independently?
 
-See below:
 
-numa_init()
- |---> numa_register_memblks()
- |      |---> memblock_set_node(memory)		set correct nid in memblock.memory
- |      |---> memblock_set_node(reserved)	set correct nid in memblock.reserved
- |      |......
- |      |---> setup_node_data()
- |             |---> memblock_alloc_nid()	here, nid is set to MAX_NUMNODES (1024)
- |......
- |---> numa_clear_kernel_node_hotplug()
-        |---> node_set()			here, we have an index 1024, and overflowed
+>>> "The timeout argument specifies the minimum number of milliseconds
+>>>        that epoll_wait() will block."
+>>>
+>>> I think the word "minimum" should be "maximum".
+>>
+>> This sentence was copied from the poll(2) man page, where the previous
+>> sentence says "poll() blocks until one of the events occurs".  So the word
+>> "block" implies that no event has occured.
+>
+> So that means that it is a bug, right? Or?
 
-This patch moves nid setting to numa_clear_kernel_node_hotplug() to fix this problem.
+The purpose of a man page is certainly not to confuse its readers.  I'd
+guess the maintainer would be happy about an improved wording.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- arch/x86/mm/numa.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 00c9f09..a183b43 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -493,14 +493,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 		struct numa_memblk *mb = &mi->blk[i];
- 		memblock_set_node(mb->start, mb->end - mb->start,
- 				  &memblock.memory, mb->nid);
--
--		/*
--		 * At this time, all memory regions reserved by memblock are
--		 * used by the kernel. Set the nid in memblock.reserved will
--		 * mark out all the nodes the kernel resides in.
--		 */
--		memblock_set_node(mb->start, mb->end - mb->start,
--				  &memblock.reserved, mb->nid);
- 	}
- 
- 	/*
-@@ -571,6 +563,17 @@ static void __init numa_clear_kernel_node_hotplug(void)
- 
- 	nodes_clear(numa_kernel_nodes);
- 
-+	/*
-+	 * At this time, all memory regions reserved by memblock are
-+	 * used by the kernel. Set the nid in memblock.reserved will
-+	 * mark out all the nodes the kernel resides in.
-+	 */
-+	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-+		struct numa_memblk *mb = &numa_meminfo.blk[i];
-+		memblock_set_node(mb->start, mb->end - mb->start,
-+				  &memblock.reserved, mb->nid);
-+	}
-+
- 	/* Mark all kernel nodes. */
- 	for (i = 0; i < type->cnt; i++)
- 		node_set(type->regions[i].nid, numa_kernel_nodes);
--- 
-1.8.3.1
-
+Regards,
+Clemens
