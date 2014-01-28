@@ -1,143 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaA1IqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:46:23 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42835 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092AbaA1IqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:46:21 -0500
-Message-ID: <52E76E3A.8030807@ti.com>
-Date: Tue, 28 Jan 2014 10:45:46 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754888AbaA1Iqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:46:45 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:58996 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786AbaA1Iql convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 03:46:41 -0500
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        "Kristo, Tero" <t-kristo@ti.com>
-Subject: Re: [PATCH] clk: divider: fix rate calculation for fractional rates
-References: <1383736008-22764-1-git-send-email-tomi.valkeinen@ti.com> <20131106111534.GW16735@n2100.arm.linux.org.uk> <527A2C9C.4080409@ti.com> <20131106161911.GA16735@n2100.arm.linux.org.uk>
-In-Reply-To: <20131106161911.GA16735@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="sMaeGXcOjeewFsFu9XaOLvtjRqgH2VUeB"
+In-Reply-To: <10462793.IYoAK2XtXv@phil>
+References: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
+	<20140128063308.GA5965@core.coreip.homeip.net>
+	<CAKDJKT5COnY=i4Dd-P8_eMoWBU+ShqVKVhoVGBk1qWxffe+wMg@mail.gmail.com>
+	<10462793.IYoAK2XtXv@phil>
+Date: Tue, 28 Jan 2014 14:16:39 +0530
+Message-ID: <CAKDJKT4jPLmtrm6Ngp+nT5vf0H4zXwwAM=oURDF-DSAJodVN6A@mail.gmail.com>
+Subject: Re: [PATCH V2] regulator: fixed: update to devm_* API
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-omap@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---sMaeGXcOjeewFsFu9XaOLvtjRqgH2VUeB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Heiko
 
-Hi Mike, Russell,
+Thank you for your reply.
 
-On 2013-11-06 18:19, Russell King - ARM Linux wrote:
-> On Wed, Nov 06, 2013 at 01:48:44PM +0200, Tomi Valkeinen wrote:
->> On 2013-11-06 13:15, Russell King - ARM Linux wrote:
->>> On Wed, Nov 06, 2013 at 01:06:48PM +0200, Tomi Valkeinen wrote:
->>>> This means that the following code works a bit oddly:
->>>>
->>>> rate =3D clk_round_rate(clk, 123428572);
->>>> clk_set_rate(clk, rate);
->>>
->>> You're right, but the above sequence is quite a crass thing to do.  W=
-hy?
+On Tue, Jan 28, 2014 at 1:08 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> On Tuesday, 28. January 2014 12:46:01 Manish Badarkhe wrote:
+>> Hi Dmitry,
 >>
->> Do you mean that you think the fix is right, but the above example
->> sequence is silly, or that the fix is not needed either?
->=20
-> I think a fix _is) required, because:
->=20
-> 	rate =3D clk_get_rate(clk);
-> 	clk_set_rate(clk, rate);
-> 	assert(clk_get_rate(clk) =3D=3D rate);
->=20
-> If not, there's something quite wrong.  However, I am saying that the
-> sequence you provided was nevertheless silly - I've seen it in real cod=
-e
-> in the kernel, which is why I've commented about it.
+>> Thank you for your review.
+>>
+>> On Tue, Jan 28, 2014 at 12:03 PM, Dmitry Torokhov
+>>
+>> <dmitry.torokhov@gmail.com> wrote:
+>> > Hi Manish,
+>> >
+>> > On Tue, Jan 28, 2014 at 08:42:00AM +0530, Manish Badarkhe wrote:
+>> >> Update the code to use devm_* API so that driver core will manage
+>> >> resources.
+>> >>
+>> >> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>> >> ---
+>> >> Changes since V1:
+>> >> 1. Updated driver to use "devm_kzalloc" to "kstrdup".
+>> >> 2. Updated commit message.
+>> >>
+>> >> Not tested on any board.
+>> >>
+>> >> :100644 100644 5ea64b9... e9763a4... M        drivers/regulator/fixed.c
+>> >> :
+>> >>  drivers/regulator/fixed.c |   42
+>> >>  ++++++++++++------------------------------
+>> >>  1 file changed, 12 insertions(+), 30 deletions(-)
+>> >>
+>> >> diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+>> >> index 5ea64b9..e9763a4 100644
+>> >> --- a/drivers/regulator/fixed.c
+>> >> +++ b/drivers/regulator/fixed.c
+>> >> @@ -132,15 +132,15 @@ static int reg_fixed_voltage_probe(struct
+>> >> platform_device *pdev)>>
+>> >>                              GFP_KERNEL);
+>> >>
+>> >>       if (drvdata == NULL) {
+>> >>
+>> >>               dev_err(&pdev->dev, "Failed to allocate device data\n");
+>> >>
+>> >> -             ret = -ENOMEM;
+>> >> -             goto err;
+>> >> +             return -ENOMEM;
+>> >>
+>> >>       }
+>> >>
+>> >> -     drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
+>> >> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
+>> >> +                                       strlen(config->supply_name) + 1,
+>> >> +                                       GFP_KERNEL);
+>> >>
+>> >>       if (drvdata->desc.name == NULL) {
+>> >>
+>> >>               dev_err(&pdev->dev, "Failed to allocate supply name\n");
+>> >>
+>> >> -             ret = -ENOMEM;
+>> >> -             goto err;
+>> >> +             return -ENOMEM;
+>> >>
+>> >>       }
+>> >
+>> > Umm, I am fairly certain that devm_kzalloc() can't be used as a
+>> > substitute for kstrdup, at least not without accompanying memcpy.
+>>
+>> Yes, I have provided allocation but it should be followed with assignment.
+>> Can I modify like this,
+>>
+>> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
+>> +                                       strlen(config->supply_name) + 1,
+>> +                                       GFP_KERNEL);
+>> +     if (drvdata->desc.name)
+>> +     sprintf(drvdata->desc.name, "%s", config->supply_name);
+>
+> hmm, so you replaced a general helper function by open coding the string-
+> duplication. Doesn't this defeat the target of simplifying the code?
 
-I just ran into this issue again with omap3, and so I'm resurrecting the
-thread.
+Intention here, is to use devm_ API and to adopt this I have to do these
+modifications for "kstrdup" functions. I have seen in regulator folder almost
+all drivers adopted to "devm_" API. Hence same thing I am following to
+update this driver. Please let me know whether to go ahead with this patch
+or retain driver as it is.
 
-Mike, can you review the patch?
-
-Russell, I'd like to understand why you think the original example is bad=
-:
-
-	rate =3D clk_round_rate(clk, rate);
-	clk_set_rate(clk, rate);
-
-If the definition of clk_round_rate is basically "clk_set_rate without
-actually setting the rate", I agree that the above code is not good as
-it might not work correctly.
-
-However, if  the following code you gave should work:
-
-	rate =3D clk_get_rate(clk);
-	clk_set_rate(clk, rate);
-	assert(clk_get_rate(clk) =3D=3D rate);
-
-then the original example should also always work, as it's almost the
-same as:
-
-	/* this is the "round" part */
-	clk_set_rate(clk, rate);
-	rate =3D clk_get_rate(clk);
-
-	clk_set_rate(clk, rate);
-	assert(clk_get_rate(clk) =3D=3D rate);
-
-Why I'm asking this is that for me (and probably for others also if
-you've seen it used in the kernel code) it feels natural to have code lik=
-e:
-
-	rate =3D clk_round_rate(clk, rate);
-=09
-	/* Verify the rounded rate here to see it's ok for the IP etc */
-
-	/* The rate is ok, so set it */
-	clk_set_rate(clk, rate);
-
-This could be rewritten as:
-
-	rounded_rate =3D clk_round_rate(clk, rate);
-=09
-	/* Verify the rounded rate here to see it's ok for the IP etc */
-
-	/* The rounded rate is ok, so set the original rate */
-	clk_set_rate(clk, rate);
-
-But it just feels unnecessary complication to keep both the original
-rate and the rounded rate around.
-
- Tomi
-
-
-
---sMaeGXcOjeewFsFu9XaOLvtjRqgH2VUeB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS5246AAoJEPo9qoy8lh71GsUP/2CtkABLXxGs9YCgJm6Cgde2
-Ew+i0mqm5/qQuhud5eLLp7jUf8sYmnqemMhlWA14oaviWTjiDwC6pxd57rcSiiG3
-/pIKkFlGgDXgBAlA0D9Q2txu398kLva0F1KPcBLCg3Uf6bVmqgG6pnkGS3GF3y7u
-qPliPr9ji5WS5otNsFX4qGElODUCk8fCf9BeI0wIsQQBFTPt2nZ+CJYe25qfUFwU
-POv6LfHzEOaCexrWTfotBpsBumNTSsh9CE0rAqCJruvIl4/0MJXAE7g+i8yMpKk6
-2BHyX/GrNE5RtQdPqOuK2DSX/iSjbfpWN3I7oJq/+SSxoV/Ma8BwA6WQiWNdSweu
-Ln8tQ6rddou7d15nZgnx+Mfe4dyO09oRfIhDxwOHTt9oR9Izzx2+k7bfFzBymWav
-8z90agzsTzqy+B6MPJEzWzmO7pEY5x3drZlrLUPYKdd8mNZ20p7X+pF61AqncsaW
-8VA11wczKRuTtJzR1BTPBGD2anIJYRwzwp62Iyo5jeu9hQx3bB2L/O36tFVtpKMe
-qZF6Hpa4sD5cIY4kJniNohhMjkDOvgNLlYmf4DleCnmBFZJNA8zHnfyXyg7/FU/J
-R52n5HBd29Oe1pxXEklHpc4BOa7ZrF2ZOXDATbNgXQF4AwZz66aX7veIVXSqteWP
-b8xtxzDitkMUGrcSAqgo
-=PmDU
------END PGP SIGNATURE-----
-
---sMaeGXcOjeewFsFu9XaOLvtjRqgH2VUeB--
+Regards
+Manish Badarkhe
