@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaA1X5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:57:15 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:49394 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbaA1XzB (ORCPT
+	id S932399AbaA1X5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:57:13 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:56396 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986AbaA1XzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:55:01 -0500
+	Tue, 28 Jan 2014 18:55:04 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/13] cgroup: update cgroup name handling
-Date: Tue, 28 Jan 2014 18:54:38 -0500
-Message-Id: <1390953285-16360-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/13] cgroup: update the meaning of cftype->max_write_len
+Date: Tue, 28 Jan 2014 18:54:40 -0500
+Message-Id: <1390953285-16360-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
 References: <1390953285-16360-1-git-send-email-tj@kernel.org>
@@ -21,109 +21,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Straightforward updates to cgroup name handling in preparation of
-kernfs conversion.
+cftype->max_write_len is used to extend the maximum size of writes.
+It's interpreted in such a way that the actual maximum size is one
+less than the specified value.  The default size is defined by
+CGROUP_LOCAL_BUFFER_SIZE.  Its interpretation is quite confusing - its
+value is decremented by 1 and then compared for equality with max
+size, which means that the actual default size is
+CGROUP_LOCAL_BUFFER_SIZE - 2, which is 62 chars.
 
-* cgroup_alloc_name() is updated to take const char * isntead of
-  dentry * for name source.
+There's no point in having a limit that low.  Update its definition so
+that it means the actual string length sans termination and anything
+below PAGE_SIZE-1 is treated as PAGE_SIZE-1.
 
-* cgroup name formatting is separated out into cgroup_file_name().
-  While at it, buffer length protection is added.
+.max_write_len for "release_agent" is updated to PATH_MAX-1 and
+cgroup_release_agent_write() is updated so that the redundant strlen()
+check is removed and it uses strlcpy() instead of strcpy().
+.max_write_len initializations in blk-throttle.c and cfq-iosched.c are
+no longer necessary and removed.  The one in cpuset is kept unchanged
+as it's an approximated value to begin with.
+
+This will also make transition to kernfs smoother.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ block/blk-throttle.c   |  4 ----
+ block/cfq-iosched.c    |  3 ---
+ include/linux/cgroup.h |  5 +++--
+ kernel/cgroup.c        | 18 ++++++++----------
+ 4 files changed, 11 insertions(+), 19 deletions(-)
 
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index a760857..ed1c1c3 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -1425,28 +1425,24 @@ static struct cftype throtl_files[] = {
+ 		.private = offsetof(struct throtl_grp, bps[READ]),
+ 		.seq_show = tg_print_conf_u64,
+ 		.write_string = tg_set_conf_u64,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "throttle.write_bps_device",
+ 		.private = offsetof(struct throtl_grp, bps[WRITE]),
+ 		.seq_show = tg_print_conf_u64,
+ 		.write_string = tg_set_conf_u64,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "throttle.read_iops_device",
+ 		.private = offsetof(struct throtl_grp, iops[READ]),
+ 		.seq_show = tg_print_conf_uint,
+ 		.write_string = tg_set_conf_uint,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "throttle.write_iops_device",
+ 		.private = offsetof(struct throtl_grp, iops[WRITE]),
+ 		.seq_show = tg_print_conf_uint,
+ 		.write_string = tg_set_conf_uint,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "throttle.io_service_bytes",
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 744833b..4611879 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1838,7 +1838,6 @@ static struct cftype cfq_blkcg_files[] = {
+ 		.flags = CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cfqg_print_leaf_weight_device,
+ 		.write_string = cfqg_set_leaf_weight_device,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "weight",
+@@ -1853,7 +1852,6 @@ static struct cftype cfq_blkcg_files[] = {
+ 		.flags = CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cfqg_print_weight_device,
+ 		.write_string = cfqg_set_weight_device,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "weight",
+@@ -1866,7 +1864,6 @@ static struct cftype cfq_blkcg_files[] = {
+ 		.name = "leaf_weight_device",
+ 		.seq_show = cfqg_print_leaf_weight_device,
+ 		.write_string = cfqg_set_leaf_weight_device,
+-		.max_write_len = 256,
+ 	},
+ 	{
+ 		.name = "leaf_weight",
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 884d367..1e4f9e2 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -398,8 +398,9 @@ struct cftype {
+ 	umode_t mode;
+ 
+ 	/*
+-	 * If non-zero, defines the maximum length of string that can
+-	 * be passed to write_string; defaults to 64
++	 * The maximum length of string, excluding trailing nul, that can
++	 * be passed to write_string.  If < PAGE_SIZE-1, PAGE_SIZE-1 is
++	 * assumed.
+ 	 */
+ 	size_t max_write_len;
+ 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index bdbd9ad..e832f90 100644
+index ab5344d..a800e56 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -67,6 +67,9 @@
-  */
- #define CGROUP_PIDLIST_DESTROY_DELAY	HZ
- 
-+#define CGROUP_FILE_NAME_MAX		(MAX_CGROUP_TYPE_NAMELEN +	\
-+					 MAX_CFTYPE_NAME + 2)
+@@ -2204,13 +2204,14 @@ static int cgroup_procs_write(struct cgroup_subsys_state *css,
+ static int cgroup_release_agent_write(struct cgroup_subsys_state *css,
+ 				      struct cftype *cft, const char *buffer)
+ {
+-	BUILD_BUG_ON(sizeof(css->cgroup->root->release_agent_path) < PATH_MAX);
+-	if (strlen(buffer) >= PATH_MAX)
+-		return -EINVAL;
++	struct cgroupfs_root *root = css->cgroup->root;
 +
- /*
-  * cgroup_tree_mutex nests above cgroup_mutex and protects cftypes, file
-  * creation/removal and hierarchy changing operations including cgroup
-@@ -799,17 +802,29 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
- 	return inode;
++	BUILD_BUG_ON(sizeof(root->release_agent_path) < PATH_MAX);
+ 	if (!cgroup_lock_live_group(css->cgroup))
+ 		return -ENODEV;
+ 	spin_lock(&release_agent_path_lock);
+-	strcpy(css->cgroup->root->release_agent_path, buffer);
++	strlcpy(root->release_agent_path, buffer,
++		sizeof(root->release_agent_path));
+ 	spin_unlock(&release_agent_path_lock);
+ 	mutex_unlock(&cgroup_mutex);
+ 	return 0;
+@@ -2236,20 +2237,17 @@ static int cgroup_sane_behavior_show(struct seq_file *seq, void *v)
+ 	return 0;
  }
  
--static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
-+static struct cgroup_name *cgroup_alloc_name(const char *name_str)
- {
- 	struct cgroup_name *name;
- 
--	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
-+	name = kmalloc(sizeof(*name) + strlen(name_str) + 1, GFP_KERNEL);
- 	if (!name)
- 		return NULL;
--	strcpy(name->name, dentry->d_name.name);
-+	strcpy(name->name, name_str);
- 	return name;
- }
- 
-+static char *cgroup_file_name(struct cgroup *cgrp, const struct cftype *cft,
-+			      char *buf)
-+{
-+	if (cft->ss && !(cft->flags & CFTYPE_NO_PREFIX) &&
-+	    !(cgrp->root->flags & CGRP_ROOT_NOPREFIX))
-+		snprintf(buf, CGROUP_FILE_NAME_MAX, "%s.%s",
-+			 cft->ss->name, cft->name);
-+	else
-+		strncpy(buf, cft->name, CGROUP_FILE_NAME_MAX);
-+	return buf;
-+}
-+
- static void cgroup_free_fn(struct work_struct *work)
- {
- 	struct cgroup *cgrp = container_of(work, struct cgroup, destroy_work);
-@@ -2428,7 +2443,7 @@ static int cgroup_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	if (cgroup_sane_behavior(cgrp))
- 		return -EPERM;
- 
--	name = cgroup_alloc_name(new_dentry);
-+	name = cgroup_alloc_name(new_dentry->d_name.name);
- 	if (!name)
- 		return -ENOMEM;
- 
-@@ -2604,14 +2619,7 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
- 	struct cfent *cfe;
- 	int error;
- 	umode_t mode;
--	char name[MAX_CGROUP_TYPE_NAMELEN + MAX_CFTYPE_NAME + 2] = { 0 };
+-/* A buffer size big enough for numbers or short strings */
+-#define CGROUP_LOCAL_BUFFER_SIZE 64
 -
--	if (cft->ss && !(cft->flags & CFTYPE_NO_PREFIX) &&
--	    !(cgrp->root->flags & CGRP_ROOT_NOPREFIX)) {
--		strcpy(name, cft->ss->name);
--		strcat(name, ".");
--	}
--	strcat(name, cft->name);
-+	char name[CGROUP_FILE_NAME_MAX];
+ static ssize_t cgroup_file_write(struct file *file, const char __user *userbuf,
+ 				 size_t nbytes, loff_t *ppos)
+ {
+ 	struct cfent *cfe = __d_cfe(file->f_dentry);
+ 	struct cftype *cft = __d_cft(file->f_dentry);
+ 	struct cgroup_subsys_state *css = cfe->css;
+-	size_t max_bytes = cft->max_write_len ?: CGROUP_LOCAL_BUFFER_SIZE - 1;
++	size_t max_bytes = max(cft->max_write_len, PAGE_SIZE);
+ 	char *buf;
+ 	int ret;
  
- 	BUG_ON(!mutex_is_locked(&dir->d_inode->i_mutex));
+-	if (nbytes >= max_bytes)
++	if (nbytes > max_bytes)
+ 		return -E2BIG;
  
-@@ -2619,6 +2627,7 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
- 	if (!cfe)
- 		return -ENOMEM;
- 
-+	cgroup_file_name(cgrp, cft, name);
- 	dentry = lookup_one_len(name, dir, strlen(name));
- 	if (IS_ERR(dentry)) {
- 		error = PTR_ERR(dentry);
-@@ -4126,7 +4135,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	if (!cgrp)
- 		return -ENOMEM;
- 
--	name = cgroup_alloc_name(dentry);
-+	name = cgroup_alloc_name(dentry->d_name.name);
- 	if (!name) {
- 		err = -ENOMEM;
- 		goto err_free_cgrp;
+ 	buf = kmalloc(nbytes + 1, GFP_KERNEL);
+@@ -3910,7 +3908,7 @@ static struct cftype cgroup_base_files[] = {
+ 		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cgroup_release_agent_show,
+ 		.write_string = cgroup_release_agent_write,
+-		.max_write_len = PATH_MAX,
++		.max_write_len = PATH_MAX - 1,
+ 	},
+ 	{ }	/* terminate */
+ };
 -- 
 1.8.5.3
 
