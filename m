@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaA1Kpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:45:45 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37929 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaA1Kpn (ORCPT
+	id S1754798AbaA1Kul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:50:41 -0500
+Received: from mail-pd0-f194.google.com ([209.85.192.194]:49357 "EHLO
+	mail-pd0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaA1Kuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:45:43 -0500
-X-IronPort-AV: E=Sophos;i="4.95,735,1384300800"; 
-   d="scan'208";a="95174994"
-Message-ID: <52E78A55.3050905@citrix.com>
-Date: Tue, 28 Jan 2014 10:45:41 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Julien Grall <julien.grall@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <ian.campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        <patches@linaro.org>
-Subject: Re: [PATCH] xen/gnttab: Use phys_addr_t to describe the grant frame
- base address
-References: <1390871025-29079-1-git-send-email-julien.grall@linaro.org>
-In-Reply-To: <1390871025-29079-1-git-send-email-julien.grall@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+	Tue, 28 Jan 2014 05:50:40 -0500
+From: Vincent Yang <vincent.yang.fujitsu@gmail.com>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: andy.green@linaro.org, jaswinder.singh@linaro.org,
+        fujitsu@lists.linaro.org, nonaka.h@jp.fujitsu.com,
+        Vincent Yang <Vincent.Yang@tw.fujitsu.com>
+Subject: [PATCH] mmc: core: Prevent unexpected SD Clock gating during Signal Voltage Switch Procedure
+Date: Tue, 28 Jan 2014 18:50:13 +0800
+Message-Id: <1390906213-7612-1-git-send-email-Vincent.Yang@tw.fujitsu.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/14 01:03, Julien Grall wrote:
-> On ARM, address size can be 32 bits or 64 bits (if CONFIG_ARCH_PHYS_ADDR_T_64BIT
-> is enabled).
-> We can't assume that the grant frame base address will always fits in an
-> unsigned long. Use phys_addr_t instead of unsigned long as argument for
-> gnttab_setup_auto_xlat_frames.
-> 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
+When switching the signal voltage from 3.3V to 1.8V, there should be only
+one SD Clock gating and un-gating operation. Between them the SD host
+controller should switch signal level to 1.8V.
+However, sometimes there is an additional gating and un-gating operation
+immediately after CMD11. This operation can cause some UHS-I cards report
+failure by holding DAT[3:0] low. It is because CONFIG_MMC_CLKGATE attempts
+to aggressively gate the clock for power saving.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+This patch is going to hold SD Clock before CMD11, therefore, the additional
+gating and un-gating operation can be prevented. It has been verified on
+some UHS-I SD memory cards and works correctly.
+---
+ drivers/mmc/core/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-David
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 098374b..86a35ef 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1432,6 +1432,8 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage, u32 ocr)
+ 		pr_warning("%s: cannot verify signal voltage switch\n",
+ 				mmc_hostname(host));
+ 
++	mmc_host_clk_hold(host);
++
+ 	cmd.opcode = SD_SWITCH_VOLTAGE;
+ 	cmd.arg = 0;
+ 	cmd.flags = MMC_RSP_R1 | MMC_CMD_AC;
+@@ -1442,8 +1444,6 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage, u32 ocr)
+ 
+ 	if (!mmc_host_is_spi(host) && (cmd.resp[0] & R1_ERROR))
+ 		return -EIO;
+-
+-	mmc_host_clk_hold(host);
+ 	/*
+ 	 * The card should drive cmd and dat[0:3] low immediately
+ 	 * after the response of cmd11, but wait 1 ms to be sure
+-- 
+1.7.9.5
+
