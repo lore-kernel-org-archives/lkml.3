@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552AbaA1Dqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 22:46:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30102 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaA1Dqn (ORCPT
+	id S1754613AbaA1DtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 22:49:05 -0500
+Received: from palinux.external.hp.com ([192.25.206.14]:47324 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaA1DtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 22:46:43 -0500
-Date: Mon, 27 Jan 2014 22:46:34 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V0 PATCH] pvh: Disable PSE feature for now
-Message-ID: <20140128034634.GC20680@pegasus.dumpdata.com>
-References: <1390875519-8667-1-git-send-email-mukesh.rathor@oracle.com>
- <1390875519-8667-2-git-send-email-mukesh.rathor@oracle.com>
+	Mon, 27 Jan 2014 22:49:02 -0500
+Date: Mon, 27 Jan 2014 20:49:00 -0700
+From: Matthew Wilcox <matthew@wil.cx>
+To: Ross Zwisler <ross.zwisler@linux.intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 22/22] XIP: Add support for unwritten extents
+Message-ID: <20140128034859.GC20939@parisc-linux.org>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com> <CEFD7DAD.22F65%matthew.r.wilcox@intel.com> <alpine.OSX.2.00.1401221546240.70541@scrumpy> <CF0C370C.235F1%willy@linux.intel.com> <alpine.OSX.2.00.1401271617570.9254@scrumpy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390875519-8667-2-git-send-email-mukesh.rathor@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <alpine.OSX.2.00.1401271617570.9254@scrumpy>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 06:18:39PM -0800, Mukesh Rathor wrote:
-> Until now, xen did not expose PSE to pvh guest, but a patch was submitted
-> to xen list to enable bunch of features for a pvh guest. PSE has not been
-
-Which 'patch'?
-
-> looked into for PVH, so until we can do that and test it to make sure it
-> works, disable the feature to avoid flood of bugs.
-
-I think we want a flood of bugs, no?
+On Mon, Jan 27, 2014 at 04:32:07PM -0700, Ross Zwisler wrote:
+> It looks like we have an additional bit of complexity with the hole case.  The
+> issue is that for holes, bh->b_size is just the full size of the write as set
+> earlier in the function:
 > 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> ---
->  arch/x86/xen/enlighten.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+>                         bh->b_size = ALIGN(end - offset, PAGE_SIZE);
 > 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index a4d7b64..4e952046 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1497,6 +1497,11 @@ static void __init xen_pvh_early_guest_init(void)
->  	xen_have_vector_callback = 1;
->  	xen_pvh_set_cr_flags(0);
+> >From this code it seems like you hoped the call into get_block() would adjust
+> bh->b_size to the size of the hole, allowing you to zero just the hole space
+> in the user buffer.  It doesn't look like it does, though, at least for ext4.
+
+Argh.  I got confused.  ext4 *has* this information, it just doesn't
+propagate it into the bh if it's a hole!  Should it?  The comments in
+the direct IO code imply that it *may*, but doesn't *have* to.  What it's
+doing now (not touching it) is probably wrong.
+
+> To just assume the current FS block is a hole, we can do something like this:
+
+Yes, this should fix things on an interim basis.  Bit inefficient,
+but it'll work.
+
+> diff --git a/fs/xip.c b/fs/xip.c
+> index 35e401e..e902593 100644
+> --- a/fs/xip.c
+> +++ b/fs/xip.c
+> @@ -122,7 +122,7 @@ static ssize_t xip_io(int rw, struct inode *inode, const struct
 >  
-> +        /* pvh guests are not quite ready for large pages yet */
-> +        setup_clear_cpu_cap(X86_FEATURE_PSE);
-> +        setup_clear_cpu_cap(X86_FEATURE_PSE36);
-> +
-> +
->  #ifdef CONFIG_X86_32
->  	BUG(); /* PVH: Implement proper support. */
->  #endif
-> -- 
-> 1.7.2.3
+>                         if (hole) {
+>                                 addr = NULL;
+> -                               size = bh->b_size - first;
+> +                               size = (1 << inode->i_blkbits) - first;
+>                         } else {
+>                                 retval = xip_get_addr(inode, bh, &addr);
+>                                 if (retval < 0)
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
