@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbaA1KTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:19:11 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49850 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaA1KTI (ORCPT
+	id S1754826AbaA1KTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:19:43 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:59431 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671AbaA1KTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:19:08 -0500
-Message-ID: <52E78411.9040802@gmail.com>
-Date: Tue, 28 Jan 2014 18:18:57 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 28 Jan 2014 05:19:09 -0500
+Message-ID: <52E78418.3000302@gmail.com>
+Date: Tue, 28 Jan 2014 19:19:04 +0900
+From: Daniel Jeong <gshark.jeong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: nicolas.dichtel@6wind.com, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, linux-kernel@vger.kernel.org,
-        zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: How to identify 6to4 and 6in4 tunnels
-References: <52E63779.5090101@gmail.com> <52E65817.1090904@6wind.com> <52E75D23.10909@gmail.com> <52E75EA5.4070102@gmail.com>
-In-Reply-To: <52E75EA5.4070102@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Sakari Ailus <sakari.ailus@iki.fi>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Daniel Jeong <gshark.jeong@gmail.com>
+Subject: Re: [RFCv2,1/2] v4l2-controls.h: add addtional Flash fault bits
+References: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com> <20140128090841.GG13820@valkosipuli.retiisi.org.uk>
+In-Reply-To: <20140128090841.GG13820@valkosipuli.retiisi.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 03:39 PM, zhuyj wrote:
-> On 01/28/2014 03:32 PM, zhuyj wrote:
->> On 01/27/2014 08:59 PM, Nicolas Dichtel wrote:
->>> Le 27/01/2014 11:39, zhuyj a écrit :
->>>> Hi, Maintainers
->>>>
->>>> In our scene, we will create the 6in4/6to4 tunnel firstly and need 
->>>> to check the
->>>> tunnel type, secondly, we will configure the ip address on it. So, 
->>>> Could we have
->>>> any way to get the actual tunnel for 6in4 and 6to4 from current 
->>>> linux version?
->>>>
->>>> Both 6in4 and 6to4 have the same protocol “IPPROTO_IPV6” in Linux 
->>>> kernel. The
->>>> only difference is the ip address on the tunnel. Can we distinguish 
->>>> them in
->>>> Linux kernel?
->>> Just check the prefix, like it is done in check_6rd().
->>>
->>>
->>> Regards,
->>> Nicolas
-> Hi, Nicolas
-> Thanks for your reply. Maybe I can configure 6to4 tunnel by the 
-> following commands:
+2014ë…„ 01ì›” 28ì¼ 18:08, Sakari Ailus ì“´ ê¸€:
+> Hi Daniel,
 >
->  ip tunnel add tun6to4 mode sit remote any local 1.202.252.122 ttl 64
->  ip link set dev tun6to4 up
->  ip -6 addr add 2002:01ca:fc7a::0012:0225:2122/128 dev tun6to4
->  ip -6 route add 2000::/3 via ::192.88.99.1 dev tun6to4 metric 1
->
-> But the kernel can not identify the tunnel is 6to4 tunnel or 6in4 
-> tunnel immediately. After the packets travel through this tunnel, the 
-> kernel can identify the type of the tunnel by check_6rd.
->
-> Is it right?
->
-> Best Regards!
-> Zhu Yanjun
->
->
-Hi, David
+> On Tue, Jan 28, 2014 at 03:55:57PM +0900, Daniel Jeong wrote:
+>> Add additional FLASH Fault bits to dectect faults from chip.
+>> Some Flash drivers support UVLO, IVFM, NTC Trip faults.
+>> UVLO : 	Under Voltage Lock Out Threshold crossed
+>> IVFM : 	IVFM block reported and/or adjusted LED current Input Voltage Flash Monitor trip threshold
+>> NTC  : 	NTC Threshold crossed. Many Flash drivers have a pin and the fault bit to
+>> serves as a threshold detector for negative temperature coefficient (NTC) thermistors.
+>>
+>> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+>> ---
+>>   include/uapi/linux/v4l2-controls.h |    3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+>> index 1666aab..01d730c 100644
+>> --- a/include/uapi/linux/v4l2-controls.h
+>> +++ b/include/uapi/linux/v4l2-controls.h
+>> @@ -803,6 +803,9 @@ enum v4l2_flash_strobe_source {
+>>   #define V4L2_FLASH_FAULT_SHORT_CIRCUIT		(1 << 3)
+>>   #define V4L2_FLASH_FAULT_OVER_CURRENT		(1 << 4)
+>>   #define V4L2_FLASH_FAULT_INDICATOR		(1 << 5)
+>> +#define V4L2_FLASH_FAULT_UVLO			(1 << 6)
+>> +#define V4L2_FLASH_FAULT_IVFM			(1 << 7)
+>> +#define V4L2_FLASH_FAULT_NTC_TRIP		(1 << 8)
+> I object adding a new fault which is essentially the same as an existing
+> fault, V4L2_FLASH_FAULT_OVER_TEMPERATURE.
 
-I want to identify sit interface 6to4 or 6in4 with the following parameters.
+I hope you consider it again.
+Usually, when the die temperature exceeds the specific temperature, ie 120 or 135 and fixed value,
+turn off PFET,NFET, current sources and set TEMP Fault bit.
+But in the NTC mode, the comparator is working and detect selected temperature through Vtrip value.
+It protects shutdown the chip due to high voltage and keep the device operation.
+Many flash chip support NTC and TEMP Fault both. For example, LM3554, LM3556, LM3559
+LM3642, LM3646, LM3560, LM3561, LM3565 etc
+Two things should be tell apart.
 
-include/uapi/linux/if_tunnel.h
-...
-struct ip_tunnel_parm {
-         char                    name[IFNAMSIZ];
-         int                     link;
-         __be16                  i_flags;             <---------I want 
-to use this variable to identify the type of sit interface. Can I?
-         __be16                  o_flags;
-         __be32                  i_key;
-         __be32                  o_key;
-         struct iphdr            iph;
-};
-...
+>
+> As the practice has been to use human-readable names for the faults, I'd
+> also suggest using V4L2_FLASH_FAULT_UNDER_VOLTAGE instead of
+> V4L2_FLASH_FAULT_UVLO.
 
-Please comment on this ? Thanks a lot.
+I agree with you.
 
-Best Regards!
-Zhu Yanjun
+>
+> What's the IVFM block and what does it do?
+
+IVFM is Input Voltage Flash Monitor.
+If the flash chip has IVFM function the flash current can be adjusted based upon the voltage level of input.
+As ramping flash current, the input voltage goes down and IVFM block adjust current to prevent to shudown due to low voltage
+and keep the flash operation. So if the input voltage crossed the IVFM Threshold level chip set the fault bit.
+Many flash chip, for example LM3556, LM3646, LM3642 , support this fucntion.
+I think, V4L2_FLASH_FAULT_INPUT_VOLTAGE_MONITOR is better than V4L2_FLASH_FAULT_IVFM.
+
+>
+>>   #define V4L2_CID_FLASH_CHARGE			(V4L2_CID_FLASH_CLASS_BASE + 11)
+>>   #define V4L2_CID_FLASH_READY			(V4L2_CID_FLASH_CLASS_BASE + 12)
+
