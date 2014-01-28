@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaA1BTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 20:19:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44569 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaA1BTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 20:19:54 -0500
-Date: Tue, 28 Jan 2014 01:18:41 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-Message-ID: <20140128011841.GG10323@ZenIV.linux.org.uk>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
- <20140127102759.GY11314@laptop.programming.kicks-ass.net>
- <20140127113627.GC10323@ZenIV.linux.org.uk>
- <20140127173931.GB32450@redhat.com>
+	id S1754114AbaA1BU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 20:20:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:46190 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753679AbaA1BUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 20:20:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,732,1384329600"; 
+   d="scan'208";a="471766902"
+Message-ID: <52E705D4.3010806@linux.intel.com>
+Date: Tue, 28 Jan 2014 09:20:20 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140127173931.GB32450@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        David Rientjes <rientjes@google.com>
+CC: Jorg Otte <jrg.otte@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: reduce log level for message "ACPI: \_PR_.CPU4:
+ failed to get CPU APIC ID"
+References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1401271615580.17114@chino.kir.corp.google.com> <52E6F9B9.1070900@intel.com>
+In-Reply-To: <52E6F9B9.1070900@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 06:39:31PM +0100, Oleg Nesterov wrote:
-> On 01/27, Al Viro wrote:
-> >
-> > BTW, there's an additional pile of obfuscation:
-> > /* work to do on interrupt/exception return */
-> > #define _TIF_WORK_MASK                                                  \
-> >         (0x0000FFFF &                                                   \
-> >          ~(_TIF_SYSCALL_TRACE|_TIF_SYSCALL_AUDIT|                       \
-> >            _TIF_SINGLESTEP|_TIF_SECCOMP|_TIF_SYSCALL_EMU))
-> >
-> > /* work to do on any return to user space */
-> > #define _TIF_ALLWORK_MASK                                               \
-> >         ((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |       \
-> >         _TIF_NOHZ)
-> 
-> Heh, yes ;)
-> 
-> > Why is _TIF_UPROBE *not* a part
-> > of _TIF_DO_NOTIFY_MASK, for example?
-> 
-> Yes, please see another email. That is why uprobe_deny_signal()
-> sets TIF_NOTIFY_RESUME along with TIF_UPROBE.
 
-*grumble* Can it end up modifying *regs?  From very cursory reading of
-kernel/events/uprobe.c it seems to do so, so we probably want to leave
-via iretq if that has hit, right?
+
+On 2014/1/28 8:28, Rafael J. Wysocki wrote:
+> On 1/28/2014 1:18 AM, David Rientjes wrote:
+>> On Mon, 27 Jan 2014, Jiang Liu wrote:
+>>
+>>> diff --git a/drivers/acpi/acpi_processor.c
+>>> b/drivers/acpi/acpi_processor.c
+>>> index c9311be..c29c2c3 100644
+>>> --- a/drivers/acpi/acpi_processor.c
+>>> +++ b/drivers/acpi/acpi_processor.c
+>>> @@ -261,7 +261,7 @@ static int acpi_processor_get_info(struct
+>>> acpi_device *device)
+>>>         apic_id = acpi_get_apicid(pr->handle, device_declaration,
+>>> pr->acpi_id);
+>>>       if (apic_id < 0) {
+>>> -        acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
+>>> +        acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
+>>>           return -ENODEV;
+>>>       }
+>> Don't we already leave some artifact in the kernel log at boot about apic
+>> ids that don't get registered?  I'm wondering if we should have this
+>> warning at all.
+> 
+> It is useful for knowing that there are potentially broken objects in
+> the ACPI tables.
+And it's very useful to identify BIOS bug in case of CPU hot-addition.
+It caused our test team about 1 week to identify BIOS bug in CPU
+hot-addition, so I added this debug message.
+Thanks!
+Gerry
+> 
+> 
