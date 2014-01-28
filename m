@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850AbaA1U16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:27:58 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45736 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364AbaA1U15 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:27:57 -0500
-Date: Tue, 28 Jan 2014 20:27:54 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-afs@lists.infradead.org, Pali Roh??r <pali.rohar@gmail.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Message-ID: <20140128202754.GI10323@ZenIV.linux.org.uk>
-References: <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
- <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
- <10828.1390940412@warthog.procyon.org.uk>
+	id S1755853AbaA1U2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:28:42 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755299AbaA1U2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:28:41 -0500
+Message-ID: <52E812F4.50906@nod.at>
+Date: Tue, 28 Jan 2014 21:28:36 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <10828.1390940412@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+References: <20140128062806.GA20750@gmail.com>	<52E76997.40303@nod.at>	<52E7D2E5.8090208@linux.intel.com>	<52E7D9FF.1080506@nod.at>	<52E7DB15.3090808@zytor.com>	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>	<20140128170507.GA16279@gmail.com>	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>	<20140128194823.GA18702@gmail.com>	<CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>	<20140128201536.GB5178@pd.tnic> <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 08:20:12PM +0000, David Howells wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Am 28.01.2014 21:25, schrieb Linus Torvalds:
+> On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
+>>
+>> Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
+>> Something like:
+>>
+>> "You don't need to enable this if you want symbolic names for kernel
+>> objects. Enable CONFIG_KALLSYMS instead."
 > 
-> > > -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
-> > > +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
-> > > -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
-> > > +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
-> > 
-> > So the S_IFREG isn't necessary.
-> 
-> True.  Is it worth creating proc_create_special() that can create a non-regular
-> file and then making proc_create() only permit regular files (and complain if
-> the S_IFMT field is not zero)?
+> Probably. And then we should make sure that allyesconfig/allmodconfig
+> don't pick it.
 
-We already do: in proc_create_data() we have
-        struct proc_dir_entry *pde;
-        if ((mode & S_IFMT) == 0)
-                mode |= S_IFREG;
+Let's make it depend on CONFIG_EXPERT.
 
-        if (!S_ISREG(mode)) {
-                WARN_ON(1);     /* use proc_mkdir() */
-                return NULL;
-        }
-
-proc_mkdir{,_data,_mode} are there for purpose.  Nobody had been insane
-enough to put FIFOs or sockets in procfs and anything else would need
-additional data anyway.  proc_symlink() is there, proc_mknod() isn't and
-nobody has complained yet.  Let's keep it that way, plese...
+Thanks,
+//richard
