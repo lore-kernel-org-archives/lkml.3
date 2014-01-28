@@ -1,63 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaA1Oxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 09:53:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59713 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754706AbaA1Ox3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 09:53:29 -0500
-Date: Tue, 28 Jan 2014 15:53:27 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: fanotify use after free.
-Message-ID: <20140128145327.GC13676@quack.suse.cz>
-References: <CA+55aFwzb7rJate=r0Sgi_N7FStNtJS_PvfgPSGaczPPgeUZvg@mail.gmail.com>
- <alpine.LNX.2.00.1401231120360.581@pobox.suse.cz>
- <20140123150540.GD28796@quack.suse.cz>
- <alpine.LNX.2.00.1401231607120.581@pobox.suse.cz>
- <20140123235549.GA7363@quack.suse.cz>
- <alpine.LNX.2.00.1401240825470.581@pobox.suse.cz>
- <20140127234017.GA7868@quack.suse.cz>
- <20140128061037.GA27636@redhat.com>
- <20140128080201.GA13676@quack.suse.cz>
- <alpine.LNX.2.00.1401281207140.3763@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1401281207140.3763@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755201AbaA1OyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 09:54:16 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:60311 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151AbaA1OyP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 09:54:15 -0500
+From: Julien Grall <julien.grall@linaro.org>
+To: linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com
+Cc: linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, ian.campbell@citrix.com,
+        xen-devel@lists.xenproject.org, patches@linaro.org,
+        david.vrabel@citrix.com, Julien Grall <julien.grall@linaro.org>
+Subject: [PATCH] arm/xen: Initialize event channels earlier
+Date: Tue, 28 Jan 2014 14:54:02 +0000
+Message-Id: <1390920842-21886-1-git-send-email-julien.grall@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-01-14 12:07:51, Jiri Kosina wrote:
-> On Tue, 28 Jan 2014, Jan Kara wrote:
-> 
-> > >   2b:*	4d 8b 64 c6 08       	mov    0x8(%r14,%rax,8),%r12     <-- trapping instruction
-> > > 
-> > > R14 is 0x6b6b6b6b6b6b6c03, which looks like a use-after-free.
-> >   Yup. But I'm somewhat puzzled by the trace. We crash when calling
-> > fsnotify_destroy_event() from fanotify_handle_event(). The fsnotify code
-> > has been called from do_sys_open() so the event was a 'FS_OPEN' which fails
-> > the fsn_event->mask & FAN_ALL_PERM_EVENTS test.
-> > 
-> > Slapping my forehead, that's a really stupid bug. The event
-> > fsnotify_add_notify_event() returns may be freed by the time we return
-> > because we already dropped the notification mutex. And then fsn_event->mask
-> > & FAN_ALL_PERM_EVENTS test will pass because FAN_ALL_PERM_EVENTS matches
-> > with the poison pattern 0x6b6b6b6b. So yet another hacked up version of
-> > fanotify fix is attached. And I have to seriously think about use counts
-> > for fanotify version of that struct.
-> 
-> With the fixed version of the patch, all the fanotify-related oopses are 
-> gone on my system.
-  Thanks for testing. So now I have to come up with something mergeable :)
+Event channels driver needs to be initialized very early. Until now, Xen
+initialization was done after all CPUs was bring up.
 
-								Honza
+We can safely move the initialization to an early initcall.
 
+Also use a cpu notifier to:
+    - Register the VCPU when the CPU is prepared
+    - Enable event channel IRQ when the CPU is running
+
+Signed-off-by: Julien Grall <julien.grall@linaro.org>
+---
+ arch/arm/xen/enlighten.c |   84 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 55 insertions(+), 29 deletions(-)
+
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 293eeea..39b668e 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -23,6 +23,7 @@
+ #include <linux/of_address.h>
+ #include <linux/cpuidle.h>
+ #include <linux/cpufreq.h>
++#include <linux/cpu.h>
+ 
+ #include <linux/mm.h>
+ 
+@@ -154,12 +155,11 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+ }
+ EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+ 
+-static void __init xen_percpu_init(void *unused)
++static void xen_percpu_init(int cpu)
+ {
+ 	struct vcpu_register_vcpu_info info;
+ 	struct vcpu_info *vcpup;
+ 	int err;
+-	int cpu = get_cpu();
+ 
+ 	pr_info("Xen: initializing cpu%d\n", cpu);
+ 	vcpup = per_cpu_ptr(xen_vcpu_info, cpu);
+@@ -170,9 +170,11 @@ static void __init xen_percpu_init(void *unused)
+ 	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
+ 	BUG_ON(err);
+ 	per_cpu(xen_vcpu, cpu) = vcpup;
++}
+ 
++static void xen_interrupt_init(void)
++{
+ 	enable_percpu_irq(xen_events_irq, 0);
+-	put_cpu();
+ }
+ 
+ static void xen_restart(enum reboot_mode reboot_mode, const char *cmd)
+@@ -193,6 +195,36 @@ static void xen_power_off(void)
+ 		BUG();
+ }
+ 
++static irqreturn_t xen_arm_callback(int irq, void *arg)
++{
++	xen_hvm_evtchn_do_upcall();
++	return IRQ_HANDLED;
++}
++
++static int xen_cpu_notification(struct notifier_block *self,
++				unsigned long action,
++				void *hcpu)
++{
++	int cpu = (long)hcpu;
++
++	switch (action) {
++	case CPU_UP_PREPARE:
++		xen_percpu_init(cpu);
++		break;
++	case CPU_STARTING:
++		xen_interrupt_init();
++		break;
++	default:
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block xen_cpu_notifier = {
++	.notifier_call = xen_cpu_notification,
++};
++
+ /*
+  * see Documentation/devicetree/bindings/arm/xen.txt for the
+  * documentation of the Xen Device Tree format.
+@@ -209,6 +241,7 @@ static int __init xen_guest_init(void)
+ 	const char *xen_prefix = "xen,xen-";
+ 	struct resource res;
+ 	phys_addr_t grant_frames;
++	int cpu;
+ 
+ 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
+ 	if (!node) {
+@@ -281,9 +314,27 @@ static int __init xen_guest_init(void)
+ 	disable_cpuidle();
+ 	disable_cpufreq();
+ 
++	xen_init_IRQ();
++
++	if (xen_events_irq < 0)
++		return -ENODEV;
++
++	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
++			       "events", &xen_vcpu)) {
++		pr_err("Error request IRQ %d\n", xen_events_irq);
++		return -EINVAL;
++	}
++
++	cpu = get_cpu();
++	xen_percpu_init(cpu);
++	xen_interrupt_init();
++	put_cpu();
++
++	register_cpu_notifier(&xen_cpu_notifier);
++
+ 	return 0;
+ }
+-core_initcall(xen_guest_init);
++early_initcall(xen_guest_init);
+ 
+ static int __init xen_pm_init(void)
+ {
+@@ -297,31 +348,6 @@ static int __init xen_pm_init(void)
+ }
+ late_initcall(xen_pm_init);
+ 
+-static irqreturn_t xen_arm_callback(int irq, void *arg)
+-{
+-	xen_hvm_evtchn_do_upcall();
+-	return IRQ_HANDLED;
+-}
+-
+-static int __init xen_init_events(void)
+-{
+-	if (!xen_domain() || xen_events_irq < 0)
+-		return -ENODEV;
+-
+-	xen_init_IRQ();
+-
+-	if (request_percpu_irq(xen_events_irq, xen_arm_callback,
+-			"events", &xen_vcpu)) {
+-		pr_err("Error requesting IRQ %d\n", xen_events_irq);
+-		return -EINVAL;
+-	}
+-
+-	on_each_cpu(xen_percpu_init, NULL, 0);
+-
+-	return 0;
+-}
+-postcore_initcall(xen_init_events);
+-
+ /* In the hypervisor.S file. */
+ EXPORT_SYMBOL_GPL(HYPERVISOR_event_channel_op);
+ EXPORT_SYMBOL_GPL(HYPERVISOR_grant_table_op);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
+
