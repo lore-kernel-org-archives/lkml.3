@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237AbaA1Dzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 22:55:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347AbaA1Dzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 22:55:39 -0500
-Date: Mon, 27 Jan 2014 22:55:18 -0500
-From: Dave Jones <davej@redhat.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when
- seting kernel nodes to unhotpluggable.
-Message-ID: <20140128035518.GA25386@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Tang Chen <tangchen@cn.fujitsu.com>,
-	David Rientjes <rientjes@google.com>, tglx@linutronix.de,
-	mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-	zhangyanfei@cn.fujitsu.com, guz.fnst@cn.fujitsu.com, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com>
- <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
- <52E70165.8070709@cn.fujitsu.com>
- <20140128025537.GA21730@redhat.com>
- <52E722F5.9010505@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E722F5.9010505@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754188AbaA1D5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 22:57:42 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:57564 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428AbaA1D5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 22:57:41 -0500
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH] acpi-cpufreq: De-register cpu notifier and free struct msr on error.
+Date: Mon, 27 Jan 2014 22:58:11 -0500
+Message-Id: <1390881491-18998-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:24:37AM +0800, Tang Chen wrote:
+If cpufreq_register_driver() fails we would free the acpi driver
+related structures but not free the ones allocated
+by acpi_cpufreq_boost_init() function. This meant that as
+the driver error-ed out and a CPU online/offline event came
+we would crash and burn as one of the CPU notifiers would point
+to garbage.
 
- > > I did a bisect with the patch above applied each step of the way.
- > > This time I got a plausible looking result....
- > 
- > I cannot reproduce this. Would you please share how to reproduce it ?
- > Or does it just happen during the booting ?
+This fixes a regression that commit cfc9c8ed03e4d908f2388af8815f44c87b503aaf
+"acpi-cpufreq: Adjust the code to use the common boost attribute"
+introduced.
 
-Just during boot. Very early. So early in fact, I have no logging facilities
-like usb-serial, just what is on vga console.
+CC: Lukasz Majewski <l.majewski@samsung.com>
+CC: Myungjoo Ham <myungjoo.ham@samsung.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/cpufreq/acpi-cpufreq.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-If you want me to add some printk's, I can add a while (1); before
-the part that oopses so we can diagnose further..
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 79e5608..3e856d6 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -969,9 +969,10 @@ static int __init acpi_cpufreq_init(void)
+ 	acpi_cpufreq_boost_init();
+ 
+ 	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
+-	if (ret)
++	if (ret) {
+ 		free_acpi_perf_data();
+-
++		acpi_cpufreq_boost_exit();
++	}
+ 	return ret;
+ }
+ 
+-- 
+1.7.7.6
 
-	Dave
