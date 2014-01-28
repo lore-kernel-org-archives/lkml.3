@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbaA1BU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 20:20:26 -0500
-Received: from mga01.intel.com ([192.55.52.88]:46190 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679AbaA1BUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 20:20:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,732,1384329600"; 
-   d="scan'208";a="471766902"
-Message-ID: <52E705D4.3010806@linux.intel.com>
-Date: Tue, 28 Jan 2014 09:20:20 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754150AbaA1BVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 20:21:42 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50021 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaA1BVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 20:21:41 -0500
+X-AuditID: 9c930179-b7c84ae000000e38-36-52e70623ed22
+Date: Tue, 28 Jan 2014 10:23:15 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Taras Glek <tglek@mozilla.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
+        Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
+        pliard@google.com
+Subject: Re: [PATCH v10 00/16] Volatile Ranges v10
+Message-ID: <20140128012315.GE25066@bbox>
+References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
+ <CAHGf_=qiQtG_7W=SfKfGHgV6p6aT3==Wnj65UAegejeoS6fLBA@mail.gmail.com>
+ <20140128001244.GB25066@bbox>
+ <52E6FCF3.6010009@linaro.org>
+ <52E70367.1080504@mozilla.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        David Rientjes <rientjes@google.com>
-CC: Jorg Otte <jrg.otte@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Rafael J . Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: reduce log level for message "ACPI: \_PR_.CPU4:
- failed to get CPU APIC ID"
-References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1401271615580.17114@chino.kir.corp.google.com> <52E6F9B9.1070900@intel.com>
-In-Reply-To: <52E6F9B9.1070900@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E70367.1080504@mozilla.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 27, 2014 at 05:09:59PM -0800, Taras Glek wrote:
+> 
+> 
+> John Stultz wrote:
+> >On 01/27/2014 04:12 PM, Minchan Kim wrote:
+> >>On Mon, Jan 27, 2014 at 05:23:17PM -0500, KOSAKI Motohiro wrote:
+> >>>- Your number only claimed the effectiveness anon vrange, but not file vrange.
+> >>Yes. It's really problem as I said.
+> >> From the beginning, John Stultz wanted to promote vrange-file to replace
+> >>android's ashmem and when I heard usecase of vrange-file, it does make sense
+> >>to me so that's why I'd like to unify them in a same interface.
+> >>
+> >>But the problem is lack of interesting from others and lack of time to
+> >>test/evaluate it. I'm not an expert of userspace so actually I need a bit
+> >>help from them who require the feature but at a moment,
+> >>but I don't know who really want or/and help it.
+> >>
+> >>Even, Android folks didn't have any interest on vrange-file.
+> >
+> >Just as a correction here. I really don't think this is the case, as
+> >Android's use definitely relies on file based volatility. It might be
+> >more fair to say there hasn't been very much discussion from Android
+> >developers on the particulars of the file volatility semantics (out
+> >possibly not having any particular objections, or more-likely, being a
+> >bit too busy to follow the all various theoretical tangents we've
+> >discussed).
+> >
+> >But I'd not want anyone to get the impression that anonymous-only
+> >volatility would be sufficient for Android's needs.
+> Mozilla is starting to use android's ashmem for discardable memory
+> within a single process:
+> https://bugzilla.mozilla.org/show_bug.cgi?id=748598 .
+> 
+> Volatile ranges do help with that specific(uncommon?) use of ashmem.
 
+Thanks for the info.
 
-On 2014/1/28 8:28, Rafael J. Wysocki wrote:
-> On 1/28/2014 1:18 AM, David Rientjes wrote:
->> On Mon, 27 Jan 2014, Jiang Liu wrote:
->>
->>> diff --git a/drivers/acpi/acpi_processor.c
->>> b/drivers/acpi/acpi_processor.c
->>> index c9311be..c29c2c3 100644
->>> --- a/drivers/acpi/acpi_processor.c
->>> +++ b/drivers/acpi/acpi_processor.c
->>> @@ -261,7 +261,7 @@ static int acpi_processor_get_info(struct
->>> acpi_device *device)
->>>         apic_id = acpi_get_apicid(pr->handle, device_declaration,
->>> pr->acpi_id);
->>>       if (apic_id < 0) {
->>> -        acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
->>> +        acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
->>>           return -ENODEV;
->>>       }
->> Don't we already leave some artifact in the kernel log at boot about apic
->> ids that don't get registered?  I'm wondering if we should have this
->> warning at all.
+I'd like to ask a question.
+Do you prefer fvrange(fd, offset, len) or fadvise(fd, offset, len, advise)
+inteface rather than current vrange syscall interface for vrange-file?
+
+Because I think it would remove unnecessary mmap/munmap syscall for vrange
+interface as well as out of address space in 32bit machine.
+
 > 
-> It is useful for knowing that there are potentially broken objects in
-> the ACPI tables.
-And it's very useful to identify BIOS bug in case of CPU hot-addition.
-It caused our test team about 1 week to identify BIOS bug in CPU
-hot-addition, so I added this debug message.
-Thanks!
-Gerry
+> For Mozilla sharing memory across processes via ashmem is not a
+> nearterm project. It's something that is likely to require
+> significant rework. Process-local discardable memory can be
+> retrofited in a more straight-forward fashion.
 > 
-> 
+> Taras
+
+-- 
+Kind regards,
+Minchan Kim
