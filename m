@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622AbaA1BAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 20:00:01 -0500
-Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:59996 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753534AbaA1A77 (ORCPT
+	id S1754290AbaA1BBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 20:01:23 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47592 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413AbaA1BBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:59:59 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2894:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3868:3870:3871:3872:4321:5007:6119:7652:8603:10004:10400:10848:11026:11473:11658:11914:12517:12519:12555:12740:13069:13311:13357:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mark13_73f81be37fb45
-X-Filterd-Recvd-Size: 2575
-Message-ID: <1390870794.20150.75.camel@joe-AO722>
-Subject: Re: [PATCH] vsprintf: ignore arguments to %n
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ryan Mallon <rmallon@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Daniel Borkmann <dborkman@redhat.com>
-Date: Mon, 27 Jan 2014 16:59:54 -0800
-In-Reply-To: <20140128003927.GA27319@www.outflux.net>
-References: <20140128003927.GA27319@www.outflux.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Jan 2014 20:01:22 -0500
+X-AuditID: 9c930179-b7c84ae000000e38-b3-52e7015ee242
+Date: Tue, 28 Jan 2014 10:02:53 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, Rob Clark <robdclark@gmail.com>,
+        Jason Evans <je@fb.com>, pliard@google.com
+Subject: Re: [PATCH v10 00/16] Volatile Ranges v10
+Message-ID: <20140128010253.GD25066@bbox>
+References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
+ <CAHGf_=qiQtG_7W=SfKfGHgV6p6aT3==Wnj65UAegejeoS6fLBA@mail.gmail.com>
+ <20140128001244.GB25066@bbox>
+ <52E6FCF3.6010009@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E6FCF3.6010009@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-27 at 16:39 -0800, Kees Cook wrote:
+On Mon, Jan 27, 2014 at 04:42:27PM -0800, John Stultz wrote:
+> On 01/27/2014 04:12 PM, Minchan Kim wrote:
+> > On Mon, Jan 27, 2014 at 05:23:17PM -0500, KOSAKI Motohiro wrote:
+> >> - Your number only claimed the effectiveness anon vrange, but not file vrange.
+> > Yes. It's really problem as I said.
+> > From the beginning, John Stultz wanted to promote vrange-file to replace
+> > android's ashmem and when I heard usecase of vrange-file, it does make sense
+> > to me so that's why I'd like to unify them in a same interface.
+> >
+> > But the problem is lack of interesting from others and lack of time to
+> > test/evaluate it. I'm not an expert of userspace so actually I need a bit
+> > help from them who require the feature but at a moment,
+> > but I don't know who really want or/and help it.
+> >
+> > Even, Android folks didn't have any interest on vrange-file.
+> 
+> Just as a correction here. I really don't think this is the case, as
+> Android's use definitely relies on file based volatility. It might be
+> more fair to say there hasn't been very much discussion from Android
+> developers on the particulars of the file volatility semantics (out
+> possibly not having any particular objections, or more-likely, being a
+> bit too busy to follow the all various theoretical tangents we've
+> discussed).
+> 
+> But I'd not want anyone to get the impression that anonymous-only
+> volatility would be sufficient for Android's needs.
 
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-[]
-> @@ -1735,14 +1735,10 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
->  		case FORMAT_TYPE_NRCHARS: {
->  			/*
->  			 * Since %n poses a greater security risk than
-> -			 * utility, ignore %n and skip its argument.
-> +			 * utility, it should not be implemented. Instead,
-> +			 * when encountering %n, ignore the arguments.
->  			 */
-> -			void *skip_arg;
-> -
-> -			WARN_ONCE(1, "Please remove ignored %%n in '%s'\n",
-> -					old_fmt);
-> -
-> -			skip_arg = va_arg(args, void *);
-> +			WARN_ONCE(1, "Ignored %%n in '%s'\n", old_fmt);
->  			break;
->  		}
+Right. Thanks for the correction.
 
-I don't think this is better either.
+> 
+> 
+> (And to further clarify here, since this can be confusing... 
+> shmem/tmpfs-only file volatility *would* be sufficient, despite that
+> technically being anonymous backed memory. The key issue is we need to
+> be able to share the volatility between processes.)
+> 
+> 
+> > So, we might drop vrange-file part in this patchset if it's really headache.
+> > But let's discuss further because still I believe it's valuable feature to
+> > keep instead of dropping.
+> 
+> If it helps gets interest in reviewing this, I'm ok with deferring
+> (tmpfs) file volatility, so folks can get comfortable with anonymous
+> volatility. But I worry its too critical a feature to ignore.
 
-Why not tell people to fix the code?
-checkpatch isn't run on quite a lot of patches.
-
-anyway, here's a possible checkpatch test too.
----
- scripts/checkpatch.pl | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 1dbd6d1..95c3264 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4069,6 +4069,15 @@ sub process {
- 			}
- 		}
- 
-+# check for unsupported uses of %n in what appear to be formats
-+		if ($sline =~ /\b$logFunctions\s*\(.*"/) {
-+			my $fmt = get_quoted_string($line, $rawline);
-+			if ($fmt ne "" && $fmt =~ /[^\%]\%n/) {
-+				WARN("PRINTF_CONTROL_N",
-+				     "printf style use of \%n is not supported\n" . $herecurr);
-+			}
-+		}
-+
- # Check for misused memsets
- 		if ($^V && $^V ge 5.10.0 &&
- 		    defined $stat &&
+Yes. I don't want to drop it without more discussion with real user
+of it but the problem is it's very hard to find one to have extra time
+to discuss it.
 
 
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
