@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaA1VKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:10:23 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:40778 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755927AbaA1VKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:10:19 -0500
-Content-Type: multipart/signed; boundary="Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2"; protocol="application/pgp-signature"; micalg=pgp-sha1
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v4 0/3] ext4: increase mbcache scalability
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20140128122623.26029.qmail@science.horizon.com>
-Date: Tue, 28 Jan 2014 14:09:15 -0700
-Cc: T Makphaibulchoke <tmac@hp.com>, Andi Kleen <andi@firstfloor.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-Id: <848E47EB-5FDF-4DB9-9800-4B1F4B1FA71C@dilger.ca>
-References: <20140128122623.26029.qmail@science.horizon.com>
-To: George Spelvin <linux@horizon.com>
-X-Mailer: Apple Mail (2.1827)
+	id S1755966AbaA1VKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:10:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755927AbaA1VKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 16:10:32 -0500
+Date: Tue, 28 Jan 2014 16:10:21 -0500
+From: Dave Jones <davej@redhat.com>
+To: Sage Weil <sage@inktank.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [GIT PULL] Ceph updates for -rc1
+Message-ID: <20140128211021.GB1377@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sage Weil <sage@inktank.com>, torvalds@linux-foundation.org,
+	linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <alpine.DEB.2.00.1401281032560.16427@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.00.1401281032560.16427@cobra.newdream.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 28, 2014 at 10:40:16AM -0800, Sage Weil wrote:
+ > Hi Linus,
+ > 
+ > Please pull the following Ceph updates from
+ > 
+ >   git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+ > 
+ > This is a big batch.  From Ilya we have:
+ > 
+ >  - rbd support for more than ~250 mapped devices (now uses same scheme 
+ >    that SCSI does for device major/minor numbering)
+ >  - crush updates for new mapping behaviors (will be needed for coming 
+ >    erasure coding support, among other things)
+ >  - preliminary support for tiered storage pools
+ > 
+ > There is also a big series fixing a pile cephfs bugs with clustered MDSs 
+ > from Yan Zheng, ACL support for cephfs from Guangliang Zhao, ceph fscache 
+ > improvements from Li Wang, improved behavior when we get ENOSPC from Josh 
+ > Durgin, some readv/writev improvements from Majianpeng, and the usual mix 
+ > of small cleanups.
 
---Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+This breaks the build for me.
 
-On Jan 28, 2014, at 5:26 AM, George Spelvin <linux@horizon.com> wrote:
->> The third part of the patch further increases the scalablity of an =
-ext4
->> filesystem by having each ext4 fielsystem allocate and use its own =
-private
->> mbcache structure, instead of sharing a single mcache structures =
-across all
->> ext4 filesystems, and increases the size of its mbcache hash tables.
->=20
-> Are you sure this helps?  The idea behind having one large mbcache is
-> that one large hash table will always be at least as well balanced as
-> multiple separate tables, if the total size is the same.
->=20
-> If you have two size 2^n hash tables, the chance of collision is equal =
-to
-> one size  2^(n+1) table if they're equally busy, and if they're =
-unequally
-> busy. the latter is better.  The busier file system will take less =
-time
-> per search, and since it's searched more often than the less-busy one,
-> net win.
->=20
-> How does it compare with just increasing the hash table size but =
-leaving
-> them combined?
+fs/ceph/acl.c: In function ‘ceph_init_acl’:
+fs/ceph/acl.c:216:3: warning: passing argument 1 of ‘posix_acl_create’ from incompatible pointer type [enabled by default]
+   ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
+   ^
+In file included from include/linux/posix_acl_xattr.h:12:0,
+                 from fs/ceph/acl.c:25:
+include/linux/posix_acl.h:96:12: note: expected ‘struct inode *’ but argument is of type ‘struct posix_acl **’
+ extern int posix_acl_create(struct inode *, umode_t *, struct posix_acl **,
+            ^
+fs/ceph/acl.c:216:3: warning: passing argument 2 of ‘posix_acl_create’ makes pointer from integer without a cast [enabled by default]
+   ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
+   ^
+In file included from include/linux/posix_acl_xattr.h:12:0,
+                 from fs/ceph/acl.c:25:
+include/linux/posix_acl.h:96:12: note: expected ‘umode_t *’ but argument is of type ‘unsigned int’
+ extern int posix_acl_create(struct inode *, umode_t *, struct posix_acl **,
+            ^
+fs/ceph/acl.c:216:3: warning: passing argument 3 of ‘posix_acl_create’ from incompatible pointer type [enabled by default]
+   ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
+   ^
+In file included from include/linux/posix_acl_xattr.h:12:0,
+                 from fs/ceph/acl.c:25:
+include/linux/posix_acl.h:96:12: note: expected ‘struct posix_acl **’ but argument is of type ‘umode_t *’
+ extern int posix_acl_create(struct inode *, umode_t *, struct posix_acl **,
+            ^
+fs/ceph/acl.c:216:3: error: too few arguments to function ‘posix_acl_create’
+   ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
+   ^
+In file included from include/linux/posix_acl_xattr.h:12:0,
+                 from fs/ceph/acl.c:25:
+include/linux/posix_acl.h:96:12: note: declared here
+ extern int posix_acl_create(struct inode *, umode_t *, struct posix_acl **,
+            ^
+fs/ceph/acl.c: In function ‘ceph_acl_chmod’:
+fs/ceph/acl.c:252:2: warning: passing argument 1 of ‘posix_acl_chmod’ from incompatible pointer type [enabled by default]
+  ret = posix_acl_chmod(&acl, GFP_KERNEL, inode->i_mode);
+  ^
+In file included from include/linux/posix_acl_xattr.h:12:0,
+                 from fs/ceph/acl.c:25:
+include/linux/posix_acl.h:95:12: note: expected ‘struct inode *’ but argument is of type ‘struct posix_acl **’
+ extern int posix_acl_chmod(struct inode *, umode_t);
+            ^
+fs/ceph/acl.c:252:2: error: too many arguments to function ‘posix_acl_chmod’
+  ret = posix_acl_chmod(&acl, GFP_KERNEL, inode->i_mode);
+  ^
+In file included from include/linux/posix_acl_xattr.h:12:0,
+                 from fs/ceph/acl.c:25:
+include/linux/posix_acl.h:95:12: note: declared here
+ extern int posix_acl_chmod(struct inode *, umode_t);
 
-Except that having one mbcache per block device would avoid the need
-to store the e_bdev pointer in thousands/millions of entries.  Since
-the blocks are never shared between different block devices, there
-is no caching benefit even if the same block is on two block devices.
-
-Cheers, Andreas
-
-
-
-
-
-
---Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIVAwUBUugce3Kl2rkXzB/gAQK5eBAAg8vPhCVJKZN55Mj55y9CiA9M9OyVsiG+
-LwXLw7HxsDoMfDW0K0SKMzPn93LKtDQpVFi23Ot4//t4PYJXkuDo0JS6v9u9ftN1
-cuuuzpvPiWx1lxBA/S1tOfrmhfdYzAbkSzhnGZJYem+VVdkSF9e4j5ETfWwKZUcV
-EtpAcCH7N8maMuEoffwn69MKngwJjSREayYsFwgxOCNvYGJalPSFj1K5Kl9OEkry
-JJoxlGCrfVG988lbX+0qqHiCizAZUSi6QclwANNJKtaHD0FlwWNzBS3jbh6fDTue
-f8wYyjGrYlSO3XaqSqL9xvk3icTdLxvwsC1mp37svBXOuDbnvwkLIO3GSoCtN143
-v70qe7PPFdszAiOsAtXVjY95jNYbAA05CO+UzjVTloBvaQnTWwDzsCjaHaldBxFI
-9eBjqbxcWbL7uaYst2nw3NYsCc5pDF26ir3zu70Igdf6+5GO8BhoseDz5V8zMnY2
-tvdOFUTn0g7A01mjDIeYwbAelAjFugpujyxhgkIVULSlYd84aoczwEM6pk9F/A6E
-W//6fybj0Xg8cI3I6Rsuppfno4Bgqh807bRj/d02yRVHzY9Vc88vSjSEiZdZo8j8
-hg5eK7zdCyQiaYlRr+EcGwAMtNz6GEGy8vX2CJQ3xOpARtH9MITcPXFyzVL91fye
-gU2o67Vk0Lk=
-=agJf
------END PGP SIGNATURE-----
-
---Apple-Mail=_AFBFE058-8A9E-4A16-9EDE-15F5645AF9B2--
