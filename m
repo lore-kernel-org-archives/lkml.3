@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162AbaA1MJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 07:09:55 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:40790 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaA1MJx (ORCPT
+	id S932080AbaA1MMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 07:12:45 -0500
+Received: from mail-yk0-f177.google.com ([209.85.160.177]:64542 "EHLO
+	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754268AbaA1MMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 07:09:53 -0500
-Message-ID: <52E79DEA.3010408@siemens.com>
-Date: Tue, 28 Jan 2014 13:09:14 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Tue, 28 Jan 2014 07:12:44 -0500
+Date: Tue, 28 Jan 2014 09:12:36 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, jason.low2@hp.com, Waiman.Long@hp.com,
+        scott.norton@hp.com, aswin@hp.com
+Subject: Re: [PATCH 0/3] perf-bench: introduce futex microbenchmarks
+Message-ID: <20140128121236.GC3998@ghostprotocols.net>
+References: <1387081917-9102-1-git-send-email-davidlohr@hp.com>
+ <20131216100828.GA21304@gmail.com>
+ <1387205098.2797.3.camel@buesod1.americas.hpqcorp.net>
+ <1390587227.912.18.camel@dvhart-mobl.amr.corp.intel.com>
+ <1390882362.27421.22.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
-References: <52E6AFFE.3030004@siemens.com> <20140127202252.GA11821@two.firstfloor.org> <52E767C2.2090807@siemens.com> <20140128115549.GA26230@gmail.com>
-In-Reply-To: <20140128115549.GA26230@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390882362.27421.22.camel@buesod1.americas.hpqcorp.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-28 12:55, Ingo Molnar wrote:
-> 
-> * Jan Kiszka <jan.kiszka@siemens.com> wrote:
-> 
->> On 2014-01-27 21:22, Andi Kleen wrote:
->>> On Mon, Jan 27, 2014 at 08:14:06PM +0100, Jan Kiszka wrote:
->>>> apic_icr_write and its users in smpboot.c were apparently written under
->>>> the assumption that this code would only run during early boot. But
->>>> nowadays we also execute it when onlining a CPU later on while the
->>>> system is fully running. That will make wakeup_cpu_via_init_nmi and,
->>>> thus, also native_apic_icr_write run in plain process context. If we
->>>> migrate the caller to a different CPU at the wrong time or interrupt it
->>>> and write to ICR/ICR2 to send unrelated IPIs, we can end up sending
->>>> INIT, SIPI or NMIs to wrong CPUs.
->>>>
->>>> Fix this by disabling interrupts during the write to the ICR halves and
->>>> disable preemption around waiting for ICR availability and using it.
->>>
->>> If you just want to disable migration use get_cpu()/put_cpu()
->>
->> Fine with me if that is now preferred. Will that be the upstream way of
->> -rt's migrate_disable()?
-> 
-> Your original patch is fine, the suggestion to do ICR accesses with 
-> just preemption disabled is crap and is really asking for trouble: if 
-> some IRQ comes in at that point after all then it might cause all 
-> sorts of hard to debug problems (hangs, delays, missed IPIs, etc.).
+Em Mon, Jan 27, 2014 at 08:12:42PM -0800, Davidlohr Bueso escreveu:
+> On Fri, 2014-01-24 at 10:13 -0800, Darren Hart wrote:
+> > I agree that we should take whatever makes sense for perf out of
+> > futex-test and merge it with perf. It will see greater use and receive
+> > more review and improvements than it will in my obscure repository.
 
-Of course, we still need irqs off during ICR writes. I thought Andi was
-just suggesting to replace preempt_disable with get_cpu, maybe to
-document why we are disabling preemption here.
+> > With trinity covering the fuzz testing and perf handling performance
+> > tests, I think futex-test can be reduced down to a functional
+> > test-suite, which is perfectly fine with me.
 
-Jan
+> > If there is still interest here, I'll support it.
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+> Arnaldo, could you consider this for 3.15? I've also got some additional
+> work for perf-bench but am waiting for this to get settled first.
+
+Sure, I'll try applying it later today.
+
+- Arnaldo
