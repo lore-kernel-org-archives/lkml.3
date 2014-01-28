@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaA1MTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 07:19:06 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:20311 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149AbaA1MTD (ORCPT
+	id S1755221AbaA1MTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 07:19:13 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:26902 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148AbaA1MTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 07:19:03 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-56-52e7a035be18
+	Tue, 28 Jan 2014 07:19:01 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-be-52e7a032184d
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -17,55 +17,65 @@ To: MyungJoo Ham <myungjoo.ham@samsung.com>,
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 03/18] mfd: max14577: Remove not needed header inclusion
-Date: Tue, 28 Jan 2014 13:18:27 +0100
-Message-id: <1390911522-28209-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 01/18] regulator: max14577: Remove unused state container
+ definition
+Date: Tue, 28 Jan 2014 13:18:25 +0100
+Message-id: <1390911522-28209-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
 References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t/xa7qmC54HGRxZwmMx9eETNovrX56z
-	Wrx+YWhxtukNu8X9r0cZLb5d6WCy2PT4GqvF5V1z2CzWHrnLbnG7cQWbxeluVgduj52z7rJ7
-	bFrVyeZx59oeNo95JwM9Ni+p9+jbsorR4/MmuQD2KC6blNSczLLUIn27BK6MTWuWsxccZqt4
-	f7ObpYHxAGsXIyeHhICJxJfDR1ggbDGJC/fWs3UxcnEICSxllPh+aC8LhNPHJNG9ZQ4TSBWb
-	gLHE5uVLwKpEBFYzSaxZMBWsnVmgl1Hi5m4PEFtYwEPi7qdWdhCbRUBV4tmW1WwgNq+Au8S2
-	u4uA4hxA6xQk5kyyAQlzApW/utoINl8IqOTU8XcsExh5FzAyrGIUTS1NLihOSs811CtOzC0u
-	zUvXS87P3cQICcUvOxgXH7M6xCjAwajEw9vR+SxIiDWxrLgy9xCjBAezkghv4uznQUK8KYmV
-	ValF+fFFpTmpxYcYmTg4pRoYI1iWsXDeqdU4ebj0Cn+gitGqvzvYssTX7ryaGJj176nwBKNJ
-	6naWvduYvVoPxS6W87/jGzuvp+q1z5kGY37puHOTP9yq2fPZLjqCjftVbcbtHZ4VIs1xptsd
-	uSffX5S8WXd/XX1qZl5rvvV+rvWtdTp3/mz+rjvzzJqArPJOc5Es64ggv99KLMUZiYZazEXF
-	iQC0nZk2IwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnluLIzCtJLcpLzFFi42I5/e/4NV3jBc+DDK5lWUx9+ITN4vqX56wW
+	r18YWpxtesNucf/rUUaLb1c6mCw2Pb7GanF51xw2i7VH7rJb3G5cwWZxupvVgdtj56y77B6b
+	VnWyedy5tofNY97JQI/NS+o9+rasYvT4vEkugD2KyyYlNSezLLVI3y6BK+P+zlNMBU1cFXf3
+	dbE2MK7j6GLk5JAQMJG4s6uZDcIWk7hwbz2QzcUhJLCUUWLNz5msEE4fk8SkYzuYQKrYBIwl
+	Ni9fAlYlIrCaSWLNgqksIAlmgV5GiZu7PUBsYYEwiZu7VoI1sAioSrza9JoVxOYVcJc4NfU5
+	UJwDaJ2CxJxJNiBhTgEPiVdXG8HKhUBKjr9jmcDIu4CRYRWjaGppckFxUnqukV5xYm5xaV66
+	XnJ+7iZGSCB+3cG49JjVIUYBDkYlHt4H3c+ChFgTy4orcw8xSnAwK4nwJs5+HiTEm5JYWZVa
+	lB9fVJqTWnyIkYmDU6qBUZj7QfCNLwqTplwo8Ck3mryL62DpxRqe/9NsbxlbNZc/Eb5kyn/q
+	qU0O+4Of2+T/WS0zXOEhxpOauPpm3to1Gv0X1vYwnDpnx/fhmqZUz8J8yQUHBG2Wieq2TrxX
+	971V21iMXY+v9+vDSZeWnuLb2RF1v7HBaZZlbYNMj+UM3ib9t5NXHrpWr8RSnJFoqMVcVJwI
+	AN+Gu3ciAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove not needed max14577-private.h header inclusion in the main driver
-header. Remove obvious comment.
+Remove the "struct max14577_regulator" because this is not used
+anywhere. It should be removed earlier along with changing the driver
+after review on the mailing lists.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- include/linux/mfd/max14577.h |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/regulator/max14577.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index 247b021dfaaf..736d39c3ec0d 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -25,13 +25,8 @@
- #ifndef __MAX14577_H__
- #define __MAX14577_H__
+diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+index b1078ba3f393..38821458d413 100644
+--- a/drivers/regulator/max14577.c
++++ b/drivers/regulator/max14577.c
+@@ -1,7 +1,7 @@
+ /*
+  * max14577.c - Regulator driver for the Maxim 14577
+  *
+- * Copyright (C) 2013 Samsung Electronics
++ * Copyright (C) 2013,2014 Samsung Electronics
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -22,12 +22,6 @@
+ #include <linux/mfd/max14577-private.h>
+ #include <linux/regulator/of_regulator.h>
  
--#include <linux/mfd/max14577-private.h>
- #include <linux/regulator/consumer.h>
- 
--/*
-- * MAX14577 Regulator
-- */
+-struct max14577_regulator {
+-	struct device *dev;
+-	struct max14577 *max14577;
+-	struct regulator_dev **regulators;
+-};
 -
- /* MAX14577 regulator IDs */
- enum max14577_regulators {
- 	MAX14577_SAFEOUT = 0,
+ static int max14577_reg_is_enabled(struct regulator_dev *rdev)
+ {
+ 	int rid = rdev_get_id(rdev);
 -- 
 1.7.9.5
 
