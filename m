@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167AbaA1R1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:27:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:34387 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894AbaA1R1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:27:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,737,1384329600"; 
-   d="scan'208";a="472129449"
-Subject: [PATCH] mm: slub: do not VM_BUG_ON_PAGE() for temporary on-stack pages
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>,
-        sasha.levin@oracle.com, kirill@shutemov.name,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        penberg@kernel.org
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 28 Jan 2014 09:27:49 -0800
-Message-Id: <20140128172749.BBF280B1@viggo.jf.intel.com>
+	id S1755438AbaA1Rdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:33:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60571 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356AbaA1Rds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 12:33:48 -0500
+Message-Id: <20140128171947.942449330@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 28 Jan 2014 18:16:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
+        bsegall@google.com, Steven Rostedt <rostedt@goodmis.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 2/9] sched: Fix race in idle_balance()
+References: <20140128171634.974847076@infradead.org>
+Content-Disposition: inline; filename=daniel_lezcano-2_sched-fix_race_in_idle_balance.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+The scheduler main function 'schedule()' checks if there are no more tasks
+on the runqueue. Then it checks if a task should be pulled in the current
+runqueue in idle_balance() assuming it will go to idle otherwise.
 
-This patch:
+But the idle_balance() releases the rq->lock in order to lookup in the sched
+domains and takes the lock again right after. That opens a window where
+another cpu may put a task in our runqueue, so we won't go to idle but
+we have filled the idle_stamp, thinking we will.
 
-	commit 309381feaee564281c3d9e90fbca8963bb7428ad
-	Author: Sasha Levin <sasha.levin@oracle.com>
-	Date:   Thu Jan 23 15:52:54 2014 -0800
-	Subject: mm: dump page when hitting a VM_BUG_ON using VM_BUG_ON_PAGE
+This patch closes the window by checking if the runqueue has been modified
+but without pulling a task after taking the lock again, so we won't go to idle
+right after in the __schedule() function.
 
-added a bunch of VM_BUG_ON_PAGE() calls.  But, most of the ones
-in the slub code are for _temporary_ 'struct page's which are
-declared on the stack and likely have lots of gunk in them.
-Dumping their contents out will just confuse folks looking at
-bad_page() output.  Plus, if we try to page_to_pfn() on them or
-soemthing, we'll probably oops anyway.
-
-Turn them back in to VM_BUG_ON()s.
-
-I believe this is 3.14 material.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-
+Cc: alex.shi@linaro.org
+Cc: peterz@infradead.org
+Cc: mingo@kernel.org
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
+ kernel/sched/fair.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
- b/mm/slub.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6417,6 +6417,13 @@ void idle_balance(struct rq *this_rq)
+ 
+ 	raw_spin_lock(&this_rq->lock);
+ 
++	/*
++	 * While browsing the domains, we released the rq lock.
++	 * A task could have be enqueued in the meantime
++	 */
++	if (this_rq->nr_running && !pulled_task)
++		return;
++
+ 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+ 		/*
+ 		 * We are going idle. next_balance may be set based on
 
-diff -puN mm/slub.c~mm-slub-do-not-VM_BUG_ON-stack-pages mm/slub.c
---- a/mm/slub.c~mm-slub-do-not-VM_BUG_ON-stack-pages	2014-01-28 09:17:49.869780639 -0800
-+++ b/mm/slub.c	2014-01-28 09:19:27.905212000 -0800
-@@ -1559,7 +1559,7 @@ static inline void *acquire_slab(struct
- 		new.freelist = freelist;
- 	}
- 
--	VM_BUG_ON_PAGE(new.frozen, &new);
-+	VM_BUG_ON(new.frozen);
- 	new.frozen = 1;
- 
- 	if (!__cmpxchg_double_slab(s, page,
-@@ -1812,7 +1812,7 @@ static void deactivate_slab(struct kmem_
- 			set_freepointer(s, freelist, prior);
- 			new.counters = counters;
- 			new.inuse--;
--			VM_BUG_ON_PAGE(!new.frozen, &new);
-+			VM_BUG_ON(!new.frozen);
- 
- 		} while (!__cmpxchg_double_slab(s, page,
- 			prior, counters,
-@@ -1840,7 +1840,7 @@ redo:
- 
- 	old.freelist = page->freelist;
- 	old.counters = page->counters;
--	VM_BUG_ON_PAGE(!old.frozen, &old);
-+	VM_BUG_ON(!old.frozen);
- 
- 	/* Determine target state of the slab */
- 	new.counters = old.counters;
-@@ -1952,7 +1952,7 @@ static void unfreeze_partials(struct kme
- 
- 			old.freelist = page->freelist;
- 			old.counters = page->counters;
--			VM_BUG_ON_PAGE(!old.frozen, &old);
-+			VM_BUG_ON(!old.frozen);
- 
- 			new.counters = old.counters;
- 			new.freelist = old.freelist;
-@@ -2225,7 +2225,7 @@ static inline void *get_freelist(struct
- 		counters = page->counters;
- 
- 		new.counters = counters;
--		VM_BUG_ON_PAGE(!new.frozen, &new);
-+		VM_BUG_ON(!new.frozen);
- 
- 		new.inuse = page->objects;
- 		new.frozen = freelist != NULL;
-@@ -2319,7 +2319,7 @@ load_freelist:
- 	 * page is pointing to the page from which the objects are obtained.
- 	 * That page must be frozen for per cpu allocations to work.
- 	 */
--	VM_BUG_ON_PAGE(!c->page->frozen, c->page);
-+	VM_BUG_ON(!c->page->frozen);
- 	c->freelist = get_freepointer(s, freelist);
- 	c->tid = next_tid(c->tid);
- 	local_irq_restore(flags);
-_
+
