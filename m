@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaA1UUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:20:50 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:56541 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaA1UUq (ORCPT
+	id S1755657AbaA1UVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:21:39 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:36634 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636AbaA1UVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:20:46 -0500
-Date: Tue, 28 Jan 2014 12:20:42 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH v2 1/5] mutex: In mutex_can_spin_on_owner(), return false
- if task need_resched()
-Message-ID: <20140128202042.GN9012@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-2-git-send-email-jason.low2@hp.com>
+	Tue, 28 Jan 2014 15:21:38 -0500
+Message-ID: <52E8114F.7050202@acm.org>
+Date: Tue, 28 Jan 2014 14:21:35 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390936396-3962-2-git-send-email-jason.low2@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012820-8236-0000-0000-0000067D5989
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: openipmi-developer@lists.sourceforge.net, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Add missing rv in ipmi_parisc_probe()
+References: <1390936355-11845-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1390936355-11845-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:13:12AM -0800, Jason Low wrote:
-> The mutex_can_spin_on_owner() function should also return false if the
-> task needs to be rescheduled to avoid entering the MCS queue when it
-> needs to reschedule.
-> 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
+On 01/28/2014 01:12 PM, Geert Uytterhoeven wrote:
+> drivers/char/ipmi/ipmi_si_intf.c: In function 'ipmi_parisc_probe':
+> drivers/char/ipmi/ipmi_si_intf.c:2752:2: error: 'rv' undeclared (first use in this function)
+> drivers/char/ipmi/ipmi_si_intf.c:2752:2: note: each undeclared identifier is reported only once for each function it appears in
+>
+> Introduced by commit d02b3709ff8efebfca0612d0ac2a6e31a91c13f4 ("ipmi:
+> Cleanup error return")
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Dang it.  Yes, you are right, of course.
 
-But I cannot help asking how this affects performance.  (My guess is
-"not much", but always good to know.)
-
+Acked-by: Corey Minyard <cminyard@mvista.com>
 > ---
->  kernel/locking/mutex.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index 4dd6e4c..85c6be1 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -212,6 +212,9 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
->  	struct task_struct *owner;
->  	int retval = 1;
-> 
-> +	if (need_resched())
-> +		return 0;
-> +
->  	rcu_read_lock();
->  	owner = ACCESS_ONCE(lock->owner);
->  	if (owner)
-> -- 
-> 1.7.1
-> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/10537567/
+>
+>  drivers/char/ipmi/ipmi_si_intf.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+> index 671c3852d359..03f41896d090 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -2724,6 +2724,7 @@ static struct platform_driver ipmi_driver = {
+>  static int ipmi_parisc_probe(struct parisc_device *dev)
+>  {
+>  	struct smi_info *info;
+> +	int rv;
+>  
+>  	info = smi_info_alloc();
+>  
 
