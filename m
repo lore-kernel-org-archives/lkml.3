@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004AbaA1Xdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:33:41 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:36212 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755294AbaA1Xdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:33:37 -0500
-X-IronPort-AV: E=Sophos;i="4.95,739,1384272000"; 
-   d="scan'208";a="9462648"
-Message-ID: <52E83EE8.1030404@cn.fujitsu.com>
-Date: Wed, 29 Jan 2014 07:36:08 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: David Rientjes <rientjes@google.com>, davej@redhat.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com,
-        Andrew Morton <akpm@linux-foundation.org>, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] numa, mem-hotplug: Initialize numa_kernel_nodes in
- numa_clear_kernel_node_hotplug().
-References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com> <1390899916-23566-2-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401280109360.4244@chino.kir.corp.google.com> <20140128114826.GA26103@gmail.com>
-In-Reply-To: <20140128114826.GA26103@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/29 07:31:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/29 07:32:00,
-	Serialize complete at 2014/01/29 07:32:00
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755942AbaA1XdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:33:07 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:55953 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565AbaA1XdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 18:33:04 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 4/9] kernfs: add missing kernfs_active() checks in directory operations
+Date: Tue, 28 Jan 2014 18:32:46 -0500
+Message-Id: <1390951971-15671-5-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1390951971-15671-1-git-send-email-tj@kernel.org>
+References: <1390951971-15671-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 07:48 PM, Ingo Molnar wrote:
->
-> * David Rientjes<rientjes@google.com>  wrote:
->
->> On Tue, 28 Jan 2014, Tang Chen wrote:
->>
->>> On-stack variable numa_kernel_nodes in numa_clear_kernel_node_hotplug()
->>> was not initialized. So we need to initialize it.
->>>
->>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->>> Tested-by: Gu Zheng<guz.fnst@cn.fujitsu.com>
->>
->> Reported-by: David Rientjes<rientjes@google.com>
->
-> Agreed. Tang Chen, please also spell it out in the changelog:
->
->     David Rientjes reported a boot crash, caused by
->     commit XYZ ("foo: bar").
->
-> I find it somewhat annoying that you found time to credit a corporate
-> collegue with a Tested-by tag, who didn't even reply to the whole
-> thread to indicate his testing efforts, but you didn't find the time
-> to credit the original reporter of the bug who also reviewed your
-> patches ...
+kernfs_iop_lookup(), kernfs_dir_pos() and kernfs_dir_next_pos() were
+missing kernfs_active() tests before using the found kernfs_node.  As
+deactivated state is currently visible only while a node is being
+removed, this doesn't pose an actual problem.  e.g. lookup succeeding
+on a deactivated node doesn't harm anything as the eventual file
+operations are gonna fail and those failures are indistinguishible
+from the cases in which the lookups had happened before the node was
+deactivated.
 
-Hi David, Ingo,
+However, we're gonna allow new nodes to be created deactivated and
+then activated explicitly by the kernfs user when it sees fit.  This
+is to support atomically making multiple nodes visible to userland and
+thus those nodes must not be visible to userland before activated.
 
-I'm sorry for the missing original reporter. I was paying so much attention
-to the second patch. And Andrew has added the missing info and committed
-the patch. :)
+Let's plug the lookup and readdir holes so that deactivated nodes are
+invisible to userland.
 
-Thanks.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/kernfs/dir.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
->
-> Thanks,
->
-> 	Ingo
->
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index f58d2f1..89f8462 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -629,7 +629,7 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
+ 	kn = kernfs_find_ns(parent, dentry->d_name.name, ns);
+ 
+ 	/* no such entry */
+-	if (!kn) {
++	if (!kn || !kernfs_active(kn)) {
+ 		ret = NULL;
+ 		goto out_unlock;
+ 	}
+@@ -1112,8 +1112,8 @@ static struct kernfs_node *kernfs_dir_pos(const void *ns,
+ 				break;
+ 		}
+ 	}
+-	/* Skip over entries in the wrong namespace */
+-	while (pos && pos->ns != ns) {
++	/* Skip over entries which are dying/dead or in the wrong namespace */
++	while (pos && (!kernfs_active(pos) || pos->ns != ns)) {
+ 		struct rb_node *node = rb_next(&pos->rb);
+ 		if (!node)
+ 			pos = NULL;
+@@ -1127,14 +1127,15 @@ static struct kernfs_node *kernfs_dir_next_pos(const void *ns,
+ 	struct kernfs_node *parent, ino_t ino, struct kernfs_node *pos)
+ {
+ 	pos = kernfs_dir_pos(ns, parent, ino, pos);
+-	if (pos)
++	if (pos) {
+ 		do {
+ 			struct rb_node *node = rb_next(&pos->rb);
+ 			if (!node)
+ 				pos = NULL;
+ 			else
+ 				pos = rb_to_kn(node);
+-		} while (pos && pos->ns != ns);
++		} while (pos && (!kernfs_active(pos) || pos->ns != ns));
++	}
+ 	return pos;
+ }
+ 
+-- 
+1.8.5.3
+
