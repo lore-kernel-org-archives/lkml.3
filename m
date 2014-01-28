@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbaA1WKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 17:10:45 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:46632 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755205AbaA1WKo (ORCPT
+	id S1755833AbaA1WRw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 17:17:52 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:37659 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923AbaA1WRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 17:10:44 -0500
-Message-ID: <1390947041.2807.28.camel@j-VirtualBox>
-Subject: Re: [PATCH v2 2/5] mutex: Modify the way optimistic spinners are
- queued
+	Tue, 28 Jan 2014 17:17:51 -0500
+Message-ID: <1390947469.2807.33.camel@j-VirtualBox>
+Subject: Re: [RFC][PATCH v2 4/5] mutex: Disable preemtion between modifying
+ lock->owner and locking/unlocking mutex
 From: Jason Low <jason.low2@hp.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
         torvalds@linux-foundation.org, tglx@linutronix.de,
         linux-kernel@vger.kernel.org, riel@redhat.com,
         akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
         andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
         chegu_vinod@hp.com
-Date: Tue, 28 Jan 2014 14:10:41 -0800
-In-Reply-To: <20140128202334.GO9012@linux.vnet.ibm.com>
+Date: Tue, 28 Jan 2014 14:17:49 -0800
+In-Reply-To: <20140128205406.GI11314@laptop.programming.kicks-ass.net>
 References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
-	 <1390936396-3962-3-git-send-email-jason.low2@hp.com>
-	 <20140128202334.GO9012@linux.vnet.ibm.com>
+	 <1390936396-3962-5-git-send-email-jason.low2@hp.com>
+	 <20140128205406.GI11314@laptop.programming.kicks-ass.net>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -31,25 +31,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-28 at 12:23 -0800, Paul E. McKenney wrote:
-> On Tue, Jan 28, 2014 at 11:13:13AM -0800, Jason Low wrote:
-> >  		/*
-> >  		 * The cpu_relax() call is a compiler barrier which forces
-> > @@ -514,6 +511,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		 */
-> >  		arch_mutex_cpu_relax();
-> >  	}
-> > +	mspin_unlock(MLOCK(lock), &node);
-> >  slowpath:
+On Tue, 2014-01-28 at 21:54 +0100, Peter Zijlstra wrote:
+> On Tue, Jan 28, 2014 at 11:13:15AM -0800, Jason Low wrote:
+> > This RFC patch disables preemption between modifying lock->owner and
+> > locking/unlocking the mutex lock. This prevents situations where the owner
+> > can preempt between those 2 operations, which causes optimistic spinners to
+> > be unable to check if lock->owner is not on CPU. As mentioned in the
+> > thread for this v1 patchset, disabling preemption is a cheap operation.
 > 
-> Are there any remaining goto statements to slowpath?  If so, they need
-> to release the lock.  If not, this label should be removed.
+> In that same thread it was also said that this wasn't really an issue at
+> all. So what is the justification?
 
-Yes, if the mutex_can_spin_on_owner() returns false, then the thread
-goes to directly slowpath, bypassing the optimistic spinning loop. In
-that case, the thread avoids acquiring the MCS lock, and doesn't unlock
-the MCS lock.
+This patch is mainly just a complementary patch for patch 5 so that we
+can allow the spinner to wait slightly longer for lock->count to get set
+without worrying about need_resched()/owner getting preempted.
 
-Thanks,
 Jason
+
 
