@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216AbaA1P2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 10:28:54 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:46857 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754706AbaA1P2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 10:28:52 -0500
-Message-ID: <52E7CCAD.5070008@linux.vnet.ibm.com>
-Date: Tue, 28 Jan 2014 09:28:45 -0600
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 4/9] ipr: Use pci_enable_msi_range() and pci_enable_msix_range()
-References: <cover.1389904166.git.agordeev@redhat.com> <eb0b62be65c050533f2565fcf3f1d673770dfd67.1389904166.git.agordeev@redhat.com> <20140128095441.GA6951@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140128095441.GA6951@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012815-0320-0000-0000-0000024F3D98
+	id S1755273AbaA1Pbe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 10:31:34 -0500
+Received: from smtp07.smtpout.orange.fr ([80.12.242.129]:34704 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118AbaA1Pbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 10:31:33 -0500
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jan 2014 10:31:32 EST
+From: Francois-Xavier Le Bail <fx.lebail@yahoo.com>
+To: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] doc: fix headers_install.txt
+Date: Tue, 28 Jan 2014 16:01:43 +0100
+Message-Id: <1390921303-4731-1-git-send-email-fx.lebail@yahoo.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 03:54 AM, Alexander Gordeev wrote:
-> On Fri, Jan 17, 2014 at 05:02:18PM +0100, Alexander Gordeev wrote:
->> As result deprecation of MSI-X/MSI enablement functions
->> pci_enable_msix() and pci_enable_msi_block() all drivers
->> using these two interfaces need to be updated to use the
->> new pci_enable_msi_range() and pci_enable_msix_range()
->> interfaces.
->>
->> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> 
-> Brian, James,
-> 
-> Could you please review patches 3 and 4?
+- The default location for installed headers is : ./usr
+- Using INSTALL_HDR_PATH=/usr/include give /usr/include/include
 
-These look like they will conflict with a recent patch to
-the ipr driver:
+Signed-off-by: Francois-Xavier Le Bail <fx.lebail@yahoo.com>
+---
+ Documentation/make/headers_install.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-http://www.spinics.net/lists/linux-scsi/msg71644.html
-
-Do you want me to rediff your patches on top of this one,
-or do you want to keep the entire MSI series together
-and do the rediff? Otherwise the patches seem fine.
-
-Thanks,
-
-Brian
-
-
--- 
-Brian King
-Power Linux I/O
-IBM Linux Technology Center
-
-
+diff --git a/Documentation/make/headers_install.txt b/Documentation/make/headers_install.txt
+index 951eb9f..b6c16bc 100644
+--- a/Documentation/make/headers_install.txt
++++ b/Documentation/make/headers_install.txt
+@@ -24,7 +24,7 @@ The "make headers_install" command can be run in the top level directory of the
+ kernel source code (or using a standard out-of-tree build).  It takes two
+ optional arguments:
+ 
+-  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr/include
++  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr
+ 
+ ARCH indicates which architecture to produce headers for, and defaults to the
+ current architecture.  The linux/asm directory of the exported kernel headers
+@@ -34,7 +34,7 @@ the command:
+   ls -d include/asm-* | sed 's/.*-//'
+ 
+ INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
+-"./usr/include".
++"./usr".
+ 
+ The command "make headers_install_all" exports headers for all architectures
+ simultaneously.  (This is mostly of interest to distribution maintainers,
