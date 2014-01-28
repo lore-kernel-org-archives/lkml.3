@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaA1AdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:33:02 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:34566 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaA1AdA (ORCPT
+	id S1754029AbaA1Aeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:34:37 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:34804 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539AbaA1Aeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:33:00 -0500
-Date: Mon, 27 Jan 2014 16:32:56 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tang Chen <tangchen@cn.fujitsu.com>
-cc: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
- kernel nodes to unhotpluggable.
-In-Reply-To: <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
-References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 27 Jan 2014 19:34:36 -0500
+From: Julien Grall <julien.grall@linaro.org>
+To: linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
+Cc: xen-devel@lists.xenproject.org, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, patches@linaro.org,
+        Julien Grall <julien.grall@linaro.org>
+Subject: [PATCH] xen/events: xen_evtchn_fifo_init can be called very late
+Date: Tue, 28 Jan 2014 00:34:29 +0000
+Message-Id: <1390869269-12502-1-git-send-email-julien.grall@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jan 2014, David Rientjes wrote:
+On ARM, xen_init_IRQ (which calls xen_evtchn_fifo_init) is called after
+all CPUs are online. It would mean that the notifier will never be called.
 
-> >  arch/x86/mm/numa.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> > index 81b2750..ebefeb7 100644
-> > --- a/arch/x86/mm/numa.c
-> > +++ b/arch/x86/mm/numa.c
-> > @@ -562,10 +562,10 @@ static void __init numa_init_array(void)
-> >  	}
-> >  }
-> >  
-> > +static nodemask_t numa_kernel_nodes __initdata;
-> >  static void __init numa_clear_kernel_node_hotplug(void)
-> >  {
-> >  	int i, nid;
-> > -	nodemask_t numa_kernel_nodes;
-> >  	unsigned long start, end;
-> >  	struct memblock_type *type = &memblock.reserved;
-> >  
-> 
-> Isn't this also a bugfix since you never initialize numa_kernel_nodes when 
-> it's allocated on the stack with NODE_MASK_NONE?
-> 
+Therefore, when a secondary CPU will receive an interrupt, Linux will segfault
+because the event channel structure for this processor is not initialized.
 
-This hasn't been answered and the patch still isn't in linux-kernel yet 
-Dave tested it as good.  I'm suspicious of the changelog that indicates 
-this nodemask is the result of a stack overflow itself which only manages 
-to reproduce itself in the init patch slightly more than 50% of the time.  
-How is that possible?
+This can be fixed by calling the init function on every online cpu when the
+event channel fifo driver is initialized.
 
-I think the changelog should indicate this also fixes an uninitialized 
-nodemask issue.
+Signed-off-by: Julien Grall <julien.grall@linaro.org>
+---
+ drivers/xen/events/events_fifo.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/xen/events/events_fifo.c b/drivers/xen/events/events_fifo.c
+index 1de2a19..15498ab 100644
+--- a/drivers/xen/events/events_fifo.c
++++ b/drivers/xen/events/events_fifo.c
+@@ -410,12 +410,14 @@ static struct notifier_block evtchn_fifo_cpu_notifier = {
+ 
+ int __init xen_evtchn_fifo_init(void)
+ {
+-	int cpu = get_cpu();
++	int cpu;
+ 	int ret;
+ 
+-	ret = evtchn_fifo_init_control_block(cpu);
+-	if (ret < 0)
+-		goto out;
++	for_each_online_cpu(cpu) {
++		ret = evtchn_fifo_init_control_block(cpu);
++		if (ret < 0)
++			goto out;
++	}
+ 
+ 	pr_info("Using FIFO-based ABI\n");
+ 
+@@ -423,6 +425,5 @@ int __init xen_evtchn_fifo_init(void)
+ 
+ 	register_cpu_notifier(&evtchn_fifo_cpu_notifier);
+ out:
+-	put_cpu();
+ 	return ret;
+ }
+-- 
+1.7.10.4
+
