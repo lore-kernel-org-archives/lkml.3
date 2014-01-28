@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384AbaA1C7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 21:59:20 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7366 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753428AbaA1C7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 21:59:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,733,1384329600"; 
-   d="scan'208";a="465718459"
-Date: Tue, 28 Jan 2014 10:59:15 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [rcu] c0f4dfd4f9: -65% softirqs.RCU
-Message-ID: <20140128025915.GB15282@localhost>
-References: <20140119121608.GB2859@localhost>
- <20140119231114.GE10038@linux.vnet.ibm.com>
- <20140120122912.GA18137@localhost>
- <20140121044100.GS10038@linux.vnet.ibm.com>
- <20140124111130.GA24254@localhost>
- <20140127170602.GO9012@linux.vnet.ibm.com>
+	id S1754506AbaA1C7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 21:59:34 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:32167
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754476AbaA1C7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 21:59:32 -0500
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h2148h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah21bch1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h129fi1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Steven Miao <realmz6@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <adi-buildroot-devel@lists.sourceforge.net>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH 2/3 v2] pinctrl-adi2: change irq_base from usigned int to int
+Date: Tue, 28 Jan 2014 11:02:42 +0800
+Message-ID: <1390878162-22402-1-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.8.2.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140127170602.GO9012@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 09:06:02AM -0800, Paul E. McKenney wrote:
-> On Fri, Jan 24, 2014 at 07:11:30PM +0800, Fengguang Wu wrote:
-> > On Mon, Jan 20, 2014 at 08:41:00PM -0800, Paul E. McKenney wrote:
-> > > On Mon, Jan 20, 2014 at 08:29:12PM +0800, Fengguang Wu wrote:
-> > > > On Sun, Jan 19, 2014 at 03:11:14PM -0800, Paul E. McKenney wrote:
-> > > > > On Sun, Jan 19, 2014 at 08:16:08PM +0800, Fengguang Wu wrote:
-> > > > > > Hi Paul,
-> > > > > > 
-> > > > > > Just FYI, we noticed the following changes (which looks good) on old commit
-> > > > > > c0f4dfd4f9 ("rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks") 
-> > > > > > in test case dd-write/4HDD-JBOD-cfq-btrfs-1dd:
-> > > > > > 
-> > > > > > b11cc5 (parent)  c0f4dfd4f90f1667d234d21f1  
-> > > > > > ---------------  -------------------------  
-> > > > > >     213757 ~ 4%     -65.4%      73929 ~ 3%  softirqs.RCU
-> > > > > >      21193 ~ 5%     -36.5%      13451 ~ 4%  softirqs.SCHED
-> > > > > >       2036 ~ 4%     -59.4%        825 ~ 3%  vmstat.system.cs
-> > > > > >    1304520 ~ 4%     -59.2%     532451 ~ 3%  perf-stat.context-switches
-> > > > > >      95685 ~ 4%     -44.0%      53598 ~ 2%  perf-stat.cpu-migrations
-> > > > > 
-> > > > > Glad it helped!  IIRC, this same commit increased latencies due to
-> > > > > synchronize_rcu() latency increasing.  So this is the good side of
-> > > > > that other not-so-good result.  ;-)
-> > > > 
-> > > > If you care it and there is a low cost way for user space to get that
-> > > > synchronize_rcu() latency, I'd be eager to collect it in my tests. :)
-> > > 
-> > > Would a kernel module that measured the latency be OK, or do you need
-> > > some system call that is exposed to synchronize_rcu() latency?
-> > 
-> > Kernel module should be good enough for me. Perhaps something like
-> > kernel/latencytop.c?
-> 
-> So you are looking for something that measures synchronize_rcu() latency
-> for the synchronize_rcu() calls that occur naturally in the kernel, rather
-> than having a focused microbenchmark?
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Yes, then I can measure the synchronize_rcu() latency in all the tests
-I run, including the possible focused microbenchmarks on RCU. :)
+Negative irq_base means there is no fixed Linux irq mappings are created from the platform data.
+The driver calls irq_create_mapping to allocate a virtual Linux irq.
 
-btw, I've measured the overheads of CONFIG_SCHEDSTATS which is
-required for running latencytop, and it seems acceptable:
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+v2-changes:
+ - reword the patch description
 
-     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
----------------  -------------------------
-    174190 ~ 0%      -4.1%     167062 ~ 0%  lkp-snb01/micro/hackbench/1600%-threads-pipe
-    158995 ~ 1%      -3.1%     154094 ~ 0%  lkp-snb01/micro/hackbench/1600%-threads-socket
-    333186 ~ 1%      -3.6%     321156 ~ 0%  TOTAL hackbench.throughput
+ drivers/pinctrl/pinctrl-adi2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
----------------  -------------------------
-       278 ~ 0%      -3.4%        269 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_MAERTS
-       632 ~ 1%      -2.9%        613 ~ 1%  lkp-a04/micro/netperf/120s-200%-TCP_SENDFILE
-       280 ~ 1%      -3.7%        270 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_STREAM
-      1191 ~ 1%      -3.2%       1153 ~ 1%  TOTAL netperf.Throughput_Mbps
+diff --git a/drivers/pinctrl/pinctrl-adi2.c b/drivers/pinctrl/pinctrl-adi2.c
+index e8120fa..9fb53c9 100644
+--- a/drivers/pinctrl/pinctrl-adi2.c
++++ b/drivers/pinctrl/pinctrl-adi2.c
+@@ -173,7 +173,7 @@ struct adi_pinctrl {
+ struct gpio_port {
+ 	struct list_head node;
+ 	void __iomem *base;
+-	unsigned int irq_base;
++	int irq_base;
+ 	unsigned int width;
+ 	struct gpio_port_t *regs;
+ 	struct gpio_port_saved saved_data;
+-- 
+1.8.2.3
 
-     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
----------------  -------------------------
-       386 ~ 0%      -2.1%        378 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_CRR
-      2057 ~ 0%      -3.6%       1982 ~ 0%  lkp-a04/micro/netperf/120s-200%-TCP_RR
-      2518 ~ 0%      -1.4%       2482 ~ 0%  lkp-a04/micro/netperf/120s-200%-UDP_RR
-      4962 ~ 0%      -2.4%       4843 ~ 0%  TOTAL netperf.Throughput_tps
 
-     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
----------------  -------------------------
-  37316711 ~ 0%      -0.9%   36976450 ~ 0%  nhm-white/sysbench/oltp/600s-100%-1000000
-  37316711 ~ 0%      -0.9%   36976450 ~ 0%  TOTAL oltp.rw_requets
-                    
-     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
----------------  -------------------------
-   2665479 ~ 0%      -0.9%    2641175 ~ 0%  nhm-white/sysbench/oltp/600s-100%-1000000
-   2665479 ~ 0%      -0.9%    2641175 ~ 0%  TOTAL oltp.transactions
-                    
-     x86_64-lkp  x86_64-lkp+CONFIG_SCHEDST
----------------  -------------------------
-     68.50 ~ 0%      -0.2%      68.39 ~ 0%  xps2/micro/pigz/100%
-     68.50 ~ 0%      -0.2%      68.39 ~ 0%  TOTAL pigz.throughput
-
-Thanks,
-Fengguang
