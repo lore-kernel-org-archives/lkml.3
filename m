@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105AbaA1Pc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 10:32:26 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53980 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaA1PcX (ORCPT
+	id S932153AbaA1Pcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 10:32:47 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:42059 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151AbaA1PcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 10:32:23 -0500
+	Tue, 28 Jan 2014 10:32:22 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/4] cgroup: move the one-off opts sanity check in cgroup_root_from_opts() to parse_cgroupfs_options()
-Date: Tue, 28 Jan 2014 10:32:05 -0500
-Message-Id: <1390923125-4369-5-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        stable@vger.kernel.org
+Subject: [PATCH 3/4] cgroup: fix locking in cgroup_cfts_commit()
+Date: Tue, 28 Jan 2014 10:32:04 -0500
+Message-Id: <1390923125-4369-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390923125-4369-1-git-send-email-tj@kernel.org>
 References: <1390923125-4369-1-git-send-email-tj@kernel.org>
@@ -21,80 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_root_from_opts() checks whether (!opts->subsys_mask &&
-!opts->none) and returns NULL if so.  After that, if allocation fails,
-returns ERR_PTR(-ENOMEM).  The caller, cgroup_mount(), doesn't treat
-NULL as an error but set opts.new_root to NULL; however, later on,
-cgroup_set_super() fails with -EINVAL if new_root is NULL.
+cgroup_cfts_commit() walks the cgroup hierarchy that the target
+subsystem is attached to and tries to apply the file changes.  Due to
+the convolution with inode locking, it can't keep cgroup_mutex locked
+while iterating.  It currently holds only RCU read lock around the
+actual iteration and then pins the found cgroup using dget().
 
-This is one bizarre error handling sequence especially when all other
-opts sanity checks including the very close (!opts->subsys_mask &&
-!opts->name) check are done in parse_cgroupfs_options().
+Unfortunately, this is incorrect.  Although the iteration does check
+cgroup_is_dead() before invoking dget(), there's nothing which
+prevents the dentry from going away inbetween.  Note that this is
+different from the usual css iterations where css_tryget() is used to
+pin the css - css_tryget() tests whether the css can be pinned and
+fails if not.
 
-Let's move the one-off check in cgroup_root_from_opts() to
-parse_cgroupfs_options() where it can be combined with the
-(!opts->subsys_mask && !opts->name) check.  cgroup_root_from_opts() is
-updated to return NULL on memory allocation failure.
+The problem can be solved by simply holding cgroup_mutex instead of
+RCU read lock around the iteration, which actually reduces LOC.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: stable@vger.kernel.org
 ---
- kernel/cgroup.c | 19 ++++++-------------
- 1 file changed, 6 insertions(+), 13 deletions(-)
+ kernel/cgroup.c | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b0e030f..5c8fe40 100644
+index 2e9f12a..b0e030f 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1265,10 +1265,10 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 		return -EINVAL;
- 
- 	/*
--	 * We either have to specify by name or by subsystems. (So all
--	 * empty hierarchies must have a name).
-+	 * We either have to specify by name or by subsystems.  All empty
-+	 * hierarchies must have a name and also "none" option specified.
+@@ -2763,10 +2763,7 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
  	 */
--	if (!opts->subsys_mask && !opts->name)
-+	if (!opts->subsys_mask && (!opts->name || !opts->none))
- 		return -EINVAL;
+ 	update_before = cgroup_serial_nr_next;
  
- 	return 0;
-@@ -1417,12 +1417,9 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
- {
- 	struct cgroupfs_root *root;
- 
--	if (!opts->subsys_mask && !opts->none)
--		return NULL;
+-	mutex_unlock(&cgroup_mutex);
 -
- 	root = kzalloc(sizeof(*root), GFP_KERNEL);
- 	if (!root)
--		return ERR_PTR(-ENOMEM);
-+		return NULL;
+ 	/* add/rm files for all cgroups created before */
+-	rcu_read_lock();
+ 	css_for_each_descendant_pre(css, cgroup_css(root, ss)) {
+ 		struct cgroup *cgrp = css->cgroup;
  
- 	init_cgroup_root(root);
+@@ -2775,23 +2772,19 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
  
-@@ -1461,10 +1458,6 @@ static int cgroup_set_super(struct super_block *sb, void *data)
- 	int ret;
- 	struct cgroup_sb_opts *opts = data;
- 
--	/* If we don't have a new root, we can't set up a new sb */
--	if (!opts->new_root)
--		return -EINVAL;
+ 		inode = cgrp->dentry->d_inode;
+ 		dget(cgrp->dentry);
+-		rcu_read_unlock();
 -
- 	BUG_ON(!opts->subsys_mask && !opts->none);
+ 		dput(prev);
+ 		prev = cgrp->dentry;
  
- 	ret = set_anon_super(sb, NULL);
-@@ -1532,8 +1525,8 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	 * reusing an existing hierarchy.
- 	 */
- 	new_root = cgroup_root_from_opts(&opts);
--	if (IS_ERR(new_root)) {
--		ret = PTR_ERR(new_root);
-+	if (!new_root) {
-+		ret = -ENOMEM;
- 		goto out_err;
++		mutex_unlock(&cgroup_mutex);
+ 		mutex_lock(&inode->i_mutex);
+ 		mutex_lock(&cgroup_mutex);
+ 		if (cgrp->serial_nr < update_before && !cgroup_is_dead(cgrp))
+ 			ret = cgroup_addrm_files(cgrp, cfts, is_add);
+-		mutex_unlock(&cgroup_mutex);
+ 		mutex_unlock(&inode->i_mutex);
+-
+-		rcu_read_lock();
+ 		if (ret)
+ 			break;
  	}
- 	opts.new_root = new_root;
+-	rcu_read_unlock();
++	mutex_unlock(&cgroup_mutex);
+ 	dput(prev);
+ 	deactivate_super(sb);
+ 	return ret;
 -- 
 1.8.5.3
 
