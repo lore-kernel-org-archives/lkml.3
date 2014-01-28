@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaA1Q17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:27:59 -0500
-Received: from imap.thunk.org ([74.207.234.97]:52232 "EHLO imap.thunk.org"
+	id S1755201AbaA1Q36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:29:58 -0500
+Received: from mx.ungleich.ch ([77.109.138.221]:35489 "EHLO mx.ungleich.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755292AbaA1Q16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:27:58 -0500
-Date: Tue, 28 Jan 2014 11:27:54 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] Ext4 changes for 3.14
-Message-ID: <20140128162754.GA17770@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
+	id S1754599AbaA1Q34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 11:29:56 -0500
+X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jan 2014 11:29:56 EST
+Date: Tue, 28 Jan 2014 17:19:49 +0100
+From: Nico Schottelius <nico-linux-20140128@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Nico Schottelius <nico-linux-20140128@schottelius.org>
+Subject: Keycodes missing / wrong on Lenovo Yoga 2 Pro
+Message-ID: <20140128161949.GI2902@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20140128@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: artist (Linux 3.12.7-2-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d0abafac8c9162f39c4f6b2f8141b772a09b3770:
+Good day kernel hackers,
 
-  ext4: fix bigalloc regression (2014-01-06 14:00:23 -0500)
+when trying out which events are recognised by xev
+to adjust my xbindkeysrc, I noticed that various keys
+are incorrectly recognised on this machine:
 
-are available in the git repository at:
+    - mute button on the side returns "f", should be xf86audiomute
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+    - fn + f4 returns f4, should be "Lock" (if we have such a symbol)
+    - fn + f5 returns f5, should be ? (has to arrows on it)
+    - fn + f6 returns nothing, should be "toggletouchpad" (or whatever
+      the name of it is)
+      dmesg returns
+      [93762.432649] atkbd serio0: Unknown key released (translated set
+      2, code 0xbf on isa0060/serio0).
+      [93762.432653] atkbd serio0: Use 'setkeycodes e03f <keycode>' to
+      make it known.
 
-for you to fetch changes up to d7092ae2973f20a39fee786c47e5edf18ced088f:
+    - fn + f8 returns tab, should be ?
+    - fn + f10 returns Super_L and q, should be "Switchmonitor" 
+    - fn + home returns pause (correct)
+    - fn + end returns pause (is there a key for break?)
 
-  ext4: delete "set but not used" variables (2014-01-11 13:26:56 -0500)
+I am wondering how to fix those keys (xorg, kernel?).
+I used 3.12.7 and X 1.15.0 for testing.
 
-----------------------------------------------------------------
-Bug fixes and cleanups for ext4.  We also enable the punch hole
-functionality for bigalloc file systems.
+Other interesting keys:
 
-----------------------------------------------------------------
-David Howells (1):
-      ext4: use %pd printk specificer
+    - fn + f9 turns of the screen (seems to be hardware wise)
 
-Jan Kara (2):
-      ext4: retry allocation when inline->extent conversion failed
-      ext4: standardize error handling in ext4_da_write_inline_data_begin()
+Furthermore I am wondering if there is a sensible way to change
+the event I get from the Windows Logo below the touchscreen (currently
+reported as Super_L). It would be awesome to be able to able to
+distinguish the key between the touchscreen and the windows key.
+Also, the "key" below the touchscreen cannot be pressed and combined
+with keys on the keyboard.
 
-Theodore Ts'o (2):
-      ext4: avoid clearing beyond i_blocks when truncating an inline data file
-      ext4: don't pass freed handle to ext4_walk_page_buffers
+I have uploaded pictures of the keyboard at
+    http://home.schottelius.org/~nico/lenovo_yoga_2_pro/
 
-Yongqiang Yang (2):
-      ext4: fix a typo in extents.c
-      ext4: ext4_inode_is_fast_symlink should use EXT4_CLUSTER_SIZE
+Cheers,
 
-Zheng Liu (1):
-      ext4: enable punch hole for bigalloc
+Nico
 
-jon ernst (1):
-      ext4: delete "set but not used" variables
+p.s.: Please cc me on reply.
+pps: The kernel fonts are (almost) unreadable when booting this
+     device - the 3200x1800 resolution is definitely requiring 
+     another font.
 
- fs/ext4/extents.c |  2 +-
- fs/ext4/inline.c  | 26 +++++++++++++++-----------
- fs/ext4/inode.c   | 11 +++--------
- fs/ext4/ioctl.c   |  6 +-----
- fs/ext4/namei.c   |  5 ++---
- 5 files changed, 22 insertions(+), 28 deletions(-)
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
