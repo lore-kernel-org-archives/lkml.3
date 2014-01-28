@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaA1ApI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:45:08 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:56828 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaA1ApG (ORCPT
+	id S1754321AbaA1AqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:46:17 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:41805 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaA1AqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:45:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <52E6F84F.1000408@zytor.com>
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com>
- <20140127002255.GA10323@ZenIV.linux.org.uk> <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com>
- <20140127074208.GB10323@ZenIV.linux.org.uk> <52E6D866.604@amacapital.net>
- <CA+55aFzWRjNC4kPeVad3isOOW+vZhnzX0Gk5_8QzD16GZEw5Kg@mail.gmail.com>
- <20140127223257.GE10323@ZenIV.linux.org.uk> <CA+55aFyajjkCtRiTOS2AbFOWi7qt2FUnW6T3iG9nXqoZ0O9Ljg@mail.gmail.com>
- <CALCETrUXjFYd7ZC958WoNk1mnPCw2kw5jt-Ywo309EObnuqFAg@mail.gmail.com> <52E6F84F.1000408@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 27 Jan 2014 16:44:45 -0800
-Message-ID: <CALCETrVGwrw=1ktqSYFys4hSZ_X0xpBfYLZQbKudNWvt0hdhJA@mail.gmail.com>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 27 Jan 2014 19:46:15 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 21/21] pinctrl: mvebu: dove: consolidate auto-numbered pmu mpp ranges
+Date: Tue, 28 Jan 2014 01:39:33 +0100
+Message-Id: <1390869573-27624-22-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 4:22 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 01/27/2014 02:46 PM, Andy Lutomirski wrote:
->>
->> I think that sysret for sigreturn is probably not very interesting.
->> On the other hand, sysret for #PF might be a huge win, despite being
->> even scarier.
->>
->
-> SYSRET for #PF or other exceptions is a nonstarter; register state is
-> live at that point.
+Passing a NULL name for pin ranges will auto-generate standard names
+for each pin. With common pinctrl driver now checking NULL name correctly,
+consolidate mpp pins 0-15.
 
-I mean sysret-via-trampoline for #PF.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pinctrl/mvebu/pinctrl-dove.c | 17 +----------------
+ 1 file changed, 1 insertion(+), 16 deletions(-)
 
-It's scary, it probably has issues with ptrace and interrupts that hit
-while the trampoline is still running, and it could break anything
-that writes past the red zone, but I think it could work.
-
-No, I don't particularly want to implement (and debug) such a beast.
-
-(I will continue cursing Intel -- why can't we have a fast way to
-return to 64-bit userspace with complete control of all non-segment
-registers?  sysret is *almost* the right thing.)
-
---Andy
-
->
->         -hpa
->
->
-
-
-
+diff --git a/drivers/pinctrl/mvebu/pinctrl-dove.c b/drivers/pinctrl/mvebu/pinctrl-dove.c
+index 1823a1a7ec45..3bfea6ccb39d 100644
+--- a/drivers/pinctrl/mvebu/pinctrl-dove.c
++++ b/drivers/pinctrl/mvebu/pinctrl-dove.c
+@@ -387,22 +387,7 @@ static int dove_twsi_ctrl_set(struct mvebu_mpp_ctrl *ctrl,
+ }
+ 
+ static struct mvebu_mpp_ctrl dove_mpp_controls[] = {
+-	MPP_FUNC_CTRL(0, 0, "mpp0", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(1, 1, "mpp1", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(2, 2, "mpp2", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(3, 3, "mpp3", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(4, 4, "mpp4", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(5, 5, "mpp5", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(6, 6, "mpp6", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(7, 7, "mpp7", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(8, 8, "mpp8", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(9, 9, "mpp9", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(10, 10, "mpp10", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(11, 11, "mpp11", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(12, 12, "mpp12", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(13, 13, "mpp13", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(14, 14, "mpp14", dove_pmu_mpp_ctrl),
+-	MPP_FUNC_CTRL(15, 15, "mpp15", dove_pmu_mpp_ctrl),
++	MPP_FUNC_CTRL(0, 15, NULL, dove_pmu_mpp_ctrl),
+ 	MPP_FUNC_CTRL(16, 23, NULL, dove_mpp_ctrl),
+ 	MPP_FUNC_CTRL(24, 39, "mpp_camera", dove_mpp4_ctrl),
+ 	MPP_FUNC_CTRL(40, 45, "mpp_sdio0", dove_mpp4_ctrl),
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.8.5.2
+
