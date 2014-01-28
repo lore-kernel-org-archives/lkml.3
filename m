@@ -1,145 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbaA1UYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:24:12 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:39982 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755719AbaA1UYL (ORCPT
+	id S1755799AbaA1UZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:25:18 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:53592 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755765AbaA1UZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:24:11 -0500
-Date: Tue, 28 Jan 2014 12:24:07 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH v2 2/5] mutex: Modify the way optimistic spinners are
- queued
-Message-ID: <20140128202407.GA26416@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-3-git-send-email-jason.low2@hp.com>
- <20140128202334.GO9012@linux.vnet.ibm.com>
+	Tue, 28 Jan 2014 15:25:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140128202334.GO9012@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012820-0928-0000-0000-000005CA59ED
+In-Reply-To: <20140128201536.GB5178@pd.tnic>
+References: <20140128062806.GA20750@gmail.com>
+	<52E76997.40303@nod.at>
+	<52E7D2E5.8090208@linux.intel.com>
+	<52E7D9FF.1080506@nod.at>
+	<52E7DB15.3090808@zytor.com>
+	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+	<20140128170507.GA16279@gmail.com>
+	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+	<20140128194823.GA18702@gmail.com>
+	<CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
+	<20140128201536.GB5178@pd.tnic>
+Date: Tue, 28 Jan 2014 12:25:15 -0800
+X-Google-Sender-Auth: zVLlHbo3R7xE6U7Fgr6wfUT-eSU
+Message-ID: <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:23:34PM -0800, Paul E. McKenney wrote:
-> On Tue, Jan 28, 2014 at 11:13:13AM -0800, Jason Low wrote:
-> > The mutex->spin_mlock was introduced in order to ensure that only 1 thread
-> > spins for lock acquisition at a time to reduce cache line contention. When
-> > lock->owner is NULL and the lock->count is still not 1, the spinner(s) will
-> > continually release and obtain the lock->spin_mlock. This can generate
-> > quite a bit of overhead/contention, and also might just delay the spinner
-> > from getting the lock.
-> > 
-> > This patch modifies the way optimistic spinners are queued by queuing before
-> > entering the optimistic spinning loop as oppose to acquiring before every
-> > call to mutex_spin_on_owner(). So in situations where the spinner requires
-> > a few extra spins before obtaining the lock, then there will only be 1 spinner
-> > trying to get the lock and it will avoid the overhead from unnecessarily
-> > unlocking and locking the spin_mlock.
-> > 
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
-> 
-> One question below.  Also, this might well have a visible effect on
-> performance, so would be good to see the numbers.
+On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
+>
+> Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
+> Something like:
+>
+> "You don't need to enable this if you want symbolic names for kernel
+> objects. Enable CONFIG_KALLSYMS instead."
 
-Never mind, I see the numbers in your patch 0.  :-/
+Probably. And then we should make sure that allyesconfig/allmodconfig
+don't pick it.
 
-							Thanx, Paul
+There *are* reasonable uses for DEBUG_INFO:
 
-> > ---
-> >  kernel/locking/mutex.c |   16 +++++++---------
-> >  1 files changed, 7 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> > index 85c6be1..7519d27 100644
-> > --- a/kernel/locking/mutex.c
-> > +++ b/kernel/locking/mutex.c
-> > @@ -419,6 +419,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  	struct mutex_waiter waiter;
-> >  	unsigned long flags;
-> >  	int ret;
-> > +	struct mspin_node node;
-> > 
-> >  	preempt_disable();
-> >  	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
-> > @@ -449,9 +450,9 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  	if (!mutex_can_spin_on_owner(lock))
-> >  		goto slowpath;
-> > 
-> > +	mspin_lock(MLOCK(lock), &node);
-> >  	for (;;) {
-> >  		struct task_struct *owner;
-> > -		struct mspin_node  node;
-> > 
-> >  		if (use_ww_ctx && ww_ctx->acquired > 0) {
-> >  			struct ww_mutex *ww;
-> > @@ -466,19 +467,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  			 * performed the optimistic spinning cannot be done.
-> >  			 */
-> >  			if (ACCESS_ONCE(ww->ctx))
-> > -				goto slowpath;
-> > +				break;
-> >  		}
-> > 
-> >  		/*
-> >  		 * If there's an owner, wait for it to either
-> >  		 * release the lock or go to sleep.
-> >  		 */
-> > -		mspin_lock(MLOCK(lock), &node);
-> >  		owner = ACCESS_ONCE(lock->owner);
-> > -		if (owner && !mutex_spin_on_owner(lock, owner)) {
-> > -			mspin_unlock(MLOCK(lock), &node);
-> > -			goto slowpath;
-> > -		}
-> > +		if (owner && !mutex_spin_on_owner(lock, owner))
-> > +			break;
-> > 
-> >  		if ((atomic_read(&lock->count) == 1) &&
-> >  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
-> > @@ -495,7 +493,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  			preempt_enable();
-> >  			return 0;
-> >  		}
-> > -		mspin_unlock(MLOCK(lock), &node);
-> > 
-> >  		/*
-> >  		 * When there's no owner, we might have preempted between the
-> > @@ -504,7 +501,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		 * the owner complete.
-> >  		 */
-> >  		if (!owner && (need_resched() || rt_task(task)))
-> > -			goto slowpath;
-> > +			break;
-> > 
-> >  		/*
-> >  		 * The cpu_relax() call is a compiler barrier which forces
-> > @@ -514,6 +511,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
-> >  		 */
-> >  		arch_mutex_cpu_relax();
-> >  	}
-> > +	mspin_unlock(MLOCK(lock), &node);
-> >  slowpath:
-> 
-> Are there any remaining goto statements to slowpath?  If so, they need
-> to release the lock.  If not, this label should be removed.
-> 
-> >  #endif
-> >  	spin_lock_mutex(&lock->wait_lock, flags);
-> > -- 
-> > 1.7.1
-> > 
+ - if you very actively and extensively use kgdb, DEBUG_INFO is very useful.
 
+ - distros might want to build distro kernels with DEBUG_INFO for the
+kernel debug package
+
+but for most kernel developers, DEBUG_INFO really just bloats things
+and makes the build much *much* slower, for very little gain. Sure,
+you get line numbers, but let's face it, it's not that hard to just do
+"x/20i <address>" and trying to match it up with the generated code
+instead. And since "just match it up" model works with user-reported
+oopses of random kernels, you had better be able and willing to do
+that *anyway*.
+
+If most of the oopses you decode are on your own machine with your own
+kernel, you might want to try to learn to be more careful when writing
+code. And I'm not even kidding.
+
+                       Linus
