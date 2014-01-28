@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384AbaA1GDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 01:03:25 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:52440 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaA1GDW (ORCPT
+	id S1753877AbaA1GHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 01:07:20 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:59276 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750747AbaA1GHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 01:03:22 -0500
-From: William Roberts <bill.c.roberts@gmail.com>
-To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        sds@tycho.nsa.gov
-Cc: William Roberts <wroberts@tresys.com>
-Subject: [PATCH v4 2/3] proc: Update get proc_pid_cmdline() to use mm.h helpers
-Date: Mon, 27 Jan 2014 22:03:22 -0800
-Message-Id: <1390889003-5058-2-git-send-email-wroberts@tresys.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1390889003-5058-1-git-send-email-wroberts@tresys.com>
-References: <1390889003-5058-1-git-send-email-wroberts@tresys.com>
+	Tue, 28 Jan 2014 01:07:18 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al0JAMdI51J5LGaB/2dsb2JhbABagwyDObRkhVCBHBd0giUBAQEEOhwjEAgDGAklDwUlAyETiATJdhcWjmkHhDgBA5gmkiCDQSg
+Date: Tue, 28 Jan 2014 17:06:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
+Message-ID: <20140128060652.GZ13997@dastard>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+ <20140123090133.GR13997@dastard>
+ <100D68C7BA14664A8938383216E40DE04061DF33@FMSMSX114.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <100D68C7BA14664A8938383216E40DE04061DF33@FMSMSX114.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re-factor proc_pid_cmdline() to use get_cmdline() helper
-from mm.h.
+On Thu, Jan 23, 2014 at 12:12:43PM +0000, Wilcox, Matthew R wrote:
+> Are you hitting the same problems with ext4 fsck that we did?  Version 1.42.8 reports spurious corruption.  From the 1.42.9 changelog:
+> 
+>   * Fixed a regression introduced in 1.42.8 which would cause e2fsck to
+>     erroneously report uninitialized extents past i_size to be invalid.
 
-Signed-off-by: William Roberts <wroberts@tresys.com>
----
- fs/proc/base.c |   36 ++----------------------------------
- 1 file changed, 2 insertions(+), 34 deletions(-)
+Don't think so - I'm running 1.42.9 on my test VM.
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 5150706..f0c5927 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -200,41 +200,9 @@ static int proc_root_link(struct dentry *dentry, struct path *path)
- 	return result;
- }
- 
--static int proc_pid_cmdline(struct task_struct *task, char * buffer)
-+static int proc_pid_cmdline(struct task_struct *task, char *buffer)
- {
--	int res = 0;
--	unsigned int len;
--	struct mm_struct *mm = get_task_mm(task);
--	if (!mm)
--		goto out;
--	if (!mm->arg_end)
--		goto out_mm;	/* Shh! No looking before we're done */
--
-- 	len = mm->arg_end - mm->arg_start;
-- 
--	if (len > PAGE_SIZE)
--		len = PAGE_SIZE;
-- 
--	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
--
--	// If the nul at the end of args has been overwritten, then
--	// assume application is using setproctitle(3).
--	if (res > 0 && buffer[res-1] != '\0' && len < PAGE_SIZE) {
--		len = strnlen(buffer, res);
--		if (len < res) {
--		    res = len;
--		} else {
--			len = mm->env_end - mm->env_start;
--			if (len > PAGE_SIZE - res)
--				len = PAGE_SIZE - res;
--			res += access_process_vm(task, mm->env_start, buffer+res, len, 0);
--			res = strnlen(buffer, res);
--		}
--	}
--out_mm:
--	mmput(mm);
--out:
--	return res;
-+	return get_cmdline(task, buffer, PAGE_SIZE);
- }
- 
- static int proc_pid_auxv(struct task_struct *task, char *buffer)
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
+Dave Chinner
+david@fromorbit.com
