@@ -1,190 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507AbaA1A6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:58:31 -0500
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:42712 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753577AbaA1A63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:58:29 -0500
+	id S1754597AbaA1A7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:59:00 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15648 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753310AbaA1A66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 19:58:58 -0500
+X-IronPort-AV: E=Sophos;i="4.95,732,1384272000"; 
+   d="scan'208";a="9459268"
+Message-ID: <52E70165.8070709@cn.fujitsu.com>
+Date: Tue, 28 Jan 2014 09:01:25 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <201401141615.55820.arnd@arndb.de>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
-	<201401122219.11593.arnd@arndb.de>
-	<CAN1v_Pt9rOGn8zmf+u7MR6-GJPDPswBbuhXu6i=MJVa2mwqNtw@mail.gmail.com>
-	<201401141615.55820.arnd@arndb.de>
-Date: Mon, 27 Jan 2014 16:58:26 -0800
-Message-ID: <CAN1v_Ps9U=yjG-G40FK+L9SLaAQp7s8j9mg9DNoiGwqjMiGtiQ@mail.gmail.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-From: Ravi Patel <rapatel@apm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Loc Ho <lho@apm.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Rientjes <rientjes@google.com>
+CC: davej@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
+ kernel nodes to unhotpluggable.
+References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com> <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/28 08:57:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/28 08:57:22,
+	Serialize complete at 2014/01/28 08:57:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 7:15 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Now that I have a better understanding of what the driver is good for and
-> how it's used, let's have a look at how we can make it fit into the Linux
-> driver APIs and the DT bindings. We don't have anything exactly like this
-> yet, but I think the "mailbox" framework is a close enough match that we
-> can fit it in there, with some extensions. This framework is still in the
-> process of being created (so far there is only a TI OMAP specific driver,
-> and one for pl320), and I've not seen any mailboxes that support IRQ
-> mitigation or multiple software interfaces per hardware mailbox, but those
-> should be easy enough to add.
-
-OK. We will put Queue Manager driver under drivers/mailbox directory along
-with TI OMAP and pl320 drivers.
-
-> For the DT binding, I would suggest using something along the lines of
-> what we have for clocks, pinctrl and dmaengine. OMAP doesn't use this
-> (yet), but now would be a good time to standardize it. The QMTM node
-> should define a "#mailbox-cells" property that indicates how many
-> 32-bit cells a qmtm needs to describe the connection between the
-> controller and the slave. My best guess is that this would be hardcoded
-> to <3>, using two cells for a 64-bit FIFO bus address, and a 32-bit cell
-> for the slave-id signal number. All other parameters that you have in
-> the big table in the qmtm driver at the moment can then get moved into
-> the slave drivers, as they are constant per type of slave. This will
-> simplify the QMTM driver.
+On 01/28/2014 08:32 AM, David Rientjes wrote:
+> On Wed, 22 Jan 2014, David Rientjes wrote:
 >
-> In the slave, you should have a "mailboxes" property with a phandle
-> to the qmtm followed by the three cells to identify the actual
-> queue. If it's possible that a device uses more than one rx and
-> one tx queue, we also need a "mailbox-names" property to identify
-> the individual queues.
-
-We explored on DT bindings suggestion given by you. We have come
-up with a sample DT binding for how it will look like. Herewith we have
-provided the same. Would you please review and give us your
-comments before we change our driver and DTS file to accomodate it?
-
-Sample DTS node for QM:
-                qmlite: qmtm@17030000 {
-                        compatible = "apm,xgene-qmtm-lite";
-                        reg = <0x0 0x17030000 0x0 0x10000>,
-                              <0x0 0x10000000 0x0 0x400000>;
-                        interrupts = <0x0 0x40 0x4>,
-                                     <0x0 0x3c 0x4>;
-                        status = "ok";
-                        #clock-cells = <1>;
-                        clocks = <&qmlclk 0>;
-                        #mailbox-cells = <3>;
-                };
-
-Sample DTS node for Ethernet:
-                menet: ethernet@17020000 {
-                        compatible = "apm,xgene-enet";
-                        status = "disabled";
-                        reg = <0x0 0x17020000 0x0 0x30>,
-                              <0x0 0x17020000 0x0 0x10000>,
-                              <0x0 0x17020000 0x0 0x20>;
-                        mailboxes = <&qmlite 0x0 0x1000002c 0x0000>,
-                                            <&qmlite 0x0 0x10000052 0x0020>,
-                                            <&qmlite 0x0 0x10000060 0x0f00>
-                        mailbox-names = "mb-tx", "mb-fp", "mb-rx";
-                        interrupts = <0x0 0x38 0x4>,
-                                     <0x0 0x39 0x4>,
-                                     <0x0 0x3a 0x4>;
-                        #clock-cells = <1>;
-                        clocks = <&eth8clk 0>;
-                        local-mac-address = <0x0 0x11 0x3a 0x8a 0x5a 0x78>;
-                        max-frame-size = <0x233a>;
-                        phyid = <3>;
-                        phy-mode = "rgmii";
-                };
-
-The mailbox node in DTS has following format:
-mailbox = <&parent 'higher 32 bit bus address' 'lower 32 bit bus
-address' 'signal id'>
-Ethernet driver will call following function in platform_probe:
- mailbox_get(dev, "mb-tx");
-mailbox_get API will return the the context of allocated and configured mailbox.
-For now, mailbox_get API will be implemented in xgene QMTM driver.
-Eventually when mailbox framework in Linux will be standardized, we
-will use it instead.
-
-> For the in-kernel interfaces, we should probably start a conversation
-> with the owners of the mailbox drivers to get a common API, for now
-> I'd suggest you just leave it as it is, and only adapt for the new
-> binding.
-
-Sure. For now we will put our driver mostly as is in the
-drivers/mailbox. Can you please help us identify the owners of the
-mailbox drivers? As you suggested, we can start conversation with them
-to define common in kernel APIs.
-
-Ravi
-
-On Tue, Jan 14, 2014 at 7:15 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 13 January 2014, Ravi Patel wrote:
->> > Examples for local resource management (I had to think about this
->> > a long time, but probably some of these are wrong) would be
->> > * balancing between multiple non-busmaster devices connected to
->> >   a dma-engine
->> > * distributing incoming ethernet data to the available CPUs based on
->> >   a flow classifier in the MAC, e.g. by IOV MAC address, VLAN tag
->> >   or even individual TCP connection depending on the NIC's capabilities.
->> > * 802.1p flow control for incoming ethernet data based on the amount
->> >   of data queued up between the MAC and the driver
->> > * interrupt mitigation for both inbound data and outbound completion,
->> >   by delaying the IRQ to the OS until multiple messages have arrived
->> >   or a queue specific amount of time has passed.
->> > * controlling the amount of outbound buffer space per flow to minimize
->> >   buffer-bloat between an ethernet driver and the NIC hardware.
->> > * reordering data from outbound flows based on priority.
->> >
->> > This is basically my current interpretation, I hope I got at least
->> > some of it right this time ;-)
+>>>   arch/x86/mm/numa.c | 2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+>>> index 81b2750..ebefeb7 100644
+>>> --- a/arch/x86/mm/numa.c
+>>> +++ b/arch/x86/mm/numa.c
+>>> @@ -562,10 +562,10 @@ static void __init numa_init_array(void)
+>>>   	}
+>>>   }
+>>>
+>>> +static nodemask_t numa_kernel_nodes __initdata;
+>>>   static void __init numa_clear_kernel_node_hotplug(void)
+>>>   {
+>>>   	int i, nid;
+>>> -	nodemask_t numa_kernel_nodes;
+>>>   	unsigned long start, end;
+>>>   	struct memblock_type *type =&memblock.reserved;
+>>>
 >>
->> You have got them right. Although we have taken Ethernet examples here,
->> most of the local resource management apply to other slave devices also.
+>> Isn't this also a bugfix since you never initialize numa_kernel_nodes when
+>> it's allocated on the stack with NODE_MASK_NONE?
+>>
 >
-> I'm very suprised I got all those right, it seems it's a quite sophisticated
-> piece of hardware then. I guess most other slave devices only use a subset
-> of the capabilities that ethernet wants.
+> This hasn't been answered and the patch still isn't in linux-kernel yet
+> Dave tested it as good.  I'm suspicious of the changelog that indicates
+> this nodemask is the result of a stack overflow itself which only manages
+> to reproduce itself in the init patch slightly more than 50% of the time.
+> How is that possible?
 >
-> Now that I have a better understanding of what the driver is good for and
-> how it's used, let's have a look at how we can make it fit into the Linux
-> driver APIs and the DT bindings. We don't have anything exactly like this
-> yet, but I think the "mailbox" framework is a close enough match that we
-> can fit it in there, with some extensions. This framework is still in the
-> process of being created (so far there is only a TI OMAP specific driver,
-> and one for pl320), and I've not seen any mailboxes that support IRQ
-> mitigation or multiple software interfaces per hardware mailbox, but those
-> should be easy enough to add.
->
-> For the DT binding, I would suggest using something along the lines of
-> what we have for clocks, pinctrl and dmaengine. OMAP doesn't use this
-> (yet), but now would be a good time to standardize it. The QMTM node
-> should define a "#mailbox-cells" property that indicates how many
-> 32-bit cells a qmtm needs to describe the connection between the
-> controller and the slave. My best guess is that this would be hardcoded
-> to <3>, using two cells for a 64-bit FIFO bus address, and a 32-bit cell
-> for the slave-id signal number. All other parameters that you have in
-> the big table in the qmtm driver at the moment can then get moved into
-> the slave drivers, as they are constant per type of slave. This will
-> simplify the QMTM driver.
->
-> In the slave, you should have a "mailboxes" property with a phandle
-> to the qmtm followed by the three cells to identify the actual
-> queue. If it's possible that a device uses more than one rx and
-> one tx queue, we also need a "mailbox-names" property to identify
-> the individual queues.
->
-> For the in-kernel interfaces, we should probably start a conversation
-> with the owners of the mailbox drivers to get a common API, for now
-> I'd suggest you just leave it as it is, and only adapt for the new
-> binding.
->
->         Arnd
+> I think the changelog should indicate this also fixes an uninitialized
+> nodemask issue.
+
+Hi David,
+
+I'm still working on this problem, but unfortunately nothing new for now.
+And the test till now shows no more problem here.
+
+I'm digging into it, but need more time.
+
+I'll resend a new patch and modify the changelog soon. Before we find the
+root cause, I think we can use this patch as a temporary solution.
+
+Thanks.
+
+
