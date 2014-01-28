@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaA1R6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:58:22 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:41171 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbaA1R6V (ORCPT
+	id S1755440AbaA1R7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:59:13 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:59137 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755239AbaA1R7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:58:21 -0500
-Date: Tue, 28 Jan 2014 18:58:04 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
- better w/ nohz
-Message-ID: <20140128175804.GA5287@netboy>
-References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
- <20140113175114.GA4271@netboy>
- <52D42D36.1020400@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D42D36.1020400@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Jan 2014 12:59:11 -0500
+From: William Roberts <bill.c.roberts@gmail.com>
+To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        sds@tycho.nsa.gov
+Cc: William Roberts <wroberts@tresys.com>
+Subject: [PATCH v6 1/3] mm: Create utility function for accessing a tasks commandline value
+Date: Tue, 28 Jan 2014 09:59:12 -0800
+Message-Id: <1390931954-7874-1-git-send-email-wroberts@tresys.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tested for a regression using the patched kernel with the nohz=off
-command line option...
+introduce get_cmdline() for retreiving the value of a processes
+proc/self/cmdline value.
 
-On Mon, Jan 13, 2014 at 10:15:18AM -0800, John Stultz wrote:
-> On 01/13/2014 09:51 AM, Richard Cochran wrote:
-> >
-> > - Linux 3.12.7-nohz-plain-20140106                nohz-plain.log
-> > - Linux 3.12.7-nohz-plain-20140106 NOHZ=OFF       periodic-plain.log
-> > - Linux 3.12.7-nohz-fix-20140106-00001-gd753140   nohz-fix.log
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
 
-Regression check:
+Signed-off-by: William Roberts <wroberts@tresys.com>
+---
+ include/linux/mm.h |    1 +
+ mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
- - Linux homeboy 3.12.7-nohz-fix-20140106-00001-gd753140 NOHZ=OFF
-   nohz-fix-periodic.log
-
-> > The performance in the log files as reflected in the clock offset is
-> > summarized in this table. The values are in nanoseconds.
-> >
-> >  |         | periodic-plain |      nohz-fix |    nohz-plain |
-> >  |---------+----------------+---------------+---------------|
-> >  | minimum |  -1.599000e+03 | -1.051000e+03 | -5.373700e+04 |
-> >  | maximum |  +1.311000e+03 | +1.048000e+03 | +6.389500e+04 |
-> >  | mean    |  +9.880240e-02 | -7.747305e+01 | +1.597904e+01 |
-> >  | stddev  |  +4.610021e+02 | +3.960978e+02 | +1.491263e+04 |
-
-Comparing the nohz=off case with and without the patch, the three hour
-test looks like this.
-
-  |         | periodic-plain | nohz-fix-periodic |
-  |---------+----------------+-------------------+
-  | minimum |  -1.599000e+03 |     -1.427000e+03 |
-  | maximum |  +1.311000e+03 |     +1.279000e+03 |
-  | mean    |  +9.880240e-02 |     -2.710778e+01 |
-  | stddev  |  +4.610021e+02 |     +3.974372e+02 |
-
-> >    http://linuxptp.sourceforge.net/nohz-fix/current_nohz.png
-> >    http://linuxptp.sourceforge.net/nohz-fix/periodic_vs_fix.png
-
-I also made a third graph showing before and after the patch.
-
-    http://linuxptp.sourceforge.net/nohz-fix/nohz_regression.png
-
-> If you do get a chance to look again, I'd also be interested if running
-> with nohz=off w/ the fix doesn't show any regression compared to the
-> unmodified nohz=off case.
-
-Looks like there is no regression.
-
-Thanks,
-Richard
-
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f28f46e..db89a94 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1175,6 +1175,7 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int get_cmdline(struct task_struct *task, char *buffer, int buflen);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/util.c b/mm/util.c
+index a24aa22..8122710 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -445,6 +445,54 @@ unsigned long vm_commit_limit(void)
+ 	return allowed;
+ }
+ 
++/**
++ * get_cmdline() - copy the cmdline value to a buffer.
++ * @task:     the task whose cmdline value to copy.
++ * @buffer:   the buffer to copy to.
++ * @buflen:   the length of the buffer. Larger cmdline values are truncated
++ *            to this length.
++ * Returns the size of the cmdline field copied. Note that the copy does
++ * not guarantee an ending NULL byte.
++ */
++int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++{
++	int res = 0;
++	unsigned int len;
++	struct mm_struct *mm = get_task_mm(task);
++	if (!mm)
++		goto out;
++	if (!mm->arg_end)
++		goto out_mm;	/* Shh! No looking before we're done */
++
++	len = mm->arg_end - mm->arg_start;
++
++	if (len > buflen)
++		len = buflen;
++
++	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
++
++	/*
++	 * If the nul at the end of args has been overwritten, then
++	 * assume application is using setproctitle(3).
++	 */
++	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
++		len = strnlen(buffer, res);
++		if (len < res) {
++			res = len;
++		} else {
++			len = mm->env_end - mm->env_start;
++			if (len > buflen - res)
++				len = buflen - res;
++			res += access_process_vm(task, mm->env_start,
++						 buffer+res, len, 0);
++			res = strnlen(buffer, res);
++		}
++	}
++out_mm:
++	mmput(mm);
++out:
++	return res;
++}
+ 
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+-- 
+1.7.9.5
 
