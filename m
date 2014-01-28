@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662AbaA1VRW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:17:22 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:35409 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923AbaA1VRE (ORCPT
+	id S1755565AbaA1VRC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:17:02 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:53507 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923AbaA1VRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:17:04 -0500
-Date: Tue, 28 Jan 2014 22:17:02 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
-Message-ID: <20140128211702.GB11821@two.firstfloor.org>
-References: <52E6AFFE.3030004@siemens.com>
- <20140127202252.GA11821@two.firstfloor.org>
- <52E767C2.2090807@siemens.com>
- <20140128115549.GA26230@gmail.com>
- <52E79DEA.3010408@siemens.com>
+	Tue, 28 Jan 2014 16:17:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E79DEA.3010408@siemens.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52E7FCF1.10705@gmail.com>
+References: <20140128003927.GA27319@www.outflux.net>
+	<52E701BF.9040306@gmail.com>
+	<CAGXu5jLbsx+H5NBY25XxH+cRSejJWZ2-v1fa2-GQ-y3VJa-h0A@mail.gmail.com>
+	<52E7FCF1.10705@gmail.com>
+Date: Tue, 28 Jan 2014 13:16:59 -0800
+X-Google-Sender-Auth: UzWu3nEPZ5U3S59y22kAsUaoOx4
+Message-ID: <CAGXu5jKKMim0M1cpvt4XP5YYzYvBqaSRR8k47zPDkWJCaj4FBw@mail.gmail.com>
+Subject: Re: [PATCH] vsprintf: ignore arguments to %n
+From: Kees Cook <keescook@chromium.org>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Of course, we still need irqs off during ICR writes. I thought Andi was
-> just suggesting to replace preempt_disable with get_cpu, maybe to
-> document why we are disabling preemption here.
+On Tue, Jan 28, 2014 at 10:54 AM, Ryan Mallon <rmallon@gmail.com> wrote:
+> On 29/01/14 09:51, Kees Cook wrote:
+>
+>> On Mon, Jan 27, 2014 at 5:02 PM, Ryan Mallon <rmallon@gmail.com> wrote:
+>>> On 28/01/14 11:39, Kees Cook wrote:
+>>>> If arguments are consumed without output when encountering %n, it
+>>>> could be used to benefit or improve information leak attacks that were
+>>>> exposed via a limited size buffer. Since %n is not used by the kernel,
+>>>> there is no reason to make an info leak attack any easier.
+>>>
+>>> I was thinking more like the following. Print the warning if %n is
+>>> detected in format_decode(), but otherwise just remove the handling of
+>>> %n outright and treat it like any other invalid format specifier.
+>>> Something like this completely untested patch. Thoughts?
+>>
+>> I'd be totally fine with it. Minor typo in the comment before the
+>> WARN_ONCE (should be "its" instead of "it"), but otherwise looks good.
+>> Consider it:
+>>
+>> Acked-by: Kees Cook <keescook@chromium.org>
+>>
+>> It builds and boots fine for me, FWIW.
+>>
+>> -Kees
+>>
+>
+>
+> It looks like your second version already got added to Andrew's mm tree.
+> I'm happy to repost mine with a fixed typo and proper signed-off by if
+> you'd rather use that version.
 
-Yes that was my point.
+I think yours is much cleaner: it entirely removes the %n processing logic.
 
-Also with irq-off you of course still always have races against
-the NMI-level machine check.
+-Kees
 
--Andi
+-- 
+Kees Cook
+Chrome OS Security
