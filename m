@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970AbaA1QL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:11:28 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:58074 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaA1QL0 (ORCPT
+	id S1755261AbaA1QOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:14:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60655 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaA1QOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:11:26 -0500
+	Tue, 28 Jan 2014 11:14:45 -0500
+Date: Tue, 28 Jan 2014 16:14:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jon Medhurst <tixy@linaro.org>, Alexandre Courbot <acourbot@nvidia.com>,
+        stable@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140128161428.GO11841@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140128132306.GB9172@localhost.localdomain>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
-	<20140115171704.GB21574@localhost.localdomain>
-	<CAKohponEZydR1OmP2xziA9bc3OJPgP3bFmuWFQmrmeQFZccMVQ@mail.gmail.com>
-	<alpine.DEB.2.02.1401161043350.4207@ionos.tec.linutronix.de>
-	<CAKohpond3wY25H_tsJQ9xs_D2dP2_wGGU5J8fBteyfB=7wmAdA@mail.gmail.com>
-	<20140120155145.GB9436@localhost.localdomain>
-	<CAKohpom8av7A1wwcdOr5+LpHz--P+s9m_gR_9B+Aa4fpwkN7uQ@mail.gmail.com>
-	<20140123145842.GD13345@localhost.localdomain>
-	<CAKohpok5AObcFbOmLYGT-KkjhVHUiLRZ=AYqofYk59_sVneSjA@mail.gmail.com>
-	<20140128132306.GB9172@localhost.localdomain>
-Date: Tue, 28 Jan 2014 08:11:25 -0800
-Message-ID: <CAGa+x86JwUOn6DG+T7VrGy4CqG3-6NCxNcB3mZfD0VBNXBk6_w@mail.gmail.com>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linaro Networking <linaro-networking@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K4JQQuyuIggLcvtH"
+Content-Disposition: inline
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Possible stable fix for decompressor speed
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 5:23 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Fri, Jan 24, 2014 at 10:51:14AM +0530, Viresh Kumar wrote:
->> On 23 January 2014 20:28, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Tue, Jan 21, 2014 at 04:03:53PM +0530, Viresh Kumar wrote:
->>
->> >> So, the main problem in my case was caused by this:
->> >>
->> >>            <...>-2147  [001] d..2   302.573881: hrtimer_start:
->> >> hrtimer=c172aa50 function=tick_sched_timer expires=602075000000
->> >> softexpires=602075000000
->> >>
->> >> I have mentioned this earlier when I sent you attachments. I think
->> >> this is somehow
->> >> tied with the NO_HZ_FULL stuff? As the timer is queued for 300 seconds after
->> >> current time.
->> >>
->> >> How to get this out?
->> >
->> > So it's scheduled away 300 seconds later. It might be a pending timer_list. Enabling the
->> > timer tracepoints may give you some clues.
->>
->> Trace was done with that enabled. /proc/timer_list confirms that a hrtimer
->> is queued for 300 seconds later for tick_sched_timer. And so I assumed
->> this is part of the current NO_HZ_FULL implementation.
->>
->> Just to confirm, when we decide that a CPU is running a single task and so
->> can enter tickless mode, do we queue this tick_sched_timer for 300 seconds
->> ahead of time? If not, then who is doing this :)
->
-> No, when a single task is running on a full dynticks CPU, the tick is supposed to run
-> every seconds. I'm actually suprised it doesn't happen in your traces, did you tweak
-> something specific?
 
-I think Viresh is using my patch/hack to configure/disable the 1Hz
-residual tick.
+--K4JQQuyuIggLcvtH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Kevin
+The changes in patch 1431574a1c4c (lib/decompressors: fix "no limit"
+output buffer length) avoid doing decompression a byte at a time when
+decompressing into high physical addresses using a small, well isolated
+change.  The patch can give a very noticable improvement in kernel boot
+times on affected systems, for example with one ARM system this reduces
+the total time to boot the kernel by more than a third.
+
+Would you consider this patch for stable?  It doesn't quite fit within
+the criteria but you've indicated in the past that such isolated and
+well supported changs can be acceptable anyway.  If it's not OK for
+stable it seems like it should be a good candidate for LTSI.
+
+--K4JQQuyuIggLcvtH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS59dhAAoJELSic+t+oim9hVAP/31TXXsoTb6DN6Syv5cJiT49
+YKwiuPAuImuPkp8rI9otH3scCDjx2oesJBl6f+WHVqkyRgZqL6cswBC81qqd6Sgm
+CCBlTw6G0nWfMLDP76MlobaZVavs83vKX/dMviUwnvpqeKX2rJl6ApKpQs8hfWxd
+gbr2+Ru6wQ2YHdp3Wiy6E/OiQhRiEwGOhWGyLRFltPb+10vjcIiFBA73CG484sFX
+7oCKq0iLHTN2y1RJZO/ZWwAgVLZQSdpqqHGCI/haHZ988TTIlY0b5m/yBn2FAWWy
+S3/GrbjibJTs3E/U8kI/hDHpSuI9xqSDVQD/uZhY3nUdAk+IpNb4rK+YicHGfgsc
+tkEJiYPmjQNKWZ/r85Vg0sxXw4mI4+6KzCqTH8YTrk3ewh4CxQ21yuYC9MFTZmNY
+Gzy5yV+DOl4Ffk5ANrIYxzOVgrJvanaeXUQLmklgJqcg2HK63/Ae7jg0o7lc0d0f
+zTn0YHWE0nHW3RqLZvkafaEWHjYbRT736+8BjPU4r8srem+840UuIXvzy5hQnK7+
+r2kWIPHzBSbyUdluvpAoWLMa5B2sUudzOPgnRam4ybVh+sqf8CKdDcYfdFfcyuG2
+qBh3xVNthl257+wcRmini+giDfcFJt38S4iGL6mik6x1TTXzXKlVTYXlyOnM5zwH
+/m9IzhI8RPxwaJ8FS+3L
+=mx9F
+-----END PGP SIGNATURE-----
+
+--K4JQQuyuIggLcvtH--
