@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398AbaA1R4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:56:23 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:38686 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497AbaA1R4V (ORCPT
+	id S1755414AbaA1R6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:58:22 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:41171 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599AbaA1R6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:56:21 -0500
+	Tue, 28 Jan 2014 12:58:21 -0500
+Date: Tue, 28 Jan 2014 18:58:04 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
+ better w/ nohz
+Message-ID: <20140128175804.GA5287@netboy>
+References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
+ <20140113175114.GA4271@netboy>
+ <52D42D36.1020400@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <52E7EE54.8030408@nod.at>
-References: <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
-	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
-	<52E6954F.2060303@nod.at>
-	<CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>
-	<20140128062806.GA20750@gmail.com>
-	<52E76997.40303@nod.at>
-	<52E7D2E5.8090208@linux.intel.com>
-	<52E7D9FF.1080506@nod.at>
-	<52E7DB15.3090808@zytor.com>
-	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
-	<20140128170507.GA16279@gmail.com>
-	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
-	<52E7E7D8.2050605@nod.at>
-	<CA+55aFyYoi_KW5h=RxvjXHe89ZgCifAiS=5DqRnvS=K=Rbitsg@mail.gmail.com>
-	<52E7EE54.8030408@nod.at>
-Date: Tue, 28 Jan 2014 09:56:20 -0800
-X-Google-Sender-Auth: GgIeChH_AL9ULRtN469BS9eDKOQ
-Message-ID: <CA+55aFwm7KQNmWJEQedempzEZHr9jJ7UdS3SBcCY9xteQ16-hw@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D42D36.1020400@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 9:52 AM, Richard Weinberger <richard@nod.at> wrote:
->
-> x/10i schedule+0x45 works.
+I tested for a regression using the patched kernel with the nohz=off
+command line option...
 
-Ok, so it's just list that is braindamaged. Maybe it wants a
-*(schedule+0x45) or something. I dunno. You can obviously get the hex
-number from just doing "p schedule+0x45" and then do that.
+On Mon, Jan 13, 2014 at 10:15:18AM -0800, John Stultz wrote:
+> On 01/13/2014 09:51 AM, Richard Cochran wrote:
+> >
+> > - Linux 3.12.7-nohz-plain-20140106                nohz-plain.log
+> > - Linux 3.12.7-nohz-plain-20140106 NOHZ=OFF       periodic-plain.log
+> > - Linux 3.12.7-nohz-fix-20140106-00001-gd753140   nohz-fix.log
 
-Whatever. I still claim that the hex numbers in the oopses are
-worthless noise. The fact that gdb has "UI issues" is an unrelated
-issue and perhaps not surprising.
+Regression check:
 
-                Linus
+ - Linux homeboy 3.12.7-nohz-fix-20140106-00001-gd753140 NOHZ=OFF
+   nohz-fix-periodic.log
+
+> > The performance in the log files as reflected in the clock offset is
+> > summarized in this table. The values are in nanoseconds.
+> >
+> >  |         | periodic-plain |      nohz-fix |    nohz-plain |
+> >  |---------+----------------+---------------+---------------|
+> >  | minimum |  -1.599000e+03 | -1.051000e+03 | -5.373700e+04 |
+> >  | maximum |  +1.311000e+03 | +1.048000e+03 | +6.389500e+04 |
+> >  | mean    |  +9.880240e-02 | -7.747305e+01 | +1.597904e+01 |
+> >  | stddev  |  +4.610021e+02 | +3.960978e+02 | +1.491263e+04 |
+
+Comparing the nohz=off case with and without the patch, the three hour
+test looks like this.
+
+  |         | periodic-plain | nohz-fix-periodic |
+  |---------+----------------+-------------------+
+  | minimum |  -1.599000e+03 |     -1.427000e+03 |
+  | maximum |  +1.311000e+03 |     +1.279000e+03 |
+  | mean    |  +9.880240e-02 |     -2.710778e+01 |
+  | stddev  |  +4.610021e+02 |     +3.974372e+02 |
+
+> >    http://linuxptp.sourceforge.net/nohz-fix/current_nohz.png
+> >    http://linuxptp.sourceforge.net/nohz-fix/periodic_vs_fix.png
+
+I also made a third graph showing before and after the patch.
+
+    http://linuxptp.sourceforge.net/nohz-fix/nohz_regression.png
+
+> If you do get a chance to look again, I'd also be interested if running
+> with nohz=off w/ the fix doesn't show any regression compared to the
+> unmodified nohz=off case.
+
+Looks like there is no regression.
+
+Thanks,
+Richard
+
+
