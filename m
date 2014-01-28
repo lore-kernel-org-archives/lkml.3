@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaA1KTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:19:43 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:59431 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671AbaA1KTJ (ORCPT
+	id S1754843AbaA1KZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:25:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60518 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaA1KZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:19:09 -0500
-Message-ID: <52E78418.3000302@gmail.com>
-Date: Tue, 28 Jan 2014 19:19:04 +0900
-From: Daniel Jeong <gshark.jeong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 28 Jan 2014 05:25:08 -0500
+Date: Tue, 28 Jan 2014 10:24:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <khali@linux-fr.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
+        linux-kernel@vger.kernel.org, LM Sensors <lm-sensors@lm-sensors.org>
+Message-ID: <20140128102451.GF11841@sirena.org.uk>
+References: <20140126214936.7736f530@endymion.delvare>
+ <52E58330.90602@roeck-us.net>
+ <52E58656.7000903@roeck-us.net>
+ <20140126235103.GP11727@sirena.org.uk>
+ <52E6951C.60609@wwwdotorg.org>
+ <20140127185031.GA28910@roeck-us.net>
+ <20140127230447.7e8be3a4@endymion.delvare>
+ <20140127234135.GA18059@roeck-us.net>
+ <20140127235815.GA8513@sirena.org.uk>
+ <52E71708.7010607@roeck-us.net>
 MIME-Version: 1.0
-To: Sakari Ailus <sakari.ailus@iki.fi>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Daniel Jeong <gshark.jeong@gmail.com>
-Subject: Re: [RFCv2,1/2] v4l2-controls.h: add addtional Flash fault bits
-References: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com> <20140128090841.GG13820@valkosipuli.retiisi.org.uk>
-In-Reply-To: <20140128090841.GG13820@valkosipuli.retiisi.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+KKZr+d1tCZIVt60"
+Content-Disposition: inline
+In-Reply-To: <52E71708.7010607@roeck-us.net>
+X-Cookie: O.K., fine.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014년 01월 28일 18:08, Sakari Ailus 쓴 글:
-> Hi Daniel,
->
-> On Tue, Jan 28, 2014 at 03:55:57PM +0900, Daniel Jeong wrote:
->> Add additional FLASH Fault bits to dectect faults from chip.
->> Some Flash drivers support UVLO, IVFM, NTC Trip faults.
->> UVLO : 	Under Voltage Lock Out Threshold crossed
->> IVFM : 	IVFM block reported and/or adjusted LED current Input Voltage Flash Monitor trip threshold
->> NTC  : 	NTC Threshold crossed. Many Flash drivers have a pin and the fault bit to
->> serves as a threshold detector for negative temperature coefficient (NTC) thermistors.
->>
->> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
->> ---
->>   include/uapi/linux/v4l2-controls.h |    3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
->> index 1666aab..01d730c 100644
->> --- a/include/uapi/linux/v4l2-controls.h
->> +++ b/include/uapi/linux/v4l2-controls.h
->> @@ -803,6 +803,9 @@ enum v4l2_flash_strobe_source {
->>   #define V4L2_FLASH_FAULT_SHORT_CIRCUIT		(1 << 3)
->>   #define V4L2_FLASH_FAULT_OVER_CURRENT		(1 << 4)
->>   #define V4L2_FLASH_FAULT_INDICATOR		(1 << 5)
->> +#define V4L2_FLASH_FAULT_UVLO			(1 << 6)
->> +#define V4L2_FLASH_FAULT_IVFM			(1 << 7)
->> +#define V4L2_FLASH_FAULT_NTC_TRIP		(1 << 8)
-> I object adding a new fault which is essentially the same as an existing
-> fault, V4L2_FLASH_FAULT_OVER_TEMPERATURE.
 
-I hope you consider it again.
-Usually, when the die temperature exceeds the specific temperature, ie 120 or 135 and fixed value,
-turn off PFET,NFET, current sources and set TEMP Fault bit.
-But in the NTC mode, the comparator is working and detect selected temperature through Vtrip value.
-It protects shutdown the chip due to high voltage and keep the device operation.
-Many flash chip support NTC and TEMP Fault both. For example, LM3554, LM3556, LM3559
-LM3642, LM3646, LM3560, LM3561, LM3565 etc
-Two things should be tell apart.
+--+KKZr+d1tCZIVt60
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> As the practice has been to use human-readable names for the faults, I'd
-> also suggest using V4L2_FLASH_FAULT_UNDER_VOLTAGE instead of
-> V4L2_FLASH_FAULT_UVLO.
+On Mon, Jan 27, 2014 at 06:33:44PM -0800, Guenter Roeck wrote:
 
-I agree with you.
+> I confirmed that your two patches ("regulator: core: Correct default
+> return value for full constraints" and "ACPI: Flag use of ACPI and ACPI
+> idioms for power supplies to regulator API") together fix the problem
+> with the lm90 driver, at least for ACPI based systems.
 
->
-> What's the IVFM block and what does it do?
+Great, thanks!
 
-IVFM is Input Voltage Flash Monitor.
-If the flash chip has IVFM function the flash current can be adjusted based upon the voltage level of input.
-As ramping flash current, the input voltage goes down and IVFM block adjust current to prevent to shudown due to low voltage
-and keep the flash operation. So if the input voltage crossed the IVFM Threshold level chip set the fault bit.
-Many flash chip, for example LM3556, LM3646, LM3642 , support this fucntion.
-I think, V4L2_FLASH_FAULT_INPUT_VOLTAGE_MONITOR is better than V4L2_FLASH_FAULT_IVFM.
+--+KKZr+d1tCZIVt60
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->
->>   #define V4L2_CID_FLASH_CHARGE			(V4L2_CID_FLASH_CLASS_BASE + 11)
->>   #define V4L2_CID_FLASH_READY			(V4L2_CID_FLASH_CLASS_BASE + 12)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJS54VwAAoJELSic+t+oim9kJQP/087RVhgPHFHw7dJC3dGkV9l
+u1iQvFW7G1LG8P19BpcC6l2jJ7KzF3fJOqBJSlaVWmvq4j1tI9Tjmt2UtB9tb+wZ
+3ChuwUQy0Qm5SwVwFPzK8TUxuU/AFoas6uyez/KpvOG2LgJPSI+HwquWqAj2EjKg
+Vem5JGSVnX4sp4tGwiIsvIIzFKQa05c2+iRGzks34B+scvMHUGhqf2cU3lSh8ax2
+gIDJWE1iOq6zEFyW+VfQt/IFotg6YaNQzpb42LODx/fbCUb7IH5OqXqMlmnsiw0V
+oT5ihIZvSNKUGqVuTTmYwdkrOdUCJxbZ8uKaXvfA3mtJDHWqzR3lyd4ygf54GKbc
+47K+mIR7oBaWHHRpLaJvgTeTytezbpkzxBnHLdvpBMXH9FBQxP18/VR+RPDoAgFZ
+n76SgcBkNl6qddeKAHFV+k2upuajDSTQ0KhN3q27ln/2SS9MAcISEINfX4aLHpyg
+9tlluszIgvE1aYDm868rBhggm6x0oBqNtCWkx4dQGpbjVmlefDQ+FUkjaQH3nGFg
+iUO+sq3PPc+/o2fMP5socIBeaFN1p0hrbLggdp40Lp6csBXyMBuIKlLUEcfp1bJp
+mR5vkZ92gX6uY9x3XlmqtWJNWsqKE7eG/BXUNHicNbe3Y2vizVUnwmjmSLpFxC1S
+QU01v/zmkP/qgo2l2Bd3
+=e8QD
+-----END PGP SIGNATURE-----
+
+--+KKZr+d1tCZIVt60--
