@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaA1DbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 22:31:21 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:12085 "EHLO song.cn.fujitsu.com"
+	id S1754583AbaA1Dbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 22:31:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63407 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754351AbaA1DbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 22:31:20 -0500
+	id S1754520AbaA1Dbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 22:31:41 -0500
 X-IronPort-AV: E=Sophos;i="4.95,733,1384272000"; 
-   d="scan'208";a="9460148"
-Message-ID: <52E72083.4090703@cn.fujitsu.com>
-Date: Tue, 28 Jan 2014 11:14:11 +0800
+   d="scan'208";a="9460162"
+Message-ID: <52E722F5.9010505@cn.fujitsu.com>
+Date: Tue, 28 Jan 2014 11:24:37 +0800
 From: Tang Chen <tangchen@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -22,10 +22,10 @@ Subject: Re: [PATCH] numa, mem-hotplug: Fix stack overflow in numa when seting
 References: <1390456168-28259-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.02.1401222203330.8088@chino.kir.corp.google.com> <alpine.DEB.2.02.1401271631090.17114@chino.kir.corp.google.com> <52E70165.8070709@cn.fujitsu.com> <20140128025537.GA21730@redhat.com>
 In-Reply-To: <20140128025537.GA21730@redhat.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 11:10:12,
+ 2014/01/28 11:20:30,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/28 11:10:54,
-	Serialize complete at 2014/01/28 11:10:54
+ 2014/01/28 11:20:36,
+	Serialize complete at 2014/01/28 11:20:36
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
@@ -84,6 +84,10 @@ On 01/28/2014 10:55 AM, Dave Jones wrote:
 >
 > I did a bisect with the patch above applied each step of the way.
 > This time I got a plausible looking result....
+
+I cannot reproduce this. Would you please share how to reproduce it ?
+Or does it just happen during the booting ?
+
 >
 >
 > a0acda917284183f9b71e2d08b0aa0aea722b321 is the first bad commit
@@ -97,11 +101,12 @@ On 01/28/2014 10:55 AM, Dave Jones wrote:
 > Reverting this commit of course removes the whole function from above,
 > so we haven't really learned anything new, other than that commit is broken,
 > even after the above fix-up.
-
-If we revert this commit, memory hot-remove won't be able to work.
-Let's try to fix it before the merge window is close.
-
 >
 > 	Dave
 >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
