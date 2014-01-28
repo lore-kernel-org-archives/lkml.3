@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbaA1Cgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 21:36:48 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:11415 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbaA1Cgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 21:36:47 -0500
-Message-ID: <1390876601.27421.20.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 5/8] mm, hugetlb: use vma_resv_map() map types
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, riel@redhat.com,
-        mgorman@suse.de, mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, hughd@google.com,
-        david@gibson.dropbear.id.au, js1304@gmail.com,
-        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
-        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 27 Jan 2014 18:36:41 -0800
-In-Reply-To: <1390856607-psfeyzze-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
-	 <1390794746-16755-6-git-send-email-davidlohr@hp.com>
-	 <1390856607-psfeyzze-mutt-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1753762AbaA1Cst (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 21:48:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:56517 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753347AbaA1Css (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 21:48:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,733,1384329600"; 
+   d="scan'208";a="445581533"
+Message-ID: <52E7193C.8050801@intel.com>
+Date: Tue, 28 Jan 2014 10:43:08 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] x86, mpx: extend siginfo structure to include
+ bound violation information
+References: <1390727338-20487-1-git-send-email-qiaowei.ren@intel.com> <1390727338-20487-5-git-send-email-qiaowei.ren@intel.com> <52E6D67A.8050409@amacapital.net>
+In-Reply-To: <52E6D67A.8050409@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-27 at 16:03 -0500, Naoya Horiguchi wrote:
-> On Sun, Jan 26, 2014 at 07:52:23PM -0800, Davidlohr Bueso wrote:
-> > From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > 
-> > Util now, we get a resv_map by two ways according to each mapping type.
-> > This makes code dirty and unreadable. Unify it.
-> > 
-> > Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> 
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> 
-> There are a few small nitpicking below ...
+On 01/28/2014 05:58 AM, Andy Lutomirski wrote:
+> On 01/26/2014 01:08 AM, Qiaowei Ren wrote:
+> (Why on earth does Intel not expose this stuff in cr2 or an MSR or
+> something?)
+>
 
-Will update, thanks!
+I guess it is due to some design reason.
+
+Thanks,
+Qiaowei
 
