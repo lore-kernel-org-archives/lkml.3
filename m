@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaA1QvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 11:51:00 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55986 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645AbaA1Qu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 11:50:58 -0500
-Date: Tue, 28 Jan 2014 10:49:37 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: "xinhui.pan" <xinhuix.pan@intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
-        <david.a.cohen@linux.intel.com>, <linus.walleij@linaro.org>,
-        <gnurou@gmail.com>, <yanmin_zhang@linux.intel.com>
-Subject: Re: [PATCH] gpio-intel-mid: fix the incorrect return of idle callback
-Message-ID: <20140128164937.GA30226@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <52E76F71.4080304@intel.com>
+	id S1755326AbaA1QvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 11:51:19 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43872 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645AbaA1QvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 11:51:16 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
-Content-Disposition: inline
-In-Reply-To: <52E76F71.4080304@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52E7DB15.3090808@zytor.com>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+	<CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
+	<52E5EFAF.3060609@linux.intel.com>
+	<CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+	<CAGXu5jLcy9R_N_FQHMFheVTYSB9uobd-Orh7spEmpMaMXDtwEQ@mail.gmail.com>
+	<52E6954F.2060303@nod.at>
+	<CAGXu5jKXqUhTdhX_n8xSe+d3sPmZ0SK-aTQh2jCXWL6TgA5o=w@mail.gmail.com>
+	<20140128062806.GA20750@gmail.com>
+	<52E76997.40303@nod.at>
+	<52E7D2E5.8090208@linux.intel.com>
+	<52E7D9FF.1080506@nod.at>
+	<52E7DB15.3090808@zytor.com>
+Date: Tue, 28 Jan 2014 08:51:15 -0800
+X-Google-Sender-Auth: gM7eRXpz_NbAA-CB9JUVPhwGEbQ
+Message-ID: <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ikeVEW9yuYc//A+q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 28, 2014 at 8:30 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> I don't think there is any way to not break anything... we're
+> introducing a new kind of object ("normalized kernel pointer") here.
 
-On Tue, Jan 28, 2014 at 04:50:57PM +0800, xinhui.pan wrote:
-> From: "xinhui.pan" <xinhuiX.pan@intel.com>
->=20
-> intel_gpio_runtime_idle should return correct error code if it do fail.
-> make it more correct even though -EBUSY is the most possible return value.
->=20
-> Signed-off-by: bo.he <bo.he@intel.com>
-> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
-> ---
->  drivers/gpio/gpio-intel-mid.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
-> index d1b50ef..05749a3 100644
-> --- a/drivers/gpio/gpio-intel-mid.c
-> +++ b/drivers/gpio/gpio-intel-mid.c
-> @@ -394,7 +394,9 @@ static const struct irq_domain_ops intel_gpio_irq_ops=
- =3D {
-> =20
->  static int intel_gpio_runtime_idle(struct device *dev)
->  {
-> -	pm_schedule_suspend(dev, 500);
-> +	int err =3D pm_schedule_suspend(dev, 500);
-> +	if (err)
-> +		return err;
->  	return -EBUSY;
+I suspect we could just drop the addresses entirely if we have a
+symbolic version. It's not like the hex addresses are all that
+interesting, and in commit messages I actually end up editing them out
+just because they are worthless noise.
 
-wait, is it only me or this would look a lot better as:
+So we could just do "schedule+0x45/0x368" without the actual hex
+address in brackets..
 
-static int intel_gpio_runtime_idle(struct device *dev)
-{
-	return pm_schedule_suspend(dev, 500);
-}
-
-cheers
-
---=20
-balbi
-
---ikeVEW9yuYc//A+q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJS59+hAAoJEIaOsuA1yqREGd0P/0Db9lH3ObkPedJCWHGMIwLy
-DRgJi321M2MpJhvjfyw5HELcaXH3NUEmOrhJCnJbBuR8rMD8saOWMKYXo3sd6pxg
-zjIYOD4xJ5M6MEFcMWyNbTdiPsh2B6hxOiA260E4hIYqBF4V8xXjzbGdJ7vr7WhL
-gsWSqkXbOWTaNeZTDmDl7rTMZ7OBQFHClOgquniNZUZH7JSgCjx8h4xo2rc+Kl8p
-vBTlYEnRgce/SAjUx3d6wdqcCaFRM2F9kjhhb8tlGKNVElWmSxzLGVGSm5ceF3zv
-F3grfjBvA0gPMqgYtKvLsBoKu81V6P0+11/A4mRPzuPYg4FLgh5vP6a8foxJkYpD
-9225SyYjhmuWz81JtlEyn8hCZO6DGhZbhscCNjQHJvxrcu5LlXOdH+hDjMvlk/bG
-8AcQ5QEP1IDsHqiAUG9jMT+DIxelxtMgqJAOwqZ2vTNJdn0uXj3NVgHWCKLycRof
-pREIhaozMLLMnKfIQKrgf83WVttm+PSnU1wqdJ5bZtAFZqqEEM1Prr2REroVX+GO
-+XeJw8MF3qTa33hbmR/SGJhWB5FR8MrcaXhIUyMCcbWSMeymSd80zKnpkq/ByG0C
-nL2Ym5qOhONXR4+LEaxY4LtmQrG4xJ6HcNQ2OugpcDY5bkBgUWrXl8/LHWZjwcPe
-sysEm6zPw+z+o+SQagQ4
-=Z/07
------END PGP SIGNATURE-----
-
---ikeVEW9yuYc//A+q--
+               Linus
