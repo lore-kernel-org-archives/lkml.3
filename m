@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaA1TUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 14:20:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37399 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754790AbaA1TUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 14:20:40 -0500
-Date: Tue, 28 Jan 2014 13:24:00 -0600
-From: Darren Etheridge <detheridge@ti.com>
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: <dri-devel@lists.freedesktop.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH v3 07/24] drm/i2c: tda998x: set the video mode from the
- adjusted value
-Message-ID: <20140128192400.GA13187@ti.com>
-References: <cover.1390153344.git.moinejf@free.fr>
- <20140119195840.1ecab03b@armhf>
- <20140123232907.GA25988@ti.com>
- <20140128181218.39d1d15e@armhf>
+	id S1755508AbaA1TXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 14:23:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34226 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438AbaA1TXU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 14:23:20 -0500
+Date: Tue, 28 Jan 2014 11:22:32 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-a57beec5d427086cdc8d75fd51164577193fa7f4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, davej@redhat.com, tt.rantala@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, tt.rantala@gmail.com,
+        davej@redhat.com
+In-Reply-To: <20140127105413.GC11314@laptop.programming.kicks-ass.net>
+References: <20140127105413.GC11314@laptop.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/numa] sched: Make sched_class::get_rr_interval()
+  optional
+Git-Commit-ID: a57beec5d427086cdc8d75fd51164577193fa7f4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140128181218.39d1d15e@armhf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 28 Jan 2014 11:22:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Francois Moine <moinejf@free.fr> wrote on Tue [2014-Jan-28 18:12:18 +0100]:
-> On Thu, 23 Jan 2014 17:29:07 -0600
-> Darren Etheridge <detheridge@ti.com> wrote:
-> 
-> > > @@ -896,9 +897,9 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
-> > >  	 * TDA19988 requires high-active sync at input stage,
-> > >  	 * so invert low-active sync provided by master encoder here
-> > >  	 */
-> > > -	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
-> > > +	if (adj_mode->flags & DRM_MODE_FLAG_NHSYNC)
-> > >  		reg_set(priv, REG_VIP_CNTRL_3, VIP_CNTRL_3_H_TGL);
-> > > -	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
-> > > +	if (adj_mode->flags & DRM_MODE_FLAG_NVSYNC)
-> > >  		reg_set(priv, REG_VIP_CNTRL_3, VIP_CNTRL_3_V_TGL);
-> > >    
-> > 
-> > Using the adj_mode->flags breaks a workaround I had done on BeagleBone Black
-> > (tilcdc + tda998x) to resolve an issue with out of spec syncs from the
-> > tlcdc.  I invert the HSYNC in adj_mode->flags but don't want the tda998x to
-> > really know that I am doing that so I use adj_mode in the tilcdc driver, and
-> > mode here in the tda998x driver.  The theory being adj_mode contains whatever
-> > workarounds I need to do for the driving device and mode has the pristine
-> > values that I want to send to the monitor.  I would need to look if there is a
-> > different way to solve this as I am guessing you are actually using adj_mode in
-> > the manner it was intended.
-> 
-> No. In fact, I just wanted the function to use only one mode.
-> 
-> Looking at the other drivers, it seems that they don't touch the
-> adjusted_mode, so, for the Cubox, mode and adjusted_mode have same
-> values.
-> 
-> I will do an other patch so that you will not have to touch the tilcdc
-> driver.
-> 
-Thanks, that would certainly be the easiest path to avoid the regression given
-the other drivers that use tda998x don't currently use adj_mode.  However I
-don't disagree with your reasoning, it would make sense to only use values
-from one of the strctures and not a mix and match.  Anybody looking at only
-the tda998x driver would be confused :) I'll work on finding a different
-solution for this.
+Commit-ID:  a57beec5d427086cdc8d75fd51164577193fa7f4
+Gitweb:     http://git.kernel.org/tip/a57beec5d427086cdc8d75fd51164577193fa7f4
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 27 Jan 2014 11:54:13 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 28 Jan 2014 13:08:41 +0100
 
-> -- 
-> Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-> Jef		|		http://moinejf.free.fr/
+sched: Make sched_class::get_rr_interval() optional
+
+Not all classes implement (or can implement) a useful get_rr_interval()
+function, default to a 0 time-slice for them.
+
+This fixes a crash reported by Tommi Rantala.
+
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20140127105413.GC11314@laptop.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 36c951b..81343d6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4324,7 +4324,9 @@ SYSCALL_DEFINE2(sched_rr_get_interval, pid_t, pid,
+ 		goto out_unlock;
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	time_slice = p->sched_class->get_rr_interval(rq, p);
++	time_slice = 0;
++	if (p->sched_class->get_rr_interval)
++		time_slice = p->sched_class->get_rr_interval(rq, p);
+ 	task_rq_unlock(rq, p, &flags);
+ 
+ 	rcu_read_unlock();
