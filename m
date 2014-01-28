@@ -1,167 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaA1Re2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 12:34:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60579 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaA1Rdu (ORCPT
+	id S932128AbaA1Rer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 12:34:47 -0500
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:52395 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755367AbaA1Reo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 12:33:50 -0500
-Message-Id: <20140128171948.082415725@infradead.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 28 Jan 2014 18:16:38 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, daniel.lezcano@linaro.org, pjt@google.com,
-        bsegall@google.com, Steven Rostedt <rostedt@goodmis.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 4/9] sched/fair: Track cgroup depth
-References: <20140128171634.974847076@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-sched-optimize_cgroup_pick_next_task_fair_1.patch
+	Tue, 28 Jan 2014 12:34:44 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2553:2559:2562:2828:2894:2911:2917:3138:3139:3140:3141:3142:3355:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:4425:4605:5007:6119:6691:7652:7903:7904:7974:10004:10226:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12740:21067,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bee47_45fc28e9d4203
+X-Filterd-Recvd-Size: 4697
+Message-ID: <1390930480.11756.9.camel@joe-AO722>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Date: Tue, 28 Jan 2014 09:34:40 -0800
+In-Reply-To: <CAMuHMdXciS54ZZA2TV3+JZP7szHyGOhbrdQ_1rEYUwx2YSO+Qg@mail.gmail.com>
+References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+	 <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
+	 <20140126201928.GA8224@gmail.com> <20140126202509.GA10275@gmail.com>
+	 <CAMuHMdUzGhpa0Bxa2X69-+5jFE3Y3+Kqyof5Te3Y+aUeRPzCWg@mail.gmail.com>
+	 <20140128120432.GA26347@gmail.com>
+	 <CAMuHMdXciS54ZZA2TV3+JZP7szHyGOhbrdQ_1rEYUwx2YSO+Qg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Track depth in cgroup tree, this is useful for things like
-find_matching_se() where you need to get to a common parent of two
-sched entities.
+On Tue, 2014-01-28 at 13:17 +0100, Geert Uytterhoeven wrote:
+> On Tue, Jan 28, 2014 at 1:04 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> > * Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> >> On Sun, Jan 26, 2014 at 9:25 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >> > * Ingo Molnar <mingo@kernel.org> wrote:
+> >> >> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> >> >> > On Sun, Jan 26, 2014 at 4:27 AM, David Howells <dhowells@redhat.com> wrote:
+> >> >> > > -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
+> >> >> > > +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+> >> >> > > -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
+> >> >> > > +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
+> >> >> >
+> >> >> > So the S_IFREG isn't necessary.
+> >> >> >
+> >> >> > And quite frankly, I personally think S_IRUGO | S_IWUSR is _less_
+> >> >> > readable than 0644. It's damn hard to parse those random letter
+> >> >> > combinations, and at least I have to really think about it, in a way
+> >> >> > that the octal representation does *not* make me go "I have to think
+> >> >> > about that".
+> >> >> >
+> >> >> > So my personal preference would be to just see that simple 0644 in
+> >> >> > proc_create. Hmm?
 
-Keeping the depth avoids having to calculate it on the spot, which
-saves a number of possible cache-misses.
+I don't have an issue with octal uses here either.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+I think just as clear if not clearer than defines like
+
+#define {whatever_}rwxrwxrwx	0777
+#define {whatever_}rw_r__r__	0644
+#define {whatever_}r________	0400
+
+etc...
+
+> >> Only a limited number of combinations is in active use, right?
+> > Correct - and in fact that kind of limitation is also a security
+> > feature: using patterns _outside_ of the typical, already defined
+> > group of permission patterns would in itself be a 'is that really
+> > justified?' red flag during review.
+> 
+> Then Joe (CCed :-) can write a checkpatch rule to flag all new users of the
+> I_S[RWX}* flags..,
+
+Flagging all "odd" uses of octal too?
+
+Perhaps a checkpatch rule might look something like:
 ---
- include/linux/sched.h |    1 +
- kernel/sched/fair.c   |   47 +++++++++++++++++++++--------------------------
- 2 files changed, 22 insertions(+), 26 deletions(-)
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1064,6 +1064,7 @@ struct sched_entity {
- #endif
+ scripts/checkpatch.pl | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 0ea2a1e..bf278e0 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -328,6 +328,12 @@ our $typeTypedefs = qr{(?x:
+ 	atomic_t
+ )};
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
-+	int			depth;
- 	struct sched_entity	*parent;
- 	/* rq on which this entity is (to be) queued: */
- 	struct cfs_rq		*cfs_rq;
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -322,13 +322,13 @@ static inline void list_del_leaf_cfs_rq(
- 	list_for_each_entry_rcu(cfs_rq, &rq->leaf_cfs_rq_list, leaf_cfs_rq_list)
- 
- /* Do the two (enqueued) entities belong to the same group ? */
--static inline int
-+static inline struct cfs_rq *
- is_same_group(struct sched_entity *se, struct sched_entity *pse)
- {
- 	if (se->cfs_rq == pse->cfs_rq)
--		return 1;
-+		return se->cfs_rq;
- 
--	return 0;
-+	return NULL;
- }
- 
- static inline struct sched_entity *parent_entity(struct sched_entity *se)
-@@ -336,17 +336,6 @@ static inline struct sched_entity *paren
- 	return se->parent;
- }
- 
--/* return depth at which a sched entity is present in the hierarchy */
--static inline int depth_se(struct sched_entity *se)
--{
--	int depth = 0;
--
--	for_each_sched_entity(se)
--		depth++;
--
--	return depth;
--}
--
- static void
- find_matching_se(struct sched_entity **se, struct sched_entity **pse)
- {
-@@ -360,8 +349,8 @@ find_matching_se(struct sched_entity **s
- 	 */
- 
- 	/* First walk up until both entities are at same depth */
--	se_depth = depth_se(*se);
--	pse_depth = depth_se(*pse);
-+	se_depth = (*se)->depth;
-+	pse_depth = (*pse)->depth;
- 
- 	while (se_depth > pse_depth) {
- 		se_depth--;
-@@ -426,10 +415,10 @@ static inline void list_del_leaf_cfs_rq(
- #define for_each_leaf_cfs_rq(rq, cfs_rq) \
- 		for (cfs_rq = &rq->cfs; cfs_rq; cfs_rq = NULL)
- 
--static inline int
-+static inline struct cfs_rq *
- is_same_group(struct sched_entity *se, struct sched_entity *pse)
- {
--	return 1;
-+	return cfs_rq_of(se); /* always the same rq */
- }
- 
- static inline struct sched_entity *parent_entity(struct sched_entity *se)
-@@ -7091,7 +7080,9 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
- #ifdef CONFIG_FAIR_GROUP_SCHED
- static void task_move_group_fair(struct task_struct *p, int on_rq)
- {
-+	struct sched_entity *se = &p->se;
- 	struct cfs_rq *cfs_rq;
++our $permissions = qr{(?x:
++	S_I[RWX](?:USR|GRP|OTH)|
++	S_IRWX[UGO]|
++	S_I(?:RWX|ALL|R|W|X)UGO
++)};
 +
- 	/*
- 	 * If the task was not on the rq at the time of this cgroup movement
- 	 * it must have been asleep, sleeping tasks keep their ->vruntime
-@@ -7117,23 +7108,24 @@ static void task_move_group_fair(struct
- 	 * To prevent boost or penalty in the new cfs_rq caused by delta
- 	 * min_vruntime between the two cfs_rqs, we skip vruntime adjustment.
- 	 */
--	if (!on_rq && (!p->se.sum_exec_runtime || p->state == TASK_WAKING))
-+	if (!on_rq && (!se->sum_exec_runtime || p->state == TASK_WAKING))
- 		on_rq = 1;
- 
- 	if (!on_rq)
--		p->se.vruntime -= cfs_rq_of(&p->se)->min_vruntime;
-+		se->vruntime -= cfs_rq_of(se)->min_vruntime;
- 	set_task_rq(p, task_cpu(p));
-+	se->depth = se->parent ? se->parent->depth + 1 : 0;
- 	if (!on_rq) {
--		cfs_rq = cfs_rq_of(&p->se);
--		p->se.vruntime += cfs_rq->min_vruntime;
-+		cfs_rq = cfs_rq_of(se);
-+		se->vruntime += cfs_rq->min_vruntime;
- #ifdef CONFIG_SMP
- 		/*
- 		 * migrate_task_rq_fair() will have removed our previous
- 		 * contribution, but we must synchronize for ongoing future
- 		 * decay.
- 		 */
--		p->se.avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
--		cfs_rq->blocked_load_avg += p->se.avg.load_avg_contrib;
-+		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
-+		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
- #endif
+ our $logFunctions = qr{(?x:
+ 	printk(?:_ratelimited|_once|)|
+ 	(?:[a-z0-9]+_){1,2}(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
+@@ -4457,6 +4463,15 @@ sub process {
+ 			WARN("EXPORTED_WORLD_WRITABLE",
+ 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+ 		}
++
++# check for uses of permissions S_I<FOO> defines
++		if ($line =~ /\b($permissions)\b/) {
++			my $perm = $1;
++			my $msg_type = \&WARN;
++			$msg_type = \&CHK if ($file);
++			&{$msg_type}("PERMISSIONS",
++				     "Use of $perm is not preferred.\n" . $herecurr);
++		}
  	}
- }
-@@ -7229,10 +7221,13 @@ void init_tg_cfs_entry(struct task_group
- 	if (!se)
- 		return;
  
--	if (!parent)
-+	if (!parent) {
- 		se->cfs_rq = &rq->cfs;
--	else
-+		se->depth = 0;
-+	} else {
- 		se->cfs_rq = parent->my_q;
-+		se->depth = parent->depth + 1;
-+	}
- 
- 	se->my_q = cfs_rq;
- 	/* guarantee group entities always have weight */
+ 	# If we have no input at all, then there is nothing to report on
 
 
