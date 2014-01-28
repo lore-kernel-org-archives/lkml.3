@@ -1,121 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888AbaA1Iqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:46:45 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:58996 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786AbaA1Iql convert rfc822-to-8bit (ORCPT
+	id S1754858AbaA1Iqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:46:43 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:61639 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbaA1Iqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:46:41 -0500
+	Tue, 28 Jan 2014 03:46:40 -0500
+Message-ID: <52E76E6F.4000101@linaro.org>
+Date: Tue, 28 Jan 2014 09:46:39 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <10462793.IYoAK2XtXv@phil>
-References: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
-	<20140128063308.GA5965@core.coreip.homeip.net>
-	<CAKDJKT5COnY=i4Dd-P8_eMoWBU+ShqVKVhoVGBk1qWxffe+wMg@mail.gmail.com>
-	<10462793.IYoAK2XtXv@phil>
-Date: Tue, 28 Jan 2014 14:16:39 +0530
-Message-ID: <CAKDJKT4jPLmtrm6Ngp+nT5vf0H4zXwwAM=oURDF-DSAJodVN6A@mail.gmail.com>
-Subject: Re: [PATCH V2] regulator: fixed: update to devm_* API
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-omap@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: paulmck@linux.vnet.ibm.com, linux-pm@vger.kernel.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, tuukka.tikkanen@linaro.org
+Subject: Re: [PATCH V2] cpuidle/governors: Fix logic in selection of idle
+ states
+References: <20140117043351.21531.14192.stgit@preeti.in.ibm.com> <52DF815D.50104@linaro.org> <52E0F9ED.2010506@linux.vnet.ibm.com> <52E22D8A.5000305@linaro.org> <52E23EA0.7010803@linux.vnet.ibm.com>
+In-Reply-To: <52E23EA0.7010803@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko
+On 01/24/2014 11:21 AM, Preeti U Murthy wrote:
+> On 01/24/2014 02:38 PM, Daniel Lezcano wrote:
+>> On 01/23/2014 12:15 PM, Preeti U Murthy wrote:
+>>> Hi Daniel,
+>>>
+>>> Thank you for the review.
 
-Thank you for your reply.
+[ ... ]
 
-On Tue, Jan 28, 2014 at 1:08 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> On Tuesday, 28. January 2014 12:46:01 Manish Badarkhe wrote:
->> Hi Dmitry,
+>>> ---
+>>>    drivers/cpuidle/cpuidle.c          |   15 +++++
+>>>    drivers/cpuidle/governors/ladder.c |  101
+>>> ++++++++++++++++++++++++++----------
+>>>    drivers/cpuidle/governors/menu.c   |    7 +-
+>>>    3 files changed, 90 insertions(+), 33 deletions(-)
+>>>
+>>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>>> index a55e68f..19d17e8 100644
+>>> --- a/drivers/cpuidle/cpuidle.c
+>>> +++ b/drivers/cpuidle/cpuidle.c
+>>> @@ -131,8 +131,9 @@ int cpuidle_idle_call(void)
+>>>
+>>>        /* ask the governor for the next state */
+>>>        next_state = cpuidle_curr_governor->select(drv, dev);
+>>> +
+>>> +    dev->last_residency = 0;
+>>>        if (need_resched()) {
 >>
->> Thank you for your review.
->>
->> On Tue, Jan 28, 2014 at 12:03 PM, Dmitry Torokhov
->>
->> <dmitry.torokhov@gmail.com> wrote:
->> > Hi Manish,
->> >
->> > On Tue, Jan 28, 2014 at 08:42:00AM +0530, Manish Badarkhe wrote:
->> >> Update the code to use devm_* API so that driver core will manage
->> >> resources.
->> >>
->> >> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
->> >> ---
->> >> Changes since V1:
->> >> 1. Updated driver to use "devm_kzalloc" to "kstrdup".
->> >> 2. Updated commit message.
->> >>
->> >> Not tested on any board.
->> >>
->> >> :100644 100644 5ea64b9... e9763a4... M        drivers/regulator/fixed.c
->> >> :
->> >>  drivers/regulator/fixed.c |   42
->> >>  ++++++++++++------------------------------
->> >>  1 file changed, 12 insertions(+), 30 deletions(-)
->> >>
->> >> diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
->> >> index 5ea64b9..e9763a4 100644
->> >> --- a/drivers/regulator/fixed.c
->> >> +++ b/drivers/regulator/fixed.c
->> >> @@ -132,15 +132,15 @@ static int reg_fixed_voltage_probe(struct
->> >> platform_device *pdev)>>
->> >>                              GFP_KERNEL);
->> >>
->> >>       if (drvdata == NULL) {
->> >>
->> >>               dev_err(&pdev->dev, "Failed to allocate device data\n");
->> >>
->> >> -             ret = -ENOMEM;
->> >> -             goto err;
->> >> +             return -ENOMEM;
->> >>
->> >>       }
->> >>
->> >> -     drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
->> >> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
->> >> +                                       strlen(config->supply_name) + 1,
->> >> +                                       GFP_KERNEL);
->> >>
->> >>       if (drvdata->desc.name == NULL) {
->> >>
->> >>               dev_err(&pdev->dev, "Failed to allocate supply name\n");
->> >>
->> >> -             ret = -ENOMEM;
->> >> -             goto err;
->> >> +             return -ENOMEM;
->> >>
->> >>       }
->> >
->> > Umm, I am fairly certain that devm_kzalloc() can't be used as a
->> > substitute for kstrdup, at least not without accompanying memcpy.
->>
->> Yes, I have provided allocation but it should be followed with assignment.
->> Can I modify like this,
->>
->> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
->> +                                       strlen(config->supply_name) + 1,
->> +                                       GFP_KERNEL);
->> +     if (drvdata->desc.name)
->> +     sprintf(drvdata->desc.name, "%s", config->supply_name);
+>> What about if (need_resched() || next_state < 0) ?
 >
-> hmm, so you replaced a general helper function by open coding the string-
-> duplication. Doesn't this defeat the target of simplifying the code?
+> Hmm.. I feel we need to distinguish between the need_resched() scenario
+> and the scenario when no idle state was suitable through the trace
+> points at-least.
 
-Intention here, is to use devm_ API and to adopt this I have to do these
-modifications for "kstrdup" functions. I have seen in regulator folder almost
-all drivers adopted to "devm_" API. Hence same thing I am following to
-update this driver. Please let me know whether to go ahead with this patch
-or retain driver as it is.
+Well, I don't think so as soon as we don't care about the return value 
+of cpuidle_idle_call in both cases.
 
-Regards
-Manish Badarkhe
+The traces are following a specific format. That is if the state is -1 
+(PWR_EVENT_EXIT), it means exiting the current idle state.
+
+The idlestat tool [1] is using this traces to open - close transitions.
+
+IMO, if the cpu is not entering idle, it should just exit without any 
+idle traces.
+
+This portion of code is a bit confusing because it is introduced by the 
+menu governor updates post-poned when entering the next idle state (not 
+exiting the current idle state with good reasons).
+
+   -- Daniel
+
+[1] http://git.linaro.org/power/idlestat.git
+
+> This could help while debugging when we could find situations where
+> there are no tasks to run, yet the cpu is not entering any idle state.
+> The traces could help clearly point that no idle state was thought
+> suitable by the governor. Of course there are many other means to find
+> this out, but this seems rather straightforward. Hence having the
+> condition next_state < 0 between trace_cpu_idle*() would be apt IMHO.
+>
+> Regards
+> Preeti U Murthy
+>
+>>
+>>> -        dev->last_residency = 0;
+>>>            /* give the governor an opportunity to reflect on the
+>>> outcome */
+>>>            if (cpuidle_curr_governor->reflect)
+>>>                cpuidle_curr_governor->reflect(dev, next_state);
+>>> @@ -141,6 +142,16 @@ int cpuidle_idle_call(void)
+>>>        }
+>>>
+>>>        trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>>> +    /*
+>>> +     * NOTE: The return code should still be success, since the
+>>> verdict of
+>>> +     * this call is "do not enter any idle state". It is not a failed
+>>> call
+>>> +     * due to errors.
+>>> +     */
+>>> +    if (next_state < 0) {
+>>> +        entered_state = next_state;
+>>> +        local_irq_enable();
+>>> +        goto out;
+>>> +    }
+>>>
+>>>        broadcast = !!(drv->states[next_state].flags &
+>>> CPUIDLE_FLAG_TIMER_STOP);
+>>>
+>>> @@ -156,7 +167,7 @@ int cpuidle_idle_call(void)
+>>>        if (broadcast)
+>>>            clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+>>>
+>>> -    trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>>> +out:    trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>>>
+>>>        /* give the governor an opportunity to reflect on the outcome */
+>>>        if (cpuidle_curr_governor->reflect)
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
