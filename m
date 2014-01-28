@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014AbaA1XYh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:24:37 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:64398 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860AbaA1XWD (ORCPT
+	id S1756046AbaA1XZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:25:20 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:36157 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045AbaA1XV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:22:03 -0500
+	Tue, 28 Jan 2014 18:21:58 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/11] kernfs: remove KERNFS_ACTIVE_REF and add kernfs_lockdep()
-Date: Tue, 28 Jan 2014 18:21:45 -0500
-Message-Id: <1390951311-15325-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 01/11] kernfs: replace kernfs_node->u.completion with kernfs_root->deactivate_waitq
+Date: Tue, 28 Jan 2014 18:21:41 -0500
+Message-Id: <1390951311-15325-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390951311-15325-1-git-send-email-tj@kernel.org>
 References: <1390951311-15325-1-git-send-email-tj@kernel.org>
@@ -23,111 +23,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There currently are two mechanisms gating active ref lockdep
-annotations - KERNFS_LOCKDEP flag and KERNFS_ACTIVE_REF type mask.
-The former disables lockdep annotations in kernfs_get/put_active()
-while the latter disables all of kernfs_deactivate().
+kernfs_node->u.completion is used to notify deactivation completion
+from kernfs_put_active() to kernfs_deactivate().  We now allow
+multiple racing removals of the same node and the current removal
+scheme is no longer correct - kernfs_remove() invocation may return
+before the node is properly deactivated if it races against another
+removal.  The removal path will be restructured to address the issue.
 
-While KERNFS_ACTIVE_REF also behaves as an optimization to skip the
-deactivation step for non-file nodes, the benefit is marginal and it
-needlessly diverges code paths.  Let's drop KERNFS_ACTIVE_REF and use
-KERNFS_LOCKDEP in kernfs_deactivate() too.
-
-While at it, add a test helper kernfs_lockdep() to test KERNFS_LOCKDEP
-flag so that it's more convenient and the related code can be compiled
-out when not enabled.
+To help such restructure which requires supporting multiple waiters,
+this patch replaces kernfs_node->u.completion with
+kernfs_root->deactivate_waitq.  This makes deactivation event
+notifications share a per-root waitqueue_head; however, the wait path
+is quite cold and this will also allow shaving one pointer off
+kernfs_node.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c        | 30 ++++++++++++++++++++----------
- include/linux/kernfs.h |  1 -
- 2 files changed, 20 insertions(+), 11 deletions(-)
+ fs/kernfs/dir.c        | 27 +++++++++++----------------
+ include/linux/kernfs.h |  4 ++--
+ 2 files changed, 13 insertions(+), 18 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 8459f61..5cf137b 100644
+index 5104cf5..9b00ebb 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -22,6 +22,15 @@ DEFINE_MUTEX(kernfs_mutex);
+@@ -8,6 +8,7 @@
+  * This file is released under the GPLv2.
+  */
  
- #define rb_to_kn(X) rb_entry((X), struct kernfs_node, rb)
++#include <linux/sched.h>
+ #include <linux/fs.h>
+ #include <linux/namei.h>
+ #include <linux/idr.h>
+@@ -151,6 +152,7 @@ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn)
+  */
+ void kernfs_put_active(struct kernfs_node *kn)
+ {
++	struct kernfs_root *root = kernfs_root(kn);
+ 	int v;
  
-+static bool kernfs_lockdep(struct kernfs_node *kn)
-+{
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	return kn->flags & KERNFS_LOCKDEP;
-+#else
-+	return false;
-+#endif
-+}
-+
- /**
-  *	kernfs_name_hash
-  *	@name: Null terminated string to hash
-@@ -144,7 +153,7 @@ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn)
- 	if (!atomic_inc_unless_negative(&kn->active))
- 		return NULL;
- 
--	if (kn->flags & KERNFS_LOCKDEP)
-+	if (kernfs_lockdep(kn))
- 		rwsem_acquire_read(&kn->dep_map, 0, 1, _RET_IP_);
- 	return kn;
- }
-@@ -164,7 +173,7 @@ void kernfs_put_active(struct kernfs_node *kn)
  	if (unlikely(!kn))
+@@ -162,11 +164,7 @@ void kernfs_put_active(struct kernfs_node *kn)
+ 	if (likely(v != KN_DEACTIVATED_BIAS))
  		return;
  
--	if (kn->flags & KERNFS_LOCKDEP)
-+	if (kernfs_lockdep(kn))
- 		rwsem_release(&kn->dep_map, 1, _RET_IP_);
- 	v = atomic_dec_return(&kn->active);
- 	if (likely(v != KN_DEACTIVATED_BIAS))
-@@ -190,25 +199,26 @@ static void kernfs_deactivate(struct kernfs_node *kn)
- 	lockdep_assert_held(&kernfs_mutex);
+-	/*
+-	 * atomic_dec_return() is a mb(), we'll always see the updated
+-	 * kn->u.completion.
+-	 */
+-	complete(kn->u.completion);
++	wake_up_all(&root->deactivate_waitq);
+ }
+ 
+ /**
+@@ -177,26 +175,22 @@ void kernfs_put_active(struct kernfs_node *kn)
+  */
+ static void kernfs_deactivate(struct kernfs_node *kn)
+ {
+-	DECLARE_COMPLETION_ONSTACK(wait);
+-	int v;
++	struct kernfs_root *root = kernfs_root(kn);
+ 
  	BUG_ON(!(kn->flags & KERNFS_REMOVED));
  
--	if (!(kernfs_type(kn) & KERNFS_ACTIVE_REF))
--		return;
+ 	if (!(kernfs_type(kn) & KERNFS_ACTIVE_REF))
+ 		return;
+ 
+-	kn->u.completion = (void *)&wait;
 -
- 	/* only the first invocation on @kn should deactivate it */
- 	if (atomic_read(&kn->active) >= 0)
- 		atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
+ 	rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
+-	/* atomic_add_return() is a mb(), put_active() will always see
+-	 * the updated kn->u.completion.
+-	 */
+-	v = atomic_add_return(KN_DEACTIVATED_BIAS, &kn->active);
  
- 	mutex_unlock(&kernfs_mutex);
+-	if (v != KN_DEACTIVATED_BIAS) {
++	atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
++
++	if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
+ 		lock_contended(&kn->dep_map, _RET_IP_);
+-		wait_for_completion(&wait);
+-	}
++
++	wait_event(root->deactivate_waitq,
++		   atomic_read(&kn->active) == KN_DEACTIVATED_BIAS);
  
--	rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
--	if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
--		lock_contended(&kn->dep_map, _RET_IP_);
-+	if (kernfs_lockdep(kn)) {
-+		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
-+		if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
-+			lock_contended(&kn->dep_map, _RET_IP_);
-+	}
+ 	lock_acquired(&kn->dep_map, _RET_IP_);
+ 	rwsem_release(&kn->dep_map, 1, _RET_IP_);
+@@ -626,6 +620,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
  
- 	/* but everyone should wait for draining */
- 	wait_event(root->deactivate_waitq,
- 		   atomic_read(&kn->active) == KN_DEACTIVATED_BIAS);
+ 	root->dir_ops = kdops;
+ 	root->kn = kn;
++	init_waitqueue_head(&root->deactivate_waitq);
  
--	lock_acquired(&kn->dep_map, _RET_IP_);
--	rwsem_release(&kn->dep_map, 1, _RET_IP_);
-+	if (kernfs_lockdep(kn)) {
-+		lock_acquired(&kn->dep_map, _RET_IP_);
-+		rwsem_release(&kn->dep_map, 1, _RET_IP_);
-+	}
- 
- 	kernfs_unmap_bin_file(kn);
- 
+ 	return root;
+ }
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 38646f6..dc4cd6c 100644
+index 5be9f02..295a3bf 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -35,7 +35,6 @@ enum kernfs_node_type {
+@@ -15,7 +15,7 @@
+ #include <linux/lockdep.h>
+ #include <linux/rbtree.h>
+ #include <linux/atomic.h>
+-#include <linux/completion.h>
++#include <linux/wait.h>
+ 
+ struct file;
+ struct dentry;
+@@ -92,7 +92,6 @@ struct kernfs_node {
+ 	struct rb_node		rb;
+ 
+ 	union {
+-		struct completion	*completion;
+ 		struct kernfs_node	*removed_list;
+ 	} u;
+ 
+@@ -133,6 +132,7 @@ struct kernfs_root {
+ 	/* private fields, do not use outside kernfs proper */
+ 	struct ida		ino_ida;
+ 	struct kernfs_dir_ops	*dir_ops;
++	wait_queue_head_t	deactivate_waitq;
  };
  
- #define KERNFS_TYPE_MASK	0x000f
--#define KERNFS_ACTIVE_REF	KERNFS_FILE
- #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
- 
- enum kernfs_node_flag {
+ struct kernfs_open_file {
 -- 
 1.8.5.3
 
