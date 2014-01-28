@@ -1,153 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaA1MfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 07:35:00 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60600 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaA1Me6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 07:34:58 -0500
-Date: Tue, 28 Jan 2014 12:34:44 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
-        linux-kernel@vger.kernel.org, LM Sensors <lm-sensors@lm-sensors.org>
-Message-ID: <20140128123444.GL11841@sirena.org.uk>
-References: <52E561D0.4040308@roeck-us.net>
- <20140126211357.6fa68909@endymion.delvare>
- <52E573B6.9040903@roeck-us.net>
- <20140126214936.7736f530@endymion.delvare>
- <52E58330.90602@roeck-us.net>
- <52E58656.7000903@roeck-us.net>
- <20140126235103.GP11727@sirena.org.uk>
- <52E6951C.60609@wwwdotorg.org>
- <20140127185031.GA28910@roeck-us.net>
- <20140127230447.7e8be3a4@endymion.delvare>
+	id S1754776AbaA1Mg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 07:36:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754611AbaA1Mgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 07:36:54 -0500
+Message-ID: <52E7A45C.3070302@redhat.com>
+Date: Tue, 28 Jan 2014 20:36:44 +0800
+From: Fu Wei <wefu@redhat.com>
+Reply-To: Fu Wei <wefu@redhat.com>
+Organization: Red Hat Software (Beijing) Co.,Ltd.Shanghai Branch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bgx/+k0aatK7HQM2"
-Content-Disposition: inline
-In-Reply-To: <20140127230447.7e8be3a4@endymion.delvare>
-X-Cookie: O.K., fine.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Harry Wei <harryxiyou@gmail.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Doc ML <linux-doc@vger.kernel.org>
+Subject: [PATCH]Documentation:Chinese translation of Documentation/arm64/tagged-pointers.txt
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a Chinese translated version of Documentation/arm64/tagged-pointers.txt
 
---bgx/+k0aatK7HQM2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is based on the modifications of Documentation/arm64/tagged-pointers.txt in submission:
+"d50240a5", "374ed9d1".
 
-On Mon, Jan 27, 2014 at 11:04:47PM +0100, Jean Delvare wrote:
+Signed-off-by: Fu Wei <wefu@redhat.com>
 
-> I have no idea, really. I have seen multiple patches flying around,
-> each seems to have its own merits, but I simply don't know which is
-> going in the direction. I don't know a thing about regulators, OF, DT
-> etc. so I am really not the right person to make a decision about this.
-
-So, regulators are in this context about providing power to the device.
-Devices tend to work a lot better if they have power, we probably
-shouldn't ignore errors in that because that's generally considered bad
-form to ignore errors and the consequences of ignoring such errors are
-typically bad if they are real.  Managing the power explicitly in
-drivers both allows greater power saving in systems that are power
-sensitive and allows us to ensure that we power on supplies for devices
-before we try to use the devices in systems where we have to do that
-=66rom Linux.  A big part of deploying this in a system is telling the
-regulator API which devices are supplied by which regulators.
-
-Having said all that many platforms just don't care about power on this
-level (we're talking leakage currents here) and have no runtime power
-managment available to the operating system.  These platforms probably
-shouldn't enable the regulator API at all since it does nothing for them
-so if the regulator API is disabled it provides stubs which look like
-always on regulators.
-
-If the platform tells the regulator API that it knows everything about
-how devices on the platform are powered then the subsystem can safely
-assume that any normal power supply that it doesn't explicitly know
-about is there outside of Linux's control since otherwise the hardware
-would be non-functional.  One way that can happen is if the platform is
-using DT, that does cover a lot of the platforms that use regulators but
-that's not the only way - specifying full constraints does this too.
-There was a bug here in the regulator core, I've committed a fix for it
-now which will go to Linus soon.
-
-The patch I posted "ACPI: Flag use of ACPI and ACPI idioms for power
-supplies to regulator API" (which is applied now) makes systems using
-ACPI do the same thing, covering essentially all desktop and server
-systems which I believe is going to cover essentially all non-DT users
-who might run into this outside of an embedded context.  We could also
-do the same for some architectures, and many are already covered by
-virtue of using DT.
-
-The problem cases that remain are with platforms that don't tell the
-regulator core that they've handed over the full list of supply mappings
-to the core.  Unfortunately the regulator API predates deferred probe so
-with platform data it uses a mechanism based on handing over supply
-mappings when a regulator is registered which totally fails to work with
-deferred probe unless you defer any missing mapping since a regulator
-may be registered later providing the supply.  It used to work OK prior
-to deferred probe but that relied on init order hacks to do so which
-aren't sustainable long term.  The fix for this is to add a new
-registration method that the board can call during early init separately
-to registering devices, that hasn't been done yet.  I will try to get
-it done this release cycle but I wouldn't be comfortable rolling it out
-as a bug fix.
-
-> All I can say is: either someone comes up with a patch set which
-> properly fixes the regression for all lm90 drivers users, or I will have
-> to revert commit 3e0f964f.
-
-If you're going to do something like that it would seem safer to just
-ignore error handling in the driver instead.  That would at least have a
-chance of powering the device on when Linux needs to do so, obviously it
-won't relaibly do the right thing in all cases but affected systems
-would have had issues with the unmodified driver anyway as the power
-wouldn't be enabled.
-
-Personally I think that providing ACPI is updated the problems are
-mostly mitigated and are on the same order as something that might
-trigger a timeout in the userspace firmware loader; it's not good but
-it's fairly easily discoverable and resolvable for the people who run
-into it as they are likely to be developers rather than end users and
-the number of affected users is likely to be small (you'd have to have
-an affected device in a system that hasn't told the regulator core it
-has full mappings and also have enabled the regulator API).  It
-therefore seems reasonable to leave the driver as it is while waiting
-for an improved regulator registration method to be merged which I will
-try to do as soon as possible.
-
-Does that make sense?
-
---bgx/+k0aatK7HQM2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS56PhAAoJELSic+t+oim9g2EP/RFl6FvV8Q00zh4IoOIGrYAh
-lrYkk8Nn266VnXPyvCS2EQ087fzmJa88kiVuKwxFx6hgWGVdeleeRtAx3k9Sx8gJ
-e8wCzN+rYOPK50yNCalwQEQ+AzAX9WEV60vMWD2RewQ1nXel4qxLJu1jhdl4gO9E
-U+Ifum+75EcW9MMhgW7quJZgz8RQW7rksHrp5wC1XBSYxUna7wjlIt5UNmQyjsjD
-v66rEg8RoQ2XwxwvJTcj9pVnVpWZ2Zj+gSFAJRGbeOClNlBgpIvkcYFfKFUalyeX
-C+hmhvI/3g323lId5AmdMkqAOZPJOYTEudDYSmTR5BGm1j/ufp1xgZwx8Ycgf1mx
-1dMEfO/Kc8nA1gSnfs9ut1gihA61AlYNvUJvvrkSRwY0qBcW3c+ANUpaFT3Ab3jd
-kiejnmLlOQvS2IjA6LLdRlWX1+gyYJUV/OKRUoeCrgqc7lpSppIpNZn8J1bsIlpO
-VfStDVk9TXFhfTvpwm6d6rq1acBIB0FR+MJz+yz1lI/AmMlfBL0nTwyYWBwzAVef
-kwKE6Fkv727ohZVDyaTEoH90/alAvHEDfGmoTqscTA4LL1Hc5XLNohmZplSSQ15k
-OUiBnhECcMhWEf74vjBd4wIG8eZXKBr+OIstZEukJpq+7lJKGYSrjU0hsOMsAP7s
-4tpro62aWFZp5+VvVRXS
-=pJQn
------END PGP SIGNATURE-----
-
---bgx/+k0aatK7HQM2--
+---
+diff --git a/Documentation/zh_CN/arm64/tagged-pointers.txt b/Documentation/zh_CN/arm64/tagged-pointers.txt
+new file mode 100644
+index 0000000..2664d1b
+--- /dev/null
++++ b/Documentation/zh_CN/arm64/tagged-pointers.txt
+@@ -0,0 +1,52 @@
++Chinese translated version of Documentation/arm64/tagged-pointers.txt
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Maintainer: Will Deacon <will.deacon@arm.com>
++Chinese maintainer: Fu Wei <wefu@redhat.com>
++---------------------------------------------------------------------
++Documentation/arm64/tagged-pointers.txt 的中文翻译
++
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
++
++英文版维护者： Will Deacon <will.deacon@arm.com>
++中文版维护者： 傅炜  Fu Wei <wefu@redhat.com>
++中文版翻译者： 傅炜  Fu Wei <wefu@redhat.com>
++中文版校译者： 傅炜  Fu Wei <wefu@redhat.com>
++
++以下为正文
++---------------------------------------------------------------------
++		Linux 在 AArch64 中带标记的虚拟地址
++		=================================
++
++作者: Will Deacon <will.deacon@arm.com>
++日期: 2013 年 06 月 12 日
++
++本文档简述了在 AArch64 地址转换系统中提供的带标记的虚拟地址及其在
++AArch64 Linux 中的潜在用途。
++
++内核提供的地址转换表配置使通过 TTBR0 完成的虚拟地址转换（即用户空间
++映射），其虚拟地址的最高 8 位（63:56）会被转换硬件所忽略。这种机制
++让这些位可供应用程序自由使用，其注意事项如下：
++
++	(1) 内核要求所有传递到 EL1 的用户空间地址带有 0x00 标记。
++	    这意味着任何携带用户空间虚拟地址的系统调用（syscall）
++	    参数 *必须* 在陷入内核前使它们的最高字节被清零。
++
++	(2) 非零标记在传递信号时不被保存。这意味着在应用程序中利用了
++	    标记的信号处理函数无法依赖 siginfo_t 的用户空间虚拟
++	    地址所携带的包含其内部域信息的标记。此规则的一个例外是
++	    当信号是在调试观察点的异常处理程序中产生的，此时标记的
++	    信息将被保存。
++
++	(3) 当使用带标记的指针时需特别留心，因为仅对两个虚拟地址
++	    的高字节，C 编译器很可能无法判断它们是不同的。
++
++此构架会阻止对带标记的 PC 指针的利用，因此在异常返回时，其高字节
++将被设置成一个为 “55” 的扩展符。
