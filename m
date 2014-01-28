@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231AbaA1XYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:24:06 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:61898 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755872AbaA1XWF (ORCPT
+	id S1756029AbaA1XYi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:24:38 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59170 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755853AbaA1XWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:22:05 -0500
+	Tue, 28 Jan 2014 18:22:03 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/11] kernfs: remove KERNFS_REMOVED
-Date: Tue, 28 Jan 2014 18:21:46 -0500
-Message-Id: <1390951311-15325-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/11] kernfs: remove kernfs_addrm_cxt
+Date: Tue, 28 Jan 2014 18:21:44 -0500
+Message-Id: <1390951311-15325-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1390951311-15325-1-git-send-email-tj@kernel.org>
 References: <1390951311-15325-1-git-send-email-tj@kernel.org>
@@ -23,253 +23,338 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KERNFS_REMOVED is used to mark half-initialized and dying nodes so
-that they don't show up in lookups and deny adding new nodes under or
-renaming it; however, its role overlaps that of deactivation.
+kernfs_addrm_cxt and the accompanying kernfs_addrm_start/finish() were
+added because there were operations which should be performed outside
+kernfs_mutex after adding and removing kernfs_nodes.  The necessary
+operations were recorded in kernfs_addrm_cxt and performed by
+kernfs_addrm_finish(); however, after the recent changes which
+relocated deactivation and unmapping so that they're performed
+directly during removal, the only operation kernfs_addrm_finish()
+performs is kernfs_put(), which can be moved inside the removal path
+too.
 
-It's necessary to deny addition of new children while removal is in
-progress; however, this role considerably intersects with deactivation
-- KERNFS_REMOVED prevents new children while deactivation prevents new
-file operations.  There's no reason to have them separate making
-things more complex than necessary.
+This patch moves the kernfs_put() of the base ref to __kernfs_remove()
+and remove kernfs_addrm_cxt and kernfs_addrm_start/finish().
 
-This patch removes KERNFS_REMOVED.
+* kernfs_add_one() is updated to grab and release kernfs_mutex itself.
+  sysfs_addrm_start/finish() invocations around it are removed from
+  all users.
 
-* Instead of KERNFS_REMOVED, each node now starts its life
-  deactivated.  This means that we now use both atomic_add() and
-  atomic_sub() on KN_DEACTIVATED_BIAS, which is INT_MIN.  The compiler
-  generates an overflow warnings when negating INT_MIN as the negation
-  can't be represented as a positive number.  Nothing is actually
-  broken but let's bump BIAS by one to avoid the warnings for archs
-  which negates the subtrahend..
+* __kernfs_remove() puts an unlinked node directly instead of chaining
+  it to kernfs_addrm_cxt.  Its callers are updated to grab and release
+  kernfs_mutex instead of calling kernfs_addrm_start/finish() around
+  it.
 
-* A new helper kernfs_active() which tests whether kn->active >= 0 is
-  added for convenience and lockdep annotation.  All KERNFS_REMOVED
-  tests are replaced with negated kernfs_active() tests.
-
-* __kernfs_remove() is updated to deactivate, but not drain, all nodes
-  in the subtree instead of setting KERNFS_REMOVED.  This removes
-  deactivation from kernfs_deactivate(), which is now renamed to
-  kernfs_drain().
-
-* Sanity check on KERNFS_REMOVED in kernfs_put() is replaced with
-  checks on the active ref.
-
-* Some comment style updates in the affected area.
-
-v2: Reordered before removal path restructuring.  kernfs_active()
-    dropped and kernfs_get/put_active() used instead.  RB_EMPTY_NODE()
-    used in the lookup paths.
-
-v3: Reverted most of v2 except for creating a new node with
-    KN_DEACTIVATED_BIAS.
+v2: Rebased on top of "kernfs: associate a new kernfs_node with its
+    parent on creation" which dropped @parent from kernfs_add_one().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c             | 66 ++++++++++++++++++++++++---------------------
- fs/kernfs/kernfs-internal.h |  3 ++-
- include/linux/kernfs.h      |  1 -
- 3 files changed, 37 insertions(+), 33 deletions(-)
+ fs/kernfs/dir.c             | 109 ++++++++++----------------------------------
+ fs/kernfs/file.c            |   6 +--
+ fs/kernfs/kernfs-internal.h |  11 +----
+ fs/kernfs/symlink.c         |   6 +--
+ include/linux/kernfs.h      |   4 --
+ 5 files changed, 28 insertions(+), 108 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 5cf137b..d0fd739 100644
+index 1cb74bd..8459f61 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -22,6 +22,12 @@ DEFINE_MUTEX(kernfs_mutex);
- 
- #define rb_to_kn(X) rb_entry((X), struct kernfs_node, rb)
- 
-+static bool kernfs_active(struct kernfs_node *kn)
-+{
-+	lockdep_assert_held(&kernfs_mutex);
-+	return atomic_read(&kn->active) >= 0;
-+}
-+
- static bool kernfs_lockdep(struct kernfs_node *kn)
- {
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -183,25 +189,20 @@ void kernfs_put_active(struct kernfs_node *kn)
+@@ -392,69 +392,44 @@ struct kernfs_node *kernfs_new_node(struct kernfs_node *parent,
  }
  
  /**
-- *	kernfs_deactivate - deactivate kernfs_node
-- *	@kn: kernfs_node to deactivate
-+ * kernfs_drain - drain kernfs_node
-+ * @kn: kernfs_node to drain
-  *
-- *	Deny new active references, drain existing ones and nuke all
-- *	existing mmaps.  Mutiple removers may invoke this function
-- *	concurrently on @kn and all will return after deactivation and
-- *	draining are complete.
-+ * Drain existing usages and nuke all existing mmaps of @kn.  Mutiple
-+ * removers may invoke this function concurrently on @kn and all will
-+ * return after draining is complete.
-  */
--static void kernfs_deactivate(struct kernfs_node *kn)
-+static void kernfs_drain(struct kernfs_node *kn)
- 	__releases(&kernfs_mutex) __acquires(&kernfs_mutex)
- {
- 	struct kernfs_root *root = kernfs_root(kn);
- 
- 	lockdep_assert_held(&kernfs_mutex);
--	BUG_ON(!(kn->flags & KERNFS_REMOVED));
+- *	kernfs_addrm_start - prepare for kernfs_node add/remove
+- *	@acxt: pointer to kernfs_addrm_cxt to be used
+- *
+- *	This function is called when the caller is about to add or remove
+- *	kernfs_node.  This function acquires kernfs_mutex.  @acxt is used
+- *	to keep and pass context to other addrm functions.
+- *
+- *	LOCKING:
+- *	Kernel thread context (may sleep).  kernfs_mutex is locked on
+- *	return.
+- */
+-void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt)
+-	__acquires(kernfs_mutex)
+-{
+-	memset(acxt, 0, sizeof(*acxt));
 -
--	/* only the first invocation on @kn should deactivate it */
--	if (atomic_read(&kn->active) >= 0)
--		atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
-+	WARN_ON_ONCE(kernfs_active(kn));
+-	mutex_lock(&kernfs_mutex);
+-}
+-
+-/**
+  *	kernfs_add_one - add kernfs_node to parent without warning
+- *	@acxt: addrm context to use
+  *	@kn: kernfs_node to be added
+  *
+  *	The caller must already have initialized @kn->parent.  This
+  *	function increments nlink of the parent's inode if @kn is a
+  *	directory and link into the children list of the parent.
+  *
+- *	This function should be called between calls to
+- *	kernfs_addrm_start() and kernfs_addrm_finish() and should be passed
+- *	the same @acxt as passed to kernfs_addrm_start().
+- *
+- *	LOCKING:
+- *	Determined by kernfs_addrm_start().
+- *
+  *	RETURNS:
+  *	0 on success, -EEXIST if entry with the given name already
+  *	exists.
+  */
+-int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn)
++int kernfs_add_one(struct kernfs_node *kn)
+ {
+ 	struct kernfs_node *parent = kn->parent;
+-	bool has_ns = kernfs_ns_enabled(parent);
+ 	struct kernfs_iattrs *ps_iattr;
++	bool has_ns;
+ 	int ret;
  
- 	mutex_unlock(&kernfs_mutex);
+-	if (has_ns != (bool)kn->ns) {
+-		WARN(1, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
+-		     has_ns ? "required" : "invalid", parent->name, kn->name);
+-		return -EINVAL;
+-	}
++	mutex_lock(&kernfs_mutex);
++
++	ret = -EINVAL;
++	has_ns = kernfs_ns_enabled(parent);
++	if (WARN(has_ns != (bool)kn->ns, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
++		 has_ns ? "required" : "invalid", parent->name, kn->name))
++		goto out_unlock;
  
-@@ -253,13 +254,15 @@ void kernfs_put(struct kernfs_node *kn)
- 		return;
- 	root = kernfs_root(kn);
-  repeat:
--	/* Moving/renaming is always done while holding reference.
-+	/*
-+	 * Moving/renaming is always done while holding reference.
- 	 * kn->parent won't change beneath us.
- 	 */
- 	parent = kn->parent;
+ 	if (kernfs_type(parent) != KERNFS_DIR)
+-		return -EINVAL;
++		goto out_unlock;
  
--	WARN(!(kn->flags & KERNFS_REMOVED), "kernfs: free using entry: %s/%s\n",
--	     parent ? parent->name : "", kn->name);
-+	WARN_ONCE(atomic_read(&kn->active) != KN_DEACTIVATED_BIAS,
-+		  "kernfs_put: %s/%s: released with incorrect active_ref %d\n",
-+		  parent ? parent->name : "", kn->name, atomic_read(&kn->active));
- 
- 	if (kernfs_type(kn) == KERNFS_LINK)
- 		kernfs_put(kn->symlink.target_kn);
-@@ -301,8 +304,8 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
- 	kn = dentry->d_fsdata;
- 	mutex_lock(&kernfs_mutex);
- 
--	/* The kernfs node has been deleted */
--	if (kn->flags & KERNFS_REMOVED)
-+	/* The kernfs node has been deactivated */
-+	if (!kernfs_active(kn))
- 		goto out_bad;
- 
- 	/* The kernfs node has been moved? */
-@@ -371,12 +374,12 @@ static struct kernfs_node *__kernfs_new_node(struct kernfs_root *root,
- 	kn->ino = ret;
- 
- 	atomic_set(&kn->count, 1);
--	atomic_set(&kn->active, 0);
-+	atomic_set(&kn->active, KN_DEACTIVATED_BIAS);
- 	RB_CLEAR_NODE(&kn->rb);
- 
- 	kn->name = name;
- 	kn->mode = mode;
--	kn->flags = flags | KERNFS_REMOVED;
-+	kn->flags = flags;
- 
- 	return kn;
- 
-@@ -432,7 +435,7 @@ int kernfs_add_one(struct kernfs_node *kn)
- 		goto out_unlock;
- 
- 	ret = -ENOENT;
--	if (parent->flags & KERNFS_REMOVED)
-+	if (!kernfs_active(parent))
- 		goto out_unlock;
++	ret = -ENOENT;
+ 	if (parent->flags & KERNFS_REMOVED)
+-		return -ENOENT;
++		goto out_unlock;
  
  	kn->hash = kernfs_name_hash(kn->name, kn->ns);
-@@ -449,7 +452,7 @@ int kernfs_add_one(struct kernfs_node *kn)
- 	}
+ 
+ 	ret = kernfs_link_sibling(kn);
+ 	if (ret)
+-		return ret;
++		goto out_unlock;
+ 
+ 	/* Update timestamps on the parent */
+ 	ps_iattr = parent->iattr;
+@@ -465,35 +440,10 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn)
  
  	/* Mark the entry added into directory tree */
--	kn->flags &= ~KERNFS_REMOVED;
-+	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
- 	ret = 0;
- out_unlock:
+ 	kn->flags &= ~KERNFS_REMOVED;
+-
+-	return 0;
+-}
+-
+-/**
+- *	kernfs_addrm_finish - finish up kernfs_node add/remove
+- *	@acxt: addrm context to finish up
+- *
+- *	Finish up kernfs_node add/remove.  Resources acquired by
+- *	kernfs_addrm_start() are released and removed kernfs_nodes are
+- *	cleaned up.
+- *
+- *	LOCKING:
+- *	kernfs_mutex is released.
+- */
+-void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
+-	__releases(kernfs_mutex)
+-{
+-	/* release resources acquired by kernfs_addrm_start() */
++	ret = 0;
++out_unlock:
  	mutex_unlock(&kernfs_mutex);
-@@ -549,7 +552,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
- 		return ERR_PTR(-ENOMEM);
+-
+-	/* kill removed kernfs_nodes */
+-	while (acxt->removed) {
+-		struct kernfs_node *kn = acxt->removed;
+-
+-		acxt->removed = kn->u.removed_list;
+-
+-		kernfs_put(kn);
+-	}
++	return ret;
+ }
+ 
+ /**
+@@ -626,7 +576,6 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+ 					 const char *name, umode_t mode,
+ 					 void *priv, const void *ns)
+ {
+-	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 	int rc;
+ 
+@@ -640,10 +589,7 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+ 	kn->priv = priv;
+ 
+ 	/* link in */
+-	kernfs_addrm_start(&acxt);
+-	rc = kernfs_add_one(&acxt, kn);
+-	kernfs_addrm_finish(&acxt);
+-
++	rc = kernfs_add_one(kn);
+ 	if (!rc)
+ 		return kn;
+ 
+@@ -796,8 +742,7 @@ static struct kernfs_node *kernfs_next_descendant_post(struct kernfs_node *pos,
+ 	return pos->parent;
+ }
+ 
+-static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+-			    struct kernfs_node *kn)
++static void __kernfs_remove(struct kernfs_node *kn)
+ {
+ 	struct kernfs_node *pos;
+ 
+@@ -841,8 +786,7 @@ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+ 				ps_iattr->ia_iattr.ia_mtime = CURRENT_TIME;
+ 			}
+ 
+-			pos->u.removed_list = acxt->removed;
+-			acxt->removed = pos;
++			kernfs_put(pos);
+ 		}
+ 
+ 		kernfs_put(pos);
+@@ -857,11 +801,9 @@ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+  */
+ void kernfs_remove(struct kernfs_node *kn)
+ {
+-	struct kernfs_addrm_cxt acxt;
+-
+-	kernfs_addrm_start(&acxt);
+-	__kernfs_remove(&acxt, kn);
+-	kernfs_addrm_finish(&acxt);
++	mutex_lock(&kernfs_mutex);
++	__kernfs_remove(kn);
++	mutex_unlock(&kernfs_mutex);
+ }
+ 
+ /**
+@@ -876,7 +818,6 @@ void kernfs_remove(struct kernfs_node *kn)
+ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 			     const void *ns)
+ {
+-	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 
+ 	if (!parent) {
+@@ -885,13 +826,13 @@ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 		return -ENOENT;
  	}
  
--	kn->flags &= ~KERNFS_REMOVED;
-+	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
- 	kn->priv = priv;
- 	kn->dir.root = root;
+-	kernfs_addrm_start(&acxt);
++	mutex_lock(&kernfs_mutex);
  
-@@ -763,24 +766,25 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 	kn = kernfs_find_ns(parent, name, ns);
+ 	if (kn)
+-		__kernfs_remove(&acxt, kn);
++		__kernfs_remove(kn);
  
- 	pr_debug("kernfs %s: removing\n", kn->name);
+-	kernfs_addrm_finish(&acxt);
++	mutex_unlock(&kernfs_mutex);
  
--	/* disable lookup and node creation under @kn */
-+	/* prevent any new usage under @kn by deactivating all nodes */
- 	pos = NULL;
- 	while ((pos = kernfs_next_descendant_post(pos, kn)))
--		pos->flags |= KERNFS_REMOVED;
-+		if (kernfs_active(pos))
-+			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
- 
- 	/* deactivate and unlink the subtree node-by-node */
- 	do {
- 		pos = kernfs_leftmost_descendant(kn);
- 
- 		/*
--		 * kernfs_deactivate() drops kernfs_mutex temporarily and
--		 * @pos's base ref could have been put by someone else by
--		 * the time the function returns.  Make sure it doesn't go
--		 * away underneath us.
-+		 * kernfs_drain() drops kernfs_mutex temporarily and @pos's
-+		 * base ref could have been put by someone else by the time
-+		 * the function returns.  Make sure it doesn't go away
-+		 * underneath us.
- 		 */
- 		kernfs_get(pos);
- 
--		kernfs_deactivate(pos);
-+		kernfs_drain(pos);
- 
- 		/*
- 		 * kernfs_unlink_sibling() succeeds once per node.  Use it
-@@ -865,7 +869,7 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
- 	mutex_lock(&kernfs_mutex);
- 
- 	error = -ENOENT;
--	if ((kn->flags | new_parent->flags) & KERNFS_REMOVED)
-+	if (!kernfs_active(kn) || !kernfs_active(new_parent))
- 		goto out;
- 
- 	error = 0;
-@@ -925,7 +929,7 @@ static struct kernfs_node *kernfs_dir_pos(const void *ns,
- 	struct kernfs_node *parent, loff_t hash, struct kernfs_node *pos)
+ 	if (kn)
+ 		return 0;
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index dbf397b..10a8c91 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -820,7 +820,6 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
+ 					 bool name_is_static,
+ 					 struct lock_class_key *key)
  {
- 	if (pos) {
--		int valid = !(pos->flags & KERNFS_REMOVED) &&
-+		int valid = kernfs_active(pos) &&
- 			pos->parent == parent && hash == pos->hash;
- 		kernfs_put(pos);
- 		if (!valid)
+-	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 	unsigned flags;
+ 	int rc;
+@@ -855,10 +854,7 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
+ 	if (ops->mmap)
+ 		kn->flags |= KERNFS_HAS_MMAP;
+ 
+-	kernfs_addrm_start(&acxt);
+-	rc = kernfs_add_one(&acxt, kn);
+-	kernfs_addrm_finish(&acxt);
+-
++	rc = kernfs_add_one(kn);
+ 	if (rc) {
+ 		kernfs_put(kn);
+ 		return ERR_PTR(rc);
 diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index 46b58de..a91d7a1 100644
+index eb536b7..46b58de 100644
 --- a/fs/kernfs/kernfs-internal.h
 +++ b/fs/kernfs/kernfs-internal.h
-@@ -26,7 +26,8 @@ struct kernfs_iattrs {
- 	struct simple_xattrs	xattrs;
- };
+@@ -45,13 +45,6 @@ static inline struct kernfs_root *kernfs_root(struct kernfs_node *kn)
+ }
  
--#define KN_DEACTIVATED_BIAS		INT_MIN
-+/* +1 to avoid triggering overflow warning when negating it */
-+#define KN_DEACTIVATED_BIAS		(INT_MIN + 1)
+ /*
+- * Context structure to be used while adding/removing nodes.
+- */
+-struct kernfs_addrm_cxt {
+-	struct kernfs_node	*removed;
+-};
+-
+-/*
+  * mount.c
+  */
+ struct kernfs_super_info {
+@@ -100,9 +93,7 @@ extern const struct inode_operations kernfs_dir_iops;
  
- /* KERNFS_TYPE_MASK and types are defined in include/linux/kernfs.h */
+ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn);
+ void kernfs_put_active(struct kernfs_node *kn);
+-void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt);
+-int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn);
+-void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt);
++int kernfs_add_one(struct kernfs_node *kn);
+ struct kernfs_node *kernfs_new_node(struct kernfs_node *parent,
+ 				    const char *name, umode_t mode,
+ 				    unsigned flags);
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+index 4d45705..8a19889 100644
+--- a/fs/kernfs/symlink.c
++++ b/fs/kernfs/symlink.c
+@@ -27,7 +27,6 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       struct kernfs_node *target)
+ {
+ 	struct kernfs_node *kn;
+-	struct kernfs_addrm_cxt acxt;
+ 	int error;
+ 
+ 	kn = kernfs_new_node(parent, name, S_IFLNK|S_IRWXUGO, KERNFS_LINK);
+@@ -39,10 +38,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 	kn->symlink.target_kn = target;
+ 	kernfs_get(target);	/* ref owned by symlink */
+ 
+-	kernfs_addrm_start(&acxt);
+-	error = kernfs_add_one(&acxt, kn);
+-	kernfs_addrm_finish(&acxt);
+-
++	error = kernfs_add_one(kn);
+ 	if (!error)
+ 		return kn;
  
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index dc4cd6c..917bc6c 100644
+index 295a3bf..38646f6 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -38,7 +38,6 @@ enum kernfs_node_type {
- #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
+@@ -91,10 +91,6 @@ struct kernfs_node {
  
- enum kernfs_node_flag {
--	KERNFS_REMOVED		= 0x0010,
- 	KERNFS_NS		= 0x0020,
- 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
- 	KERNFS_HAS_MMAP		= 0x0080,
+ 	struct rb_node		rb;
+ 
+-	union {
+-		struct kernfs_node	*removed_list;
+-	} u;
+-
+ 	const void		*ns;	/* namespace tag */
+ 	unsigned int		hash;	/* ns + name hash */
+ 	union {
 -- 
 1.8.5.3
 
