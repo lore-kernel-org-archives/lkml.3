@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaA1SWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:22:50 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51163 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755299AbaA1SWs (ORCPT
+	id S1755349AbaA1S0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:26:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:44717 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894AbaA1S0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:22:48 -0500
-Date: Tue, 28 Jan 2014 18:22:30 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-Message-ID: <20140128182230.GO15937@n2100.arm.linux.org.uk>
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org> <1390590670-25901-4-git-send-email-yinghai@kernel.org> <CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com> <CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com> <CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com> <52E7E776.30909@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E7E776.30909@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 28 Jan 2014 13:26:31 -0500
+From: Christopher Covington <cov@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>
+Subject: [PATCH v2] ARM: hw_breakpoint: Add ARMv8 support
+Date: Tue, 28 Jan 2014 13:26:23 -0500
+Message-Id: <1390933583-1278-1-git-send-email-cov@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1390415365-17230-1-git-send-email-cov@codeaurora.org>
+References: <1390415365-17230-1-git-send-email-cov@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:23:02PM -0500, Santosh Shilimkar wrote:
-> On Tuesday 28 January 2014 12:12 PM, Yinghai Lu wrote:
-> > Index: linux-2.6/include/linux/bootmem.h
-> > ===================================================================
-> > --- linux-2.6.orig/include/linux/bootmem.h
-> > +++ linux-2.6/include/linux/bootmem.h
-> > @@ -179,6 +179,9 @@ static inline void * __init memblock_vir
-> >                                                     NUMA_NO_NODE);
-> >  }
-> > 
-> > +/* Take arch's ARCH_LOW_ADDRESS_LIMIT at first*/
-> > +#include <asm/processor.h>
-> > +
-> >  #ifndef ARCH_LOW_ADDRESS_LIMIT
-> >  #define ARCH_LOW_ADDRESS_LIMIT  0xffffffffUL
-> >  #endif
-> 
-> This won't help mostly since the ARM 32 arch don't set ARCH_LOW_ADDRESS_LIMIT.
-> Sorry i couldn't respond to the thread earlier because of travel and
-> don't have access to my board to try out the patches.
+Add the trivial support necessary to get hardware breakpoints
+working for GDB on ARMv8 simulators running in AArch32 mode.
 
-Let's think about this for a moment, shall we...
+Signed-off-by: Christopher Covington <cov@codeaurora.org>
+---
 
-What does memblock_alloc_virt*() return?  It returns a virtual address.
+ v2: modify debug_exception_updates_fsr
 
-How is that virtual address obtained?  ptr = phys_to_virt(alloc);
+ arch/arm/include/asm/hw_breakpoint.h | 1 +
+ arch/arm/kernel/hw_breakpoint.c      | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-What is the valid address range for passing into phys_to_virt() ?  Only
-lowmem addresses.
-
-Hence, having ARCH_LOW_ADDRESS_LIMIT set to 4GB-1 by default seems to be
-completely rediculous - and presumably this also fails on x86_32 if it
-returns memory up at 4GB.
-
-So... yes, I think reverting the arch/arm part of this patch is the right
-solution, whether the rest of it should be reverted is something I can't
-comment on.
-
+diff --git a/arch/arm/include/asm/hw_breakpoint.h b/arch/arm/include/asm/hw_breakpoint.h
+index eef55ea..8e427c7 100644
+--- a/arch/arm/include/asm/hw_breakpoint.h
++++ b/arch/arm/include/asm/hw_breakpoint.h
+@@ -51,6 +51,7 @@ static inline void decode_ctrl_reg(u32 reg,
+ #define ARM_DEBUG_ARCH_V7_ECP14	3
+ #define ARM_DEBUG_ARCH_V7_MM	4
+ #define ARM_DEBUG_ARCH_V7_1	5
++#define ARM_DEBUG_ARCH_V8	6
+ 
+ /* Breakpoint */
+ #define ARM_BREAKPOINT_EXECUTE	0
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index 3d44660..a711b27 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -167,7 +167,7 @@ static int debug_arch_supported(void)
+ /* Can we determine the watchpoint access type from the fsr? */
+ static int debug_exception_updates_fsr(void)
+ {
+-	return 0;
++	return get_debug_arch() == ARM_DEBUG_ARCH_V8;
+ }
+ 
+ /* Determine number of WRP registers available. */
+@@ -257,6 +257,7 @@ static int enable_monitor_mode(void)
+ 		break;
+ 	case ARM_DEBUG_ARCH_V7_ECP14:
+ 	case ARM_DEBUG_ARCH_V7_1:
++	case ARM_DEBUG_ARCH_V8:
+ 		ARM_DBG_WRITE(c0, c2, 2, (dscr | ARM_DSCR_MDBGEN));
+ 		isb();
+ 		break;
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by the Linux Foundation.
+
