@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaA1I7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:59:38 -0500
-Received: from smtprelay0051.hostedemail.com ([216.40.44.51]:48671 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754653AbaA1I7g (ORCPT
+	id S1754920AbaA1JBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:01:36 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:55262 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaA1JBe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:59:36 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2729:2828:3138:3139:3140:3141:3142:3151:3352:3622:3867:3871:4225:4321:5007:6119:7576:7652:8603:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13019:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: coal96_536708074120e
-X-Filterd-Recvd-Size: 2119
-Message-ID: <1390899572.20150.97.camel@joe-AO722>
-Subject: Re: [PATCH] USB2NET : SR9800 : One chip USB2.0 USB2NET SR9800
- Device Driver Support
-From: Joe Perches <joe@perches.com>
-To: liujunliang_ljl@163.com
-Cc: davem@davemloft.net, horms@verge.net.au, romieu@fr.zoreil.com,
-        gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sunhecheng@vip.126.com
-Date: Tue, 28 Jan 2014 00:59:32 -0800
-In-Reply-To: <1390898200-9925-1-git-send-email-liujunliang_ljl@163.com>
-References: <1390898200-9925-1-git-send-email-liujunliang_ljl@163.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jan 2014 04:01:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <1939430.3DVPas1i8V@phil>
+References: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
+	<10462793.IYoAK2XtXv@phil>
+	<CAKDJKT4jPLmtrm6Ngp+nT5vf0H4zXwwAM=oURDF-DSAJodVN6A@mail.gmail.com>
+	<1939430.3DVPas1i8V@phil>
+Date: Tue, 28 Jan 2014 14:31:32 +0530
+Message-ID: <CAKDJKT5z=-CmK+goocgdqy2eQMZN2tsoPgzOFk4KbFTTTiUNAA@mail.gmail.com>
+Subject: Re: [PATCH V2] regulator: fixed: update to devm_* API
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-omap@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-28 at 16:36 +0800, liujunliang_ljl@163.com wrote:
-> From: Liu Junliang <liujunliang_ljl@163.com>
+On Tue, Jan 28, 2014 at 2:25 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> On Tuesday, 28. January 2014 14:16:39 Manish Badarkhe wrote:
+>> Hi Heiko
+>>
+>> Thank you for your reply.
+>>
+>> On Tue, Jan 28, 2014 at 1:08 PM, Heiko Stübner <heiko@sntech.de> wrote:
+>> > On Tuesday, 28. January 2014 12:46:01 Manish Badarkhe wrote:
+>> >> Hi Dmitry,
+>> >>
+>> >> Thank you for your review.
+>> >>
+>> >> On Tue, Jan 28, 2014 at 12:03 PM, Dmitry Torokhov
+>> >>
+>> >> <dmitry.torokhov@gmail.com> wrote:
+>> >> > Hi Manish,
+>> >> >
+>> >> > On Tue, Jan 28, 2014 at 08:42:00AM +0530, Manish Badarkhe wrote:
+>> >> >> Update the code to use devm_* API so that driver core will manage
+>> >> >> resources.
+>> >> >>
+>> >> >> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+>> >> >> ---
+>> >> >> Changes since V1:
+>> >> >> 1. Updated driver to use "devm_kzalloc" to "kstrdup".
+>> >> >> 2. Updated commit message.
+>> >> >>
+>> >> >> Not tested on any board.
+>> >> >>
+>> >> >> :100644 100644 5ea64b9... e9763a4... M
+>> >> >> :drivers/regulator/fixed.c
+>> >> >> :
+>> >> >>  drivers/regulator/fixed.c |   42
+>> >> >>  ++++++++++++------------------------------
+>> >> >>  1 file changed, 12 insertions(+), 30 deletions(-)
+>> >> >>
+>> >> >> diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+>> >> >> index 5ea64b9..e9763a4 100644
+>> >> >> --- a/drivers/regulator/fixed.c
+>> >> >> +++ b/drivers/regulator/fixed.c
+>> >> >> @@ -132,15 +132,15 @@ static int reg_fixed_voltage_probe(struct
+>> >> >> platform_device *pdev)>>
+>> >> >>
+>> >> >>                              GFP_KERNEL);
+>> >> >>
+>> >> >>       if (drvdata == NULL) {
+>> >> >>
+>> >> >>               dev_err(&pdev->dev, "Failed to allocate device data\n");
+>> >> >>
+>> >> >> -             ret = -ENOMEM;
+>> >> >> -             goto err;
+>> >> >> +             return -ENOMEM;
+>> >> >>
+>> >> >>       }
+>> >> >>
+>> >> >> -     drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
+>> >> >> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
+>> >> >> +                                       strlen(config->supply_name) +
+>> >> >> 1,
+>> >> >> +                                       GFP_KERNEL);
+>> >> >>
+>> >> >>       if (drvdata->desc.name == NULL) {
+>> >> >>
+>> >> >>               dev_err(&pdev->dev, "Failed to allocate supply name\n");
+>> >> >>
+>> >> >> -             ret = -ENOMEM;
+>> >> >> -             goto err;
+>> >> >> +             return -ENOMEM;
+>> >> >>
+>> >> >>       }
+>> >> >
+>> >> > Umm, I am fairly certain that devm_kzalloc() can't be used as a
+>> >> > substitute for kstrdup, at least not without accompanying memcpy.
+>> >>
+>> >> Yes, I have provided allocation but it should be followed with
+>> >> assignment.
+>> >> Can I modify like this,
+>> >>
+>> >> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
+>> >> +                                       strlen(config->supply_name) + 1,
+>> >> +                                       GFP_KERNEL);
+>> >> +     if (drvdata->desc.name)
+>> >> +     sprintf(drvdata->desc.name, "%s", config->supply_name);
+>> >
+>> > hmm, so you replaced a general helper function by open coding the string-
+>> > duplication. Doesn't this defeat the target of simplifying the code?
+>>
+>> Intention here, is to use devm_ API and to adopt this I have to do these
+>> modifications for "kstrdup" functions. I have seen in regulator folder
+>> almost all drivers adopted to "devm_" API. Hence same thing I am following
+>> to update this driver. Please let me know whether to go ahead with this
+>> patch or retain driver as it is.
+>
+> I don't have a strong opinion on this and others are most likely more qualified
+> to have a definitive answer, I just found it strange to exchange one open-coded
+> pattern against another open-coded one.
+>
+> So don't let me keep you from it ;-)
 
-trivial comments...
+Okay.
+@Mark, Dmitry: Please let me know your opinion on this.
 
-> diff --git a/drivers/net/usb/sr9800.c b/drivers/net/usb/sr9800.c
-
-[]
-
-> +static int sr_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-> +{
-[]
-> +		if (size != ((~header >> 16) & 0x07ff)) {
-> +			netdev_err(dev->net,
-> +				   "sr_rx_fixup() Bad Header Length\n");
-
-printks with embedded functions names are
-generally better using "%s: ", __func__
-
-			netdev_err(dev->net, "%s: Bad header length\n",
-				   __func__);
-
-[]
-
-> +			netdev_err(dev->net,
-> +				   "sr_rx_fixup() Bad RX Length %d\n", size);
-
-etc.
-
-> +	if (skb->len != offset) {
-> +		netdev_err(dev->net, "sr_rx_fixup() Bad SKB Length %d\n",
-> +			   skb->len);
-
-etc.
-
-[]
-
-> +static inline int sr9800_set_default_mode(struct usbnet *dev)
-> +{
-
-rather a big function to inline
-
-[]
-
-> +	if (ret < 0) {
-> +		netdev_dbg(dev->net, "Write IPG,IPG1,IPG2 failed: %d", ret);
-
-missing newline terminations
-
-> +	netdev_dbg(dev->net, "RX_CTL is 0x%04x after all initializations",
-> +		   rx_ctl);
-
-etc...
-
-
-
+Thanks
+Manish Badarkhe
