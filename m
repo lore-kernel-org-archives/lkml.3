@@ -1,34 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaA1PS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 10:18:29 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:44579 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaA1PS1 (ORCPT
+	id S932100AbaA1PU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 10:20:59 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:42992 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073AbaA1PU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 10:18:27 -0500
-Date: Tue, 28 Jan 2014 10:18:23 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cpuset: update MAINTAINERS entry
-Message-ID: <20140128151823.GB19156@htj.dyndns.org>
-References: <52E72405.7070402@huawei.com>
+	Tue, 28 Jan 2014 10:20:58 -0500
+Message-ID: <52E7CAD6.4020500@6wind.com>
+Date: Tue, 28 Jan 2014 16:20:54 +0100
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E72405.7070402@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: zhuyj <zyjzyj2000@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, linux-kernel@vger.kernel.org
+Subject: Re: How to identify 6to4 and 6in4 tunnels
+References: <52E63779.5090101@gmail.com> <52E65817.1090904@6wind.com> <52E75D23.10909@gmail.com> <52E75EA5.4070102@gmail.com>
+In-Reply-To: <52E75EA5.4070102@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:29:09AM +0800, Li Zefan wrote:
-> Add mailing list and tree tag to the entry.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Le 28/01/2014 08:39, zhuyj a écrit :
+> On 01/28/2014 03:32 PM, zhuyj wrote:
+>> On 01/27/2014 08:59 PM, Nicolas Dichtel wrote:
+>>> Le 27/01/2014 11:39, zhuyj a écrit :
+>>>> Hi, Maintainers
+>>>>
+>>>> In our scene, we will create the 6in4/6to4 tunnel firstly and need to check the
+>>>> tunnel type, secondly, we will configure the ip address on it. So, Could we
+>>>> have
+>>>> any way to get the actual tunnel for 6in4 and 6to4 from current linux version?
+>>>>
+>>>> Both 6in4 and 6to4 have the same protocol “IPPROTO_IPV6” in Linux kernel. The
+>>>> only difference is the ip address on the tunnel. Can we distinguish them in
+>>>> Linux kernel?
+>>> Just check the prefix, like it is done in check_6rd().
+>>>
+>>>
+>>> Regards,
+>>> Nicolas
+> Hi, Nicolas
+> Thanks for your reply. Maybe I can configure 6to4 tunnel by the following commands:
+>
+>   ip tunnel add tun6to4 mode sit remote any local 1.202.252.122 ttl 64
+>   ip link set dev tun6to4 up
+>   ip -6 addr add 2002:01ca:fc7a::0012:0225:2122/128 dev tun6to4
+>   ip -6 route add 2000::/3 via ::192.88.99.1 dev tun6to4 metric 1
+>
+> But the kernel can not identify the tunnel is 6to4 tunnel or 6in4 tunnel
+> immediately. After the packets travel through this tunnel, the kernel can
+> identify the type of the tunnel by check_6rd.
+>
+> Is it right?
+As soon as you have added the ipv6 addresses, you know that this tunnel is a
+6to4 tunnel.
+But what problem are you trying to solve?
 
-Applied to cgroup/for-3.14-fixes.  Thanks.
 
--- 
-tejun
+Regards,
+Nicolas
