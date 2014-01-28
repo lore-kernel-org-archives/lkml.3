@@ -1,108 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253AbaA1GNq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 01:13:46 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:57698 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaA1GNp (ORCPT
+	id S1754613AbaA1GNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 01:13:52 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:61715 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498AbaA1GNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 01:13:45 -0500
+	Tue, 28 Jan 2014 01:13:50 -0500
 From: William Roberts <bill.c.roberts@gmail.com>
 To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
         sds@tycho.nsa.gov
 Cc: William Roberts <wroberts@tresys.com>
-Subject: [PATCH v5 1/3] mm: Create utility function for accessing a tasks commandline value
-Date: Mon, 27 Jan 2014 22:13:46 -0800
-Message-Id: <1390889628-5543-1-git-send-email-wroberts@tresys.com>
+Subject: [PATCH v5 3/3] audit: Audit proc cmdline value
+Date: Mon, 27 Jan 2014 22:13:48 -0800
+Message-Id: <1390889628-5543-3-git-send-email-wroberts@tresys.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1390889628-5543-1-git-send-email-wroberts@tresys.com>
+References: <1390889628-5543-1-git-send-email-wroberts@tresys.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-introduce get_cmdline() for retreiving the value of a processes
-proc/self/cmdline value.
+During an audit event, cache and print the value of the process's
+cmdline value (proc/<pid>/cmdline). This is useful in situations
+where processes are started via fork'd virtual machines where the
+comm field is incorrect. Often times, setting the comm field still
+is insufficient as the comm width is not very wide and most
+virtual machine "package names" do not fit. Also, during execution,
+many threads have their comm field set as well. By tying it back to
+the global cmdline value for the process, audit records will be more
+complete in systems with these properties. An example of where this
+is useful and applicable is in the realm of Android. With Android,
+their is no fork/exec for VM instances. The bare, preloaded Dalvik
+VM listens for a fork and specialize request. When this request comes
+in, the VM forks, and the loads the specific application (specializing).
+This was done to take advantage of COW and to not require a load of
+basic packages by the VM on very app spawn. When this spawn occurs,
+the package name is set via setproctitle() and shows up in procfs.
+Many of these package names are longer then 16 bytes, the historical
+width of task->comm. Having the cmdline in the audit records will
+couple the application back to the record directly. Also, on my
+Debian development box, some audit records were more useful then
+what was printed under comm.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Stephen Smalley <sds@tycho.nsa.gov>
+The cached cmdline is tied to the life-cycle of the audit_context
+structure and is built on demand.
+
+Example denial prior to patch (Ubuntu):
+CALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
+
+After Patches (Ubuntu):
+type=SYSCALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 cmdline="/usr/lib/dbus-1.0/dbus-daemon-launch-helper" key=(null)
+
+Example denial prior to patch (Android):
+type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" subj=u:r:bluetooth:s0 key=(null)
+
+After Patches (Android):
+type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" cmdline="com.android.bluetooth" subj=u:r:bluetooth:s0 key=(null)
 
 Signed-off-by: William Roberts <wroberts@tresys.com>
 ---
- include/linux/mm.h |    1 +
- mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
+ kernel/audit.h   |    6 ++++++
+ kernel/auditsc.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f28f46e..db89a94 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1175,6 +1175,7 @@ void account_page_writeback(struct page *page);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
-+int get_cmdline(struct task_struct *task, char *buffer, int buflen);
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 57cc64d..aae1b21 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -106,6 +106,11 @@ struct audit_names {
+ 	bool			should_free;
+ };
  
- /* Is the vma a continuation of the stack vma above it? */
- static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
-diff --git a/mm/util.c b/mm/util.c
-index a24aa22..8122710 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -445,6 +445,54 @@ unsigned long vm_commit_limit(void)
- 	return allowed;
++struct audit_cmdline {
++	int	len;	/* length of the cmdline field. */
++	char	*value;	/* the cmdline field */
++};
++
+ /* The per-task audit context. */
+ struct audit_context {
+ 	int		    dummy;	/* must be the first element */
+@@ -202,6 +207,7 @@ struct audit_context {
+ 		} execve;
+ 	};
+ 	int fds[2];
++	struct audit_cmdline cmdline;
+ 
+ #if AUDIT_DEBUG
+ 	int		    put_count;
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 10176cd..2a5d2ef 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -79,6 +79,9 @@
+ /* no execve audit message should be longer than this (userspace limits) */
+ #define MAX_EXECVE_AUDIT_LEN 7500
+ 
++/* max length to print of cmdline value during audit */
++#define MAX_CMDLINE_AUDIT_LEN 128
++
+ /* number of audit rules */
+ int audit_n_rules;
+ 
+@@ -842,6 +845,13 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
+ 	return context;
  }
  
-+/**
-+ * get_cmdline() - copy the cmdline value to a buffer.
-+ * @task:     the task whose cmdline value to copy.
-+ * @buffer:   the buffer to copy to.
-+ * @buflen:   the length of the buffer. Larger cmdline values are truncated
-+ *            to this length.
-+ * Returns the size of the cmdline field copied. Note that the copy does
-+ * not guarantee an ending NULL byte.
-+ */
-+int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++static inline void audit_cmdline_free(struct audit_context *context)
 +{
-+	int res = 0;
-+	unsigned int len;
-+	struct mm_struct *mm = get_task_mm(task);
-+	if (!mm)
-+		goto out;
-+	if (!mm->arg_end)
-+		goto out_mm;	/* Shh! No looking before we're done */
-+
-+	len = mm->arg_end - mm->arg_start;
-+
-+	if (len > buflen)
-+		len = buflen;
-+
-+	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
-+
-+	/*
-+	 * If the nul at the end of args has been overwritten, then
-+	 * assume application is using setproctitle(3).
-+	 */
-+	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
-+		len = strnlen(buffer, res);
-+		if (len < res) {
-+			res = len;
-+		} else {
-+			len = mm->env_end - mm->env_start;
-+			if (len > buflen - res)
-+				len = buflen - res;
-+			res += access_process_vm(task, mm->env_start,
-+						 buffer+res, len, 0);
-+			res = strnlen(buffer, res);
-+		}
-+	}
-+out_mm:
-+	mmput(mm);
-+out:
-+	return res;
++	kfree(context->cmdline.value);
++	context->cmdline.value = NULL;
++	context->cmdline.len = 0;
 +}
++
+ static inline void audit_free_names(struct audit_context *context)
+ {
+ 	struct audit_names *n, *next;
+@@ -955,6 +965,7 @@ static inline void audit_free_context(struct audit_context *context)
+ 	audit_free_aux(context);
+ 	kfree(context->filterkey);
+ 	kfree(context->sockaddr);
++	audit_cmdline_free(context);
+ 	kfree(context);
+ }
  
- /* Tracepoints definitions. */
- EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+@@ -1271,6 +1282,45 @@ static void show_special(struct audit_context *context, int *call_panic)
+ 	audit_log_end(ab);
+ }
+ 
++static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
++			 struct audit_context *context)
++{
++	int res;
++	char *buf;
++	char *msg = "(null)";
++	int len = strlen(msg);
++
++	audit_log_format(ab, " cmdline=");
++
++	/* Not  cached */
++	if (!context->cmdline.value) {
++		buf = kmalloc(MAX_CMDLINE_AUDIT_LEN, GFP_KERNEL);
++		if (!buf)
++			goto out;
++		res = get_cmdline(tsk, buf, MAX_CMDLINE_AUDIT_LEN);
++		if (res == 0) {
++			kfree(buf);
++			goto out;
++		}
++		/*
++		 * Ensure NULL terminated but don't clobber the end
++		 * unless the buffer is full. Worst case you end up
++		 * with 2 null bytes ending it. By doing it this way
++		 * one avoids additional branching. One checking if the
++		 * end is null and another to check if their should be
++		 * an increment before setting the null byte.
++		 */
++		res -= res == MAX_CMDLINE_AUDIT_LEN;
++		buf[res] = '\0';
++		context->cmdline.value = buf;
++		context->cmdline.len = res;
++	}
++	msg = context->cmdline.value;
++	len = context->cmdline.len;
++out:
++	audit_log_n_untrustedstring(ab, msg, len);
++}
++
+ static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+ {
+ 	int i, call_panic = 0;
+@@ -1303,6 +1353,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 
+ 	audit_log_task_info(ab, tsk);
+ 	audit_log_key(ab, context->filterkey);
++	audit_log_cmdline(ab, tsk, context);
+ 	audit_log_end(ab);
+ 
+ 	for (aux = context->aux; aux; aux = aux->next) {
 -- 
 1.7.9.5
 
