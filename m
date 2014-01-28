@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367AbaA1S5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:57:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42347 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636AbaA1S5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:57:38 -0500
-Date: Tue, 28 Jan 2014 13:56:52 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Yinghai Lu <yinghai@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave.hansen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH 1/3] memblock, nobootmem: Add memblock_virt_alloc_low()
-Message-ID: <20140128185652.GA9362@phenom.dumpdata.com>
-References: <1390590670-25901-1-git-send-email-yinghai@kernel.org>
- <1390590670-25901-4-git-send-email-yinghai@kernel.org>
- <CAOesGMh7+SzLTfyPomnB_Q_wft+RC+F3tx-Ow1TdSmHiSwrKcw@mail.gmail.com>
- <CAGa+x87jJep_TSG70wAr5M-Ce7soPyr4SBdPqyo2ENZ2DYcqkA@mail.gmail.com>
- <CAE9FiQU_vZo40cje_XJXSxuKW-JL6H-8rAazwOw1O-ewcV+C5g@mail.gmail.com>
- <52E7E776.30909@ti.com>
- <20140128182230.GO15937@n2100.arm.linux.org.uk>
- <52E7F8AC.9090909@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E7F8AC.9090909@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1755237AbaA1TEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 14:04:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12933 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754321AbaA1TEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 14:04:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,737,1384329600"; 
+   d="scan'208";a="473919988"
+Subject: Re: [numa shrinker] 9b17c62382: -36.6% regression on sparse file
+ copy
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>, Glauber Costa <glommer@parallels.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        lkp@linux.intel.com, "Chen, Tim C" <tim.c.chen@intel.com>
+In-Reply-To: <20140127120943.GA17055@localhost>
+References: <20140106082048.GA567@localhost>
+	 <20140106131042.GA5145@destitution> <20140109025715.GA11984@localhost>
+	 <20140115001827.GO3469@dastard>  <20140127120943.GA17055@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Jan 2014 11:03:30 -0800
+Message-ID: <1390935810.3138.80.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 01:36:28PM -0500, Santosh Shilimkar wrote:
-> + Gryagorii,
-> On Tuesday 28 January 2014 01:22 PM, Russell King - ARM Linux wrote:
-> > On Tue, Jan 28, 2014 at 12:23:02PM -0500, Santosh Shilimkar wrote:
-> >> On Tuesday 28 January 2014 12:12 PM, Yinghai Lu wrote:
-> >>> Index: linux-2.6/include/linux/bootmem.h
-> >>> ===================================================================
-> >>> --- linux-2.6.orig/include/linux/bootmem.h
-> >>> +++ linux-2.6/include/linux/bootmem.h
-> >>> @@ -179,6 +179,9 @@ static inline void * __init memblock_vir
-> >>>                                                     NUMA_NO_NODE);
-> >>>  }
-> >>>
-> >>> +/* Take arch's ARCH_LOW_ADDRESS_LIMIT at first*/
-> >>> +#include <asm/processor.h>
-> >>> +
-> >>>  #ifndef ARCH_LOW_ADDRESS_LIMIT
-> >>>  #define ARCH_LOW_ADDRESS_LIMIT  0xffffffffUL
-> >>>  #endif
-> >>
-> >> This won't help mostly since the ARM 32 arch don't set ARCH_LOW_ADDRESS_LIMIT.
-> >> Sorry i couldn't respond to the thread earlier because of travel and
-> >> don't have access to my board to try out the patches.
-> > 
-> > Let's think about this for a moment, shall we...
-> > 
-> > What does memblock_alloc_virt*() return?  It returns a virtual address.
-> > 
-> > How is that virtual address obtained?  ptr = phys_to_virt(alloc);
-> > 
-> > What is the valid address range for passing into phys_to_virt() ?  Only
-> > lowmem addresses.
-> > 
-> > Hence, having ARCH_LOW_ADDRESS_LIMIT set to 4GB-1 by default seems to be
-> > completely rediculous - and presumably this also fails on x86_32 if it
-> > returns memory up at 4GB.
-> > 
-> > So... yes, I think reverting the arch/arm part of this patch is the right
-> > solution, whether the rest of it should be reverted is something I can't
-> > comment on.
-> > 
-> Grygorri mentioned an alternate to update the memblock_find_in_range_node() so
-> that it takes into account the limit.
-
-This patch breaks also Xen and 32-bit guests (see
-http://lists.xen.org/archives/html/xen-devel/2014-01/msg02476.html)
-
-Reverting it fixes it.
-
+On Mon, 2014-01-27 at 20:09 +0800, Fengguang Wu wrote:
+> Hi Dave,
 > 
-> Regards,
-> Santosh 
+> On Wed, Jan 15, 2014 at 11:18:27AM +1100, Dave Chinner wrote:
+> > On Thu, Jan 09, 2014 at 10:57:15AM +0800, Fengguang Wu wrote:
+> > > Hi Dave,
+> > > 
+> > > As you suggested, I added tests for ext4 and btrfs, the results are
+> > > the same.
+> > > 
+> > > Then I tried running perf record for 10 seconds starting from 200s.
+> > > (The test runs for 410s). I see several warning messages and hope
+> > > they do not impact the accuracy too much:
+> > > 
+> > > [  252.608069] perf samples too long (2532 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+> > > [  252.608863] perf samples too long (2507 > 2500), lowering kernel.perf_event_max_sample_rate to 25000
+> > > [  252.609422] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 1.389 msecs
+> > > 
+> > > Anyway the noticeable perf change are:
+> > > 
+> > > 1d3d4437eae1bb2  9b17c62382dd2e7507984b989  
+> > > ---------------  -------------------------  
+> > >      12.15 ~10%    +209.8%      37.63 ~ 2%  brickland2/debug2/vm-scalability/300s-btrfs-lru-file-readtwice
+> > >      12.88 ~16%    +189.4%      37.27 ~ 0%  brickland2/debug2/vm-scalability/300s-ext4-lru-file-readtwice
+> > >      15.24 ~ 9%    +146.0%      37.50 ~ 1%  brickland2/debug2/vm-scalability/300s-xfs-lru-file-readtwice
+> > >      40.27         +179.1%     112.40       TOTAL perf-profile.cpu-cycles._raw_spin_lock.grab_super_passive.super_cache_count.shrink_slab.do_try_to_free_pages
+> > > 
+> > > 1d3d4437eae1bb2  9b17c62382dd2e7507984b989  
+> > > ---------------  -------------------------  
+> > >      11.91 ~12%    +218.2%      37.89 ~ 2%  brickland2/debug2/vm-scalability/300s-btrfs-lru-file-readtwice
+> > >      12.47 ~16%    +200.3%      37.44 ~ 0%  brickland2/debug2/vm-scalability/300s-ext4-lru-file-readtwice
+> > >      15.36 ~11%    +145.4%      37.68 ~ 1%  brickland2/debug2/vm-scalability/300s-xfs-lru-file-readtwice
+> > >      39.73         +184.5%     113.01       TOTAL perf-profile.cpu-cycles._raw_spin_lock.put_super.drop_super.super_cache_count.shrink_slab
+> > > 
+> > > perf report for 9b17c62382dd2e7507984b989:
+> > > 
+> > > # Overhead          Command       Shared Object                                          Symbol
+> > > # ........  ...............  ..................  ..............................................
+> > > #
+> > >     77.74%               dd  [kernel.kallsyms]   [k] _raw_spin_lock                            
+> > >                          |
+> > >                          --- _raw_spin_lock
+> > >                             |          
+> > >                             |--47.65%-- grab_super_passive
+> > 
+> > Oh, it's superblock lock contention, probably caused by an increase
+> > in shrinker calls (i.e. per-node rather than global). I think we've
+> > seen this before - can you try the two patches from Tim Chen here:
+> > 
+> > https://lkml.org/lkml/2013/9/6/353
+> > https://lkml.org/lkml/2013/9/6/356
+> > 
+> > If they fix the problem, I'll get them into 3.14 and pushed back to
+> > the relevant stable kernels.
+> 
+> Yes, the two patches help a lot:
+> 
+> 9b17c62382dd2e7  8401edd4b12960c703233f4ed
+> ---------------  -------------------------  
+>    6748913 ~ 2%     +37.5%    9281049 ~ 1%  brickland2/debug2/vm-scalability/300s-btrfs-lru-file-readtwice
+>    8417200 ~ 0%     +56.5%   13172417 ~ 0%  brickland2/debug2/vm-scalability/300s-ext4-lru-file-readtwice
+>    8333983 ~ 1%     +56.9%   13078610 ~ 0%  brickland2/debug2/vm-scalability/300s-xfs-lru-file-readtwice
+>   23500096 ~ 1%     +51.2%   35532077 ~ 0%  TOTAL vm-scalability.throughput
+> 
+> They restore performance numbers back to 1d3d4437eae1bb2's level
+> (which is 9b17c62382's parent commit).
+> 
+> Thanks,
+> Fengguang
+
+Dave,
+
+You're going to merge the two patches to 3.14?
+
+Thanks.
+
+Tim
+
