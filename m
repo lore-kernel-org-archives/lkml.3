@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaA1Bc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 20:32:26 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:22902 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaA1BcZ (ORCPT
+	id S1754132AbaA1Bcx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 20:32:53 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:44051 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334AbaA1Bcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 20:32:25 -0500
-X-IronPort-AV: E=Sophos;i="4.95,732,1384329600"; 
-   d="scan'208";a="11614567"
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: Linaro Patches <patches@linaro.org>,
-        Linux GPIO List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>
-Subject: [PATCH] gpio: bcm281xx: Use "unsigned gpio" consistently throughout the code
-Date: Mon, 27 Jan 2014 17:32:18 -0800
-Message-ID: <1390872738-822-1-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 27 Jan 2014 20:32:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 27 Jan 2014 17:32:29 -0800
+Message-ID: <CAK5ve-JFvsN5RM3TY-p=LWVNK0cYcjH3FWMiZd-PuUtnVnTMnA@mail.gmail.com>
+Subject: [GIT PULL] LED updates for 3.14
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes some inconsistencies caused by the use of "int gpio"
-in some parts of the code and "unsigned gpio" in others.
+Hi Linus
 
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
----
- drivers/gpio/gpio-bcm-kona.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Basically this cycle is most cleanup for LED subsystem.
 
-diff --git a/drivers/gpio/gpio-bcm-kona.c b/drivers/gpio/gpio-bcm-kona.c
-index e5aa4d0..b4f20f7 100644
---- a/drivers/gpio/gpio-bcm-kona.c
-+++ b/drivers/gpio/gpio-bcm-kona.c
-@@ -323,7 +323,7 @@ static void bcm_kona_gpio_irq_ack(struct irq_data *d)
- {
- 	struct bcm_kona_gpio *kona_gpio;
- 	void __iomem *reg_base;
--	int gpio = d->hwirq;
-+	unsigned gpio = d->hwirq;
- 	int bank_id = GPIO_BANK(gpio);
- 	int bit = GPIO_BIT(gpio);
- 	u32 val;
-@@ -344,7 +344,7 @@ static void bcm_kona_gpio_irq_mask(struct irq_data *d)
- {
- 	struct bcm_kona_gpio *kona_gpio;
- 	void __iomem *reg_base;
--	int gpio = d->hwirq;
-+	unsigned gpio = d->hwirq;
- 	int bank_id = GPIO_BANK(gpio);
- 	int bit = GPIO_BIT(gpio);
- 	u32 val;
-@@ -365,7 +365,7 @@ static void bcm_kona_gpio_irq_unmask(struct irq_data *d)
- {
- 	struct bcm_kona_gpio *kona_gpio;
- 	void __iomem *reg_base;
--	int gpio = d->hwirq;
-+	unsigned gpio = d->hwirq;
- 	int bank_id = GPIO_BANK(gpio);
- 	int bit = GPIO_BIT(gpio);
- 	u32 val;
-@@ -386,7 +386,7 @@ static int bcm_kona_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- {
- 	struct bcm_kona_gpio *kona_gpio;
- 	void __iomem *reg_base;
--	int gpio = d->hwirq;
-+	unsigned gpio = d->hwirq;
- 	u32 lvl_type;
- 	u32 val;
- 	unsigned long flags;
--- 
-1.7.9.5
+Please consider the following changes since commit
+802eee95bde72fd0cd0f3a5b2098375a487d1eda:
 
+  Linux 3.13-rc6 (2013-12-29 16:01:33 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git for-next
+
+for you to fetch changes up to 3cb6f44aedf519dce4a9106dec675b94d675c539:
+
+  leds: s3c24xx: Remove hardware.h inclusion (2014-01-27 17:28:53 -0800)
+
+----------------------------------------------------------------
+Alexander Shiyan (2):
+      leds: leds-mc13783: Remove duplicate field in platform data
+      leds: leds-mc13783: Remove unneeded mc13xxx_{un}lock
+
+Chen Gang (1):
+      drivers: leds: leds-tca6507: check CONFIG_GPIOLIB whether
+defined for 'gpio_base'
+
+Milo Kim (2):
+      leds: lp5521/5523: Fix multiple engine usage bug
+      leds: lp5523: Support LED MUX configuration on running a pattern
+
+NeilBrown (3):
+      LEDS: tca6507 - fix bugs in parsing of device-tree configuration.
+      LEDS: tca6507: add device-tree support for GPIO configuration.
+      LEDS: tca6507 - fix up some comments.
+
+Olof Johansson (1):
+      leds: pwm: Remove a warning on non-DT platforms
+
+Sachin Kamat (2):
+      leds: kirkwood: Cleanup in header files
+      leds: s3c24xx: Remove hardware.h inclusion
+
+Xiubo Li (1):
+      leds: leds-pwm: fix duty time overflow.
+
+ZHAO Gang (1):
+      leds: replace list_for_each with list_for_each_entry
+
+ Documentation/devicetree/bindings/leds/tca6507.txt |  16 ++
+ Documentation/leds/leds-lp55xx.txt                 |  10 +-
+ arch/arm/mach-imx/mach-mx31moboard.c               |  16 +-
+ drivers/leds/led-triggers.c                        |  15 +-
+ drivers/leds/leds-lp5521.c                         |  18 +-
+ drivers/leds/leds-lp5523.c                         |  20 +-
+ drivers/leds/leds-lp55xx-common.c                  |   2 +
+ drivers/leds/leds-mc13783.c                        |  89 +--------
+ drivers/leds/leds-pwm.c                            |   9 +-
+ drivers/leds/leds-s3c24xx.c                        |   3 +-
+ drivers/leds/leds-tca6507.c                        | 207 ++++++++++++---------
+ include/linux/mfd/mc13xxx.h                        |  37 +++-
+ .../linux/platform_data/leds-kirkwood-netxbig.h    |   8 +-
+ include/linux/platform_data/leds-kirkwood-ns2.h    |   8 +-
+ 14 files changed, 227 insertions(+), 231 deletions(-)
