@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaA1UUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:20:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117AbaA1UUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:20:43 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com>
-References: <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-afs@lists.infradead.org,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Date: Tue, 28 Jan 2014 20:20:12 +0000
-Message-ID: <10828.1390940412@warthog.procyon.org.uk>
+	id S932282AbaA1UUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 15:20:50 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:56541 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117AbaA1UUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 15:20:46 -0500
+Date: Tue, 28 Jan 2014 12:20:42 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [PATCH v2 1/5] mutex: In mutex_can_spin_on_owner(), return false
+ if task need_resched()
+Message-ID: <20140128202042.GN9012@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+ <1390936396-3962-2-git-send-email-jason.low2@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390936396-3962-2-git-send-email-jason.low2@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012820-8236-0000-0000-0000067D5989
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> > -       p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
-> > +       p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
-> > -       p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
-> > +       p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
+On Tue, Jan 28, 2014 at 11:13:12AM -0800, Jason Low wrote:
+> The mutex_can_spin_on_owner() function should also return false if the
+> task needs to be rescheduled to avoid entering the MCS queue when it
+> needs to reschedule.
 > 
-> So the S_IFREG isn't necessary.
+> Signed-off-by: Jason Low <jason.low2@hp.com>
 
-True.  Is it worth creating proc_create_special() that can create a non-regular
-file and then making proc_create() only permit regular files (and complain if
-the S_IFMT field is not zero)?
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> And quite frankly, I personally think S_IRUGO | S_IWUSR is _less_
-> readable than 0644. It's damn hard to parse those random letter
-> combinations, and at least I have to really think about it, in a way
-> that the octal representation does *not* make me go "I have to think
-> about that".
+But I cannot help asking how this affects performance.  (My guess is
+"not much", but always good to know.)
 
-Fine by me.
+> ---
+>  kernel/locking/mutex.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> index 4dd6e4c..85c6be1 100644
+> --- a/kernel/locking/mutex.c
+> +++ b/kernel/locking/mutex.c
+> @@ -212,6 +212,9 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
+>  	struct task_struct *owner;
+>  	int retval = 1;
+> 
+> +	if (need_resched())
+> +		return 0;
+> +
+>  	rcu_read_lock();
+>  	owner = ACCESS_ONCE(lock->owner);
+>  	if (owner)
+> -- 
+> 1.7.1
+> 
 
-David
