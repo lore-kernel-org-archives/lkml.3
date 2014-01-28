@@ -1,271 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083AbaA1JGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:06:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8815 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773AbaA1JGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:06:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,735,1384329600"; 
-   d="scan'208";a="445697513"
-Date: Tue, 28 Jan 2014 11:12:58 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HID: i2c-hid: add runtime PM support
-Message-ID: <20140128091258.GY18029@intel.com>
-References: <1389694438-18614-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAN+gG=Fa+H53V1evKXiWK6OpWj29pF4z8rGJAXWs3C7mHm1mLQ@mail.gmail.com>
+	id S1754785AbaA1JJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:09:20 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:36722 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750855AbaA1JJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 04:09:16 -0500
+Date: Tue, 28 Jan 2014 11:08:41 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Daniel Jeong <gshark.jeong@gmail.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [RFCv2,1/2] v4l2-controls.h: add addtional Flash fault bits
+Message-ID: <20140128090841.GG13820@valkosipuli.retiisi.org.uk>
+References: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAN+gG=Fa+H53V1evKXiWK6OpWj29pF4z8rGJAXWs3C7mHm1mLQ@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <1390892158-5646-1-git-send-email-gshark.jeong@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 27, 2014 at 10:36:25PM -0500, Benjamin Tissoires wrote:
-> On Tue, Jan 14, 2014 at 5:13 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > This patch adds runtime PM support for the HID over I2C driver. When the
-> > i2c-hid device is first opened we power it on and on the last close we
-> > power it off.
-> >
-> > The implementation is not the most power efficient because it needs some
-> > interaction from the userspace (e.g close the device node whenever we are
-> > no more interested in getting events), nevertheless it allows us to save
-> > some power and works with devices that are not wake capable.
-> >
+Hi Daniel,
+
+On Tue, Jan 28, 2014 at 03:55:57PM +0900, Daniel Jeong wrote:
+> Add additional FLASH Fault bits to dectect faults from chip.
+> Some Flash drivers support UVLO, IVFM, NTC Trip faults.
+> UVLO : 	Under Voltage Lock Out Threshold crossed
+> IVFM : 	IVFM block reported and/or adjusted LED current Input Voltage Flash Monitor trip threshold
+> NTC  : 	NTC Threshold crossed. Many Flash drivers have a pin and the fault bit to 
+> serves as a threshold detector for negative temperature coefficient (NTC) thermistors.
 > 
-> Hi Mika,
+> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+> ---
+>  include/uapi/linux/v4l2-controls.h |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> I am a little bit puzzled here. The commit message just says that you
-> changed the implementation of the power saving with the exact same
-> behavior...  At least that's what I understand.
-> Currently, the devices should be put on sleep if nobody is reading,
-> and back alive if a reader arrives.
-> I think there is a gain with the patch, but my knowledge of the pm
-> subsystem is far too limited to see it :(
+> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+> index 1666aab..01d730c 100644
+> --- a/include/uapi/linux/v4l2-controls.h
+> +++ b/include/uapi/linux/v4l2-controls.h
+> @@ -803,6 +803,9 @@ enum v4l2_flash_strobe_source {
+>  #define V4L2_FLASH_FAULT_SHORT_CIRCUIT		(1 << 3)
+>  #define V4L2_FLASH_FAULT_OVER_CURRENT		(1 << 4)
+>  #define V4L2_FLASH_FAULT_INDICATOR		(1 << 5)
+> +#define V4L2_FLASH_FAULT_UVLO			(1 << 6)
+> +#define V4L2_FLASH_FAULT_IVFM			(1 << 7)
+> +#define V4L2_FLASH_FAULT_NTC_TRIP		(1 << 8)
 
-Yes, there should be gain. If there is power domain involved like, ACPI in
-our case, runtime suspending the device on close will let ACPI to move the
-device to D3cold (e.g full off) which saves more power.
+I object adding a new fault which is essentially the same as an existing
+fault, V4L2_FLASH_FAULT_OVER_TEMPERATURE.
 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/hid/i2c-hid/i2c-hid.c | 81 ++++++++++++++++++++++++++++---------------
-> >  1 file changed, 54 insertions(+), 27 deletions(-)
-> >
-> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> > index d1f81f52481a..ff767d03d60e 100644
-> > --- a/drivers/hid/i2c-hid/i2c-hid.c
-> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> > @@ -25,6 +25,7 @@
-> >  #include <linux/delay.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/pm.h>
-> > +#include <linux/pm_runtime.h>
-> >  #include <linux/device.h>
-> >  #include <linux/wait.h>
-> >  #include <linux/err.h>
-> > @@ -454,10 +455,18 @@ static void i2c_hid_init_reports(struct hid_device *hid)
-> >                 return;
-> >         }
-> >
-> > +       /*
-> > +        * The device must be powered on while we fetch initial reports
-> > +        * from it.
-> > +        */
-> > +       pm_runtime_get_sync(&client->dev);
-> > +
-> >         list_for_each_entry(report,
-> >                 &hid->report_enum[HID_FEATURE_REPORT].report_list, list)
-> >                 i2c_hid_init_report(report, inbuf, ihid->bufsize);
-> >
-> > +       pm_runtime_put(&client->dev);
-> > +
-> >         kfree(inbuf);
-> >  }
-> >
-> > @@ -703,8 +712,8 @@ static int i2c_hid_open(struct hid_device *hid)
-> >
-> >         mutex_lock(&i2c_hid_open_mut);
-> >         if (!hid->open++) {
-> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
-> > -               if (ret) {
-> > +               ret = pm_runtime_get_sync(&client->dev);
-> 
-> dummy question (kind of late here...). Is there a counter of how many
-> get/put has been called in pm_runtime which could allow us to get rid
-> of the hid->open count?
+As the practice has been to use human-readable names for the faults, I'd
+also suggest using V4L2_FLASH_FAULT_UNDER_VOLTAGE instead of
+V4L2_FLASH_FAULT_UVLO.
 
-There is a counter but I'm not sure if drivers are supposed to use that. I
-would prefer not to use that.
+What's the IVFM block and what does it do?
 
-> 
-> > +               if (ret < 0) {
-> >                         hid->open--;
-> >                         goto done;
-> >                 }
-> > @@ -712,7 +721,7 @@ static int i2c_hid_open(struct hid_device *hid)
-> >         }
-> >  done:
-> >         mutex_unlock(&i2c_hid_open_mut);
-> > -       return ret;
-> > +       return ret < 0 ? ret : 0;
-> >  }
-> >
-> >  static void i2c_hid_close(struct hid_device *hid)
-> > @@ -729,37 +738,17 @@ static void i2c_hid_close(struct hid_device *hid)
-> >                 clear_bit(I2C_HID_STARTED, &ihid->flags);
-> >
-> >                 /* Save some power */
-> > -               i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
-> > +               pm_runtime_put(&client->dev);
-> >         }
-> >         mutex_unlock(&i2c_hid_open_mut);
-> >  }
-> >
-> > -static int i2c_hid_power(struct hid_device *hid, int lvl)
-> > -{
-> > -       struct i2c_client *client = hid->driver_data;
-> > -       struct i2c_hid *ihid = i2c_get_clientdata(client);
-> > -       int ret = 0;
-> > -
-> > -       i2c_hid_dbg(ihid, "%s lvl:%d\n", __func__, lvl);
-> > -
-> > -       switch (lvl) {
-> > -       case PM_HINT_FULLON:
-> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
-> > -               break;
-> > -       case PM_HINT_NORMAL:
-> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
-> > -               break;
-> > -       }
-> > -       return ret;
-> > -}
-> > -
-> >  static struct hid_ll_driver i2c_hid_ll_driver = {
-> >         .parse = i2c_hid_parse,
-> >         .start = i2c_hid_start,
-> >         .stop = i2c_hid_stop,
-> >         .open = i2c_hid_open,
-> >         .close = i2c_hid_close,
-> > -       .power = i2c_hid_power,
-> 
-> If I understand correctly, here you are trying to fix hidraw (with
-> i2c_hid tramsport) which used to set_power on/off twice with the first
-> reader, right?
+>  #define V4L2_CID_FLASH_CHARGE			(V4L2_CID_FLASH_CLASS_BASE + 11)
+>  #define V4L2_CID_FLASH_READY			(V4L2_CID_FLASH_CLASS_BASE + 12)
 
-Right.
+-- 
+Kind regards,
 
-> I don't think we have other i2c_hid users of hid_hw_power, but I am a
-> little bit worried of simply removing the callback.
-
-OK.
-
-> What if we just change i2c_hid_set_power in i2c_hid_power by the
-> corresponding pm_runtime calls?
-
-Sure, I'll change that in the next version.
-
-> 
-> >         .request = i2c_hid_request,
-> >  };
-> >
-> > @@ -973,13 +962,17 @@ static int i2c_hid_probe(struct i2c_client *client,
-> >         if (ret < 0)
-> >                 goto err;
-> >
-> > +       pm_runtime_get_noresume(&client->dev);
-> > +       pm_runtime_set_active(&client->dev);
-> > +       pm_runtime_enable(&client->dev);
-> > +
-> >         ret = i2c_hid_fetch_hid_descriptor(ihid);
-> >         if (ret < 0)
-> > -               goto err;
-> > +               goto err_pm;
-> >
-> >         ret = i2c_hid_init_irq(client);
-> >         if (ret < 0)
-> > -               goto err;
-> > +               goto err_pm;
-> >
-> >         hid = hid_allocate_device();
-> >         if (IS_ERR(hid)) {
-> > @@ -1010,6 +1003,7 @@ static int i2c_hid_probe(struct i2c_client *client,
-> >                 goto err_mem_free;
-> >         }
-> >
-> > +       pm_runtime_put(&client->dev);
-> >         return 0;
-> >
-> >  err_mem_free:
-> > @@ -1018,6 +1012,10 @@ err_mem_free:
-> >  err_irq:
-> >         free_irq(client->irq, ihid);
-> >
-> > +err_pm:
-> > +       pm_runtime_put_noidle(&client->dev);
-> > +       pm_runtime_disable(&client->dev);
-> > +
-> >  err:
-> >         i2c_hid_free_buffers(ihid);
-> >         kfree(ihid);
-> > @@ -1029,6 +1027,11 @@ static int i2c_hid_remove(struct i2c_client *client)
-> >         struct i2c_hid *ihid = i2c_get_clientdata(client);
-> >         struct hid_device *hid;
-> >
-> > +       pm_runtime_get_sync(&client->dev);
-> > +       pm_runtime_disable(&client->dev);
-> > +       pm_runtime_set_suspended(&client->dev);
-> > +       pm_runtime_put_noidle(&client->dev);
-> > +
-> >         hid = ihid->hid;
-> >         hid_destroy_device(hid);
-> >
-> > @@ -1074,7 +1077,31 @@ static int i2c_hid_resume(struct device *dev)
-> >  }
-> >  #endif
-> >
-> > -static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
-> > +#ifdef CONFIG_PM_RUNTIME
-> > +static int i2c_hid_runtime_suspend(struct device *dev)
-> > +{
-> > +       struct i2c_client *client = to_i2c_client(dev);
-> > +
-> > +       i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
-> > +       disable_irq(client->irq);
-> > +       return 0;
-> > +}
-> > +
-> > +static int i2c_hid_runtime_resume(struct device *dev)
-> > +{
-> > +       struct i2c_client *client = to_i2c_client(dev);
-> > +
-> > +       enable_irq(client->irq);
-> > +       i2c_hid_set_power(client, I2C_HID_PWR_ON);
-> > +       return 0;
-> > +}
-> 
-> These two functions looks very similar to i2c_hid_suspend and
-> i2c_hid_resume, without the reset and the irq_wake :(
-> So, my question here is can we use some common code for them?
-> It may not be possible regarding CONFIG_PM_RUNTIME and
-> CONFIG_PM_SLEEP, but it still looks ugly to me.
-
-It looks ugly, I agree and we can probably reuse some code in the
-callbacks. I'll look into that.
-
-> I tested this today, and it works, so you should be right, but I'd
-> like to have your opinion on this.
-
-Thanks for testing and comments.
-
-I'll prepare a new version with the suggested changes if you are OK with my
-explanations ;-)
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
