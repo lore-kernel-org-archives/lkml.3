@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaA1X37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 18:29:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47908 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaA1X36 (ORCPT
+	id S1755870AbaA1XdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 18:33:00 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:39520 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045AbaA1Xc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:29:58 -0500
-Date: Tue, 28 Jan 2014 15:29:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com, pshelar@nicira.com
-Subject: Re: [PATCH] mm: slub: fix page->_count corruption (again)
-Message-Id: <20140128152956.d5659f56ae279856731a1ac5@linux-foundation.org>
-In-Reply-To: <20140128231722.E7387E6B@viggo.jf.intel.com>
-References: <20140128231722.E7387E6B@viggo.jf.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jan 2014 18:32:59 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHSET driver-core-next] kernfs: prepare for cgroup's kernfs conversion
+Date: Tue, 28 Jan 2014 18:32:42 -0500
+Message-Id: <1390951971-15671-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014 15:17:22 -0800 Dave Hansen <dave@sr71.net> wrote:
+Hello,
 
-> Commit abca7c496 notes that we can not _set_ a page->counters
-> directly, except when using a real double-cmpxchg.  Doing so can
-> lose updates to ->_count.
-> 
-> That an absolute rule:
-> 
->         You may not *set* page->counters except via a cmpxchg.
-> 
-> Commit abca7c496 fixed this for the folks who have the slub
-> cmpxchg_double code turned off at compile time, but it left the
-> bad alone.  It can still be reached, and the same bug triggered
-> in two cases:
-> 1. Turning on slub debugging at runtime, which is available on
->    the distro kernels that I looked at.
-> 2. On 64-bit CPUs with no CMPXCHG16B (some early AMD x86-64
->    cpus, evidently)
-> 
-> There are at least 3 ways we could fix this:
-> 
-> 1. Take all of the exising calls to cmpxchg_double_slab() and
->    __cmpxchg_double_slab() and convert them to take an old, new
->    and target 'struct page'.
-> 2. Do (1), but with the newly-introduced 'slub_data'.
-> 3. Do some magic inside the two cmpxchg...slab() functions to
->    pull the counters out of new_counters and only set those
->    fields in page->{inuse,frozen,objects}.
+This patchset makes various updates in preparation of cgroup's kernfs
+conversion.  This patchset contains the following 9 patches.
 
-This code is borderline insane.
+ 0001-kernfs-invoke-dir_ops-while-holding-active-ref-of-th.patch
+ 0002-kernfs-rename-kernfs_dir_ops-to-kernfs_syscall_ops.patch
+ 0003-kernfs-implement-kernfs_syscall_ops-remount_fs-and-s.patch
+ 0004-kernfs-add-missing-kernfs_active-checks-in-directory.patch
+ 0005-kernfs-allow-nodes-to-be-created-in-the-deactivated-.patch
+ 0006-kernfs-implement-kernfs_ops-atomic_write_len.patch
+ 0007-kernfs-add-kernfs_open_file-priv.patch
+ 0008-kernfs-implement-kernfs_node_from_dentry-kernfs_root.patch
+ 0009-kernfs-implement-kernfs_get_parent-kernfs_name-path-.patch
 
-Yes, struct page is special and it's worth spending time and doing
-weird things to optimise it.  But sheesh.
+ 0001-0003 update kernfs_dir_ops for active ref protection, add
+ additional syscall operations and rename the struct to
+ kernfs_syscall_ops.
 
-An alternative is to make that cmpxchg quietly go away.  Is it more
-trouble than it is worth?
+ 0004-0005 implement an option to create new kernfs_nodes in
+ deactivated state so that multiple nodes can be made visible
+ atomically or removed without ever being visible to userland.
+
+ 0006 implements kernfs_ops->atomic_write_len which will be used to
+ support cgroup cftype->max_write_len.
+
+ 0007 adds kernfs_open_file->priv.
+
+ 0008-0009 add various helpers and accessors.
+
+This patchset is on top of
+
+  linus#master 54c0a4b46150 ("Merge branch 'akpm' (incoming from Andrew)")
++ [1] [PATCHSET v4 driver-core-next] kernfs, sysfs, driver-core: implement synchronous
+
+and also available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-cgroup-prep
+
+diffstat follows.
+
+ fs/kernfs/dir.c        |  325 ++++++++++++++++++++++++++++++++++++++++++++-----
+ fs/kernfs/file.c       |   49 ++++---
+ fs/kernfs/mount.c      |   37 +++++
+ fs/sysfs/dir.c         |   44 +-----
+ fs/sysfs/mount.c       |    2 
+ include/linux/kernfs.h |   74 +++++++++--
+ 6 files changed, 436 insertions(+), 95 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://lkml.kernel.org/g/<1390951311-15325-1-git-send-email-tj@kernel.org>
