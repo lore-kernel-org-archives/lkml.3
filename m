@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134AbaA1OUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 09:20:42 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:64695 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaA1OUk (ORCPT
+	id S1754765AbaA1O2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 09:28:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:44133 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513AbaA1O2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 09:20:40 -0500
-Message-ID: <1390918834.22403.16.camel@host5.omatika.ru>
-Subject: Re: [PATCH 01/11] resolve PXA<->8250 serial device address conflict
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>
-Date: Tue, 28 Jan 2014 18:20:34 +0400
-In-Reply-To: <20140128141437.GB8713@xo-6d-61-c0.localdomain>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
-	 <1385879185-22455-2-git-send-email-ynvich@gmail.com>
-	 <20140128141437.GB8713@xo-6d-61-c0.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Tue, 28 Jan 2014 09:28:47 -0500
+Message-ID: <52E7BE91.8030209@ti.com>
+Date: Tue, 28 Jan 2014 19:58:33 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Pratyush Anand <pratyush.anand@st.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Mohit Kumar <mohit.kumar@st.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: Query: Phy: How to find consumer device on dt platform
+References: <20140128141356.GC3519@pratyush-vbox>
+In-Reply-To: <20140128141356.GC3519@pratyush-vbox>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-28 at 15:14 +0100, Pavel Machek wrote:
-> Yes, please. I was hitting the same issue with Sharp Zaurus and bluetooth
-> CF card... Bluetooth card had 8250 inside...
+Hi,
 
-A better implementation is posted as v3 of the patch.
+On Tuesday 28 January 2014 07:43 PM, Pratyush Anand wrote:
+> Hi Kishon,
+> 
+> I have a phy driver which has to be used by two different consumer
+> driver, say pcie and sata.
 
-http://linux-kernel.2935.n7.nabble.com/PATCH-00-11-ARM-support-for-ICP-DAS-LP-8x4x-tp761919p773485.html
+I assume you have multiple instances of the same IP and you have a single
+driver for it?
+> 
+> I have a common set of registers, which need to be programmed
+> differently for PCIe and SATA during phy init/exit.
 
-It would be great if you could test that patch add post back the
-results.
+One way is differentiate using different compatible strings fro pcie and sata
+and use of_device_is_compatible to select a particular path.
+> 
+> Therefore, in the init/exit routine of phy_ops, I need some way of
+> identifying that phy_init/exit has been called from PCIe driver or
+> SATA driver.
 
+In this case you'll be actually registering two different PHYs (each for pcie
+and sata), so your phy_get should give you the only the appropriate phy.
+
+Cheers
+Kishon
