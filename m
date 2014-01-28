@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaA1DMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 22:12:30 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33636 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347AbaA1DM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 22:12:28 -0500
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-omap@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, badarkhe.manish@gmail.com
-Subject: [PATCH V2] regulator: fixed: update to devm_* API
-Date: Tue, 28 Jan 2014 08:42:00 +0530
-Message-Id: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754546AbaA1DNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 22:13:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31054 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753841AbaA1DNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 22:13:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,733,1384329600"; 
+   d="scan'208";a="465723367"
+Date: Tue, 28 Jan 2014 08:43:24 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, dan.j.williams@intel.com,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+Message-ID: <20140128031324.GH10628@intel.com>
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+ <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+ <52E0FC22.8060903@metafoo.de>
+ <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
+ <52E2698B.6070001@metafoo.de>
+ <20140126135933.GD10628@intel.com>
+ <52E54849.2000208@metafoo.de>
+ <CA+mB=1JvnTcyRnuvdnW1BCeiMLSTMrrAbKwVKgwFUmWrVuXzSw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+mB=1JvnTcyRnuvdnW1BCeiMLSTMrrAbKwVKgwFUmWrVuXzSw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the code to use devm_* API so that driver core will manage
-resources.
+On Mon, Jan 27, 2014 at 06:42:36PM +0530, Srikanth Thokala wrote:
+> Hi Lars/Vinod,
+> >> The question here i think would be waht this device supports? Is the hardware
+> >> capable of doing interleaved transfers, then would make sense.
+> >
+> > The hardware does 2D transfers. The parameters for a transfer are height,
+> > width and stride. That's only a subset of what interleaved transfers can be
+> > (xt->num_frames must be one for 2d transfers). But if I remember correctly
+> > there has been some discussion on this in the past and the result of that
+> > discussion was that using interleaved transfers for 2D transfers is
+> > preferred over adding a custom API for 2D transfers.
+> 
+> I went through the prep_interleaved_dma API and I see only one descriptor
+> is prepared per API call (i.e. per frame).  As our IP supports upto 16 frame
+> buffers (can be more in future), isn't it less efficient compared to the
+> prep_slave_sg where we get a single sg list and can prepare all the descriptors
+> (of non-contiguous buffers) in one go?  Correct me, if am wrong and let me
+> know your opinions.
+Well the descriptor maybe one, but that can represent multiple frames, for
+example 16 as in your case. Can you read up the documentation of how multiple
+frames are passed. Pls see include/linux/dmaengine.h 
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-Changes since V1:
-1. Updated driver to use "devm_kzalloc" to "kstrdup".
-2. Updated commit message.
+/**
+ * Interleaved Transfer Request
+ * ----------------------------
+ * A chunk is collection of contiguous bytes to be transfered.
+ * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+ * ICGs may or maynot change between chunks.
+ * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+ *  that when repeated an integral number of times, specifies the transfer.
+ * A transfer template is specification of a Frame, the number of times
+ *  it is to be repeated and other per-transfer attributes.
+ *
+ * Practically, a client driver would have ready a template for each
+ *  type of transfer it is going to need during its lifetime and
+ *  set only 'src_start' and 'dst_start' before submitting the requests.
+ *
+ *
+ *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+ *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+ *
+ *    ==  Chunk size
+ *    ... ICG
+ */
 
-Not tested on any board.
-
-:100644 100644 5ea64b9... e9763a4... M	drivers/regulator/fixed.c
- drivers/regulator/fixed.c |   42 ++++++++++++------------------------------
- 1 file changed, 12 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 5ea64b9..e9763a4 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -132,15 +132,15 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
- 			       GFP_KERNEL);
- 	if (drvdata == NULL) {
- 		dev_err(&pdev->dev, "Failed to allocate device data\n");
--		ret = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
- 	}
- 
--	drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
-+	drvdata->desc.name = devm_kzalloc(&pdev->dev,
-+					  strlen(config->supply_name) + 1,
-+					  GFP_KERNEL);
- 	if (drvdata->desc.name == NULL) {
- 		dev_err(&pdev->dev, "Failed to allocate supply name\n");
--		ret = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
- 	}
- 	drvdata->desc.type = REGULATOR_VOLTAGE;
- 	drvdata->desc.owner = THIS_MODULE;
-@@ -149,13 +149,13 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
- 	drvdata->desc.enable_time = config->startup_delay;
- 
- 	if (config->input_supply) {
--		drvdata->desc.supply_name = kstrdup(config->input_supply,
--							GFP_KERNEL);
-+		drvdata->desc.supply_name = devm_kzalloc(&pdev->dev,
-+					    strlen(config->input_supply) + 1,
-+					    GFP_KERNEL);
- 		if (!drvdata->desc.supply_name) {
- 			dev_err(&pdev->dev,
- 				"Failed to allocate input supply\n");
--			ret = -ENOMEM;
--			goto err_name;
-+			return -ENOMEM;
- 		}
- 	}
- 
-@@ -186,11 +186,12 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
- 	cfg.driver_data = drvdata;
- 	cfg.of_node = pdev->dev.of_node;
- 
--	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
-+	drvdata->dev = devm_regulator_register(&pdev->dev, &drvdata->desc,
-+					       &cfg);
- 	if (IS_ERR(drvdata->dev)) {
- 		ret = PTR_ERR(drvdata->dev);
- 		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
--		goto err_input;
-+		return ret;
- 	}
- 
- 	platform_set_drvdata(pdev, drvdata);
-@@ -199,24 +200,6 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
- 		drvdata->desc.fixed_uV);
- 
- 	return 0;
--
--err_input:
--	kfree(drvdata->desc.supply_name);
--err_name:
--	kfree(drvdata->desc.name);
--err:
--	return ret;
--}
--
--static int reg_fixed_voltage_remove(struct platform_device *pdev)
--{
--	struct fixed_voltage_data *drvdata = platform_get_drvdata(pdev);
--
--	regulator_unregister(drvdata->dev);
--	kfree(drvdata->desc.supply_name);
--	kfree(drvdata->desc.name);
--
--	return 0;
- }
- 
- #if defined(CONFIG_OF)
-@@ -229,7 +212,6 @@ MODULE_DEVICE_TABLE(of, fixed_of_match);
- 
- static struct platform_driver regulator_fixed_voltage_driver = {
- 	.probe		= reg_fixed_voltage_probe,
--	.remove		= reg_fixed_voltage_remove,
- 	.driver		= {
- 		.name		= "reg-fixed-voltage",
- 		.owner		= THIS_MODULE,
 -- 
-1.7.10.4
-
+~Vinod
