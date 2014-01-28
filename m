@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326AbaA1SuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 13:50:01 -0500
-Received: from smtprelay0047.hostedemail.com ([216.40.44.47]:48222 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754321AbaA1SuA (ORCPT
+	id S1755395AbaA1SwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 13:52:00 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47308 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779AbaA1Sv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 13:50:00 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1539:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3876:3877:5007:6114:6642:7652:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13161:13229:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: front88_913cf59f9de14
-X-Filterd-Recvd-Size: 1471
-Message-ID: <1390934997.11756.17.camel@joe-AO722>
-Subject: [PATCH] omap: iommu: Fix decimal permissions
-From: Joe Perches <joe@perches.com>
-To: Joerg Roedel <joro@8bytes.org>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Cc: iommu <iommu@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 28 Jan 2014 10:49:57 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jan 2014 13:51:59 -0500
+From: Christopher Covington <cov@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Christopher Covington <cov@codeaurora.org>
+Subject: [PATCH v3] ARM: hw_breakpoint: Add ARMv8 support
+Date: Tue, 28 Jan 2014 13:51:51 -0500
+Message-Id: <1390935112-28465-1-git-send-email-cov@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <20140128183851.GK2885@mudshark.cambridge.arm.com>
+References: <20140128183851.GK2885@mudshark.cambridge.arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These should have been octal
+Add the trivial support necessary to get hardware breakpoints
+working for GDB on ARMv8 simulators running in AArch32 mode.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Christopher Covington <cov@codeaurora.org>
 ---
- drivers/iommu/omap-iommu-debug.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/omap-iommu-debug.c b/drivers/iommu/omap-iommu-debug.c
-index d97fbe4..80fffba 100644
---- a/drivers/iommu/omap-iommu-debug.c
-+++ b/drivers/iommu/omap-iommu-debug.c
-@@ -354,8 +354,8 @@ DEBUG_FOPS(mem);
- 			return -ENOMEM;					\
- 	}
+ v3: assume for now that ARMv9 and later will update FSR
+
+ v2: modify debug_exception_updates_fsr
+
+ arch/arm/include/asm/hw_breakpoint.h | 1 +
+ arch/arm/kernel/hw_breakpoint.c      | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/hw_breakpoint.h b/arch/arm/include/asm/hw_breakpoint.h
+index eef55ea..8e427c7 100644
+--- a/arch/arm/include/asm/hw_breakpoint.h
++++ b/arch/arm/include/asm/hw_breakpoint.h
+@@ -51,6 +51,7 @@ static inline void decode_ctrl_reg(u32 reg,
+ #define ARM_DEBUG_ARCH_V7_ECP14	3
+ #define ARM_DEBUG_ARCH_V7_MM	4
+ #define ARM_DEBUG_ARCH_V7_1	5
++#define ARM_DEBUG_ARCH_V8	6
  
--#define DEBUG_ADD_FILE(name) __DEBUG_ADD_FILE(name, 600)
--#define DEBUG_ADD_FILE_RO(name) __DEBUG_ADD_FILE(name, 400)
-+#define DEBUG_ADD_FILE(name) __DEBUG_ADD_FILE(name, 0600)
-+#define DEBUG_ADD_FILE_RO(name) __DEBUG_ADD_FILE(name, 0400)
- 
- static int iommu_debug_register(struct device *dev, void *data)
+ /* Breakpoint */
+ #define ARM_BREAKPOINT_EXECUTE	0
+diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
+index 3d44660..9da35c6 100644
+--- a/arch/arm/kernel/hw_breakpoint.c
++++ b/arch/arm/kernel/hw_breakpoint.c
+@@ -167,7 +167,7 @@ static int debug_arch_supported(void)
+ /* Can we determine the watchpoint access type from the fsr? */
+ static int debug_exception_updates_fsr(void)
  {
-
+-	return 0;
++	return get_debug_arch() >= ARM_DEBUG_ARCH_V8;
+ }
+ 
+ /* Determine number of WRP registers available. */
+@@ -257,6 +257,7 @@ static int enable_monitor_mode(void)
+ 		break;
+ 	case ARM_DEBUG_ARCH_V7_ECP14:
+ 	case ARM_DEBUG_ARCH_V7_1:
++	case ARM_DEBUG_ARCH_V8:
+ 		ARM_DBG_WRITE(c0, c2, 2, (dscr | ARM_DSCR_MDBGEN));
+ 		isb();
+ 		break;
+-- 
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by the Linux Foundation.
 
