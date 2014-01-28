@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965AbaA1Jfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 04:35:54 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:54102 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595AbaA1Jft (ORCPT
+	id S1755020AbaA1JgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 04:36:23 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:55422 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916AbaA1Jfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 04:35:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,735,1384300800"; 
-   d="scan'208";a="95157608"
-Message-ID: <1390901746.7753.5.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] xen/gnttab: Use phys_addr_t to describe the grant frame
- base address
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Julien Grall <julien.grall@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <stefano.stabellini@eu.citrix.com>,
-        <patches@linaro.org>
-Date: Tue, 28 Jan 2014 09:35:46 +0000
-In-Reply-To: <1390871025-29079-1-git-send-email-julien.grall@linaro.org>
-References: <1390871025-29079-1-git-send-email-julien.grall@linaro.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Tue, 28 Jan 2014 04:35:50 -0500
+Date: Tue, 28 Jan 2014 04:35:46 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cpuset: update MAINTAINERS entry
+Message-ID: <20140128093546.GA19156@htj.dyndns.org>
+References: <52E72405.7070402@huawei.com>
+ <alpine.DEB.2.02.1401272232150.17436@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401272232150.17436@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-28 at 01:03 +0000, Julien Grall wrote:
-> On ARM, address size can be 32 bits or 64 bits (if CONFIG_ARCH_PHYS_ADDR_T_64BIT
-> is enabled).
-> We can't assume that the grant frame base address will always fits in an
-> unsigned long. Use phys_addr_t instead of unsigned long as argument for
-> gnttab_setup_auto_xlat_frames.
+On Mon, Jan 27, 2014 at 10:33:40PM -0800, David Rientjes wrote:
+> It seems like Tejun would obviously be a maintainer as well?
 
-Strictly speaking I think it would be wrong for the tools to provide a
-grant frame address which only kernels with LPAE support enabled could
-use, so the issue is more theoretical than a real danger.
+No, I'm not.  Li has final say on what goes in for cpuset and they may
+even go through other trees.
 
-The patch is still correct though.
+Thanks.
 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
+-- 
+tejun
