@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaA1TYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 14:24:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34286 "EHLO
+	id S1755692AbaA1TYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 14:24:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34293 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619AbaA1TYP (ORCPT
+	with ESMTP id S1755672AbaA1TYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 14:24:15 -0500
-Date: Tue, 28 Jan 2014 11:23:30 -0800
+	Tue, 28 Jan 2014 14:24:17 -0500
+Date: Tue, 28 Jan 2014 11:23:41 -0800
 From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-52bf84aa206cd2c2516dfa3e03b578edf8a3242f@git.kernel.org>
+Message-ID: <tip-ff1df896aef8e0ec1556a5c44f424bd45bfa2cbe@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         peterz@infradead.org, riel@redhat.com, chegu_vinod@hp.com,
         mgorman@suse.de, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, riel@redhat.com, chegu_vinod@hp.com,
         mgorman@suse.de, tglx@linutronix.de
-In-Reply-To: <1390860228-21539-2-git-send-email-riel@redhat.com>
-References: <1390860228-21539-2-git-send-email-riel@redhat.com>
+In-Reply-To: <1390860228-21539-3-git-send-email-riel@redhat.com>
+References: <1390860228-21539-3-git-send-email-riel@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] sched/numa, mm: Remove p->numa_migrate_deferred
-Git-Commit-ID: 52bf84aa206cd2c2516dfa3e03b578edf8a3242f
+Subject: [tip:sched/numa] sched/numa: Rename p->
+ numa_faults to numa_faults_memory
+Git-Commit-ID: ff1df896aef8e0ec1556a5c44f424bd45bfa2cbe
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,182 +30,254 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 28 Jan 2014 11:23:36 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 28 Jan 2014 11:23:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  52bf84aa206cd2c2516dfa3e03b578edf8a3242f
-Gitweb:     http://git.kernel.org/tip/52bf84aa206cd2c2516dfa3e03b578edf8a3242f
+Commit-ID:  ff1df896aef8e0ec1556a5c44f424bd45bfa2cbe
+Gitweb:     http://git.kernel.org/tip/ff1df896aef8e0ec1556a5c44f424bd45bfa2cbe
 Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Mon, 27 Jan 2014 17:03:40 -0500
+AuthorDate: Mon, 27 Jan 2014 17:03:41 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Jan 2014 13:17:04 +0100
+CommitDate: Tue, 28 Jan 2014 13:17:05 +0100
 
-sched/numa, mm: Remove p->numa_migrate_deferred
+sched/numa: Rename p->numa_faults to numa_faults_memory
 
-Excessive migration of pages can hurt the performance of workloads
-that span multiple NUMA nodes.  However, it turns out that the
-p->numa_migrate_deferred knob is a really big hammer, which does
-reduce migration rates, but does not actually help performance.
+In order to get a more consistent naming scheme, making it clear
+which fault statistics track memory locality, and which track
+CPU locality, rename the memory fault statistics.
 
-Now that the second stage of the automatic numa balancing code
-has stabilized, it is time to replace the simplistic migration
-deferral code with something smarter.
-
+Suggested-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Rik van Riel <riel@redhat.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Chegu Vinod <chegu_vinod@hp.com>
-Link: http://lkml.kernel.org/r/1390860228-21539-2-git-send-email-riel@redhat.com
+Link: http://lkml.kernel.org/r/1390860228-21539-3-git-send-email-riel@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/sysctl/kernel.txt | 10 +--------
- include/linux/sched.h           |  1 -
- kernel/sched/fair.c             |  8 --------
- kernel/sysctl.c                 |  7 -------
- mm/mempolicy.c                  | 45 -----------------------------------------
- 5 files changed, 1 insertion(+), 70 deletions(-)
+ include/linux/sched.h |  8 ++++----
+ kernel/sched/core.c   |  4 ++--
+ kernel/sched/debug.c  |  6 +++---
+ kernel/sched/fair.c   | 56 +++++++++++++++++++++++++--------------------------
+ 4 files changed, 37 insertions(+), 37 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 6d48640..760f6e6a 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -386,8 +386,7 @@ feature should be disabled. Otherwise, if the system overhead from the
- feature is too high then the rate the kernel samples for NUMA hinting
- faults may be controlled by the numa_balancing_scan_period_min_ms,
- numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
--numa_balancing_scan_size_mb, numa_balancing_settle_count sysctls and
--numa_balancing_migrate_deferred.
-+numa_balancing_scan_size_mb, and numa_balancing_settle_count sysctls.
- 
- ==============================================================
- 
-@@ -428,13 +427,6 @@ rate for each task.
- numa_balancing_scan_size_mb is how many megabytes worth of pages are
- scanned for a given scan.
- 
--numa_balancing_migrate_deferred is how many page migrations get skipped
--unconditionally, after a page migration is skipped because a page is shared
--with other tasks. This reduces page migration overhead, and determines
--how much stronger the "move task near its memory" policy scheduler becomes,
--versus the "move memory near its task" memory management policy, for workloads
--with shared memory.
--
- ==============================================================
- 
- osrelease, ostype & version:
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ffccdad..d572d5b 100644
+index d572d5b..144d509 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1457,7 +1457,6 @@ struct task_struct {
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
- 	int numa_preferred_nid;
--	int numa_migrate_deferred;
- 	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
+@@ -1469,15 +1469,15 @@ struct task_struct {
+ 	 * Scheduling placement decisions are made based on the these counts.
+ 	 * The values remain static for the duration of a PTE scan
+ 	 */
+-	unsigned long *numa_faults;
++	unsigned long *numa_faults_memory;
+ 	unsigned long total_numa_faults;
+ 
+ 	/*
+ 	 * numa_faults_buffer records faults per node during the current
+-	 * scan window. When the scan completes, the counts in numa_faults
+-	 * decay and these values are copied.
++	 * scan window. When the scan completes, the counts in
++	 * numa_faults_memory decay and these values are copied.
+ 	 */
+-	unsigned long *numa_faults_buffer;
++	unsigned long *numa_faults_buffer_memory;
+ 
+ 	/*
+ 	 * numa_faults_locality tracks if faults recorded during the last
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 81343d6..bc708c5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1744,8 +1744,8 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+ 	p->numa_work.next = &p->numa_work;
+-	p->numa_faults = NULL;
+-	p->numa_faults_buffer = NULL;
++	p->numa_faults_memory = NULL;
++	p->numa_faults_buffer_memory = NULL;
+ 
+ 	INIT_LIST_HEAD(&p->numa_entry);
+ 	p->numa_group = NULL;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index dd52e7f..31b908d 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -533,15 +533,15 @@ static void sched_show_numa(struct task_struct *p, struct seq_file *m)
+ 			unsigned long nr_faults = -1;
+ 			int cpu_current, home_node;
+ 
+-			if (p->numa_faults)
+-				nr_faults = p->numa_faults[2*node + i];
++			if (p->numa_faults_memory)
++				nr_faults = p->numa_faults_memory[2*node + i];
+ 
+ 			cpu_current = !i ? (task_node(p) == node) :
+ 				(pol && node_isset(node, pol->v.nodes));
+ 
+ 			home_node = (p->numa_preferred_nid == node);
+ 
+-			SEQ_printf(m, "numa_faults, %d, %d, %d, %d, %ld\n",
++			SEQ_printf(m, "numa_faults_memory, %d, %d, %d, %d, %ld\n",
+ 				i, node, cpu_current, home_node, nr_faults);
+ 		}
+ 	}
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index efe6457..7cdde91 100644
+index 7cdde91..3e616d7 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -819,14 +819,6 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
- /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
- unsigned int sysctl_numa_balancing_scan_delay = 1000;
+@@ -901,11 +901,11 @@ static inline int task_faults_idx(int nid, int priv)
  
--/*
-- * After skipping a page migration on a shared page, skip N more numa page
-- * migrations unconditionally. This reduces the number of NUMA migrations
-- * in shared memory workloads, and has the effect of pulling tasks towards
-- * where their memory lives, over pulling the memory towards the task.
-- */
--unsigned int sysctl_numa_balancing_migrate_deferred = 16;
--
- static unsigned int task_nr_scan_windows(struct task_struct *p)
+ static inline unsigned long task_faults(struct task_struct *p, int nid)
  {
- 	unsigned long rss = 0;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c8da99f..b41d61d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -384,13 +384,6 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
--	{
--		.procname       = "numa_balancing_migrate_deferred",
--		.data           = &sysctl_numa_balancing_migrate_deferred,
--		.maxlen         = sizeof(unsigned int),
--		.mode           = 0644,
--		.proc_handler   = proc_dointvec,
--	},
- #endif /* CONFIG_NUMA_BALANCING */
- #endif /* CONFIG_SCHED_DEBUG */
- 	{
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 0cd2c4d..68d5c7f 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2304,35 +2304,6 @@ static void sp_free(struct sp_node *n)
- 	kmem_cache_free(sn_cache, n);
+-	if (!p->numa_faults)
++	if (!p->numa_faults_memory)
+ 		return 0;
+ 
+-	return p->numa_faults[task_faults_idx(nid, 0)] +
+-		p->numa_faults[task_faults_idx(nid, 1)];
++	return p->numa_faults_memory[task_faults_idx(nid, 0)] +
++		p->numa_faults_memory[task_faults_idx(nid, 1)];
  }
  
--#ifdef CONFIG_NUMA_BALANCING
--static bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
--{
--	/* Never defer a private fault */
--	if (cpupid_match_pid(p, last_cpupid))
--		return false;
--
--	if (p->numa_migrate_deferred) {
--		p->numa_migrate_deferred--;
--		return true;
--	}
--	return false;
--}
--
--static inline void defer_numa_migrate(struct task_struct *p)
--{
--	p->numa_migrate_deferred = sysctl_numa_balancing_migrate_deferred;
--}
--#else
--static inline bool numa_migrate_deferred(struct task_struct *p, int last_cpupid)
--{
--	return false;
--}
--
--static inline void defer_numa_migrate(struct task_struct *p)
--{
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- /**
-  * mpol_misplaced - check whether current page node is valid in policy
-  *
-@@ -2435,24 +2406,8 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 		 */
- 		last_cpupid = page_cpupid_xchg_last(page, this_cpupid);
- 		if (!cpupid_pid_unset(last_cpupid) && cpupid_to_nid(last_cpupid) != thisnid) {
--
--			/* See sysctl_numa_balancing_migrate_deferred comment */
--			if (!cpupid_match_pid(current, last_cpupid))
--				defer_numa_migrate(current);
--
- 			goto out;
- 		}
--
--		/*
--		 * The quadratic filter above reduces extraneous migration
--		 * of shared pages somewhat. This code reduces it even more,
--		 * reducing the overhead of page migrations of shared pages.
--		 * This makes workloads with shared pages rely more on
--		 * "move task near its memory", and less on "move memory
--		 * towards its task", which is exactly what we want.
--		 */
--		if (numa_migrate_deferred(current, last_cpupid))
--			goto out;
+ static inline unsigned long group_faults(struct task_struct *p, int nid)
+@@ -927,7 +927,7 @@ static inline unsigned long task_weight(struct task_struct *p, int nid)
+ {
+ 	unsigned long total_faults;
+ 
+-	if (!p->numa_faults)
++	if (!p->numa_faults_memory)
+ 		return 0;
+ 
+ 	total_faults = p->total_numa_faults;
+@@ -1255,7 +1255,7 @@ static int task_numa_migrate(struct task_struct *p)
+ static void numa_migrate_preferred(struct task_struct *p)
+ {
+ 	/* This task has no NUMA fault statistics yet */
+-	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults))
++	if (unlikely(p->numa_preferred_nid == -1 || !p->numa_faults_memory))
+ 		return;
+ 
+ 	/* Periodically retry migrating the task to the preferred node */
+@@ -1371,16 +1371,16 @@ static void task_numa_placement(struct task_struct *p)
+ 			long diff;
+ 
+ 			i = task_faults_idx(nid, priv);
+-			diff = -p->numa_faults[i];
++			diff = -p->numa_faults_memory[i];
+ 
+ 			/* Decay existing window, copy faults since last scan */
+-			p->numa_faults[i] >>= 1;
+-			p->numa_faults[i] += p->numa_faults_buffer[i];
+-			fault_types[priv] += p->numa_faults_buffer[i];
+-			p->numa_faults_buffer[i] = 0;
++			p->numa_faults_memory[i] >>= 1;
++			p->numa_faults_memory[i] += p->numa_faults_buffer_memory[i];
++			fault_types[priv] += p->numa_faults_buffer_memory[i];
++			p->numa_faults_buffer_memory[i] = 0;
+ 
+-			faults += p->numa_faults[i];
+-			diff += p->numa_faults[i];
++			faults += p->numa_faults_memory[i];
++			diff += p->numa_faults_memory[i];
+ 			p->total_numa_faults += diff;
+ 			if (p->numa_group) {
+ 				/* safe because we can only change our own group */
+@@ -1465,7 +1465,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 		grp->gid = p->pid;
+ 
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+-			grp->faults[i] = p->numa_faults[i];
++			grp->faults[i] = p->numa_faults_memory[i];
+ 
+ 		grp->total_faults = p->total_numa_faults;
+ 
+@@ -1523,8 +1523,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	double_lock(&my_grp->lock, &grp->lock);
+ 
+ 	for (i = 0; i < 2*nr_node_ids; i++) {
+-		my_grp->faults[i] -= p->numa_faults[i];
+-		grp->faults[i] += p->numa_faults[i];
++		my_grp->faults[i] -= p->numa_faults_memory[i];
++		grp->faults[i] += p->numa_faults_memory[i];
+ 	}
+ 	my_grp->total_faults -= p->total_numa_faults;
+ 	grp->total_faults += p->total_numa_faults;
+@@ -1550,12 +1550,12 @@ void task_numa_free(struct task_struct *p)
+ {
+ 	struct numa_group *grp = p->numa_group;
+ 	int i;
+-	void *numa_faults = p->numa_faults;
++	void *numa_faults = p->numa_faults_memory;
+ 
+ 	if (grp) {
+ 		spin_lock(&grp->lock);
+ 		for (i = 0; i < 2*nr_node_ids; i++)
+-			grp->faults[i] -= p->numa_faults[i];
++			grp->faults[i] -= p->numa_faults_memory[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+@@ -1565,8 +1565,8 @@ void task_numa_free(struct task_struct *p)
+ 		put_numa_group(grp);
  	}
  
- 	if (curnid != polnid)
+-	p->numa_faults = NULL;
+-	p->numa_faults_buffer = NULL;
++	p->numa_faults_memory = NULL;
++	p->numa_faults_buffer_memory = NULL;
+ 	kfree(numa_faults);
+ }
+ 
+@@ -1591,16 +1591,16 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 		return;
+ 
+ 	/* Allocate buffer to track faults on a per-node basis */
+-	if (unlikely(!p->numa_faults)) {
+-		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
++	if (unlikely(!p->numa_faults_memory)) {
++		int size = sizeof(*p->numa_faults_memory) * 2 * nr_node_ids;
+ 
+ 		/* numa_faults and numa_faults_buffer share the allocation */
+-		p->numa_faults = kzalloc(size * 2, GFP_KERNEL|__GFP_NOWARN);
+-		if (!p->numa_faults)
++		p->numa_faults_memory = kzalloc(size * 2, GFP_KERNEL|__GFP_NOWARN);
++		if (!p->numa_faults_memory)
+ 			return;
+ 
+-		BUG_ON(p->numa_faults_buffer);
+-		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
++		BUG_ON(p->numa_faults_buffer_memory);
++		p->numa_faults_buffer_memory = p->numa_faults_memory + (2 * nr_node_ids);
+ 		p->total_numa_faults = 0;
+ 		memset(p->numa_faults_locality, 0, sizeof(p->numa_faults_locality));
+ 	}
+@@ -1629,7 +1629,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 	if (migrated)
+ 		p->numa_pages_migrated += pages;
+ 
+-	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
++	p->numa_faults_buffer_memory[task_faults_idx(node, priv)] += pages;
+ 	p->numa_faults_locality[!!(flags & TNF_FAULT_LOCAL)] += pages;
+ }
+ 
+@@ -4771,7 +4771,7 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ {
+ 	int src_nid, dst_nid;
+ 
+-	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults ||
++	if (!sched_feat(NUMA_FAVOUR_HIGHER) || !p->numa_faults_memory ||
+ 	    !(env->sd->flags & SD_NUMA)) {
+ 		return false;
+ 	}
+@@ -4802,7 +4802,7 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
+ 	if (!sched_feat(NUMA) || !sched_feat(NUMA_RESIST_LOWER))
+ 		return false;
+ 
+-	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++	if (!p->numa_faults_memory || !(env->sd->flags & SD_NUMA))
+ 		return false;
+ 
+ 	src_nid = cpu_to_node(env->src_cpu);
