@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaA1VIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 16:08:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36761 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861AbaA1VII (ORCPT
+	id S1755895AbaA1VIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:08:38 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:20646 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738AbaA1VIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:08:08 -0500
-Date: Tue, 28 Jan 2014 22:07:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
+	Tue, 28 Jan 2014 16:08:36 -0500
+Message-ID: <1390943313.11839.7.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 0/5] mutex: Mutex scalability patches
+From: Davidlohr Bueso <davidlohr@hp.com>
 To: Jason Low <jason.low2@hp.com>
-Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
+Cc: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
         linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Message-ID: <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Date: Tue, 28 Jan 2014 13:08:33 -0800
+In-Reply-To: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
 References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-6-git-send-email-jason.low2@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390936396-3962-6-git-send-email-jason.low2@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 11:13:16AM -0800, Jason Low wrote:
-> Before a thread attempts mutex spin on owner, it is first added to a queue
-> using an MCS lock so that only 1 thread spins on owner at a time. However, when
-> the spinner is queued, it is unable to check if it needs to reschedule and
-> will remain on the queue. This could cause the spinner to spin longer
-> than its allocated time. 
-
-what allocated time?
-
-> However, once it is the spinner's turn to spin on
-> owner, it would immediately go to slowpath if it need_resched() and gets no spin
-> time. In these situations, not only does the spinner take up more time for a
-> chance to spin for the mutex, it also ends up not getting to spin once it
-> gets its turn.
+On Tue, 2014-01-28 at 11:13 -0800, Jason Low wrote:
+> v1->v2:
+> - Replace the previous patch that limits the # of times a thread can spin with
+>   !lock->owner with a patch that releases the mutex before holding the wait_lock
+>   in the __mutex_unlock_common_slowpath() function.
+> - Add a patch which allows a thread to attempt 1 mutex_spin_on_owner() without
+>   checking need_resched() if need_resched() triggered while in the MCS queue.
+> - Add a patch which disables preemption between modifying lock->owner and
+>   acquiring/releasing the mutex.
 > 
-> One solution would be to exit the MCS queue and go to mutex slowpath if
-> need_resched(). However, that may require a lot of overhead. For instance, if a
-> thread at the end of the queue need_resched(), in order to remove it from the
-> queue, we would have to unqueue and requeue all other spinners in front of it.
-
-If you can do that, you can also walk the list and find prev and cmpxchg
-the entry out. But I don't think you can do either, as we simply don't
-have a head pointer.
-
-> This RFC patch tries to address the issue in another context by avoiding
-> situations where spinners immediately get sent to the slowpath on
-> need_resched() upon getting to spin. 
-
-> We will first check for need_resched()
-> right after acquiring the MCS lock. If need_resched() is true, then
-> need_resched() triggered while the thread is waiting in the MCS queue (since
-> patch 1 makes the spinner check for need_resched() before entering the queue).
-
-> In this case, we will allow the thread to have at least 1 try to do
-> mutex_spin_on_owner() regardless of need_resched(). 
-
-No! We should absolutely not ever willfully ignore need_resched(). Esp.
-not for unbounded spins.
-
-> This patch also removes
-> the need_resched() in the outer loop in case we require a few extra spins to
-> observe lock->count == 1, and patch 4 ensures we won't be spinning with
-> lock owner preempted.
+> This patchset addresses a few scalability issues with mutexes.
 > 
-> And if the need_resched() check after acquiring the MCS lock is false, then
-> we won't give the spinner any extra spinning.
+> Patch 1 has the mutex_can_spin_on_owner() funtion check for need_resched()
+> before being added to MCS queue. 
+> 
+> Patches 2, 3 are to fix issues with threads spinning when
+> there is no lock owner when the mutex is under high contention.
+> 
+> Patch 4 and 5 are RFC patches. Patch 4 disables preemption between modifying
+> lock->owner and locking/unlocking the mutex. Patch 5 addresses the situation
+> where spinners can potentially wait a long time in the MCS queue for a chance
+> to spin on mutex owner (not checking for need_resched()), yet ends up not
+> getting to spin.
+> 
+> These changes benefit the AIM7 fserver and high_systime workloads (run on disk)
+> on an 8 socket, 80 core box. The table below shows the performance
+> improvements with 3.13 + patches 1, 2, 3 when compared to the 3.13 baseline,
+> and the performance improvements with 3.13 + all 5 patches compared to
+> the 3.13 baseline.
 
-But urgh, nasty problem. Lemme ponder this a bit.
+A lot of these changes are quite subtle. It would be good to see how
+smaller systems are impacted with other workloads, not only big servers.
+Since you see improvement in fserver, perhaps similar workloads could
+also be of use: fio, filebench, postmark, fstress, etc.
+
+Thanks,
+Davidlohr
+
