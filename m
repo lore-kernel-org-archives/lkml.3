@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaA1I4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 03:56:09 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:49420 "EHLO gloria.sntech.de"
+	id S1754838AbaA1I55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 03:57:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53503 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198AbaA1I4H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 03:56:07 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-omap@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH V2] regulator: fixed: update to devm_* API
-Date: Tue, 28 Jan 2014 09:55:26 +0100
-Message-ID: <1939430.3DVPas1i8V@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAKDJKT4jPLmtrm6Ngp+nT5vf0H4zXwwAM=oURDF-DSAJodVN6A@mail.gmail.com>
-References: <1390878720-8676-1-git-send-email-badarkhe.manish@gmail.com> <10462793.IYoAK2XtXv@phil> <CAKDJKT4jPLmtrm6Ngp+nT5vf0H4zXwwAM=oURDF-DSAJodVN6A@mail.gmail.com>
+	id S1754662AbaA1I54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 03:57:56 -0500
+Date: Tue, 28 Jan 2014 08:57:53 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.14] mm, mempolicy: fix mempolicy printing in
+ numa_maps
+Message-ID: <20140128085753.GN4963@suse.de>
+References: <alpine.DEB.2.02.1401251902180.3140@chino.kir.corp.google.com>
+ <20140127110330.GH4963@suse.de>
+ <alpine.DEB.2.02.1401271526010.17114@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401271526010.17114@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, 28. January 2014 14:16:39 Manish Badarkhe wrote:
-> Hi Heiko
+On Mon, Jan 27, 2014 at 03:31:32PM -0800, David Rientjes wrote:
+> On Mon, 27 Jan 2014, Mel Gorman wrote:
 > 
-> Thank you for your reply.
+> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> > index c2ccec0..c1a2573 100644
+> > --- a/mm/mempolicy.c
+> > +++ b/mm/mempolicy.c
+> > @@ -120,6 +120,14 @@ static struct mempolicy default_policy = {
+> >  
+> >  static struct mempolicy preferred_node_policy[MAX_NUMNODES];
+> >  
+> > +/* Returns true if the policy is the default policy */
+> > +static bool mpol_is_default(struct mempolicy *pol)
+> > +{
+> > +	return !pol ||
+> > +		pol == &default_policy ||
+> > +		pol == &preferred_node_policy[numa_node_id()];
+> > +}
+> > +
+> >  static struct mempolicy *get_task_policy(struct task_struct *p)
+> >  {
+> >  	struct mempolicy *pol = p->mempolicy;
 > 
-> On Tue, Jan 28, 2014 at 1:08 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > On Tuesday, 28. January 2014 12:46:01 Manish Badarkhe wrote:
-> >> Hi Dmitry,
-> >> 
-> >> Thank you for your review.
-> >> 
-> >> On Tue, Jan 28, 2014 at 12:03 PM, Dmitry Torokhov
-> >> 
-> >> <dmitry.torokhov@gmail.com> wrote:
-> >> > Hi Manish,
-> >> > 
-> >> > On Tue, Jan 28, 2014 at 08:42:00AM +0530, Manish Badarkhe wrote:
-> >> >> Update the code to use devm_* API so that driver core will manage
-> >> >> resources.
-> >> >> 
-> >> >> Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
-> >> >> ---
-> >> >> Changes since V1:
-> >> >> 1. Updated driver to use "devm_kzalloc" to "kstrdup".
-> >> >> 2. Updated commit message.
-> >> >> 
-> >> >> Not tested on any board.
-> >> >> 
-> >> >> :100644 100644 5ea64b9... e9763a4... M       
-> >> >> :drivers/regulator/fixed.c
-> >> >> :
-> >> >>  drivers/regulator/fixed.c |   42
-> >> >>  ++++++++++++------------------------------
-> >> >>  1 file changed, 12 insertions(+), 30 deletions(-)
-> >> >> 
-> >> >> diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-> >> >> index 5ea64b9..e9763a4 100644
-> >> >> --- a/drivers/regulator/fixed.c
-> >> >> +++ b/drivers/regulator/fixed.c
-> >> >> @@ -132,15 +132,15 @@ static int reg_fixed_voltage_probe(struct
-> >> >> platform_device *pdev)>>
-> >> >> 
-> >> >>                              GFP_KERNEL);
-> >> >>       
-> >> >>       if (drvdata == NULL) {
-> >> >>       
-> >> >>               dev_err(&pdev->dev, "Failed to allocate device data\n");
-> >> >> 
-> >> >> -             ret = -ENOMEM;
-> >> >> -             goto err;
-> >> >> +             return -ENOMEM;
-> >> >> 
-> >> >>       }
-> >> >> 
-> >> >> -     drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
-> >> >> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
-> >> >> +                                       strlen(config->supply_name) +
-> >> >> 1,
-> >> >> +                                       GFP_KERNEL);
-> >> >> 
-> >> >>       if (drvdata->desc.name == NULL) {
-> >> >>       
-> >> >>               dev_err(&pdev->dev, "Failed to allocate supply name\n");
-> >> >> 
-> >> >> -             ret = -ENOMEM;
-> >> >> -             goto err;
-> >> >> +             return -ENOMEM;
-> >> >> 
-> >> >>       }
-> >> > 
-> >> > Umm, I am fairly certain that devm_kzalloc() can't be used as a
-> >> > substitute for kstrdup, at least not without accompanying memcpy.
-> >> 
-> >> Yes, I have provided allocation but it should be followed with
-> >> assignment.
-> >> Can I modify like this,
-> >> 
-> >> +     drvdata->desc.name = devm_kzalloc(&pdev->dev,
-> >> +                                       strlen(config->supply_name) + 1,
-> >> +                                       GFP_KERNEL);
-> >> +     if (drvdata->desc.name)
-> >> +     sprintf(drvdata->desc.name, "%s", config->supply_name);
-> > 
-> > hmm, so you replaced a general helper function by open coding the string-
-> > duplication. Doesn't this defeat the target of simplifying the code?
+> I was trying to avoid doing this because numa_node_id() of process A 
+> reading numa_maps for process B has nothing to do with the policy of the 
+> process A and I thought MPOL_F_MORON's purpose was exactly for what it is 
+> used for today. It works today since you initialize preferred_node_policy 
+> for all nodes, but could this ever change to only be valid for N_MEMORY 
+> node states, for example?
 > 
-> Intention here, is to use devm_ API and to adopt this I have to do these
-> modifications for "kstrdup" functions. I have seen in regulator folder
-> almost all drivers adopted to "devm_" API. Hence same thing I am following
-> to update this driver. Please let me know whether to go ahead with this
-> patch or retain driver as it is.
 
-I don't have a strong opinion on this and others are most likely more qualified 
-to have a definitive answer, I just found it strange to exchange one open-coded 
-pattern against another open-coded one.
+You're right about the numa_node_id() usage, I should have called
+task_node(p) to read the node it's currently running but that is potentially
+obscure for different reasons.
 
-So don't let me keep you from it ;-)
+> I'm not sure what the harm in updating mpol_to_str() would be if 
+> MPOL_F_MORON is to change in the future?
 
-Heiko
+It just has to be caught correctly and handled and it's a little non-obvious
+but ok if I see a patch that modifies how MPOL_F_MORON is used in the
+future I should remember to check for this.  I withdraw my objection for
+your patch so
 
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+-- 
+Mel Gorman
+SUSE Labs
