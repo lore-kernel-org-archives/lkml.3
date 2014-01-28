@@ -1,111 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaA1NmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 08:42:11 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:49477 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679AbaA1NmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 08:42:08 -0500
-From: Tom Gundersen <teg@jklm.no>
-To: linux-kernel@vger.kernel.org
-Cc: linux-input@vger.kernel.org, kay@vrfy.org, Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH] module: allow multiple calls to MODULE_DEVICE_TABLE() per module
-Date: Tue, 28 Jan 2014 14:42:26 +0100
-Message-Id: <1390916546-27155-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <87k3dkzy4t.fsf@rustcorp.com.au>
-References: <87k3dkzy4t.fsf@rustcorp.com.au>
+	id S1755017AbaA1Nsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 08:48:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58395 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985AbaA1Nsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 08:48:51 -0500
+Date: Tue, 28 Jan 2014 14:48:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] mm: page-writeback: fix dirty_balance_reserve
+ subtraction from dirtyable memory
+Message-ID: <20140128134849.GA4625@dhcp22.suse.cz>
+References: <1390600984-13925-1-git-send-email-hannes@cmpxchg.org>
+ <1390600984-13925-2-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390600984-13925-2-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
-second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
-the modaliases being exposed.
+On Fri 24-01-14 17:03:03, Johannes Weiner wrote:
+> The dirty_balance_reserve is an approximation of the fraction of free
+> pages that the page allocator does not make available for page cache
+> allocations.  As a result, it has to be taken into account when
+> calculating the amount of "dirtyable memory", the baseline to which
+> dirty_background_ratio and dirty_ratio are applied.
+> 
+> However, currently the reserve is subtracted from the sum of free and
+> reclaimable pages, which is non-sensical and leads to erroneous
+> results when the system is dominated by unreclaimable pages and the
+> dirty_balance_reserve is bigger than free+reclaimable.  In that case,
+> at least the already allocated cache should be considered dirtyable.
+> 
+> Fix the calculation by subtracting the reserve from the amount of free
+> pages, then adding the reclaimable pages on top.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-This fixes the problem by including the name of the device_id table in the
-__mod_*_device_table alias, allowing us to export several device_id tables
-per module.
+Makes sense
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Suggested-by: Kay Sievers <kay@vrfy.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Tom Gundersen <teg@jklm.no>
----
- include/linux/module.h   |  2 +-
- scripts/mod/file2alias.c | 14 +++++++++-----
- 2 files changed, 10 insertions(+), 6 deletions(-)
+> ---
+>  mm/page-writeback.c | 52 +++++++++++++++++++++++-----------------------------
+>  1 file changed, 23 insertions(+), 29 deletions(-)
+> 
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 63807583d8e8..79cf52b058a7 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -191,6 +191,25 @@ static unsigned long writeout_period_time = 0;
+>   * global dirtyable memory first.
+>   */
+>  
+> +/**
+> + * zone_dirtyable_memory - number of dirtyable pages in a zone
+> + * @zone: the zone
+> + *
+> + * Returns the zone's number of pages potentially available for dirty
+> + * page cache.  This is the base value for the per-zone dirty limits.
+> + */
+> +static unsigned long zone_dirtyable_memory(struct zone *zone)
+> +{
+> +	unsigned long nr_pages;
+> +
+> +	nr_pages = zone_page_state(zone, NR_FREE_PAGES);
+> +	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+> +
+> +	nr_pages += zone_reclaimable_pages(zone);
+> +
+> +	return nr_pages;
+> +}
+> +
+>  static unsigned long highmem_dirtyable_memory(unsigned long total)
+>  {
+>  #ifdef CONFIG_HIGHMEM
+> @@ -201,8 +220,7 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+>  		struct zone *z =
+>  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+>  
+> -		x += zone_page_state(z, NR_FREE_PAGES) +
+> -		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
+> +		x += zone_dirtyable_memory(zone);
+>  	}
+>  	/*
+>  	 * Unreclaimable memory (kernel memory or anonymous memory
+> @@ -238,9 +256,11 @@ static unsigned long global_dirtyable_memory(void)
+>  {
+>  	unsigned long x;
+>  
+> -	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+> +	x = global_page_state(NR_FREE_PAGES);
+>  	x -= min(x, dirty_balance_reserve);
+>  
+> +	x += global_reclaimable_pages();
+> +
+>  	if (!vm_highmem_is_dirtyable)
+>  		x -= highmem_dirtyable_memory(x);
+>  
+> @@ -289,32 +309,6 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+>  }
+>  
+>  /**
+> - * zone_dirtyable_memory - number of dirtyable pages in a zone
+> - * @zone: the zone
+> - *
+> - * Returns the zone's number of pages potentially available for dirty
+> - * page cache.  This is the base value for the per-zone dirty limits.
+> - */
+> -static unsigned long zone_dirtyable_memory(struct zone *zone)
+> -{
+> -	/*
+> -	 * The effective global number of dirtyable pages may exclude
+> -	 * highmem as a big-picture measure to keep the ratio between
+> -	 * dirty memory and lowmem reasonable.
+> -	 *
+> -	 * But this function is purely about the individual zone and a
+> -	 * highmem zone can hold its share of dirty pages, so we don't
+> -	 * care about vm_highmem_is_dirtyable here.
+> -	 */
+> -	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
+> -		zone_reclaimable_pages(zone);
+> -
+> -	/* don't allow this to underflow */
+> -	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
+> -	return nr_pages;
+> -}
+> -
+> -/**
+>   * zone_dirty_limit - maximum number of dirty pages allowed in a zone
+>   * @zone: the zone
+>   *
+> -- 
+> 1.8.4.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 15cd6b1..7732d76 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -143,7 +143,7 @@ extern const struct gtype##_id __mod_##gtype##_table		\
- #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
- 
- #define MODULE_DEVICE_TABLE(type,name)		\
--  MODULE_GENERIC_TABLE(type##_device,name)
-+  MODULE_GENERIC_TABLE(type##__##name##_device,name)
- 
- /* Version of form [<epoch>:]<version>[-<extra-version>].
-    Or for CVS/RCS ID version, everything but the number is stripped.
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 2370863..6778381 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -42,7 +42,7 @@ typedef unsigned char	__u8;
- 
- /* This array collects all instances that use the generic do_table */
- struct devtable {
--	const char *device_id; /* name of table, __mod_<name>_device_table. */
-+	const char *device_id; /* name of table, __mod_<name>__*_device_table. */
- 	unsigned long id_size;
- 	void *function;
- };
-@@ -146,7 +146,8 @@ static void device_id_check(const char *modname, const char *device_id,
- 
- 	if (size % id_size || size < id_size) {
- 		fatal("%s: sizeof(struct %s_device_id)=%lu is not a modulo "
--		      "of the size of section __mod_%s_device_table=%lu.\n"
-+		      "of the size of "
-+		      "section __mod_%s__<identifier>_device_table=%lu.\n"
- 		      "Fix definition of struct %s_device_id "
- 		      "in mod_devicetable.h\n",
- 		      modname, device_id, id_size, device_id, size, device_id);
-@@ -1206,7 +1207,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- {
- 	void *symval;
- 	char *zeros = NULL;
--	const char *name;
-+	const char *name, *identifier;
- 	unsigned int namelen;
- 
- 	/* We're looking for a section relative symbol */
-@@ -1217,7 +1218,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 	if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
- 		return;
- 
--	/* All our symbols are of form <prefix>__mod_XXX_device_table. */
-+	/* All our symbols are of form <prefix>__mod_<name>__<identifier>_device_table. */
- 	name = strstr(symname, "__mod_");
- 	if (!name)
- 		return;
-@@ -1227,7 +1228,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
- 		return;
- 	if (strcmp(name + namelen - strlen("_device_table"), "_device_table"))
- 		return;
--	namelen -= strlen("_device_table");
-+	identifier = strstr(name, "__");
-+	if (!identifier)
-+		return;
-+	namelen = identifier - name;
- 
- 	/* Handle all-NULL symbols allocated into .bss */
- 	if (info->sechdrs[get_secindex(info, sym)].sh_type & SHT_NOBITS) {
 -- 
-1.8.5.3
-
+Michal Hocko
+SUSE Labs
