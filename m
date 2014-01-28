@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaA1KZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 05:25:09 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60518 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaA1KZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 05:25:08 -0500
-Date: Tue, 28 Jan 2014 10:24:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>, Stephen Warren <swarren@wwwdotorg.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Wei Ni <wni@nvidia.com>,
-        linux-kernel@vger.kernel.org, LM Sensors <lm-sensors@lm-sensors.org>
-Message-ID: <20140128102451.GF11841@sirena.org.uk>
-References: <20140126214936.7736f530@endymion.delvare>
- <52E58330.90602@roeck-us.net>
- <52E58656.7000903@roeck-us.net>
- <20140126235103.GP11727@sirena.org.uk>
- <52E6951C.60609@wwwdotorg.org>
- <20140127185031.GA28910@roeck-us.net>
- <20140127230447.7e8be3a4@endymion.delvare>
- <20140127234135.GA18059@roeck-us.net>
- <20140127235815.GA8513@sirena.org.uk>
- <52E71708.7010607@roeck-us.net>
+	id S1754873AbaA1K0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 05:26:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57246 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775AbaA1K0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 05:26:05 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140128093701.GC2221@dhcp22.suse.cz>
+References: <20140127163758.GC6839@pd.tnic> <52E68C25.1070804@zytor.com> <20140127164544.GE6839@pd.tnic> <20140128093701.GC2221@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+KKZr+d1tCZIVt60"
-Content-Disposition: inline
-In-Reply-To: <52E71708.7010607@roeck-us.net>
-X-Cookie: O.K., fine.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [lm-sensors] lm90 driver no longer working on PCs in 3.13
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC] x86: Disable traditional FPU instructions too
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 28 Jan 2014 02:25:09 -0800
+To: Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiri Kosina <jkosina@suse.cz>, Michael Matz <matz@suse.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Message-ID: <30d5350d-2f0d-4103-a28d-cb9b796fd8ce@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If that is intentional it needs a big huge freaking comment recording why it is not a bug.  I would expect that to generate a FP multiply.
 
---+KKZr+d1tCZIVt60
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On January 28, 2014 1:37:01 AM PST, Michal Hocko <mhocko@suse.cz> wrote:
+>[CCing Ralf for MIPS.]
+>
+>On Mon 27-01-14 17:45:44, Borislav Petkov wrote:
+>> On Mon, Jan 27, 2014 at 08:41:09AM -0800, H. Peter Anvin wrote:
+>> > I don't think it'd hurt... although I think the above pretty much
+>> > requires that the code contain actual floating-point types to ever
+>be
+>> > generated.
+>> 
+>> Yes, that is supposed to catch usage of the 'E' floating constant,
+>for
+>> example, in definitions. It is a build-time assertion, if you want.
+>:)
+>
+>And git grep says that mips abuses this notation:
+>arch/mips/include/asm/kvm_host.h:#define MS_TO_NS(x) (x * 1E6L)
+>
+>I do not have cross-compiler set up to check whether this is a real
+>issue because include/media/rc-core.h defines the same macro correctly
+>so the real code might end up using the right variant.
 
-On Mon, Jan 27, 2014 at 06:33:44PM -0800, Guenter Roeck wrote:
-
-> I confirmed that your two patches ("regulator: core: Correct default
-> return value for full constraints" and "ACPI: Flag use of ACPI and ACPI
-> idioms for power supplies to regulator API") together fix the problem
-> with the lm90 driver, at least for ACPI based systems.
-
-Great, thanks!
-
---+KKZr+d1tCZIVt60
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS54VwAAoJELSic+t+oim9kJQP/087RVhgPHFHw7dJC3dGkV9l
-u1iQvFW7G1LG8P19BpcC6l2jJ7KzF3fJOqBJSlaVWmvq4j1tI9Tjmt2UtB9tb+wZ
-3ChuwUQy0Qm5SwVwFPzK8TUxuU/AFoas6uyez/KpvOG2LgJPSI+HwquWqAj2EjKg
-Vem5JGSVnX4sp4tGwiIsvIIzFKQa05c2+iRGzks34B+scvMHUGhqf2cU3lSh8ax2
-gIDJWE1iOq6zEFyW+VfQt/IFotg6YaNQzpb42LODx/fbCUb7IH5OqXqMlmnsiw0V
-oT5ihIZvSNKUGqVuTTmYwdkrOdUCJxbZ8uKaXvfA3mtJDHWqzR3lyd4ygf54GKbc
-47K+mIR7oBaWHHRpLaJvgTeTytezbpkzxBnHLdvpBMXH9FBQxP18/VR+RPDoAgFZ
-n76SgcBkNl6qddeKAHFV+k2upuajDSTQ0KhN3q27ln/2SS9MAcISEINfX4aLHpyg
-9tlluszIgvE1aYDm868rBhggm6x0oBqNtCWkx4dQGpbjVmlefDQ+FUkjaQH3nGFg
-iUO+sq3PPc+/o2fMP5socIBeaFN1p0hrbLggdp40Lp6csBXyMBuIKlLUEcfp1bJp
-mR5vkZ92gX6uY9x3XlmqtWJNWsqKE7eG/BXUNHicNbe3Y2vizVUnwmjmSLpFxC1S
-QU01v/zmkP/qgo2l2Bd3
-=e8QD
------END PGP SIGNATURE-----
-
---+KKZr+d1tCZIVt60--
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
