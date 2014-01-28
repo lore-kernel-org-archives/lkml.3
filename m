@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaA1MJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 07:09:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:60161 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaA1MJD (ORCPT
+	id S1755162AbaA1MJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 07:09:55 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:40790 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaA1MJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 07:09:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>, dmaengine@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Patch v3 2/2] dmaengine: qcom_bam_dma: Add device tree binding
-Date: Tue, 28 Jan 2014 13:08:47 +0100
-Message-ID: <9156959.vu4XdoKglI@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <4916428.f0GtxdkWKj@wuerfel>
-References: <1390890471-14882-1-git-send-email-agross@codeaurora.org> <20140128113242.GJ10628@intel.com> <4916428.f0GtxdkWKj@wuerfel>
+	Tue, 28 Jan 2014 07:09:53 -0500
+Message-ID: <52E79DEA.3010408@siemens.com>
+Date: Tue, 28 Jan 2014 13:09:14 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:GOOsqVkMm5aESw61AgA68O2rkYIoBqWKPtolcoH2AvW
- /wCu7hqU2qkuhm1VnpbnCFVBAj22p398iZHG1IYseUwMucFNtT
- r8nPLtS4+KcH52OiDTQewC6RzIq1v9hG0XuK611D2Fbhz/rKuK
- XxnXaey3l8OK/qlaGiFMuLVU5jzInm5QHZABoudcNOG6gMtB7y
- oS1DJZsxiIuKL7vtTYERpQfAKbgmCA8NgERADDnYe80ui1R9w+
- iOQJIyTifKEXaifUtasG6xXf4mugMkJj5CQFBO4u3/zB+sly3g
- 5XIme4XmfFe0FKYeYgirWHKfUIwarbyLls+z+eTPN/LWkXzwwz
- pn+tbCpLKMXEL1X8XyAo=
+To: Ingo Molnar <mingo@kernel.org>
+CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Plug racy xAPIC access of CPU hotplug code
+References: <52E6AFFE.3030004@siemens.com> <20140127202252.GA11821@two.firstfloor.org> <52E767C2.2090807@siemens.com> <20140128115549.GA26230@gmail.com>
+In-Reply-To: <20140128115549.GA26230@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 January 2014 13:05:10 Arnd Bergmann wrote:
-> On Tuesday 28 January 2014 17:02:42 Vinod Koul wrote:
-> > On Tue, Jan 28, 2014 at 11:17:57AM +0000, Russell King - ARM Linux wrote:
-> > > On Tue, Jan 28, 2014 at 10:16:53AM +0100, Arnd Bergmann wrote:
-> > > > On Tuesday 28 January 2014 10:05:35 Lars-Peter Clausen wrote:
-> > > > > Why does the direction needs to be specified in specifier? I see two
-> > > > > options, either the direction per is fixed in hardware. In that case the DMA
-> > > > > controller node should describe which channel is which direction. Or the
-> > > > > direction is not fixed in hardware and can be changed at runtime in which
-> > > > > case it should be set on a per descriptor basis.
-> > > > 
-> > > > Normally the direction is implied by dmaengine_slave_config().
-> > > 
-> > > No.  The direction argument in there is deprecated - we've been talking
-> > > about removing it for some time.
-> > > 
-> > > DMA engine drivers should store all parameters of the configuration, and
-> > > then select the appropriate ones when preparing a transfer (which itself
-> > > involves a direction.)
-> > 
-> > Right all the prep_ calls for slave cases have explcit direction argument so
-> > sending it using slave config makes no sense. So will remove it after the merge
-> > window closes and fix 
+On 2014-01-28 12:55, Ingo Molnar wrote:
 > 
-> Ok, thanks for clearing up my mistake. However, the argument remains:
-> the direction doesn't need to be in the DT DMA descriptor since it
-> gets set by software anyway.
+> * Jan Kiszka <jan.kiszka@siemens.com> wrote:
+> 
+>> On 2014-01-27 21:22, Andi Kleen wrote:
+>>> On Mon, Jan 27, 2014 at 08:14:06PM +0100, Jan Kiszka wrote:
+>>>> apic_icr_write and its users in smpboot.c were apparently written under
+>>>> the assumption that this code would only run during early boot. But
+>>>> nowadays we also execute it when onlining a CPU later on while the
+>>>> system is fully running. That will make wakeup_cpu_via_init_nmi and,
+>>>> thus, also native_apic_icr_write run in plain process context. If we
+>>>> migrate the caller to a different CPU at the wrong time or interrupt it
+>>>> and write to ICR/ICR2 to send unrelated IPIs, we can end up sending
+>>>> INIT, SIPI or NMIs to wrong CPUs.
+>>>>
+>>>> Fix this by disabling interrupts during the write to the ICR halves and
+>>>> disable preemption around waiting for ICR availability and using it.
+>>>
+>>> If you just want to disable migration use get_cpu()/put_cpu()
+>>
+>> Fine with me if that is now preferred. Will that be the upstream way of
+>> -rt's migrate_disable()?
+> 
+> Your original patch is fine, the suggestion to do ICR accesses with 
+> just preemption disabled is crap and is really asking for trouble: if 
+> some IRQ comes in at that point after all then it might cause all 
+> sorts of hard to debug problems (hangs, delays, missed IPIs, etc.).
 
-On a related note, should we try to remove the slave_id field from
-the slave config structure as well? I believe it is still used by
-the shmobile dma engine in non-DT mode, but that is inconsistent with
-how all the others work, and with what the same driver does for DT.
+Of course, we still need irqs off during ICR writes. I thought Andi was
+just suggesting to replace preempt_disable with get_cpu, maybe to
+document why we are disabling preemption here.
 
-	Arnd
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
