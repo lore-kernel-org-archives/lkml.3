@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219AbaA1U5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 15:57:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6400 "EHLO mx1.redhat.com"
+	id S1755483AbaA1VBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 16:01:33 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:33948 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932128AbaA1U5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 15:57:13 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140128202754.GI10323@ZenIV.linux.org.uk>
-References: <20140128202754.GI10323@ZenIV.linux.org.uk> <CA+55aFz3Zi_PyQwnCS45XHO-om+XSesBby4g0WS0JcQp5i_m+Q@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> <10828.1390940412@warthog.procyon.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-afs@lists.infradead.org, Pali Roh??r <pali.rohar@gmail.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Date: Tue, 28 Jan 2014 20:56:44 +0000
-Message-ID: <28052.1390942604@warthog.procyon.org.uk>
+	id S1755043AbaA1VBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 16:01:32 -0500
+Date: Tue, 28 Jan 2014 23:01:26 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mark Rutland <mark.rutland@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: readahead: fix do_readahead for no readpage(s)
+Message-ID: <20140128210126.GA27556@node.dhcp.inet.fi>
+References: <1390907659-11675-1-git-send-email-mark.rutland@arm.com>
+ <20140128120301.581c90caeb1c49e346b6aa66@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140128120301.581c90caeb1c49e346b6aa66@linux-foundation.org>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
-
-> > ... and then making proc_create() only permit regular files (and complain
-> > if the S_IFMT field is not zero)?
+On Tue, Jan 28, 2014 at 12:03:01PM -0800, Andrew Morton wrote:
+> On Tue, 28 Jan 2014 11:14:19 +0000 Mark Rutland <mark.rutland@arm.com> wrote:
 > 
-> We already do: in proc_create_data() we have
->         struct proc_dir_entry *pde;
->         if ((mode & S_IFMT) == 0)
->                 mode |= S_IFREG;
+> > Commit 63d0f0a3c7e1 (mm/readahead.c:do_readhead(): don't check for
+> > ->readpage) unintentionally made do_readahead return 0 for all valid
+> > files regardless of whether readahead was supported, rather than the
+> > expected -EINVAL. This gets forwarded on to userspace, and results in
+> > sys_readahead appearing to succeed in cases that don't make sense (e.g.
+> > when called on pipes or sockets). This issue is detected by the LTP
+> > readahead01 testcase.
 > 
->         if (!S_ISREG(mode)) {
->                 WARN_ON(1);     /* use proc_mkdir() */
->                 return NULL;
->         }
+> How can this be?
 > 
-> proc_mkdir{,_data,_mode} are there for purpose.  Nobody had been insane
-> enough to put FIFOs or sockets in procfs and anything else would need
-> additional data anyway.  proc_symlink() is there, proc_mknod() isn't and
-> nobody has complained yet.  Let's keep it that way, plese...
+> : static ssize_t
+> : do_readahead(struct address_space *mapping, struct file *filp,
+> : 	     pgoff_t index, unsigned long nr)
+> : {
+> : 	if (!mapping || !mapping->a_ops)
+> : 		return -EINVAL;
+> : 
+> : 	return force_page_cache_readahead(mapping, filp, index, nr);
 
-Should we then change the proc_create_data() to do:
+It's not what we have in Linus' tree. force_page_cache_readahead() return
+code is unused:
 
-	struct proc_dir_entry *pde;
+	force_page_cache_readahead(mapping, filp, index, nr);
+	return 0;
 
-	if (mode & S_IFMT) {
-		WARN_ON(1);     /* use proc_mkdir() */
-		return NULL;
-	}
-	mode |= S_IFREG;
+> : }
+> 
+> and
+> 
+> : int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+> : 		pgoff_t offset, unsigned long nr_to_read)
+> : {
+> : 	if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
+> : 		return -EINVAL;
+> 
+> Clearly, do_readahead() will return -EINVAL if neither ->readpage or
+> ->readpages are implemented.
+> 
+> I can see that the behaviour would change if the address_space
+> implements only one of ->readpage and ->readpages, but that doesn't
+> appear to match your description and the new behaviour is correct - we
+> can now perform readahead for address_spaces which implement
+> ->readpages and not ->readpage (which would be odd and might not work
+> for other reasons..).
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-and stop passing S_IFREG into it?
-
-David
+-- 
+ Kirill A. Shutemov
