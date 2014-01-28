@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822AbaA1AZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jan 2014 19:25:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52623 "EHLO mail.zytor.com"
+	id S1753909AbaA1A2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jan 2014 19:28:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58637 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121AbaA1AZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jan 2014 19:25:33 -0500
-Message-ID: <52E6F84F.1000408@zytor.com>
-Date: Mon, 27 Jan 2014 16:22:39 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752052AbaA1A2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jan 2014 19:28:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,732,1384329600"; 
+   d="scan'208";a="445527308"
+Message-ID: <52E6F9B9.1070900@intel.com>
+Date: Tue, 28 Jan 2014 01:28:41 +0100
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] de-asmify the x86-64 system call slowpath
-References: <CA+55aFzNxTtvNX7zqBELHs489e5mEx1sM=i=red=aQAGviXrNw@mail.gmail.com> <20140127002255.GA10323@ZenIV.linux.org.uk> <CA+55aFzCtJ5gfw__3A=zkjJdv9Ag2CAmtHG5MnrRnCZYqz7EQA@mail.gmail.com> <20140127074208.GB10323@ZenIV.linux.org.uk> <52E6D866.604@amacapital.net> <CA+55aFzWRjNC4kPeVad3isOOW+vZhnzX0Gk5_8QzD16GZEw5Kg@mail.gmail.com> <20140127223257.GE10323@ZenIV.linux.org.uk> <CA+55aFyajjkCtRiTOS2AbFOWi7qt2FUnW6T3iG9nXqoZ0O9Ljg@mail.gmail.com> <CALCETrUXjFYd7ZC958WoNk1mnPCw2kw5jt-Ywo309EObnuqFAg@mail.gmail.com>
-In-Reply-To: <CALCETrUXjFYd7ZC958WoNk1mnPCw2kw5jt-Ywo309EObnuqFAg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: David Rientjes <rientjes@google.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: Jorg Otte <jrg.otte@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Rafael J . Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: reduce log level for message "ACPI: \_PR_.CPU4:
+ failed to get CPU APIC ID"
+References: <CADDKRnDZt9Q4XKyJcO1htMrCJYj6_5yECURBHsJ7O==hup7ZRw@mail.gmail.com> <1390804498-30311-1-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.02.1401271615580.17114@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401271615580.17114@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2014 02:46 PM, Andy Lutomirski wrote:
-> 
-> I think that sysret for sigreturn is probably not very interesting.
-> On the other hand, sysret for #PF might be a huge win, despite being
-> even scarier.
-> 
+On 1/28/2014 1:18 AM, David Rientjes wrote:
+> On Mon, 27 Jan 2014, Jiang Liu wrote:
+>
+>> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+>> index c9311be..c29c2c3 100644
+>> --- a/drivers/acpi/acpi_processor.c
+>> +++ b/drivers/acpi/acpi_processor.c
+>> @@ -261,7 +261,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>>   
+>>   	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
+>>   	if (apic_id < 0) {
+>> -		acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
+>> +		acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
+>>   		return -ENODEV;
+>>   	}
+> Don't we already leave some artifact in the kernel log at boot about apic
+> ids that don't get registered?  I'm wondering if we should have this
+> warning at all.
 
-SYSRET for #PF or other exceptions is a nonstarter; register state is
-live at that point.
-
-	-hpa
+It is useful for knowing that there are potentially broken objects in 
+the ACPI tables.
 
 
