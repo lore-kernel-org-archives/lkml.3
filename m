@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaA2JZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:25:41 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:40109 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035AbaA2JZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:25:35 -0500
-X-Mailbox-Line: From d4ba259762605793aee726b5e33dcad6a8bd4777 Mon Sep 17 00:00:00 2001
-Message-Id: <d4ba259762605793aee726b5e33dcad6a8bd4777.1390986083.git.moinejf@free.fr>
-In-Reply-To: <cover.1390986082.git.moinejf@free.fr>
-References: <cover.1390986082.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Sat, 25 Jan 2014 18:14:36 +0100
-Subject: [PATCH v5 17/23] drm/i2c: tda998x: set the PLL division factor in
- range 0..3
-To: dri-devel@lists.freedesktop.org
-Cc: Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+	id S1752390AbaA2J3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:29:46 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58018 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690AbaA2J3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:29:42 -0500
+Message-ID: <52E8CA00.7060303@gmail.com>
+Date: Wed, 29 Jan 2014 11:29:36 +0200
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Tero Kristo <t-kristo@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, pali.rohar@gmail.com, pavel@ucw.cz,
+        chf.fritz@googlemail.com, nm@ti.com
+Subject: Re: [BISECTED] OMAP: DSS: clk rate mismatch
+References: <52E697C0.6000202@gmail.com> <52E7614E.8010903@ti.com> <52E76EE0.2060006@ti.com> <52E7F451.7040708@gmail.com> <52E8C586.7040907@ti.com>
+In-Reply-To: <52E8C586.7040907@ti.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The predivider division factor of the register PLL_SERIAL_2 is in the
-range 0..3, the value 0 being used for a division by 1.
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 36e95b2..873e1e9 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -214,7 +214,7 @@ struct tda998x_priv {
- # define PLL_SERIAL_1_SRL_IZ(x)   (((x) & 3) << 1)
- # define PLL_SERIAL_1_SRL_MAN_IZ  (1 << 6)
- #define REG_PLL_SERIAL_2          REG(0x02, 0x01)     /* read/write */
--# define PLL_SERIAL_2_SRL_NOSC(x) (((x) & 3) << 0)
-+# define PLL_SERIAL_2_SRL_NOSC(x) ((x) << 0)
- # define PLL_SERIAL_2_SRL_PR(x)   (((x) & 0xf) << 4)
- #define REG_PLL_SERIAL_3          REG(0x02, 0x02)     /* read/write */
- # define PLL_SERIAL_3_SRL_CCIR    (1 << 0)
-@@ -886,6 +886,11 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
- 	}
- 
- 	div = 148500 / mode->clock;
-+	if (div != 0) {
-+		div--;
-+		if (div > 3)
-+			div = 3;
-+	}
- 
- 	/* mute the audio FIFO: */
- 	reg_set(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_FIFO);
--- 
-1.9.rc1
+On 29.01.2014 11:10, Tero Kristo wrote:
 
+>
+> It looks like the omap36xx version of the omap96m_alwon_fck is modelled
+> improperly in the dts files. I don't have access to omap36xx hardware
+> myself, but give a try for the following patch:
+>
+>
+
+It could be that 36xx omap96m_alwon_fck clock is wrongly modeled, but I 
+am testing on 1) 3430es2 (Nokia N900) and 2) legacy boot, so I guess 
+that patch won't help much (unless I am missing something and DT is used 
+even with legacy boot and 36xx clocks are used on 3430es2)
+
+Thanks,
+Ivo
