@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaA2SXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:23:08 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:65300 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228AbaA2SXE (ORCPT
+	id S1753532AbaA2SYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:24:11 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:62450 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046AbaA2SR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:23:04 -0500
-Date: Wed, 29 Jan 2014 19:22:59 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
-Message-ID: <20140129182259.GA6711@dhcp22.suse.cz>
-References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
- <52E24956.3000007@yandex-team.ru>
+	Wed, 29 Jan 2014 13:17:58 -0500
+Subject: [PATCH 04/17] x86/PCI: Merge pci_scan_bus_on_node() into
+ pcibios_scan_root()
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-acpi@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 29 Jan 2014 11:17:56 -0700
+Message-ID: <20140129181756.15476.8169.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E24956.3000007@yandex-team.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 24-01-14 15:07:02, Roman Gushchin wrote:
-> Hi, Michal!
+pci_scan_bus_on_node() is only called by pcibios_scan_root().
+This merges pci_scan_bus_on_node() into pcibios_scan_root() and removes
+pci_scan_bus_on_node().
 
-Hi,
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/include/asm/pci.h |    4 ----
+ arch/x86/pci/common.c      |   49 +++++++++++++++++---------------------------
+ 2 files changed, 19 insertions(+), 34 deletions(-)
 
-> As you can remember, I've proposed to introduce low limits about a year ago.
-> 
-> We had a small discussion at that time: http://marc.info/?t=136195226600004 .
-
-yes I remember that discussion and vaguely remember the proposed
-approach. I really wanted to prevent from introduction of a new knob but
-things evolved differently than I planned since then and it turned out
-that the knew knob is unavoidable. That's why I came with this approach
-which is quite different from yours AFAIR.
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 4e891abf8b48..b52f9c0ec5fb 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -26,10 +26,6 @@ extern int pci_routeirq;
+ extern int noioapicquirk;
+ extern int noioapicreroute;
  
-> Since that time we intensively use low limits in our production
-> (on thousands of machines). So, I'm very interested to merge this
-> functionality into upstream.
+-/* scan a bus after allocating a pci_sysdata for it */
+-extern struct pci_bus *pci_scan_bus_on_node(int busno, struct pci_ops *ops,
+-					    int node);
+-
+ #ifdef CONFIG_PCI
+ 
+ #ifdef CONFIG_PCI_DOMAINS
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index f530c7e93250..52ad00c2e198 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -458,8 +458,25 @@ void __init dmi_check_pciprobe(void)
+ 
+ struct pci_bus *pcibios_scan_root(int busnum)
+ {
+-	return pci_scan_bus_on_node(busnum, &pci_root_ops,
+-					get_mp_bus_to_node(busnum));
++	struct pci_bus *bus;
++	struct pci_sysdata *sd;
++	LIST_HEAD(resources);
++
++	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
++	if (!sd) {
++		printk(KERN_ERR "PCI: OOM, skipping PCI bus %02x\n", busnum);
++		return NULL;
++	}
++	sd->node = get_mp_bus_to_node(busnum);
++	x86_pci_root_bus_resources(busnum, &resources);
++	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busnum);
++	bus = pci_scan_root_bus(NULL, busnum, &pci_root_ops, sd, &resources);
++	if (!bus) {
++		pci_free_resource_list(&resources);
++		kfree(sd);
++	}
++
++	return bus;
+ }
+ 
+ void __init pcibios_set_cache_line_size(void)
+@@ -669,34 +686,6 @@ int pci_ext_cfg_avail(void)
+ 		return 0;
+ }
+ 
+-struct pci_bus *pci_scan_bus_on_node(int busno, struct pci_ops *ops, int node)
+-{
+-	LIST_HEAD(resources);
+-	struct pci_bus *bus = NULL;
+-	struct pci_sysdata *sd;
+-
+-	/*
+-	 * Allocate per-root-bus (not per bus) arch-specific data.
+-	 * TODO: leak; this memory is never freed.
+-	 * It's arguable whether it's worth the trouble to care.
+-	 */
+-	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
+-	if (!sd) {
+-		printk(KERN_ERR "PCI: OOM, skipping PCI bus %02x\n", busno);
+-		return NULL;
+-	}
+-	sd->node = node;
+-	x86_pci_root_bus_resources(busno, &resources);
+-	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busno);
+-	bus = pci_scan_root_bus(NULL, busno, ops, sd, &resources);
+-	if (!bus) {
+-		pci_free_resource_list(&resources);
+-		kfree(sd);
+-	}
+-
+-	return bus;
+-}
+-
+ /*
+  * NUMA info for PCI busses
+  *
 
-Have you tried to use this implementation? Would this work as well?
-My very vague recollection of your patch is that it didn't cover both
-global and target reclaims and it didn't fit into the reclaim very
-naturally it used its own scaling method. I will have to refresh my
-memory though.
-
-> In my experience, low limits also require some changes in memcg page accounting
-> policy. For instance, an application in protected cgroup should have a guarantee
-> that it's filecache belongs to it's cgroup and is protected by low limit
-> therefore. If the filecache was created by another application in other cgroup,
-> it can be not so. I've solved this problem by implementing optional page
-> reaccouting on pagefaults and read/writes.
-
-Memory sharing is a separate issue and we should discuss that
-separately. 
-
-> I can prepare my current version of patchset, if someone is interested.
-
-Sure, having something to compare with is always valuable.
-
-> Regards,
-> Roman
--- 
-Michal Hocko
-SUSE Labs
