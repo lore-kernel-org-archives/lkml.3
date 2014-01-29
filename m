@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaA2JPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:15:00 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:49171 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaA2JO5 (ORCPT
+	id S1751674AbaA2JPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:15:15 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38002 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaA2JPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:14:57 -0500
-Subject: [PATCH -tip v2 1/8] [BUGFIX] perf-probe: Fix to do exit call for
- symbol maps
+	Wed, 29 Jan 2014 04:15:00 -0500
+Subject: [PATCH -tip v2 3/8] perf-probe: Show in what binaries/modules
+ probes are set
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -17,8 +17,8 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
         Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 29 Jan 2014 09:14:52 +0000
-Message-ID: <20140129091452.22141.36766.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+Date: Wed, 29 Jan 2014 09:14:57 +0000
+Message-ID: <20140129091457.22141.54608.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.16
@@ -29,288 +29,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some perf-probe commands do symbol_init() but doesn't
-do exit call. This fixes that to call symbol_exit()
-and relase machine if needed.
-This also merges init_vmlinux() and init_user_exec()
-because both of them are doing similar things.
-(init_user_exec() just skips init vmlinux related
- symbol maps)
+Show the name of binary file or modules in which the probes
+are set with --list option.
+
+Without this change;
+
+  # ./perf probe -m drm drm_av_sync_delay
+  # ./perf probe -x perf dso__load_vmlinux
+
+  # ./perf probe -l
+    probe:drm_av_sync_delay (on drm_av_sync_delay)
+    probe_perf:dso__load_vmlinux (on 0x000000000006d110)
+
+With this change;
+
+  # ./perf probe -l
+    probe:drm_av_sync_delay (on drm_av_sync_delay in drm)
+    probe_perf:dso__load_vmlinux (on 0x000000000006d110 in /kbuild/ksrc/linux-3/tools/perf/perf)
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/perf/util/probe-event.c |  110 +++++++++++++++++++++++------------------
- 1 file changed, 61 insertions(+), 49 deletions(-)
+ tools/perf/util/probe-event.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index a8a9b6c..14c649df 100644
+index 48498c6..4a9f43b 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -73,31 +73,35 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
- static int convert_name_to_addr(struct perf_probe_event *pev,
- 				const char *exec);
- static void clear_probe_trace_event(struct probe_trace_event *tev);
--static struct machine machine;
-+static struct machine *host_machine;
- 
- /* Initialize symbol maps and path of vmlinux/modules */
--static int init_vmlinux(void)
-+static int init_symbol_maps(bool user_only)
- {
- 	int ret;
- 
- 	symbol_conf.sort_by_name = true;
--	if (symbol_conf.vmlinux_name == NULL)
--		symbol_conf.try_vmlinux_path = true;
--	else
--		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
-+	if (user_only)
-+		symbol_conf.try_vmlinux_path = false;
-+	else {
-+		if (symbol_conf.vmlinux_name == NULL)
-+			symbol_conf.try_vmlinux_path = true;
-+		else
-+			pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
-+	}
- 	ret = symbol__init();
- 	if (ret < 0) {
- 		pr_debug("Failed to init symbol map.\n");
- 		goto out;
- 	}
- 
--	ret = machine__init(&machine, "", HOST_KERNEL_ID);
--	if (ret < 0)
--		goto out;
--
--	if (machine__create_kernel_maps(&machine) < 0) {
--		pr_debug("machine__create_kernel_maps() failed.\n");
--		goto out;
-+	if (host_machine || user_only)	/* already initialized */
-+		return 0;
-+	host_machine = machine__new_host();
-+	if (!host_machine) {
-+		pr_debug("machine__new_host() failed.\n");
-+		symbol__exit();
-+		ret = -1;
- 	}
- out:
- 	if (ret < 0)
-@@ -105,21 +109,30 @@ out:
- 	return ret;
+@@ -1734,7 +1734,8 @@ static struct strlist *get_probe_trace_command_rawlist(int fd)
  }
  
-+static void exit_symbol_maps(void)
-+{
-+	if (host_machine) {
-+		machine__delete(host_machine);
-+		host_machine = NULL;
-+	}
-+	symbol__exit();
-+}
-+
- static struct symbol *__find_kernel_function_by_name(const char *name,
- 						     struct map **mapp)
+ /* Show an event */
+-static int show_perf_probe_event(struct perf_probe_event *pev)
++static int show_perf_probe_event(struct perf_probe_event *pev,
++				 const char *module)
  {
--	return machine__find_kernel_function_by_name(&machine, name, mapp,
-+	return machine__find_kernel_function_by_name(host_machine, name, mapp,
- 						     NULL);
- }
- 
- static struct map *kernel_get_module_map(const char *module)
- {
- 	struct rb_node *nd;
--	struct map_groups *grp = &machine.kmaps;
-+	struct map_groups *grp = &host_machine->kmaps;
- 
- 	/* A file path -- this is an offline module */
- 	if (module && strchr(module, '/'))
--		return machine__new_module(&machine, 0, module);
-+		return machine__new_module(host_machine, 0, module);
- 
- 	if (!module)
- 		module = "kernel";
-@@ -141,7 +154,7 @@ static struct dso *kernel_get_module_dso(const char *module)
- 	const char *vmlinux_name;
- 
- 	if (module) {
--		list_for_each_entry(dso, &machine.kernel_dsos, node) {
-+		list_for_each_entry(dso, &host_machine->kernel_dsos, node) {
- 			if (strncmp(dso->short_name + 1, module,
- 				    dso->short_name_len - 2) == 0)
- 				goto found;
-@@ -150,7 +163,7 @@ static struct dso *kernel_get_module_dso(const char *module)
- 		return NULL;
- 	}
- 
--	map = machine.vmlinux_maps[MAP__FUNCTION];
-+	map = host_machine->vmlinux_maps[MAP__FUNCTION];
- 	dso = map->dso;
- 
- 	vmlinux_name = symbol_conf.vmlinux_name;
-@@ -173,20 +186,6 @@ const char *kernel_get_module_path(const char *module)
- 	return (dso) ? dso->long_name : NULL;
- }
- 
--static int init_user_exec(void)
--{
--	int ret = 0;
--
--	symbol_conf.try_vmlinux_path = false;
--	symbol_conf.sort_by_name = true;
--	ret = symbol__init();
--
--	if (ret < 0)
--		pr_debug("Failed to init symbol map.\n");
--
--	return ret;
--}
--
- static int convert_exec_to_group(const char *exec, char **result)
- {
- 	char *ptr1, *ptr2, *exec_copy;
-@@ -563,7 +562,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
-  * Show line-range always requires debuginfo to find source file and
-  * line number.
-  */
--int show_line_range(struct line_range *lr, const char *module)
-+static int __show_line_range(struct line_range *lr, const char *module)
- {
- 	int l = 1;
- 	struct line_node *ln;
-@@ -573,10 +572,6 @@ int show_line_range(struct line_range *lr, const char *module)
- 	char *tmp;
- 
- 	/* Search a line range */
--	ret = init_vmlinux();
--	if (ret < 0)
--		return ret;
--
- 	dinfo = open_debuginfo(module);
- 	if (!dinfo) {
- 		pr_warning("Failed to open debuginfo file.\n");
-@@ -646,6 +641,19 @@ end:
- 	return ret;
- }
- 
-+int show_line_range(struct line_range *lr, const char *module)
-+{
-+	int ret;
-+
-+	ret = init_symbol_maps(false);
-+	if (ret < 0)
-+		return ret;
-+	ret = __show_line_range(lr, module);
-+	exit_symbol_maps();
-+
-+	return ret;
-+}
-+
- static int show_available_vars_at(struct debuginfo *dinfo,
- 				  struct perf_probe_event *pev,
- 				  int max_vls, struct strfilter *_filter,
-@@ -707,14 +715,15 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 	int i, ret = 0;
- 	struct debuginfo *dinfo;
- 
--	ret = init_vmlinux();
-+	ret = init_symbol_maps(false);
- 	if (ret < 0)
+ 	int i, ret;
+ 	char buf[128];
+@@ -1750,6 +1751,8 @@ static int show_perf_probe_event(struct perf_probe_event *pev)
  		return ret;
  
- 	dinfo = open_debuginfo(module);
- 	if (!dinfo) {
- 		pr_warning("Failed to open debuginfo file.\n");
--		return -ENOENT;
-+		ret = -ENOENT;
-+		goto out;
- 	}
+ 	printf("  %-20s (on %s", buf, place);
++	if (module)
++		printf(" in %s", module);
  
- 	setup_pager();
-@@ -724,6 +733,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 					     externs);
- 
- 	debuginfo__delete(dinfo);
-+out:
-+	exit_symbol_maps();
- 	return ret;
- }
- 
-@@ -1807,7 +1818,7 @@ int show_perf_probe_events(void)
- 	if (fd < 0)
- 		return fd;
- 
--	ret = init_vmlinux();
-+	ret = init_symbol_maps(false);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -1820,6 +1831,7 @@ int show_perf_probe_events(void)
- 		close(fd);
- 	}
- 
-+	exit_symbol_maps();
- 	return ret;
- }
- 
-@@ -2135,12 +2147,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 	if (pkgs == NULL)
- 		return -ENOMEM;
- 
--	if (!pevs->uprobes)
--		/* Init vmlinux path */
--		ret = init_vmlinux();
--	else
--		ret = init_user_exec();
--
-+	ret = init_symbol_maps(pevs->uprobes);
- 	if (ret < 0) {
- 		free(pkgs);
- 		return ret;
-@@ -2174,6 +2181,7 @@ end:
- 		zfree(&pkgs[i].tevs);
- 	}
- 	free(pkgs);
-+	exit_symbol_maps();
- 
- 	return ret;
- }
-@@ -2347,7 +2355,7 @@ static int available_kernel_funcs(const char *module)
- 	struct map *map;
- 	int ret;
- 
--	ret = init_vmlinux();
-+	ret = init_symbol_maps(false);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -2356,7 +2364,10 @@ static int available_kernel_funcs(const char *module)
- 		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
- 		return -EINVAL;
- 	}
--	return __show_available_funcs(map);
-+	ret = __show_available_funcs(map);
-+	exit_symbol_maps();
-+
-+	return ret;
- }
- 
- static int available_user_funcs(const char *target)
-@@ -2364,7 +2375,7 @@ static int available_user_funcs(const char *target)
- 	struct map *map;
- 	int ret;
- 
--	ret = init_user_exec();
-+	ret = init_symbol_maps(true);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -2372,6 +2383,7 @@ static int available_user_funcs(const char *target)
- 	ret = __show_available_funcs(map);
- 	dso__delete(map->dso);
- 	map__delete(map);
-+	exit_symbol_maps();
- 	return ret;
- }
- 
+ 	if (pev->nargs > 0) {
+ 		printf(" with");
+@@ -1787,7 +1790,8 @@ static int __show_perf_probe_events(int fd, bool is_kprobe)
+ 			ret = convert_to_perf_probe_event(&tev, &pev,
+ 								is_kprobe);
+ 			if (ret >= 0)
+-				ret = show_perf_probe_event(&pev);
++				ret = show_perf_probe_event(&pev,
++							    tev.point.module);
+ 		}
+ 		clear_perf_probe_event(&pev);
+ 		clear_probe_trace_event(&tev);
+@@ -1986,7 +1990,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 		group = pev->group;
+ 		pev->event = tev->event;
+ 		pev->group = tev->group;
+-		show_perf_probe_event(pev);
++		show_perf_probe_event(pev, tev->point.module);
+ 		/* Trick here - restore current event/group */
+ 		pev->event = (char *)event;
+ 		pev->group = (char *)group;
 
 
