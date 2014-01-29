@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaA2U0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:26:40 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:49558 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaA2U0j (ORCPT
+	id S1751962AbaA2U2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:28:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33603 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaA2U2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:26:39 -0500
-Date: Wed, 29 Jan 2014 15:26:33 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Frank Mayhar <fmayhar@google.com>
-Subject: [PATCH] block: __elv_next_request() shouldn't call into the elevator
- if bypassing
-Message-ID: <20140129202633.GQ30842@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Jan 2014 15:28:15 -0500
+Date: Wed, 29 Jan 2014 12:28:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm, oom: base root bonus on current usage
+Message-Id: <20140129122813.59d32e5c5dad3efc2248bc60@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1401251942510.3140@chino.kir.corp.google.com>
+References: <20140115234308.GB4407@cmpxchg.org>
+	<alpine.DEB.2.02.1401151614480.15665@chino.kir.corp.google.com>
+	<20140116070709.GM6963@cmpxchg.org>
+	<alpine.DEB.2.02.1401212050340.8512@chino.kir.corp.google.com>
+	<20140124040531.GF4407@cmpxchg.org>
+	<alpine.DEB.2.02.1401251942510.3140@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_queue bypassing is used to suppress higher-level function of a
-request_queue so that they can be switched, reconfigured and shut
-down.  A request_queue does the followings while bypassing.
+On Sat, 25 Jan 2014 19:48:32 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
 
-* bypasses elevator and io_cq association and queues requests directly
-  to the FIFO dispatch queue.
+> A 3% of system memory bonus is sometimes too excessive in comparison to 
+> other processes and can yield poor results when all processes on the 
+> system are root and none of them use over 3% of memory.
+> 
+> Replace the 3% of system memory bonus with a 3% of current memory usage 
+> bonus.
 
-* bypasses block cgroup request_list lookup and always uses the root
-  request_list.
+This changelog has deteriorated :( We should provide sufficient info so
+that people will be able to determine whether this patch will fix a
+problem they or their customers are observing.  And so that people who
+maintain -stable and its derivatives can decide whether to backport it.
 
-Once confirmed to be bypassing, specific elevator and block cgroup
-policy implementations can assume that nothing is in flight for them
-and perform various operations which would be dangerous otherwise.
+I went back and stole some text from the v1 patch.  Please review the
+result.  The changelog would be even better if it were to describe the
+new behaviour under the problematic workloads.
 
-Such confirmation is acheived by short-circuiting all new requests
-directly to the dispatch queue and waiting for all the requests which
-were issued before to finish.  Unfortunately, while the request
-allocating and draining sides were properly handled, we forgot to
-actually plug the request dispatch path.  Even after bypassing mode is
-confirmed, if the attached driver tries to fetch a request and the
-dispatch queue is empty, __elv_next_request() would invoke the current
-elevator's elevator_dispatch_fn() callback.  As all in-flight requests
-were drained, the elevator wouldn't contain any request but once
-bypass is confirmed we don't even know whether the elevator is even
-there.  It might be in the process of being switched and half torn
-down.
+We don't think -stable needs this?
 
-Frank Mayhar reports that this actually happened while switching
-elevators, leading to an oops.
 
-Let's fix it by making __elv_next_request() avoid invoking the
-elevator_dispatch_fn() callback if the queue is bypassing.  It already
-avoids invoking the callback if the queue is dying.  As a dying queue
-is guaranteed to be bypassing, we can simply replace blk_queue_dying()
-check with blk_queue_bypass().
+From: David Rientjes <rientjes@google.com>
+Subject: mm, oom: base root bonus on current usage
 
-Reported-by: Frank Mayhar <fmayhar@google.com>
-References: http://lkml.kernel.org/g/1390319905.20232.38.camel@bobble.lax.corp.google.com
-Cc: stable@vger.kernel.org
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
+
+With a63d83f427fb ("oom: badness heuristic rewrite"), the OOM killer tries
+to avoid killing privileged tasks by subtracting 3% of overall memory
+(system or cgroup) from their per-task consumption.  But as a result, all
+root tasks that consume less than 3% of overall memory are considered
+equal, and so it only takes 33+ privileged tasks pushing the system out of
+memory for the OOM killer to do something stupid and kill sshd or
+dhclient.  For example, on a 32G machine it can't tell the difference
+between the 1M agetty and the 10G fork bomb member.
+
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not the
+same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
+
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
-Hello,
 
-Sorry about the delay.  Frank, if your test is still holding up, can
-you please reply with Tested-by?
+ Documentation/filesystems/proc.txt |    4 ++--
+ mm/oom_kill.c                      |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Thanks!
+diff -puN Documentation/filesystems/proc.txt~mm-oom-base-root-bonus-on-current-usage Documentation/filesystems/proc.txt
+--- a/Documentation/filesystems/proc.txt~mm-oom-base-root-bonus-on-current-usage
++++ a/Documentation/filesystems/proc.txt
+@@ -1386,8 +1386,8 @@ may allocate from based on an estimation
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
+ 
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
+ 
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+diff -puN mm/oom_kill.c~mm-oom-base-root-bonus-on-current-usage mm/oom_kill.c
+--- a/mm/oom_kill.c~mm-oom-base-root-bonus-on-current-usage
++++ a/mm/oom_kill.c
+@@ -178,7 +178,7 @@ unsigned long oom_badness(struct task_st
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		adj -= 30;
++		points -= (points * 3) / 100;
+ 
+ 	/* Normalize to oom_score_adj units */
+ 	adj *= totalpages / 1000;
+_
 
- block/blk.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/block/blk.h b/block/blk.h
-index c90e1d8..d23b415 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -113,7 +113,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
- 			q->flush_queue_delayed = 1;
- 			return NULL;
- 		}
--		if (unlikely(blk_queue_dying(q)) ||
-+		if (unlikely(blk_queue_bypass(q)) ||
- 		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
- 			return NULL;
- 	}
