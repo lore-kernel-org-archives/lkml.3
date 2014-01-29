@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaA2JvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:51:22 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:49089 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929AbaA2JvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:51:19 -0500
-Message-ID: <52E8CED4.5010406@huawei.com>
-Date: Wed, 29 Jan 2014 17:50:12 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751425AbaA2KAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 05:00:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:63570 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925AbaA2KAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 05:00:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,741,1384329600"; 
+   d="scan'208";a="446342385"
+Message-ID: <52E8D13A.1060100@intel.com>
+Date: Wed, 29 Jan 2014 18:00:26 +0800
+From: "xinhui.pan" <xinhuix.pan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: convert to kernfs
-References: <1390953285-16360-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1390953285-16360-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+CC: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, yanmin_zhang@linux.intel.com,
+        bo.he@intel.com
+Subject: Re: [PATCH] i2c-designware-pcidrv: fix the incorrect return of idle
+ callback
+References: <52E744AC.2050606@intel.com> <20140128183035.GC20789@katana> <20140129083548.GG18029@intel.com>
+In-Reply-To: <20140129083548.GG18029@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is finally done!
 
-We'll have our most important vacation in China, so I won't be responsive
-until next next Monday. I'll review those patches when I come back to work.
 
-On 2014/1/29 7:54, Tejun Heo wrote:
-> Hello,
+于 2014年01月29日 16:35, Mika Westerberg 写道:
+> On Tue, Jan 28, 2014 at 07:30:35PM +0100, Wolfram Sang wrote:
+>> On Tue, Jan 28, 2014 at 01:48:28PM +0800, xinhui.pan wrote:
+>>> From: "xinhui.pan" <xinhuix.pan@intel.com>
+>>>
+>>> i2c_dw_pci_runtime_idle should return -EBUSY rather than zero if it do success.
+>>
+>> I don't understand...
+>>
+>>> Otherwise rpm_idle will call pm_suspend again and that may cause pm_schedule_suspend delay invalidate.
+>>> 	
+>>> Signed-off-by: bo.he <bo.he@intel.com>
+>>> Signed-off-by: xinhui.pan <xinhuix.pan@intel.com>
+>>> ---
+>>>  drivers/i2c/busses/i2c-designware-pcidrv.c |    4 ++--
+>>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+>>> index f6ed06c..96e81f6 100644
+>>> --- a/drivers/i2c/busses/i2c-designware-pcidrv.c
+>>> +++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+>>> @@ -190,8 +190,8 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
+>>>  	int err = pm_schedule_suspend(dev, 500);
+>>>  	dev_dbg(dev, "runtime_idle called\n");
+>>>  
+>>> -	if (err != 0)
+>>> -		return 0;
+>>> +	if (err)
+>>> +		return err;
+>>>  	return -EBUSY;
+>>
+>> ... it does return EBUSY when pm_schedule_suspend() succeeds? It only
+>> returns 0 if it does not succeed (for which I don't know if this is an
+>> apropriate behaviour). Mika?
 > 
-> cgroup filesystem code was derived from the original sysfs
-> implementation which was heavily intertwined with vfs objects and
-> locking with the goal of re-using the existing vfs infrastructure.
-> That experiment turned out rather disastrous and sysfs switched, a
-> long time ago, to distributed filesystem model where a separate
-> representation is maintained which is queried by vfs.  Unfortunately,
-> cgroup stuck with the failed experiment all these years and
-> accumulated even more problems over time.
+> If I understand correctly, pm_schedule_suspend(dev, 500) is there because
+> we want to runtime suspend in 500 ms. It then returns -EBUSY to prevent PM
+> runtime from carrying on suspend on it's own. However, I have no idea where
+> this magical 500 ms requirement comes from.
 > 
-> Locking and object lifetime management being entangled with vfs is
-> probably the most egregious.  vfs was never designed to be misused
-> like this and cgroup ends up jumping through various convoluted
-> dancing to make things work.  Even then, operations across multiple
-> cgroups can't be done safely as it'll deadlock with rename locking.
-> 
-> Recently, kernfs is separated out from sysfs so that it can be used by
-> users other than sysfs.  This patchset converts cgroup to use kernfs.
-> This simplifies code base quite a bit and allows further cleanups and
-> implementation of features which depend on operating across multiple
-> nodes.
-> 
-> This patchset contains the following 13 patches.
-> 
->  0001-cgroup-improve-css_from_dir-into-css_tryget_from_dir.patch
->  0002-cgroup-introduce-cgroup_tree_mutex.patch
->  0003-cgroup-release-cgroup_mutex-over-file-removals.patch
->  0004-cgroup-restructure-locking-and-error-handling-in-cgr.patch
->  0005-cgroup-factor-out-cgroup_setup_root-from-cgroup_moun.patch
->  0006-cgroup-update-cgroup-name-handling.patch
->  0007-cgroup-make-cgroup_subsys-base_cftypes-use-cgroup_ad.patch
->  0008-cgroup-update-the-meaning-of-cftype-max_write_len.patch
->  0009-cgroup-introduce-cgroup_init-exit_cftypes.patch
->  0010-cgroup-introduce-cgroup_ino.patch
->  0011-cgroup-misc-preps-for-kernfs-conversion.patch
->  0012-cgroup-relocate-functions-in-preparation-of-kernfs-c.patch
->  0013-cgroup-convert-to-kernfs.patch
-> 
-> 0001 updates css_from_dir() into css_tryget_from_dir() so that the
-> caller doesn't have to worry about RCU locking.
-> 
-> 0002-0004 introduce cgroup_tree_mutex and prepare locking.
-> 
-> 0005-0006 are misc preps.
-> 
-> 0007-0008 update cftype handling in preparation.
-> 
-> 0009-0012 are misc preps.
-> 
-> 0013 converts cgroup to kernfs.
-> 
-> This patchset is on top of
-> 
->   linus#master 54c0a4b46150 ("Merge branch 'akpm' (incoming from Andrew)")
-> + [1] [PATCHSET cgroup/for-3.14-fixes] cgroup: four misc fixes
-> + [2] [PATCH] arm, pm, vmpressure: add missing slab.h includes
-> + [3] [PATCHSET v2 cgroup/for-3.15] cgroup: drop module support and cgroup_root_mutex
-> + git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-cgroup-prep
-> 
-> and also available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-kernfs-conversion
-> 
-> diffstat follows.
-> 
->  block/blk-throttle.c   |    4
->  block/cfq-iosched.c    |    3
->  include/linux/cgroup.h |   71 --
->  kernel/cgroup.c        | 1712 ++++++++++++++++++++-----------------------------
->  kernel/events/core.c   |   17
->  mm/memcontrol.c        |   16
->  mm/memory-failure.c    |    8
->  7 files changed, 754 insertions(+), 1077 deletions(-)
+> If we fail to schedule suspend we let the PM core to do whatever it thinks
+> suitable (in this case I suppose it suspends the device).
 > 
 
+Hi ,Mika
+  If the callback returns 0,it means pm_schedule_suspend fails,
+also means rpm_check_suspend_allowed(pm_schedule_suspend calls it) 
+returns nonzero value.As a result,rpm_suspend will be called by rpm_idle.
+  However in rpm_idle, rpm_check_suspend_allowed is called at first,too.
+and the return value is treated as it is.But rpm_idle just returns 
+without doing anything(rpm_suspend is not called). 
+  in both case above,why goes in different ways? I am confused.
+ 
+> I think the whole idle dance could be replaced with a use of runtime PM
+> autosuspend, just like we do in the platform version of the driver.
+> 
+> Xinghui,
+> 
+> Is this a real problem that you are trying to solve?
+> 
+
+To be honest,we got many panic when testing.
+But is not caused by this driver I think.
+while checking problems,we found these confusing codes by accident.
 
