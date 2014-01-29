@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaA2Qvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 11:51:52 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47570 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbaA2Qvt (ORCPT
+	id S1753251AbaA2Qwb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 11:52:31 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:58379 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116AbaA2QvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 11:51:49 -0500
+	Wed, 29 Jan 2014 11:51:15 -0500
 From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: catalin.marinas@arm.com, will.deacon@arm.com, tglx@linutronix.de,
@@ -14,9 +14,9 @@ Cc: catalin.marinas@arm.com, will.deacon@arm.com, tglx@linutronix.de,
         gregkh@linuxfoundation.org, akpm@linux-foundation.org, arnd@arndb.de,
         linux-arm-kernel@lists.infradead.org,
         Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH 5/5] arm64: add Crypto Extensions based synchronous core AES cipher
-Date: Wed, 29 Jan 2014 17:50:46 +0100
-Message-Id: <1391014246-9715-6-git-send-email-ard.biesheuvel@linaro.org>
+Subject: [PATCH 2/5] cpu: add generic support for CPU feature based module autoloading
+Date: Wed, 29 Jan 2014 17:50:43 +0100
+Message-Id: <1391014246-9715-3-git-send-email-ard.biesheuvel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
 References: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
@@ -24,176 +24,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements the core AES cipher using the Crypto Extensions,
-using only NEON registers q0 and q1.
+This patch adds support for advertising optional CPU features over udev using
+the modalias, and for declaring compatibility with/dependency upon such a
+feature in a module.
+
+This feature can be enabled by setting CONFIG_GENERIC_CPU_AUTOPROBE for the
+architecture, and supplying a file <asm/cpufeature.h> which defines how the
+numbers used in the modalias string map to actual CPU features.
 
 Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 ---
- arch/arm64/Makefile               |   1 +
- arch/arm64/crypto/Makefile        |  13 +++++
- arch/arm64/crypto/aes-ce-cipher.c | 103 ++++++++++++++++++++++++++++++++++++++
- crypto/Kconfig                    |   6 +++
- 4 files changed, 123 insertions(+)
- create mode 100644 arch/arm64/crypto/Makefile
- create mode 100644 arch/arm64/crypto/aes-ce-cipher.c
+ drivers/base/Kconfig              |  8 ++++++
+ drivers/base/cpu.c                | 39 +++++++++++++++++++++----
+ include/linux/cpufeature.h        | 60 +++++++++++++++++++++++++++++++++++++++
+ include/linux/mod_devicetable.h   |  9 ++++++
+ scripts/mod/devicetable-offsets.c |  3 ++
+ scripts/mod/file2alias.c          | 10 +++++++
+ 6 files changed, 123 insertions(+), 6 deletions(-)
+ create mode 100644 include/linux/cpufeature.h
 
-diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-index 2fceb71ac3b7..8185a913c5ed 100644
---- a/arch/arm64/Makefile
-+++ b/arch/arm64/Makefile
-@@ -45,6 +45,7 @@ export	TEXT_OFFSET GZFLAGS
- core-y		+= arch/arm64/kernel/ arch/arm64/mm/
- core-$(CONFIG_KVM) += arch/arm64/kvm/
- core-$(CONFIG_XEN) += arch/arm64/xen/
-+core-$(CONFIG_CRYPTO) += arch/arm64/crypto/
- libs-y		:= arch/arm64/lib/ $(libs-y)
- libs-y		+= $(LIBGCC)
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index ec36e7772e57..3f0d3732df7f 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -185,6 +185,14 @@ config GENERIC_CPU_DEVICES
+ 	bool
+ 	default n
  
-diff --git a/arch/arm64/crypto/Makefile b/arch/arm64/crypto/Makefile
-new file mode 100644
-index 000000000000..ac58945c50b3
---- /dev/null
-+++ b/arch/arm64/crypto/Makefile
-@@ -0,0 +1,13 @@
-+#
-+# linux/arch/arm64/crypto/Makefile
-+#
-+# Copyright (C) 2013 Linaro Ltd <ard.biesheuvel@linaro.org>
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
++config HAVE_CPU_AUTOPROBE
++	def_bool ARCH_HAS_CPU_AUTOPROBE
 +
-+obj-$(CONFIG_CRYPTO_AES_ARM64_CE) += aes-ce-cipher.o
++config GENERIC_CPU_AUTOPROBE
++	bool
++	depends on !ARCH_HAS_CPU_AUTOPROBE
++	select HAVE_CPU_AUTOPROBE
 +
-+CFLAGS_aes-ce-cipher.o += -march=armv8-a+crypto
-diff --git a/arch/arm64/crypto/aes-ce-cipher.c b/arch/arm64/crypto/aes-ce-cipher.c
+ config SOC_BUS
+ 	bool
+ 
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 270649012e64..8a38bf8c792f 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -15,6 +15,7 @@
+ #include <linux/percpu.h>
+ #include <linux/acpi.h>
+ #include <linux/of.h>
++#include <linux/cpufeature.h>
+ 
+ #include "base.h"
+ 
+@@ -286,12 +287,38 @@ static void cpu_device_release(struct device *dev)
+ 	 */
+ }
+ 
+-#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
++#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
++static ssize_t print_cpu_modalias(struct device *dev,
++				  struct device_attribute *attr,
++				  char *buf)
++{
++	ssize_t n;
++	u32 i;
++
++	n = sprintf(buf, "cpu:type:" CPU_FEATURE_TYPEFMT ":feature:",
++		    CPU_FEATURE_TYPEVAL);
++
++	for (i = 0; i < MAX_CPU_FEATURES; i++)
++		if (cpu_have_feature(i)) {
++			if (PAGE_SIZE < n + sizeof(",XXXX\n")) {
++				WARN(1, "CPU features overflow page\n");
++				break;
++			}
++			n += sprintf(&buf[n], ",%04X", i);
++		}
++	buf[n++] = '\n';
++	return n;
++}
++#else
++#define print_cpu_modalias	arch_print_cpu_modalias
++#endif
++
+ static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+ {
+ 	char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
+ 	if (buf) {
+-		arch_print_cpu_modalias(NULL, NULL, buf);
++		print_cpu_modalias(NULL, NULL, buf);
+ 		add_uevent_var(env, "MODALIAS=%s", buf);
+ 		kfree(buf);
+ 	}
+@@ -319,7 +346,7 @@ int register_cpu(struct cpu *cpu, int num)
+ 	cpu->dev.offline_disabled = !cpu->hotpluggable;
+ 	cpu->dev.offline = !cpu_online(num);
+ 	cpu->dev.of_node = of_get_cpu_node(num, NULL);
+-#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
++#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+ 	cpu->dev.bus->uevent = cpu_uevent;
+ #endif
+ 	cpu->dev.groups = common_cpu_attr_groups;
+@@ -343,8 +370,8 @@ struct device *get_cpu_device(unsigned cpu)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_device);
+ 
+-#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+-static DEVICE_ATTR(modalias, 0444, arch_print_cpu_modalias, NULL);
++#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+ #endif
+ 
+ static struct attribute *cpu_root_attrs[] = {
+@@ -357,7 +384,7 @@ static struct attribute *cpu_root_attrs[] = {
+ 	&cpu_attrs[2].attr.attr,
+ 	&dev_attr_kernel_max.attr,
+ 	&dev_attr_offline.attr,
+-#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
++#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+ 	&dev_attr_modalias.attr,
+ #endif
+ 	NULL
+diff --git a/include/linux/cpufeature.h b/include/linux/cpufeature.h
 new file mode 100644
-index 000000000000..b5a5d5d6e4b8
+index 000000000000..c4d4eb8ac9fe
 --- /dev/null
-+++ b/arch/arm64/crypto/aes-ce-cipher.c
-@@ -0,0 +1,103 @@
++++ b/include/linux/cpufeature.h
+@@ -0,0 +1,60 @@
 +/*
-+ * linux/arch/arm64/crypto/aes-ce-cipher.c
-+ *
-+ * Copyright (C) 2013 Linaro Ltd <ard.biesheuvel@linaro.org>
++ * Copyright (C) 2014 Linaro Ltd. <ard.biesheuvel@linaro.org>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#include <asm/neon.h>
-+#include <crypto/aes.h>
-+#include <linux/crypto.h>
-+#include <linux/module.h>
-+#include <linux/cpufeature.h>
++#ifndef __LINUX_CPUFEATURE_H
++#define __LINUX_CPUFEATURE_H
 +
-+MODULE_DESCRIPTION("Synchronous AES cipher using ARMv8 Crypto Extensions");
-+MODULE_AUTHOR("Ard Biesheuvel <ard.biesheuvel@linaro.org>");
-+MODULE_LICENSE("GPL");
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
 +
-+static void aes_cipher_encrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
-+{
-+	struct crypto_aes_ctx *ctx = crypto_tfm_ctx(tfm);
-+	u32 rounds = 6 + ctx->key_length / 4;
++#include <linux/mod_devicetable.h>
++#include <asm/cpufeature.h>
 +
-+	kernel_neon_begin();
++/*
++ * Macros imported from <asm/cpufeature.h>:
++ * - cpu_feature(x)		ordinal value of feature called 'x'
++ * - cpu_have_feature(u32 n)	whether feature #n is available
++ * - MAX_CPU_FEATURES		upper bound for feature ordinal values
++ * Optional:
++ * - CPU_FEATURE_TYPEFMT	format string fragment for printing the cpu type
++ * - CPU_FEATURE_TYPEVAL	set of values matching the format string above
++ */
 +
-+	__asm__("	ld1		{v0.16b}, [%[in]]		;"
-+		"	ld1		{v1.16b}, [%[key]], #16		;"
-+		"0:	aese		v0.16b, v1.16b			;"
-+		"	subs		%[rounds], %[rounds], #1	;"
-+		"	ld1		{v1.16b}, [%[key]], #16		;"
-+		"	beq		1f				;"
-+		"	aesmc		v0.16b, v0.16b			;"
-+		"	b		0b				;"
-+		"1:	eor		v0.16b, v0.16b, v1.16b		;"
-+		"	st1		{v0.16b}, [%[out]]		;"
-+	: :
-+		[out]		"r"(dst),
-+		[in]		"r"(src),
-+		[rounds]	"r"(rounds),
-+		[key]		"r"(ctx->key_enc)
-+	:			"cc");
++#ifndef CPU_FEATURE_TYPEFMT
++#define CPU_FEATURE_TYPEFMT	"%s"
++#endif
 +
-+	kernel_neon_end();
-+}
++#ifndef CPU_FEATURE_TYPEVAL
++#define CPU_FEATURE_TYPEVAL	ELF_PLATFORM
++#endif
 +
-+static void aes_cipher_decrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
-+{
-+	struct crypto_aes_ctx *ctx = crypto_tfm_ctx(tfm);
-+	u32 rounds = 6 + ctx->key_length / 4;
++/*
++ * Use module_cpu_feature_match(feature, module_init_function) to
++ * declare that
++ * a) the module shall be probed upon discovery of CPU feature 'feature'
++ *    (typically at boot time using udev)
++ * b) the module must not be loaded if CPU feature 'feature' is not present
++ *    (not even by manual insmod).
++ *
++ * For a list of legal values for 'feature', please consult the file
++ * 'asm/cpufeature.h' of your favorite architecture.
++ */
++#define module_cpu_feature_match(x, __init)			\
++static struct cpu_feature const cpu_feature_match_ ## x[] =	\
++	{ { .feature = cpu_feature(x) }, { } };			\
++MODULE_DEVICE_TABLE(cpu, cpu_feature_match_ ## x);		\
++								\
++static int cpu_feature_match_ ## x ## _init(void)		\
++{								\
++	if (!cpu_have_feature(cpu_feature(x)))			\
++		return -ENODEV;					\
++	return __init();					\
++}								\
++module_init(cpu_feature_match_ ## x ## _init)
 +
-+	kernel_neon_begin();
++#endif
++#endif
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 45e921401b06..f2ac87c613a5 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -564,6 +564,15 @@ struct x86_cpu_id {
+ #define X86_MODEL_ANY  0
+ #define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
+ 
++/*
++ * Generic table type for matching CPU features.
++ * @feature:	the bit number of the feature (0 - 65535)
++ */
 +
-+	__asm__("	ld1		{v0.16b}, [%[in]]		;"
-+		"	ld1		{v1.16b}, [%[key]], #16		;"
-+		"0:	aesd		v0.16b, v1.16b			;"
-+		"	ld1		{v1.16b}, [%[key]], #16		;"
-+		"	subs		%[rounds], %[rounds], #1	;"
-+		"	beq		1f				;"
-+		"	aesimc		v0.16b, v0.16b			;"
-+		"	b		0b				;"
-+		"1:	eor		v0.16b, v0.16b, v1.16b		;"
-+		"	st1		{v0.16b}, [%[out]]		;"
-+	: :
-+		[out]		"r"(dst),
-+		[in]		"r"(src),
-+		[rounds]	"r"(rounds),
-+		[key]		"r"(ctx->key_dec)
-+	:			"cc");
-+
-+	kernel_neon_end();
-+}
-+
-+static struct crypto_alg aes_alg = {
-+	.cra_name		= "aes",
-+	.cra_driver_name	= "aes-ce",
-+	.cra_priority		= 300,
-+	.cra_flags		= CRYPTO_ALG_TYPE_CIPHER,
-+	.cra_blocksize		= AES_BLOCK_SIZE,
-+	.cra_ctxsize		= sizeof(struct crypto_aes_ctx),
-+	.cra_module		= THIS_MODULE,
-+	.cra_cipher = {
-+		.cia_min_keysize	= AES_MIN_KEY_SIZE,
-+		.cia_max_keysize	= AES_MAX_KEY_SIZE,
-+		.cia_setkey		= crypto_aes_set_key,
-+		.cia_encrypt		= aes_cipher_encrypt,
-+		.cia_decrypt		= aes_cipher_decrypt
-+	}
++struct cpu_feature {
++	__u16	feature;
 +};
 +
-+static int __init aes_mod_init(void)
-+{
-+	return crypto_register_alg(&aes_alg);
-+}
-+
-+static void __exit aes_mod_exit(void)
-+{
-+	crypto_unregister_alg(&aes_alg);
-+}
-+
-+module_cpu_feature_match(AES, aes_mod_init);
-+module_exit(aes_mod_exit);
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 7bcb70d216e1..f1d98bc346b6 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -791,6 +791,12 @@ config CRYPTO_AES_ARM_BS
- 	  This implementation does not rely on any lookup tables so it is
- 	  believed to be invulnerable to cache timing attacks.
+ #define IPACK_ANY_FORMAT 0xff
+ #define IPACK_ANY_ID (~0)
+ struct ipack_device_id {
+diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
+index bb5d115ca671..f282516acc7b 100644
+--- a/scripts/mod/devicetable-offsets.c
++++ b/scripts/mod/devicetable-offsets.c
+@@ -174,6 +174,9 @@ int main(void)
+ 	DEVID_FIELD(x86_cpu_id, model);
+ 	DEVID_FIELD(x86_cpu_id, vendor);
  
-+config CRYPTO_AES_ARM64_CE
-+	tristate "Synchronous AES cipher using ARMv8 Crypto Extensions"
-+	depends on ARM64 && KERNEL_MODE_NEON
-+	select CRYPTO_ALGAPI
-+	select CRYPTO_AES
++	DEVID(cpu_feature);
++	DEVID_FIELD(cpu_feature, feature);
 +
- config CRYPTO_ANUBIS
- 	tristate "Anubis cipher algorithm"
- 	select CRYPTO_ALGAPI
+ 	DEVID(mei_cl_device_id);
+ 	DEVID_FIELD(mei_cl_device_id, name);
+ 
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 23708636b05c..8a69005228d8 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -1135,6 +1135,16 @@ static int do_x86cpu_entry(const char *filename, void *symval,
+ }
+ ADD_TO_DEVTABLE("x86cpu", x86_cpu_id, do_x86cpu_entry);
+ 
++/* LOOKS like cpu:type:*:feature:*FEAT* */
++static int do_cpu_entry(const char *filename, void *symval, char *alias)
++{
++	DEF_FIELD(symval, cpu_feature, feature);
++
++	sprintf(alias, "cpu:type:*:feature:*%04X*", feature);
++	return 1;
++}
++ADD_TO_DEVTABLE("cpu", cpu_feature, do_cpu_entry);
++
+ /* Looks like: mei:S */
+ static int do_mei_entry(const char *filename, void *symval,
+ 			char *alias)
 -- 
 1.8.3.2
 
