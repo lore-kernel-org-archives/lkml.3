@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792AbaA2ANq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 19:13:46 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:52597 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791AbaA2ANo (ORCPT
+	id S1755679AbaA2AUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 19:20:52 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:36084 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbaA2AUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 19:13:44 -0500
-Date: Wed, 29 Jan 2014 00:13:38 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, platform-drivers-x86@vger.kernel.org
-Subject: [GIT PULL] x86 platform drivers for 3.14
-Message-ID: <20140129001338.GA1427@srcf.ucam.org>
+	Tue, 28 Jan 2014 19:20:50 -0500
+Date: Wed, 29 Jan 2014 01:20:48 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20140129002048.GE11821@two.firstfloor.org>
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+ <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Nothing amazingly special here. Some cleanups, a new driver to support a 
-single button on some new HPs, a tiny amount of hardware enablement.
+So the 1-2 threads case is the standard case on a small
+system, isn't it? This may well cause regressions.
 
-The following changes since commit ec513b16c480c6cdda1e3d597e611eafca05227b:
+> In the extremely unlikely case that all the queue node entries are
+> used up, the current code will fall back to busy spinning without
+> waiting in a queue with warning message.
 
-  Merge tag 'usb-3.14-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2014-01-20 16:13:02 -0800)
+Traditionally we had some code which could take thousands
+of locks in rare cases (e.g. all locks in a hash table or all locks of
+a big reader lock) 
 
-are available in the git repository at:
+The biggest offender was the mm for changing mmu 
+notifiers, but I believe that's a mutex now.
+lglocks presumably still can do it on large enough
+systems.  I wouldn't be surprised if there is 
+other code which e.g. make take all locks in a table.
 
+I don't think the warning is valid and will
+likely trigger in some obscure cases.
 
-  git://cavan.codon.org.uk/platform-drivers-x86.git for_linus
-
-for you to fetch changes up to b4b0b4a9e0392dbd00e5f033e1329ce61ed06fef:
-
-  ipc: add intel-mid's pci id macros (2014-01-21 08:47:15 -0500)
-
-----------------------------------------------------------------
-Alex Hung (1):
-      hp-wireless: new driver for hp wireless button for Windows 8
-
-Colin Ian King (1):
-      sony-laptop: remove unnecessary assigment of len
-
-David Cohen (2):
-      ipc: simplify platform data approach
-      ipc: add intel-mid's pci id macros
-
-David E. Box (1):
-      X86 platform: New BayTrail IOSF-SB MBI driver
-
-Guenter Roeck (5):
-      compal-laptop: Use devm_kzalloc to allocate local data structure
-      eeepc-laptop: Convert to use devm_hwmon_device_register_with_groups
-      compal-laptop: Replace SENSOR_DEVICE_ATTR with DEVICE_ATTR
-      compal-laptop: Use devm_hwmon_device_register_with_groups
-      asus-wmi: Convert to use devm_hwmon_device_register_with_groups
-
-Hans de Goede (2):
-      dell-laptop: rkill whitelist Precision models
-      dell-laptop: Only install the i8042 filter when rfkill is active
-
-Julia Lawall (1):
-      fujitsu-laptop: fix error return code
-
-Rashika Kheria (2):
-      drivers: platform: Mark functions as static in hp_accel.c
-      drivers: platform: Include appropriate header file in mxm-wmi.c
-
-Takashi Iwai (1):
-      hp_accel: Add a new PnP ID HPQ6007 for new HP laptops
-
-Unai Uribarri (1):
-      toshiba_acpi: Support RFKILL hotkey scancode
-
-Wei Yongjun (1):
-      dell-laptop: fix to return error code in dell_send_intensity()
-
- drivers/platform/x86/Kconfig          |  19 +++
- drivers/platform/x86/Makefile         |   2 +
- drivers/platform/x86/asus-wmi.c       |  48 ++------
- drivers/platform/x86/compal-laptop.c  | 121 +++++++++---------
- drivers/platform/x86/dell-laptop.c    |  78 ++++++------
- drivers/platform/x86/eeepc-laptop.c   |  52 ++------
- drivers/platform/x86/fujitsu-laptop.c |  15 ++-
- drivers/platform/x86/hp-wireless.c    | 132 ++++++++++++++++++++
- drivers/platform/x86/hp_accel.c       |   7 +-
- drivers/platform/x86/intel_baytrail.c | 224 ++++++++++++++++++++++++++++++++++
- drivers/platform/x86/intel_baytrail.h |  90 ++++++++++++++
- drivers/platform/x86/intel_scu_ipc.c  |  87 ++++++-------
- drivers/platform/x86/mxm-wmi.c        |   1 +
- drivers/platform/x86/sony-laptop.c    |   2 +-
- drivers/platform/x86/toshiba_acpi.c   |   1 +
- 15 files changed, 642 insertions(+), 237 deletions(-)
- create mode 100644 drivers/platform/x86/hp-wireless.c
- create mode 100644 drivers/platform/x86/intel_baytrail.c
- create mode 100644 drivers/platform/x86/intel_baytrail.h
-
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+-Andi
