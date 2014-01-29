@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaA2XtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 18:49:00 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45449 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaA2Xs5 (ORCPT
+	id S1752189AbaA2XuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 18:50:21 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:36362 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaA2XuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 18:48:57 -0500
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH v4 2/2] PM / Hibernate: use name_to_dev_t to parse resume
-Date: Wed, 29 Jan 2014 15:48:24 -0800
-Message-Id: <1391039304-3172-3-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391039304-3172-1-git-send-email-sebastian.capella@linaro.org>
-References: <1391039304-3172-1-git-send-email-sebastian.capella@linaro.org>
+	Wed, 29 Jan 2014 18:50:19 -0500
+Message-ID: <52E993B6.9000401@gmail.com>
+Date: Thu, 30 Jan 2014 00:50:14 +0100
+From: Branimir Maksimovic <branimir.maksimovic@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: latest git usb3.0 ports not working
+References: <52DEC0BA.1060007@gmail.com> <20140121221706.GC12657@xanatos> <20140129221121.GE5991@xanatos>
+In-Reply-To: <20140129221121.GE5991@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the name_to_dev_t call to parse the device name echo'd to
-to /sys/power/resume.  This imitates the method used in hibernate.c
-in software_resume, and allows the resume partition to be specified
-using other equivalent device formats as well.  By allowing
-/sys/debug/resume to accept the same syntax as the resume=device
-parameter, we can parse the resume=device in the init script and
-use the resume device directly from the kernel command line.
+On 01/29/2014 11:11 PM, Sarah Sharp wrote:
+> On Tue, Jan 21, 2014 at 02:17:06PM -0800, Sarah Sharp wrote:
+>> On Tue, Jan 21, 2014 at 07:47:22PM +0100, Branimir Maksimovic wrote:
+>>> asus maximus v gene motherboard,
+>>> this is from dmesg:
+>>>
+>>> [   75.576160] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+>>> [   88.991634] xhci_hcd 0000:03:00.0: Stopped the command ring
+>>> failed, maybe the host is dead
+>>> [   88.991748] xhci_hcd 0000:03:00.0: Abort command ring failed
+>>> [   88.991845] xhci_hcd 0000:03:00.0: HC died; cleaning up
+>>> [   93.985489] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+>>> [   93.985494] xhci_hcd 0000:03:00.0: Abort the command ring, but
+>>> the xHCI is dead.
+>>> [   98.982586] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+>>> [   98.982591] xhci_hcd 0000:03:00.0: Abort the command ring, but
+>>> the xHCI is dead.
+>>> [  103.979696] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+>>> [  103.979702] xhci_hcd 0000:03:00.0: Abort the command ring, but
+>>> the xHCI is dead.
+>> By latest git, do you mean linus/master, or 3.13.0?  If it's
+>> linus/master, please provide the commit ID.  Which kernel version worked
+>> for you?
+> Try reverting commit 7dd09a1af2c7150269350aaa567a11b06e831003 "xhci:
+> replace xhci_write_64() with writeq()" and let me know if it worked for
+> you.
+>
+> I would like to help you, but I can't if you don't respond.
+>
+> Sarah Sharp
+Everything is fine after revert. Thanks! usb3.0 is working now.
+It is latest repository from linus/master.
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Len Brown <len.brown@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- kernel/power/hibernate.c |   33 +++++++++++++++++----------------
- 1 file changed, 17 insertions(+), 16 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 37170d4..b4a3e0b 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -973,26 +973,27 @@ static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
- static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
- 			    const char *buf, size_t n)
- {
--	unsigned int maj, min;
- 	dev_t res;
--	int ret = -EINVAL;
-+	char *name = kstrimdup(buf, GFP_KERNEL);
- 
--	if (sscanf(buf, "%u:%u", &maj, &min) != 2)
--		goto out;
-+	if (name == NULL)
-+		return -ENOMEM;
- 
--	res = MKDEV(maj,min);
--	if (maj != MAJOR(res) || min != MINOR(res))
--		goto out;
-+	res = name_to_dev_t(name);
- 
--	lock_system_sleep();
--	swsusp_resume_device = res;
--	unlock_system_sleep();
--	printk(KERN_INFO "PM: Starting manual resume from disk\n");
--	noresume = 0;
--	software_resume();
--	ret = n;
-- out:
--	return ret;
-+	if (res != 0) {
-+		lock_system_sleep();
-+		swsusp_resume_device = res;
-+		unlock_system_sleep();
-+		printk(KERN_INFO "PM: Starting manual resume from disk\n");
-+		noresume = 0;
-+		software_resume();
-+	} else {
-+		n = -EINVAL;
-+	}
-+
-+	kfree(name);
-+	return n;
- }
- 
- power_attr(resume);
--- 
-1.7.9.5
 
