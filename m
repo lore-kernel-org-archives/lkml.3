@@ -1,122 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaA2ACI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 19:02:08 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:56484 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932499AbaA1X7y (ORCPT
+	id S932598AbaA2ACY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 19:02:24 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46086 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381AbaA2ACU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 18:59:54 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/8] cgroup: relocate cgroup_rm_cftypes()
-Date: Tue, 28 Jan 2014 18:59:39 -0500
-Message-Id: <1390953585-16554-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1390953585-16554-1-git-send-email-tj@kernel.org>
-References: <1390953585-16554-1-git-send-email-tj@kernel.org>
+	Tue, 28 Jan 2014 19:02:20 -0500
+Date: Tue, 28 Jan 2014 16:02:16 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 49/73] drivers/mtd: delete non-required instances of
+ include <linux/init.h>
+Message-ID: <20140129000216.GB8919@ld-irv-0074>
+References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
+ <1390339396-3479-50-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390339396-3479-50-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cftype handling is about to be revamped.  Relocate cgroup_rm_cftypes()
-above cgroup_add_cftypes() in preparation.  This is pure relocation.
+On Tue, Jan 21, 2014 at 04:22:52PM -0500, Paul Gortmaker wrote:
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+> 
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Brian Norris <computersforpeace@gmail.com>
+> Cc: linux-mtd@lists.infradead.org
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 70 ++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 35 insertions(+), 35 deletions(-)
+> diff --git a/drivers/mtd/maps/sa1100-flash.c b/drivers/mtd/maps/sa1100-flash.c
+> index 8fc06bf..3428034e 100644
+> --- a/drivers/mtd/maps/sa1100-flash.c
+> +++ b/drivers/mtd/maps/sa1100-flash.c
+> @@ -7,7 +7,6 @@
+>  #include <linux/types.h>
+>  #include <linux/ioport.h>
+>  #include <linux/kernel.h>
+> -#include <linux/init.h>
+>  #include <linux/errno.h>
+>  #include <linux/slab.h>
+>  #include <linux/platform_device.h>
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 056bd7d..16eaf82 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2400,6 +2400,41 @@ static int cgroup_init_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- }
- 
- /**
-+ * cgroup_rm_cftypes - remove an array of cftypes from a subsystem
-+ * @cfts: zero-length name terminated array of cftypes
-+ *
-+ * Unregister @cfts.  Files described by @cfts are removed from all
-+ * existing cgroups and all future cgroups won't have them either.  This
-+ * function can be called anytime whether @cfts' subsys is attached or not.
-+ *
-+ * Returns 0 on successful unregistration, -ENOENT if @cfts is not
-+ * registered.
-+ */
-+int cgroup_rm_cftypes(struct cftype *cfts)
-+{
-+	struct cftype *found = NULL;
-+	struct cftype_set *set;
-+
-+	if (!cfts || !cfts[0].ss)
-+		return -ENOENT;
-+
-+	cgroup_cfts_prepare();
-+
-+	list_for_each_entry(set, &cfts[0].ss->cftsets, node) {
-+		if (set->cfts == cfts) {
-+			list_del(&set->node);
-+			kfree(set);
-+			found = cfts;
-+			break;
-+		}
-+	}
-+
-+	cgroup_cfts_commit(found, false);
-+	cgroup_exit_cftypes(cfts);
-+	return found ? 0 : -ENOENT;
-+}
-+
-+/**
-  * cgroup_add_cftypes - add an array of cftypes to a subsystem
-  * @ss: target cgroup subsystem
-  * @cfts: zero-length name terminated array of cftypes
-@@ -2437,41 +2472,6 @@ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- EXPORT_SYMBOL_GPL(cgroup_add_cftypes);
- 
- /**
-- * cgroup_rm_cftypes - remove an array of cftypes from a subsystem
-- * @cfts: zero-length name terminated array of cftypes
-- *
-- * Unregister @cfts.  Files described by @cfts are removed from all
-- * existing cgroups and all future cgroups won't have them either.  This
-- * function can be called anytime whether @cfts' subsys is attached or not.
-- *
-- * Returns 0 on successful unregistration, -ENOENT if @cfts is not
-- * registered.
-- */
--int cgroup_rm_cftypes(struct cftype *cfts)
--{
--	struct cftype *found = NULL;
--	struct cftype_set *set;
--
--	if (!cfts || !cfts[0].ss)
--		return -ENOENT;
--
--	cgroup_cfts_prepare();
--
--	list_for_each_entry(set, &cfts[0].ss->cftsets, node) {
--		if (set->cfts == cfts) {
--			list_del(&set->node);
--			kfree(set);
--			found = cfts;
--			break;
--		}
--	}
--
--	cgroup_cfts_commit(found, false);
--	cgroup_exit_cftypes(cfts);
--	return found ? 0 : -ENOENT;
--}
--
--/**
-  * cgroup_task_count - count the number of tasks in a cgroup.
-  * @cgrp: the cgroup in question
-  *
--- 
-1.8.5.3
+This file uses __exit_p(), from <linux/init.h>. So I dropped this hunk
+and pushed the rest to l2-mtd.git/next.
 
+Thanks,
+Brian
