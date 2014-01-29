@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaA2Mp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 07:45:27 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60875 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaA2MpZ (ORCPT
+	id S1752243AbaA2Mpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 07:45:47 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64151 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaA2Mpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 07:45:25 -0500
-Date: Wed, 29 Jan 2014 12:45:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Simon <horms@verge.net.au>, Magnus <magnus.damm@gmail.com>,
-        Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org
-Message-ID: <20140129124516.GZ11841@sirena.org.uk>
-References: <87r47r6v48.wl%kuninori.morimoto.gx@gmail.com>
+	Wed, 29 Jan 2014 07:45:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: iop32x: gpio breakage after "instantiate GPIO from platform device"
+Date: Wed, 29 Jan 2014 13:45:40 +0100
+Message-ID: <4529033.RhLP7Lt6Fg@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CACRpkdbd1FOOZOrF5crh3dYfYOy1CaYFH-SOqw_SJmd39JBjhg@mail.gmail.com>
+References: <4202760.m9CxkiIWk3@wuerfel> <CACRpkdbd1FOOZOrF5crh3dYfYOy1CaYFH-SOqw_SJmd39JBjhg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="COrbquG2VC1mW6F2"
-Content-Disposition: inline
-In-Reply-To: <87r47r6v48.wl%kuninori.morimoto.gx@gmail.com>
-X-Cookie: O.K., fine.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: About gpio-regulator setting on DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dnfg6JHa8bkv64Nj2ktEOi+yWGu8+Y9ijEestwmMeha
+ O7tKr8Se4FLfAPBGMOcn80rFXsD5fTIC5rDmBvAOpQCCAVHhH3
+ i0ytjMYl6TyrUqZxrZTxmlo4NCPi/U3WdplXFpJIoysdNcjMhD
+ fNCjhxy+fU3neXKHonvGErZPAwStAnIspsoz4tks+llZYeZKHA
+ x4l+CZ6JGRWTgto/6PIJqiUXQ0dyH0JhGWdGyCETohbylqGWWZ
+ /w8tseyTRS00smPpaxAJ9OJPGUE9GB4nQxwMcfH1WX8cqcb0QT
+ PaNTZiDTAA8ucYAdcW38M5eDzPQGiKaxJlMqVHfTqwVlTZuwaN
+ YGFlzGJ0y42KHssm/RLY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 29 January 2014 13:41:59 Linus Walleij wrote:
+> On Tue, Jan 28, 2014 at 10:05 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > Commit 7b85b867b9904 "ARM: plat-iop: instantiate GPIO from platform
+> > device" nicely cleaned up the gpio register access for iop, but
+> > forgot one board that directly pokes into the gpio registers
+> > to do a system reset.
+> >
+> > That board no longer compiles, and this patch just disables
+> > the code in question to work around it so I can locally build
+> > randconfig again, but it needs to be fixed properly.
+> 
+> OK I'm sending a proper fix instead.
 
---COrbquG2VC1mW6F2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, thanks!
 
-On Wed, Jan 29, 2014 at 12:38:19AM -0800, Kuninori Morimoto wrote:
-
-> How to set GPIOF_OUT_INIT_HIGH via DT ?
-> Or, am I misunderstanding ?
-
-The combination of the enable-active-high and enable-at-boot properties
-ought be able to cause the driver to do the right thing, the flags do
-this:
-
-	if (config->enabled_at_boot) {
-		if (config->enable_high)
-			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
-		else
-			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
-	} else {
-		if (config->enable_high)
-			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_LOW;
-		else
-			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
-	}
-
-of_get_named_gpio() just looks up the GPIO number, it doesn't request
-the GPIO.
-
---COrbquG2VC1mW6F2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS6PfZAAoJELSic+t+oim9EooP/29aTH7RKotfUbBPuaxLsICz
-ENTlnaOBfy6a0aL40mvvjaOwU4x5wsJGsfn7F4XGpJCCygriaBiv1e+vwaTWHlkR
-VfoiMWsOyrvwRRz6BX00Wbco7ftke1bPHDl+i591oWrKJMKJxSFE+vO9m21AecHb
-0bDiui9jxzcIxQNDMAfslThaFXnO9X15nah6LE4xldGKiBDcyR/tOy7s4IqjutH0
-kb9e99CbbW8uFHjzVt9LE3c0XDl/xwwPbp1L0Eweav5+OBx6g86pidLNQYGEsrxr
-W1ig/GtCINcdfJJmM/+yFVlAD9DJVxx3NJ65PYquJfkuAHRzSsKtt1wn2iXj9iCl
-dZThLXH16XYO5CFYuztk8o9LyHdywtz25mldpT6Apk2d3NplrcRR5zC8OYYJ1k2d
-bke6YpVd18Bd8iFnPR9vnoS1hhZeHWJvepnqm2/fXt4T/yrcUeLQbEyyrJYeYwtW
-sPqTwDHV2fvZXFwhIb20M1pvc5O0ClHOKkeM1H1Zhccbdq9AMdNBkWhYh9H3ymYb
-vobAdEWs8c4ceeryxxzRCSF3A5sqLDhsDt8eRVJ0dt7KlOWRvq6uBsCJ+E8GXni0
-N7zHRPacni+zQ9AVKz1RqJZBPxUUOtpdvxeKKX3LlVCoqudNgZS37nozr4knOFOD
-sIzFmoZnl+sIb1A9xCvu
-=K4cz
------END PGP SIGNATURE-----
-
---COrbquG2VC1mW6F2--
+	Arnd
