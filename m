@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaA2FUT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 00:20:19 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:43498 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaA2FUQ (ORCPT
+	id S1751166AbaA2FZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 00:25:00 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54131 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaA2FY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 00:20:16 -0500
+	Wed, 29 Jan 2014 00:24:59 -0500
+Date: Tue, 28 Jan 2014 21:24:57 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: Stanislaw Gruszka <sgruszka@redhat.com>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        xen-devel@lists.xensource.com
+Subject: Re: [BUG?] Interrupts enabled after xen_acpi_processor_resume+0x0/0x34
+ [xen_acpi_processor]
+In-Reply-To: <20140128160404.GA5732@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
+References: <20140128150848.GA1428@redhat.com> <20140128160404.GA5732@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <52E87929.30708@prisktech.co.nz>
-References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
-	<1390823503-24087-1-git-send-email-alchark@gmail.com>
-	<1390823503-24087-4-git-send-email-alchark@gmail.com>
-	<CAL_JsqLi0QKeeUkGMKmYZ1ki02mzk=L1gDxTJyXFGiOe_aHiVw@mail.gmail.com>
-	<CABjd4Yxo0Pp+QtTuXhKBT9KdVhUk12x2L8+FBL_ZWmPYopG2JQ@mail.gmail.com>
-	<52E87929.30708@prisktech.co.nz>
-Date: Wed, 29 Jan 2014 09:20:14 +0400
-Message-ID: <CABjd4Yy2pFr=qr1_e3XqupHngp_mF0GcDT0hCM46v=tNNDY1hw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
-From: Alexey Charkov <alchark@gmail.com>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Rob Herring <robherring2@gmail.com>, netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Roger Luethi <rl@hellgate.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/29 Tony Prisk <linux@prisktech.co.nz>:
-> On 29/01/14 07:27, Alexey Charkov wrote:
->>
->> 2014/1/27 Rob Herring <robherring2@gmail.com>:
->>>
->>> On Mon, Jan 27, 2014 at 5:51 AM, Alexey Charkov <alchark@gmail.com>
->>> wrote:
->>>>
->>>> This should make the driver usable with VIA/WonderMedia ARM-based
->>>> Systems-on-Chip integrated Rhine III adapters. Note that these
->>>> are always in MMIO mode, and don't have any known EEPROM.
->>>>
->>>> Signed-off-by: Alexey Charkov <alchark@gmail.com>
->>>> Signed-off-by: Roger Luethi <rl@hellgate.ch>
->>>> ---
->>>>   .../devicetree/bindings/net/via-rhine.txt          |  18 ++
->>>>   drivers/net/ethernet/via/Kconfig                   |   2 +-
->>>>   drivers/net/ethernet/via/via-rhine.c               | 293
->>>> +++++++++++++--------
->>>>   3 files changed, 200 insertions(+), 113 deletions(-)
->>>>   create mode 100644 Documentation/devicetree/bindings/net/via-rhine.txt
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/net/via-rhine.txt
->>>> b/Documentation/devicetree/bindings/net/via-rhine.txt
->>>> new file mode 100644
->>>> index 0000000..684dd3a
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/net/via-rhine.txt
->>>> @@ -0,0 +1,18 @@
->>>> +* VIA Rhine 10/100 Network Controller
->>>> +
->>>> +Required properties:
->>>> +- compatible : Should be "via,rhine"
->>>
->>> This should be more specific rather than...
->>>
->>>> +- reg : Address and length of the io space
->>>> +- interrupts : Should contain the controller interrupt line
->>>> +- rhine,revision : Rhine core revision, used to inform the
->>>> +       driver of quirks and capabilities to expect from
->>>> +       the device. Mimics the respective PCI attribute.
->>>
->>> having this property. The OF match table can then have the quirks set
->>> based on compatible strings.
->>
->> Sounds fair. Do you think something like the following would fly?
->>
->> Required properties:
->> - compatible : Should be "via,rhine-soc-vt8500" for integrated Rhine
->> cores found in SoC's such as VIA VT8500, WonderMedia WM8950 and
->> possibly others. These are listed as 1106:3106 rev. 0x84 on the
->> virtual PCI bus under vendor-provided kernels.
->
-> Does it need a special name? I would have assumed they are using their own
-> IP for the VT6105 or VT6106S.
-> Then you can use it to add quirks later on if needed.
+On Tue, 28 Jan 2014, Konrad Rzeszutek Wilk wrote:
 
-The problem is that I have no reliable source for the exact name of
-the IP block. The lookup table within the driver says that rev. 0x83
-is VT6105_B0, and rev. 0x8A is VT6105L (and it doesn't contain any
-entry for 0x84, so our case gets treated as 0x83 currently).
+> diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+> index 7231859..7602229 100644
+> --- a/drivers/xen/xen-acpi-processor.c
+> +++ b/drivers/xen/xen-acpi-processor.c
+> @@ -46,7 +46,7 @@ module_param_named(off, no_hypercall, int, 0400);
+>   */
+>  static unsigned int nr_acpi_bits;
+>  /* Mutex to protect the acpi_ids_done - for CPU hotplug use. */
+> -static DEFINE_MUTEX(acpi_ids_mutex);
+> +static DEFINE_SPINLOCK(acpi_ids_lock);
+>  /* Which ACPI ID we have processed from 'struct acpi_processor'. */
+>  static unsigned long *acpi_ids_done;
+>  /* Which ACPI ID exist in the SSDT/DSDT processor definitions. */
+> @@ -68,7 +68,7 @@ static int push_cxx_to_hypervisor(struct acpi_processor *_pr)
+>  	int ret = 0;
+>  
+>  	dst_cx_states = kcalloc(_pr->power.count,
+> -				sizeof(struct xen_processor_cx), GFP_KERNEL);
+> +				sizeof(struct xen_processor_cx), GFP_ATOMIC);
+>  	if (!dst_cx_states)
+>  		return -ENOMEM;
+>  
+> @@ -149,7 +149,7 @@ xen_copy_pss_data(struct acpi_processor *_pr,
+>  		     sizeof(struct acpi_processor_px));
+>  
+>  	dst_states = kcalloc(_pr->performance->state_count,
+> -			     sizeof(struct xen_processor_px), GFP_KERNEL);
+> +			     sizeof(struct xen_processor_px), GFP_ATOMIC);
+>  	if (!dst_states)
+>  		return ERR_PTR(-ENOMEM);
+>  
+> @@ -275,9 +275,9 @@ static int upload_pm_data(struct acpi_processor *_pr)
+>  {
+>  	int err = 0;
+>  
+> -	mutex_lock(&acpi_ids_mutex);
+> +	spin_lock(&acpi_ids_lock);
+>  	if (__test_and_set_bit(_pr->acpi_id, acpi_ids_done)) {
+> -		mutex_unlock(&acpi_ids_mutex);
+> +		spin_unlock(&acpi_ids_lock);
+>  		return -EBUSY;
+>  	}
+>  	if (_pr->flags.power)
+> @@ -286,7 +286,7 @@ static int upload_pm_data(struct acpi_processor *_pr)
+>  	if (_pr->performance && _pr->performance->states)
+>  		err |= push_pxx_to_hypervisor(_pr);
+>  
+> -	mutex_unlock(&acpi_ids_mutex);
+> +	spin_unlock(&acpi_ids_lock);
+>  	return err;
+>  }
+>  static unsigned int __init get_max_acpi_id(void)
 
-If we only differentiate them by the compatible string, I would be
-reluctant to call it vt6105 or vt6106 or whatever else without knowing
-for sure. Otherwise, if at some point we need to add any quirks
-specific to rev. 0x84, we wouldn't be able to do that without
-side-effects.
-
-Thoughts welcome :)
-
-Thanks,
-Alexey
+Looks incomplete, what about the kzalloc() in 
+xen_upload_processor_pm_data() and kcalloc()s in check_acpi_ids()?
