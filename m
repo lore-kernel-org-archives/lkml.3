@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaA2M05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 07:26:57 -0500
-Received: from www.humilis.net ([80.100.93.5]:49344 "EHLO panda.humilis.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbaA2M0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 07:26:55 -0500
-Date: Wed, 29 Jan 2014 13:26:51 +0100
-From: Sander <sander@humilis.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        David Garbett <David.Garbett@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
-Message-ID: <20140129122651.GB31980@panda>
-Reply-To: sander@humilis.net
-References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com>
- <20140108143529.GB14122@mudshark.cambridge.arm.com>
- <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
- <20140108192028.GM27432@n2100.arm.linux.org.uk>
- <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
- <alpine.LFD.2.10.1401081600370.1851@knanqh.ubzr>
- <CAD=FV=XqoSGpQ_Yrjj4hvV_0FSMfQGcGEsKkL1Stnm9m5s2Xvw@mail.gmail.com>
+	id S1752064AbaA2Mls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 07:41:48 -0500
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:59599 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750970AbaA2Mlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 07:41:46 -0500
+X-Yandex-Uniq: ed4b0e6a-cd7d-4d46-a47d-5e88e62ea064
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Wed, 29 Jan 2014 16:41:32 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        David Whipple <whipple@securedatainnovations.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [REGRESSION][BISECTED] 3.10.26: net_dma: mark broken
+ (b69ec589136c)
+Message-ID: <20140129124132.GA3180@stfomichev-desktop>
+References: <20140127173149.GA8099@stfomichev-desktop>
+ <CAPcyv4gNdKqRYGfjNY0GyOysN-3WrTVRGbo-+6Jdb2ukFGPX9w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=XqoSGpQ_Yrjj4hvV_0FSMfQGcGEsKkL1Stnm9m5s2Xvw@mail.gmail.com>
-X-Uptime: 10:23:38 up 50 days, 13:37, 29 users,  load average: 2.00, 2.11,
- 2.45
+In-Reply-To: <CAPcyv4gNdKqRYGfjNY0GyOysN-3WrTVRGbo-+6Jdb2ukFGPX9w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote (ao):
-> On Wed, Jan 8, 2014 at 1:08 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> > On Wed, 8 Jan 2014, Doug Anderson wrote:
-> >> * If Joe Upstream wants to run an upstream kernel on some type of
-> >> exynos5250 product (Samsung ARM Chromebook, HP Chromebook 11, Nexus 10
-> >> are the ones I know of) then he will deal with the small number of
-> >> crashes or figure out a solution.
-> >
-> > If Joe Upstream wants to run an upstream kernel, doesn't he have to
-> > unscrew his write protect switch first, at which point the RO firmware
-> > can be updated as well?
-> 
-> Actually, no.  You can move your device into dev mode and run any
-> kernel you want.  You'll get an annoying "you're in dev mode" screen
-> at every bootup, but otherwise it works just fine.
-> 
-> Going into dev mode requires some special keystrokes at bootup and a
-> wipe of your hard disk but no screwdrivers.
+> I wonder if we are simply racing the initialization of the completion
+> vs when it is triggered by dma.
+We have wmb() in the ioat2_tx_submit_unlock (before submitting work to dma,
+but after init_completion), shouldn't it make race between interrupt handler
+and our waiting thread impossible?
 
-And there is http://www.arndaleboard.org/ where you just put an upstream
-kernel on sd and boot.
+I also believe I traced x->done in the do_wait_for_common
+before and after 'timeout = action(timeout);' and it was as expected:
+0 - before and 1 - after.
 
-	Sander
+> I also think we need to be waiting
+> for in-flight tasklet runs when stopping the channel.
+Yes, I also thought that's the reason of the race, because tasklet is in
+the queue, but it is disabled (on my weird trace I don't see the interrupt,
+so I abandoned this idea).
+But it seems to be possible only when we issue dma, wait_for_completion_timeout
+waits and times out, we do cleanup (tasklet_disable), we get interrupt and
+do tasklet_schedule. But (again) I don't see timeout and
+interrupt on my trace (could it be corrupted?).
+
+Despite all this theory, the patch below (which just replaces tasklet_disable
+with tasklet_kill in the cleanup routines) seems to be working (did about
+40 reboots and didn't see the issue).
+
+I think replacing tasklet_disable with tasklet_kill is reasonable anyway, so
+should I send the patch rebased on 3.13 with comments or you'll take care
+and merge it into mainline and stable yourself?
+
+---
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 17a2393b3e25..6c62f4de02c0 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -379,7 +379,7 @@ static void ioat1_dma_free_chan_resources(struct dma_chan *c)
+ 	if (ioat->desccount == 0)
+ 		return;
+ 
+-	tasklet_disable(&chan->cleanup_task);
++	tasklet_kill(&chan->cleanup_task);
+ 	del_timer_sync(&chan->timer);
+ 	ioat1_cleanup(ioat);
+ 
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index b925e1b1d139..268e93d1af2d 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -809,7 +809,7 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+ 	if (!ioat->ring)
+ 		return;
+ 
+-	tasklet_disable(&chan->cleanup_task);
++	tasklet_kill(&chan->cleanup_task);
+ 	del_timer_sync(&chan->timer);
+ 	device->cleanup_fn((unsigned long) c);
+ 	device->reset_hw(chan);
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index acb86507828a..94a5f04e114e 100644
