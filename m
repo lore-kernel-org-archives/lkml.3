@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaA2O5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:57:40 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:54108 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599AbaA2O5i (ORCPT
+	id S1752687AbaA2O5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:57:49 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:46756 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaA2O5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:57:38 -0500
+	Wed, 29 Jan 2014 09:57:47 -0500
 From: Manish Badarkhe <badarkhe.manish@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: broonie@kernel.org, lgirdwood@gmail.com, gregkh@linuxfoundation.org,
         badarkhe.manish@gmail.com
-Subject: [PATCH V4 1/2] devres: introduce API "devm_kstrdup"
-Date: Wed, 29 Jan 2014 20:27:27 +0530
-Message-Id: <1391007448-26245-2-git-send-email-badarkhe.manish@gmail.com>
+Subject: [PATCH V4 2/2] regulator: fixed: update to devm_* API
+Date: Wed, 29 Jan 2014 20:27:28 +0530
+Message-Id: <1391007448-26245-3-git-send-email-badarkhe.manish@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
 References: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
@@ -21,66 +21,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces "devm_kstrdup" API so that the
-device's driver can allocate memory and copy string.
+Update the code to use devm_* API so that driver core will manage
+resources.
 
 Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
 ---
-:100644 100644 545c4de... db4e264... M	drivers/base/devres.c
-:100644 100644 952b010... ec1b6e2... M	include/linux/device.h
- drivers/base/devres.c  |   26 ++++++++++++++++++++++++++
- include/linux/device.h |    1 +
- 2 files changed, 27 insertions(+)
+:100644 100644 5ea64b9... 3c307d6... M	drivers/regulator/fixed.c
+ drivers/regulator/fixed.c |   42 ++++++++++++------------------------------
+ 1 file changed, 12 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index 545c4de..db4e264 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -791,6 +791,32 @@ void * devm_kmalloc(struct device *dev, size_t size, gfp_t gfp)
- EXPORT_SYMBOL_GPL(devm_kmalloc);
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 5ea64b9..3c307d6 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -132,15 +132,15 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
+ 			       GFP_KERNEL);
+ 	if (drvdata == NULL) {
+ 		dev_err(&pdev->dev, "Failed to allocate device data\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
  
- /**
-+ * devm_kstrdup - Allocate resource managed space and
-+ *                copy an existing string into that.
-+ * @dev: Device to allocate memory for
-+ * @s: the string to duplicate
-+ * @gfp: the GFP mask used in the devm_kmalloc() call when
-+ *       allocating memory
-+ * RETURNS:
-+ * Pointer to allocated string on success, NULL on failure.
-+ */
-+char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
-+{
-+	size_t size;
-+	char *buf;
-+
-+	if (!s)
-+		return NULL;
-+
-+	size = strlen(s) + 1;
-+	buf = devm_kmalloc(dev, size, gfp);
-+	if (buf)
-+		memcpy(buf, s, size);
-+	return buf;
-+}
-+EXPORT_SYMBOL_GPL(devm_kstrdup);
-+
-+/**
-  * devm_kfree - Resource-managed kfree
-  * @dev: Device this memory belongs to
-  * @p: Memory to free
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 952b010..ec1b6e2 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -626,6 +626,7 @@ static inline void *devm_kcalloc(struct device *dev,
- 	return devm_kmalloc_array(dev, n, size, flags | __GFP_ZERO);
+-	drvdata->desc.name = kstrdup(config->supply_name, GFP_KERNEL);
++	drvdata->desc.name = devm_kstrdup(&pdev->dev,
++					  config->supply_name,
++					  GFP_KERNEL);
+ 	if (drvdata->desc.name == NULL) {
+ 		dev_err(&pdev->dev, "Failed to allocate supply name\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
+ 	drvdata->desc.type = REGULATOR_VOLTAGE;
+ 	drvdata->desc.owner = THIS_MODULE;
+@@ -149,13 +149,13 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
+ 	drvdata->desc.enable_time = config->startup_delay;
+ 
+ 	if (config->input_supply) {
+-		drvdata->desc.supply_name = kstrdup(config->input_supply,
+-							GFP_KERNEL);
++		drvdata->desc.supply_name = devm_kstrdup(&pdev->dev,
++					    config->input_supply,
++					    GFP_KERNEL);
+ 		if (!drvdata->desc.supply_name) {
+ 			dev_err(&pdev->dev,
+ 				"Failed to allocate input supply\n");
+-			ret = -ENOMEM;
+-			goto err_name;
++			return -ENOMEM;
+ 		}
+ 	}
+ 
+@@ -186,11 +186,12 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
+ 	cfg.driver_data = drvdata;
+ 	cfg.of_node = pdev->dev.of_node;
+ 
+-	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
++	drvdata->dev = devm_regulator_register(&pdev->dev, &drvdata->desc,
++					       &cfg);
+ 	if (IS_ERR(drvdata->dev)) {
+ 		ret = PTR_ERR(drvdata->dev);
+ 		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
+-		goto err_input;
++		return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, drvdata);
+@@ -199,24 +200,6 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
+ 		drvdata->desc.fixed_uV);
+ 
+ 	return 0;
+-
+-err_input:
+-	kfree(drvdata->desc.supply_name);
+-err_name:
+-	kfree(drvdata->desc.name);
+-err:
+-	return ret;
+-}
+-
+-static int reg_fixed_voltage_remove(struct platform_device *pdev)
+-{
+-	struct fixed_voltage_data *drvdata = platform_get_drvdata(pdev);
+-
+-	regulator_unregister(drvdata->dev);
+-	kfree(drvdata->desc.supply_name);
+-	kfree(drvdata->desc.name);
+-
+-	return 0;
  }
- extern void devm_kfree(struct device *dev, void *p);
-+extern char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp);
  
- void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
- void __iomem *devm_request_and_ioremap(struct device *dev,
+ #if defined(CONFIG_OF)
+@@ -229,7 +212,6 @@ MODULE_DEVICE_TABLE(of, fixed_of_match);
+ 
+ static struct platform_driver regulator_fixed_voltage_driver = {
+ 	.probe		= reg_fixed_voltage_probe,
+-	.remove		= reg_fixed_voltage_remove,
+ 	.driver		= {
+ 		.name		= "reg-fixed-voltage",
+ 		.owner		= THIS_MODULE,
 -- 
 1.7.10.4
 
