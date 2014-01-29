@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaA2UKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:10:48 -0500
-Received: from [195.214.232.25] ([195.214.232.25]:20621 "EHLO relay.sw.ru"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaA2UKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:10:47 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>, criu@openvz.org,
-        Andrey Vagin <avagin@openvz.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Borislav Petkov <bp@suse.de>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH] mm: don't lose the SOFT_DIRTY flag on mprotect
-Date: Thu, 30 Jan 2014 00:04:59 +0400
-Message-Id: <1391025899-25299-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1751514AbaA2UOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:14:45 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:37293 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaA2UOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 15:14:43 -0500
+Date: Wed, 29 Jan 2014 15:14:40 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+cc: Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>, linux-pm@vger.kernel.org,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v2 5/6] X86: remove redundant cpuidle_idle_call()
+In-Reply-To: <CAOesGMjvOkuxCopog91SAV1-gB9GaEYXpuXwhV1EJQor_pKjBA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1401291434120.1652@knanqh.ubzr>
+References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org> <1391017513-12995-6-git-send-email-nicolas.pitre@linaro.org> <CAOesGMjvOkuxCopog91SAV1-gB9GaEYXpuXwhV1EJQor_pKjBA@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SOFT_DIRTY bit shows that the content of memory was changed
-after a defined point in the past. mprotect() doesn't change the
-content of memory, so it must not change the SOFT_DIRTY bit.
+On Wed, 29 Jan 2014, Olof Johansson wrote:
 
-This patch does nothing with _PAGE_SWP_SOFT_DIRTY, becase pte_modify()
-is called only for present pages.
+> Hi,
+> 
+> On Wed, Jan 29, 2014 at 9:45 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > The core idle loop now takes care of it.
+> >
+> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+> > Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > ---
+> >  arch/x86/kernel/process.c | 5 +----
+> >  1 file changed, 1 insertion(+), 4 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> > index 3fb8d95ab8..4505e2a950 100644
+> > --- a/arch/x86/kernel/process.c
+> > +++ b/arch/x86/kernel/process.c
+> > @@ -298,10 +298,7 @@ void arch_cpu_idle_dead(void)
+> >   */
+> >  void arch_cpu_idle(void)
+> >  {
+> > -       if (cpuidle_idle_call())
+> > -               x86_idle();
+> > -       else
+> > -               local_irq_enable();
+> > +       x86_idle();
+> 
+> You're taking out the local_irq_enable() here but I don't see the
+> equivalent of adding it back in the 1/6 patch that moves the
+> cpuidle_idle_call() up to common code. It seems that one of the call
+> paths through cpuidle_idle_call() don't re-enable it on its own.
 
-Fixes: 0f8975ec4db2 (mm: soft-dirty bits for user memory changes tracking)
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- arch/x86/include/asm/pgtable_types.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+When cpuidle_idle_call() returns non-zero, IRQs are left disabled.  When 
+it returns zero then IRQs should be disabled.  Same goes for cpuidle 
+drivers.  That's the theory at least.
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index a83aa44..1aa9ccd 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -121,7 +121,8 @@
- 
- /* Set of bits not changed in pte_modify */
- #define _PAGE_CHG_MASK	(PTE_PFN_MASK | _PAGE_PCD | _PAGE_PWT |		\
--			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY)
-+			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY |	\
-+			 _PAGE_SOFT_DIRTY)
- #define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE)
- 
- #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
--- 
-1.8.5.3
+Looking into some cpuidle drivers for x86 I found at least one that 
+doesn't respect this convention.  Damn.
 
+> Even if this is the right thing to do, why it's OK to do so should
+> probably be documented in the patch description.
+
+Better yet, I'm going to amend patch 1/6 with the below to make things 
+more reliable while still identifying misbehaving drivers.
+
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index ffcd3ee9af..14ca43430a 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -98,7 +98,8 @@ static void cpu_idle_loop(void)
+ 					rcu_idle_enter();
+ 					if (cpuidle_idle_call())
+ 						arch_cpu_idle();
+-					WARN_ON_ONCE(irqs_disabled());
++					if (WARN_ON_ONCE(irqs_disabled()))
++						local_irq_enable();
+ 					rcu_idle_exit();
+ 					start_critical_timings();
+ 				} else {
