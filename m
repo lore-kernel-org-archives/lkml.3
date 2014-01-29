@@ -1,312 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaA2O5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:57:05 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40102 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaA2O5C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:57:02 -0500
+	id S1752576AbaA2O5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:57:14 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46940 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751086AbaA2O5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 09:57:09 -0500
+Message-ID: <52E916BC.5040906@ti.com>
+Date: Wed, 29 Jan 2014 16:57:00 +0200
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140129091313.GK18029@intel.com>
-References: <1389694438-18614-1-git-send-email-mika.westerberg@linux.intel.com>
-	<CAN+gG=Fa+H53V1evKXiWK6OpWj29pF4z8rGJAXWs3C7mHm1mLQ@mail.gmail.com>
-	<20140128091258.GY18029@intel.com>
-	<CAN+gG=GPHyWdM+G=dzswfqVT4Jm8kEbnQs58jq2M_7_-FVB0=w@mail.gmail.com>
-	<20140129091313.GK18029@intel.com>
-Date: Wed, 29 Jan 2014 09:57:00 -0500
-Message-ID: <CAN+gG=HoPBBkM7v88y-K=q7mkMET-2dn2YcSN6zWi50cLnBqVA@mail.gmail.com>
-Subject: Re: [PATCH] HID: i2c-hid: add runtime PM support
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Fritz <chf.fritz@googlemail.com>
+CC: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>	 <52E77D03.8090001@ti.com>  <52E7B361.2030601@ti.com>	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>
+In-Reply-To: <1390994505.5023.32.camel@mars>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 4:13 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Tue, Jan 28, 2014 at 09:19:33AM -0500, Benjamin Tissoires wrote:
->> On Tue, Jan 28, 2014 at 4:12 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > On Mon, Jan 27, 2014 at 10:36:25PM -0500, Benjamin Tissoires wrote:
->> >> On Tue, Jan 14, 2014 at 5:13 AM, Mika Westerberg
->> >> <mika.westerberg@linux.intel.com> wrote:
->> >> > This patch adds runtime PM support for the HID over I2C driver. When the
->> >> > i2c-hid device is first opened we power it on and on the last close we
->> >> > power it off.
->> >> >
->> >> > The implementation is not the most power efficient because it needs some
->> >> > interaction from the userspace (e.g close the device node whenever we are
->> >> > no more interested in getting events), nevertheless it allows us to save
->> >> > some power and works with devices that are not wake capable.
->> >> >
->> >>
->> >> Hi Mika,
->> >>
->> >> I am a little bit puzzled here. The commit message just says that you
->> >> changed the implementation of the power saving with the exact same
->> >> behavior...  At least that's what I understand.
->> >> Currently, the devices should be put on sleep if nobody is reading,
->> >> and back alive if a reader arrives.
->> >> I think there is a gain with the patch, but my knowledge of the pm
->> >> subsystem is far too limited to see it :(
->> >
->> > Yes, there should be gain. If there is power domain involved like, ACPI in
->> > our case, runtime suspending the device on close will let ACPI to move the
->> > device to D3cold (e.g full off) which saves more power.
+On 01/29/2014 01:21 PM, Christoph Fritz wrote:
+> On Tue, 2014-01-28 at 18:02 +0100, Christoph Fritz wrote:
+>> On Tue, 2014-01-28 at 15:40 +0200, Tero Kristo wrote:
+>>>
+>>>>> Due to a regression since next-20140122 the following errors are present:
+>>>>>
+>>>>>    - pin sys_clkout2, which gets configured to 24 Mhz by the fourth patch
+>>>>>      in this set, erroneously outputs only 12 Mhz.
+>>>>>      Just out of curiosity, configuring it to 48 Mhz puts out desired 24 Mhz.
+>>>>>
+>>>>>    - omap_dss, which gets configured by the third patch in this set, fails
+>>>>>      to do 'dss_set_fck_rate(fck);' in
+>>>>>      drivers/video/omap2/dss/dss.c:dss_setup_default_clock() which leads to:
+>>>>>
+>>>>>       | omapdss_dss: probe of omapdss_dss failed with error -22
+>>>>>       | omapdss CORE error: Failed to initialize DSS platform driver
+>>>>>       | panel-dpi panel-dpi.0: failed to find video source 'dpi.0
+>>>>>
+>>>>>     Both regressions seem to have something to do with the clock framework.
+>>>>>     Could this be related to the DT clock conversion patches?
+>>>>
+>>>
+>>> Yea its definitely possible, as the clock DT conversion touches pretty
+>>> much everything. Have you tried whether this works properly with legacy
+>>> boot? Personally I don't have access to any omap3 devices that would
+>>> have display and have no possibility to check this out myself. Anyway,
+>>> my initial guess is that some clock divider setup might be wrong with
+>>> omap3, or we are missing some ti,set-rate-parent flag for some clock
+>>> node which prevents escalating clk_set_rate properly. However, it should
+>>> be easy to debug this by looking at the clock node in question, and its
+>>> parent nodes to see if there are any problems.
 >>
->> Oh, right. So, if you could just put this last sentence in the commit
->> message, that would be great.
+>> Currently I only analyzed sys_clkout2 (see attachments for full
+>> clk_summary files):
+>>
+>> clk_summary__next-20140115__works_as_expected:
+>>               dpll4_m2_ck        1           1            96000000
+>>                  dpll4_m2x2_ck   1           1            96000000
+>>                     omap_192m_alwon_fck 1           1            96000000
+>>                        omap_96m_alwon_fck 1           2            96000000
+>>                           per_96m_fck 0           6            96000000
+>>                              mcbsp4_fck 0           1            96000000
+>>                              mcbsp3_fck 0           2            96000000
+>>                              mcbsp2_fck 0           2            96000000
+>>                           cm_96m_fck 2           3            96000000
+>>                              clkout2_src_ck 1           1            96000000
+>>                                 sys_clkout2 1           1            24000000
+>>
+>> For real, on pin sys_clkout2 are correctly 24 Mhz measured.
+>>
+>> clk_summary__next-20140124__sysclkout2_dss_fails:
+>>               dpll4_m2_ck        1           1            96000000
+>>                  dpll4_m2x2_mul_ck 1           1            192000000
+>>                     dpll4_m2x2_ck 1           1            192000000
+>>                        omap_192m_alwon_fck 0           0            192000000
+>>                        omap_96m_alwon_fck 1           2            192000000
+>>                           per_96m_fck 0           6            192000000
+>>                              mcbsp4_fck 0           1            192000000
+>>                              mcbsp3_fck 0           2            192000000
+>>                              mcbsp2_fck 0           2            192000000
+>>                           cm_96m_fck 2           3            192000000
+>>                              clkout2_src_ck 1           1            192000000
+>>                                 sys_clkout2 1           1            24000000
+>>
+>> For real, on pin sys_clkout2 are only ~12 Mhz measured.
+>>
+>> So I added this patch:
+>>
+>> Subject: [PATCH] ARM: dts: fix omap3 clock multiplier for dpll4_m2x2_ck
+>>
+>> Before DT clock conversion, there was no multiplier for dpll4_m2x2_ck.
+>> So to be compatible again, set dpll4_m2x2_mul_ck multiplier back to 1.
+>> ---
+>>   arch/arm/boot/dts/omap3xxx-clocks.dtsi |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap3xxx-clocks.dtsi b/arch/arm/boot/dts/omap3xxx-clocks.dtsi
+>> index cb04d4b..b594050 100644
+>> --- a/arch/arm/boot/dts/omap3xxx-clocks.dtsi
+>> +++ b/arch/arm/boot/dts/omap3xxx-clocks.dtsi
+>> @@ -212,7 +212,7 @@
+>>   		#clock-cells = <0>;
+>>   		compatible = "fixed-factor-clock";
+>>   		clocks = <&dpll4_m2_ck>;
+>> -		clock-mult = <2>;
+>> +		clock-mult = <1>;
+>>   		clock-div = <1>;
+>>   	};
+>>
+>> And it works again. But due to the fact that sys_clkout2 was at 12 Mhz
+>> instead of 24, shouldn't it have been at 48 caused by "clock-mult = 2 ?
 >
-> Sure.
+> Any ideas on that?
 >
->>
->> >
->> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> >> > ---
->> >> >  drivers/hid/i2c-hid/i2c-hid.c | 81 ++++++++++++++++++++++++++++---------------
->> >> >  1 file changed, 54 insertions(+), 27 deletions(-)
->> >> >
->> >> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
->> >> > index d1f81f52481a..ff767d03d60e 100644
->> >> > --- a/drivers/hid/i2c-hid/i2c-hid.c
->> >> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
->> >> > @@ -25,6 +25,7 @@
->> >> >  #include <linux/delay.h>
->> >> >  #include <linux/slab.h>
->> >> >  #include <linux/pm.h>
->> >> > +#include <linux/pm_runtime.h>
->> >> >  #include <linux/device.h>
->> >> >  #include <linux/wait.h>
->> >> >  #include <linux/err.h>
->> >> > @@ -454,10 +455,18 @@ static void i2c_hid_init_reports(struct hid_device *hid)
->> >> >                 return;
->> >> >         }
->> >> >
->> >> > +       /*
->> >> > +        * The device must be powered on while we fetch initial reports
->> >> > +        * from it.
->> >> > +        */
->> >> > +       pm_runtime_get_sync(&client->dev);
->> >> > +
->> >> >         list_for_each_entry(report,
->> >> >                 &hid->report_enum[HID_FEATURE_REPORT].report_list, list)
->> >> >                 i2c_hid_init_report(report, inbuf, ihid->bufsize);
->> >> >
->> >> > +       pm_runtime_put(&client->dev);
->> >> > +
->> >> >         kfree(inbuf);
->> >> >  }
->> >> >
->> >> > @@ -703,8 +712,8 @@ static int i2c_hid_open(struct hid_device *hid)
->> >> >
->> >> >         mutex_lock(&i2c_hid_open_mut);
->> >> >         if (!hid->open++) {
->> >> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
->> >> > -               if (ret) {
->> >> > +               ret = pm_runtime_get_sync(&client->dev);
->> >>
->> >> dummy question (kind of late here...). Is there a counter of how many
->> >> get/put has been called in pm_runtime which could allow us to get rid
->> >> of the hid->open count?
->> >
->> > There is a counter but I'm not sure if drivers are supposed to use that. I
->> > would prefer not to use that.
->>
->> ok
->>
->> >
->> >>
->> >> > +               if (ret < 0) {
->> >> >                         hid->open--;
->> >> >                         goto done;
->> >> >                 }
->> >> > @@ -712,7 +721,7 @@ static int i2c_hid_open(struct hid_device *hid)
->> >> >         }
->> >> >  done:
->> >> >         mutex_unlock(&i2c_hid_open_mut);
->> >> > -       return ret;
->> >> > +       return ret < 0 ? ret : 0;
->> >> >  }
->> >> >
->> >> >  static void i2c_hid_close(struct hid_device *hid)
->> >> > @@ -729,37 +738,17 @@ static void i2c_hid_close(struct hid_device *hid)
->> >> >                 clear_bit(I2C_HID_STARTED, &ihid->flags);
->> >> >
->> >> >                 /* Save some power */
->> >> > -               i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
->> >> > +               pm_runtime_put(&client->dev);
->> >> >         }
->> >> >         mutex_unlock(&i2c_hid_open_mut);
->> >> >  }
->> >> >
->> >> > -static int i2c_hid_power(struct hid_device *hid, int lvl)
->> >> > -{
->> >> > -       struct i2c_client *client = hid->driver_data;
->> >> > -       struct i2c_hid *ihid = i2c_get_clientdata(client);
->> >> > -       int ret = 0;
->> >> > -
->> >> > -       i2c_hid_dbg(ihid, "%s lvl:%d\n", __func__, lvl);
->> >> > -
->> >> > -       switch (lvl) {
->> >> > -       case PM_HINT_FULLON:
->> >> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
->> >> > -               break;
->> >> > -       case PM_HINT_NORMAL:
->> >> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
->> >> > -               break;
->> >> > -       }
->> >> > -       return ret;
->> >> > -}
->> >> > -
->> >> >  static struct hid_ll_driver i2c_hid_ll_driver = {
->> >> >         .parse = i2c_hid_parse,
->> >> >         .start = i2c_hid_start,
->> >> >         .stop = i2c_hid_stop,
->> >> >         .open = i2c_hid_open,
->> >> >         .close = i2c_hid_close,
->> >> > -       .power = i2c_hid_power,
->> >>
->> >> If I understand correctly, here you are trying to fix hidraw (with
->> >> i2c_hid tramsport) which used to set_power on/off twice with the first
->> >> reader, right?
->> >
->> > Right.
->> >
->> >> I don't think we have other i2c_hid users of hid_hw_power, but I am a
->> >> little bit worried of simply removing the callback.
->> >
->> > OK.
->> >
->> >> What if we just change i2c_hid_set_power in i2c_hid_power by the
->> >> corresponding pm_runtime calls?
->> >
->> > Sure, I'll change that in the next version.
->> >
->> >>
->> >> >         .request = i2c_hid_request,
->> >> >  };
->> >> >
->> >> > @@ -973,13 +962,17 @@ static int i2c_hid_probe(struct i2c_client *client,
->> >> >         if (ret < 0)
->> >> >                 goto err;
->> >> >
->> >> > +       pm_runtime_get_noresume(&client->dev);
->> >> > +       pm_runtime_set_active(&client->dev);
->> >> > +       pm_runtime_enable(&client->dev);
->> >> > +
->> >> >         ret = i2c_hid_fetch_hid_descriptor(ihid);
->> >> >         if (ret < 0)
->> >> > -               goto err;
->> >> > +               goto err_pm;
->> >> >
->> >> >         ret = i2c_hid_init_irq(client);
->> >> >         if (ret < 0)
->> >> > -               goto err;
->> >> > +               goto err_pm;
->> >> >
->> >> >         hid = hid_allocate_device();
->> >> >         if (IS_ERR(hid)) {
->> >> > @@ -1010,6 +1003,7 @@ static int i2c_hid_probe(struct i2c_client *client,
->> >> >                 goto err_mem_free;
->> >> >         }
->> >> >
->> >> > +       pm_runtime_put(&client->dev);
->> >> >         return 0;
->> >> >
->> >> >  err_mem_free:
->> >> > @@ -1018,6 +1012,10 @@ err_mem_free:
->> >> >  err_irq:
->> >> >         free_irq(client->irq, ihid);
->> >> >
->> >> > +err_pm:
->> >> > +       pm_runtime_put_noidle(&client->dev);
->> >> > +       pm_runtime_disable(&client->dev);
->> >> > +
->> >> >  err:
->> >> >         i2c_hid_free_buffers(ihid);
->> >> >         kfree(ihid);
->> >> > @@ -1029,6 +1027,11 @@ static int i2c_hid_remove(struct i2c_client *client)
->> >> >         struct i2c_hid *ihid = i2c_get_clientdata(client);
->> >> >         struct hid_device *hid;
->> >> >
->> >> > +       pm_runtime_get_sync(&client->dev);
->> >> > +       pm_runtime_disable(&client->dev);
->> >> > +       pm_runtime_set_suspended(&client->dev);
->> >> > +       pm_runtime_put_noidle(&client->dev);
->> >> > +
->> >> >         hid = ihid->hid;
->> >> >         hid_destroy_device(hid);
->> >> >
->> >> > @@ -1074,7 +1077,31 @@ static int i2c_hid_resume(struct device *dev)
->> >> >  }
->> >> >  #endif
->> >> >
->> >> > -static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
->> >> > +#ifdef CONFIG_PM_RUNTIME
->> >> > +static int i2c_hid_runtime_suspend(struct device *dev)
->> >> > +{
->> >> > +       struct i2c_client *client = to_i2c_client(dev);
->> >> > +
->> >> > +       i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
->> >> > +       disable_irq(client->irq);
->> >> > +       return 0;
->> >> > +}
->> >> > +
->> >> > +static int i2c_hid_runtime_resume(struct device *dev)
->> >> > +{
->> >> > +       struct i2c_client *client = to_i2c_client(dev);
->> >> > +
->> >> > +       enable_irq(client->irq);
->> >> > +       i2c_hid_set_power(client, I2C_HID_PWR_ON);
->> >> > +       return 0;
->> >> > +}
->> >>
->> >> These two functions looks very similar to i2c_hid_suspend and
->> >> i2c_hid_resume, without the reset and the irq_wake :(
->> >> So, my question here is can we use some common code for them?
->> >> It may not be possible regarding CONFIG_PM_RUNTIME and
->> >> CONFIG_PM_SLEEP, but it still looks ugly to me.
->> >
->> > It looks ugly, I agree and we can probably reuse some code in the
->> > callbacks. I'll look into that.
->>
->> well, anyway, if this involve something even more ugly, we can for
->> sure stick with this version :)
->
-> It turned out that it is going to be ugly, no matter what :-( I'll keep the
-> current version for now.
->
->>
->> >
->> >> I tested this today, and it works, so you should be right, but I'd
->> >> like to have your opinion on this.
->> >
->> > Thanks for testing and comments.
->> >
->> > I'll prepare a new version with the suggested changes if you are OK with my
->> > explanations ;-)
->>
->> Sure I am. Thanks for handling the whole ACPI part of this module. I
->> was really pleased the other day to see that the touchscreen of a Bay
->> trail tablet is now working out of the box :) I still have many other
->> problems with this tablet, but still, having the input working is
->> always good with a tablet...
->
-> If that's the Asus T100 tablet, we are going to fix rest of the problems
-> soon :-)
+> I reverted the patch above and added:
 
-That's great. I hope this will also fix my Lenovo Miix 2 (the T100 is
-too expensive compared to the Dell Venue pro 8 and the Lenovo one) :)
-I think most of my problems are ACPI related (WIFI card not powered
-up, SD-ext reader not working, suspend/resume not there, etc...), so I
-expect great of you :)
+Hmm, well, the omap96m_alwon_fck rate is still wrong. Try adding 
+ti,min-div = <2>; and ti,max-div = <4>; to properties of the clock node.
 
-I'll give a last shot to the v2, before giving the reviewed by.
+-Tero
 
-Cheers,
-Benjamin
+>
+> From: Tero Kristo <t-kristo@ti.com>
+> Date: Wed, 29 Jan 2014 11:03:46 +0200
+> Subject: [PATCH] ARM: dts: omap36xx: fix omap96m_alwon_fck
+>
+> OMAP36xx has different hardware implementation for the omap96m_alwon_fck
+> compared to other OMAP3 variants. Reflect this properly in the dts file.
+>
+> Signed-off-by: Tero Kristo <t-kristo@ti.com>
+> ---
+>    arch/arm/boot/dts/omap36xx-clocks.dtsi |    9 +++++++++
+>    1 file changed, 9 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/omap36xx-clocks.dtsi
+> b/arch/arm/boot/dts/omap36xx-clocks.dtsi
+> index 2fcf253..24ddf3f 100644
+> --- a/arch/arm/boot/dts/omap36xx-clocks.dtsi
+> +++ b/arch/arm/boot/dts/omap36xx-clocks.dtsi
+> @@ -88,3 +88,12 @@
+>    			 <&mcbsp4_ick>, <&uart4_fck>;
+>    	};
+>    };
+> +
+> +&omap_96m_alwon_fck {
+> +	compatible = "ti,divider-clock";
+> +	clocks = <&omap_192m_alwon_fck>;
+> +	ti,bit-shift = <12>;
+> +	ti,max-div = <2>;
+> +	reg = <0x0a40>;
+> +	ti,index-starts-at-one;
+> +};
+>
+> But the output of sys_clkout2 is still wrong.
+>
+> clk_summary__next-20140124__patch_tero_fix_omap96m_alwon_fck
+>               dpll4_m2_ck        1           1            96000000
+>                  dpll4_m2x2_mul_ck 1           1            192000000
+>                     dpll4_m2x2_ck 1           1            192000000
+>                        omap_192m_alwon_fck 1           1            192000000
+>                           omap_96m_alwon_fck 1           2            192000000
+>                              per_96m_fck 0           6            192000000
+>                                 mcbsp4_fck 0           1            192000000
+>                                 mcbsp3_fck 0           2            192000000
+>                                 mcbsp2_fck 0           2            192000000
+>                              cm_96m_fck 2           3            192000000
+>                                 clkout2_src_ck 1           1            192000000
+>                                    sys_clkout2 1           1            24000000
+>
+> Thanks
+>    -- Christoph
+>
+
