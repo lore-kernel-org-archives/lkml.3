@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149AbaA2HiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 02:38:12 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50359 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaA2HiH (ORCPT
+	id S932082AbaA2HwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 02:52:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49382 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153AbaA2HwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 02:38:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <52E0F1D7.4030401@samsung.com>
-References: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
- <1389777472-15294-1-git-send-email-ch.naveen@samsung.com> <CAHfPSqCHGbVX3iMC-LNnFYkdutRYFuk07RCeYLU4KAaTpgyQ0w@mail.gmail.com>
- <52E0F1D7.4030401@samsung.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 29 Jan 2014 13:07:47 +0530
-Message-ID: <CAHfPSqDsg9O42RignJwj7KqmU3yrecbjai2oy+m6VhRpQVQgaA@mail.gmail.com>
-Subject: Re: [PATCH 8/8 v4] crypto:s5p-sss: Use clk_prepare/clk_unprepare
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
-        cpgs@samsung.com, tomasz.figa@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Jan 2014 02:52:15 -0500
+Date: Tue, 28 Jan 2014 23:52:14 -0800 (PST)
+Message-Id: <20140128.235214.881810600024309551.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        nicolas.dichtel@6wind.com, stable@vger.kernel.org, williams@redhat.com,
+        lclaudio@uudg.org, jkacur@redhat.com
+Subject: Re: [PATCH 0/2] [BUG FIXES - 3.10.27] sit: More backports
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140128205756.074448668@goodmis.org>
+References: <20140128205756.074448668@goodmis.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sylwester,
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Tue, 28 Jan 2014 15:57:56 -0500
 
-On 23 January 2014 16:11, Sylwester Nawrocki <s.nawrocki@samsung.com> wrote:
-> Hi,
->
-> On 23/01/14 11:18, Naveen Krishna Ch wrote:
->> Hello All,
->>
->> On 15 January 2014 14:47, Naveen Krishna Chatradhi
->> <ch.naveen@samsung.com> wrote:
->>> This patch set adds use of clk_prepare/clk_unprepare as
->>> required by generic clock framework.
->>>
->>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->>> ---
->>> Changes since v3:
->>> None
->>>
->>>  drivers/crypto/s5p-sss.c |    6 +++---
->>>  1 file changed, 3 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
->>> index f7c66c7..870e794 100644
->>> --- a/drivers/crypto/s5p-sss.c
->>> +++ b/drivers/crypto/s5p-sss.c
->>> @@ -648,7 +648,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
->>>                 return -ENOENT;
->>>         }
->>>
->>> -       clk_enable(pdata->clk);
->>> +       clk_prepare_enable(pdata->clk);
->
-> How about properly checking the return value ?
-Sure, Thanks.
->
-> --
-> Thanks,
-> Sylwester
+> At Red Hat we base our real-time kernel off of 3.10.27 and do lots of
+> stress testing on that kernel. This has discovered some bugs that we
+> can hit with the vanilla 3.10.27 kernel (no -rt patches applied).
+> 
+> I sent out a bug fix that can cause a crash with the current 3.10.27
+> when you add and then remove the sit module. That patch is obsoleted by
+> these patches, as that patch was not enough.
+> 
+> A previous patch that was backported:
+> 
+>   Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5
+>   sit: allow to use rtnl ops on fb tunnel
+> 
+> Had a depenency on commit 5e6700b3bf98 ("sit: add support of x-netns")
+> which was not backported. The dependency was only on part of that
+> commit which is what I backported.
+> 
+> The other upstream commit 9434266f2c645d4fcf62a03a8e36ad8075e37943
+> sit: fix use after free of fb_tunnel_dev
+> 
+> fixes another bug we encountered, it also fixes the 3.10.27 bug
+> where removing the sit module cause the crash. This is the patch
+> that obsoletes my previous patch.
 
-
-
--- 
-Shine bright,
-(: Nav :)
+Greg, these have my blessing, please apply these to 3.10 -stable,
+thanks a lot!
