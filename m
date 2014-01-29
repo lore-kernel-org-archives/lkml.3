@@ -1,186 +1,640 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaA2QES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 11:04:18 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:57727 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaA2QEQ (ORCPT
+	id S1752663AbaA2QFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 11:05:10 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:63718 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477AbaA2QFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 11:04:16 -0500
-Message-ID: <52E9267C.90403@6wind.com>
-Date: Wed, 29 Jan 2014 17:04:12 +0100
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 29 Jan 2014 11:05:06 -0500
+Date: Wed, 29 Jan 2014 11:05:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/6] cgroup: drop module support
+Message-ID: <20140129160502.GF30842@htj.dyndns.org>
+References: <1390952641-15950-1-git-send-email-tj@kernel.org>
+ <1390952641-15950-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        stable <stable@vger.kernel.org>, Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH 0/2] [BUG FIXES - 3.10.27] sit: More backports
-References: <20140128205756.074448668@goodmis.org>	<52E8E025.2060803@6wind.com> <20140129075745.4227a2ed@gandalf.local.home>
-In-Reply-To: <20140129075745.4227a2ed@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390952641-15950-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 29/01/2014 13:57, Steven Rostedt a écrit :
-> On Wed, 29 Jan 2014 12:04:05 +0100
-> Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
->
->> Le 28/01/2014 21:57, Steven Rostedt a écrit :
->>> At Red Hat we base our real-time kernel off of 3.10.27 and do lots of
->>> stress testing on that kernel. This has discovered some bugs that we
->>> can hit with the vanilla 3.10.27 kernel (no -rt patches applied).
->>>
->>> I sent out a bug fix that can cause a crash with the current 3.10.27
->>> when you add and then remove the sit module. That patch is obsoleted by
->>> these patches, as that patch was not enough.
->> Can you explain a bit more which problem remains after that patch?
->> I wonder if a problem remains also with ip6_tunnel.ko (net/ipv6/ip6_tunnel.c),
->> the same problem was spotted into this module.
->
-> Hmm, OK it may only need the first version of the patch. It was one of
-> those cases where it didn't fix the second bug, so we added the full
-> patch as well. Then we found the second bug but never tried all the
-> tests with the smaller version of the patch. I'll put back the first
-> patch and then ask our QA to retest it with the older version and the
-> other patch.
->
->>
->>>
->>> A previous patch that was backported:
->>>
->>>     Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5
->>>     sit: allow to use rtnl ops on fb tunnel
->>>
->>> Had a depenency on commit 5e6700b3bf98 ("sit: add support of x-netns")
->>> which was not backported. The dependency was only on part of that
->>> commit which is what I backported.
->> I cannot comment directly the patch, it was an attachement, hence I put my
->
-> It's not really an attachment. It was sent with quilt mail, which only
-> makes it look like one. What mail client are you using? mutt, alpine,
-> evolution, claws-mail, and thunderbird all show it as a normal patch.
-> I do know that k9-mail on android makes it into an attachment.
-Thunderbird. The patch was show as a normal aptch, but when I do "reply all", I
-get an empty mail.
+>From 9eabfa8710f51e6b865b4d6668fa7356656f05d8 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 29 Jan 2014 11:01:26 -0500
 
->
->> comments here.
->> In patch 0001-sit-Unregister-sit-devices-with-rtnl_link_ops.patch, I wonder how
->> 'if (dev_net(t->dev) != net)' can be wrong. If commit 5e6700b3bf98 ("sit: add
->> support of x-netns") has not been backported, this test is always true.
->
-> Should it just be removed then? This has fixed our bugs, but perhaps it
-> opened new ones we haven't detected yet. I can remove the if and
-> unregister and see if it still works. Or perhaps calling unregister all
-> the time isn't bad.
-Ok, I've think a bit more to this problem. First, let's explain it.
+With module supported dropped from net_prio, no controller is using
+cgroup module support.  None of actual resource controllers can be
+built as a module and we aren't gonna add new controllers which don't
+control resources.  This patch drops module support from cgroup.
 
-rmmod sit
-=> sit_cleanup()
-   => rtnl_link_unregister()
-     => __rtnl_kill_links()
-       => for_each_netdev(net, dev) {
-            if (dev->rtnl_link_ops == ops)
-               ops->dellink(dev, &list_kill);
-          }
-  **at this point, the FB device is deleted (and all sit tunnels)**
+* cgroup_[un]load_subsys() and cgroup_subsys->module removed.
 
-   => unregister_pernet_device()
-     => unregister_pernet_operations()
-       => ops_exit_list()
-         => sit_exit_net()
-           => sit_destroy_tunnels()
-              in this function, no tunnel is found
-           unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
-   ** second deletion, here is the bug **
+* As there's no point in distinguishing IS_BUILTIN() and IS_MODULE(),
+  cgroup_subsys.h now uses IS_ENABLED() directly.
 
-Now, what happen on netns deletion with the previous patch? Only sit_exit_net()
-will be called, hence with the previous patch, the fb device will not be
-destroyed, netns will leak.
+* enum cgroup_subsys_id now exactly matches the list of enabled
+  controllers as ordered in cgroup_subsys.h.
 
-Your patch serie seems to be the good way to go (note that patch 1/2 does not
-compile) but I think the fix is smaller because we don't have x-netns.
+* cgroup_subsys[] is now a contiguously occupied array.  Size
+  specification is no longer necessary and dropped.
 
-Here is my proposal, if you agree, I will send the same patch for ip6_tunnnel,
-which have the netns leak.
+* for_each_builtin_subsys() is removed and for_each_subsys() is
+  updated to not require any locking.
 
+* module ref handling is removed from rebind_subsystems().
 
- From d101450583c3a472a2a94904cfe13fd4e7d2f519 Mon Sep 17 00:00:00 2001
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Date: Wed, 29 Jan 2014 16:40:30 +0100
-Subject: [PATCH] sit: fix double free of fb_tunnel_dev on exit
+* Module related comments dropped.
 
-This problem was fixed upstream by commit 9434266f2c64 ("sit: fix use after free
-of fb_tunnel_dev").
-The upstream patch depends on upstream commit 5e6700b3bf98 ("sit: add support of
-x-netns"), which was not backported into 3.10 branch.
+v2: Rebased on top of fe1217c4f3f7 ("net: net_cls: move cgroupfs
+    classid handling into core").
 
-First, explain the problem: when the sit module is unloaded, sit_cleanup() is
-called.
-rmmod sit
-=> sit_cleanup()
-   => rtnl_link_unregister()
-     => __rtnl_kill_links()
-       => for_each_netdev(net, dev) {
-         if (dev->rtnl_link_ops == ops)
-         	ops->dellink(dev, &list_kill);
-         }
-At this point, the FB device is deleted (and all sit tunnels).
-   => unregister_pernet_device()
-     => unregister_pernet_operations()
-       => ops_exit_list()
-         => sit_exit_net()
-           => sit_destroy_tunnels()
-           In this function, no tunnel is found.
-           => unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
-We delete the FB device a second time here!
+v3: Added {} around the if (need_forkexit_callback) block in
+    cgroup_post_fork() for readability as suggested by Li.
 
-Because we cannot simply remove the second deletion (sit_exit_net() must remove
-the FB device when a netns is deleted), we add an rtnl ops which delete all sit
-device excepting the FB device and thus we can keep the explicit deletion in
-sit_exit_net().
-
-CC: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
-  net/ipv6/sit.c | 10 ++++++++++
-  1 file changed, 10 insertions(+)
+ block/blk-cgroup.c            |   1 -
+ include/linux/cgroup.h        |  29 +----
+ include/linux/cgroup_subsys.h |  24 ++--
+ kernel/cgroup.c               | 284 +++---------------------------------------
+ net/core/netclassid_cgroup.c  |   1 -
+ net/core/netprio_cgroup.c     |   1 -
+ 6 files changed, 32 insertions(+), 308 deletions(-)
 
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 0491264b8bfc..620d326e8fdd 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1507,6 +1507,15 @@ static const struct nla_policy 
-ipip6_policy[IFLA_IPTUN_MAX + 1] = {
-  #endif
-  };
-
-+static void ipip6_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct sit_net *sitn = net_generic(net, sit_net_id);
-+
-+	if (dev != sitn->fb_tunnel_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
-  static struct rtnl_link_ops sit_link_ops __read_mostly = {
-  	.kind		= "sit",
-  	.maxtype	= IFLA_IPTUN_MAX,
-@@ -1517,6 +1526,7 @@ static struct rtnl_link_ops sit_link_ops __read_mostly = {
-  	.changelink	= ipip6_changelink,
-  	.get_size	= ipip6_get_size,
-  	.fill_info	= ipip6_fill_info,
-+	.dellink	= ipip6_dellink,
-  };
-
-  static struct xfrm_tunnel sit_handler __read_mostly = {
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 4e491d9..660d419 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -914,7 +914,6 @@ struct cgroup_subsys blkio_subsys = {
+ 	.can_attach = blkcg_can_attach,
+ 	.subsys_id = blkio_subsys_id,
+ 	.base_cftypes = blkcg_files,
+-	.module = THIS_MODULE,
+ };
+ EXPORT_SYMBOL_GPL(blkio_subsys);
+ 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 5c09759..d842a73 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -37,28 +37,13 @@ extern void cgroup_post_fork(struct task_struct *p);
+ extern void cgroup_exit(struct task_struct *p, int run_callbacks);
+ extern int cgroupstats_build(struct cgroupstats *stats,
+ 				struct dentry *dentry);
+-extern int cgroup_load_subsys(struct cgroup_subsys *ss);
+-extern void cgroup_unload_subsys(struct cgroup_subsys *ss);
+ 
+ extern int proc_cgroup_show(struct seq_file *, void *);
+ 
+-/*
+- * Define the enumeration of all cgroup subsystems.
+- *
+- * We define ids for builtin subsystems and then modular ones.
+- */
++/* define the enumeration of all cgroup subsystems */
+ #define SUBSYS(_x) _x ## _subsys_id,
+ enum cgroup_subsys_id {
+-#define IS_SUBSYS_ENABLED(option) IS_BUILTIN(option)
+ #include <linux/cgroup_subsys.h>
+-#undef IS_SUBSYS_ENABLED
+-	CGROUP_BUILTIN_SUBSYS_COUNT,
+-
+-	__CGROUP_SUBSYS_TEMP_PLACEHOLDER = CGROUP_BUILTIN_SUBSYS_COUNT - 1,
+-
+-#define IS_SUBSYS_ENABLED(option) IS_MODULE(option)
+-#include <linux/cgroup_subsys.h>
+-#undef IS_SUBSYS_ENABLED
+ 	CGROUP_SUBSYS_COUNT,
+ };
+ #undef SUBSYS
+@@ -370,10 +355,9 @@ struct css_set {
+ 	struct list_head cgrp_links;
+ 
+ 	/*
+-	 * Set of subsystem states, one for each subsystem. This array
+-	 * is immutable after creation apart from the init_css_set
+-	 * during subsystem registration (at boot time) and modular subsystem
+-	 * loading/unloading.
++	 * Set of subsystem states, one for each subsystem. This array is
++	 * immutable after creation apart from the init_css_set during
++	 * subsystem registration (at boot time).
+ 	 */
+ 	struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
+ 
+@@ -620,15 +604,10 @@ struct cgroup_subsys {
+ 	/* base cftypes, automatically [de]registered with subsys itself */
+ 	struct cftype *base_cftypes;
+ 	struct cftype_set base_cftset;
+-
+-	/* should be defined only by modular subsystems */
+-	struct module *module;
+ };
+ 
+ #define SUBSYS(_x) extern struct cgroup_subsys _x ## _subsys;
+-#define IS_SUBSYS_ENABLED(option) IS_BUILTIN(option)
+ #include <linux/cgroup_subsys.h>
+-#undef IS_SUBSYS_ENABLED
+ #undef SUBSYS
+ 
+ /**
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index 7b99d71..11c42f6 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -3,51 +3,51 @@
+  *
+  * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
+  */
+-#if IS_SUBSYS_ENABLED(CONFIG_CPUSETS)
++#if IS_ENABLED(CONFIG_CPUSETS)
+ SUBSYS(cpuset)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEBUG)
++#if IS_ENABLED(CONFIG_CGROUP_DEBUG)
+ SUBSYS(debug)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_SCHED)
++#if IS_ENABLED(CONFIG_CGROUP_SCHED)
+ SUBSYS(cpu_cgroup)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_CPUACCT)
++#if IS_ENABLED(CONFIG_CGROUP_CPUACCT)
+ SUBSYS(cpuacct)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_MEMCG)
++#if IS_ENABLED(CONFIG_MEMCG)
+ SUBSYS(mem_cgroup)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEVICE)
++#if IS_ENABLED(CONFIG_CGROUP_DEVICE)
+ SUBSYS(devices)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_FREEZER)
++#if IS_ENABLED(CONFIG_CGROUP_FREEZER)
+ SUBSYS(freezer)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_NET_CLASSID)
++#if IS_ENABLED(CONFIG_CGROUP_NET_CLASSID)
+ SUBSYS(net_cls)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_BLK_CGROUP)
++#if IS_ENABLED(CONFIG_BLK_CGROUP)
+ SUBSYS(blkio)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_PERF)
++#if IS_ENABLED(CONFIG_CGROUP_PERF)
+ SUBSYS(perf)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_NET_PRIO)
++#if IS_ENABLED(CONFIG_CGROUP_NET_PRIO)
+ SUBSYS(net_prio)
+ #endif
+ 
+-#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_HUGETLB)
++#if IS_ENABLED(CONFIG_CGROUP_HUGETLB)
+ SUBSYS(hugetlb)
+ #endif
+ /*
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b0e030f..7f809c5 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -47,7 +47,6 @@
+ #include <linux/string.h>
+ #include <linux/sort.h>
+ #include <linux/kmod.h>
+-#include <linux/module.h>
+ #include <linux/delayacct.h>
+ #include <linux/cgroupstats.h>
+ #include <linux/hashtable.h>
+@@ -120,15 +119,9 @@ static struct workqueue_struct *cgroup_destroy_wq;
+  */
+ static struct workqueue_struct *cgroup_pidlist_destroy_wq;
+ 
+-/*
+- * Generate an array of cgroup subsystem pointers. At boot time, this is
+- * populated with the built in subsystems, and modular subsystems are
+- * registered after that. The mutable section of this array is protected by
+- * cgroup_mutex.
+- */
++/* generate an array of cgroup subsystem pointers */
+ #define SUBSYS(_x) [_x ## _subsys_id] = &_x ## _subsys,
+-#define IS_SUBSYS_ENABLED(option) IS_BUILTIN(option)
+-static struct cgroup_subsys *cgroup_subsys[CGROUP_SUBSYS_COUNT] = {
++static struct cgroup_subsys *cgroup_subsys[] = {
+ #include <linux/cgroup_subsys.h>
+ };
+ 
+@@ -258,30 +251,13 @@ static int notify_on_release(const struct cgroup *cgrp)
+ 		else
+ 
+ /**
+- * for_each_subsys - iterate all loaded cgroup subsystems
++ * for_each_subsys - iterate all enabled cgroup subsystems
+  * @ss: the iteration cursor
+  * @ssid: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
+- *
+- * Iterates through all loaded subsystems.  Should be called under
+- * cgroup_mutex or cgroup_root_mutex.
+  */
+ #define for_each_subsys(ss, ssid)					\
+-	for (({ cgroup_assert_mutex_or_root_locked(); (ssid) = 0; });	\
+-	     (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)			\
+-		if (!((ss) = cgroup_subsys[(ssid)])) { }		\
+-		else
+-
+-/**
+- * for_each_builtin_subsys - iterate all built-in cgroup subsystems
+- * @ss: the iteration cursor
+- * @i: the index of @ss, CGROUP_BUILTIN_SUBSYS_COUNT after reaching the end
+- *
+- * Bulit-in subsystems are always present and iteration itself doesn't
+- * require any synchronization.
+- */
+-#define for_each_builtin_subsys(ss, i)					\
+-	for ((i) = 0; (i) < CGROUP_BUILTIN_SUBSYS_COUNT &&		\
+-	     (((ss) = cgroup_subsys[i]) || true); (i)++)
++	for ((ssid) = 0; (ssid) < CGROUP_SUBSYS_COUNT &&		\
++	     (((ss) = cgroup_subsys[ssid]) || true); (ssid)++)
+ 
+ /* iterate across the active hierarchies */
+ #define for_each_active_root(root)					\
+@@ -975,50 +951,24 @@ static void cgroup_d_remove_dir(struct dentry *dentry)
+ 	remove_dir(dentry);
+ }
+ 
+-/*
+- * Call with cgroup_mutex held. Drops reference counts on modules, including
+- * any duplicate ones that parse_cgroupfs_options took. If this function
+- * returns an error, no reference counts are touched.
+- */
+ static int rebind_subsystems(struct cgroupfs_root *root,
+ 			     unsigned long added_mask, unsigned removed_mask)
+ {
+ 	struct cgroup *cgrp = &root->top_cgroup;
+ 	struct cgroup_subsys *ss;
+-	unsigned long pinned = 0;
+ 	int i, ret;
+ 
+ 	BUG_ON(!mutex_is_locked(&cgroup_mutex));
+ 	BUG_ON(!mutex_is_locked(&cgroup_root_mutex));
+ 
+ 	/* Check that any added subsystems are currently free */
+-	for_each_subsys(ss, i) {
+-		if (!(added_mask & (1 << i)))
+-			continue;
+-
+-		/* is the subsystem mounted elsewhere? */
+-		if (ss->root != &cgroup_dummy_root) {
+-			ret = -EBUSY;
+-			goto out_put;
+-		}
+-
+-		/* pin the module */
+-		if (!try_module_get(ss->module)) {
+-			ret = -ENOENT;
+-			goto out_put;
+-		}
+-		pinned |= 1 << i;
+-	}
+-
+-	/* subsys could be missing if unloaded between parsing and here */
+-	if (added_mask != pinned) {
+-		ret = -ENOENT;
+-		goto out_put;
+-	}
++	for_each_subsys(ss, i)
++		if ((added_mask & (1 << i)) && ss->root != &cgroup_dummy_root)
++			return -EBUSY;
+ 
+ 	ret = cgroup_populate_dir(cgrp, added_mask);
+ 	if (ret)
+-		goto out_put;
++		return ret;
+ 
+ 	/*
+ 	 * Nothing can fail from this point on.  Remove files for the
+@@ -1057,9 +1007,6 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+ 			RCU_INIT_POINTER(cgrp->subsys[i], NULL);
+ 
+ 			cgroup_subsys[i]->root = &cgroup_dummy_root;
+-
+-			/* subsystem is now free - drop reference on module */
+-			module_put(ss->module);
+ 			root->subsys_mask &= ~bit;
+ 		}
+ 	}
+@@ -1071,12 +1018,6 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+ 	root->flags |= CGRP_ROOT_SUBSYS_BOUND;
+ 
+ 	return 0;
+-
+-out_put:
+-	for_each_subsys(ss, i)
+-		if (pinned & (1 << i))
+-			module_put(ss->module);
+-	return ret;
+ }
+ 
+ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
+@@ -4503,7 +4444,7 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
+ 	return ret;
+ }
+ 
+-static void __init_or_module cgroup_init_cftsets(struct cgroup_subsys *ss)
++static void __init cgroup_init_cftsets(struct cgroup_subsys *ss)
+ {
+ 	INIT_LIST_HEAD(&ss->cftsets);
+ 
+@@ -4556,186 +4497,9 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ 	BUG_ON(online_css(css));
+ 
+ 	mutex_unlock(&cgroup_mutex);
+-
+-	/* this function shouldn't be used with modular subsystems, since they
+-	 * need to register a subsys_id, among other things */
+-	BUG_ON(ss->module);
+ }
+ 
+ /**
+- * cgroup_load_subsys: load and register a modular subsystem at runtime
+- * @ss: the subsystem to load
+- *
+- * This function should be called in a modular subsystem's initcall. If the
+- * subsystem is built as a module, it will be assigned a new subsys_id and set
+- * up for use. If the subsystem is built-in anyway, work is delegated to the
+- * simpler cgroup_init_subsys.
+- */
+-int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+-{
+-	struct cgroup_subsys_state *css;
+-	int i, ret;
+-	struct hlist_node *tmp;
+-	struct css_set *cset;
+-	unsigned long key;
+-
+-	/* check name and function validity */
+-	if (ss->name == NULL || strlen(ss->name) > MAX_CGROUP_TYPE_NAMELEN ||
+-	    ss->css_alloc == NULL || ss->css_free == NULL)
+-		return -EINVAL;
+-
+-	/*
+-	 * we don't support callbacks in modular subsystems. this check is
+-	 * before the ss->module check for consistency; a subsystem that could
+-	 * be a module should still have no callbacks even if the user isn't
+-	 * compiling it as one.
+-	 */
+-	if (ss->fork || ss->exit)
+-		return -EINVAL;
+-
+-	/*
+-	 * an optionally modular subsystem is built-in: we want to do nothing,
+-	 * since cgroup_init_subsys will have already taken care of it.
+-	 */
+-	if (ss->module == NULL) {
+-		/* a sanity check */
+-		BUG_ON(cgroup_subsys[ss->subsys_id] != ss);
+-		return 0;
+-	}
+-
+-	/* init base cftset */
+-	cgroup_init_cftsets(ss);
+-
+-	mutex_lock(&cgroup_mutex);
+-	mutex_lock(&cgroup_root_mutex);
+-	cgroup_subsys[ss->subsys_id] = ss;
+-
+-	/*
+-	 * no ss->css_alloc seems to need anything important in the ss
+-	 * struct, so this can happen first (i.e. before the dummy root
+-	 * attachment).
+-	 */
+-	css = ss->css_alloc(cgroup_css(cgroup_dummy_top, ss));
+-	if (IS_ERR(css)) {
+-		/* failure case - need to deassign the cgroup_subsys[] slot. */
+-		cgroup_subsys[ss->subsys_id] = NULL;
+-		mutex_unlock(&cgroup_root_mutex);
+-		mutex_unlock(&cgroup_mutex);
+-		return PTR_ERR(css);
+-	}
+-
+-	ss->root = &cgroup_dummy_root;
+-
+-	/* our new subsystem will be attached to the dummy hierarchy. */
+-	init_css(css, ss, cgroup_dummy_top);
+-
+-	/*
+-	 * Now we need to entangle the css into the existing css_sets. unlike
+-	 * in cgroup_init_subsys, there are now multiple css_sets, so each one
+-	 * will need a new pointer to it; done by iterating the css_set_table.
+-	 * furthermore, modifying the existing css_sets will corrupt the hash
+-	 * table state, so each changed css_set will need its hash recomputed.
+-	 * this is all done under the css_set_lock.
+-	 */
+-	write_lock(&css_set_lock);
+-	hash_for_each_safe(css_set_table, i, tmp, cset, hlist) {
+-		/* skip entries that we already rehashed */
+-		if (cset->subsys[ss->subsys_id])
+-			continue;
+-		/* remove existing entry */
+-		hash_del(&cset->hlist);
+-		/* set new value */
+-		cset->subsys[ss->subsys_id] = css;
+-		/* recompute hash and restore entry */
+-		key = css_set_hash(cset->subsys);
+-		hash_add(css_set_table, &cset->hlist, key);
+-	}
+-	write_unlock(&css_set_lock);
+-
+-	ret = online_css(css);
+-	if (ret) {
+-		ss->css_free(css);
+-		goto err_unload;
+-	}
+-
+-	/* success! */
+-	mutex_unlock(&cgroup_root_mutex);
+-	mutex_unlock(&cgroup_mutex);
+-	return 0;
+-
+-err_unload:
+-	mutex_unlock(&cgroup_root_mutex);
+-	mutex_unlock(&cgroup_mutex);
+-	/* @ss can't be mounted here as try_module_get() would fail */
+-	cgroup_unload_subsys(ss);
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(cgroup_load_subsys);
+-
+-/**
+- * cgroup_unload_subsys: unload a modular subsystem
+- * @ss: the subsystem to unload
+- *
+- * This function should be called in a modular subsystem's exitcall. When this
+- * function is invoked, the refcount on the subsystem's module will be 0, so
+- * the subsystem will not be attached to any hierarchy.
+- */
+-void cgroup_unload_subsys(struct cgroup_subsys *ss)
+-{
+-	struct cgrp_cset_link *link;
+-	struct cgroup_subsys_state *css;
+-
+-	BUG_ON(ss->module == NULL);
+-
+-	/*
+-	 * we shouldn't be called if the subsystem is in use, and the use of
+-	 * try_module_get() in rebind_subsystems() should ensure that it
+-	 * doesn't start being used while we're killing it off.
+-	 */
+-	BUG_ON(ss->root != &cgroup_dummy_root);
+-
+-	mutex_lock(&cgroup_mutex);
+-	mutex_lock(&cgroup_root_mutex);
+-
+-	css = cgroup_css(cgroup_dummy_top, ss);
+-	if (css)
+-		offline_css(css);
+-
+-	/* deassign the subsys_id */
+-	cgroup_subsys[ss->subsys_id] = NULL;
+-
+-	/*
+-	 * disentangle the css from all css_sets attached to the dummy
+-	 * top. as in loading, we need to pay our respects to the hashtable
+-	 * gods.
+-	 */
+-	write_lock(&css_set_lock);
+-	list_for_each_entry(link, &cgroup_dummy_top->cset_links, cset_link) {
+-		struct css_set *cset = link->cset;
+-		unsigned long key;
+-
+-		hash_del(&cset->hlist);
+-		cset->subsys[ss->subsys_id] = NULL;
+-		key = css_set_hash(cset->subsys);
+-		hash_add(css_set_table, &cset->hlist, key);
+-	}
+-	write_unlock(&css_set_lock);
+-
+-	/*
+-	 * remove subsystem's css from the cgroup_dummy_top and free it -
+-	 * need to free before marking as null because ss->css_free needs
+-	 * the cgrp->subsys pointer to find their state.
+-	 */
+-	if (css)
+-		ss->css_free(css);
+-	RCU_INIT_POINTER(cgroup_dummy_top->subsys[ss->subsys_id], NULL);
+-
+-	mutex_unlock(&cgroup_root_mutex);
+-	mutex_unlock(&cgroup_mutex);
+-}
+-EXPORT_SYMBOL_GPL(cgroup_unload_subsys);
+-
+-/**
+  * cgroup_init_early - cgroup initialization at system boot
+  *
+  * Initialize cgroups at system boot, and initialize any
+@@ -4760,8 +4524,7 @@ int __init cgroup_init_early(void)
+ 	list_add(&init_cgrp_cset_link.cset_link, &cgroup_dummy_top->cset_links);
+ 	list_add(&init_cgrp_cset_link.cgrp_link, &init_css_set.cgrp_links);
+ 
+-	/* at bootup time, we don't worry about modular subsystems */
+-	for_each_builtin_subsys(ss, i) {
++	for_each_subsys(ss, i) {
+ 		BUG_ON(!ss->name);
+ 		BUG_ON(strlen(ss->name) > MAX_CGROUP_TYPE_NAMELEN);
+ 		BUG_ON(!ss->css_alloc);
+@@ -4794,7 +4557,7 @@ int __init cgroup_init(void)
+ 	if (err)
+ 		return err;
+ 
+-	for_each_builtin_subsys(ss, i) {
++	for_each_subsys(ss, i) {
+ 		if (!ss->early_init)
+ 			cgroup_init_subsys(ss);
+ 	}
+@@ -5029,15 +4792,7 @@ void cgroup_post_fork(struct task_struct *child)
+ 	 * and addition to css_set.
+ 	 */
+ 	if (need_forkexit_callback) {
+-		/*
+-		 * fork/exit callbacks are supported only for builtin
+-		 * subsystems, and the builtin section of the subsys
+-		 * array is immutable, so we don't need to lock the
+-		 * subsys array here. On the other hand, modular section
+-		 * of the array can be freed at module unload, so we
+-		 * can't touch that.
+-		 */
+-		for_each_builtin_subsys(ss, i)
++		for_each_subsys(ss, i)
+ 			if (ss->fork)
+ 				ss->fork(child);
+ 	}
+@@ -5102,11 +4857,8 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ 	RCU_INIT_POINTER(tsk->cgroups, &init_css_set);
+ 
+ 	if (run_callbacks && need_forkexit_callback) {
+-		/*
+-		 * fork/exit callbacks are supported only for builtin
+-		 * subsystems, see cgroup_post_fork() for details.
+-		 */
+-		for_each_builtin_subsys(ss, i) {
++		/* see cgroup_post_fork() for details */
++		for_each_subsys(ss, i) {
+ 			if (ss->exit) {
+ 				struct cgroup_subsys_state *old_css = cset->subsys[i];
+ 				struct cgroup_subsys_state *css = task_css(tsk, i);
+@@ -5225,11 +4977,7 @@ static int __init cgroup_disable(char *str)
+ 		if (!*token)
+ 			continue;
+ 
+-		/*
+-		 * cgroup_disable, being at boot time, can't know about
+-		 * module subsystems, so we don't worry about them.
+-		 */
+-		for_each_builtin_subsys(ss, i) {
++		for_each_subsys(ss, i) {
+ 			if (!strcmp(token, ss->name)) {
+ 				ss->disabled = 1;
+ 				printk(KERN_INFO "Disabling %s control group"
+diff --git a/net/core/netclassid_cgroup.c b/net/core/netclassid_cgroup.c
+index 9fc7f90..9e5ad5d 100644
+--- a/net/core/netclassid_cgroup.c
++++ b/net/core/netclassid_cgroup.c
+@@ -110,5 +110,4 @@ struct cgroup_subsys net_cls_subsys = {
+ 	.attach			= cgrp_attach,
+ 	.subsys_id		= net_cls_subsys_id,
+ 	.base_cftypes		= ss_files,
+-	.module			= THIS_MODULE,
+ };
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index cc3a31e..857e160 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -252,7 +252,6 @@ struct cgroup_subsys net_prio_subsys = {
+ 	.attach		= net_prio_attach,
+ 	.subsys_id	= net_prio_subsys_id,
+ 	.base_cftypes	= ss_files,
+-	.module		= THIS_MODULE,
+ };
+ 
+ static int netprio_device_event(struct notifier_block *unused,
 -- 
-1.8.4.1
+1.8.5.3
+
