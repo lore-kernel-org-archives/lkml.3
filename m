@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786AbaA2C5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 21:57:44 -0500
-Received: from science.horizon.com ([71.41.210.146]:56608 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752281AbaA2C5m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 21:57:42 -0500
-Date: 28 Jan 2014 21:57:40 -0500
-Message-ID: <20140129025740.17866.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: andi@firstfloor.org, Waiman.Long@hp.com
-Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock implementation
-Cc: akpm@linux-foundation.org, arnd@arndb.de, aswin@hp.com,
-        daniel@numascale.com, halcy@yandex.ru, hpa@zytor.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux@horizon.com, mingo@redhat.com, paulmck@linux.vnet.ibm.com,
-        peterz@infradead.org, raghavendra.kt@linux.vnet.ibm.com,
-        riel@redhat.com, rostedt@goodmis.org, scott.norton@hp.com,
-        tglx@linutronix.de, thavatchai.makpahibulchoke@hp.com,
-        tim.c.chen@linux.intel.com, torvalds@linux-foundation.org,
-        walken@google.com, x86@kernel.org
-In-Reply-To: <20140129002048.GE11821@two.firstfloor.org>
+	id S932082AbaA2DA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 22:00:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14942 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752017AbaA2DAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 22:00:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,739,1384329600"; 
+   d="scan'208";a="474138992"
+Subject: [PATCH regression] dma-debug: fix overlap detection
+From: Dan Williams <dan.j.williams@intel.com>
+To: akpm@linux-foundation.org
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Francois Romieu <romieu@fr.zoreil.com>
+Date: Tue, 28 Jan 2014 19:00:54 -0800
+Message-ID: <20140129025817.10334.73833.stgit@viggo.jf.intel.com>
+User-Agent: StGit/0.17.1-3-g7cb9
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So the 1-2 threads case is the standard case on a small
-> system, isn't it? This may well cause regressions.
+Commit 0abdd7a81b7e "dma-debug: introduce debug_dma_assert_idle()" was
+reworked to expand the overlap counter to the full range expressable by
+3 tag bits, but it has a thinko in treating the overlap counter as a
+pure reference count for the entry.
 
-Well, the common case should be uncontended, which is faster.
-But yes, testing would be nice.
+Instead of deleting when the reference-count drops to zero, we need to
+delete when the overlap-count drops below zero.  Also, when detecting
+overflow we can just test the overlap-count > MAX rather than applying
+special meaning to 0.
 
->> In the extremely unlikely case that all the queue node entries are
->> used up, the current code will fall back to busy spinning without
->> waiting in a queue with warning message.
+Cc: Francois Romieu <romieu@fr.zoreil.com>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
 
-> Traditionally we had some code which could take thousands
-> of locks in rare cases (e.g. all locks in a hash table or all locks of
-> a big reader lock) 
+Regression report available here:
+http://marc.info/?l=linux-netdev&m=139073373932386&w=2
 
-Doesn't apply; the question implies a misunderstanding of what's
-happening.  The entry is only needed while spinning waiting for
-the lock.  Once the lock has been acquired, it may be recycled.
+This patch, now tested on the original net_dma case, sees the expected
+handful of reports before the eventual data corruption occurs.
 
-The thread may *hold* thousands of locks; the entries only apply
-to locks being *waited for*.
+ lib/dma-debug.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
->From process context a thread may only be waiting for one at a time.
-Additional entries are only needed in case a processor takes an interrupt
-while spinning, and the interrupt handler wants to take a lock, too.
+diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+index c38083871f11..2defd1308b04 100644
+--- a/lib/dma-debug.c
++++ b/lib/dma-debug.c
+@@ -463,7 +463,7 @@ static int active_pfn_set_overlap(unsigned long pfn, int overlap)
+ 	int i;
+ 
+ 	if (overlap > ACTIVE_PFN_MAX_OVERLAP || overlap < 0)
+-		return 0;
++		return overlap;
+ 
+ 	for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
+ 		if (overlap & 1 << i)
+@@ -486,7 +486,7 @@ static void active_pfn_inc_overlap(unsigned long pfn)
+ 	 * debug_dma_assert_idle() as the pfn may be marked idle
+ 	 * prematurely.
+ 	 */
+-	WARN_ONCE(overlap == 0,
++	WARN_ONCE(overlap > ACTIVE_PFN_MAX_OVERLAP,
+ 		  "DMA-API: exceeded %d overlapping mappings of pfn %lx\n",
+ 		  ACTIVE_PFN_MAX_OVERLAP, pfn);
+ }
+@@ -517,7 +517,11 @@ static void active_pfn_remove(struct dma_debug_entry *entry)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&radix_lock, flags);
+-	if (active_pfn_dec_overlap(entry->pfn) == 0)
++	/* since we are counting overlaps the final put of the
++	 * entry->pfn will occur when the overlap count is 0.
++	 * active_pfn_dec_overlap() returns -1 in that case
++	 */
++	if (active_pfn_dec_overlap(entry->pfn) < 0)
+ 		radix_tree_delete(&dma_active_pfn, entry->pfn);
+ 	spin_unlock_irqrestore(&radix_lock, flags);
+ }
 
-If that lock also has to be waited for, and during the wait you take a
-nested interrupt or NMI, a third level might happen.
-
-The chances of this being nested more than 4 deep seem sufficiently
-minute.
