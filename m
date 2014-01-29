@@ -1,191 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaA2JNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:13:08 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:44353 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaA2JNE (ORCPT
+	id S1751443AbaA2JPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:15:00 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:49171 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaA2JO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:13:04 -0500
+	Wed, 29 Jan 2014 04:14:57 -0500
+Subject: [PATCH -tip v2 1/8] [BUGFIX] perf-probe: Fix to do exit call for
+ symbol maps
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Wed, 29 Jan 2014 09:14:52 +0000
+Message-ID: <20140129091452.22141.36766.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <20140127173149.GA8099@stfomichev-desktop>
-References: <20140127173149.GA8099@stfomichev-desktop>
-Date: Wed, 29 Jan 2014 01:13:03 -0800
-Message-ID: <CAPcyv4gNdKqRYGfjNY0GyOysN-3WrTVRGbo-+6Jdb2ukFGPX9w@mail.gmail.com>
-Subject: Re: [REGRESSION][BISECTED] 3.10.26: net_dma: mark broken (b69ec589136c)
-From: Dan Williams <dan.j.williams@intel.com>
-To: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        David Whipple <whipple@securedatainnovations.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=047d7b6dce841bacf604f118590e
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b6dce841bacf604f118590e
-Content-Type: text/plain; charset=ISO-8859-1
+Some perf-probe commands do symbol_init() but doesn't
+do exit call. This fixes that to call symbol_exit()
+and relase machine if needed.
+This also merges init_vmlinux() and init_user_exec()
+because both of them are doing similar things.
+(init_user_exec() just skips init vmlinux related
+ symbol maps)
 
-On Mon, Jan 27, 2014 at 9:31 AM, Stanislav Fomichev
-<stfomichev@yandex-team.ru> wrote:
-> For Xeon machines in config we have:
-> CONFIG_NET_DMA=y
-> # CONFIG_ASYNC_TX_DMA is not set
-> # CONFIG_DMATEST is not set
-> CONFIG_DCA=m
->
-> "net_dma: mark broken" changed it to (no CONFIG_NET_DMA):
-> # CONFIG_ASYNC_TX_DMA is not set
-> # CONFIG_DMATEST is not set
-> CONFIG_DMA_ENGINE_RAID=y
-> CONFIG_DCA=m
->
-> Since this commit, we started to observe that after machine reboots there
-> is some change (1 out of 10) that ksoftirqd/0 will eat 100% CPU#0.
-> In this case I see huge number of tasklets executed on CPU#0 (about a million
-> each second).
->
-> To reproduce I just reboot machine and check ksoftirqd/0 CPU usage, if it's <5%,
-> reboot machine again.
->
-> I added trace_printk into tasklet_action and I see the same tasklet
-> "executed" (it's disabled) over and over:
->      ksoftirqd/0-3     [000] ..s.    65.281375: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281377: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281377: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281377: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281378: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281378: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281378: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281379: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281379: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281379: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->
-> Then I added more printk's and got the following (correct) trace for the case
-> when ksoftirqd/0 doesn't consume 100% CPU:
->         modprobe-650   [005] ....     9.553511: ioat_init_channel: tasklet_init(ffff880c13d72500)
->      migration/3-71    [003] d...     9.554049: complete: x=ffff88061a6f9df0 ret=cpu_stop_signal_done
->     migration/15-132   [015] d...     9.554790: complete: x=ffff880c15fe3df0 ret=cpu_stop_signal_done
->         modprobe-650   [005] ..s.     9.556690: ioat_dma_self_test: init_completion(ffff88061c2bfa18) ret=ioat3_dma_self_test [ioatdma]
->         modprobe-650   [005] ....     9.556693: ioat_dma_self_test: wait_for_completion(ffff88061c2bfa18, 750)
->            mount-620   [000] d.h.     9.556694: ioat_dma_do_interrupt_msix: tasklet_schedule(ffff880c13d72500)
->            mount-620   [000] d.h.     9.556695: __tasklet_schedule: t=ffff880c13d72500 ret=ioat_dma_do_interrupt_msix [ioatdma]
->            mount-620   [000] ..s.     9.556696: tasklet_action: t=ffff880627c03e98 func=ioat3_cleanup_event [ioatdma] count=0
->            mount-620   [000] ..s.     9.556699: ioat_dma_test_callback: complete(ffff88061c2bfa18) ret=__cleanup [ioatdma]
->            mount-620   [000] d.s.     9.556700: complete: x=ffff88061c2bfa18 ret=ioat_dma_test_callback [ioatdma]
->            mount-620   [000] d.H.     9.556704: ioat_dma_do_interrupt_msix: tasklet_schedule(ffff880c13d72500)
->            mount-620   [000] d.H.     9.556705: __tasklet_schedule: t=ffff880c13d72500 ret=ioat_dma_do_interrupt_msix [ioatdma]
->            mount-620   [000] ..s.     9.556705: tasklet_action: t=ffff880627c03e98 func=ioat3_cleanup_event [ioatdma] count=0
->     migration/10-107   [010] d...     9.558487: complete: x=ffff880c15f4fdf0 ret=cpu_stop_signal_done
->         modprobe-650   [011] ....     9.560545: ioat_dma_self_test: wait_for_completion returned tmo=750
->
-> And really weird trace when ksoftirqd/0 consumes 100% CPU:
->         modprobe-689   [014] ....     9.490260: ioat_init_channel: tasklet_init(ffff880c13c8b568)
->      migration/3-71    [003] d...     9.491727: complete: x=ffff88061a761df0 ret=cpu_stop_signal_done
->     migration/13-122   [013] d...     9.492212: complete: x=ffff880c15567df0 ret=cpu_stop_signal_done
->      migration/3-71    [003] d...     9.493098: complete: x=ffff880c15565df0 ret=cpu_stop_signal_done
->         modprobe-689   [014] ..s.     9.493655: ioat_dma_self_test: init_completion(ffff88061a503a18) ret=ioat3_dma_self_test [ioatdma]
->         modprobe-689   [014] ....     9.493657: ioat_dma_self_test: wait_for_completion(ffff88061a503a18, 750)
->         modprobe-689   [014] ....     9.494250: ioat_dma_self_test: wait_for_completion returned tmo=750
->         kthreadd-736   [002] d...     9.496220: complete: x=ffff880c143cfbe0 ret=kthread
->      migration/2-66    [002] d...     9.499974: complete: x=ffff880619c59df0 ret=cpu_stop_signal_done
->     migration/11-112   [011] d...     9.500705: complete: x=ffff880c15589df0 ret=cpu_stop_signal_done
->      migration/1-61    [001] d...     9.501807: complete: x=ffff88061a48ddf0 ret=cpu_stop_signal_done
->         modprobe-689   [014] ....     9.506554: ioat_init_channel: tasklet_init(ffff880c1363e358)
->      migration/3-71    [003] d...     9.506737: complete: x=ffff88061a7b1df0 ret=cpu_stop_signal_done
->     migration/13-122   [013] d...     9.508612: complete: x=ffff880c1570fdf0 ret=cpu_stop_signal_done
->         modprobe-689   [014] ..s.     9.508988: ioat_dma_self_test: init_completion(ffff88061a503a18) ret=ioat3_dma_self_test [ioatdma]
->         modprobe-689   [014] ....     9.508990: ioat_dma_self_test: wait_for_completion(ffff88061a503a18, 750)
->     migration/11-112   [011] d...     9.509157: complete: x=ffff88061a76ddf0 ret=cpu_stop_signal_done
->     migration/11-112   [011] d...     9.509998: complete: x=ffff880c14385df0 ret=cpu_stop_signal_done
->      migration/4-76    [004] d...     9.512649: complete: x=ffff880c155b1df0 ret=cpu_stop_signal_done
->     migration/10-107   [010] d...     9.513768: complete: x=ffff88061a773df0 ret=cpu_stop_signal_done
->      migration/8-97    [008] d...     9.515415: complete: x=ffff880c155b3df0 ret=cpu_stop_signal_done
->      migration/6-87    [006] d...     9.515475: complete: x=ffff880c155a5df0 ret=cpu_stop_signal_done
->     migration/11-112   [011] d...     9.515650: complete: x=ffff880c155a7df0 ret=cpu_stop_signal_done
->      migration/4-76    [004] d...     9.516355: complete: x=ffff880619c5bdf0 ret=cpu_stop_signal_done
->      migration/4-76    [004] d...     9.516492: complete: x=ffff880619c4bdf0 ret=cpu_stop_signal_done
->      migration/4-76    [004] d...     9.516882: complete: x=ffff880c1576ddf0 ret=cpu_stop_signal_done
->      migration/3-71    [003] d...     9.518353: complete: x=ffff880c15763df0 ret=cpu_stop_signal_done
->     migration/14-127   [014] d...     9.518737: complete: x=ffff880c15785df0 ret=cpu_stop_signal_done
->      migration/3-71    [003] d...     9.518947: complete: x=ffff880c15761df0 ret=cpu_stop_signal_done
->      migration/8-97    [008] d...     9.519121: complete: x=ffff88061ab03df0 ret=cpu_stop_signal_done
->      migration/8-97    [008] d...     9.519492: complete: x=ffff880c15b15df0 ret=cpu_stop_signal_done
->      migration/1-61    [001] d...     9.523569: complete: x=ffff880c15b2fdf0 ret=cpu_stop_signal_done
->      migration/3-71    [003] d...     9.524123: complete: x=ffff880619fc9df0 ret=cpu_stop_signal_done
->         modprobe-689   [008] ..s.     9.524370: ioat_dma_self_test: init_completion(ffff88061a503a18) ret=ioat3_dma_self_test [ioatdma]
->         modprobe-689   [008] ....     9.524372: ioat_dma_self_test: wait_for_completion(ffff88061a503a18, 750)
->      migration/1-61    [001] d...     9.524835: complete: x=ffff880c13e51df0 ret=cpu_stop_signal_done
->     ksoftirqd/14-128   [014] d.s.     9.525102: complete: x=ffff88061a7b1b20 ret=blk_end_sync_rq
->      ksoftirqd/3-72    [003] d.s.     9.526560: complete: x=ffff880c155b1b20 ret=blk_end_sync_rq
->      migration/9-102   [009] d...     9.526669: complete: x=ffff880c157e7df0 ret=cpu_stop_signal_done
->         kthreadd-768   [003] d...     9.526770: complete: x=ffff88061dbcfd00 ret=kthread
->         kthreadd-769   [012] d...     9.526833: complete: x=ffff88061dd29d00 ret=kthread
->      ksoftirqd/7-93    [007] d.s.     9.527077: complete: x=ffff880c1570fb20 ret=blk_end_sync_rq
->         kthreadd-771   [007] d...     9.527799: complete: x=ffff880c17403d00 ret=kthread
->      migration/7-92    [007] d...     9.527916: complete: x=ffff880c13e47df0 ret=cpu_stop_signal_done
->         modprobe-689   [003] ....     9.527917: ioat_dma_self_test: wait_for_completion returned tmo=750
->
-> .. later
->
->      ksoftirqd/0-3     [000] ..s.    65.281375: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ksoftirqd/0-3     [000] ..s.    65.281376: tasklet_action: t=ffff88061e5cddc0 func=ioat3_cleanup_event [ioatdma] count=1
->      ... and forever
->
-> So nobody is completing the work (but wait_for_completion_timeout returns
-> without a timeout) and nobody schedules tasklet, but it somehow ends up
-> in the CPU#0 tasklet vector (disabled).
-> Any ideas what could be wrong and how I can further debug it?
->
-> If I put something like udelay(1000) in ioat_dma_self_test before
-> wait_for_completion_timeout I never see this issue.
->
-> Probably because we had NET_DMA=y, our NIC driver used DMA and somehow
-> masked the issue prior to this 'bad' commit.
->
-> This behavior also occurs on 3.13, I assume the reason is the same.
->
-> Here is where I placed trace_printk, just in case:
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+---
+ tools/perf/util/probe-event.c |  110 +++++++++++++++++++++++------------------
+ 1 file changed, 61 insertions(+), 49 deletions(-)
 
-I wonder if we are simply racing the initialization of the completion
-vs when it is triggered by dma.  I also think we need to be waiting
-for in-flight tasklet runs when stopping the channel.
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index a8a9b6c..14c649df 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -73,31 +73,35 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
+ static int convert_name_to_addr(struct perf_probe_event *pev,
+ 				const char *exec);
+ static void clear_probe_trace_event(struct probe_trace_event *tev);
+-static struct machine machine;
++static struct machine *host_machine;
+ 
+ /* Initialize symbol maps and path of vmlinux/modules */
+-static int init_vmlinux(void)
++static int init_symbol_maps(bool user_only)
+ {
+ 	int ret;
+ 
+ 	symbol_conf.sort_by_name = true;
+-	if (symbol_conf.vmlinux_name == NULL)
+-		symbol_conf.try_vmlinux_path = true;
+-	else
+-		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
++	if (user_only)
++		symbol_conf.try_vmlinux_path = false;
++	else {
++		if (symbol_conf.vmlinux_name == NULL)
++			symbol_conf.try_vmlinux_path = true;
++		else
++			pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
++	}
+ 	ret = symbol__init();
+ 	if (ret < 0) {
+ 		pr_debug("Failed to init symbol map.\n");
+ 		goto out;
+ 	}
+ 
+-	ret = machine__init(&machine, "", HOST_KERNEL_ID);
+-	if (ret < 0)
+-		goto out;
+-
+-	if (machine__create_kernel_maps(&machine) < 0) {
+-		pr_debug("machine__create_kernel_maps() failed.\n");
+-		goto out;
++	if (host_machine || user_only)	/* already initialized */
++		return 0;
++	host_machine = machine__new_host();
++	if (!host_machine) {
++		pr_debug("machine__new_host() failed.\n");
++		symbol__exit();
++		ret = -1;
+ 	}
+ out:
+ 	if (ret < 0)
+@@ -105,21 +109,30 @@ out:
+ 	return ret;
+ }
+ 
++static void exit_symbol_maps(void)
++{
++	if (host_machine) {
++		machine__delete(host_machine);
++		host_machine = NULL;
++	}
++	symbol__exit();
++}
++
+ static struct symbol *__find_kernel_function_by_name(const char *name,
+ 						     struct map **mapp)
+ {
+-	return machine__find_kernel_function_by_name(&machine, name, mapp,
++	return machine__find_kernel_function_by_name(host_machine, name, mapp,
+ 						     NULL);
+ }
+ 
+ static struct map *kernel_get_module_map(const char *module)
+ {
+ 	struct rb_node *nd;
+-	struct map_groups *grp = &machine.kmaps;
++	struct map_groups *grp = &host_machine->kmaps;
+ 
+ 	/* A file path -- this is an offline module */
+ 	if (module && strchr(module, '/'))
+-		return machine__new_module(&machine, 0, module);
++		return machine__new_module(host_machine, 0, module);
+ 
+ 	if (!module)
+ 		module = "kernel";
+@@ -141,7 +154,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 	const char *vmlinux_name;
+ 
+ 	if (module) {
+-		list_for_each_entry(dso, &machine.kernel_dsos, node) {
++		list_for_each_entry(dso, &host_machine->kernel_dsos, node) {
+ 			if (strncmp(dso->short_name + 1, module,
+ 				    dso->short_name_len - 2) == 0)
+ 				goto found;
+@@ -150,7 +163,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 		return NULL;
+ 	}
+ 
+-	map = machine.vmlinux_maps[MAP__FUNCTION];
++	map = host_machine->vmlinux_maps[MAP__FUNCTION];
+ 	dso = map->dso;
+ 
+ 	vmlinux_name = symbol_conf.vmlinux_name;
+@@ -173,20 +186,6 @@ const char *kernel_get_module_path(const char *module)
+ 	return (dso) ? dso->long_name : NULL;
+ }
+ 
+-static int init_user_exec(void)
+-{
+-	int ret = 0;
+-
+-	symbol_conf.try_vmlinux_path = false;
+-	symbol_conf.sort_by_name = true;
+-	ret = symbol__init();
+-
+-	if (ret < 0)
+-		pr_debug("Failed to init symbol map.\n");
+-
+-	return ret;
+-}
+-
+ static int convert_exec_to_group(const char *exec, char **result)
+ {
+ 	char *ptr1, *ptr2, *exec_copy;
+@@ -563,7 +562,7 @@ static int _show_one_line(FILE *fp, int l, bool skip, bool show_num)
+  * Show line-range always requires debuginfo to find source file and
+  * line number.
+  */
+-int show_line_range(struct line_range *lr, const char *module)
++static int __show_line_range(struct line_range *lr, const char *module)
+ {
+ 	int l = 1;
+ 	struct line_node *ln;
+@@ -573,10 +572,6 @@ int show_line_range(struct line_range *lr, const char *module)
+ 	char *tmp;
+ 
+ 	/* Search a line range */
+-	ret = init_vmlinux();
+-	if (ret < 0)
+-		return ret;
+-
+ 	dinfo = open_debuginfo(module);
+ 	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+@@ -646,6 +641,19 @@ end:
+ 	return ret;
+ }
+ 
++int show_line_range(struct line_range *lr, const char *module)
++{
++	int ret;
++
++	ret = init_symbol_maps(false);
++	if (ret < 0)
++		return ret;
++	ret = __show_line_range(lr, module);
++	exit_symbol_maps();
++
++	return ret;
++}
++
+ static int show_available_vars_at(struct debuginfo *dinfo,
+ 				  struct perf_probe_event *pev,
+ 				  int max_vls, struct strfilter *_filter,
+@@ -707,14 +715,15 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	int i, ret = 0;
+ 	struct debuginfo *dinfo;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	dinfo = open_debuginfo(module);
+ 	if (!dinfo) {
+ 		pr_warning("Failed to open debuginfo file.\n");
+-		return -ENOENT;
++		ret = -ENOENT;
++		goto out;
+ 	}
+ 
+ 	setup_pager();
+@@ -724,6 +733,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 					     externs);
+ 
+ 	debuginfo__delete(dinfo);
++out:
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
+@@ -1807,7 +1818,7 @@ int show_perf_probe_events(void)
+ 	if (fd < 0)
+ 		return fd;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -1820,6 +1831,7 @@ int show_perf_probe_events(void)
+ 		close(fd);
+ 	}
+ 
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
+@@ -2135,12 +2147,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 	if (pkgs == NULL)
+ 		return -ENOMEM;
+ 
+-	if (!pevs->uprobes)
+-		/* Init vmlinux path */
+-		ret = init_vmlinux();
+-	else
+-		ret = init_user_exec();
+-
++	ret = init_symbol_maps(pevs->uprobes);
+ 	if (ret < 0) {
+ 		free(pkgs);
+ 		return ret;
+@@ -2174,6 +2181,7 @@ end:
+ 		zfree(&pkgs[i].tevs);
+ 	}
+ 	free(pkgs);
++	exit_symbol_maps();
+ 
+ 	return ret;
+ }
+@@ -2347,7 +2355,7 @@ static int available_kernel_funcs(const char *module)
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_vmlinux();
++	ret = init_symbol_maps(false);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -2356,7 +2364,10 @@ static int available_kernel_funcs(const char *module)
+ 		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
+ 		return -EINVAL;
+ 	}
+-	return __show_available_funcs(map);
++	ret = __show_available_funcs(map);
++	exit_symbol_maps();
++
++	return ret;
+ }
+ 
+ static int available_user_funcs(const char *target)
+@@ -2364,7 +2375,7 @@ static int available_user_funcs(const char *target)
+ 	struct map *map;
+ 	int ret;
+ 
+-	ret = init_user_exec();
++	ret = init_symbol_maps(true);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -2372,6 +2383,7 @@ static int available_user_funcs(const char *target)
+ 	ret = __show_available_funcs(map);
+ 	dso__delete(map->dso);
+ 	map__delete(map);
++	exit_symbol_maps();
+ 	return ret;
+ }
+ 
 
-Does the attached patch modulate the failure?
 
---047d7b6dce841bacf604f118590e
-Content-Type: application/octet-stream; name=ioat-dbg
-Content-Disposition: attachment; filename=ioat-dbg
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hr0dm47v0
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZG1hL2lvYXQvZG1hLmMgYi9kcml2ZXJzL2RtYS9pb2F0L2Rt
-YS5jCmluZGV4IDg3NTI5MTgxZWZjYy4uNDc1ODM3NDAwODk3IDEwMDY0NAotLS0gYS9kcml2ZXJz
-L2RtYS9pb2F0L2RtYS5jCisrKyBiL2RyaXZlcnMvZG1hL2lvYXQvZG1hLmMKQEAgLTM3OSw3ICsz
-NzksNyBAQCBzdGF0aWMgdm9pZCBpb2F0MV9kbWFfZnJlZV9jaGFuX3Jlc291cmNlcyhzdHJ1Y3Qg
-ZG1hX2NoYW4gKmMpCiAJaWYgKGlvYXQtPmRlc2Njb3VudCA9PSAwKQogCQlyZXR1cm47CiAKLQl0
-YXNrbGV0X2Rpc2FibGUoJmNoYW4tPmNsZWFudXBfdGFzayk7CisJdGFza2xldF9raWxsKCZjaGFu
-LT5jbGVhbnVwX3Rhc2spOwogCWRlbF90aW1lcl9zeW5jKCZjaGFuLT50aW1lcik7CiAJaW9hdDFf
-Y2xlYW51cChpb2F0KTsKIApAQCAtNzkwLDcgKzc5MCw3IEBAIGludCBpb2F0X2RtYV9zZWxmX3Rl
-c3Qoc3RydWN0IGlvYXRkbWFfZGV2aWNlICpkZXZpY2UpCiAJZG1hX2FkZHJfdCBkbWFfZGVzdCwg
-ZG1hX3NyYzsKIAlkbWFfY29va2llX3QgY29va2llOwogCWludCBlcnIgPSAwOwotCXN0cnVjdCBj
-b21wbGV0aW9uIGNtcDsKKwlERUNMQVJFX0NPTVBMRVRJT05fT05TVEFDSyhjbXApOwogCXVuc2ln
-bmVkIGxvbmcgdG1vOwogCXVuc2lnbmVkIGxvbmcgZmxhZ3M7CiAKQEAgLTgzNiw3ICs4MzYsNiBA
-QCBpbnQgaW9hdF9kbWFfc2VsZl90ZXN0KHN0cnVjdCBpb2F0ZG1hX2RldmljZSAqZGV2aWNlKQog
-CX0KIAogCWFzeW5jX3R4X2Fjayh0eCk7Ci0JaW5pdF9jb21wbGV0aW9uKCZjbXApOwogCXR4LT5j
-YWxsYmFjayA9IGlvYXRfZG1hX3Rlc3RfY2FsbGJhY2s7CiAJdHgtPmNhbGxiYWNrX3BhcmFtID0g
-JmNtcDsKIAljb29raWUgPSB0eC0+dHhfc3VibWl0KHR4KTsKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
-ZG1hL2lvYXQvZG1hX3YyLmMgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92Mi5jCmluZGV4IDVkM2Fm
-ZmU3ZTk3Ni4uZjlkN2E0NDg4M2UyIDEwMDY0NAotLS0gYS9kcml2ZXJzL2RtYS9pb2F0L2RtYV92
-Mi5jCisrKyBiL2RyaXZlcnMvZG1hL2lvYXQvZG1hX3YyLmMKQEAgLTgwOSw3ICs4MDksNyBAQCB2
-b2lkIGlvYXQyX2ZyZWVfY2hhbl9yZXNvdXJjZXMoc3RydWN0IGRtYV9jaGFuICpjKQogCWlmICgh
-aW9hdC0+cmluZykKIAkJcmV0dXJuOwogCi0JdGFza2xldF9kaXNhYmxlKCZjaGFuLT5jbGVhbnVw
-X3Rhc2spOworCXRhc2tsZXRfa2lsbCgmY2hhbi0+Y2xlYW51cF90YXNrKTsKIAlkZWxfdGltZXJf
-c3luYygmY2hhbi0+dGltZXIpOwogCWRldmljZS0+Y2xlYW51cF9mbigodW5zaWduZWQgbG9uZykg
-Yyk7CiAJZGV2aWNlLT5yZXNldF9odyhjaGFuKTsK
---047d7b6dce841bacf604f118590e--
