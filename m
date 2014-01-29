@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139AbaA2WKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 17:10:50 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:58131 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaA2WKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 17:10:48 -0500
-Date: Wed, 29 Jan 2014 15:10:44 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 10/9] PCI/MSI: Undeprecate pci_enable_msi()
-Message-ID: <20140129221044.GF16825@google.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <20140117092620.GA29340@dhcp-26-207.brq.redhat.com>
+	id S1752304AbaA2WLY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 17:11:24 -0500
+Received: from mga14.intel.com ([143.182.124.37]:17379 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575AbaA2WLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 17:11:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,744,1384329600"; 
+   d="scan'208";a="337567905"
+Date: Wed, 29 Jan 2014 14:11:21 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Branimir Maksimovic <branimir.maksimovic@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: latest git usb3.0 ports not working
+Message-ID: <20140129221121.GE5991@xanatos>
+References: <52DEC0BA.1060007@gmail.com>
+ <20140121221706.GC12657@xanatos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140117092620.GA29340@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140121221706.GC12657@xanatos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 10:26:20AM +0100, Alexander Gordeev wrote:
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-
-I applied this to pci/msi, thanks!
-
-> ---
->  Documentation/PCI/MSI-HOWTO.txt |   23 ++++++++++++++++++++---
->  1 files changed, 20 insertions(+), 3 deletions(-)
+On Tue, Jan 21, 2014 at 02:17:06PM -0800, Sarah Sharp wrote:
+> On Tue, Jan 21, 2014 at 07:47:22PM +0100, Branimir Maksimovic wrote:
+> > asus maximus v gene motherboard,
+> > this is from dmesg:
+> > 
+> > [   75.576160] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+> > [   88.991634] xhci_hcd 0000:03:00.0: Stopped the command ring
+> > failed, maybe the host is dead
+> > [   88.991748] xhci_hcd 0000:03:00.0: Abort command ring failed
+> > [   88.991845] xhci_hcd 0000:03:00.0: HC died; cleaning up
+> > [   93.985489] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+> > [   93.985494] xhci_hcd 0000:03:00.0: Abort the command ring, but
+> > the xHCI is dead.
+> > [   98.982586] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+> > [   98.982591] xhci_hcd 0000:03:00.0: Abort the command ring, but
+> > the xHCI is dead.
+> > [  103.979696] xhci_hcd 0000:03:00.0: Timeout while waiting for a slot
+> > [  103.979702] xhci_hcd 0000:03:00.0: Abort the command ring, but
+> > the xHCI is dead.
 > 
-> diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-> index a8d0100..3c3080e 100644
-> --- a/Documentation/PCI/MSI-HOWTO.txt
-> +++ b/Documentation/PCI/MSI-HOWTO.txt
-> @@ -82,7 +82,19 @@ Most of the hard work is done for the driver in the PCI layer.  It simply
->  has to request that the PCI layer set up the MSI capability for this
->  device.
->  
-> -4.2.1 pci_enable_msi_range
-> +4.2.1 pci_enable_msi
-> +
-> +int pci_enable_msi(struct pci_dev *dev)
-> +
-> +A successful call allocates ONE interrupt to the device, regardless
-> +of how many MSIs the device supports.  The device is switched from
-> +pin-based interrupt mode to MSI mode.  The dev->irq number is changed
-> +to a new number which represents the message signaled interrupt;
-> +consequently, this function should be called before the driver calls
-> +request_irq(), because an MSI is delivered via a vector that is
-> +different from the vector of a pin-based interrupt.
-> +
-> +4.2.2 pci_enable_msi_range
->  
->  int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
->  
-> @@ -158,7 +170,12 @@ static int foo_driver_enable_single_msi(struct pci_dev *pdev)
->  	return pci_enable_msi_range(pdev, 1, 1);
->  }
->  
-> -4.2.2 pci_disable_msi
-> +Note, unlike pci_enable_msi() function, which could be also used to
-> +enable the single MSI mode, pci_enable_msi_range() returns either a
-> +negative errno or 1 (not negative errno or 0 - as pci_enable_msi()
-> +does).
-> +
-> +4.2.3 pci_disable_msi
->  
->  void pci_disable_msi(struct pci_dev *dev)
->  
-> @@ -172,7 +189,7 @@ on any interrupt for which it previously called request_irq().
->  Failure to do so results in a BUG_ON(), leaving the device with
->  MSI enabled and thus leaking its vector.
->  
-> -4.2.3 pci_msi_vec_count
-> +4.2.4 pci_msi_vec_count
->  
->  int pci_msi_vec_count(struct pci_dev *dev)
->  
-> -- 
-> 1.7.7.6
-> 
-> -- 
-> Regards,
-> Alexander Gordeev
-> agordeev@redhat.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> By latest git, do you mean linus/master, or 3.13.0?  If it's
+> linus/master, please provide the commit ID.  Which kernel version worked
+> for you?
+
+Try reverting commit 7dd09a1af2c7150269350aaa567a11b06e831003 "xhci:
+replace xhci_write_64() with writeq()" and let me know if it worked for
+you.
+
+I would like to help you, but I can't if you don't respond.
+
+Sarah Sharp
