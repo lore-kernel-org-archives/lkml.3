@@ -1,221 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaA2JYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:24:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45364 "EHLO mx2.suse.de"
+	id S1752369AbaA2JYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:24:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:26913 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716AbaA2JYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:24:31 -0500
-Date: Wed, 29 Jan 2014 10:24:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 01/13] cgroup: improve css_from_dir() into
- css_tryget_from_dir()
-Message-ID: <20140129092429.GC18713@dhcp22.suse.cz>
-References: <1390953285-16360-1-git-send-email-tj@kernel.org>
- <1390953285-16360-2-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390953285-16360-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751716AbaA2JYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:24:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,741,1384329600"; 
+   d="scan'208";a="474351133"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] HID: i2c-hid: add runtime PM support
+Date: Wed, 29 Jan 2014 11:24:36 +0200
+Message-Id: <1390987476-1905-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-01-14 18:54:33, Tejun Heo wrote:
-> css_from_dir() returns the matching css (cgroup_subsys_state) given a
-> dentry and subsystem.  The function doesn't pin the css before
-> returning and requires the caller to be holding RCU read lock or
-> cgroup_mutex and handling pinning on the caller side.
-> 
-> Given that users of the function are likely to want to pin the
-> returned css (both existing users do) and that getting and putting
-> css's are very cheap, there's no reason for the interface to be tricky
-> like this.
-> 
-> Rename css_from_dir() to css_tryget_from_dir() and make it try to pin
-> the found css and return it only if pinning succeeded.  The callers
-> are updated so that they no longer do RCU locking and pinning around
-> the function and just use the returned css.
-> 
-> This will also ease converting cgroup to kernfs.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+This patch adds runtime PM support for the HID over I2C driver. When the
+i2c-hid device is first opened we power it on and on the last close we
+power it off. This is actually what the driver is already doing but in
+addition it allows subsystems, like ACPI power domain to power off the
+device during runtime PM suspend, which should save even more power.
 
-yes, this is handy.
-For memcg part
-Acked-by: Michal Hocko <mhocko@suse.cz>
+The implementation is not the most power efficient because it needs some
+interaction from the userspace (e.g close the device node whenever we are
+no more interested in getting events), nevertheless it allows us to save
+some power and works with devices that are not wake capable.
 
-Thanks!
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+v2:
+  - Update changelog to mention that ACPI power domain for example can
+    power off the device on suspend.
+  - Make i2c_hid_power to just call RPM get/put
 
-> ---
->  include/linux/cgroup.h |  4 ++--
->  kernel/cgroup.c        | 25 ++++++++++++++++---------
->  kernel/events/core.c   | 17 +----------------
->  mm/memcontrol.c        | 16 +++++++---------
->  4 files changed, 26 insertions(+), 36 deletions(-)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index 198c7fc..2255639 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -823,8 +823,8 @@ int css_scan_tasks(struct cgroup_subsys_state *css,
->  int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
->  int cgroup_transfer_tasks(struct cgroup *to, struct cgroup *from);
->  
-> -struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
-> -					 struct cgroup_subsys *ss);
-> +struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
-> +						struct cgroup_subsys *ss);
->  
->  #else /* !CONFIG_CGROUPS */
->  
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 3d92fd0..823e250 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -4964,28 +4964,35 @@ static int __init cgroup_disable(char *str)
->  __setup("cgroup_disable=", cgroup_disable);
->  
->  /**
-> - * css_from_dir - get corresponding css from the dentry of a cgroup dir
-> + * css_tryget_from_dir - get corresponding css from the dentry of a cgroup dir
->   * @dentry: directory dentry of interest
->   * @ss: subsystem of interest
->   *
-> - * Must be called under cgroup_mutex or RCU read lock.  The caller is
-> - * responsible for pinning the returned css if it needs to be accessed
-> - * outside the critical section.
-> + * If @dentry is a directory for a cgroup which has @ss enabled on it, try
-> + * to get the corresponding css and return it.  If such css doesn't exist
-> + * or can't be pinned, an ERR_PTR value is returned.
->   */
-> -struct cgroup_subsys_state *css_from_dir(struct dentry *dentry,
-> -					 struct cgroup_subsys *ss)
-> +struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
-> +						struct cgroup_subsys *ss)
->  {
->  	struct cgroup *cgrp;
-> -
-> -	cgroup_assert_mutex_or_rcu_locked();
-> +	struct cgroup_subsys_state *css;
->  
->  	/* is @dentry a cgroup dir? */
->  	if (!dentry->d_inode ||
->  	    dentry->d_inode->i_op != &cgroup_dir_inode_operations)
->  		return ERR_PTR(-EBADF);
->  
-> +	rcu_read_lock();
-> +
->  	cgrp = __d_cgrp(dentry);
-> -	return cgroup_css(cgrp, ss) ?: ERR_PTR(-ENOENT);
-> +	css = cgroup_css(cgrp, ss);
-> +
-> +	if (!css || !css_tryget(css))
-> +		css = ERR_PTR(-ENOENT);
-> +
-> +	rcu_read_unlock();
-> +	return css;
->  }
->  
->  /**
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 6490373..a3c3ab5 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -370,11 +370,6 @@ perf_cgroup_match(struct perf_event *event)
->  				    event->cgrp->css.cgroup);
->  }
->  
-> -static inline bool perf_tryget_cgroup(struct perf_event *event)
-> -{
-> -	return css_tryget(&event->cgrp->css);
-> -}
-> -
->  static inline void perf_put_cgroup(struct perf_event *event)
->  {
->  	css_put(&event->cgrp->css);
-> @@ -593,9 +588,7 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
->  	if (!f.file)
->  		return -EBADF;
->  
-> -	rcu_read_lock();
-> -
-> -	css = css_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
-> +	css = css_tryget_from_dir(f.file->f_dentry, &perf_event_cgrp_subsys);
->  	if (IS_ERR(css)) {
->  		ret = PTR_ERR(css);
->  		goto out;
-> @@ -604,13 +597,6 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
->  	cgrp = container_of(css, struct perf_cgroup, css);
->  	event->cgrp = cgrp;
->  
-> -	/* must be done before we fput() the file */
-> -	if (!perf_tryget_cgroup(event)) {
-> -		event->cgrp = NULL;
-> -		ret = -ENOENT;
-> -		goto out;
-> -	}
-> -
->  	/*
->  	 * all events in a group must monitor
->  	 * the same cgroup because a task belongs
-> @@ -621,7 +607,6 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
->  		ret = -EINVAL;
->  	}
->  out:
-> -	rcu_read_unlock();
->  	fdput(f);
->  	return ret;
->  }
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d4a8c40..ab4e412 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6184,17 +6184,15 @@ static int memcg_write_event_control(struct cgroup_subsys_state *css,
->  	 * automatically removed on cgroup destruction but the removal is
->  	 * asynchronous, so take an extra ref on @css.
->  	 */
-> -	rcu_read_lock();
-> -
-> +	cfile_css = css_tryget_from_dir(cfile.file->f_dentry->d_parent,
-> +					&memory_cgrp_subsys);
->  	ret = -EINVAL;
-> -	cfile_css = css_from_dir(cfile.file->f_dentry->d_parent,
-> -				 &memory_cgrp_subsys);
-> -	if (cfile_css == css && css_tryget(css))
-> -		ret = 0;
-> -
-> -	rcu_read_unlock();
-> -	if (ret)
-> +	if (IS_ERR(cfile_css))
->  		goto out_put_cfile;
-> +	if (cfile_css != css) {
-> +		css_put(cfile_css);
-> +		goto out_put_cfile;
-> +	}
->  
->  	ret = event->register_event(memcg, event->eventfd, buffer);
->  	if (ret)
-> -- 
-> 1.8.5.3
-> 
+ drivers/hid/i2c-hid/i2c-hid.c | 68 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 57 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index d1f81f52481a..923ff818a1bf 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -25,6 +25,7 @@
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/pm.h>
++#include <linux/pm_runtime.h>
+ #include <linux/device.h>
+ #include <linux/wait.h>
+ #include <linux/err.h>
+@@ -454,10 +455,18 @@ static void i2c_hid_init_reports(struct hid_device *hid)
+ 		return;
+ 	}
+ 
++	/*
++	 * The device must be powered on while we fetch initial reports
++	 * from it.
++	 */
++	pm_runtime_get_sync(&client->dev);
++
+ 	list_for_each_entry(report,
+ 		&hid->report_enum[HID_FEATURE_REPORT].report_list, list)
+ 		i2c_hid_init_report(report, inbuf, ihid->bufsize);
+ 
++	pm_runtime_put(&client->dev);
++
+ 	kfree(inbuf);
+ }
+ 
+@@ -703,8 +712,8 @@ static int i2c_hid_open(struct hid_device *hid)
+ 
+ 	mutex_lock(&i2c_hid_open_mut);
+ 	if (!hid->open++) {
+-		ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
+-		if (ret) {
++		ret = pm_runtime_get_sync(&client->dev);
++		if (ret < 0) {
+ 			hid->open--;
+ 			goto done;
+ 		}
+@@ -712,7 +721,7 @@ static int i2c_hid_open(struct hid_device *hid)
+ 	}
+ done:
+ 	mutex_unlock(&i2c_hid_open_mut);
+-	return ret;
++	return ret < 0 ? ret : 0;
+ }
+ 
+ static void i2c_hid_close(struct hid_device *hid)
+@@ -729,7 +738,7 @@ static void i2c_hid_close(struct hid_device *hid)
+ 		clear_bit(I2C_HID_STARTED, &ihid->flags);
+ 
+ 		/* Save some power */
+-		i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++		pm_runtime_put(&client->dev);
+ 	}
+ 	mutex_unlock(&i2c_hid_open_mut);
+ }
+@@ -738,19 +747,18 @@ static int i2c_hid_power(struct hid_device *hid, int lvl)
+ {
+ 	struct i2c_client *client = hid->driver_data;
+ 	struct i2c_hid *ihid = i2c_get_clientdata(client);
+-	int ret = 0;
+ 
+ 	i2c_hid_dbg(ihid, "%s lvl:%d\n", __func__, lvl);
+ 
+ 	switch (lvl) {
+ 	case PM_HINT_FULLON:
+-		ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
++		pm_runtime_get_sync(&client->dev);
+ 		break;
+ 	case PM_HINT_NORMAL:
+-		ret = i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++		pm_runtime_put(&client->dev);
+ 		break;
+ 	}
+-	return ret;
++	return 0;
+ }
+ 
+ static struct hid_ll_driver i2c_hid_ll_driver = {
+@@ -973,13 +981,17 @@ static int i2c_hid_probe(struct i2c_client *client,
+ 	if (ret < 0)
+ 		goto err;
+ 
++	pm_runtime_get_noresume(&client->dev);
++	pm_runtime_set_active(&client->dev);
++	pm_runtime_enable(&client->dev);
++
+ 	ret = i2c_hid_fetch_hid_descriptor(ihid);
+ 	if (ret < 0)
+-		goto err;
++		goto err_pm;
+ 
+ 	ret = i2c_hid_init_irq(client);
+ 	if (ret < 0)
+-		goto err;
++		goto err_pm;
+ 
+ 	hid = hid_allocate_device();
+ 	if (IS_ERR(hid)) {
+@@ -1010,6 +1022,7 @@ static int i2c_hid_probe(struct i2c_client *client,
+ 		goto err_mem_free;
+ 	}
+ 
++	pm_runtime_put(&client->dev);
+ 	return 0;
+ 
+ err_mem_free:
+@@ -1018,6 +1031,10 @@ err_mem_free:
+ err_irq:
+ 	free_irq(client->irq, ihid);
+ 
++err_pm:
++	pm_runtime_put_noidle(&client->dev);
++	pm_runtime_disable(&client->dev);
++
+ err:
+ 	i2c_hid_free_buffers(ihid);
+ 	kfree(ihid);
+@@ -1029,6 +1046,11 @@ static int i2c_hid_remove(struct i2c_client *client)
+ 	struct i2c_hid *ihid = i2c_get_clientdata(client);
+ 	struct hid_device *hid;
+ 
++	pm_runtime_get_sync(&client->dev);
++	pm_runtime_disable(&client->dev);
++	pm_runtime_set_suspended(&client->dev);
++	pm_runtime_put_noidle(&client->dev);
++
+ 	hid = ihid->hid;
+ 	hid_destroy_device(hid);
+ 
+@@ -1074,7 +1096,31 @@ static int i2c_hid_resume(struct device *dev)
+ }
+ #endif
+ 
+-static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
++#ifdef CONFIG_PM_RUNTIME
++static int i2c_hid_runtime_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++
++	i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++	disable_irq(client->irq);
++	return 0;
++}
++
++static int i2c_hid_runtime_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++
++	enable_irq(client->irq);
++	i2c_hid_set_power(client, I2C_HID_PWR_ON);
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops i2c_hid_pm = {
++	SET_SYSTEM_SLEEP_PM_OPS(i2c_hid_suspend, i2c_hid_resume)
++	SET_RUNTIME_PM_OPS(i2c_hid_runtime_suspend, i2c_hid_runtime_resume,
++			   NULL)
++};
+ 
+ static const struct i2c_device_id i2c_hid_id_table[] = {
+ 	{ "hid", 0 },
 -- 
-Michal Hocko
-SUSE Labs
+1.8.5.2
+
