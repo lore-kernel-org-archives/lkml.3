@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaA2SWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:22:18 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:52862 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122AbaA2SWP (ORCPT
+	id S1753091AbaA2SWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:22:52 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:41988 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaA2SWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:22:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <52CF1327.3090705@redhat.com>
-References: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
- <CAG_cf+eYoK--k=z+f5xQBx0FP3_z5sbszrSZ1qYq7jR_Zi9Vaw@mail.gmail.com> <52CF1327.3090705@redhat.com>
-From: Andrew de los Reyes <adlr@chromium.org>
-Date: Wed, 29 Jan 2014 10:21:54 -0800
-X-Google-Sender-Auth: UrvfYqP1JkKL9E8N8C2jfiJPP_g
-Message-ID: <CAAfQ=8_r2Pc34qXhU874qV=38dk_gAEaji+mgjRY2BELBCb7Zw@mail.gmail.com>
-Subject: Re: [PATCH 0/5] HID logitech DJ fixes and preps for enabling extended features
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Linux Input <linux-input@vger.kernel.org>,
+	Wed, 29 Jan 2014 13:22:50 -0500
+Date: Wed, 29 Jan 2014 13:22:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: kernfs: lockdep complains about kernfs_addrm_ctx
+Message-ID: <20140129182247.GN30842@htj.dyndns.org>
+References: <alpine.LNX.2.00.1401221456080.27143@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1401221456080.27143@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just curious, what is the status of these patches?
+Hello, Jiri.
 
-Benjamin, should I rebase Chrome OS's Logitech patches on top of these
-and look at sending them upstream as well?
+On Wed, Jan 22, 2014 at 03:01:38PM +0100, Jiri Kosina wrote:
+> booting with current Linus' tree (df32e43a5) gives me this:
+> 
+>  INFO: trying to register non-static key.
+>  the code is fine but needs lockdep annotation.
+>  turning off the locking correctness validator.
+>  CPU: 1 PID: 105 Comm: udevd Not tainted 3.13.0-03477-gdf32e43 #1
+>  Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
+>   0000000000000000 ffff880037ad3468 ffffffff8159701b ffff880037ad34e8
+>   ffffffff8109e317 0000000000000000 ffff880037ad4fd0 ffff880037ad34e8
+>   0000000000000000 ffff880037ad34b8 ffffffff00000000 0000000000000002
+>  Call Trace:
+>   [<ffffffff8159701b>] dump_stack+0x72/0x87
+>   [<ffffffff8109e317>] register_lock_class+0x497/0x4c0
+>   [<ffffffff810a1c2d>] __lock_acquire+0x7d/0x600
+>   [<ffffffff810a0cdd>] ? trace_hardirqs_on_caller+0x13d/0x1e0
+>   [<ffffffff810a22a1>] lock_acquire+0xf1/0x120
+>   [<ffffffff81215460>] ? kernfs_addrm_finish+0x30/0x50
+>   [<ffffffff81214cf9>] kernfs_deactivate+0xe9/0x130
+...
+> 
+> I have started to look into the kernfs code now to debug this, but as I 
+> haven't been following it closely during the review phase, it might take 
+> some time before I familiarize myself with it; hence sending this as a 
+> heads-up.
 
-On Thu, Jan 9, 2014 at 1:22 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> On 09/01/14 16:08, Andrew de los Reyes wrote:
->> In general, I'm positive on the change to fix the USB3 issue (yay!),
->> and for the others I'm happy it's going upstream. It seem to open up
->> the possibility of user-space drivers, which is great, even though we
->> don't need this on our team.
->>
->> One thing I want to double-check: on some devices (T651, at least),
->> the raw data comes in not via HID++, but tacked onto the end of the
->> normal mouse reports. Will a driver for this device be able to get all
->> packets, not just HID++ ones? Sorry if this was clear and I missed it.
->
-> Yeah, that is partly why I can not send the rest of the series right
-> now. Nestor already warned me about those funny devices, so I need to
-> double check how to implement HID++.
->
-> On a technical point of view, a driver connected through the unifying
-> receiver currently only get the regular input reports, and this series
-> adds the HID++ reports to these ones. So yes, a device will receive all
-> reports dedicated to it.
->
-> Cheers,
-> Benjamin
->
->>
->> -andrew
->>
->> On Wed, Jan 8, 2014 at 2:18 PM, Benjamin Tissoires
->> <benjamin.tissoires@redhat.com> wrote:
->>> Hi Jiri,
->>>
->>> Well, this work is _not_ for 3.14 (except maybe patch 1), especially since it is
->>> missing the biggest part where we enable the capabilities of Logitech devices.
->>>
->>> Long story short:
->>> This work is based on the work I did back in Summer 2011. I worked at Logitech
->>> for a few weeks to show up a demo of a driver for the Logitech Wireless Touchpad.
->>> At that time, a first draft has been done, but due to a lack of resources, noone
->>> upstreamed it.
->>> Since then, the code marinated a little at Logitech and in the ChromeOS kernel
->>> tree, but nobody tried to push it upstream. So here I am, trying to push this stuff
->>> upstream.
->>>
->>> I can not send the full series right now because I am lacking most of the
->>> testing hardware (I mean I only have the oldest Wireless Touchpad).
->>> Hopefully, I should receive some other soon, and I'll be able to send the second
->>> part then.
->>>
->>> Now, let me roughly explain the patches:
->>> - patch 1 can be applied right now I think, but it's entirely up to you Jiri.
->>>   This patch should fix the missing notifications with some USB 3.0 boards.
->>> - patches 2 to 5 allows to forward in both direction the proprietary protocol
->>>   used by Logitech (HID++ [1]) between the driver and the hardware.
->>> - later patches will introduce a transport layer for HID++ and also a driver
->>>   to support full multitouch on various Logitech touchpads.
->>>
->>> Nestor, Andrew, feel free to add your "Signed-off-by" whereever you want, I lost
->>> a little bit the track of who added what.
->>>
->>> Cheers,
->>> Benjamin
->>>
->>> [1] HID++: Documentation is provided at
->>> https://drive.google.com/a/logitech.com/?tab=mo#folders/0BxbRzx7vEV7eWmgwazJ3NUFfQ28
->>>
->>> Benjamin Tisssoires (5):
->>>   HID: logitech-dj: Fix USB 3.0 issue
->>>   HID: core: do not scan reports if the group is already set
->>>   HID: logitech-dj: rely on hid groups to separate receivers from dj
->>>     devices
->>>   HID: logitech-dj: forward incoming HID++ reports to the correct dj
->>>     device
->>>   HID: logitech-dj: add .request callback
->>>
->>>  drivers/hid/hid-core.c        |   3 +-
->>>  drivers/hid/hid-logitech-dj.c | 161 +++++++++++++++++++++++++++++++++---------
->>>  drivers/hid/hid-logitech-dj.h |  16 ++---
->>>  include/linux/hid.h           |   1 +
->>>  4 files changed, 136 insertions(+), 45 deletions(-)
->>>
->>> --
->>> 1.8.4.2
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Oops, this got reported again and the fix patch has been posted
+earlier today.
+
+ http://lkml.kernel.org/g/<20140129170403.GJ30842@htj.dyndns.org>
+
+Can you please see whether the above patch fixes the issue?
+
+Thanks.
+
+-- 
+tejun
