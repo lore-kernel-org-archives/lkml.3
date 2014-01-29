@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaA2OO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:14:29 -0500
+	id S1752513AbaA2ONS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:13:18 -0500
 Received: from mga14.intel.com ([143.182.124.37]:53968 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530AbaA2ONT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:13:19 -0500
+	id S1752435AbaA2ONJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 09:13:09 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,742,1384329600"; 
-   d="scan'208";a="466608397"
+   d="scan'208";a="466608345"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 6/9] perf tools: Prevent the use of kcore if the kernel has moved
-Date: Wed, 29 Jan 2014 16:14:41 +0200
-Message-Id: <1391004884-10334-7-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 3/9] perf tools: Add machine__get_kallsyms_filename()
+Date: Wed, 29 Jan 2014 16:14:38 +0200
+Message-Id: <1391004884-10334-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
 References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
@@ -28,79 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of kcore is predicated upon it matching
-the recorded data.  If the kernel has been
-relocated at boot time (i.e. since the data
-was recorded) then do not use kcore.
-
-Note that it is possible to make a copy
-of kcore at the time the data is recorded
-using 'perf buildid-cache'.  Then perf tools
-will use the copy because it does match the
-data.
+Separate out the logic used to make the
+kallsyms full path name for a machine.
+It will be reused in a subsequent patch.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/symbol.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ tools/perf/util/machine.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 39ce9ad..4ac1f87 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -976,6 +976,23 @@ static int validate_kcore_modules(const char *kallsyms_filename,
- 	return 0;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ded7459..290c2e6 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -496,19 +496,22 @@ static int symbol__in_kernel(void *arg, const char *name,
+ 	return 1;
  }
  
-+static int validate_kcore_addresses(const char *kallsyms_filename,
-+				    struct map *map)
++static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
++					   size_t bufsz)
 +{
-+	struct kmap *kmap = map__kmap(map);
-+
-+	if (kmap->ref_reloc_sym && kmap->ref_reloc_sym->name) {
-+		u64 start;
-+
-+		start = kallsyms__get_function_start(kallsyms_filename,
-+						     kmap->ref_reloc_sym->name);
-+		if (start != kmap->ref_reloc_sym->addr)
-+			return -EINVAL;
-+	}
-+
-+	return validate_kcore_modules(kallsyms_filename, map);
++	if (machine__is_default_guest(machine))
++		scnprintf(buf, bufsz, "%s", symbol_conf.default_guest_kallsyms);
++	else
++		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
 +}
 +
- struct kcore_mapfn_data {
- 	struct dso *dso;
- 	enum map_type type;
-@@ -1019,8 +1036,8 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 					     kallsyms_filename))
- 		return -EINVAL;
+ /* Figure out the start address of kernel map from /proc/kallsyms */
+ static u64 machine__get_kernel_start_addr(struct machine *machine)
+ {
+-	const char *filename;
+-	char path[PATH_MAX];
++	char filename[PATH_MAX];
+ 	struct process_args args;
  
--	/* All modules must be present at their original addresses */
--	if (validate_kcore_modules(kallsyms_filename, map))
-+	/* Modules and kernel must be present at their original addresses */
-+	if (validate_kcore_addresses(kallsyms_filename, map))
- 		return -EINVAL;
+-	if (machine__is_default_guest(machine))
+-		filename = (char *)symbol_conf.default_guest_kallsyms;
+-	else {
+-		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+-		filename = path;
+-	}
++	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
  
- 	md.dso = dso;
-@@ -1424,7 +1441,7 @@ static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
- 			continue;
- 		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
- 			  "%s/%s/kallsyms", dir, dent->d_name);
--		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+		if (!validate_kcore_addresses(kallsyms_filename, map)) {
- 			strlcpy(dir, kallsyms_filename, dir_sz);
- 			ret = 0;
- 			break;
-@@ -1479,7 +1496,7 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
- 		if (fd != -1) {
- 			close(fd);
- 			/* If module maps match go with /proc/kallsyms */
--			if (!validate_kcore_modules("/proc/kallsyms", map))
-+			if (!validate_kcore_addresses("/proc/kallsyms", map))
- 				goto proc_kallsyms;
- 		}
- 
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return 0;
 -- 
 1.7.11.7
 
