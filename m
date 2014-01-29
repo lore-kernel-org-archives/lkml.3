@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaA2T6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 14:58:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6932 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942AbaA2T6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 14:58:07 -0500
-Date: Wed, 29 Jan 2014 14:57:56 -0500
-From: Dave Jones <davej@redhat.com>
-To: mkrufky@kernellabs.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: mlx111sf: Fix unintentional garbage stack read.
-Message-ID: <20140129195756.GB30316@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, mkrufky@kernellabs.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752008AbaA2T5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 14:57:07 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:50377 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844AbaA2T5E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 14:57:04 -0500
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Gauthier <marc@cadence.com>, Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 1/4] net: ethoc: implement basic ethtool operations
+Date: Wed, 29 Jan 2014 23:56:34 +0400
+Message-Id: <1391025397-14965-2-git-send-email-jcmvbkbc@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1391025397-14965-1-git-send-email-jcmvbkbc@gmail.com>
+References: <1391025397-14965-1-git-send-email-jcmvbkbc@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mxl111sf_read_reg takes an address of a variable to write to as an argument.
-drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c:mxl111sf_config_pin_mux_modes passes
-several uninitialized stack variables to this routine, expecting them to be
-filled in.  In the event that something unexpected happens when reading from
-the chip, we end up doing a pr_debug of the value passed in, revealing whatever
-garbage happened to be on the stack.
+The following methods are implemented:
+- get link state (standard implementation);
+- get timestamping info (standard implementation).
 
-Change the pr_debug to match what happens in the 'success' case, where we assign
-buf[1] to *data.
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+---
+ drivers/net/ethernet/ethoc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Spotted with Coverity (Bugs 731910 through 731917)
-
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-
-diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf.c b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
-index 08240e498451..ccd854afd2f8 100644
---- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
-+++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
-@@ -105,7 +105,7 @@ int mxl111sf_read_reg(struct mxl111sf_state *state, u8 addr, u8 *data)
- 		ret = -EINVAL;
- 	}
- 
--	pr_debug("R: (0x%02x, 0x%02x)\n", addr, *data);
-+	pr_debug("R: (0x%02x, 0x%02x)\n", addr, buf[1]);
- fail:
- 	return ret;
+diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+index 5854d41..6de6352 100644
+--- a/drivers/net/ethernet/ethoc.c
++++ b/drivers/net/ethernet/ethoc.c
+@@ -900,6 +900,11 @@ out:
+ 	return NETDEV_TX_OK;
  }
+ 
++const struct ethtool_ops ethoc_ethtool_ops = {
++	.get_link = ethtool_op_get_link,
++	.get_ts_info = ethtool_op_get_ts_info,
++};
++
+ static const struct net_device_ops ethoc_netdev_ops = {
+ 	.ndo_open = ethoc_open,
+ 	.ndo_stop = ethoc_stop,
+@@ -1148,6 +1153,7 @@ static int ethoc_probe(struct platform_device *pdev)
+ 	netdev->netdev_ops = &ethoc_netdev_ops;
+ 	netdev->watchdog_timeo = ETHOC_TIMEOUT;
+ 	netdev->features |= 0;
++	netdev->ethtool_ops = &ethoc_ethtool_ops;
+ 
+ 	/* setup NAPI */
+ 	netif_napi_add(netdev, &priv->napi, ethoc_poll, 64);
+-- 
+1.8.1.4
+
