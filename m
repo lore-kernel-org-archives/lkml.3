@@ -1,66 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaA2NZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 08:25:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbaA2NZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 08:25:08 -0500
-Date: Wed, 29 Jan 2014 14:26:52 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Brian King <brking@linux.vnet.ibm.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 4/9] ipr: Use pci_enable_msi_range() and
- pci_enable_msix_range()
-Message-ID: <20140129132651.GA27764@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <eb0b62be65c050533f2565fcf3f1d673770dfd67.1389904166.git.agordeev@redhat.com>
- <20140128095441.GA6951@dhcp-26-207.brq.redhat.com>
- <52E7CCAD.5070008@linux.vnet.ibm.com>
+	id S1752212AbaA2N1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 08:27:45 -0500
+Received: from mailfilter.police.go.th ([58.97.43.174]:41146 "EHLO
+	mailfilter.police.go.th" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaA2N1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 08:27:42 -0500
+Date: Wed, 29 Jan 2014 19:21:49 +0700 (ICT)
+From: Yung kyu kim <decha.pu@police.go.th>
+Reply-To: "2650326406@qq.com" <2650326406@qq.com>
+Message-ID: <1482091352.28772.1390998109770.JavaMail.root@mail.police.go.th>
+Subject: STAKEHOLDER NEEDED!!!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E7CCAD.5070008@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.69.1]
+X-Mailer: Zimbra 6.0.8_GA_2661 (zclient/6.0.8_GA_2661)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 09:28:45AM -0600, Brian King wrote:
+ Hello,
 
-Thanks for the review, Brian!
+The Project is about the exportation of 100,000 barrels of Light Crude
+Oil daily out from Iraq to Turkey through my client's company in Iraq
+at the rate of $92.00 per barrel. This amount to $9,200,000 daily. I ask
+for your support as a foreigner to handle this business project with my
+client and you are not expected to invest in Iraq
 
-> These look like they will conflict with a recent patch to
-> the ipr driver:
-> 
-> http://www.spinics.net/lists/linux-scsi/msg71644.html
+If yes, let me know and we will discuss this project proper.
 
-BTW, this one does not appear ACKed.
-
-> Do you want me to rediff your patches on top of this one,
-> or do you want to keep the entire MSI series together
-> and do the rediff? Otherwise the patches seem fine.
-
-I would prefer the former.
-
-@Bjorn, please let us know if you prefer otherwise.
-
-> Thanks,
-> 
-> Brian
-> 
-> 
-> -- 
-> Brian King
-> Power Linux I/O
-> IBM Linux Technology Center
-> 
-> 
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Kim.
+Email :2784295239@qq.com
