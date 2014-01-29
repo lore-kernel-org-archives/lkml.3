@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaA2SYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:24:11 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:62450 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaA2SR6 (ORCPT
+	id S1753309AbaA2S1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:27:10 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:38861 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaA2S1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:17:58 -0500
-Subject: [PATCH 04/17] x86/PCI: Merge pci_scan_bus_on_node() into
- pcibios_scan_root()
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-acpi@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Jan 2014 11:17:56 -0700
-Message-ID: <20140129181756.15476.8169.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Wed, 29 Jan 2014 13:27:08 -0500
+Date: Wed, 29 Jan 2014 18:28:05 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/5] arm: add new asm macro update_sctlr
+Message-ID: <20140129182805.GF11329@bivouac.eciton.net>
+References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
+ <1389445524-30623-3-git-send-email-leif.lindholm@linaro.org>
+ <20140122112055.GF1621@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140122112055.GF1621@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pci_scan_bus_on_node() is only called by pcibios_scan_root().
-This merges pci_scan_bus_on_node() into pcibios_scan_root() and removes
-pci_scan_bus_on_node().
+On Wed, Jan 22, 2014 at 11:20:55AM +0000, Will Deacon wrote:
+> > +#ifdef CONFIG_CPU_CP15
+> > +/* Macro for setting/clearing bits in sctlr */
+> > +	.macro update_sctlr, set:req, clear:req, tmp:req, tmp2:req
+> > +	mrc	p15, 0, \tmp, c1, c0, 0
+> > +	ldr	\tmp2, =\set
+> > +	orr	\tmp, \tmp, \tmp2
+> > +	ldr	\tmp2, =\clear
+> > +	mvn	\tmp2, \tmp2
+> > +	and	\tmp, \tmp, \tmp2
+> > +	mcr	p15, 0, \tmp, c1, c0, 0
+> 
+> I think this would be cleaner if you force the caller to put set and clear
+> into registers beforehand, rather than have to do the literal load every
+> time. Also, I don't think set and clear should be required (and then you can
+> lose tmp2 as well).
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/include/asm/pci.h |    4 ----
- arch/x86/pci/common.c      |   49 +++++++++++++++++---------------------------
- 2 files changed, 19 insertions(+), 34 deletions(-)
+I can't figure out how to make register-parameters non-required
+(i.e. conditionalise on whether an optional parameter was provided),
+so my attempt of refactoring actually ends up using an additional
+register:
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 4e891abf8b48..b52f9c0ec5fb 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -26,10 +26,6 @@ extern int pci_routeirq;
- extern int noioapicquirk;
- extern int noioapicreroute;
- 
--/* scan a bus after allocating a pci_sysdata for it */
--extern struct pci_bus *pci_scan_bus_on_node(int busno, struct pci_ops *ops,
--					    int node);
--
- #ifdef CONFIG_PCI
- 
- #ifdef CONFIG_PCI_DOMAINS
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index f530c7e93250..52ad00c2e198 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -458,8 +458,25 @@ void __init dmi_check_pciprobe(void)
- 
- struct pci_bus *pcibios_scan_root(int busnum)
- {
--	return pci_scan_bus_on_node(busnum, &pci_root_ops,
--					get_mp_bus_to_node(busnum));
-+	struct pci_bus *bus;
-+	struct pci_sysdata *sd;
-+	LIST_HEAD(resources);
-+
-+	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
-+	if (!sd) {
-+		printk(KERN_ERR "PCI: OOM, skipping PCI bus %02x\n", busnum);
-+		return NULL;
-+	}
-+	sd->node = get_mp_bus_to_node(busnum);
-+	x86_pci_root_bus_resources(busnum, &resources);
-+	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busnum);
-+	bus = pci_scan_root_bus(NULL, busnum, &pci_root_ops, sd, &resources);
-+	if (!bus) {
-+		pci_free_resource_list(&resources);
-+		kfree(sd);
-+	}
-+
-+	return bus;
- }
- 
- void __init pcibios_set_cache_line_size(void)
-@@ -669,34 +686,6 @@ int pci_ext_cfg_avail(void)
- 		return 0;
- }
- 
--struct pci_bus *pci_scan_bus_on_node(int busno, struct pci_ops *ops, int node)
--{
--	LIST_HEAD(resources);
--	struct pci_bus *bus = NULL;
--	struct pci_sysdata *sd;
--
--	/*
--	 * Allocate per-root-bus (not per bus) arch-specific data.
--	 * TODO: leak; this memory is never freed.
--	 * It's arguable whether it's worth the trouble to care.
--	 */
--	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
--	if (!sd) {
--		printk(KERN_ERR "PCI: OOM, skipping PCI bus %02x\n", busno);
--		return NULL;
--	}
--	sd->node = node;
--	x86_pci_root_bus_resources(busno, &resources);
--	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busno);
--	bus = pci_scan_root_bus(NULL, busno, ops, sd, &resources);
--	if (!bus) {
--		pci_free_resource_list(&resources);
--		kfree(sd);
--	}
--
--	return bus;
--}
--
- /*
-  * NUMA info for PCI busses
-  *
+#ifdef CONFIG_CPU_CP15
+/* Macro for setting/clearing bits in sctlr */
+	.macro	update_sctlr, set:req, clear:req, tmp:req
+	mrc	p15, 0, \tmp, c1, c0, 0
+	orr	\tmp, \set
+	mvn	\clear, \clear
+	and	\tmp, \tmp, \clear
+	mcr	p15, 0, \tmp, c1, c0, 0
+	.endm
+#endif
 
+If you think that's an improvement I can do that, and I have (just)
+enough registers to spare.
+If I'm being daft with my macro issues, do point it out.
+
+/
+    Leif
