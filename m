@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaA2VBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 16:01:04 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:61941 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404AbaA2VAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 16:00:19 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        linux-pwm@vger.kernel.org,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH 5/5] ARM: dts: AM33XX: Add ecap interrupt properties
-Date: Wed, 29 Jan 2014 15:59:59 -0500
-Message-Id: <1391029199-3670-6-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1391029199-3670-1-git-send-email-mporter@linaro.org>
-References: <1391029199-3670-1-git-send-email-mporter@linaro.org>
+	id S1752628AbaA2VBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 16:01:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45354 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752584AbaA2VBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 16:01:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,744,1384329600"; 
+   d="scan'208";a="472860567"
+Date: Wed, 29 Jan 2014 13:06:06 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>, "xinhui.pan" <xinhuix.pan@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linus.walleij@linaro.org, gnurou@gmail.com,
+        yanmin_zhang@linux.intel.com
+Subject: Re: [PATCH] gpio-intel-mid: fix the incorrect return of idle callback
+Message-ID: <20140129210606.GD13185@psi-dev26.jf.intel.com>
+References: <52E76F71.4080304@intel.com>
+ <20140128164937.GA30226@saruman.home>
+ <20140128172413.GA31821@psi-dev26.jf.intel.com>
+ <20140128181206.GB31977@saruman.home>
+ <20140129001357.GA13185@psi-dev26.jf.intel.com>
+ <52E8AC7C.5070903@intel.com>
+ <20140129191232.GC13185@psi-dev26.jf.intel.com>
+ <20140129195230.GC32149@saruman.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140129195230.GC32149@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing interrupt properties to the ecap0, ecap1, and ecap2
-nodes.
+On Wed, Jan 29, 2014 at 01:52:30PM -0600, Felipe Balbi wrote:
+> On Wed, Jan 29, 2014 at 11:12:32AM -0800, David Cohen wrote:
+> > On Wed, Jan 29, 2014 at 03:23:40PM +0800, xinhui.pan wrote:
+> > > 
+> > > 于 2014年01月29日 08:13, David Cohen 写道:
+> > > > On Tue, Jan 28, 2014 at 12:12:06PM -0600, Felipe Balbi wrote:
+> > > >> On Tue, Jan 28, 2014 at 09:24:13AM -0800, David Cohen wrote:
+> > > >>> On Tue, Jan 28, 2014 at 10:49:37AM -0600, Felipe Balbi wrote:
+> > > >>>> On Tue, Jan 28, 2014 at 04:50:57PM +0800, xinhui.pan wrote:
+> > > >>>>> From: "xinhui.pan" <xinhuiX.pan@intel.com>
+> > > >>>>>
+> > > >>>>> intel_gpio_runtime_idle should return correct error code if it do fail.
+> > > >>>>> make it more correct even though -EBUSY is the most possible return value.
+> > > >>>>>
+> > > >>>>> Signed-off-by: bo.he <bo.he@intel.com>
+> > > >>>>> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+> > > >>>>> ---
+> > > >>>>>  drivers/gpio/gpio-intel-mid.c |    4 +++-
+> > > >>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+> > > >>>>>
+> > > >>>>> diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
+> > > >>>>> index d1b50ef..05749a3 100644
+> > > >>>>> --- a/drivers/gpio/gpio-intel-mid.c
+> > > >>>>> +++ b/drivers/gpio/gpio-intel-mid.c
+> > > >>>>> @@ -394,7 +394,9 @@ static const struct irq_domain_ops intel_gpio_irq_ops = {
+> > > >>>>>  
+> > > >>>>>  static int intel_gpio_runtime_idle(struct device *dev)
+> > > >>>>>  {
+> > > >>>>> -	pm_schedule_suspend(dev, 500);
+> > > >>>>> +	int err = pm_schedule_suspend(dev, 500);
+> > > >>>>> +	if (err)
+> > > >>>>> +		return err;
+> > > >>>>>  	return -EBUSY;
+> > > >>>>
+> > > >>>> wait, is it only me or this would look a lot better as:
+> > > >>>>
+> > > >>>> static int intel_gpio_runtime_idle(struct device *dev)
+> > > >>>> {
+> > > >>>> 	return pm_schedule_suspend(dev, 500);
+> > > >>>> }
+> > > >>>
+> > > >>> The reply to your suggestion is probably in this commit :)
+> > > >>>
+> > > >>> ---
+> > > >>> commit 45f0a85c8258741d11bda25c0a5669c06267204a
+> > > >>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > >>> Date:   Mon Jun 3 21:49:52 2013 +0200
+> > > >>>
+> > > >>>     PM / Runtime: Rework the "runtime idle" helper routine
+> > > >>> ---
+> > > >>>
+> > > >>> We won't return 0 from here.
+> > > >>
+> > > >> so you never want to return 0, why don't you, then:
+> > > >>
+> > > >> static int intel_gpio_runtime_idle(struct device *dev)
+> > > >> {
+> > > >> 	pm_schedule_suspend(dev, 500);
+> > > >> 	return -EBUSY;
+> > > >> }
+> > > > 
+> > > > That's how it is currently :)
+> > > > 
+> > > > But this patch is making the function to return a different code in case
+> > > > of error. IMHO there is not much fuctional gain with it, but I see
+> > > > perhaps one extra info for tracing during development.
+> > > > 
+> > > > Anyway, I'll let Xinhui to do further comment since he's the author.
+> > > > 
+> > > > Br, David
+> > > > 
+> > > hi ,David & Balbi
+> > >   I checked several drivers yesterday to see how they use pm_schedule_suspend 
+> > > then found one bug in i2c. Also I noticed  gpio. 
+> > > I think returning a correct error code is important.So I change -EBUSY 
+> > > to *err*. To be honest,current code works well.
+> > 
+> > In my experience, when I'm using fancy things like lauterbach a proper
+> > error code may save couple of minutes in my life :)
+> > 
+> > I keep my ack here.
+> 
+> fair enough, sorry for the noise ;-) It could still be simplified a bit:
+> 
+> 	return err ?: -EBUSY;
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- arch/arm/boot/dts/am33xx.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+Agreed :)
+Xinhui, could we have this suggestion in your patch?
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 6d95d3d..b4139ba 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -582,6 +582,8 @@
- 				compatible = "ti,am33xx-ecap";
- 				#pwm-cells = <3>;
- 				reg = <0x48300100 0x80>;
-+				interrupts = <31>;
-+				interrupt-names = "ecap0";
- 				ti,hwmods = "ecap0";
- 				status = "disabled";
- 			};
-@@ -610,6 +612,8 @@
- 				compatible = "ti,am33xx-ecap";
- 				#pwm-cells = <3>;
- 				reg = <0x48302100 0x80>;
-+				interrupts = <47>;
-+				interrupt-names = "ecap1";
- 				ti,hwmods = "ecap1";
- 				status = "disabled";
- 			};
-@@ -638,6 +642,8 @@
- 				compatible = "ti,am33xx-ecap";
- 				#pwm-cells = <3>;
- 				reg = <0x48304100 0x80>;
-+				interrupts = <61>;
-+				interrupt-names = "ecap2";
- 				ti,hwmods = "ecap2";
- 				status = "disabled";
- 			};
--- 
-1.8.4
+Br, David
+
+> 
+> -- 
+> balbi
+
 
