@@ -1,169 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaA2HAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 02:00:49 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:58402 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaA2HAr (ORCPT
+	id S1756014AbaA2HBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 02:01:31 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:59819 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545AbaA2HBH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 02:00:47 -0500
-Message-ID: <52E8A74F.9060603@gmail.com>
-Date: Tue, 28 Jan 2014 23:01:35 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 29 Jan 2014 02:01:07 -0500
 MIME-Version: 1.0
-To: Max Filippov <jcmvbkbc@gmail.com>, linux-xtensa@linux-xtensa.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+In-Reply-To: <52E8A407.1020809@gmail.com>
+References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
+	<1390975218-13863-3-git-send-email-jcmvbkbc@gmail.com>
+	<52E8A407.1020809@gmail.com>
+Date: Wed, 29 Jan 2014 11:01:06 +0400
+Message-ID: <CAMo8BfJ_nce_H_8HJ7iw9ME=8C+sjF_Q43RaDG+1eVrpxWRvdQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] net: ethoc: don't advertise gigabit speed on
+ attached PHY
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
         "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH v2 3/4] net: ethoc: set up MII management bus clock
-References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com> <1390975218-13863-4-git-send-email-jcmvbkbc@gmail.com>
-In-Reply-To: <1390975218-13863-4-git-send-email-jcmvbkbc@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 28/01/2014 22:00, Max Filippov a écrit :
-> MII management bus clock is derived from the MAC clock by dividing it by
-> MIIMODER register CLKDIV field value. This value may need to be set up
-> in case it is undefined or its default value is too high (and
-> communication with PHY is too slow) or too low (and communication with
-> PHY is impossible). The value of CLKDIV is not specified directly, but
-> is derived from the MAC clock for the default MII management bus frequency
-> of 2.5MHz. The MAC clock may be specified in the platform data, or as
-> either 'clock-frequency' or 'clocks' device tree attribute.
+On Wed, Jan 29, 2014 at 10:47 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> Hi Max,
 >
-> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-> ---
-> Changes v1->v2:
-> - drop MDIO bus frequency configurability, always configure for standard
->    2.5MHz;
-> - allow using common clock framework to provide ethoc clock.
+> Le 28/01/2014 22:00, Max Filippov a Ã©crit :
 >
->   drivers/net/ethernet/ethoc.c | 37 +++++++++++++++++++++++++++++++++++--
->   include/net/ethoc.h          |  1 +
->   2 files changed, 36 insertions(+), 2 deletions(-)
+>> OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but does
+>> not disable advertisement when PHY supports them. This results in
+>> non-functioning network when the MAC is connected to a gigabit PHY
+>> connected
+>> to a gigabit switch.
+>>
+>> The fix is to disable gigabit speed advertisement on attached PHY
+>> unconditionally.
+>>
+>> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+>> ---
+>> Changes v1->v2:
+>> - disable both gigabit advertisement and support.
+>>
+>>   drivers/net/ethernet/ethoc.c | 8 ++++++++
+>>   1 file changed, 8 insertions(+)
+>>
+>> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+>> index 4de8cfd..5643b2d 100644
+>> --- a/drivers/net/ethernet/ethoc.c
+>> +++ b/drivers/net/ethernet/ethoc.c
+>> @@ -688,6 +688,14 @@ static int ethoc_mdio_probe(struct net_device *dev)
+>>         }
+>>
+>>         priv->phy = phy;
+>> +       phy_update_advert(phy,
+>> +                         ADVERTISED_1000baseT_Full |
+>> +                         ADVERTISED_1000baseT_Half, 0);
+>> +       phy_start_aneg(phy);
 >
-> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
-> index 5643b2d..5854d41 100644
-> --- a/drivers/net/ethernet/ethoc.c
-> +++ b/drivers/net/ethernet/ethoc.c
-> @@ -13,6 +13,7 @@
 >
->   #include <linux/dma-mapping.h>
->   #include <linux/etherdevice.h>
-> +#include <linux/clk.h>
->   #include <linux/crc32.h>
->   #include <linux/interrupt.h>
->   #include <linux/io.h>
-> @@ -216,6 +217,7 @@ struct ethoc {
->
->   	struct phy_device *phy;
->   	struct mii_bus *mdio;
-> +	struct clk *clk;
->   	s8 phy_id;
->   };
->
-> @@ -925,6 +927,8 @@ static int ethoc_probe(struct platform_device *pdev)
->   	int num_bd;
->   	int ret = 0;
->   	bool random_mac = false;
-> +	u32 eth_clkfreq = 0;
-> +	struct ethoc_platform_data *pdata = dev_get_platdata(&pdev->dev);
->
->   	/* allocate networking device */
->   	netdev = alloc_etherdev(sizeof(struct ethoc));
-> @@ -1038,8 +1042,7 @@ static int ethoc_probe(struct platform_device *pdev)
->   	}
->
->   	/* Allow the platform setup code to pass in a MAC address. */
-> -	if (dev_get_platdata(&pdev->dev)) {
-> -		struct ethoc_platform_data *pdata = dev_get_platdata(&pdev->dev);
-> +	if (pdata) {
->   		memcpy(netdev->dev_addr, pdata->hwaddr, IFHWADDRLEN);
->   		priv->phy_id = pdata->phy_id;
->   	} else {
-> @@ -1077,6 +1080,32 @@ static int ethoc_probe(struct platform_device *pdev)
->   	if (random_mac)
->   		netdev->addr_assign_type = NET_ADDR_RANDOM;
->
-> +	/* Allow the platform setup code to adjust MII management bus clock. */
-> +	if (pdata)
-> +		eth_clkfreq = pdata->eth_clkfreq;
+> This does not look necessary, you should not have to call phy_start_aneg()
+> because the PHY state machine is not yet started, at best this calls does
+> nothing.
 
-Since this is a new member, why not make it a struct clk pointer 
-directly so you could simplify the code path?
+This call actually makes the whole thing work, because otherwise once gigabit
+support is cleared from the supported mask genphy_config_advert does not
+update gigabit advertisement register, leaving it enabled.
 
-> +	else
-> +		of_property_read_u32(pdev->dev.of_node,
-> +				     "clock-frequency", &eth_clkfreq);
-> +	if (!eth_clkfreq) {
-> +		struct clk *clk = clk_get(&pdev->dev, NULL);
-> +
-> +		if (!IS_ERR(clk)) {
-> +			priv->clk = clk;
-> +			clk_prepare_enable(clk);
-> +			eth_clkfreq = clk_get_rate(clk);
-> +		}
-> +	}
-> +	if (eth_clkfreq) {
-> +		u32 clkdiv = MIIMODER_CLKDIV(eth_clkfreq / 2500000 + 1);
-> +
-> +		if (!clkdiv)
-> +			clkdiv = 2;
-> +		dev_dbg(&pdev->dev, "setting MII clkdiv to %u\n", clkdiv);
-> +		ethoc_write(priv, MIIMODER,
-> +			    (ethoc_read(priv, MIIMODER) & MIIMODER_NOPRE) |
-> +			    clkdiv);
-> +	}
-
-This does look a bit convoluted, and it looks like the clk_get() or 
-getting the clock-frequency property should boil down to being the same 
-thing with of_clk_get() as it should resolve all clocks phandles and 
-fetch their frequencies appropriately.
-
-> +
->   	/* register MII bus */
->   	priv->mdio = mdiobus_alloc();
->   	if (!priv->mdio) {
-> @@ -1141,6 +1170,8 @@ free_mdio:
->   	kfree(priv->mdio->irq);
->   	mdiobus_free(priv->mdio);
->   free:
-> +	if (priv->clk)
-> +		clk_disable_unprepare(priv->clk);
-
-This should probbaly be if (!IS_ERR(priv-clk)).
-
->   	free_netdev(netdev);
->   out:
->   	return ret;
-> @@ -1165,6 +1196,8 @@ static int ethoc_remove(struct platform_device *pdev)
->   			kfree(priv->mdio->irq);
->   			mdiobus_free(priv->mdio);
->   		}
-> +		if (priv->clk)
-> +			clk_disable_unprepare(priv->clk);
-
-Same here
-
->   		unregister_netdev(netdev);
->   		free_netdev(netdev);
->   	}
-> diff --git a/include/net/ethoc.h b/include/net/ethoc.h
-> index 96f3789..2a2d6bb 100644
-> --- a/include/net/ethoc.h
-> +++ b/include/net/ethoc.h
-> @@ -16,6 +16,7 @@
->   struct ethoc_platform_data {
->   	u8 hwaddr[IFHWADDRLEN];
->   	s8 phy_id;
-> +	u32 eth_clkfreq;
->   };
->
->   #endif /* !LINUX_NET_ETHOC_H */
+>> +       phy_update_supported(phy,
+>> +                            SUPPORTED_1000baseT_Full |
+>> +                            SUPPORTED_1000baseT_Half, 0);
+>> +
+>>         return 0;
+>>   }
+>>
+>>
 >
 
+-- 
+Thanks.
+-- Max
