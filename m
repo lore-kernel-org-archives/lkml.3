@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaA2TY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 14:24:29 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:12372 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122AbaA2TY1 (ORCPT
+	id S1753032AbaA2T2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 14:28:34 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42233 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752064AbaA2T2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 14:24:27 -0500
-Message-ID: <1391023456.18140.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 6/8] mm, hugetlb: remove vma_has_reserves
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, riel@redhat.com,
-        mgorman@suse.de, mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, hughd@google.com,
-        david@gibson.dropbear.id.au, js1304@gmail.com,
-        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
-        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Jan 2014 11:24:16 -0800
-In-Reply-To: <1390856653-v1nkcg1e-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
-	 <1390794746-16755-7-git-send-email-davidlohr@hp.com>
-	 <1390856653-v1nkcg1e-mutt-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Jan 2014 14:28:32 -0500
+Date: Wed, 29 Jan 2014 19:27:18 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/5] arm: add new asm macro update_sctlr
+Message-ID: <20140129192718.GT26622@mudshark.cambridge.arm.com>
+References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
+ <1389445524-30623-3-git-send-email-leif.lindholm@linaro.org>
+ <20140122112055.GF1621@mudshark.cambridge.arm.com>
+ <20140129182805.GF11329@bivouac.eciton.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140129182805.GF11329@bivouac.eciton.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-27 at 16:04 -0500, Naoya Horiguchi wrote:
-> On Sun, Jan 26, 2014 at 07:52:24PM -0800, Davidlohr Bueso wrote:
-> > From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Hi Leif,
+
+On Wed, Jan 29, 2014 at 06:28:05PM +0000, Leif Lindholm wrote:
+> On Wed, Jan 22, 2014 at 11:20:55AM +0000, Will Deacon wrote:
+> > > +#ifdef CONFIG_CPU_CP15
+> > > +/* Macro for setting/clearing bits in sctlr */
+> > > +	.macro update_sctlr, set:req, clear:req, tmp:req, tmp2:req
+> > > +	mrc	p15, 0, \tmp, c1, c0, 0
+> > > +	ldr	\tmp2, =\set
+> > > +	orr	\tmp, \tmp, \tmp2
+> > > +	ldr	\tmp2, =\clear
+> > > +	mvn	\tmp2, \tmp2
+> > > +	and	\tmp, \tmp, \tmp2
+> > > +	mcr	p15, 0, \tmp, c1, c0, 0
 > > 
-> > vma_has_reserves() can be substituted by using return value of
-> > vma_needs_reservation(). If chg returned by vma_needs_reservation()
-> > is 0, it means that vma has reserves. Otherwise, it means that vma don't
-> > have reserves and need a hugepage outside of reserve pool. This definition
-> > is perfectly same as vma_has_reserves(), so remove vma_has_reserves().
+> > I think this would be cleaner if you force the caller to put set and clear
+> > into registers beforehand, rather than have to do the literal load every
+> > time. Also, I don't think set and clear should be required (and then you can
+> > lose tmp2 as well).
 > 
-> I'm concerned that this patch doesn't work when VM_NORESERVE is set.
-> vma_needs_reservation() doesn't check VM_NORESERVE and this patch changes
-> dequeue_huge_page_vma() not to check it. So no one seems to check it any more.
+> I can't figure out how to make register-parameters non-required
+> (i.e. conditionalise on whether an optional parameter was provided),
+> so my attempt of refactoring actually ends up using an additional
+> register:
+> 
+> #ifdef CONFIG_CPU_CP15
+> /* Macro for setting/clearing bits in sctlr */
+> 	.macro	update_sctlr, set:req, clear:req, tmp:req
+> 	mrc	p15, 0, \tmp, c1, c0, 0
+> 	orr	\tmp, \set
+> 	mvn	\clear, \clear
+> 	and	\tmp, \tmp, \clear
+> 	mcr	p15, 0, \tmp, c1, c0, 0
+> 	.endm
+> #endif
+> 
+> If you think that's an improvement I can do that, and I have (just)
+> enough registers to spare.
+> If I'm being daft with my macro issues, do point it out.
 
-Good catch. I agree, this is new behavior and quite frankly not worth
-changing just for a cleanup - the code is subtle enough as it is. I'm
-dropping this patch and #7 which depends on this one, if Joonsoo wants
-to later pursue this, he can.
+I was thinking along the lines of:
 
-Thanks,
-Davidlohr
+	.macro  update_sctlr, tmp:req, set=0, clear=0
+	.if	\set
+	orr ...
+	.endif
+	.if	\clear
+	bic ...
+	.endif
+	.endm
 
+however, that puts us back to the problem of having to pass immediates
+instead of registers. Gas *does* seem to accept the following:
+
+	.macro  update_sctlr, tmp:req, set=0, clear=0
+	.if	\set != 0
+	orr ...
+	.endif
+	.if	\clear != 0
+	bic ...
+	.endif
+	.endm
+
+which is filthy, so we'd need to see how beautiful the caller ends up being
+to justify that!
+
+Will
