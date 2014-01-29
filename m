@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaA2SAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:00:21 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60948 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaA2SAS (ORCPT
+	id S1752761AbaA2SBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:01:49 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:60188 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaA2SBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:00:18 -0500
-Date: Wed, 29 Jan 2014 18:00:09 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: devicetree@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Message-ID: <20140129180009.GF22609@sirena.org.uk>
-References: <1390900898-31579-1-git-send-email-geert@linux-m68k.org>
+	Wed, 29 Jan 2014 13:01:47 -0500
+Message-ID: <52E94204.1050207@gmail.com>
+Date: Wed, 29 Jan 2014 19:01:40 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6v9BRtpmy+umdQlo"
-Content-Disposition: inline
-In-Reply-To: <1390900898-31579-1-git-send-email-geert@linux-m68k.org>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5] spi: rspi: Add DT support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Rob Herring <robherring2@gmail.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mtd@lists.infradead.org, dev@linux-sunxi.org
+Subject: Re: [RFC PATCH v2 09/14] mtd: nand: add sunxi NFC dt bindings doc
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>	<1391006064-28890-10-git-send-email-b.brezillon.dev@gmail.com> <CAL_JsqLVr1gSLArqtfOiHce+u6ZK8FiKMX0o9bvMrMoGGhATvg@mail.gmail.com>
+In-Reply-To: <CAL_JsqLVr1gSLArqtfOiHce+u6ZK8FiKMX0o9bvMrMoGGhATvg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Rob,
 
---6v9BRtpmy+umdQlo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Le 29/01/2014 18:11, Rob Herring a écrit :
+> On Wed, Jan 29, 2014 at 8:34 AM, Boris BREZILLON
+> <b.brezillon.dev@gmail.com> wrote:
+>> Add the sunxi NAND Flash Controller dt bindings documentation.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+>> ---
+>>   .../devicetree/bindings/mtd/sunxi-nand.txt         |   46 ++++++++++++++++++++
+>>   1 file changed, 46 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/mtd/sunxi-nand.txt b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+>> new file mode 100644
+>> index 0000000..b0e55a3
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+>> @@ -0,0 +1,46 @@
+>> +Allwinner NAND Flash Controller (NFC)
+>> +
+>> +Required properties:
+>> +- compatible : "allwinner,sun4i-nand".
+>> +- reg : shall contain registers location and length for data and reg.
+>> +- interrupts : shall define the nand controller interrupt.
+>> +- #address-cells: shall be set to 1. Encode the nand CS.
+>> +- #size-cells : shall be set to 0.
+>> +- clocks : shall reference nand controller clocks.
+>> +- clock-names : nand controller internal clock names. Shall contain :
+>> +    * "ahb_clk" : AHB gating clock
+>> +    * "sclk" : nand controller clock
+>> +
+>> +Optional children nodes:
+>> +Children nodes represent the available nand chips.
+>> +
+>> +Optional properties:
+> For the controller or per nand chip?
+>
+>> +- onfi,nand-timing-mode : mandatory if the chip does not support the ONFI
+>> +  standard.
+> Add to generic nand binding.
+>
+>> +- allwinner,rb : shall contain the native Ready/Busy ids.
+>> + or
+>> +- rb-gpios : shall contain the gpios used as R/B pins.
+> Isn't allwinner,rb implied by a lack of rb-gpios property. Or no R/B
+> pin is an option?
+Both are optional. In case none of the properties are defined the dev_ready
+callback is set to NULL and the nand_base waiting loop is used.
 
-On Tue, Jan 28, 2014 at 10:21:38AM +0100, Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+> If so, don't you need some fixed time delay
+> properties like max erase time?
 
-Applied, thanks.  I was expecting your last patch to be resubmitted as
-well?
+This is handled in nand_base (using the chip_delay field), but I guess 
+we could
+use the information retrieved from nand timings and the operation in 
+progress...
 
---6v9BRtpmy+umdQlo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> rb-gpios could be added to the generic nand binding as well.
+Sure.
+>
+> Rob
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS6UGmAAoJELSic+t+oim9LGYP/3UG1DnGnKPwXHPFG0Nc3D6r
-FmAFb30VLFltAYY2Ua7qdjKJDbhwRw0qyyNeTuRzJ4H9oaqtJ/VlGi1uh35WBufg
-jl+JlWeurL/ghI/4v8WW/ynoMm0w9nGzzXKDcQA+tXTPX76GL3gaGLlObb6yy0ye
-ewC7Nj6i2RzZa0HPx1j12soB+C6/3QwUWbmjxUL1a3Snj3hbYbP4vGt6f+G3Jd4/
-BPZc7a8Z6/HlIJpHZK5grK1jobv1DCVY6bMZRrbaQ8njg5o3OUNj2T0sHWV80jHb
-38wFTJ2BY4c48LBWUnNg43c30SJu7gElgX/OhA0zy1Ei49oTsI8HYZL65jl66/ja
-a88Mxe9YMcrueS3iR7uX0bOWeCh0PS0NEtQcgdUIZh/5UiH8dFUeZEhLhix4MXTk
-+8y+U8waKE7kn64rCfMf6Fy227QyjFlTxY3lBdooWddQkRnY+aZEA/JQkonlzQex
-13pcVf9WdiemwXEI9YVnY43nXTpoDbfkTUaoTuuqxYwRF/mJxqPDDhKK3qTRXlfL
-//Ah3Po6flZ9kLB5wncnb9fGTVAkSZ1KE9ObBrH+LQTssciINaQAbPIvBM54KbE/
-8GFkM30TcI0XJxZPwNZmOVCCgOuO94ZgpQAuiW2ht0wfUba6N7hNTDxy0tu8WfWu
-nAZ/P/Nz4thA8xCu85Hp
-=u8DS
------END PGP SIGNATURE-----
-
---6v9BRtpmy+umdQlo--
