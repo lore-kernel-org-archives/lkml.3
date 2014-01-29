@@ -1,142 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaA2PMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 10:12:25 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:48733 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaA2PMY convert rfc822-to-8bit (ORCPT
+	id S1752278AbaA2PQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 10:16:30 -0500
+Received: from smtprelay0157.hostedemail.com ([216.40.44.157]:45506 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751138AbaA2PQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 10:12:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <52D3ABB6.9030204@overkiz.com>
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
- <52D1494E.9090303@overkiz.com> <1389449230.19197.2.camel@localhost>
- <52D1541F.4040400@overkiz.com> <1389456075.20989.11.camel@localhost>
- <1389474709.22660.4.camel@localhost> <52D3ABB6.9030204@overkiz.com>
-From: Michal Suchanek <hramrach@gmail.com>
-Date: Wed, 29 Jan 2014 16:11:41 +0100
-Message-ID: <CAOMqctSrXow1Wjppzp0Y4+p26KFFggtEphxX2xcs0ZoLvDUx1g@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [RFC PATCH 0/9] mtd: nand: add sunxi NAND Flash
- Controller support
-To: linux-sunxi <linux-sunxi@googlegroups.com>
-Cc: =?UTF-8?Q?Henrik_Nordstr=C3=B6m?= <henrik@henriknordstrom.net>,
-        dev@linux-sunxi.org, Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Jan 2014 10:16:29 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3870:3871:4321:5007:6120:7652:7901:7903:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13255:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: board58_55448523b2209
+X-Filterd-Recvd-Size: 1611
+Message-ID: <1391008584.11756.59.camel@joe-AO722>
+Subject: Re: [PATCH v5 17/23] drm/i2c: tda998x: set the PLL division factor
+ in range 0..3
+From: Joe Perches <joe@perches.com>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Date: Wed, 29 Jan 2014 07:16:24 -0800
+In-Reply-To: <d4ba259762605793aee726b5e33dcad6a8bd4777.1390986083.git.moinejf@free.fr>
+References: <cover.1390986082.git.moinejf@free.fr>
+	 <d4ba259762605793aee726b5e33dcad6a8bd4777.1390986083.git.moinejf@free.fr>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 January 2014 10:02, boris brezillon <b.brezillon@overkiz.com> wrote:
-> Hi Henrik,
->
->
-> On 11/01/2014 22:11, Henrik Nordström wrote:
->>
->> <bbrezillon> thanks for pointing out your documents
->> <bbrezillon> I'm trying to get the NAND driver with HW ECC (and HW RND)
->> without using DMA at all
->>
->> I tried many things but did not quite get the ECC reading command to
->> return meaningful resuts. But should work somehow.
->>
->> <bbrezillon> do you have any other information I could use to do this ?
->>
->> Not really. There is no known code to look at using the nand controller
->> without DMA. All allwinner code uses DMA even the boot ROM (BROM).
->>
->> <bbrezillon> For example, I wonder why there are 2 RAM sectors (the
->> driver I found only make use of RAM0)
->>
->> I think it's used during DMA to fetch next sector while the previous one
->> is transferred by DMA. But not sure.
->
->
-> Some feedback on my tests:
->
-> - I managed to get HW ECC working without any DMA transfer (using CMD = 01):
->   * I only tested the sequential ECC => ECC are stored between 2 data blocks
-> (1024 byte)
->   * Non sequential ECC should work if I store ECC bytes in the OOB area too
-> (I'll just have
->      to send RANDOM_OUT commands to move to the OOB area before sending the
-> ECC
->      cmd and another RANDOM_OUT to go back to the DATA area)
->
-> - The HW RND (randomizer) works too, I'll just have to figure out how this
-> could be
->   mainlined:
->    * using a simple dt property to tell the controller it should enable the
-> randomizer
->    * provide an interface (like the nand_ecc_ctrl struct ) for other to add
-> their own
->       randomizer implementation (this was requested:
-> https://lkml.org/lkml/2013/12/13/154)
->
->
-> The most complicated part is the boot0 partition.
->
-> Tell me if I'm wrong, but here's what I understood from your work (and yuq's
-> work too):
->
-> boot 0 part properties:
-> - uses sequential ECC
-> - uses 1024 bytes ECC blocks
-> - boot0 code is stored only on the first ECC block of each page (1024 bytes
-> + ecc bytes)
-> - boot0 code is stored on the first 64 pages of the first block
-> - boot0 uses HW randomizer with a specific rnd seed (0x4a80)
->
-> It's not that complicated to read/write from/to boot0, but it's a bit more
-> to mainline this
-> implementation:
->  - the nand chip must use the same ECC algorithm and ECC layout on the whole
-> flash
->    (no partition specific config available)
-> - you cannot mark some part of pages as unused => the nand driver will write
-> the
->   whole page, not just the first ECC block (1024 bytes)
->
-> I thought about manually creating an mtd device that fullfils these needs
-> (in case we
-> encounter the "allwinner,nandn-boot" property on a nand@X node), but I'm not
-> sure
-> this is the right approach.
->
-> Any ideas ?
+On Sat, 2014-01-25 at 18:14 +0100, Jean-Francois Moine wrote:
+> The predivider division factor of the register PLL_SERIAL_2 is in the
+> range 0..3, the value 0 being used for a division by 1.
 
-Maybe if varying parameters on one MTD device is not acceptable you
-could export parts of the flash as different MTD devices each with its
-own parameters. Since the boot0 part is fixed size this should not
-really be an issue. Existing MTD drivers that share hardware with
-other devices exist - eg. the MTD driver which exports part of RAM as
-MDT device.
+trivia:
 
-I wonder if it would be good idea to make it possible to use the NAND
-only for storage without a boot0 area. If this is selected by a DT
-parameter as suggested changing the parameter will probably make the
-NAND unreadable.
+> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+[]
+> @@ -886,6 +886,11 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+>  	}
+>  
+>  	div = 148500 / mode->clock;
+> +	if (div != 0) {
+> +		div--;
+> +		if (div > 3)
+> +			div = 3;
+> +	}
 
-Thanks
+perhaps
+	clamp(div, 1, 4)
+	div--;
 
-Michal
 
->
->
-> Best Regards,
->
-> Boris
->
->>
->> Regards
->> Henrik
->>
->
-> --
-> You received this message because you are subscribed to the Google Groups
-> "linux-sunxi" group.
-> To unsubscribe from this group and stop receiving emails from it, send an
-> email to linux-sunxi+unsubscribe@googlegroups.com.
-> For more options, visit https://groups.google.com/groups/opt_out.
