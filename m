@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaA2Qk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 11:40:57 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60930 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaA2Qkz (ORCPT
+	id S1752841AbaA2QoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 11:44:23 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:36412
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751973AbaA2QoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 11:40:55 -0500
-Date: Wed, 29 Jan 2014 16:40:35 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Message-ID: <20140129164035.GC22609@sirena.org.uk>
-References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
- <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
- <20140129122520.GY11841@sirena.org.uk>
- <20140129133227.GQ3867@lukather>
+	Wed, 29 Jan 2014 11:44:21 -0500
+X-Forefront-Antispam-Report: CIP:107.0.224.235;KIP:(null);UIP:(null);IPV:NLI;H:hq-edge-01.wardrobe.irobot.com;RD:107-0-224-235-ip-static.hfc.comcastbusiness.net;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VPS2(zzc85dhde40hzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchd2iz1de097hz2dh2a8h839hd25he5bhf0ah1288h12a5h12bdh137ah1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1b0ah1bceh2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1f5fh1fe8h1ff5h209eh20f0h22d0h2336h2438h2461h2487h24d7h2516h250di34h1155h)
+Message-ID: <52E93009.1090609@irobot.com>
+Date: Wed, 29 Jan 2014 08:44:57 -0800
+From: Adam Wozniak <awozniak@irobot.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
-Content-Disposition: inline
-In-Reply-To: <20140129133227.GQ3867@lukather>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI controller
- driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: <linux-kernel@vger.kernel.org>, <linux-arm@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, "Agius, Frank" <fagius@irobot.com>
+Subject: high cpu load on omap3 using musb
+Content-Type: multipart/mixed;
+	boundary="------------060906000108060200050904"
+X-OriginalArrivalTime: 29 Jan 2014 16:45:04.0659 (UTC) FILETIME=[75E47630:01CF1D11]
+X-OriginatorOrg: irobot.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--------------060906000108060200050904
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
---oJ71EGRlYNjSvfq7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+With a USB 2.0 webcam attached to the OTG port on an OMAP3 (applies to 
+overo gumstix, beagleboard, probably others) we see a high CPU load in a 
+kworker thread.
 
-On Wed, Jan 29, 2014 at 02:32:27PM +0100, Maxime Ripard wrote:
-> On Wed, Jan 29, 2014 at 12:25:20PM +0000, Mark Brown wrote:
+Between 2.6.33 and 2.6.34 musb_core.c changed.
 
-> > A select of PM_RUNTIME is both surprising and odd - why is that there?
-> > The usual idiom is that the device starts out powered up (flagged using
-> > pm_runtime_set_active()) and then runtime PM then suspends it when it's
-> > compiled in.  That way if for some reason people want to avoid runtime
-> > PM they can still use the device.
+IRQ handlers changed with the result that a worker in musb_core.c got 
+scheduled far more frequently than needed.
 
-> Since pm_runtime_set_active and all the pm_runtime* callbacks in
-> general are defined to pretty much empty functions, how the
-> suspend/resume callbacks are called then? Obviously, we need them to
-> be run, hence why I added the select here, but now I'm seeing a
-> construct like what's following acceptable then?
+I've included a patch below against 3.7, but i think it'll apply against 
+mainline.
+[I apologize for any whitespace mangling.  I've also attached the patch.]
 
-> pm_runtime_enable(&pdev->dev);
-> if (!pm_runtime_enabled(&pdev->dev))
->    sun6i_spi_runtime_resume(&pdev->dev);
+I'd like more eyeballs to tell me if this is right.  I'd also like to 
+know who I need to talk to to get this pushed into mainline.
 
-I think you're looking for pm_request_idle() - just leave the device
-started by default and kick the system to suspend it.
+--Adam
 
-> Actually the IP asserts the CS automatically, the only thing you need
-> to do is to set which CS to use for your next transfer in some
-> register (which is what I'm doing after the !enable), and the CS will
-> be managed directly by the controller. Hence, there's no way to say
-> wether you want to enable it or not.
+# The MUSB IRQ schedules work on every interrupt.
+# This is unnecessary, and causes excessive CPU load.
+#
+# Here we only schedule work if there is something for
+# the worker to do.
 
-> The controller allows to control the CS manually also, if that's the
-> preferred way of doing things.
+Index: git/drivers/usb/musb/musb_core.c
+===================================================================
+--- git.orig/drivers/usb/musb/musb_core.c
++++ git/drivers/usb/musb/musb_core.c
+@@ -925,7 +925,9 @@ b_host:
+         }
+  #endif
 
-Yes, that's required to provide set_cs() - it's there so that things
-like the cs_change option in transfers can be factored out into the
-core.  We may in future want to integrate the ability to switch between
-manual and automatic management but it's likely to be more trouble than
-it's worth.
+-       schedule_work(&musb->irq_work);
++       if (musb->xceiv->state != musb->xceiv_old_state) {
++               schedule_work(&musb->irq_work);
++       }
 
-> > This means we can only transfer a single FIFO of data?  I didn't see a
-> > check on the transfer length.
+         return handled;
+  }
 
-> At the moment, indeed. And that's the first thing I check in the
-> transfer_one function.
 
-Oh, so it is - sorry.
+--------------060906000108060200050904
+Content-Type: text/x-patch; name="musb_smartwork.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="musb_smartwork.patch"
+Content-Description: musb_smartwork.patch
 
---oJ71EGRlYNjSvfq7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+# The MUSB IRQ schedules work on every interrupt.
+# This is unnecessary, and causes excessive CPU load.
+#
+# Here we only schedule work if there is something for
+# the worker to do.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Index: git/drivers/usb/musb/musb_core.c
+===================================================================
+--- git.orig/drivers/usb/musb/musb_core.c
++++ git/drivers/usb/musb/musb_core.c
+@@ -925,7 +925,9 @@ b_host:
+ 	}
+ #endif
+ 
+-	schedule_work(&musb->irq_work);
++	if (musb->xceiv->state != musb->xceiv_old_state) {
++		schedule_work(&musb->irq_work);
++	}
+ 
+ 	return handled;
+ }
 
-iQIcBAEBAgAGBQJS6S7/AAoJELSic+t+oim9g8IQAIGYMI0tc30LgFaisLrM3mPC
-7FHp1g9iHlyz6rMgp1DAm3S3+toded9Ood9KM3S6U+pgYzlOjeagQYRG0a8H4wto
-BO7Desp3jDQnlF3srvzDfM5MTTthAu76sjCKYvQ/3PZsMTLn07sYA/JjHKHk0NxM
-rLBF1F6GkOrxatLRpers5jfYAz3EWv7VJaq1xKqwLx0/CPosPybC1QDUAazmkTnJ
-YwyfnUmxEmA4thkxTapM8fn2oClZW4iuOKcFDK1BowPaeZKwsneDq6DV4a8MGsbP
-JtB0qyS1Mfpt5QkSLLSHZFuxksQeRfrhesZY6PPb4eocMRmBMR/4OGEl6kxsBupN
-r70IVKh0u+p0MOyoi3aaYUiphTvaPkqSUaL6SmNFaQyLxt6GezwQz0Y7LU7KmjMV
-NTmnfvqdpVbWhGq2DqgADjEhAmJW/qUNSfkfZfMXL1S9l/JaNnq6hyugCQFIo2vf
-u6CNI90M6BRvwHFTAfujNE8A6Z++o3a8nHdkedOyZBh5tsvCs1SpX3MzSjIbKBD1
-iKH44WUxpms7Q3uxA8V8Doqt2LT02sbAimr2tN4ca/lpC5vkubzd13m7V/b1Ku4G
-FWyyA2Udd0acguYJOPOHux1Ws18uk1e4cVPKhjuWkSpcr9nRmI49dA85ExhLzssv
-gB7RUq0RdKBKyMx8XHHW
-=r2F4
------END PGP SIGNATURE-----
-
---oJ71EGRlYNjSvfq7--
+--------------060906000108060200050904--
