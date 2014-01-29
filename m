@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaA2PFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 10:05:47 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:43742 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806AbaA2PFq (ORCPT
+	id S1752654AbaA2PF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 10:05:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:62893 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaA2PFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 10:05:46 -0500
-Message-ID: <52E918C9.7030408@linux.vnet.ibm.com>
-Date: Wed, 29 Jan 2014 16:05:45 +0100
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+	Wed, 29 Jan 2014 10:05:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Gross <agross@codeaurora.org>,
+        dmaengine@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Patch v3 2/2] dmaengine: qcom_bam_dma: Add device tree binding
+Date: Wed, 29 Jan 2014 16:05:22 +0100
+Message-ID: <21038487.ygragjUUsd@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20140128121656.GH15937@n2100.arm.linux.org.uk>
+References: <1390890471-14882-1-git-send-email-agross@codeaurora.org> <9156959.vu4XdoKglI@wuerfel> <20140128121656.GH15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Meelis Roos <mroos@linux.ee>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: 3.13: BUG: unable to handle kernel paging request at 00000000b4343e88
-References: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee> <20140121141037.f76dba61212c5597ff733207@linux-foundation.org> <alpine.SOC.1.00.1401221731150.3033@math.ut.ee> <52E26EF3.1090901@linux.vnet.ibm.com> <alpine.SOC.1.00.1401242249540.16252@math.ut.ee> <52E68111.6010005@linux.vnet.ibm.com> <alpine.SOC.1.00.1401280832500.5459@math.ut.ee>
-In-Reply-To: <alpine.SOC.1.00.1401280832500.5459@math.ut.ee>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012915-8372-0000-0000-000008786867
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ZgA9Ab5RVHj+V/VGScmaTbW1Mc5P7RsBNPGILg1vvHD
+ 45geW+94fEjDS4zGg7YEZ7GI3+EbGAw3GBfEdfi5i8JKlAYGwU
+ bCdEhYr/ZtlsZyRm8Iyo1+Zcu1QBDQq5rVLXa1EmJixdGbFmrP
+ DkJeBW8CBQbcXakjVHbtjWmzBgqNr5mlSYiA58d5RaGclGjuFD
+ b8TAlGLzlAXK9K82BNRVtRl8jboWk6xtfBz2K+6O0hlMctkLA2
+ 83abeL3Mzy6kdowvaSIKsVInFo9anDtHh3o+8yNnkCcbVHaIzl
+ G6//Hx/zxLI2lJQ+ky4pOMAUAl2PTeEOrk0Bcf3+WALY/7ouOJ
+ Nsd8Kpw+3hZA25gVvmMI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.01.2014 07:33, Meelis Roos wrote:
->>>>>> It looks like gcov exploded when running a module's constructors or
->>>>>> init function, but I'm unable to work out which module it was :(
->>>>> [...]
->>>>>
->>>>>> Maybe it's tg3.
->>>>>>
->>>>>> Could you add `ignore_loglevel' to the kernel boot parameters?  That
->>>>>> should make all pr_debug()s come out and they include the module's
->>>>>> name.
->>>>
->>>> I'm not sure if this related, but all 3 kernel logs consistently contain
->>>> this error message:
->>>>
->>>>> [    0.617401] gcov: could not create file
->>>>
->>>> which should only be shown in case of severe out-of-memory situations or
->>>> duplicate object file names.
->>>>
->>>> Could you retry with the following patch applied (2 times if possible)
->>>> and send dmesg output?
->>>
->>> This seems to be relevant - now there is a reproducible crash during the 
->>> printk. Captured end of the backtrace from HP ILO as image, attached. 
->>> This is reproducible.
->>
->> Ok, that's a lead. It appears that gcov-kernel receives gcov_info
->> structures in an unexpected format. Based on your previous dmesg output,
->> your kernel was compiled using gcc 4.7.2 which gcov-kernel should be able
->> to handle just fine. Could you please try out this debugging patch
->> (replacing the previous one)? Output will likely be quite verbose, so you
->> might consider using log_buf_len=1M or similar as kernel parameter.
+On Tuesday 28 January 2014 12:16:56 Russell King - ARM Linux wrote:
+> On Tue, Jan 28, 2014 at 01:08:47PM +0100, Arnd Bergmann wrote:
 > 
-> I do not get very far - it still crashes on startuo. PNG attached.
+> On balance, I think the virtual channel approach makes client drivers
+> more elegant and simpler, and makes the DMA engine API easier to use,
+> and gives greater flexibility for future improvements.  So, I wouldn't
+> miss the slave_id being removed.
 
-I tried to reproduce this behavior a couple of times with no success.
-Could you post your kernel configuration? I've also modified the
-debugging patch to ensure that the gcov_info structure passed to
-gcov_init() is no longer accessed beyond displaying the first 64
-bytes. If you could apply this and send dmesg output, this might
-hopefully provide a clue as to why the kernel cannot handle these
-data structures correctly.
+Ok, good. There are some dmaengine drivers that actually behave
+in hardware like the virtual-channel extension, i.e. they have
+one physical channel per request line (qcom_bam_dma seems to be
+one of them in fact), so they don't really have a choice.
 
-diff -Naurp a/kernel/gcov/base.c b/kernel/gcov/base.c
---- a/kernel/gcov/base.c
-+++ b/kernel/gcov/base.c
-@@ -18,6 +18,7 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/printk.h>
- #include "gcov.h"
+The way that both the DT and ACPI bindings are structured,
+the request ID is always known by the time the channel is
+allocated to allow this model, and that means supporting both
+approaches in the same master or slave driver is a mess.
 
- static int gcov_events_enabled;
-@@ -31,6 +32,10 @@ void __gcov_init(struct gcov_info *info)
- {
- 	static unsigned int gcov_version;
-
-+	pr_warn("__gcov_init(%p): enter\n", info);
-+	print_hex_dump(KERN_WARNING, "", DUMP_PREFIX_ADDRESS, 16, 4, info,
-+		       64, true);
-+	return;
- 	mutex_lock(&gcov_lock);
- 	if (gcov_version == 0) {
- 		gcov_version = gcov_info_version(info);
-diff -Naurp a/kernel/module.c b/kernel/module.c
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3003,8 +3003,11 @@ static void do_mod_ctors(struct module *
- #ifdef CONFIG_CONSTRUCTORS
- 	unsigned long i;
-
--	for (i = 0; i < mod->num_ctors; i++)
-+	for (i = 0; i < mod->num_ctors; i++) {
-+		pr_warn("Calling mod(%s)->ctors[%ld]=%p\n", mod->name, i,
-+			mod->ctors[i]);
- 		mod->ctors[i]();
-+	}
- #endif
- }
-
+	Arnd
