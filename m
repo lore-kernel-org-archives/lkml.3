@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbaA2C07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 21:26:59 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:17732 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaA2C05 (ORCPT
+	id S1755976AbaA2C20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 21:28:26 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20382 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaA2C2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 21:26:57 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 28 Jan 2014 18:25:37 -0800
-Subject: Re: [PATCH v3 3/6] misc: fuse: Add efuse driver for Tegra
-From: Jim Lin <jilin@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Danny Huang <dahuang@nvidia.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-In-Reply-To: <1390952176-30402-4-git-send-email-pdeschrijver@nvidia.com>
-References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com>
-	 <1390952176-30402-4-git-send-email-pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jan 2014 10:26:18 +0800
-Message-ID: <1390962378.2398.11.camel@jilin-desktop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 28 Jan 2014 21:28:24 -0500
+Date: Tue, 28 Jan 2014 18:28:16 -0800
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V0 PATCH] pvh: Disable PSE feature for now
+Message-ID: <20140128182816.3ef321d1@mantra.us.oracle.com>
+In-Reply-To: <20140128034634.GC20680@pegasus.dumpdata.com>
+References: <1390875519-8667-1-git-send-email-mukesh.rathor@oracle.com>
+	<1390875519-8667-2-git-send-email-mukesh.rathor@oracle.com>
+	<20140128034634.GC20680@pegasus.dumpdata.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-29 at 07:36 +0800, Peter De Schrijver wrote:
-> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
+On Mon, 27 Jan 2014 22:46:34 -0500
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+
+> On Mon, Jan 27, 2014 at 06:18:39PM -0800, Mukesh Rathor wrote:
+> > Until now, xen did not expose PSE to pvh guest, but a patch was
+> > submitted to xen list to enable bunch of features for a pvh guest.
+> > PSE has not been
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  Documentation/ABI/testing/sysfs-driver-tegra-fuse |    8 +
->  drivers/misc/fuse/Makefile                        |    1 +
->  drivers/misc/fuse/tegra/Makefile                  |    7 +
->  drivers/misc/fuse/tegra/fuse-tegra.c              |  228 ++++++++++++++++
->  drivers/misc/fuse/tegra/fuse-tegra20.c            |  136 ++++++++++
->  drivers/misc/fuse/tegra/fuse-tegra30.c            |  178 +++++++++++++
->  drivers/misc/fuse/tegra/fuse.h                    |   82 ++++++
-Could we move this fuse.h to other folder under /include/linux
-(like /include/linux/platform_data)
-for other driver to include?
-So other driver can invoke function to read fuse data if needed.
+> Which 'patch'?
+> 
+> > looked into for PVH, so until we can do that and test it to make
+> > sure it works, disable the feature to avoid flood of bugs.
+> 
+> I think we want a flood of bugs, no?
 
---nvpublic
+Ok, but lets document (via this email :)), that they are not tested.
 
+thanks
+Mukesh
