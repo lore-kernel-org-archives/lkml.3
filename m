@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaA2Oee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:34:34 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:52520 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaA2Oeb (ORCPT
+	id S1752669AbaA2Oej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:34:39 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:33311 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575AbaA2Oef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:34:31 -0500
+	Wed, 29 Jan 2014 09:34:35 -0500
 From: Boris BREZILLON <b.brezillon.dev@gmail.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
@@ -19,75 +19,86 @@ Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
         dev@linux-sunxi.org
-Subject: [RFC PATCH v2 00/14] mtd: nand: add sunxi NAND Flash Controller support
-Date: Wed, 29 Jan 2014 15:34:10 +0100
-Message-Id: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+Subject: [RFC PATCH v2 02/14] of: mtd: add NAND ECC level requirements retrieval
+Date: Wed, 29 Jan 2014 15:34:12 +0100
+Message-Id: <1391006064-28890-3-git-send-email-b.brezillon.dev@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Some chip do not support automatic retrieval of ECC level requirements.
+Provide an helper function to retrieve these requirements from DT.
 
-This series adds support for the sunxi NAND Flash Controller (NFC).
-This controller supports up to 8 NAND chip connected.
+Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+---
+ drivers/of/of_mtd.c    |   25 +++++++++++++++++++++++++
+ include/linux/of_mtd.h |    7 +++++++
+ 2 files changed, 32 insertions(+)
 
-I'm still in the early stages drivers development and some key features are
-missing, but it's usable (I tested it on the cubietruck board).
-
-Here's what's missing:
- - DMA support
- - HW randomization support
- - other improvements ?
-
-This series depends on Emilio's patch series implementing mod0 clks
-(http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/185478.html)
-+ an other patch not yet posted
-(http://git.elopez.com.ar/linux/commits/5b4eb3ac406b9c98965714d40e8dd6da943d1ab0)
-
-
-Best Regards,
-
-Boris
-
-Changes since v1:
- - add HW ECC support
- - rework NAND timings retrieval (use ONFI timing mode instead of raw timings)
- - add nand-ecc-level property to specify NAND ECC requirements from DT
-
-Boris BREZILLON (14):
-  mtd: nand: retrieve ECC requirements from Hynix READ ID byte 4
-  of: mtd: add NAND ECC level requirements retrieval
-  of: mtd: add documentation for nand-ecc-level property
-  mtd: nand: define struct nand_timings
-  mtd: nand: add ONFI timing mode to nand_timings converter
-  of: mtd: add NAND timing mode retrieval support
-  of: mtd: add documentation for the ONFI NAND timing mode property
-  mtd: nand: add sunxi NAND flash controller support
-  mtd: nand: add sunxi NFC dt bindings doc
-  ARM: dt/sunxi: add NFC node to Allwinner A20 SoC
-  ARM: dt/sunxi: add NFC pinctrl pin definitions
-  ARM: sunxi/dt: enable NAND on cubietruck board
-  mtd: nand: add sunxi HW ECC support
-  ARM: sunxi/dt: enable HW ECC on cubietruck board
-
- Documentation/devicetree/bindings/mtd/nand.txt     |    8 +
- .../devicetree/bindings/mtd/sunxi-nand.txt         |   46 +
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   31 +
- arch/arm/boot/dts/sun7i-a20.dtsi                   |   35 +
- drivers/mtd/nand/Kconfig                           |    6 +
- drivers/mtd/nand/Makefile                          |    3 +-
- drivers/mtd/nand/nand_base.c                       |   37 +
- drivers/mtd/nand/nand_timings.c                    |  248 +++++
- drivers/mtd/nand/sunxi_nand.c                      |  997 ++++++++++++++++++++
- drivers/of/of_mtd.c                                |   44 +
- include/linux/mtd/nand.h                           |   53 ++
- include/linux/of_mtd.h                             |   15 +
- 12 files changed, 1522 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
- create mode 100644 drivers/mtd/nand/nand_timings.c
- create mode 100644 drivers/mtd/nand/sunxi_nand.c
-
+diff --git a/drivers/of/of_mtd.c b/drivers/of/of_mtd.c
+index a27ec94..e8ced61 100644
+--- a/drivers/of/of_mtd.c
++++ b/drivers/of/of_mtd.c
+@@ -50,6 +50,31 @@ int of_get_nand_ecc_mode(struct device_node *np)
+ EXPORT_SYMBOL_GPL(of_get_nand_ecc_mode);
+ 
+ /**
++ * of_get_nand_ecc_level - Get nand ecc level for the given device_node
++ * @np:	Pointer to the given device_node
++ * @strengh: ECC strength
++ * @blk_size: ECC block size
++ *
++ * The function gets ecc level requirements from property 'nand-ecc-level'.
++ * Return 0 on success, -errno otherwise.
++ */
++int of_get_nand_ecc_level(struct device_node *np, u32 *strengh, u32 *blk_size)
++{
++	int err;
++
++	err = of_property_read_u32_index(np, "nand-ecc-level", 0, strengh);
++	if (err < 0)
++		return err;
++
++	err = of_property_read_u32_index(np, "nand-ecc-level", 1, blk_size);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(of_get_nand_ecc_level);
++
++/**
+  * of_get_nand_bus_width - Get nand bus witdh for given device_node
+  * @np:	Pointer to the given device_node
+  *
+diff --git a/include/linux/of_mtd.h b/include/linux/of_mtd.h
+index 6f10e93..3bd8c3b 100644
+--- a/include/linux/of_mtd.h
++++ b/include/linux/of_mtd.h
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/of.h>
+ int of_get_nand_ecc_mode(struct device_node *np);
++int of_get_nand_ecc_level(struct device_node *np, u32 *strengh, u32 *blk_size);
+ int of_get_nand_bus_width(struct device_node *np);
+ bool of_get_nand_on_flash_bbt(struct device_node *np);
+ 
+@@ -23,6 +24,12 @@ static inline int of_get_nand_ecc_mode(struct device_node *np)
+ 	return -ENOSYS;
+ }
+ 
++static inline int of_get_nand_ecc_level(struct device_node *np, u32 *strengh,
++					u32 *blk_size)
++{
++	return -ENOSYS;
++}
++
+ static inline int of_get_nand_bus_width(struct device_node *np)
+ {
+ 	return -ENOSYS;
 -- 
 1.7.9.5
 
