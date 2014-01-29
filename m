@@ -1,1639 +1,544 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbaA2AqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 19:46:21 -0500
-Received: from [207.46.163.25] ([207.46.163.25]:8188 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754026AbaA2AqS (ORCPT
+	id S1755501AbaA2Aqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 19:46:44 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:65232 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350AbaA2Aql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 19:46:18 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(z579ehzc89bhe0eahc857h4015I14ffIde40hzz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hz70kz1de098h8275bh8275dh1de097h186068hz2fh95h839hd24hf0ah119dh1288h12a5h12bdh137ah1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1bceh224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh20f0h2216h2336h2438h2461h2487h24d7h906i34h1155h)
-Date: Tue, 28 Jan 2014 16:44:35 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>, Yinghai Lu <yinghai@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [REGRESSION] Biscted to 'memblock, nobootmem: add
- memblock_virt_alloc_low()'
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="kXdP64Ggrk/fb43R"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <35c4753f-bcb5-46df-b273-e5b39db163f0@CO9EHSMHS018.ehs.local>
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Tue, 28 Jan 2014 19:46:41 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7f266d00000287c-f1-52e84f6e21fb
+Content-transfer-encoding: 8BIT
+Message-id: <1390956313.25542.64.camel@kjgkr>
+Subject: Re: [GIT PULL] Core block IO changes for 3.14
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Date: Wed, 29 Jan 2014 09:45:13 +0900
+In-reply-to: <20140129110536.00ce3c9e580f747fd0f1d0e6@canb.auug.org.au>
+References: <20140128224336.GF25989@kernel.dk>
+ <20140128225229.GH25989@kernel.dk>
+ <20140129110536.00ce3c9e580f747fd0f1d0e6@canb.auug.org.au>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ908/xdBBtsOcFusvtvPZnF51xw2
+	i617r7JbPOp7y+7A4tF44wabx+WzpR4nZvxm8fi8SS6AJYrLJiU1J7MstUjfLoErY87yBvaC
+	U+UVC878Z25gvBzTxcjJISFgItF7cDoLhC0mceHeerYuRi4OIYFljBKHXj9ghCna0LOEESIx
+	nVFizaNnYAleAUGJH5PvAXVzcDALyEscuZQNEmYWUJeYNG8RM4gtJPCSUeLPaQeIcl2Jme1d
+	YHFhATOJl5cvsYK0sgloS2zebwBRrijxdv9dsLAIUPjAbwGIiQUSX74cA+tkEVCVuPTpCtjJ
+	nALuElP3b2eCuGwCo8Sxp71gRfwCohKHF25nhjhfSWJ3eyc7SJGEwCl2iSV/vjFBTBKQ+Db5
+	ENj5EgKyEpsOQNVLShxccYMFaNwsJE/OQnhyFpInFzAyr2IUTS1ILihOSi8y0StOzC0uzUvX
+	S87P3cQIibsJOxjvHbA+xJgMtHEis5Rocj4wbvNK4g2NzYwsTE1MjY3MLc1IE1YS51V7lBQk
+	JJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXF1+gc/NiW2xkv9B2/flVxUM/VKaPLKuzveiQTq
+	tuuctp/ixheQ+Sk879VvY8WMxWLpogJdT0+k75E/mSNszuWr9uPGO42y1MjlVqcWX/m1aLno
+	5dZ9b1gmqk42iP/4ef2ny3feLtp3deu0KcuTq55VHRTh8TJwcPQ6/TruvGnabsnbeXOqrh9U
+	YinOSDTUYi4qTgQARbHgD9ECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd08/xdBBls/sVqsvtvPZnF51xw2
+	i617r7JbPOp7y+7A4tF44wabx+WzpR4nZvxm8fi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCOMWPO8gb2glPlFQvO/GduYLwc08XIySEhYCKxoWcJI4QtJnHh3nq2
+	LkYuDiGB6YwSax49A0vwCghK/Jh8j6WLkYODWUBe4silbJAws4C6xKR5i5hBbCGBl4wSf047
+	QJTrSsxs7wKLCwuYSby8fIkVpJVNQFti834DiHJFibf774KFRYDCB34LQEwskPjy5RhYJ4uA
+	qsSlT1dYQGxOAXeJqfu3M0FcNoFR4tjTXrAifgFRicMLtzNDnK8ksbu9k30Co9AsJEfPQjh6
+	FpKjFzAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjupnUjsYVzZYHGIU4GBU4uFdcfF5
+	kBBrYllxZe4hRgkOZiUR3umSL4KEeFMSK6tSi/Lji0pzUosPMSYDXT6RWUo0OR+YcPJK4g2N
+	TcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgVFU7rDufKHXSrskCtKq
+	PL89P2qnvzvzbeD+TGu2BQ/zog2frbrsURde8G6Zzbei2NP9H3Yulwg70VdWo/x2+a+1m9yb
+	xFvPxMwyzixcdN9zw4t3S7k/Pd/QdVvSpVk5dYI+62GeCVP+qToebFhfPGe1CaPmzNeikcu8
+	V6xhSjdfpKYR7ccTVarEUpyRaKjFXFScCAAx8EB7LgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---kXdP64Ggrk/fb43R
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Jens and Stephen,
+
+In the case of f2fs, could you please check the following code changes?
+It is based on the following commit from Linus tree.
+
+commit d891ea23d5203e5c47439b2a174f86a00b356a6c
+Merge: 08d21b5 125d725
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue Jan 28 11:02:23 2014 -0800
+
+    Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client
+
+---
+ fs/f2fs/data.c              | 31 ++++++++++++++-----------------
+ include/trace/events/f2fs.h |  4 ++--
+ 2 files changed, 16 insertions(+), 19 deletions(-)
+
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 0ae5587..55ae30a 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -26,40 +26,37 @@
+ 
+ static void f2fs_read_end_io(struct bio *bio, int err)
+ {
+-	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+-	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
++	struct bio_vec *bvec;
++	int i;
+ 
+-	do {
++	bio_for_each_segment_all(bvec, bio, i) {
+ 		struct page *page = bvec->bv_page;
+ 
+-		if (--bvec >= bio->bi_io_vec)
+-			prefetchw(&bvec->bv_page->flags);
+-
+-		if (unlikely(!uptodate)) {
++		if (unlikely(err)) {
+ 			ClearPageUptodate(page);
+ 			SetPageError(page);
+ 		} else {
+ 			SetPageUptodate(page);
+ 		}
+ 		unlock_page(page);
+-	} while (bvec >= bio->bi_io_vec);
++	}
+ 
+ 	bio_put(bio);
+ }
+ 
+ static void f2fs_write_end_io(struct bio *bio, int err)
+ {
+-	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+-	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+-	struct f2fs_sb_info *sbi =
+F2FS_SB(bvec->bv_page->mapping->host->i_sb);
++	struct f2fs_sb_info *sbi = NULL;
++	struct bio_vec *bvec;
++	int i;
+ 
+-	do {
++	bio_for_each_segment_all(bvec, bio, i) {
+ 		struct page *page = bvec->bv_page;
+ 
+-		if (--bvec >= bio->bi_io_vec)
+-			prefetchw(&bvec->bv_page->flags);
++		if (!sbi)
++			sbi = F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+ 
+-		if (unlikely(!uptodate)) {
++		if (unlikely(err)) {
+ 			SetPageError(page);
+ 			set_bit(AS_EIO, &page->mapping->flags);
+ 			set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
+@@ -67,7 +64,7 @@ static void f2fs_write_end_io(struct bio *bio, int
+err)
+ 		}
+ 		end_page_writeback(page);
+ 		dec_page_count(sbi, F2FS_WRITEBACK);
+-	} while (bvec >= bio->bi_io_vec);
++	}
+ 
+ 	if (bio->bi_private)
+ 		complete(bio->bi_private);
+@@ -91,7 +88,7 @@ static struct bio *__bio_alloc(struct f2fs_sb_info
+*sbi, block_t blk_addr,
+ 	bio = bio_alloc(GFP_NOIO, npages);
+ 
+ 	bio->bi_bdev = sbi->sb->s_bdev;
+-	bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
++	bio->bi_iter.bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+ 	bio->bi_end_io = is_read ? f2fs_read_end_io : f2fs_write_end_io;
+ 
+ 	return bio;
+diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+index 3b9f28d..67f38fa 100644
+--- a/include/trace/events/f2fs.h
++++ b/include/trace/events/f2fs.h
+@@ -629,8 +629,8 @@ DECLARE_EVENT_CLASS(f2fs__submit_bio,
+ 		__entry->dev		= sb->s_dev;
+ 		__entry->rw		= rw;
+ 		__entry->type		= type;
+-		__entry->sector		= bio->bi_sector;
+-		__entry->size		= bio->bi_size;
++		__entry->sector		= bio->bi_iter.bi_sector;
++		__entry->size		= bio->bi_iter.bi_size;
+ 	),
+ 
+ 	TP_printk("dev = (%d,%d), %s%s, %s, sector = %lld, size = %u",
+-- 
+1.8.4.474.g128a96c
+
+Thanks,
+
+2014-01-29 (수), 11:05 +1100, Stephen Rothwell:
+> Hi all,
+> 
+> On Tue, 28 Jan 2014 15:52:29 -0700 Jens Axboe <axboe@kernel.dk> wrote:
+> >
+> > On Tue, Jan 28 2014, Jens Axboe wrote:
+> > > 
+> > > This is the pull request for the core block IO changes for 3.14. The
+> > > major piece in here is the immutable bio_ve series from Kent, the rest
+> > > is fairly minor. It was supposed to go in last round, but various issues
+> > > pushed it to this release instead. The pull request contains:
+> > > 
+> > > 
+> > > - Various smaller blk-mq fixes from different folks. Nothing major here,
+> > >   just minor fixes and cleanups.
+> > > 
+> > > - Fix for a memory leak in the error path in the block ioctl code from
+> > >   Christian Engelmayer.
+> > > 
+> > > - Header export fix from CaiZhiyong.
+> > > 
+> > > - Finally the immutable biovec changes from Kent Overstreet. This
+> > >   enables some nice future work on making arbitrarily sized bios
+> > >   possible, and splitting more efficient. Related fixes to immutable
+> > >   bio_vecs:
+> > > 
+> > >         - dm-cache immutable fixup from Mike Snitzer.
+> > >         - btrfs immutable fixup from Muthu Kumar.
+> > > 
+> > > - bio-integrity fix from Nic Bellinger, which is also going to stable.
+> > > 
+> > > 
+> > > Please pull! There will be a bit of merge work for you, but it should be
+> > > fairly straight forward. It's mostly related to changin:
+> > > 
+> > > bio->bi_sector  -> bio->bi_iter.bi_sector
+> > > bio->bi_size    -> bio->bi_iter.bi_size
+> > > 
+> > > 
+> > > git://git.kernel.dk/linux-block.git for-3.14/core
+> > 
+> > BTW, let me know if you want me to merge this. The above has been in
+> > for-next since forever, and Stephen has carried a fix or two for new
+> > merges.
+> 
+> The worst bit is the conflicts with the f2fs changes that have already
+> been merged.  My current merge commit looks like this (though I don't
+> remember getting any comments on my fixes):
+> 
+> da3f6c793c656a022453df8bf458d13e5a353beb
+> diff --cc drivers/md/dm-thin.c
+> index 726228b33a01,357eb272dbd9..faaf944597ab
+> --- a/drivers/md/dm-thin.c
+> +++ b/drivers/md/dm-thin.c
+> @@@ -1258,8 -1262,8 +1264,8 @@@ static void process_bio_read_only(struc
+>   	r = dm_thin_find_block(tc->td, block, 1, &lookup_result);
+>   	switch (r) {
+>   	case 0:
+> - 		if (lookup_result.shared && (rw == WRITE) && bio->bi_size)
+> + 		if (lookup_result.shared && (rw == WRITE) && bio->bi_iter.bi_size)
+>  -			bio_io_error(bio);
+>  +			handle_unserviceable_bio(tc->pool, bio);
+>   		else {
+>   			inc_all_io_entry(tc->pool, bio);
+>   			remap_and_issue(tc, bio, lookup_result.block);
+> diff --cc drivers/md/raid10.c
+> index 8d39d63281b9,6d43d88657aa..33fc408e5eac
+> --- a/drivers/md/raid10.c
+> +++ b/drivers/md/raid10.c
+> @@@ -1319,8 -1256,8 +1256,8 @@@ read_again
+>   			/* Could not read all from this device, so we will
+>   			 * need another r10_bio.
+>   			 */
+>  -			sectors_handled = (r10_bio->sectors + max_sectors
+>  +			sectors_handled = (r10_bio->sector + max_sectors
+> - 					   - bio->bi_sector);
+> + 					   - bio->bi_iter.bi_sector);
+>   			r10_bio->sectors = max_sectors;
+>   			spin_lock_irq(&conf->device_lock);
+>   			if (bio->bi_phys_segments == 0)
+> diff --cc fs/btrfs/extent_io.c
+> index fbe501d3bd01,bcb6f1b780d6..85bbd01f1271
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@@ -2375,12 -2332,15 +2375,13 @@@ int end_extent_writepage(struct page *p
+>    */
+>   static void end_bio_extent_writepage(struct bio *bio, int err)
+>   {
+> - 	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> + 	struct bio_vec *bvec;
+>  -	struct extent_io_tree *tree;
+>   	u64 start;
+>   	u64 end;
+> + 	int i;
+>   
+> - 	do {
+> + 	bio_for_each_segment_all(bvec, bio, i) {
+>   		struct page *page = bvec->bv_page;
+>  -		tree = &BTRFS_I(page->mapping->host)->io_tree;
+>   
+>   		/* We always issue full-page reads, but if some block
+>   		 * in a page fails to read, blk_update_request() will
+> diff --cc fs/btrfs/inode.c
+> index 1ef056837755,7ab0e94ad492..f0422a5efa78
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@@ -7016,10 -6891,11 +7013,11 @@@ static void btrfs_end_dio_bio(struct bi
+>   	struct btrfs_dio_private *dip = bio->bi_private;
+>   
+>   	if (err) {
+>  -		printk(KERN_ERR "btrfs direct IO failed ino %llu rw %lu "
+>  -		      "sector %#Lx len %u err no %d\n",
+>  +		btrfs_err(BTRFS_I(dip->inode)->root->fs_info,
+>  +			  "direct IO failed ino %llu rw %lu sector %#Lx len %u err no %d",
+>   		      btrfs_ino(dip->inode), bio->bi_rw,
+> - 		      (unsigned long long)bio->bi_sector, bio->bi_size, err);
+> + 		      (unsigned long long)bio->bi_iter.bi_sector,
+> + 		      bio->bi_iter.bi_size, err);
+>   		dip->errors = 1;
+>   
+>   		/*
+> diff --cc fs/f2fs/data.c
+> index 0ae558723506,a2c8de8ba6ce..25d675e6a138
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@@ -24,195 -24,6 +24,192 @@@
+>   #include "segment.h"
+>   #include <trace/events/f2fs.h>
+>   
+>  +static void f2fs_read_end_io(struct bio *bio, int err)
+>  +{
+> - 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> - 	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> ++	struct bio_vec *bvec;
+> ++	int i;
+>  +
+> - 	do {
+> ++	bio_for_each_segment_all(bvec, bio, i) {
+>  +		struct page *page = bvec->bv_page;
+>  +
+> - 		if (--bvec >= bio->bi_io_vec)
+> - 			prefetchw(&bvec->bv_page->flags);
+> - 
+> - 		if (unlikely(!uptodate)) {
+> ++		if (unlikely(err)) {
+>  +			ClearPageUptodate(page);
+>  +			SetPageError(page);
+>  +		} else {
+>  +			SetPageUptodate(page);
+>  +		}
+>  +		unlock_page(page);
+> - 	} while (bvec >= bio->bi_io_vec);
+> ++	}
+>  +
+>  +	bio_put(bio);
+>  +}
+>  +
+>  +static void f2fs_write_end_io(struct bio *bio, int err)
+>  +{
+> - 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+> - 	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+> - 	struct f2fs_sb_info *sbi = F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+> ++	struct bio_vec *bvec;
+> ++	struct f2fs_sb_info *sbi = NULL;
+> ++	int i;
+>  +
+> - 	do {
+> ++	bio_for_each_segment_all(bvec, bio, i) {
+>  +		struct page *page = bvec->bv_page;
+>  +
+> - 		if (--bvec >= bio->bi_io_vec)
+> - 			prefetchw(&bvec->bv_page->flags);
+> ++		if (!sbi)
+> ++			sbi = F2FS_SB(bvec->bv_page->mapping->host->i_sb);
+>  +
+> - 		if (unlikely(!uptodate)) {
+> ++		if (unlikely(err)) {
+>  +			SetPageError(page);
+>  +			set_bit(AS_EIO, &page->mapping->flags);
+>  +			set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
+>  +			sbi->sb->s_flags |= MS_RDONLY;
+>  +		}
+>  +		end_page_writeback(page);
+>  +		dec_page_count(sbi, F2FS_WRITEBACK);
+> - 	} while (bvec >= bio->bi_io_vec);
+> ++	}
+>  +
+>  +	if (bio->bi_private)
+>  +		complete(bio->bi_private);
+>  +
+>  +	if (!get_pages(sbi, F2FS_WRITEBACK) &&
+>  +			!list_empty(&sbi->cp_wait.task_list))
+>  +		wake_up(&sbi->cp_wait);
+>  +
+>  +	bio_put(bio);
+>  +}
+>  +
+>  +/*
+>  + * Low-level block read/write IO operations.
+>  + */
+>  +static struct bio *__bio_alloc(struct f2fs_sb_info *sbi, block_t blk_addr,
+>  +				int npages, bool is_read)
+>  +{
+>  +	struct bio *bio;
+>  +
+>  +	/* No failure on bio allocation */
+>  +	bio = bio_alloc(GFP_NOIO, npages);
+>  +
+>  +	bio->bi_bdev = sbi->sb->s_bdev;
+> - 	bio->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+> ++	bio->bi_iter.bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+>  +	bio->bi_end_io = is_read ? f2fs_read_end_io : f2fs_write_end_io;
+>  +
+>  +	return bio;
+>  +}
+>  +
+>  +static void __submit_merged_bio(struct f2fs_bio_info *io)
+>  +{
+>  +	struct f2fs_io_info *fio = &io->fio;
+>  +	int rw;
+>  +
+>  +	if (!io->bio)
+>  +		return;
+>  +
+>  +	rw = fio->rw;
+>  +
+>  +	if (is_read_io(rw)) {
+>  +		trace_f2fs_submit_read_bio(io->sbi->sb, rw,
+>  +						fio->type, io->bio);
+>  +		submit_bio(rw, io->bio);
+>  +	} else {
+>  +		trace_f2fs_submit_write_bio(io->sbi->sb, rw,
+>  +						fio->type, io->bio);
+>  +		/*
+>  +		 * META_FLUSH is only from the checkpoint procedure, and we
+>  +		 * should wait this metadata bio for FS consistency.
+>  +		 */
+>  +		if (fio->type == META_FLUSH) {
+>  +			DECLARE_COMPLETION_ONSTACK(wait);
+>  +			io->bio->bi_private = &wait;
+>  +			submit_bio(rw, io->bio);
+>  +			wait_for_completion(&wait);
+>  +		} else {
+>  +			submit_bio(rw, io->bio);
+>  +		}
+>  +	}
+>  +
+>  +	io->bio = NULL;
+>  +}
+>  +
+>  +void f2fs_submit_merged_bio(struct f2fs_sb_info *sbi,
+>  +				enum page_type type, int rw)
+>  +{
+>  +	enum page_type btype = PAGE_TYPE_OF_BIO(type);
+>  +	struct f2fs_bio_info *io;
+>  +
+>  +	io = is_read_io(rw) ? &sbi->read_io : &sbi->write_io[btype];
+>  +
+>  +	mutex_lock(&io->io_mutex);
+>  +
+>  +	/* change META to META_FLUSH in the checkpoint procedure */
+>  +	if (type >= META_FLUSH) {
+>  +		io->fio.type = META_FLUSH;
+>  +		io->fio.rw = WRITE_FLUSH_FUA | REQ_META | REQ_PRIO;
+>  +	}
+>  +	__submit_merged_bio(io);
+>  +	mutex_unlock(&io->io_mutex);
+>  +}
+>  +
+>  +/*
+>  + * Fill the locked page with data located in the block address.
+>  + * Return unlocked page.
+>  + */
+>  +int f2fs_submit_page_bio(struct f2fs_sb_info *sbi, struct page *page,
+>  +					block_t blk_addr, int rw)
+>  +{
+>  +	struct bio *bio;
+>  +
+>  +	trace_f2fs_submit_page_bio(page, blk_addr, rw);
+>  +
+>  +	/* Allocate a new bio */
+>  +	bio = __bio_alloc(sbi, blk_addr, 1, is_read_io(rw));
+>  +
+>  +	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
+>  +		bio_put(bio);
+>  +		f2fs_put_page(page, 1);
+>  +		return -EFAULT;
+>  +	}
+>  +
+>  +	submit_bio(rw, bio);
+>  +	return 0;
+>  +}
+>  +
+>  +void f2fs_submit_page_mbio(struct f2fs_sb_info *sbi, struct page *page,
+>  +			block_t blk_addr, struct f2fs_io_info *fio)
+>  +{
+>  +	enum page_type btype = PAGE_TYPE_OF_BIO(fio->type);
+>  +	struct f2fs_bio_info *io;
+>  +	bool is_read = is_read_io(fio->rw);
+>  +
+>  +	io = is_read ? &sbi->read_io : &sbi->write_io[btype];
+>  +
+>  +	verify_block_addr(sbi, blk_addr);
+>  +
+>  +	mutex_lock(&io->io_mutex);
+>  +
+>  +	if (!is_read)
+>  +		inc_page_count(sbi, F2FS_WRITEBACK);
+>  +
+>  +	if (io->bio && (io->last_block_in_bio != blk_addr - 1 ||
+>  +						io->fio.rw != fio->rw))
+>  +		__submit_merged_bio(io);
+>  +alloc_new:
+>  +	if (io->bio == NULL) {
+>  +		int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+>  +
+>  +		io->bio = __bio_alloc(sbi, blk_addr, bio_blocks, is_read);
+>  +		io->fio = *fio;
+>  +	}
+>  +
+>  +	if (bio_add_page(io->bio, page, PAGE_CACHE_SIZE, 0) <
+>  +							PAGE_CACHE_SIZE) {
+>  +		__submit_merged_bio(io);
+>  +		goto alloc_new;
+>  +	}
+>  +
+>  +	io->last_block_in_bio = blk_addr;
+>  +
+>  +	mutex_unlock(&io->io_mutex);
+>  +	trace_f2fs_submit_page_mbio(page, fio->rw, fio->type, blk_addr);
+>  +}
+>  +
+>   /*
+>    * Lock ordering for the change of data block address:
+>    * ->data_page
+> diff --cc include/trace/events/f2fs.h
+> index 3b9f28dfc849,bd3ee4fbe7a7..67f38faac589
+> --- a/include/trace/events/f2fs.h
+> +++ b/include/trace/events/f2fs.h
+> @@@ -627,16 -614,16 +627,16 @@@ DECLARE_EVENT_CLASS(f2fs__submit_bio
+>   
+>   	TP_fast_assign(
+>   		__entry->dev		= sb->s_dev;
+>  -		__entry->btype		= btype;
+>  -		__entry->sync		= sync;
+>  +		__entry->rw		= rw;
+>  +		__entry->type		= type;
+> - 		__entry->sector		= bio->bi_sector;
+> - 		__entry->size		= bio->bi_size;
+> + 		__entry->sector		= bio->bi_iter.bi_sector;
+> + 		__entry->size		= bio->bi_iter.bi_size;
+>   	),
+>   
+>  -	TP_printk("dev = (%d,%d), type = %s, io = %s, sector = %lld, size = %u",
+>  +	TP_printk("dev = (%d,%d), %s%s, %s, sector = %lld, size = %u",
+>   		show_dev(__entry),
+>  -		show_block_type(__entry->btype),
+>  -		__entry->sync ? "sync" : "no sync",
+>  +		show_bio_type(__entry->rw),
+>  +		show_block_type(__entry->type),
+>   		(unsigned long long)__entry->sector,
+>   		__entry->size)
+>   );
+> 
+
+-- 
+Jaegeuk Kim
+Samsung
 
-Hi all,
-
-I just found that the current Linux tree
-(HEAD@ d891ea23d5203e5c47439b2a174f86a00b356a6c ) fails to boot on
-Zynq (ARM).
-The system runs into a panic relatively early (full boot log attached):
-[    0.000000] Unable to handle kernel paging request at virtual address ff=
-ffffc0
-[    0.000000] pgd =3D c0004000
-[    0.000000] [ffffffc0] *pgd=3D2e7f6821, *pte=3D00000000, *ppte=3D0000000=
-0
-[    0.000000] Internal error: Oops: 817 [#1] PREEMPT SMP ARM
-[    0.000000] Modules linked in:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.13.0-xilinx-08988-=
-gd891ea23d520 #22
-[    0.000000] task: c0385ab0 ti: c037c000 task.ti: c037c000
-[    0.000000] PC is at __memzero+0x4c/0x80
-[    0.000000] LR is at 0x0
-[    0.000000] pc : [<c01d9ccc>]    lr : [<00000000>]    psr: 000001d3
-[    0.000000] sp : c037df0c  ip : 00000000  fp : 00000000
-[    0.000000] r10: ffffffff  r9 : ffffffff  r8 : 3fffffc0
-[    0.000000] r7 : ffffffff  r6 : ffffffc0  r5 : 00000040  r4 : 0000001c
-[    0.000000] r3 : 00000000  r2 : 00000000  r1 : ffffffdc  r0 : ffffffc0
-[    0.000000] Flags: nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segme=
-nt kernel
-[    0.000000] Control: 18c5387d  Table: 0000404a  DAC: 00000015
-[    0.000000] Process swapper (pid: 0, stack limit =3D 0xc037c240)
-[    0.000000] Stack: (0xc037df0c to 0xc037e000)
-[    0.000000] df00:                            c0365cfc ffffffff 00000000 =
-ffffffff 0000001c
-[    0.000000] df20: ffffffff 00000000 00000000 413fc090 c038704c c0365f08 =
-ffffffff c0370368
-[    0.000000] df40: ffff1000 0002e7f5 00001000 00000007 c038dff0 c0370368 =
-c039ebf4 c037dfd4
-[    0.000000] df60: c0370368 c039ebf4 c08ef12c c038704c c038dff0 c035aabc =
-ffffffff 18c5387d
-[    0.000000] df80: ffffffff 0000406a 413fc090 c03843c0 00000000 c025eb74 =
-c02f23a9 c037dfb4
-[    0.000000] dfa0: c0008200 c037c000 00000001 c039e840 ffffffff 0000406a =
-c03843c0 c0357854
-[    0.000000] dfc0: 00000000 00000000 00000000 00000000 00000000 c0372918 =
-18c5387d c0384410
-[    0.000000] dfe0: c0372914 c038717c 0000406a 413fc090 00000000 00008074 =
-00000000 00000000
-[    0.000000] Code: e3110020 18a0500c 18a0500c e3110010 (18a0500c) =
-
-[    0.000000] ---[ end trace 15c15b4afa9eff8e ]---
-[    0.000000] Kernel panic - not syncing: Attempted to kill the idle task!=
-
-
-I bisected this issue down to commit:
-ad6492b80f60a2139fa9bf8fd79b182fe5e3647c is the first bad commit
-commit ad6492b80f60a2139fa9bf8fd79b182fe5e3647c
-Author: Yinghai Lu <yinghai@kernel.org>
-Date:   Mon Jan 27 17:06:49 2014 -0800
-
-    memblock, nobootmem: add memblock_virt_alloc_low()
-    =
-
-    The new memblock_virt APIs are used to replaced old bootmem API.
-    =
-
-    We need to allocate page below 4G for swiotlb.
-    =
-
-    That should fix regression on Andrew's system that is using swiotlb.
-    =
-
-    Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-    Cc: Russell King <linux@arm.linux.org.uk>
-    Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-    Cc: Dave Hansen <dave.hansen@intel.com>
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: "H. Peter Anvin" <hpa@zytor.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-:040000 040000 75086461d0b57fca2e767b9be2e660a3fc34fc8b 2365645efe4f6ad75fc=
-faab3e59da2d9cf0968a2 M	arch
-:040000 040000 106df01421a1d64347ee050c854e2540064a060b fab0ad7e09604c1ce79=
-5abdee894896619822838 M	include
-:040000 040000 f67991f1b98d03d9791883a5b714bb1d8e6ae596 f6067483b5d7a5688bd=
-873e75a3b4e89df104234 M	lib
-
-Reverting that commit on top of HEAD results in a booting system again.
-I also attached my kernel config.
-
-Is this somehow related to this discussion regarding the non-DMAabble
-memory (though that case doesn't seem to panic):
-https://lkml.org/lkml/2014/1/27/212 ?
-
-	Thanks,
-	S=C3=B6ren
-
-
---kXdP64Ggrk/fb43R
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: attachment; filename="boot.log"
-Content-Transfer-Encoding: base64
-
-CgpVLUJvb3QgMjAxMy4xMCAoSmFuIDEzIDIwMTQgLSAxNDo0MzoyMCkKCkkyQzogICByZWFkeQpN
-ZW1vcnk6IEVDQyBkaXNhYmxlZApEUkFNOiAgMSBHaUIKTU1DOiAgIHp5bnFfc2RoY2k6IDAKU0Y6
-IERldGVjdGVkIFMyNUZMMTI4U182NEsgd2l0aCBwYWdlIHNpemUgNTEyIEJ5dGVzLCBlcmFzZSBz
-aXplIDEyOCBLaUIsIHRvdGFsIDMyIE1pQgoqKiogV2FybmluZyAtIGJhZCBDUkMsIHVzaW5nIGRl
-ZmF1bHQgZW52aXJvbm1lbnQKCkluOiAgICBzZXJpYWwKT3V0OiAgIHNlcmlhbApFcnI6ICAgc2Vy
-aWFsCk5ldDogICBHZW0uZTAwMGIwMDAKSGl0IGFueSBrZXkgdG8gc3RvcCBhdXRvYm9vdDogIDMg
-CAgIIDIgCAgIIDEgCAgIIDAgClRGVFBpbmcgTGludXggdG8gUkFNLi4uCkdlbS5lMDAwYjAwMCBX
-YWl0aW5nIGZvciBQSFkgYXV0byBuZWdvdGlhdGlvbiB0byBjb21wbGV0ZS4uLi4uLiBkb25lClVz
-aW5nIEdlbS5lMDAwYjAwMCBkZXZpY2UKVEZUUCBmcm9tIHNlcnZlciAxMC4xMC43MC4xMDE7IG91
-ciBJUCBhZGRyZXNzIGlzIDEwLjEwLjcwLjEwMgpGaWxlbmFtZSAndUltYWdlJy4KTG9hZCBhZGRy
-ZXNzOiAweDMwMDAwMDAKTG9hZGluZzogKggjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjI1QgIyMjIyMjIyMjIyMjIyMjCgkgIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKCSAjCgkgMTA0
-LjUgS2lCL3MKZG9uZQpCeXRlcyB0cmFuc2ZlcnJlZCA9IDE5MTkwMzIgKDFkNDgzOCBoZXgpCkdl
-bS5lMDAwYjAwMDo3IGlzIGNvbm5lY3RlZCB0byBHZW0uZTAwMGIwMDAuICBSZWNvbm5lY3Rpbmcg
-dG8gR2VtLmUwMDBiMDAwCkdlbS5lMDAwYjAwMCBXYWl0aW5nIGZvciBQSFkgYXV0byBuZWdvdGlh
-dGlvbiB0byBjb21wbGV0ZS4uLi4uLi4gZG9uZQpVc2luZyBHZW0uZTAwMGIwMDAgZGV2aWNlClRG
-VFAgZnJvbSBzZXJ2ZXIgMTAuMTAuNzAuMTAxOyBvdXIgSVAgYWRkcmVzcyBpcyAxMC4xMC43MC4x
-MDIKRmlsZW5hbWUgJ2RldmljZXRyZWUuZHRiJy4KTG9hZCBhZGRyZXNzOiAweDJhMDAwMDAKTG9h
-ZGluZzogKggjCgkgNjUuNCBLaUIvcwpkb25lCkJ5dGVzIHRyYW5zZmVycmVkID0gMzM2MyAoZDIz
-IGhleCkKR2VtLmUwMDBiMDAwOjcgaXMgY29ubmVjdGVkIHRvIEdlbS5lMDAwYjAwMC4gIFJlY29u
-bmVjdGluZyB0byBHZW0uZTAwMGIwMDAKR2VtLmUwMDBiMDAwIFdhaXRpbmcgZm9yIFBIWSBhdXRv
-IG5lZ290aWF0aW9uIHRvIGNvbXBsZXRlLi4uLi4uLiBkb25lClVzaW5nIEdlbS5lMDAwYjAwMCBk
-ZXZpY2UKVEZUUCBmcm9tIHNlcnZlciAxMC4xMC43MC4xMDE7IG91ciBJUCBhZGRyZXNzIGlzIDEw
-LjEwLjcwLjEwMgpGaWxlbmFtZSAndXJhbWRpc2suaW1hZ2UuZ3onLgpMb2FkIGFkZHJlc3M6IDB4
-MjAwMDAwMApMb2FkaW5nOiAqCCMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCgkgIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKCSAjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIwoJICMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjCgkgIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMKCSAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
-IyMjIyMjIyMjIyMjIyMjIyMjCgkgMTEuOSBNaUIvcwpkb25lCkJ5dGVzIHRyYW5zZmVycmVkID0g
-NTYxOTk2NyAoNTVjMGZmIGhleCkKIyMgQm9vdGluZyBrZXJuZWwgZnJvbSBMZWdhY3kgSW1hZ2Ug
-YXQgMDMwMDAwMDAgLi4uCiAgIEltYWdlIE5hbWU6ICAgTGludXgtMy4xMy4wLXhpbGlueC0wODk4
-OC1nZDg5MWUKICAgSW1hZ2UgVHlwZTogICBBUk0gTGludXggS2VybmVsIEltYWdlICh1bmNvbXBy
-ZXNzZWQpCiAgIERhdGEgU2l6ZTogICAgMTkxODk2OCBCeXRlcyA9IDEuOCBNaUIKICAgTG9hZCBB
-ZGRyZXNzOiAwMDAwODAwMAogICBFbnRyeSBQb2ludDogIDAwMDA4MDAwCiAgIFZlcmlmeWluZyBD
-aGVja3N1bSAuLi4gT0sKIyMgTG9hZGluZyBpbml0IFJhbWRpc2sgZnJvbSBMZWdhY3kgSW1hZ2Ug
-YXQgMDIwMDAwMDAgLi4uCiAgIEltYWdlIE5hbWU6ICAgCiAgIEltYWdlIFR5cGU6ICAgQVJNIExp
-bnV4IFJBTURpc2sgSW1hZ2UgKGd6aXAgY29tcHJlc3NlZCkKICAgRGF0YSBTaXplOiAgICA1NjE5
-OTAzIEJ5dGVzID0gNS40IE1pQgogICBMb2FkIEFkZHJlc3M6IDAwMDAwMDAwCiAgIEVudHJ5IFBv
-aW50OiAgMDAwMDAwMDAKICAgVmVyaWZ5aW5nIENoZWNrc3VtIC4uLiBPSwojIyBGbGF0dGVuZWQg
-RGV2aWNlIFRyZWUgYmxvYiBhdCAwMmEwMDAwMAogICBCb290aW5nIHVzaW5nIHRoZSBmZHQgYmxv
-YiBhdCAweDJhMDAwMDAKICAgTG9hZGluZyBLZXJuZWwgSW1hZ2UgLi4uIE9LCiAgIExvYWRpbmcg
-UmFtZGlzayB0byAxZmFhMzAwMCwgZW5kIDFmZmZmMGJmIC4uLiBPSwogICBMb2FkaW5nIERldmlj
-ZSBUcmVlIHRvIDFmYTlmMDAwLCBlbmQgMWZhYTJkMjIgLi4uIE9LCgpTdGFydGluZyBrZXJuZWwg
-Li4uCgpVbmNvbXByZXNzaW5nIExpbnV4Li4uIGRvbmUsIGJvb3RpbmcgdGhlIGtlcm5lbC4KWyAg
-ICAwLjAwMDAwMF0gQm9vdGluZyBMaW51eCBvbiBwaHlzaWNhbCBDUFUgMHgwCg1bICAgIDAuMDAw
-MDAwXSBMaW51eCB2ZXJzaW9uIDMuMTMuMC14aWxpbngtMDg5ODgtZ2Q4OTFlYTIzZDUyMCAoc29y
-ZW5iQHhzamFuZHJlaXNseCkgKGdjYyB2ZXJzaW9uIDQuNy4xIChVYnVudHUvTGluYXJvIDQuNy4x
-LTV1YnVudHUxfnBwYTEpICkgIzIyIFNNUCBQUkVFTVBUIFR1ZSBKYW4gMjggMTY6MTg6NDkgUFNU
-IDIwMTQKDVsgICAgMC4wMDAwMDBdIENQVTogQVJNdjcgUHJvY2Vzc29yIFs0MTNmYzA5MF0gcmV2
-aXNpb24gMCAoQVJNdjcpLCBjcj0xOGM1Mzg3ZAoNWyAgICAwLjAwMDAwMF0gQ1BVOiBQSVBUIC8g
-VklQVCBub25hbGlhc2luZyBkYXRhIGNhY2hlLCBWSVBUIGFsaWFzaW5nIGluc3RydWN0aW9uIGNh
-Y2hlCg1bICAgIDAuMDAwMDAwXSBNYWNoaW5lIG1vZGVsOiBaeW5xIFpDNzA2IERldmVsb3BtZW50
-IEJvYXJkCg1bICAgIDAuMDAwMDAwXSBib290Y29uc29sZSBbZWFybHljb24wXSBlbmFibGVkCg1b
-ICAgIDAuMDAwMDAwXSBjbWE6IENNQTogcmVzZXJ2ZWQgMTYgTWlCIGF0IDJlODAwMDAwCg1bICAg
-IDAuMDAwMDAwXSBNZW1vcnkgcG9saWN5OiBEYXRhIGNhY2hlIHdyaXRlYWxsb2MKDVsgICAgMC4w
-MDAwMDBdIFVuYWJsZSB0byBoYW5kbGUga2VybmVsIHBhZ2luZyByZXF1ZXN0IGF0IHZpcnR1YWwg
-YWRkcmVzcyBmZmZmZmZjMAoNWyAgICAwLjAwMDAwMF0gcGdkID0gYzAwMDQwMDAKDVsgICAgMC4w
-MDAwMDBdIFtmZmZmZmZjMF0gKnBnZD0yZTdmNjgyMSwgKnB0ZT0wMDAwMDAwMCwgKnBwdGU9MDAw
-MDAwMDAKDVsgICAgMC4wMDAwMDBdIEludGVybmFsIGVycm9yOiBPb3BzOiA4MTcgWyMxXSBQUkVF
-TVBUIFNNUCBBUk0KDVsgICAgMC4wMDAwMDBdIE1vZHVsZXMgbGlua2VkIGluOgoNWyAgICAwLjAw
-MDAwMF0gQ1BVOiAwIFBJRDogMCBDb21tOiBzd2FwcGVyIE5vdCB0YWludGVkIDMuMTMuMC14aWxp
-bngtMDg5ODgtZ2Q4OTFlYTIzZDUyMCAjMjIKDVsgICAgMC4wMDAwMDBdIHRhc2s6IGMwMzg1YWIw
-IHRpOiBjMDM3YzAwMCB0YXNrLnRpOiBjMDM3YzAwMAoNWyAgICAwLjAwMDAwMF0gUEMgaXMgYXQg
-X19tZW16ZXJvKzB4NGMvMHg4MAoNWyAgICAwLjAwMDAwMF0gTFIgaXMgYXQgMHgwCg1bICAgIDAu
-MDAwMDAwXSBwYyA6IFs8YzAxZDljY2M+XSAgICBsciA6IFs8MDAwMDAwMDA+XSAgICBwc3I6IDAw
-MDAwMWQzCg1bICAgIDAuMDAwMDAwXSBzcCA6IGMwMzdkZjBjICBpcCA6IDAwMDAwMDAwICBmcCA6
-IDAwMDAwMDAwCg1bICAgIDAuMDAwMDAwXSByMTA6IGZmZmZmZmZmICByOSA6IGZmZmZmZmZmICBy
-OCA6IDNmZmZmZmMwCg1bICAgIDAuMDAwMDAwXSByNyA6IGZmZmZmZmZmICByNiA6IGZmZmZmZmMw
-ICByNSA6IDAwMDAwMDQwICByNCA6IDAwMDAwMDFjCg1bICAgIDAuMDAwMDAwXSByMyA6IDAwMDAw
-MDAwICByMiA6IDAwMDAwMDAwICByMSA6IGZmZmZmZmRjICByMCA6IGZmZmZmZmMwCg1bICAgIDAu
-MDAwMDAwXSBGbGFnczogbnpjdiAgSVJRcyBvZmYgIEZJUXMgb2ZmICBNb2RlIFNWQ18zMiAgSVNB
-IEFSTSAgU2VnbWVudCBrZXJuZWwKDVsgICAgMC4wMDAwMDBdIENvbnRyb2w6IDE4YzUzODdkICBU
-YWJsZTogMDAwMDQwNGEgIERBQzogMDAwMDAwMTUKDVsgICAgMC4wMDAwMDBdIFByb2Nlc3Mgc3dh
-cHBlciAocGlkOiAwLCBzdGFjayBsaW1pdCA9IDB4YzAzN2MyNDApCg1bICAgIDAuMDAwMDAwXSBT
-dGFjazogKDB4YzAzN2RmMGMgdG8gMHhjMDM3ZTAwMCkKDVsgICAgMC4wMDAwMDBdIGRmMDA6ICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgIGMwMzY1Y2ZjIGZmZmZmZmZmIDAwMDAwMDAwIGZmZmZm
-ZmZmIDAwMDAwMDFjCg1bICAgIDAuMDAwMDAwXSBkZjIwOiBmZmZmZmZmZiAwMDAwMDAwMCAwMDAw
-MDAwMCA0MTNmYzA5MCBjMDM4NzA0YyBjMDM2NWYwOCBmZmZmZmZmZiBjMDM3MDM2OAoNWyAgICAw
-LjAwMDAwMF0gZGY0MDogZmZmZjEwMDAgMDAwMmU3ZjUgMDAwMDEwMDAgMDAwMDAwMDcgYzAzOGRm
-ZjAgYzAzNzAzNjggYzAzOWViZjQgYzAzN2RmZDQKDVsgICAgMC4wMDAwMDBdIGRmNjA6IGMwMzcw
-MzY4IGMwMzllYmY0IGMwOGVmMTJjIGMwMzg3MDRjIGMwMzhkZmYwIGMwMzVhYWJjIGZmZmZmZmZm
-IDE4YzUzODdkCg1bICAgIDAuMDAwMDAwXSBkZjgwOiBmZmZmZmZmZiAwMDAwNDA2YSA0MTNmYzA5
-MCBjMDM4NDNjMCAwMDAwMDAwMCBjMDI1ZWI3NCBjMDJmMjNhOSBjMDM3ZGZiNAoNWyAgICAwLjAw
-MDAwMF0gZGZhMDogYzAwMDgyMDAgYzAzN2MwMDAgMDAwMDAwMDEgYzAzOWU4NDAgZmZmZmZmZmYg
-MDAwMDQwNmEgYzAzODQzYzAgYzAzNTc4NTQKDVsgICAgMC4wMDAwMDBdIGRmYzA6IDAwMDAwMDAw
-IDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIDAwMDAwMDAwIGMwMzcyOTE4IDE4YzUzODdkIGMw
-Mzg0NDEwCg1bICAgIDAuMDAwMDAwXSBkZmUwOiBjMDM3MjkxNCBjMDM4NzE3YyAwMDAwNDA2YSA0
-MTNmYzA5MCAwMDAwMDAwMCAwMDAwODA3NCAwMDAwMDAwMCAwMDAwMDAwMAoNWyAgICAwLjAwMDAw
-MF0gQ29kZTogZTMxMTAwMjAgMThhMDUwMGMgMThhMDUwMGMgZTMxMTAwMTAgKDE4YTA1MDBjKSAK
-DVsgICAgMC4wMDAwMDBdIC0tLVsgZW5kIHRyYWNlIDE1YzE1YjRhZmE5ZWZmOGUgXS0tLQoNWyAg
-ICAwLjAwMDAwMF0gS2VybmVsIHBhbmljIC0gbm90IHN5bmNpbmc6IEF0dGVtcHRlZCB0byBraWxs
-IHRoZSBpZGxlIHRhc2shCg0K
-
-
---kXdP64Ggrk/fb43R
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: attachment; filename="config"
-
-#
-# Automatically generated file; DO NOT EDIT.
-# Linux/arm 3.13.0 Kernel Configuration
-#
-CONFIG_ARM=y
-CONFIG_SYS_SUPPORTS_APM_EMULATION=y
-CONFIG_HAVE_PROC_CPU=y
-CONFIG_STACKTRACE_SUPPORT=y
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-CONFIG_RWSEM_GENERIC_SPINLOCK=y
-CONFIG_GENERIC_HWEIGHT=y
-CONFIG_GENERIC_CALIBRATE_DELAY=y
-CONFIG_NEED_DMA_MAP_STATE=y
-CONFIG_VECTORS_BASE=0xffff0000
-CONFIG_ARM_PATCH_PHYS_VIRT=y
-CONFIG_GENERIC_BUG=y
-CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-CONFIG_IRQ_WORK=y
-CONFIG_BUILDTIME_EXTABLE_SORT=y
-
-#
-# General setup
-#
-CONFIG_INIT_ENV_ARG_LIMIT=32
-CONFIG_CROSS_COMPILE=""
-# CONFIG_COMPILE_TEST is not set
-CONFIG_LOCALVERSION="-xilinx"
-CONFIG_LOCALVERSION_AUTO=y
-CONFIG_HAVE_KERNEL_GZIP=y
-CONFIG_HAVE_KERNEL_LZMA=y
-CONFIG_HAVE_KERNEL_XZ=y
-CONFIG_HAVE_KERNEL_LZO=y
-CONFIG_HAVE_KERNEL_LZ4=y
-CONFIG_KERNEL_GZIP=y
-# CONFIG_KERNEL_LZMA is not set
-# CONFIG_KERNEL_XZ is not set
-# CONFIG_KERNEL_LZO is not set
-# CONFIG_KERNEL_LZ4 is not set
-CONFIG_DEFAULT_HOSTNAME="(none)"
-CONFIG_SWAP=y
-CONFIG_SYSVIPC=y
-CONFIG_SYSVIPC_SYSCTL=y
-# CONFIG_FHANDLE is not set
-
-#
-# IRQ subsystem
-#
-CONFIG_GENERIC_IRQ_PROBE=y
-CONFIG_GENERIC_IRQ_SHOW=y
-CONFIG_HARDIRQS_SW_RESEND=y
-CONFIG_IRQ_DOMAIN=y
-CONFIG_IRQ_DOMAIN_DEBUG=y
-CONFIG_IRQ_FORCED_THREADING=y
-CONFIG_SPARSE_IRQ=y
-CONFIG_KTIME_SCALAR=y
-CONFIG_GENERIC_CLOCKEVENTS=y
-CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-CONFIG_ARCH_HAS_TICK_BROADCAST=y
-CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
-
-#
-# Timers subsystem
-#
-CONFIG_TICK_ONESHOT=y
-CONFIG_NO_HZ_COMMON=y
-# CONFIG_HZ_PERIODIC is not set
-CONFIG_NO_HZ_IDLE=y
-# CONFIG_NO_HZ_FULL is not set
-CONFIG_NO_HZ=y
-CONFIG_HIGH_RES_TIMERS=y
-
-#
-# CPU/Task time and stats accounting
-#
-CONFIG_TICK_CPU_ACCOUNTING=y
-# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
-# CONFIG_IRQ_TIME_ACCOUNTING is not set
-# CONFIG_BSD_PROCESS_ACCT is not set
-
-#
-# RCU Subsystem
-#
-CONFIG_TREE_PREEMPT_RCU=y
-CONFIG_PREEMPT_RCU=y
-CONFIG_RCU_STALL_COMMON=y
-# CONFIG_RCU_USER_QS is not set
-CONFIG_RCU_FANOUT=32
-CONFIG_RCU_FANOUT_LEAF=16
-# CONFIG_RCU_FANOUT_EXACT is not set
-# CONFIG_RCU_FAST_NO_HZ is not set
-# CONFIG_TREE_RCU_TRACE is not set
-# CONFIG_RCU_BOOST is not set
-# CONFIG_RCU_NOCB_CPU is not set
-CONFIG_IKCONFIG=y
-CONFIG_IKCONFIG_PROC=y
-CONFIG_LOG_BUF_SHIFT=14
-CONFIG_GENERIC_SCHED_CLOCK=y
-# CONFIG_CGROUPS is not set
-# CONFIG_CHECKPOINT_RESTORE is not set
-# CONFIG_NAMESPACES is not set
-# CONFIG_SCHED_AUTOGROUP is not set
-CONFIG_SYSFS_DEPRECATED=y
-CONFIG_SYSFS_DEPRECATED_V2=y
-# CONFIG_RELAY is not set
-CONFIG_BLK_DEV_INITRD=y
-CONFIG_INITRAMFS_SOURCE=""
-CONFIG_RD_GZIP=y
-# CONFIG_RD_BZIP2 is not set
-# CONFIG_RD_LZMA is not set
-# CONFIG_RD_XZ is not set
-# CONFIG_RD_LZO is not set
-# CONFIG_RD_LZ4 is not set
-CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-CONFIG_SYSCTL=y
-CONFIG_ANON_INODES=y
-CONFIG_HAVE_UID16=y
-CONFIG_EXPERT=y
-CONFIG_UID16=y
-CONFIG_SYSCTL_SYSCALL=y
-CONFIG_KALLSYMS=y
-CONFIG_KALLSYMS_ALL=y
-CONFIG_PRINTK=y
-CONFIG_BUG=y
-CONFIG_ELF_CORE=y
-CONFIG_BASE_FULL=y
-CONFIG_FUTEX=y
-CONFIG_EPOLL=y
-CONFIG_SIGNALFD=y
-CONFIG_TIMERFD=y
-CONFIG_EVENTFD=y
-CONFIG_SHMEM=y
-CONFIG_AIO=y
-CONFIG_EMBEDDED=y
-CONFIG_HAVE_PERF_EVENTS=y
-CONFIG_PERF_USE_VMALLOC=y
-
-#
-# Kernel Performance Events And Counters
-#
-CONFIG_PERF_EVENTS=y
-# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
-CONFIG_VM_EVENT_COUNTERS=y
-CONFIG_COMPAT_BRK=y
-CONFIG_SLAB=y
-# CONFIG_SLUB is not set
-# CONFIG_SLOB is not set
-# CONFIG_PROFILING is not set
-CONFIG_HAVE_OPROFILE=y
-# CONFIG_KPROBES is not set
-# CONFIG_JUMP_LABEL is not set
-# CONFIG_HAVE_64BIT_ALIGNED_ACCESS is not set
-CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
-CONFIG_ARCH_USE_BUILTIN_BSWAP=y
-CONFIG_HAVE_KPROBES=y
-CONFIG_HAVE_KRETPROBES=y
-CONFIG_HAVE_ARCH_TRACEHOOK=y
-CONFIG_HAVE_DMA_ATTRS=y
-CONFIG_HAVE_DMA_CONTIGUOUS=y
-CONFIG_GENERIC_SMP_IDLE_THREAD=y
-CONFIG_GENERIC_IDLE_POLL_SETUP=y
-CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
-CONFIG_HAVE_CLK=y
-CONFIG_HAVE_DMA_API_DEBUG=y
-CONFIG_HAVE_HW_BREAKPOINT=y
-CONFIG_HAVE_PERF_REGS=y
-CONFIG_HAVE_PERF_USER_STACK_DUMP=y
-CONFIG_HAVE_ARCH_JUMP_LABEL=y
-CONFIG_ARCH_WANT_IPC_PARSE_VERSION=y
-CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
-CONFIG_HAVE_CC_STACKPROTECTOR=y
-CONFIG_CC_STACKPROTECTOR=y
-# CONFIG_CC_STACKPROTECTOR_NONE is not set
-CONFIG_CC_STACKPROTECTOR_REGULAR=y
-# CONFIG_CC_STACKPROTECTOR_STRONG is not set
-CONFIG_HAVE_CONTEXT_TRACKING=y
-CONFIG_HAVE_VIRT_CPU_ACCOUNTING_GEN=y
-CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
-CONFIG_HAVE_MOD_ARCH_SPECIFIC=y
-CONFIG_MODULES_USE_ELF_REL=y
-CONFIG_CLONE_BACKWARDS=y
-CONFIG_OLD_SIGSUSPEND3=y
-CONFIG_OLD_SIGACTION=y
-
-#
-# GCOV-based kernel profiling
-#
-# CONFIG_GCOV_KERNEL is not set
-CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-CONFIG_SLABINFO=y
-CONFIG_RT_MUTEXES=y
-CONFIG_BASE_SMALL=0
-CONFIG_MODULES=y
-# CONFIG_MODULE_FORCE_LOAD is not set
-CONFIG_MODULE_UNLOAD=y
-CONFIG_MODULE_FORCE_UNLOAD=y
-CONFIG_MODVERSIONS=y
-# CONFIG_MODULE_SRCVERSION_ALL is not set
-# CONFIG_MODULE_SIG is not set
-CONFIG_STOP_MACHINE=y
-CONFIG_BLOCK=y
-CONFIG_LBDAF=y
-# CONFIG_BLK_DEV_BSG is not set
-# CONFIG_BLK_DEV_BSGLIB is not set
-# CONFIG_BLK_DEV_INTEGRITY is not set
-# CONFIG_BLK_CMDLINE_PARSER is not set
-
-#
-# Partition Types
-#
-# CONFIG_PARTITION_ADVANCED is not set
-CONFIG_MSDOS_PARTITION=y
-CONFIG_EFI_PARTITION=y
-
-#
-# IO Schedulers
-#
-CONFIG_IOSCHED_NOOP=y
-CONFIG_IOSCHED_DEADLINE=y
-CONFIG_IOSCHED_CFQ=y
-# CONFIG_DEFAULT_DEADLINE is not set
-CONFIG_DEFAULT_CFQ=y
-# CONFIG_DEFAULT_NOOP is not set
-CONFIG_DEFAULT_IOSCHED="cfq"
-CONFIG_UNINLINE_SPIN_UNLOCK=y
-CONFIG_FREEZER=y
-
-#
-# System Type
-#
-CONFIG_MMU=y
-CONFIG_ARCH_MULTIPLATFORM=y
-# CONFIG_ARCH_INTEGRATOR is not set
-# CONFIG_ARCH_REALVIEW is not set
-# CONFIG_ARCH_VERSATILE is not set
-# CONFIG_ARCH_AT91 is not set
-# CONFIG_ARCH_CLPS711X is not set
-# CONFIG_ARCH_GEMINI is not set
-# CONFIG_ARCH_EBSA110 is not set
-# CONFIG_ARCH_EP93XX is not set
-# CONFIG_ARCH_FOOTBRIDGE is not set
-# CONFIG_ARCH_NETX is not set
-# CONFIG_ARCH_IOP13XX is not set
-# CONFIG_ARCH_IOP32X is not set
-# CONFIG_ARCH_IOP33X is not set
-# CONFIG_ARCH_IXP4XX is not set
-# CONFIG_ARCH_DOVE is not set
-# CONFIG_ARCH_KIRKWOOD is not set
-# CONFIG_ARCH_MV78XX0 is not set
-# CONFIG_ARCH_ORION5X is not set
-# CONFIG_ARCH_MMP is not set
-# CONFIG_ARCH_KS8695 is not set
-# CONFIG_ARCH_W90X900 is not set
-# CONFIG_ARCH_LPC32XX is not set
-# CONFIG_ARCH_PXA is not set
-# CONFIG_ARCH_MSM_NODT is not set
-# CONFIG_ARCH_SHMOBILE_LEGACY is not set
-# CONFIG_ARCH_RPC is not set
-# CONFIG_ARCH_SA1100 is not set
-# CONFIG_ARCH_S3C24XX is not set
-# CONFIG_ARCH_S3C64XX is not set
-# CONFIG_ARCH_S5P64X0 is not set
-# CONFIG_ARCH_S5PC100 is not set
-# CONFIG_ARCH_S5PV210 is not set
-# CONFIG_ARCH_EXYNOS is not set
-# CONFIG_ARCH_DAVINCI is not set
-# CONFIG_ARCH_OMAP1 is not set
-
-#
-# Multiple platform selection
-#
-
-#
-# CPU Core family selection
-#
-# CONFIG_ARCH_MULTI_V6 is not set
-CONFIG_ARCH_MULTI_V7=y
-CONFIG_ARCH_MULTI_V6_V7=y
-# CONFIG_ARCH_MULTI_CPU_AUTO is not set
-# CONFIG_ARCH_MVEBU is not set
-# CONFIG_ARCH_BCM is not set
-# CONFIG_ARCH_BERLIN is not set
-# CONFIG_ARCH_HIGHBANK is not set
-# CONFIG_ARCH_HI3xxx is not set
-# CONFIG_ARCH_KEYSTONE is not set
-# CONFIG_ARCH_MSM_DT is not set
-# CONFIG_ARCH_MXC is not set
-# CONFIG_ARCH_OMAP3 is not set
-# CONFIG_ARCH_OMAP4 is not set
-# CONFIG_SOC_OMAP5 is not set
-# CONFIG_SOC_AM33XX is not set
-# CONFIG_SOC_AM43XX is not set
-# CONFIG_ARCH_ROCKCHIP is not set
-# CONFIG_ARCH_SOCFPGA is not set
-# CONFIG_PLAT_SPEAR is not set
-# CONFIG_ARCH_STI is not set
-# CONFIG_ARCH_SHMOBILE_MULTI is not set
-# CONFIG_ARCH_SUNXI is not set
-# CONFIG_ARCH_SIRF is not set
-# CONFIG_ARCH_TEGRA is not set
-# CONFIG_ARCH_U8500 is not set
-# CONFIG_ARCH_VEXPRESS is not set
-# CONFIG_ARCH_VIRT is not set
-# CONFIG_ARCH_WM8850 is not set
-CONFIG_ARCH_ZYNQ=y
-
-#
-# Processor Type
-#
-CONFIG_CPU_V7=y
-CONFIG_CPU_32v6K=y
-CONFIG_CPU_32v7=y
-CONFIG_CPU_ABRT_EV7=y
-CONFIG_CPU_PABRT_V7=y
-CONFIG_CPU_CACHE_V7=y
-CONFIG_CPU_CACHE_VIPT=y
-CONFIG_CPU_COPY_V6=y
-CONFIG_CPU_TLB_V7=y
-CONFIG_CPU_HAS_ASID=y
-CONFIG_CPU_CP15=y
-CONFIG_CPU_CP15_MMU=y
-
-#
-# Processor Features
-#
-# CONFIG_ARM_LPAE is not set
-# CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
-CONFIG_ARM_THUMB=y
-# CONFIG_ARM_THUMBEE is not set
-CONFIG_ARM_VIRT_EXT=y
-CONFIG_SWP_EMULATE=y
-# CONFIG_CPU_ICACHE_DISABLE is not set
-# CONFIG_CPU_DCACHE_DISABLE is not set
-# CONFIG_CPU_BPREDICT_DISABLE is not set
-CONFIG_KUSER_HELPERS=y
-CONFIG_OUTER_CACHE=y
-CONFIG_OUTER_CACHE_SYNC=y
-CONFIG_MIGHT_HAVE_CACHE_L2X0=y
-CONFIG_CACHE_L2X0=y
-CONFIG_CACHE_PL310=y
-CONFIG_ARM_L1_CACHE_SHIFT_6=y
-CONFIG_ARM_L1_CACHE_SHIFT=6
-CONFIG_ARM_DMA_MEM_BUFFERABLE=y
-CONFIG_ARM_NR_BANKS=8
-CONFIG_MULTI_IRQ_HANDLER=y
-# CONFIG_ARM_ERRATA_430973 is not set
-CONFIG_PL310_ERRATA_588369=y
-# CONFIG_ARM_ERRATA_643719 is not set
-CONFIG_ARM_ERRATA_720789=y
-CONFIG_PL310_ERRATA_727915=y
-CONFIG_PL310_ERRATA_753970=y
-CONFIG_ARM_ERRATA_754322=y
-CONFIG_ARM_ERRATA_754327=y
-CONFIG_ARM_ERRATA_764369=y
-CONFIG_PL310_ERRATA_769419=y
-CONFIG_ARM_ERRATA_775420=y
-# CONFIG_ARM_ERRATA_798181 is not set
-# CONFIG_ARM_ERRATA_773022 is not set
-CONFIG_ICST=y
-
-#
-# Bus support
-#
-CONFIG_ARM_AMBA=y
-# CONFIG_PCI_SYSCALL is not set
-# CONFIG_PCCARD is not set
-
-#
-# Kernel Features
-#
-CONFIG_HAVE_SMP=y
-CONFIG_SMP=y
-CONFIG_SMP_ON_UP=y
-CONFIG_ARM_CPU_TOPOLOGY=y
-CONFIG_SCHED_MC=y
-CONFIG_SCHED_SMT=y
-CONFIG_HAVE_ARM_SCU=y
-# CONFIG_HAVE_ARM_ARCH_TIMER is not set
-CONFIG_HAVE_ARM_TWD=y
-# CONFIG_MCPM is not set
-# CONFIG_BIG_LITTLE is not set
-CONFIG_VMSPLIT_3G=y
-# CONFIG_VMSPLIT_2G is not set
-# CONFIG_VMSPLIT_1G is not set
-CONFIG_PAGE_OFFSET=0xC0000000
-CONFIG_NR_CPUS=4
-CONFIG_HOTPLUG_CPU=y
-# CONFIG_ARM_PSCI is not set
-CONFIG_ARCH_NR_GPIO=0
-# CONFIG_PREEMPT_NONE is not set
-# CONFIG_PREEMPT_VOLUNTARY is not set
-CONFIG_PREEMPT=y
-CONFIG_PREEMPT_COUNT=y
-CONFIG_HZ_FIXED=0
-CONFIG_HZ_100=y
-# CONFIG_HZ_200 is not set
-# CONFIG_HZ_250 is not set
-# CONFIG_HZ_300 is not set
-# CONFIG_HZ_500 is not set
-# CONFIG_HZ_1000 is not set
-CONFIG_HZ=100
-CONFIG_SCHED_HRTICK=y
-# CONFIG_THUMB2_KERNEL is not set
-CONFIG_AEABI=y
-# CONFIG_OABI_COMPAT is not set
-# CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
-# CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
-CONFIG_HAVE_ARCH_PFN_VALID=y
-CONFIG_HIGHMEM=y
-# CONFIG_HIGHPTE is not set
-CONFIG_HW_PERF_EVENTS=y
-CONFIG_ARCH_WANT_GENERAL_HUGETLB=y
-CONFIG_FLATMEM=y
-CONFIG_FLAT_NODE_MEM_MAP=y
-CONFIG_HAVE_MEMBLOCK=y
-CONFIG_NO_BOOTMEM=y
-CONFIG_MEMORY_ISOLATION=y
-# CONFIG_HAVE_BOOTMEM_INFO_NODE is not set
-CONFIG_PAGEFLAGS_EXTENDED=y
-CONFIG_SPLIT_PTLOCK_CPUS=4
-# CONFIG_COMPACTION is not set
-CONFIG_MIGRATION=y
-# CONFIG_PHYS_ADDR_T_64BIT is not set
-CONFIG_ZONE_DMA_FLAG=0
-CONFIG_BOUNCE=y
-# CONFIG_KSM is not set
-CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
-CONFIG_CROSS_MEMORY_ATTACH=y
-# CONFIG_CLEANCACHE is not set
-# CONFIG_FRONTSWAP is not set
-CONFIG_CMA=y
-# CONFIG_CMA_DEBUG is not set
-# CONFIG_ZBUD is not set
-CONFIG_FORCE_MAX_ZONEORDER=11
-CONFIG_ALIGNMENT_TRAP=y
-# CONFIG_UACCESS_WITH_MEMCPY is not set
-# CONFIG_SECCOMP is not set
-CONFIG_SWIOTLB=y
-CONFIG_IOMMU_HELPER=y
-# CONFIG_XEN is not set
-
-#
-# Boot options
-#
-CONFIG_USE_OF=y
-CONFIG_ATAGS=y
-# CONFIG_DEPRECATED_PARAM_STRUCT is not set
-CONFIG_ZBOOT_ROM_TEXT=0x0
-CONFIG_ZBOOT_ROM_BSS=0x0
-# CONFIG_ARM_APPENDED_DTB is not set
-CONFIG_CMDLINE="console=ttyPS0,115200n8 root=/dev/ram rw initrd=0x00800000,16M earlyprintk mtdparts=physmap-flash.0:512K(nor-fsbl),512K(nor-u-boot),5M(nor-linux),9M(nor-user),1M(nor-scratch),-(nor-rootfs)"
-CONFIG_CMDLINE_FROM_BOOTLOADER=y
-# CONFIG_CMDLINE_EXTEND is not set
-# CONFIG_CMDLINE_FORCE is not set
-# CONFIG_KEXEC is not set
-# CONFIG_CRASH_DUMP is not set
-CONFIG_AUTO_ZRELADDR=y
-
-#
-# CPU Power Management
-#
-
-#
-# CPU Idle
-#
-# CONFIG_CPU_IDLE is not set
-# CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED is not set
-
-#
-# Floating point emulation
-#
-
-#
-# At least one emulation must be selected
-#
-CONFIG_VFP=y
-CONFIG_VFPv3=y
-CONFIG_NEON=y
-CONFIG_KERNEL_MODE_NEON=y
-
-#
-# Userspace binary formats
-#
-CONFIG_BINFMT_ELF=y
-CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
-# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-CONFIG_BINFMT_SCRIPT=y
-# CONFIG_HAVE_AOUT is not set
-# CONFIG_BINFMT_MISC is not set
-CONFIG_COREDUMP=y
-
-#
-# Power management options
-#
-CONFIG_SUSPEND=y
-CONFIG_SUSPEND_FREEZER=y
-CONFIG_PM_SLEEP=y
-CONFIG_PM_SLEEP_SMP=y
-# CONFIG_PM_AUTOSLEEP is not set
-# CONFIG_PM_WAKELOCKS is not set
-CONFIG_PM_RUNTIME=y
-CONFIG_PM=y
-# CONFIG_PM_DEBUG is not set
-# CONFIG_APM_EMULATION is not set
-CONFIG_PM_CLK=y
-# CONFIG_WQ_POWER_EFFICIENT_DEFAULT is not set
-CONFIG_CPU_PM=y
-CONFIG_ARCH_SUSPEND_POSSIBLE=y
-CONFIG_ARM_CPU_SUSPEND=y
-# CONFIG_NET is not set
-CONFIG_HAVE_BPF_JIT=y
-
-#
-# Device Drivers
-#
-
-#
-# Generic Driver Options
-#
-CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-CONFIG_DEVTMPFS=y
-CONFIG_DEVTMPFS_MOUNT=y
-CONFIG_STANDALONE=y
-CONFIG_PREVENT_FIRMWARE_BUILD=y
-CONFIG_FW_LOADER=y
-CONFIG_FIRMWARE_IN_KERNEL=y
-CONFIG_EXTRA_FIRMWARE=""
-CONFIG_FW_LOADER_USER_HELPER=y
-# CONFIG_DEBUG_DRIVER is not set
-# CONFIG_DEBUG_DEVRES is not set
-# CONFIG_SYS_HYPERVISOR is not set
-# CONFIG_GENERIC_CPU_DEVICES is not set
-# CONFIG_DMA_SHARED_BUFFER is not set
-CONFIG_DMA_CMA=y
-
-#
-# Default contiguous memory area size:
-#
-CONFIG_CMA_SIZE_MBYTES=16
-CONFIG_CMA_SIZE_SEL_MBYTES=y
-# CONFIG_CMA_SIZE_SEL_PERCENTAGE is not set
-# CONFIG_CMA_SIZE_SEL_MIN is not set
-# CONFIG_CMA_SIZE_SEL_MAX is not set
-CONFIG_CMA_ALIGNMENT=8
-CONFIG_CMA_AREAS=7
-
-#
-# Bus devices
-#
-# CONFIG_ARM_CCI is not set
-# CONFIG_MTD is not set
-CONFIG_DTC=y
-CONFIG_OF=y
-
-#
-# Device Tree and Open Firmware support
-#
-CONFIG_PROC_DEVICETREE=y
-# CONFIG_OF_SELFTEST is not set
-CONFIG_OF_FLATTREE=y
-CONFIG_OF_EARLY_FLATTREE=y
-CONFIG_OF_ADDRESS=y
-CONFIG_OF_IRQ=y
-# CONFIG_PARPORT is not set
-CONFIG_ARCH_MIGHT_HAVE_PC_PARPORT=y
-CONFIG_BLK_DEV=y
-# CONFIG_BLK_DEV_NULL_BLK is not set
-# CONFIG_BLK_DEV_COW_COMMON is not set
-CONFIG_BLK_DEV_LOOP=y
-CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
-# CONFIG_BLK_DEV_CRYPTOLOOP is not set
-
-#
-# DRBD disabled because PROC_FS or INET not selected
-#
-CONFIG_BLK_DEV_RAM=y
-CONFIG_BLK_DEV_RAM_COUNT=16
-CONFIG_BLK_DEV_RAM_SIZE=16384
-# CONFIG_BLK_DEV_XIP is not set
-# CONFIG_CDROM_PKTCDVD is not set
-
-#
-# Misc devices
-#
-# CONFIG_SENSORS_LIS3LV02D is not set
-# CONFIG_ATMEL_PWM is not set
-# CONFIG_DUMMY_IRQ is not set
-# CONFIG_ATMEL_SSC is not set
-# CONFIG_ENCLOSURE_SERVICES is not set
-CONFIG_SRAM=y
-# CONFIG_C2PORT is not set
-
-#
-# EEPROM support
-#
-# CONFIG_EEPROM_93CX6 is not set
-
-#
-# Texas Instruments shared transport line discipline
-#
-
-#
-# Altera FPGA firmware download module
-#
-
-#
-# Intel MIC Host Driver
-#
-
-#
-# Intel MIC Card Driver
-#
-
-#
-# SCSI device support
-#
-CONFIG_SCSI_MOD=y
-# CONFIG_RAID_ATTRS is not set
-CONFIG_SCSI=y
-CONFIG_SCSI_DMA=y
-# CONFIG_SCSI_TGT is not set
-# CONFIG_SCSI_NETLINK is not set
-CONFIG_SCSI_PROC_FS=y
-
-#
-# SCSI support type (disk, tape, CD-ROM)
-#
-CONFIG_BLK_DEV_SD=y
-# CONFIG_CHR_DEV_ST is not set
-# CONFIG_CHR_DEV_OSST is not set
-# CONFIG_BLK_DEV_SR is not set
-CONFIG_CHR_DEV_SG=y
-# CONFIG_CHR_DEV_SCH is not set
-CONFIG_SCSI_MULTI_LUN=y
-# CONFIG_SCSI_CONSTANTS is not set
-# CONFIG_SCSI_LOGGING is not set
-# CONFIG_SCSI_SCAN_ASYNC is not set
-
-#
-# SCSI Transports
-#
-# CONFIG_SCSI_SPI_ATTRS is not set
-# CONFIG_SCSI_FC_ATTRS is not set
-# CONFIG_SCSI_SAS_ATTRS is not set
-# CONFIG_SCSI_SAS_LIBSAS is not set
-# CONFIG_SCSI_SRP_ATTRS is not set
-CONFIG_SCSI_LOWLEVEL=y
-# CONFIG_ISCSI_BOOT_SYSFS is not set
-# CONFIG_SCSI_UFSHCD is not set
-# CONFIG_LIBFC is not set
-# CONFIG_LIBFCOE is not set
-# CONFIG_SCSI_DEBUG is not set
-# CONFIG_SCSI_DH is not set
-# CONFIG_SCSI_OSD_INITIATOR is not set
-# CONFIG_ATA is not set
-# CONFIG_MD is not set
-# CONFIG_TARGET_CORE is not set
-
-#
-# Input device support
-#
-CONFIG_INPUT=y
-# CONFIG_INPUT_FF_MEMLESS is not set
-# CONFIG_INPUT_POLLDEV is not set
-CONFIG_INPUT_SPARSEKMAP=y
-# CONFIG_INPUT_MATRIXKMAP is not set
-
-#
-# Userland interfaces
-#
-CONFIG_INPUT_MOUSEDEV=y
-CONFIG_INPUT_MOUSEDEV_PSAUX=y
-CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
-CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
-# CONFIG_INPUT_JOYDEV is not set
-CONFIG_INPUT_EVDEV=y
-# CONFIG_INPUT_EVBUG is not set
-
-#
-# Input Device Drivers
-#
-CONFIG_INPUT_KEYBOARD=y
-CONFIG_KEYBOARD_ATKBD=y
-# CONFIG_KEYBOARD_LKKBD is not set
-# CONFIG_KEYBOARD_NEWTON is not set
-# CONFIG_KEYBOARD_OPENCORES is not set
-# CONFIG_KEYBOARD_SAMSUNG is not set
-# CONFIG_KEYBOARD_STOWAWAY is not set
-# CONFIG_KEYBOARD_SUNKBD is not set
-# CONFIG_KEYBOARD_XTKBD is not set
-CONFIG_INPUT_MOUSE=y
-CONFIG_MOUSE_PS2=y
-CONFIG_MOUSE_PS2_ALPS=y
-CONFIG_MOUSE_PS2_LOGIPS2PP=y
-CONFIG_MOUSE_PS2_SYNAPTICS=y
-CONFIG_MOUSE_PS2_CYPRESS=y
-CONFIG_MOUSE_PS2_TRACKPOINT=y
-# CONFIG_MOUSE_PS2_ELANTECH is not set
-# CONFIG_MOUSE_PS2_SENTELIC is not set
-# CONFIG_MOUSE_PS2_TOUCHKIT is not set
-# CONFIG_MOUSE_SERIAL is not set
-# CONFIG_MOUSE_VSXXXAA is not set
-# CONFIG_INPUT_JOYSTICK is not set
-# CONFIG_INPUT_TABLET is not set
-# CONFIG_INPUT_TOUCHSCREEN is not set
-# CONFIG_INPUT_MISC is not set
-
-#
-# Hardware I/O ports
-#
-CONFIG_SERIO=y
-CONFIG_SERIO_SERPORT=y
-# CONFIG_SERIO_AMBAKMI is not set
-CONFIG_SERIO_LIBPS2=y
-# CONFIG_SERIO_RAW is not set
-# CONFIG_SERIO_ALTERA_PS2 is not set
-# CONFIG_SERIO_PS2MULT is not set
-# CONFIG_SERIO_ARC_PS2 is not set
-# CONFIG_SERIO_APBPS2 is not set
-# CONFIG_SERIO_OLPC_APSP is not set
-# CONFIG_GAMEPORT is not set
-
-#
-# Character devices
-#
-CONFIG_TTY=y
-CONFIG_VT=y
-CONFIG_CONSOLE_TRANSLATIONS=y
-CONFIG_VT_CONSOLE=y
-CONFIG_VT_CONSOLE_SLEEP=y
-CONFIG_HW_CONSOLE=y
-CONFIG_VT_HW_CONSOLE_BINDING=y
-CONFIG_UNIX98_PTYS=y
-# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
-# CONFIG_LEGACY_PTYS is not set
-# CONFIG_SERIAL_NONSTANDARD is not set
-# CONFIG_TRACE_SINK is not set
-# CONFIG_DEVKMEM is not set
-
-#
-# Serial drivers
-#
-# CONFIG_SERIAL_8250 is not set
-
-#
-# Non-8250 serial port support
-#
-# CONFIG_SERIAL_AMBA_PL010 is not set
-# CONFIG_SERIAL_AMBA_PL011 is not set
-# CONFIG_SERIAL_KGDB_NMI is not set
-# CONFIG_SERIAL_UARTLITE is not set
-# CONFIG_SERIAL_SH_SCI is not set
-CONFIG_SERIAL_CORE=y
-CONFIG_SERIAL_CORE_CONSOLE=y
-CONFIG_CONSOLE_POLL=y
-# CONFIG_SERIAL_SCCNXP is not set
-# CONFIG_SERIAL_TIMBERDALE is not set
-# CONFIG_SERIAL_ALTERA_JTAGUART is not set
-# CONFIG_SERIAL_ALTERA_UART is not set
-CONFIG_SERIAL_XILINX_PS_UART=y
-CONFIG_SERIAL_XILINX_PS_UART_CONSOLE=y
-# CONFIG_SERIAL_ARC is not set
-# CONFIG_SERIAL_FSL_LPUART is not set
-# CONFIG_SERIAL_ST_ASC is not set
-# CONFIG_TTY_PRINTK is not set
-# CONFIG_HVC_DCC is not set
-# CONFIG_IPMI_HANDLER is not set
-# CONFIG_HW_RANDOM is not set
-# CONFIG_R3964 is not set
-# CONFIG_RAW_DRIVER is not set
-# CONFIG_TCG_TPM is not set
-# CONFIG_I2C is not set
-# CONFIG_SPI is not set
-# CONFIG_HSI is not set
-
-#
-# PPS support
-#
-CONFIG_PPS=y
-# CONFIG_PPS_DEBUG is not set
-
-#
-# PPS clients support
-#
-# CONFIG_PPS_CLIENT_KTIMER is not set
-# CONFIG_PPS_CLIENT_LDISC is not set
-# CONFIG_PPS_CLIENT_GPIO is not set
-
-#
-# PPS generators support
-#
-
-#
-# PTP clock support
-#
-CONFIG_PTP_1588_CLOCK=y
-
-#
-# Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
-#
-CONFIG_ARCH_HAVE_CUSTOM_GPIO_H=y
-# CONFIG_W1 is not set
-# CONFIG_POWER_SUPPLY is not set
-# CONFIG_POWER_AVS is not set
-# CONFIG_HWMON is not set
-# CONFIG_THERMAL is not set
-# CONFIG_WATCHDOG is not set
-CONFIG_SSB_POSSIBLE=y
-
-#
-# Sonics Silicon Backplane
-#
-# CONFIG_SSB is not set
-CONFIG_BCMA_POSSIBLE=y
-
-#
-# Broadcom specific AMBA
-#
-# CONFIG_BCMA is not set
-
-#
-# Multifunction device drivers
-#
-# CONFIG_MFD_CORE is not set
-# CONFIG_MFD_CROS_EC is not set
-# CONFIG_HTC_PASIC3 is not set
-# CONFIG_MFD_KEMPLD is not set
-# CONFIG_MFD_SM501 is not set
-# CONFIG_ABX500_CORE is not set
-# CONFIG_MFD_SYSCON is not set
-# CONFIG_MFD_TI_AM335X_TSCADC is not set
-# CONFIG_MFD_TMIO is not set
-# CONFIG_MFD_T7L66XB is not set
-# CONFIG_MFD_TC6387XB is not set
-# CONFIG_MFD_TC6393XB is not set
-# CONFIG_VEXPRESS_CONFIG is not set
-# CONFIG_REGULATOR is not set
-# CONFIG_MEDIA_SUPPORT is not set
-
-#
-# Graphics support
-#
-# CONFIG_TEGRA_HOST1X is not set
-# CONFIG_DRM is not set
-# CONFIG_VGASTATE is not set
-# CONFIG_VIDEO_OUTPUT_CONTROL is not set
-# CONFIG_FB is not set
-# CONFIG_EXYNOS_VIDEO is not set
-# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
-
-#
-# Console display driver support
-#
-CONFIG_DUMMY_CONSOLE=y
-# CONFIG_SOUND is not set
-
-#
-# HID support
-#
-# CONFIG_HID is not set
-CONFIG_USB_OHCI_LITTLE_ENDIAN=y
-# CONFIG_USB_SUPPORT is not set
-# CONFIG_MMC is not set
-# CONFIG_MEMSTICK is not set
-# CONFIG_NEW_LEDS is not set
-# CONFIG_ACCESSIBILITY is not set
-# CONFIG_EDAC is not set
-CONFIG_RTC_LIB=y
-# CONFIG_RTC_CLASS is not set
-# CONFIG_DMADEVICES is not set
-# CONFIG_AUXDISPLAY is not set
-# CONFIG_UIO is not set
-# CONFIG_VIRT_DRIVERS is not set
-
-#
-# Virtio drivers
-#
-# CONFIG_VIRTIO_MMIO is not set
-
-#
-# Microsoft Hyper-V guest support
-#
-# CONFIG_STAGING is not set
-CONFIG_CLKDEV_LOOKUP=y
-CONFIG_HAVE_CLK_PREPARE=y
-CONFIG_COMMON_CLK=y
-
-#
-# Common Clock Framework
-#
-# CONFIG_COMMON_CLK_AXI_CLKGEN is not set
-# CONFIG_COMMON_CLK_QCOM is not set
-
-#
-# Hardware Spinlock drivers
-#
-CONFIG_CLKSRC_OF=y
-CONFIG_CADENCE_TTC_TIMER=y
-CONFIG_ARM_GLOBAL_TIMER=y
-CONFIG_CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK=y
-# CONFIG_MAILBOX is not set
-# CONFIG_IOMMU_SUPPORT is not set
-
-#
-# Remoteproc drivers
-#
-# CONFIG_STE_MODEM_RPROC is not set
-
-#
-# Rpmsg drivers
-#
-# CONFIG_PM_DEVFREQ is not set
-# CONFIG_EXTCON is not set
-# CONFIG_MEMORY is not set
-# CONFIG_IIO is not set
-# CONFIG_PWM is not set
-CONFIG_IRQCHIP=y
-CONFIG_ARM_GIC=y
-# CONFIG_IPACK_BUS is not set
-# CONFIG_RESET_CONTROLLER is not set
-# CONFIG_FMC is not set
-
-#
-# PHY Subsystem
-#
-# CONFIG_GENERIC_PHY is not set
-# CONFIG_PHY_EXYNOS_MIPI_VIDEO is not set
-# CONFIG_PHY_EXYNOS_DP_VIDEO is not set
-# CONFIG_POWERCAP is not set
-
-#
-# File systems
-#
-CONFIG_DCACHE_WORD_ACCESS=y
-CONFIG_EXT2_FS=y
-# CONFIG_EXT2_FS_XATTR is not set
-# CONFIG_EXT2_FS_XIP is not set
-CONFIG_EXT3_FS=y
-# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-CONFIG_EXT3_FS_XATTR=y
-# CONFIG_EXT3_FS_POSIX_ACL is not set
-# CONFIG_EXT3_FS_SECURITY is not set
-CONFIG_EXT4_FS=y
-# CONFIG_EXT4_FS_POSIX_ACL is not set
-# CONFIG_EXT4_FS_SECURITY is not set
-# CONFIG_EXT4_DEBUG is not set
-CONFIG_JBD=y
-# CONFIG_JBD_DEBUG is not set
-CONFIG_JBD2=y
-# CONFIG_JBD2_DEBUG is not set
-CONFIG_FS_MBCACHE=y
-# CONFIG_REISERFS_FS is not set
-# CONFIG_JFS_FS is not set
-# CONFIG_XFS_FS is not set
-# CONFIG_GFS2_FS is not set
-# CONFIG_BTRFS_FS is not set
-# CONFIG_NILFS2_FS is not set
-# CONFIG_FS_POSIX_ACL is not set
-CONFIG_FILE_LOCKING=y
-CONFIG_FSNOTIFY=y
-# CONFIG_DNOTIFY is not set
-CONFIG_INOTIFY_USER=y
-# CONFIG_FANOTIFY is not set
-# CONFIG_QUOTA is not set
-# CONFIG_QUOTACTL is not set
-# CONFIG_AUTOFS4_FS is not set
-# CONFIG_FUSE_FS is not set
-
-#
-# Caches
-#
-# CONFIG_FSCACHE is not set
-
-#
-# CD-ROM/DVD Filesystems
-#
-# CONFIG_ISO9660_FS is not set
-# CONFIG_UDF_FS is not set
-
-#
-# DOS/FAT/NT Filesystems
-#
-CONFIG_FAT_FS=y
-CONFIG_MSDOS_FS=y
-CONFIG_VFAT_FS=y
-CONFIG_FAT_DEFAULT_CODEPAGE=437
-CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
-# CONFIG_NTFS_FS is not set
-
-#
-# Pseudo filesystems
-#
-CONFIG_PROC_FS=y
-CONFIG_PROC_SYSCTL=y
-CONFIG_PROC_PAGE_MONITOR=y
-CONFIG_SYSFS=y
-CONFIG_TMPFS=y
-# CONFIG_TMPFS_POSIX_ACL is not set
-# CONFIG_TMPFS_XATTR is not set
-# CONFIG_HUGETLB_PAGE is not set
-CONFIG_CONFIGFS_FS=y
-CONFIG_MISC_FILESYSTEMS=y
-# CONFIG_ADFS_FS is not set
-# CONFIG_AFFS_FS is not set
-# CONFIG_HFS_FS is not set
-# CONFIG_HFSPLUS_FS is not set
-# CONFIG_BEFS_FS is not set
-# CONFIG_BFS_FS is not set
-# CONFIG_EFS_FS is not set
-# CONFIG_LOGFS is not set
-# CONFIG_CRAMFS is not set
-# CONFIG_SQUASHFS is not set
-# CONFIG_VXFS_FS is not set
-# CONFIG_MINIX_FS is not set
-# CONFIG_OMFS_FS is not set
-# CONFIG_HPFS_FS is not set
-# CONFIG_QNX4FS_FS is not set
-# CONFIG_QNX6FS_FS is not set
-# CONFIG_ROMFS_FS is not set
-# CONFIG_PSTORE is not set
-# CONFIG_SYSV_FS is not set
-# CONFIG_UFS_FS is not set
-# CONFIG_F2FS_FS is not set
-CONFIG_NLS=y
-CONFIG_NLS_DEFAULT="iso8859-1"
-CONFIG_NLS_CODEPAGE_437=y
-# CONFIG_NLS_CODEPAGE_737 is not set
-# CONFIG_NLS_CODEPAGE_775 is not set
-# CONFIG_NLS_CODEPAGE_850 is not set
-# CONFIG_NLS_CODEPAGE_852 is not set
-# CONFIG_NLS_CODEPAGE_855 is not set
-# CONFIG_NLS_CODEPAGE_857 is not set
-# CONFIG_NLS_CODEPAGE_860 is not set
-# CONFIG_NLS_CODEPAGE_861 is not set
-# CONFIG_NLS_CODEPAGE_862 is not set
-# CONFIG_NLS_CODEPAGE_863 is not set
-# CONFIG_NLS_CODEPAGE_864 is not set
-# CONFIG_NLS_CODEPAGE_865 is not set
-# CONFIG_NLS_CODEPAGE_866 is not set
-# CONFIG_NLS_CODEPAGE_869 is not set
-# CONFIG_NLS_CODEPAGE_936 is not set
-# CONFIG_NLS_CODEPAGE_950 is not set
-# CONFIG_NLS_CODEPAGE_932 is not set
-# CONFIG_NLS_CODEPAGE_949 is not set
-# CONFIG_NLS_CODEPAGE_874 is not set
-# CONFIG_NLS_ISO8859_8 is not set
-# CONFIG_NLS_CODEPAGE_1250 is not set
-# CONFIG_NLS_CODEPAGE_1251 is not set
-CONFIG_NLS_ASCII=y
-CONFIG_NLS_ISO8859_1=y
-# CONFIG_NLS_ISO8859_2 is not set
-# CONFIG_NLS_ISO8859_3 is not set
-# CONFIG_NLS_ISO8859_4 is not set
-# CONFIG_NLS_ISO8859_5 is not set
-# CONFIG_NLS_ISO8859_6 is not set
-# CONFIG_NLS_ISO8859_7 is not set
-# CONFIG_NLS_ISO8859_9 is not set
-# CONFIG_NLS_ISO8859_13 is not set
-# CONFIG_NLS_ISO8859_14 is not set
-# CONFIG_NLS_ISO8859_15 is not set
-# CONFIG_NLS_KOI8_R is not set
-# CONFIG_NLS_KOI8_U is not set
-# CONFIG_NLS_MAC_ROMAN is not set
-# CONFIG_NLS_MAC_CELTIC is not set
-# CONFIG_NLS_MAC_CENTEURO is not set
-# CONFIG_NLS_MAC_CROATIAN is not set
-# CONFIG_NLS_MAC_CYRILLIC is not set
-# CONFIG_NLS_MAC_GAELIC is not set
-# CONFIG_NLS_MAC_GREEK is not set
-# CONFIG_NLS_MAC_ICELAND is not set
-# CONFIG_NLS_MAC_INUIT is not set
-# CONFIG_NLS_MAC_ROMANIAN is not set
-# CONFIG_NLS_MAC_TURKISH is not set
-# CONFIG_NLS_UTF8 is not set
-
-#
-# Kernel hacking
-#
-
-#
-# printk and dmesg options
-#
-CONFIG_PRINTK_TIME=y
-CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
-# CONFIG_BOOT_PRINTK_DELAY is not set
-CONFIG_DYNAMIC_DEBUG=y
-
-#
-# Compile-time checks and compiler options
-#
-CONFIG_DEBUG_INFO=y
-# CONFIG_DEBUG_INFO_REDUCED is not set
-CONFIG_ENABLE_WARN_DEPRECATED=y
-CONFIG_ENABLE_MUST_CHECK=y
-CONFIG_FRAME_WARN=1024
-# CONFIG_STRIP_ASM_SYMS is not set
-# CONFIG_READABLE_ASM is not set
-# CONFIG_UNUSED_SYMBOLS is not set
-CONFIG_DEBUG_FS=y
-# CONFIG_HEADERS_CHECK is not set
-CONFIG_DEBUG_SECTION_MISMATCH=y
-# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
-CONFIG_MAGIC_SYSRQ=y
-CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE=0x1
-CONFIG_DEBUG_KERNEL=y
-
-#
-# Memory Debugging
-#
-# CONFIG_DEBUG_PAGEALLOC is not set
-# CONFIG_DEBUG_OBJECTS is not set
-# CONFIG_DEBUG_SLAB is not set
-CONFIG_HAVE_DEBUG_KMEMLEAK=y
-# CONFIG_DEBUG_KMEMLEAK is not set
-# CONFIG_DEBUG_STACK_USAGE is not set
-# CONFIG_DEBUG_VM is not set
-# CONFIG_DEBUG_MEMORY_INIT is not set
-# CONFIG_DEBUG_PER_CPU_MAPS is not set
-# CONFIG_DEBUG_HIGHMEM is not set
-# CONFIG_DEBUG_SHIRQ is not set
-
-#
-# Debug Lockups and Hangs
-#
-CONFIG_LOCKUP_DETECTOR=y
-# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
-CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
-CONFIG_DETECT_HUNG_TASK=y
-CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
-# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
-CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
-# CONFIG_PANIC_ON_OOPS is not set
-CONFIG_PANIC_ON_OOPS_VALUE=0
-CONFIG_PANIC_TIMEOUT=0
-# CONFIG_SCHED_DEBUG is not set
-# CONFIG_SCHEDSTATS is not set
-CONFIG_TIMER_STATS=y
-# CONFIG_DEBUG_PREEMPT is not set
-
-#
-# Lock Debugging (spinlocks, mutexes, etc...)
-#
-CONFIG_DEBUG_RT_MUTEXES=y
-CONFIG_DEBUG_PI_LIST=y
-# CONFIG_RT_MUTEX_TESTER is not set
-CONFIG_DEBUG_SPINLOCK=y
-CONFIG_DEBUG_MUTEXES=y
-CONFIG_DEBUG_WW_MUTEX_SLOWPATH=y
-CONFIG_DEBUG_LOCK_ALLOC=y
-CONFIG_PROVE_LOCKING=y
-CONFIG_LOCKDEP=y
-# CONFIG_LOCK_STAT is not set
-# CONFIG_DEBUG_LOCKDEP is not set
-CONFIG_DEBUG_ATOMIC_SLEEP=y
-# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
-CONFIG_TRACE_IRQFLAGS=y
-CONFIG_STACKTRACE=y
-# CONFIG_DEBUG_KOBJECT is not set
-CONFIG_DEBUG_BUGVERBOSE=y
-# CONFIG_DEBUG_WRITECOUNT is not set
-# CONFIG_DEBUG_LIST is not set
-# CONFIG_DEBUG_SG is not set
-# CONFIG_DEBUG_NOTIFIERS is not set
-# CONFIG_DEBUG_CREDENTIALS is not set
-
-#
-# RCU Debugging
-#
-CONFIG_PROVE_RCU=y
-# CONFIG_PROVE_RCU_REPEATEDLY is not set
-# CONFIG_PROVE_RCU_DELAY is not set
-# CONFIG_SPARSE_RCU_POINTER is not set
-# CONFIG_RCU_TORTURE_TEST is not set
-CONFIG_RCU_CPU_STALL_TIMEOUT=60
-# CONFIG_RCU_CPU_STALL_VERBOSE is not set
-# CONFIG_RCU_CPU_STALL_INFO is not set
-# CONFIG_RCU_TRACE is not set
-# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
-# CONFIG_NOTIFIER_ERROR_INJECTION is not set
-# CONFIG_FAULT_INJECTION is not set
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_HAVE_DYNAMIC_FTRACE=y
-CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
-CONFIG_HAVE_C_RECORDMCOUNT=y
-CONFIG_TRACING_SUPPORT=y
-# CONFIG_FTRACE is not set
-
-#
-# Runtime Testing
-#
-# CONFIG_LKDTM is not set
-# CONFIG_TEST_LIST_SORT is not set
-# CONFIG_BACKTRACE_SELF_TEST is not set
-# CONFIG_RBTREE_TEST is not set
-# CONFIG_INTERVAL_TREE_TEST is not set
-# CONFIG_PERCPU_TEST is not set
-# CONFIG_ATOMIC64_SELFTEST is not set
-# CONFIG_TEST_STRING_HELPERS is not set
-# CONFIG_TEST_KSTRTOX is not set
-# CONFIG_DMA_API_DEBUG is not set
-# CONFIG_TEST_MODULE is not set
-# CONFIG_TEST_USER_COPY is not set
-# CONFIG_SAMPLES is not set
-CONFIG_HAVE_ARCH_KGDB=y
-CONFIG_KGDB=y
-CONFIG_KGDB_SERIAL_CONSOLE=y
-# CONFIG_KGDB_TESTS is not set
-CONFIG_KGDB_KDB=y
-# CONFIG_KDB_KEYBOARD is not set
-CONFIG_KDB_CONTINUE_CATASTROPHIC=0
-CONFIG_ARM_PTDUMP=y
-# CONFIG_STRICT_DEVMEM is not set
-CONFIG_ARM_UNWIND=y
-# CONFIG_DEBUG_USER is not set
-CONFIG_DEBUG_LL=y
-# CONFIG_DEBUG_ZYNQ_UART0 is not set
-CONFIG_DEBUG_ZYNQ_UART1=y
-# CONFIG_DEBUG_ICEDCC is not set
-# CONFIG_DEBUG_SEMIHOSTING is not set
-# CONFIG_DEBUG_LL_UART_8250 is not set
-# CONFIG_DEBUG_LL_UART_PL01X is not set
-CONFIG_DEBUG_LL_INCLUDE="debug/zynq.S"
-# CONFIG_DEBUG_UART_PL01X is not set
-# CONFIG_DEBUG_UART_8250 is not set
-CONFIG_DEBUG_UNCOMPRESS=y
-CONFIG_UNCOMPRESS_INCLUDE="debug/uncompress.h"
-CONFIG_EARLY_PRINTK=y
-# CONFIG_OC_ETM is not set
-# CONFIG_PID_IN_CONTEXTIDR is not set
-# CONFIG_DEBUG_SET_MODULE_RONX is not set
-
-#
-# Security options
-#
-# CONFIG_KEYS is not set
-# CONFIG_SECURITY_DMESG_RESTRICT is not set
-# CONFIG_SECURITY is not set
-# CONFIG_SECURITYFS is not set
-CONFIG_DEFAULT_SECURITY_DAC=y
-CONFIG_DEFAULT_SECURITY=""
-CONFIG_CRYPTO=y
-
-#
-# Crypto core or helper
-#
-CONFIG_CRYPTO_ALGAPI=y
-CONFIG_CRYPTO_ALGAPI2=y
-CONFIG_CRYPTO_AEAD2=y
-CONFIG_CRYPTO_BLKCIPHER=y
-CONFIG_CRYPTO_BLKCIPHER2=y
-CONFIG_CRYPTO_HASH=y
-CONFIG_CRYPTO_HASH2=y
-CONFIG_CRYPTO_RNG=m
-CONFIG_CRYPTO_RNG2=y
-CONFIG_CRYPTO_PCOMP2=y
-CONFIG_CRYPTO_MANAGER=y
-CONFIG_CRYPTO_MANAGER2=y
-CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
-# CONFIG_CRYPTO_GF128MUL is not set
-# CONFIG_CRYPTO_NULL is not set
-# CONFIG_CRYPTO_PCRYPT is not set
-CONFIG_CRYPTO_WORKQUEUE=y
-CONFIG_CRYPTO_CRYPTD=y
-# CONFIG_CRYPTO_AUTHENC is not set
-# CONFIG_CRYPTO_TEST is not set
-CONFIG_CRYPTO_ABLK_HELPER=y
-
-#
-# Authenticated Encryption with Associated Data
-#
-# CONFIG_CRYPTO_CCM is not set
-# CONFIG_CRYPTO_GCM is not set
-# CONFIG_CRYPTO_SEQIV is not set
-
-#
-# Block modes
-#
-# CONFIG_CRYPTO_CBC is not set
-# CONFIG_CRYPTO_CTR is not set
-# CONFIG_CRYPTO_CTS is not set
-# CONFIG_CRYPTO_ECB is not set
-# CONFIG_CRYPTO_LRW is not set
-# CONFIG_CRYPTO_PCBC is not set
-# CONFIG_CRYPTO_XTS is not set
-
-#
-# Hash modes
-#
-# CONFIG_CRYPTO_CMAC is not set
-# CONFIG_CRYPTO_HMAC is not set
-# CONFIG_CRYPTO_XCBC is not set
-# CONFIG_CRYPTO_VMAC is not set
-
-#
-# Digest
-#
-CONFIG_CRYPTO_CRC32C=y
-# CONFIG_CRYPTO_CRC32 is not set
-# CONFIG_CRYPTO_CRCT10DIF is not set
-# CONFIG_CRYPTO_GHASH is not set
-# CONFIG_CRYPTO_MD4 is not set
-# CONFIG_CRYPTO_MD5 is not set
-# CONFIG_CRYPTO_MICHAEL_MIC is not set
-# CONFIG_CRYPTO_RMD128 is not set
-# CONFIG_CRYPTO_RMD160 is not set
-# CONFIG_CRYPTO_RMD256 is not set
-# CONFIG_CRYPTO_RMD320 is not set
-# CONFIG_CRYPTO_SHA1 is not set
-# CONFIG_CRYPTO_SHA1_ARM is not set
-# CONFIG_CRYPTO_SHA256 is not set
-# CONFIG_CRYPTO_SHA512 is not set
-# CONFIG_CRYPTO_TGR192 is not set
-# CONFIG_CRYPTO_WP512 is not set
-
-#
-# Ciphers
-#
-CONFIG_CRYPTO_AES=y
-CONFIG_CRYPTO_AES_ARM=y
-CONFIG_CRYPTO_AES_ARM_BS=y
-# CONFIG_CRYPTO_ANUBIS is not set
-# CONFIG_CRYPTO_ARC4 is not set
-# CONFIG_CRYPTO_BLOWFISH is not set
-# CONFIG_CRYPTO_CAMELLIA is not set
-# CONFIG_CRYPTO_CAST5 is not set
-# CONFIG_CRYPTO_CAST6 is not set
-# CONFIG_CRYPTO_DES is not set
-# CONFIG_CRYPTO_FCRYPT is not set
-# CONFIG_CRYPTO_KHAZAD is not set
-# CONFIG_CRYPTO_SALSA20 is not set
-# CONFIG_CRYPTO_SEED is not set
-# CONFIG_CRYPTO_SERPENT is not set
-# CONFIG_CRYPTO_TEA is not set
-# CONFIG_CRYPTO_TWOFISH is not set
-
-#
-# Compression
-#
-# CONFIG_CRYPTO_DEFLATE is not set
-# CONFIG_CRYPTO_ZLIB is not set
-# CONFIG_CRYPTO_LZO is not set
-# CONFIG_CRYPTO_LZ4 is not set
-# CONFIG_CRYPTO_LZ4HC is not set
-
-#
-# Random Number Generation
-#
-CONFIG_CRYPTO_ANSI_CPRNG=m
-CONFIG_CRYPTO_HW=y
-# CONFIG_BINARY_PRINTF is not set
-
-#
-# Library routines
-#
-CONFIG_BITREVERSE=y
-CONFIG_GENERIC_STRNCPY_FROM_USER=y
-CONFIG_GENERIC_STRNLEN_USER=y
-CONFIG_GENERIC_PCI_IOMAP=y
-CONFIG_GENERIC_IO=y
-CONFIG_ARCH_USE_CMPXCHG_LOCKREF=y
-# CONFIG_CRC_CCITT is not set
-CONFIG_CRC16=y
-# CONFIG_CRC_T10DIF is not set
-# CONFIG_CRC_ITU_T is not set
-CONFIG_CRC32=y
-# CONFIG_CRC32_SELFTEST is not set
-CONFIG_CRC32_SLICEBY8=y
-# CONFIG_CRC32_SLICEBY4 is not set
-# CONFIG_CRC32_SARWATE is not set
-# CONFIG_CRC32_BIT is not set
-# CONFIG_CRC7 is not set
-# CONFIG_LIBCRC32C is not set
-# CONFIG_CRC8 is not set
-# CONFIG_RANDOM32_SELFTEST is not set
-CONFIG_ZLIB_INFLATE=y
-# CONFIG_XZ_DEC is not set
-# CONFIG_XZ_DEC_BCJ is not set
-CONFIG_DECOMPRESS_GZIP=y
-CONFIG_GENERIC_ALLOCATOR=y
-CONFIG_HAS_IOMEM=y
-CONFIG_HAS_IOPORT=y
-CONFIG_HAS_DMA=y
-CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
-# CONFIG_AVERAGE is not set
-# CONFIG_CORDIC is not set
-# CONFIG_DDR is not set
-# CONFIG_VIRTUALIZATION is not set
-
-
---kXdP64Ggrk/fb43R--
