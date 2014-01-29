@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaA2DG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 22:06:26 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:32857 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432AbaA2DGZ (ORCPT
+	id S1755898AbaA2D0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 22:26:47 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:43794 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573AbaA2D0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 22:06:25 -0500
+	Tue, 28 Jan 2014 22:26:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140127000305.GA14236@electric-eye.fr.zoreil.com>
-References: <1859471893.20140126115521@eikelenboom.it>
-	<20140127000305.GA14236@electric-eye.fr.zoreil.com>
-Date: Tue, 28 Jan 2014 19:06:24 -0800
-X-Google-Sender-Auth: PHyWZrUHc_brV-77wD8_yzx-xdg
-Message-ID: <CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com>
-Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7
- overlapping mappings of pfn 55ebe
-From: Dan Williams <dan.j.williams@intel.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140127142520.GD10323@ZenIV.linux.org.uk>
+References: <20140127142520.GD10323@ZenIV.linux.org.uk>
+Date: Tue, 28 Jan 2014 19:26:08 -0800
+X-Google-Sender-Auth: jHz_jq2Fm0LbvCN66i6GIGFxIR8
+Message-ID: <CA+55aFyuC11WPBh0bWu_K3+CooAVAUbSTfk2aw5sks8eJRAhDQ@mail.gmail.com>
+Subject: Re: [git pull] vfs pile 1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 4:03 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
-> Sander Eikelenboom <linux@eikelenboom.it> :
-> [...]
->> I have got a regression with a 3.14-mw kernel (last commit is 4ba9920e5e9c0e16b5ed24292d45322907bb9035):
->> It looks like it's related to the rtl8169 ...
->>
->> --
->> Sander
->>
->> Jan 26 11:36:26 serveerstertje kernel: [   89.105537] ------------[ cut here ]------------
->> Jan 26 11:36:26 serveerstertje kernel: [   89.116779] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x103/0x130()
->> Jan 26 11:36:26 serveerstertje kernel: [   89.128148] DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
->> Jan 26 11:36:26 serveerstertje kernel: [   89.139397] Modules linked in:
->> Jan 26 11:36:26 serveerstertje kernel: [   89.150535] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-20140125-mw-pcireset+ #1
->> Jan 26 11:36:26 serveerstertje kernel: [   89.161784] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
->> Jan 26 11:36:26 serveerstertje kernel: [   89.172965]  0000000000000009 ffff88005f603838 ffffffff81acbcfa ffffffff822134e0
->> Jan 26 11:36:26 serveerstertje kernel: [   89.184156]  ffff88005f603888 ffff88005f603878 ffffffff810bdf62 ffff880000000000
->> Jan 26 11:36:26 serveerstertje kernel: [   89.195186]  0000000000055ebe 00000000ffffffef 0000000000000200 ffff8800592ea098
->> Jan 26 11:36:26 serveerstertje kernel: [   89.206227] Call Trace:
->> Jan 26 11:36:26 serveerstertje kernel: [   89.217027]  <IRQ>  [<ffffffff81acbcfa>] dump_stack+0x46/0x58
->> Jan 26 11:36:26 serveerstertje kernel: [   89.227907]  [<ffffffff810bdf62>] warn_slowpath_common+0x82/0xb0
->> Jan 26 11:36:26 serveerstertje kernel: [   89.238678]  [<ffffffff810be031>] warn_slowpath_fmt+0x41/0x50
->> Jan 26 11:36:26 serveerstertje kernel: [   89.249336]  [<ffffffff81471c5a>] ? active_pfn_read_overlap+0x3a/0x70
->> Jan 26 11:36:26 serveerstertje kernel: [   89.259904]  [<ffffffff814729e3>] add_dma_entry+0x103/0x130
->> Jan 26 11:36:26 serveerstertje kernel: [   89.270416]  [<ffffffff81472de6>] debug_dma_map_page+0x126/0x150
->> Jan 26 11:36:26 serveerstertje kernel: [   89.280840]  [<ffffffff81714686>] rtl8169_start_xmit+0x216/0xa20
-> [r8169 and xen stuff]
->
-> Dan, I miss the part of the debug code that tells where the mappings were
-> previously set.
+On Mon, Jan 27, 2014 at 6:25 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>         Assorted stuff; the biggest pile here is Christoph's ACL series.
+> Plus assorted cleanups and fixes all over the place...  There will be
+> another pile later this week.
 
-In this case it was a facepalm mistake on my part.  The mappings were
-not being properly accounted in the last revision of the patch I sent.
- I copied you on the fix [1].
+The posix_acl_chmod() code looks wrong.
 
---
-Dan
+Not that it looked right before either, but whatever. The code
+basically looks like some variation of this in most setattr()
+implementations:
 
-[1]: http://marc.info/?l=linux-netdev&m=139096447627032&w=2
+        if (ia_valid & ATTR_MODE)
+                rc = posix_acl_chmod(inode, inode->i_mode);
+
+but the mode we're changing to (and what ATTR_MODE guards) is actually
+attr->ia_mode, not inode->i_mode. And quite frankly, passing in
+inode->i_mode looks stupid, since we're already passing in the inode
+pointer, so that's just redundant and pointless information.
+
+Anyway, I noticed this after doing the (untested, and still un-acked -
+hint, hint) ceph conversion. In that, I made ceph use attr->ia_mode.
+Maybe that was wrong, but at least it's not insane and stupid like the
+other filesystem implementations are.
+
+Comments?
+
+              Linus
