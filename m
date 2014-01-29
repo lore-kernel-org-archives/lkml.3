@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaA2XdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 18:33:11 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:58753 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126AbaA2XdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 18:33:09 -0500
-Message-ID: <52E98F99.2050600@ti.com>
-Date: Wed, 29 Jan 2014 17:32:41 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752133AbaA2Xjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 18:39:45 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53030 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaA2Xjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 18:39:43 -0500
+Date: Wed, 29 Jan 2014 15:39:36 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@kernel.org
+Cc: josh@joshtriplett.org, peterz@infradead.org, oleg@redhat.com,
+        rostedt@goodmis.org, bitbucket@online.de, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL timers] Timer-wheel bandaids^Wcommits
+Message-ID: <20140129233936.GA11150@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Robert Nelson <robertcnelson@gmail.com>
-CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Mike Turquette <mturquette@linaro.org>, <devicetree@vger.kernel.org>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: dts: OMAP3+: add clock nodes for CPU
-References: <1391019557-22313-1-git-send-email-nm@ti.com>	<1391019557-22313-3-git-send-email-nm@ti.com> <CAOCHtYjaCBn2oOk66ef9wiz_GJnVwHDyx446_mrkipPoENaeUQ@mail.gmail.com>
-In-Reply-To: <CAOCHtYjaCBn2oOk66ef9wiz_GJnVwHDyx446_mrkipPoENaeUQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012923-1542-0000-0000-0000059F68BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2014 01:29 PM, Robert Nelson wrote:
-> On Wed, Jan 29, 2014 at 12:19 PM, Nishanth Menon <nm@ti.com> wrote:
->> OMAP34xx, AM3517 and OMAP36xx platforms use dpll1 clock.
->>
->> OMAP443x, OMAP446x, OMAP447x, OMAP5, DRA7, AM43xx platforms use
->> dpll_mpu clock.
->>
->> Latency used is the generic latency defined in omap-cpufreq
->> driver.
->>
->> Signed-off-by: Nishanth Menon <nm@ti.com>
-> 
-> Hi Nishanth,
-> 
-> After this patch, do you see any limitation to finally enabling 1Ghz
-> operation on the beagle-xm by default? Or are we still missing a
-> dependicy somewhere?
+Hello, Ingo,
 
-yes, there is:
-a) ABB dt series - i will repost this in a few mins
-b) AVS conversion from non-dt mode to dt supported mode. (which by
-itself depends on VC/VP conversion).
-c) clk notifier based dvfs for cpufreq-cpu0 -> this allows us to
-introduce the necessary plumbing for mpu voltage domain such that the
-TWL4030 regulator, AVS and ABB are rightly sequenced.
+This pull request contains latency bandaids^Woptimizations to the
+timer-wheel code that are useful in conjunction with NO_HZ_FULL Kconfig
+option.  These optimizations reduce the jiffy-by-jiffy looping in cases
+where there is either zero or one timers in the timer wheel, which is
+a common case for NO_HZ_FULL "worker" CPUs that run almost entirely
+in usermode for a single task.
 
-What you have done in the patch below is to introduce ABB regulator -
-but no one is actually using it -> this might actually work on certain
-samples at 1GHz, but prolonged operation will either damage the device
-or fail on other samples - I have tried numerous times Internally to
-get approval for non ABB/AVS configuration for 1GHz - but I have a
-clear feedback that it cannot be done with the constraints of
-DM3730/OMAP3630.
+Each of these commits has at least two Reviewed-by, one Acked-by, and
+one Tested-by tag, so they are ready for more extensive testing in -tip.
 
-Lets do this a series at a time and build up the necessary support -
-we get clock nodes for dvfs (using i2c1) here with cpufreq-cpu0 with
-this series. If folks can ack and queue this up, we can get in ABB dts
-nodes in place - allowing us to work on the next set -> sequencing
-using clock notifier. in parallel we could work on converting AVS back
-to dt based solution.
+							Thanx, Paul
 
-yes, the road is long.
+The following changes since commit 00e2bcd6d35f59fce7fa0e76e24d08f74c6a8506:
 
--- 
-Regards,
-Nishanth Menon
+  clocksource: Timer-sun5i: Switch to sched_clock_register() (2014-01-19 13:23:23 +0100)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/timers
+
+for you to fetch changes up to 6f089d0be7fef9705b3a7755b05d1092e772b910:
+
+  timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0 (2014-01-29 15:25:16 -0800)
+
+----------------------------------------------------------------
+Oleg Nesterov (1):
+      timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0
+
+Paul E. McKenney (4):
+      timers: Track total number of timers in list
+      timers: Reduce __run_timers() latency for empty list
+      timers: Reduce future __run_timers() latency for newly emptied list
+      timers: Reduce future __run_timers() latency for first add to empty list
+
+ kernel/timer.c | 30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
+
