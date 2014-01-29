@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaA2PkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 10:40:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54602 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaA2PkU (ORCPT
+	id S1752489AbaA2Pmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 10:42:44 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:37719 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaA2Pmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 10:40:20 -0500
-Date: Wed, 29 Jan 2014 08:40:14 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: [GIT PULL] Core block IO changes for 3.14
-Message-ID: <20140129154014.GP25989@kernel.dk>
-References: <20140128224336.GF25989@kernel.dk>
- <20140128225229.GH25989@kernel.dk>
- <CAMuHMdUseSC+Roa5sTYfXtBxGn2OOCQpLAtdRgeoVAVdBrotWw@mail.gmail.com>
- <20140129151710.GO25989@kernel.dk>
- <CAMuHMdWdvSUV6-nWQ5w5TAYhSQBm20ruhaDj9y08jd5EMo=yGA@mail.gmail.com>
+	Wed, 29 Jan 2014 10:42:42 -0500
+Date: Wed, 29 Jan 2014 09:39:28 -0600
+From: Andrew Ruder <andy@aeruder.net>
+To: Richard Weinberger <richard@nod.at>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] reproducable ubifs reboot assert and corruption
+Message-ID: <20140129153928.GA7278@gmail.com>
+Mail-Followup-To: Richard Weinberger <richard@nod.at>,
+	"linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <20140122051510.GB17284@gmail.com>
+ <CAFLxGvwmzftdQKSjjjwpFLS8g3EJqMrQ2gU2scBsh2MvG7Wyyw@mail.gmail.com>
+ <20140127163939.GA27809@gmail.com>
+ <20140129053238.GA6035@gmail.com>
+ <52E8AB0F.2090905@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdWdvSUV6-nWQ5w5TAYhSQBm20ruhaDj9y08jd5EMo=yGA@mail.gmail.com>
+In-Reply-To: <52E8AB0F.2090905@nod.at>
+User-Agent: Mutt/1.5.21+155 (d3096e8796e7) (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29 2014, Geert Uytterhoeven wrote:
-> Hi Jens,
-> 
-> On Wed, Jan 29, 2014 at 4:17 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> > On Wed, Jan 29 2014, Geert Uytterhoeven wrote:
-> >> On Tue, Jan 28, 2014 at 11:52 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> >> >> - Finally the immutable biovec changes from Kent Overstreet. This
-> >> >>   enables some nice future work on making arbitrarily sized bios
-> >> >>   possible, and splitting more efficient. Related fixes to immutable
-> >> >>   bio_vecs:
-> >> >>
-> >> >>         - dm-cache immutable fixup from Mike Snitzer.
-> >> >>         - btrfs immutable fixup from Muthu Kumar.
-> >> >>
-> >> >> - bio-integrity fix from Nic Bellinger, which is also going to stable.
-> >> >>
-> >> >>
-> >> >> Please pull! There will be a bit of merge work for you, but it should be
-> >> >> fairly straight forward. It's mostly related to changin:
-> >> >>
-> >> >> bio->bi_sector  -> bio->bi_iter.bi_sector
-> >> >> bio->bi_size    -> bio->bi_iter.bi_size
-> >> >>
-> >> >>
-> >> >> git://git.kernel.dk/linux-block.git for-3.14/core
-> >> >
-> >> > BTW, let me know if you want me to merge this. The above has been in
-> >> > for-next since forever, and Stephen has carried a fix or two for new
-> >> > merges.
-> >>
-> >> arch/xtensa/platforms/iss/simdisk.c:108:23: error: 'struct bio' has no
-> >> member named 'bi_sector'
-> >>
-> >> http://kisskb.ellerman.id.au/kisskb/buildresult/10542666/
-> >
-> > Does the below fix it for you? There's an existing bug in there where it
-> > kunmaps the wrong part (page instead of the address). Not sure that
-> > matters on xtensa or whether the kmaps are a no-op, but cleaned up none
-> > the less.
-> 
-> Yes, it does. Thanks!
+On Wed, Jan 29, 2014 at 08:17:35AM +0100, Richard Weinberger wrote:
+> So you can trigger this by running fsstress on /mnt and then call
+> mount -o remount,ro /mnt?
 
-Thanks for testing!
+That's all it takes.  I actually run the remount until it succeeds,
+obviously with fsstress going in the background there is a pretty narrow
+window where it needs to sneak in with a write between the start of the
+sync_filesystem and before the remount check for writers (-EBUSY).
 
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Can you also trigger it on nandsim or mtdram?
 
-Added.
+Haven't tried, but I can.  I just don't really have that great of
+a development environment for doing this on a desktop machine.
 
-Linus, I queued up this patch, it's in for-3.14/core as well. This will
-offset the inserted/deleted lines by 7/7.
+> I did a quick test on my testbed using mtdram and was unable to trigger it.
+> But I fear my box is too fast.
 
--- 
-Jens Axboe
+I think there is definitely a speed component of my 416 MHz PXA 270 that
+makes this pretty easy to hit.  What if you did something like (changing
+the ubiattach and mount lines obviously)?
 
+I'll see if I can do this in a qemu, but it might take me a while to get
+that setup.
+
+- Andy
