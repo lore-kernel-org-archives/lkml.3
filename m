@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaA2EUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 23:20:45 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18218 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755236AbaA2EUo (ORCPT
+	id S1755764AbaA2Epe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 23:45:34 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:38372 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaA2Epd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 23:20:44 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap8EACqB6FKl5H4J/2dsb2JhbABahka6WIEldIMlGIE5iAXJNheOfx2EIgSYKJIfg0Eo
-From: Alistair Popple <alistair@popple.id.au>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, olaf@aepfle.de, benh@kernel.crashing.org,
-        Alistair Popple <alistair@popple.id.au>
-Subject: [PATCH] powerpc/iommu: Fix initialisation of DART iommu table
-Date: Wed, 29 Jan 2014 15:20:12 +1100
-Message-Id: <1390969212-20758-1-git-send-email-alistair@popple.id.au>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 28 Jan 2014 23:45:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
+References: <1390895840.8373.2.camel@beeld>
+	<20140128164320.GB7596@redhat.com>
+	<CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
+Date: Wed, 29 Jan 2014 10:45:31 +0600
+Message-ID: <CADZ9YHjaQtes5XXo1FOSLjqgqbyA_d5LT607+8HRgqXFm-69=g@mail.gmail.com>
+Subject: Re: Do we really need curr_target in signal_struct ?
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d084775738b746648d4102337163a04534a02982 switched the generic
-powerpc iommu backend code to use the it_page_shift field to determine
-page size. Commit 3a553170d35d69bea3877bffa508489dfa6f133d should have
-initiliased this field for all platforms, however the DART iommu table
-code was not updated.
+On Wed, Jan 29, 2014 at 10:09 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> On Tue, Jan 28, 2014 at 10:43 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 01/28, Rakib Mullick wrote:
+>>
+>> You could simply do while_each_thread(p, t) to find a thread which
+>> wants_signal(..).
+>>
+> Yes, while_each_thread() is much nicer than get_nr_thread(), thanks for
+> the pointer.
+>
+Or, should we use for_each_thread()? Just noticed that, you've plan to remove
+while_each_thread().
 
-This commit initialises the it_page_shift field to 4K for the DART
-iommu.
-
-Signed-off-by: Alistair Popple <alistair@popple.id.au>
----
- arch/powerpc/sysdev/dart_iommu.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/powerpc/sysdev/dart_iommu.c b/arch/powerpc/sysdev/dart_iommu.c
-index bd968a4..62c47bb 100644
---- a/arch/powerpc/sysdev/dart_iommu.c
-+++ b/arch/powerpc/sysdev/dart_iommu.c
-@@ -292,6 +292,7 @@ static void iommu_table_dart_setup(void)
- 	iommu_table_dart.it_offset = 0;
- 	/* it_size is in number of entries */
- 	iommu_table_dart.it_size = dart_tablesize / sizeof(u32);
-+	iommu_table_dart.it_page_shift = IOMMU_PAGE_SHIFT_4K;
- 
- 	/* Initialize the common IOMMU code */
- 	iommu_table_dart.it_base = (unsigned long)dart_vbase;
--- 
-1.7.10.4
-
+Thanks,
+Rakib
