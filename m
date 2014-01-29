@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaA2OYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:24:55 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:49629 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaA2OYy (ORCPT
+	id S1752268AbaA2O31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:29:27 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:38296 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867AbaA2O30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:24:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pratyush Anand <pratyush.anand@st.com>
-Subject: Re: Query: Phy: How to find consumer device on dt platform
-Date: Wed, 29 Jan 2014 15:24:35 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel@list.st.com
-References: <20140128141356.GC3519@pratyush-vbox> <52E894A4.8050303@ti.com> <20140129095031.GA2287@pratyush-vbox>
-In-Reply-To: <20140129095031.GA2287@pratyush-vbox>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401291524.36131.arnd@arndb.de>
-X-Provags-ID: V02:K0:9RTx/1//Jv6RPYJ8BRUkaIoAYN0ZrGAzeYp50i4I4zB
- jJ3A+05oZy2z069seXPT0g4o6oKK8LWOnfo7aUgb2A7Y3MhSMZ
- yy/TUnu9vJ53xyimtvYsl7hLTB8MmmD23jzJoaISRZs7QOYAB+
- AN1N/lAjeOk7vFy9aVnTjQSlKQsaE7bNqbhLc68E/t87S/bySY
- Tg7psMLQWEfM4+as7iAz4jpghqiGG/1wYY5J+GKZkxjFZhJHTa
- OeVUErxZymLCmDZoEFzkCg2Rf27EkhFdKTOckC8nkwmwAQNTJa
- zUAv1zSWZecsJJHegIzXu3JdFIT2yNThWgBosgitkhTe2d6ibM
- OSjxEs4Owv9z7RWcq1Ft/IU0uQO/EWjChS/26I9lj
+	Wed, 29 Jan 2014 09:29:26 -0500
+From: dietmar.eggemann@arm.com
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com
+Subject: [PATCH] sched: delete is_same_group outside CONFIG_FAIR_GROUP_SCHED
+Date: Wed, 29 Jan 2014 14:29:33 +0000
+Message-Id: <1391005773-29493-1-git-send-email-dietmar.eggemann@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-OriginalArrivalTime: 29 Jan 2014 14:29:23.0390 (UTC) FILETIME=[815165E0:01CF1CFE]
+X-MC-Unique: 114012914292304001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s0TETWkx020994
 
-On Wednesday 29 January 2014, Pratyush Anand wrote:
-> On Wed, Jan 29, 2014 at 01:41:56PM +0800, Kishon Vijay Abraham I wrote:
-> > > 
-> > > I would instead recommend making the mode of the PHY device the
-> > > argument to the phy handle in DT, so that the sata node uses
-> > > 
-> > > 	phys = <&phyA 0>;
-> > > 
-> > > and the PCIe node uses
-> > > 
-> > > 	phys = <&phyB 1>;
-> > > 
-> > > Then the binding for the phy defines that an argument of '0' means sata mode,
-> > > while '1' means pcie mode, plus you should define all other valid modes.
-> 
-> Probably, it may  not help in this case. How would *phys* defining as
-> above with PCIe/SATA node help phy driver to decide whether current
-> phy instance is associated with PCIe or SATA. Actually, there is no
-> way to pass information from phy consumer driver(pcie/sata driver in
-> this case) to phy driver.
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 
-I don't understand what is unclear about my example where I do just that.
-The argument (0 or 1) gets passed into the driver's xlate function
-when the consumer calls of_phy_get().
+Since is_same_group is only used in group scheduling code, there is
+no need to define it outside CONFIG_FAIR_GROUP_SCHED.
 
-> > Anyway phyA and phyB points to different nodes and just from phyA and phyB we
-> > should be able to tell whether it is sata or pcie.
-> 
-> We have multiple instances (say 3) of same phy, which can be
-> programmed either for pcie or for sata. We have multiple instances of
-> ahci and pcie controller. phy_n will be connected to either ahci_n or
-> pcie_n.
-> 
-> What Kishon has suggested here is exactly what I was thinking.
-> I think, we should go with this.
+Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+---
+ kernel/sched/fair.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-I still find it highly inconsistent.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e64b0794060e..78b68e89cf77 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -426,12 +426,6 @@ static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
+ #define for_each_leaf_cfs_rq(rq, cfs_rq) \
+ 		for (cfs_rq = &rq->cfs; cfs_rq; cfs_rq = NULL)
+ 
+-static inline int
+-is_same_group(struct sched_entity *se, struct sched_entity *pse)
+-{
+-	return 1;
+-}
+-
+ static inline struct sched_entity *parent_entity(struct sched_entity *se)
+ {
+ 	return NULL;
+-- 
+1.7.9.5
 
-	Arnd
+
