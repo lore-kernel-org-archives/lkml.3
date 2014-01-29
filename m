@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021AbaA2AIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 19:08:47 -0500
-Received: from mga14.intel.com ([143.182.124.37]:38669 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755045AbaA2AIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 19:08:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,739,1384329600"; 
-   d="scan'208";a="337318728"
-Date: Tue, 28 Jan 2014 16:13:57 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [PATCH] gpio-intel-mid: fix the incorrect return of idle callback
-Message-ID: <20140129001357.GA13185@psi-dev26.jf.intel.com>
-References: <52E76F71.4080304@intel.com>
- <20140128164937.GA30226@saruman.home>
- <20140128172413.GA31821@psi-dev26.jf.intel.com>
- <20140128181206.GB31977@saruman.home>
+	id S1755792AbaA2ANq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 19:13:46 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:52597 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791AbaA2ANo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 19:13:44 -0500
+Date: Wed, 29 Jan 2014 00:13:38 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, platform-drivers-x86@vger.kernel.org
+Subject: [GIT PULL] x86 platform drivers for 3.14
+Message-ID: <20140129001338.GA1427@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140128181206.GB31977@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 12:12:06PM -0600, Felipe Balbi wrote:
-> On Tue, Jan 28, 2014 at 09:24:13AM -0800, David Cohen wrote:
-> > On Tue, Jan 28, 2014 at 10:49:37AM -0600, Felipe Balbi wrote:
-> > > On Tue, Jan 28, 2014 at 04:50:57PM +0800, xinhui.pan wrote:
-> > > > From: "xinhui.pan" <xinhuiX.pan@intel.com>
-> > > > 
-> > > > intel_gpio_runtime_idle should return correct error code if it do fail.
-> > > > make it more correct even though -EBUSY is the most possible return value.
-> > > > 
-> > > > Signed-off-by: bo.he <bo.he@intel.com>
-> > > > Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
-> > > > ---
-> > > >  drivers/gpio/gpio-intel-mid.c |    4 +++-
-> > > >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > > > 
-> > > > diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
-> > > > index d1b50ef..05749a3 100644
-> > > > --- a/drivers/gpio/gpio-intel-mid.c
-> > > > +++ b/drivers/gpio/gpio-intel-mid.c
-> > > > @@ -394,7 +394,9 @@ static const struct irq_domain_ops intel_gpio_irq_ops = {
-> > > >  
-> > > >  static int intel_gpio_runtime_idle(struct device *dev)
-> > > >  {
-> > > > -	pm_schedule_suspend(dev, 500);
-> > > > +	int err = pm_schedule_suspend(dev, 500);
-> > > > +	if (err)
-> > > > +		return err;
-> > > >  	return -EBUSY;
-> > > 
-> > > wait, is it only me or this would look a lot better as:
-> > > 
-> > > static int intel_gpio_runtime_idle(struct device *dev)
-> > > {
-> > > 	return pm_schedule_suspend(dev, 500);
-> > > }
-> > 
-> > The reply to your suggestion is probably in this commit :)
-> > 
-> > ---
-> > commit 45f0a85c8258741d11bda25c0a5669c06267204a
-> > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Date:   Mon Jun 3 21:49:52 2013 +0200
-> > 
-> >     PM / Runtime: Rework the "runtime idle" helper routine
-> > ---
-> > 
-> > We won't return 0 from here.
-> 
-> so you never want to return 0, why don't you, then:
-> 
-> static int intel_gpio_runtime_idle(struct device *dev)
-> {
-> 	pm_schedule_suspend(dev, 500);
-> 	return -EBUSY;
-> }
+Hi Linus,
 
-That's how it is currently :)
+Nothing amazingly special here. Some cleanups, a new driver to support a 
+single button on some new HPs, a tiny amount of hardware enablement.
 
-But this patch is making the function to return a different code in case
-of error. IMHO there is not much fuctional gain with it, but I see
-perhaps one extra info for tracing during development.
+The following changes since commit ec513b16c480c6cdda1e3d597e611eafca05227b:
 
-Anyway, I'll let Xinhui to do further comment since he's the author.
+  Merge tag 'usb-3.14-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2014-01-20 16:13:02 -0800)
 
-Br, David
-
-> 
-> just like drivers/tty/serial/mfd.c::serial_hsu_runtime_idle() is doing ?
-> 
-> -- 
-> balbi
+are available in the git repository at:
 
 
+  git://cavan.codon.org.uk/platform-drivers-x86.git for_linus
+
+for you to fetch changes up to b4b0b4a9e0392dbd00e5f033e1329ce61ed06fef:
+
+  ipc: add intel-mid's pci id macros (2014-01-21 08:47:15 -0500)
+
+----------------------------------------------------------------
+Alex Hung (1):
+      hp-wireless: new driver for hp wireless button for Windows 8
+
+Colin Ian King (1):
+      sony-laptop: remove unnecessary assigment of len
+
+David Cohen (2):
+      ipc: simplify platform data approach
+      ipc: add intel-mid's pci id macros
+
+David E. Box (1):
+      X86 platform: New BayTrail IOSF-SB MBI driver
+
+Guenter Roeck (5):
+      compal-laptop: Use devm_kzalloc to allocate local data structure
+      eeepc-laptop: Convert to use devm_hwmon_device_register_with_groups
+      compal-laptop: Replace SENSOR_DEVICE_ATTR with DEVICE_ATTR
+      compal-laptop: Use devm_hwmon_device_register_with_groups
+      asus-wmi: Convert to use devm_hwmon_device_register_with_groups
+
+Hans de Goede (2):
+      dell-laptop: rkill whitelist Precision models
+      dell-laptop: Only install the i8042 filter when rfkill is active
+
+Julia Lawall (1):
+      fujitsu-laptop: fix error return code
+
+Rashika Kheria (2):
+      drivers: platform: Mark functions as static in hp_accel.c
+      drivers: platform: Include appropriate header file in mxm-wmi.c
+
+Takashi Iwai (1):
+      hp_accel: Add a new PnP ID HPQ6007 for new HP laptops
+
+Unai Uribarri (1):
+      toshiba_acpi: Support RFKILL hotkey scancode
+
+Wei Yongjun (1):
+      dell-laptop: fix to return error code in dell_send_intensity()
+
+ drivers/platform/x86/Kconfig          |  19 +++
+ drivers/platform/x86/Makefile         |   2 +
+ drivers/platform/x86/asus-wmi.c       |  48 ++------
+ drivers/platform/x86/compal-laptop.c  | 121 +++++++++---------
+ drivers/platform/x86/dell-laptop.c    |  78 ++++++------
+ drivers/platform/x86/eeepc-laptop.c   |  52 ++------
+ drivers/platform/x86/fujitsu-laptop.c |  15 ++-
+ drivers/platform/x86/hp-wireless.c    | 132 ++++++++++++++++++++
+ drivers/platform/x86/hp_accel.c       |   7 +-
+ drivers/platform/x86/intel_baytrail.c | 224 ++++++++++++++++++++++++++++++++++
+ drivers/platform/x86/intel_baytrail.h |  90 ++++++++++++++
+ drivers/platform/x86/intel_scu_ipc.c  |  87 ++++++-------
+ drivers/platform/x86/mxm-wmi.c        |   1 +
+ drivers/platform/x86/sony-laptop.c    |   2 +-
+ drivers/platform/x86/toshiba_acpi.c   |   1 +
+ 15 files changed, 642 insertions(+), 237 deletions(-)
+ create mode 100644 drivers/platform/x86/hp-wireless.c
+ create mode 100644 drivers/platform/x86/intel_baytrail.c
+ create mode 100644 drivers/platform/x86/intel_baytrail.h
+
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
