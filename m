@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaA2O5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:57:36 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:52851 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaA2O5c (ORCPT
+	id S1752645AbaA2O5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:57:40 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:54108 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599AbaA2O5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:57:32 -0500
+	Wed, 29 Jan 2014 09:57:38 -0500
 From: Manish Badarkhe <badarkhe.manish@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: broonie@kernel.org, lgirdwood@gmail.com, gregkh@linuxfoundation.org,
         badarkhe.manish@gmail.com
-Subject: [PATCH V4 0/2] devm_* API operation for fixed regulator
-Date: Wed, 29 Jan 2014 20:27:26 +0530
-Message-Id: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
+Subject: [PATCH V4 1/2] devres: introduce API "devm_kstrdup"
+Date: Wed, 29 Jan 2014 20:27:27 +0530
+Message-Id: <1391007448-26245-2-git-send-email-badarkhe.manish@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
+References: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_* API operations for fixed regulator driver so that
-driver core will manage resources.
+This patch introduces "devm_kstrdup" API so that the
+device's driver can allocate memory and copy string.
 
-Also, introduce a new API "devm_kstrdup" and used it in fixed
-regulator driver to manage resources.
+Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+---
+:100644 100644 545c4de... db4e264... M	drivers/base/devres.c
+:100644 100644 952b010... ec1b6e2... M	include/linux/device.h
+ drivers/base/devres.c  |   26 ++++++++++++++++++++++++++
+ include/linux/device.h |    1 +
+ 2 files changed, 27 insertions(+)
 
-Changes since V3:
- 1. Update "devm_kstrdup" function to remove "size" argument.
-    Also,used "devm_kmalloc" instead of "devm_kzalloc".
-
-Changes since V2:
- 1. Update driver to use new API "devm_kstrdup" instead of
-    "kstrdup".
- 2. Added a seperate patch to introduce new API "devm_kstrdup"
-
-Changes since V1:
- 1. Updated driver to use "devm_kzalloc" instead of "kstrdup".
- 2. Updated commit message.
-
-Manish Badarkhe (2):
-  devres: introduce API "devm_kstrdup"
-  regulator: fixed: update to devm_* API
-
- drivers/base/devres.c     |   26 ++++++++++++++++++++++++++
- drivers/regulator/fixed.c |   42 ++++++++++++------------------------------
- include/linux/device.h    |    1 +
- 3 files changed, 39 insertions(+), 30 deletions(-)
-
+diff --git a/drivers/base/devres.c b/drivers/base/devres.c
+index 545c4de..db4e264 100644
+--- a/drivers/base/devres.c
++++ b/drivers/base/devres.c
+@@ -791,6 +791,32 @@ void * devm_kmalloc(struct device *dev, size_t size, gfp_t gfp)
+ EXPORT_SYMBOL_GPL(devm_kmalloc);
+ 
+ /**
++ * devm_kstrdup - Allocate resource managed space and
++ *                copy an existing string into that.
++ * @dev: Device to allocate memory for
++ * @s: the string to duplicate
++ * @gfp: the GFP mask used in the devm_kmalloc() call when
++ *       allocating memory
++ * RETURNS:
++ * Pointer to allocated string on success, NULL on failure.
++ */
++char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp)
++{
++	size_t size;
++	char *buf;
++
++	if (!s)
++		return NULL;
++
++	size = strlen(s) + 1;
++	buf = devm_kmalloc(dev, size, gfp);
++	if (buf)
++		memcpy(buf, s, size);
++	return buf;
++}
++EXPORT_SYMBOL_GPL(devm_kstrdup);
++
++/**
+  * devm_kfree - Resource-managed kfree
+  * @dev: Device this memory belongs to
+  * @p: Memory to free
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 952b010..ec1b6e2 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -626,6 +626,7 @@ static inline void *devm_kcalloc(struct device *dev,
+ 	return devm_kmalloc_array(dev, n, size, flags | __GFP_ZERO);
+ }
+ extern void devm_kfree(struct device *dev, void *p);
++extern char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp);
+ 
+ void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+ void __iomem *devm_request_and_ioremap(struct device *dev,
 -- 
 1.7.10.4
 
