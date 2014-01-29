@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaA2RpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 12:45:24 -0500
+	id S1752865AbaA2RqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 12:46:13 -0500
 Received: from relais.videotron.ca ([24.201.245.36]:21485 "EHLO
 	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaA2RpV (ORCPT
+	with ESMTP id S1752402AbaA2RpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 12:45:21 -0500
+	Wed, 29 Jan 2014 12:45:23 -0500
 Content-transfer-encoding: 7BIT
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>,
@@ -19,10 +19,9 @@ To: Russell King <linux@arm.linux.org.uk>,
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
         linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH v2 1/6] idle: move the cpuidle entry point to the generic idle
- loop
-Date: Wed, 29 Jan 2014 12:45:08 -0500
-Message-id: <1391017513-12995-2-git-send-email-nicolas.pitre@linaro.org>
+Subject: [PATCH v2 6/6] cpu/idle.c: move to sched/idle.c
+Date: Wed, 29 Jan 2014 12:45:13 -0500
+Message-id: <1391017513-12995-7-git-send-email-nicolas.pitre@linaro.org>
 X-Mailer: git-send-email 1.8.4.108.g55ea5f6
 In-reply-to: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
 References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
@@ -30,41 +29,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to integrate cpuidle with the scheduler, we must have a better
-proximity in the core code with what cpuidle is doing and not delegate
-such interaction to arch code.
-
-Architectures implementing arch_cpu_idle() should simply enter
-a cheap idle mode in the absence of a proper cpuidle driver.
+Integration of cpuidle with the scheduler requires that the idle loop be
+closely integrated with the scheduler proper. Moving cpu/idle.c into the
+sched directory will allow for a smoother integration, and eliminate a
+subdirectory which contained only one source file.
 
 Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- kernel/cpu/idle.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/Makefile              | 1 -
+ kernel/cpu/Makefile          | 1 -
+ kernel/sched/Makefile        | 2 +-
+ kernel/{cpu => sched}/idle.c | 0
+ 4 files changed, 1 insertion(+), 3 deletions(-)
+ delete mode 100644 kernel/cpu/Makefile
+ rename kernel/{cpu => sched}/idle.c (100%)
 
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index 988573a9a3..ffcd3ee9af 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -3,6 +3,7 @@
-  */
- #include <linux/sched.h>
- #include <linux/cpu.h>
-+#include <linux/cpuidle.h>
- #include <linux/tick.h>
- #include <linux/mm.h>
- #include <linux/stackprotector.h>
-@@ -95,7 +96,8 @@ static void cpu_idle_loop(void)
- 				if (!current_clr_polling_and_test()) {
- 					stop_critical_timings();
- 					rcu_idle_enter();
--					arch_cpu_idle();
-+					if (cpuidle_idle_call())
-+						arch_cpu_idle();
- 					WARN_ON_ONCE(irqs_disabled());
- 					rcu_idle_exit();
- 					start_critical_timings();
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bc010ee272..6f1c7e5cfc 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -22,7 +22,6 @@ obj-y += sched/
+ obj-y += locking/
+ obj-y += power/
+ obj-y += printk/
+-obj-y += cpu/
+ obj-y += irq/
+ obj-y += rcu/
+ 
+diff --git a/kernel/cpu/Makefile b/kernel/cpu/Makefile
+deleted file mode 100644
+index 59ab052ef7..0000000000
+--- a/kernel/cpu/Makefile
++++ /dev/null
+@@ -1 +0,0 @@
+-obj-y	= idle.o
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 7b621409cf..ac3e0ea68f 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -11,7 +11,7 @@ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
+ endif
+ 
+-obj-y += core.o proc.o clock.o cputime.o idle_task.o fair.o rt.o stop_task.o
++obj-y += core.o proc.o clock.o cputime.o idle_task.o idle.o fair.o rt.o stop_task.o
+ obj-y += wait.o completion.o
+ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+diff --git a/kernel/cpu/idle.c b/kernel/sched/idle.c
+similarity index 100%
+rename from kernel/cpu/idle.c
+rename to kernel/sched/idle.c
 -- 
 1.8.4.108.g55ea5f6
 
