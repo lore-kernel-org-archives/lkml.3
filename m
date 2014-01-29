@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108AbaA2SSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:18:12 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:63740 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaA2SSG (ORCPT
+	id S1753162AbaA2SST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:18:19 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:64852 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115AbaA2SSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:18:06 -0500
-Subject: [PATCH 05/17] x86/PCI: Drop return value of pcibios_scan_root()
+	Wed, 29 Jan 2014 13:18:14 -0500
+Subject: [PATCH 06/17] x86/PCI: Add x86_pci_root_bus_node() to look up NUMA
+ node from PCI bus
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-acpi@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 29 Jan 2014 11:18:03 -0700
-Message-ID: <20140129181803.15476.65726.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Wed, 29 Jan 2014 11:18:11 -0700
+Message-ID: <20140129181811.15476.19897.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,74 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody really uses the return value of pcibios_scan_root() (one place uses
-it to control a printk, but the printk is not very useful).  This converts
-pcibios_scan_root() to a void function.
+The AMD early_fill_mp_bus_info() already allocates a struct pci_root_info
+for each PCI host bridge it finds, and that structure contains the NUMA
+node number.  We don't need to keep the same information in the
+mp_bus_to_node[] table.
+
+This adds x86_pci_root_bus_node(), which returns the NUMA node number, or
+NUMA_NO_NODE if the node is unknown.
+
+Note that unlike get_mp_bus_to_node(), x86_pci_root_bus_node() only works
+for root buses.  For example, if amd_bus.c finds a host bridge on node 1 to
+[bus 00-0f], get_mp_bus_to_node() returns 1 for any bus between 00 and 0f,
+but x86_pci_root_bus_node() returns 1 for bus 00 and NUMA_NO_NODE for buses
+01-0f.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/x86/include/asm/pci.h |    2 +-
- arch/x86/pci/common.c      |    6 ++----
- arch/x86/pci/irq.c         |    4 +---
- 3 files changed, 4 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/topology.h |    1 +
+ arch/x86/pci/bus_numa.c         |   10 ++++++++++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index b52f9c0ec5fb..96ae4f4040bb 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -65,7 +65,7 @@ extern unsigned long pci_mem_start;
- 
- extern int pcibios_enabled;
- void pcibios_config_init(void);
--struct pci_bus *pcibios_scan_root(int bus);
-+void pcibios_scan_root(int bus);
- 
- void pcibios_set_master(struct pci_dev *dev);
- void pcibios_penalize_isa_irq(int irq, int active);
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 52ad00c2e198..600e5925f1a4 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -456,7 +456,7 @@ void __init dmi_check_pciprobe(void)
- 	dmi_check_system(pciprobe_dmi_table);
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index d35f24e231cd..09046a1a6c35 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -131,6 +131,7 @@ static inline void arch_fix_phys_package_id(int num, u32 slot)
  }
  
--struct pci_bus *pcibios_scan_root(int busnum)
-+void pcibios_scan_root(int busnum)
+ struct pci_bus;
++int x86_pci_root_bus_node(int bus);
+ void x86_pci_root_bus_resources(int bus, struct list_head *resources);
+ 
+ #ifdef CONFIG_SMP
+diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
+index c2735feb2508..2e36a4469549 100644
+--- a/arch/x86/pci/bus_numa.c
++++ b/arch/x86/pci/bus_numa.c
+@@ -20,6 +20,16 @@ static struct pci_root_info *x86_find_pci_root_info(int bus)
+ 	return NULL;
+ }
+ 
++int x86_pci_root_bus_node(int bus)
++{
++	struct pci_root_info *info = x86_find_pci_root_info(bus);
++
++	if (!info)
++		return NUMA_NO_NODE;
++
++	return info->node;
++}
++
+ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
  {
- 	struct pci_bus *bus;
- 	struct pci_sysdata *sd;
-@@ -465,7 +465,7 @@ struct pci_bus *pcibios_scan_root(int busnum)
- 	sd = kzalloc(sizeof(*sd), GFP_KERNEL);
- 	if (!sd) {
- 		printk(KERN_ERR "PCI: OOM, skipping PCI bus %02x\n", busnum);
--		return NULL;
-+		return;
- 	}
- 	sd->node = get_mp_bus_to_node(busnum);
- 	x86_pci_root_bus_resources(busnum, &resources);
-@@ -475,8 +475,6 @@ struct pci_bus *pcibios_scan_root(int busnum)
- 		pci_free_resource_list(&resources);
- 		kfree(sd);
- 	}
--
--	return bus;
- }
- 
- void __init pcibios_set_cache_line_size(void)
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index 8658874165c2..84112f55dd7a 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -138,9 +138,7 @@ static void __init pirq_peer_trick(void)
- 	for (i = 1; i < 256; i++) {
- 		if (!busmap[i] || pci_find_bus(0, i))
- 			continue;
--		if (pcibios_scan_root(i))
--			printk(KERN_INFO "PCI: Discovered primary peer "
--			       "bus %02x [IRQ]\n", i);
-+		pcibios_scan_root(i);
- 	}
- 	pcibios_last_bus = -1;
- }
+ 	struct pci_root_info *info = x86_find_pci_root_info(bus);
 
