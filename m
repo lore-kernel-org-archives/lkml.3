@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782AbaA2MJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 07:09:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48455 "EHLO mx2.suse.de"
+	id S1752047AbaA2MKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 07:10:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16815 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882AbaA2MJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 07:09:09 -0500
-Date: Wed, 29 Jan 2014 13:09:07 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 6/8] cgroup: remove cgroup->name
-Message-ID: <20140129120907.GA22183@dhcp22.suse.cz>
-References: <1390953585-16554-1-git-send-email-tj@kernel.org>
- <1390953585-16554-7-git-send-email-tj@kernel.org>
+	id S1751141AbaA2MKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 07:10:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,741,1384329600"; 
+   d="scan'208";a="472601418"
+Date: Wed, 29 Jan 2014 17:39:41 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Joe Perches <joe@perches.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Daniel Mack <zonque@gmail.com>, Xiang Wang <wangx@marvell.com>,
+        Zhangfei Gao <zhangfei.gao@marvell.com>
+Subject: Re: [PATCH] dmaengine: mmp_pdma: fix mismerge
+Message-ID: <20140129120941.GK10628@intel.com>
+References: <3546714.4OTE6dW34L@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390953585-16554-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3546714.4OTE6dW34L@wuerfel>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-01-14 18:59:43, Tejun Heo wrote:
-> cgroup->name handling became quite complicated over time involving
-> dedicated struct cgroup_name for RCU protection.  Now that cgroup is
-> on kernfs, we can drop all of it and simply use kernfs_name/path() and
-> friends.  Replace cgroup->name and all related code with kernfs
-> name/path constructs.
+On Tue, Jan 28, 2014 at 09:45:38PM +0100, Arnd Bergmann wrote:
+> The merge between 2b7f65b11d87f "mmp_pdma: Style neatening" and
+> 8010dad55a0ab0 "dma: add dma_get_any_slave_channel(), for use in of_xlate()"
+> caused a build error by leaving obsolete code in place:
 > 
-> * Reimplement cgroup_name() and cgroup_path() as thin wrappers on top
->   of kernfs counterparts, which involves semantic changes.
->   pr_cont_cgroup_name() and pr_cont_cgroup_path() added.
+>   mmp_pdma.c: In function 'mmp_pdma_dma_xlate':
+>   mmp_pdma.c:909:31: error: 'candidate' undeclared
+>   mmp_pdma.c:912:3: error: label 'retry' used but not defined
+>   mmp_pdma.c:901:24: warning: unused variable 'c' [-Wunused-variable]
 > 
-> * cgroup->name handling dropped from cgroup_rename().
+> This removes the extraneous lines.
 > 
-> * All users of cgroup_name/path() updated to the new semantics.  Users
->   which were formatting the string just to printk them are converted
->   to use pr_cont_cgroup_name/path() instead, which simplifies things
->   quite a bit.  As cgroup_name() no longer requires RCU read lock
->   around it, RCU lockings which were protecting only cgroup_name() are
->   removed.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Applied thanks
 
-Nice. I hated the way how we retrieved the name previously.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+--
+~Vinod
+> 
+> diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+> index 32e58ee..69c6a12 100644
+> --- a/drivers/dma/mmp_pdma.c
+> +++ b/drivers/dma/mmp_pdma.c
+> @@ -898,19 +898,11 @@ static struct dma_chan *mmp_pdma_dma_xlate(struct of_phandle_args *dma_spec,
+>  {
+>  	struct mmp_pdma_device *d = ofdma->of_dma_data;
+>  	struct dma_chan *chan;
+> -	struct mmp_pdma_chan *c;
+>  
+>  	chan = dma_get_any_slave_channel(&d->device);
+>  	if (!chan)
+>  		return NULL;
+>  
+> -	/* dma_get_slave_channel will return NULL if we lost a race between
+> -	 * the lookup and the reservation */
+> -	chan = dma_get_slave_channel(candidate);
+> -
+> -	if (!chan)
+> -		goto retry;
+> -
+>  	to_mmp_pdma_chan(chan)->drcmr = dma_spec->args[0];
+>  
+>  	return chan;
+> 
 
-Btw. after this change we should drop part of the comment above
-oom_info_lock:
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 19d5d4274e22..d998baec5deb 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1684,8 +1684,7 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
- void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
- {
- 	/*
--	 * protects memcg_name and makes sure that parallel ooms do not
--	 * interleave
-+	 * Makes sure that parallel ooms do not interleave
- 	 */
- 	static DEFINE_SPINLOCK(oom_info_lock);
- 	struct cgroup *task_cgrp;
 -- 
-Michal Hocko
-SUSE Labs
