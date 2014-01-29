@@ -1,106 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116AbaA2AfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 19:35:24 -0500
-Received: from ozlabs.org ([203.10.76.45]:45068 "EHLO ozlabs.org"
+	id S932252AbaA2Ahd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 19:37:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59705 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734AbaA2AfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 19:35:22 -0500
-Date: Wed, 29 Jan 2014 11:35:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Shawn Guo <shawn.guo@linaro.org>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the imx-mxs tree with the arm tree
-Message-Id: <20140129113514.86275e22015dea313d78d5e1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S932139AbaA2Ahb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 19:37:31 -0500
+Date: Tue, 28 Jan 2014 19:36:46 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, riel@redhat.com,
+        mgorman@suse.de, mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, hughd@google.com,
+        david@gibson.dropbear.id.au, js1304@gmail.com,
+        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
+        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1390955806-ljm7w9nq-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1390876457.27421.19.camel@buesod1.americas.hpqcorp.net>
+References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
+ <1390794746-16755-4-git-send-email-davidlohr@hp.com>
+ <1390856576-ud1qp3fm-mutt-n-horiguchi@ah.jp.nec.com>
+ <1390859042.27421.4.camel@buesod1.americas.hpqcorp.net>
+ <1390874021-48f5mo0m-mutt-n-horiguchi@ah.jp.nec.com>
+ <1390876457.27421.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 3/8] mm, hugetlb: fix race in region tracking
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_Jan_2014_11_35_14_+1100_UrkZyoCHIbAMnvG5"
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Jan_2014_11_35_14_+1100_UrkZyoCHIbAMnvG5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 27, 2014 at 06:34:17PM -0800, Davidlohr Bueso wrote:
+> On Mon, 2014-01-27 at 20:53 -0500, Naoya Horiguchi wrote:
+> > Hi Davidlohr,
+> > 
+> > On Mon, Jan 27, 2014 at 01:44:02PM -0800, Davidlohr Bueso wrote:
+> > > On Mon, 2014-01-27 at 16:02 -0500, Naoya Horiguchi wrote:
+> > > > On Sun, Jan 26, 2014 at 07:52:21PM -0800, Davidlohr Bueso wrote:
+> > > > > From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > > > > 
+> > > > > There is a race condition if we map a same file on different processes.
+> > > > > Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
+> > > > > When we do mmap, we don't grab a hugetlb_instantiation_mutex, but only the,
+> > > > > mmap_sem (exclusively). This doesn't prevent other tasks from modifying the
+> > > > > region structure, so it can be modified by two processes concurrently.
+> > > > > 
+> > > > > To solve this, introduce a spinlock to resv_map and make region manipulation
+> > > > > function grab it before they do actual work.
+> > > > > 
+> > > > > Acked-by: David Gibson <david@gibson.dropbear.id.au>
+> > > > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > > > > [Updated changelog]
+> > > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > > > > ---
+> > > > ...
+> > > > > @@ -203,15 +200,23 @@ static long region_chg(struct resv_map *resv, long f, long t)
+> > > > >  	 * Subtle, allocate a new region at the position but make it zero
+> > > > >  	 * size such that we can guarantee to record the reservation. */
+> > > > >  	if (&rg->link == head || t < rg->from) {
+> > > > > -		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+> > > > > -		if (!nrg)
+> > > > > -			return -ENOMEM;
+> > > > > +		if (!nrg) {
+> > > > > +			spin_unlock(&resv->lock);
+> > > > 
+> > > > I think that doing kmalloc() inside the lock is simpler.
+> > > > Why do you unlock and retry here?
+> > > 
+> > > This is a spinlock, no can do -- we've previously debated this and since
+> > > the critical region is quite small, a non blocking lock is better suited
+> > > here. We do the retry so we don't race once the new region is allocated
+> > > after the lock is dropped.
+> > 
+> > Using spinlock instead of rw_sem makes sense.
+> > But I'm not sure how the retry is essential to fix the race.
+> > (Sorry I can't find the discussion log about this.)
+> > As you did in your ver.1 (https://lkml.org/lkml/2013/7/26/296),
+> > simply doing like below seems to be fine to me, is it right?
+> > 
+> >         if (&rg->link == head || t < rg->from) {
+> > 		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+> > 		if (!nrg) {
+> > 			chg = -ENOMEM;
+> > 			goto out_locked;
+> > 		}
+> > 		nrg->from = f;
+> > 		...
+> > 	}
+> 
+> That's nice and simple because we were using the rwsem version.
+> 
+> > 
+> > In the current version nrg is initialized to NULL, so we always do retry
+> > once when adding new file_region. That's not optimal to me.
+> 
+> Right, the retry can only occur once.
+> 
+> > 
+> > If this retry is really essential for the fix, please comment the reason
+> > both in patch description and inline comment. It's very important for
+> > future code maintenance.
+> 
+> So we locate the corresponding region in the reserve map, and if we are
+> below the current region, then we allocate a new one. Since we dropped
+> the lock to allocate memory, we have to make sure that we still need the
+> new region and that we don't race with the new status of the reservation
+> map. This is the whole point of the retry, and I don't see it being
+> suboptimal.
 
-Hi Shawn,
+I'm afraid that you don't explain why you need drop the lock for memory
+allocation. Are you saying that this unlocking comes from the difference
+between rwsem and spin lock?
 
-Today's linux-next merge of the imx-mxs tree got a conflict in
-arch/arm/boot/dts/Makefile between commits 208d7baf8085 ("ARM: imx:
-initial SolidRun HummingBoard support") and 971488f1149f ("ARM: imx:
-initial SolidRun Cubox-i support") from the arm tree and various commits
-from the imx-mxs tree.
+I think if we call kmalloc() with the lock held we don't have to check
+that "we still need the new region" because resv->lock guarantees that
+no other thread changes the reservation map, right?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> We just cannot retake the lock after we get the new region and just add
+> it to to the list.
+> 
+> > 
+> > And I noticed another point. I don't think the name of new goto label
+> > 'out_locked' is a good one. 'out_unlock' or 'unlock' is better.
+> 
+> What worries me more is that we're actually freeing a valid new region
+> (nrg) upon exit. We certainly don't do so in the current code, and it
+> doesn't seem to be a leak. Instead, we should be doing:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+You're right. There is another goto in region_chg() where we never do
+the kmalloc, so calling kfree is a bug.
 
-diff --cc arch/arm/boot/dts/Makefile
-index b9d6a8b485e0,2841184f354c..000000000000
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@@ -150,15 -137,32 +153,35 @@@ dtb-$(CONFIG_ARCH_MXC) +=3D=20
-  	imx53-m53evk.dtb \
-  	imx53-mba53.dtb \
-  	imx53-qsb.dtb \
-+ 	imx53-qsrb.dtb \
-  	imx53-smd.dtb \
-+ 	imx53-tx53-x03x.dtb \
-+ 	imx53-tx53-x13x.dtb \
-+ 	imx53-voipac-bsb.dtb \
- +	imx6dl-cubox-i.dtb \
-+ 	imx6dl-dfi-fs700-m60.dtb \
-+ 	imx6dl-gw51xx.dtb \
-+ 	imx6dl-gw52xx.dtb \
-+ 	imx6dl-gw53xx.dtb \
-+ 	imx6dl-gw54xx.dtb \
- +	imx6dl-hummingboard.dtb \
-+ 	imx6dl-nitrogen6x.dtb \
-  	imx6dl-sabreauto.dtb \
-+ 	imx6dl-sabrelite.dtb \
-  	imx6dl-sabresd.dtb \
-  	imx6dl-wandboard.dtb \
-  	imx6q-arm2.dtb \
-+ 	imx6q-cm-fx6.dtb \
- +	imx6q-cubox-i.dtb \
-+ 	imx6q-dfi-fs700-m60.dtb \
-+ 	imx6q-dmo-edmqmx6.dtb \
-+ 	imx6q-gk802.dtb \
-+ 	imx6q-gw51xx.dtb \
-+ 	imx6q-gw52xx.dtb \
-+ 	imx6q-gw53xx.dtb \
-+ 	imx6q-gw5400-a.dtb \
-+ 	imx6q-gw54xx.dtb \
-+ 	imx6q-nitrogen6x.dtb \
-  	imx6q-phytec-pbab01.dtb \
-  	imx6q-sabreauto.dtb \
-  	imx6q-sabrelite.dtb \
+Thanks,
+Naoya Horiguchi
 
---Signature=_Wed__29_Jan_2014_11_35_14_+1100_UrkZyoCHIbAMnvG5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS6EzGAAoJEMDTa8Ir7ZwVeGQP/j2Mk98eUGlxCukxNQTS2a1f
-+ibIC0M6i0R05d9EzJlyQ6AlQr3bYonlinX8pOJahEdFgqY9iO86cTJ4kC9Cq8uI
-1ckm55O7KzeAqA/m1AxNTJ5+qn2BksGaW2uIuVryQ4SThWZlaJ7fk+5uyDZQdvv8
-B5eFOmwQajbKTOutrnVTfNdZz3NO9CbswU/PkcQp1mmm0ueXThi/WzHTM0dqr/D7
-r1ZZ/8mvLCrKhQy7FAJkh5IYYFEMJmGoiSBwNOm4fxl9HdPqePwHqIiu78r6t0lL
-ANHlHFLj78tJyBObBVSwQJWK5xycVyJMJrrF8Ht0/47vOGpfUpHEudWG4WDPnrZy
-D7YkNggKmHFZEfYIZAxUr88PzsMbh8iFemsD1GzCOG5Ih7kuC+hGs8ueVPPCzumb
-uBdzKtQgAMyiFw2ptZv2pUUWE4lEJMAduSzRBSwQ2LuOOjTVIlD4b9QVaHu1f92S
-5Qo5WviXh+ufs4NaRmIEkvPKdeApkhWn2S79Vhxarzv4YrX4vTNb5mh9ZQBvftPu
-nIGCOvs/rU0oXRIwXS77MUmQ8RBu68dpvnJ43Ye0+s9GlSABHAJs960IBpLV9Tbb
-yXAUB5qpgb/GXhaJJqF9QnBudSvdnPSVQecx7lW0ywxxPKlFLcbEoVsd8nhtRouz
-kD9OOpxQIopZqBYBDYE7
-=a7hg
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Jan_2014_11_35_14_+1100_UrkZyoCHIbAMnvG5--
+> 	if (&rg->link == head || t < rg->from) {
+> 		if (!nrg) {
+> 			spin_unlock(&resv->lock);
+> 			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+> 			if (!nrg)
+> 				return -ENOMEM;
+> 
+> 			goto retry;
+> 		}
+> 
+> 		nrg->from = f;
+> 		nrg->to   = f;
+> 		INIT_LIST_HEAD(&nrg->link);
+> 		list_add(&nrg->link, rg->link.prev);
+> 
+> 		chg = t - f;
+> 		goto out;
+> 	}
+> ...
+> out:
+> 	spin_unlock(&resv->lock);
+> 	return chg;
+> 
+> 
+> Thanks,
+> Davidlohr
+> 
