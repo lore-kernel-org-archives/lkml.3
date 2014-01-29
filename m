@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaA2Kri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 05:47:38 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:45715 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaA2Krf (ORCPT
+	id S1752035AbaA2KtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 05:49:17 -0500
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:45689 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751774AbaA2KtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 05:47:35 -0500
+	Wed, 29 Jan 2014 05:49:15 -0500
+Message-ID: <52E8D827.8010609@overkiz.com>
+Date: Wed, 29 Jan 2014 11:29:59 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140121101407.GD30706@mudshark.cambridge.arm.com>
-References: <CAJ8eaTzT4Os5RjtTu5gWpA=t-8Gg9rwmthEHVUOf+3+XhRpu6Q@mail.gmail.com>
-	<20140120102051.GB16496@mudshark.cambridge.arm.com>
-	<CAJ8eaTwH3kov0Bo_sCDvgxzQWtRB2tKit=_rKFBhQ6jBZcND-A@mail.gmail.com>
-	<20140121101407.GD30706@mudshark.cambridge.arm.com>
-Date: Wed, 29 Jan 2014 16:17:35 +0530
-Message-ID: <CAJ8eaTwa28M4sdSaH02kfw8Ey9cidxowu4H=zkWgDy0c7oSWUg@mail.gmail.com>
-Subject: Re: BUG: spinlock lockup
-From: naveen yadav <yad.naveen@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: [RFC PATCH 1/9] mtd: nand: retrieve ECC requirements from Hynix
+ READ ID byte 4
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-2-git-send-email-b.brezillon@overkiz.com> <20140123014906.GY8919@ld-irv-0074>
+In-Reply-To: <20140123014906.GY8919@ld-irv-0074>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 15530100365989607647
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrieegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.500002/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrieegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Will,
+Hello Brian,
 
-
-Thanks for your input. We debug by adding print as below and found
-very big value difference between next and owner(more then 1000). So
-it seams memory corruption.
-
-
-
-linux/lib/spinlock_debug.c
-
- 		msg, raw_smp_processor_id(),
- 		current->comm, task_pid_nr(current));
- 	printk(KERN_EMERG " lock: %pS, .magic: %08x, .owner: %s/%d, "
--			".owner_cpu: %d\n",
-+		".owner_cpu: %d raw_lock.tickets.next %u raw_lock.tickets.owner %u \n",
- 		lock, lock->magic,
- 		owner ? owner->comm : "<none>",
- 		owner ? task_pid_nr(owner) : -1,
--		lock->owner_cpu);
-+		lock->owner_cpu,
-+		lock->raw_lock.tickets.next,
-+		lock->raw_lock.tickets.owner);
- 	dump_stack();
- }
-
-
-I have one request, is it possible to change like below, if any
-corruption, it is easy to debug .
-if magic is corrupt, we can find quickly.
-
-typedef struct raw_spinlock {
-
-#ifdef CONFIG_DEBUG_SPINLOCK
-        unsigned int magic, owner_cpu;
-        void *owner;
-#endif
-
-        arch_spinlock_t raw_lock;
-#ifdef CONFIG_GENERIC_LOCKBREAK
-        unsigned int break_lock;
-#endif
-#ifdef CONFIG_DEBUG_LOCK_ALLOC
-        struct lockdep_map dep_map;
-#endif
-} raw_spinlock_t;
-
-So if this structure got corrupt,
-On Tue, Jan 21, 2014 at 3:44 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Jan 21, 2014 at 06:37:31AM +0000, naveen yadav wrote:
->> Thanks for your reply,
->>
->> We are using Cortex A15.
->> yes,  this is with ticket lock.
->>
->> We will check value of arch_spinlock_t and share it. It is bit
->> difficult to reproduce this scenario.
->>
->> If you have some idea ,please suggest how to reproduce it.
+On 23/01/2014 02:49, Brian Norris wrote:
+> + Huang
 >
-> You could try enabling lockdep and see if it catches anything earlier
-> on.
+> Hi Boris,
 >
-> Will
+> On Wed, Jan 08, 2014 at 03:21:56PM +0100, Boris BREZILLON wrote:
+>> The Hynix nand flashes store their ECC requirements in byte 4 of its id
+>> (returned on READ ID command).
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> I haven't verified yet (perhaps Huang can confirm?), but this may be
+> similar to a patch Huang submitted recently. In his case, we found that
+> this table is actually quite unreliable and is likely hard to maintain.
+
+You mean these bytes are not reliable within the whole Hynix LP (Large Page)
+NAND product line ?
+
+>
+> Why do you need this ECC information, for my reference?
+
+Because the NAND flash available on the cubietruck board does not 
+support the
+ONFI standard, and I thought this could be a option to retrieve the ECC 
+strength
+requirements.
+
+Anyway, I added a new helper function to retrieve ecc informations from 
+device
+tree (I'll post it in the 2nd version of this series). We'll see if this 
+approach is
+accepted...
+
+>
+> Brian
+
