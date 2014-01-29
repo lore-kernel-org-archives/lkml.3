@@ -1,284 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaA2LwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 06:52:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48372 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaA2LwH (ORCPT
+	id S1751853AbaA2LwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 06:52:17 -0500
+Received: from mail-bn1lp0158.outbound.protection.outlook.com ([207.46.163.158]:59210
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751586AbaA2LwL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 06:52:07 -0500
-Date: Wed, 29 Jan 2014 12:51:42 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Message-ID: <20140129115142.GE9636@twins.programming.kicks-ass.net>
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-6-git-send-email-jason.low2@hp.com>
- <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
- <1390949495.2807.52.camel@j-VirtualBox>
+	Wed, 29 Jan 2014 06:52:11 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "rob@landley.net" <rob@landley.net>, "perex@perex.cz" <perex@perex.cz>,
+        "moinejf@free.fr" <moinejf@free.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: RE: [PATCH v2 5/7] ASoC: add snd_soc_of_parse_audio_simple_widgets
+ for DT
+Thread-Topic: [PATCH v2 5/7] ASoC: add snd_soc_of_parse_audio_simple_widgets
+ for DT
+Thread-Index: AQHPGOCWUlsJwU28O0aJBBem7kVvaJqZAcaAgAKczTI=
+Date: Wed, 29 Jan 2014 11:52:08 +0000
+Message-ID: <4b698a662f2649cdae6e146c4cb9618c@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1390549386-4702-1-git-send-email-Li.Xiubo@freescale.com>
+ <1390549386-4702-6-git-send-email-Li.Xiubo@freescale.com>,<20140127195545.GZ11841@sirena.org.uk>
+In-Reply-To: <20140127195545.GZ11841@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [115.49.141.227]
+x-forefront-prvs: 01068D0A20
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(51704005)(189002)(199002)(164054003)(76786001)(74876001)(81816001)(50986001)(83322001)(47736001)(47976001)(74706001)(90146001)(74316001)(76796001)(74366001)(80976001)(85306002)(56816005)(69226001)(93136001)(49866001)(81686001)(86362001)(4396001)(81342001)(53806001)(33646001)(59766001)(76576001)(76482001)(87936001)(79102001)(54356001)(74662001)(31966008)(85852003)(66066001)(83072002)(87266001)(54316002)(46102001)(81542001)(56776001)(63696002)(51856001)(93516002)(92566001)(77982001)(74502001)(80022001)(47446002)(65816001)(94316002)(2656002)(8406003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:115.49.141.227;FPR:;InfoNoRecordsMX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390949495.2807.52.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 02:51:35PM -0800, Jason Low wrote:
-> > But urgh, nasty problem. Lemme ponder this a bit.
 
-OK, please have a very careful look at the below. It survived a boot
-with udev -- which usually stresses mutex contention enough to explode
-(in fact it did a few time when I got the contention/cancel path wrong),
-however I have not ran anything else on it.
+> > The "template-wname" includes: "Mic", "Line", "Hp", "Spk"...
+>
+> Sorry, this is nitpicking but can we have "HP" or even "Headphone"
+> instead of "Hp" - otherwise it looks like a typo and people might
+> correct it.  Similarly "Speaker" might be better as "Spk".
 
-The below is an MCS variant that allows relatively cheap unqueueing. But
-its somewhat tricky and I might have gotten a case wrong, esp. the
-double concurrent cancel case got my head hurting (I didn't attempt a
-tripple unqueue).
+Yes, I will  use them.
 
-Applies to tip/master but does generate a few (harmless) compile
-warnings because I didn't fully clean up the mcs_spinlock vs m_spinlock
-thing.
+Please see the next version days later.
 
-Also, there's a comment in the slowpath that bears consideration.
+Thanks,
 
----
- kernel/locking/mutex.c | 158 +++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 148 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 45fe1b5293d6..4a69da73903c 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -166,6 +166,9 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
- 	struct task_struct *owner;
- 	int retval = 1;
- 
-+	if (need_resched())
-+		return 0;
-+
- 	rcu_read_lock();
- 	owner = ACCESS_ONCE(lock->owner);
- 	if (owner)
-@@ -358,6 +361,134 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
- 	spin_unlock_mutex(&lock->base.wait_lock, flags);
- }
- 
-+struct m_spinlock {
-+	struct m_spinlock *next, *prev;
-+	int locked; /* 1 if lock acquired */
-+};
-+
-+/*
-+ * Using a single mcs node per CPU is safe because mutex_lock() should not be
-+ * called from interrupt context and we have preemption disabled over the mcs
-+ * lock usage.
-+ */
-+static DEFINE_PER_CPU(struct m_spinlock, m_node);
-+
-+static bool m_spin_lock(struct m_spinlock **lock)
-+{
-+	struct m_spinlock *node = this_cpu_ptr(&m_node);
-+	struct m_spinlock *prev, *next;
-+
-+	node->locked = 0;
-+	node->next = NULL;
-+
-+	node->prev = prev = xchg(lock, node);
-+	if (likely(prev == NULL))
-+		return true;
-+
-+	ACCESS_ONCE(prev->next) = node;
-+
-+	/*
-+	 * Normally @prev is untouchable after the above store; because at that
-+	 * moment unlock can proceed and wipe the node element from stack.
-+	 *
-+	 * However, since our nodes are static per-cpu storage, we're
-+	 * guaranteed their existence -- this allows us to apply
-+	 * cmpxchg in an attempt to undo our queueing.
-+	 */
-+
-+	while (!smp_load_acquire(&node->locked)) {
-+		if (need_resched())
-+			goto unqueue;
-+		arch_mutex_cpu_relax();
-+	}
-+	return true;
-+
-+unqueue:
-+
-+	/*
-+	 * Undo our @prev->next assignment; this will make @prev's unlock()
-+	 * wait for a next pointer since @lock points to us.
-+	 */
-+	if (cmpxchg(&prev->next, node, NULL) != node) { /* A -> B */
-+		/*
-+		 * @prev->next no longer pointed to us; either we hold the lock
-+		 * or @prev cancelled the wait too and we need to reload and
-+		 * retry.
-+		 */
-+		if (smp_load_acquire(&node->locked))
-+			return true;
-+
-+		/*
-+		 * Because we observed the new @prev->next, the smp_wmb() at (B)
-+		 * ensures that we must now observe the new @node->prev.
-+		 */
-+		prev = ACCESS_ONCE(node->prev);
-+		goto unqueue;
-+	}
-+
-+	if (smp_load_acquire(&node->locked)) {
-+		/*
-+		 * OOPS, we were too late, we already got the lock.  No harm
-+		 * done though; @prev is now unused an nobody cares we frobbed
-+		 * it.
-+		 */
-+		return true;
-+	}
-+
-+	/*
-+	 * Per the above logic @prev's unlock() will now wait,
-+	 * therefore @prev is now stable.
-+	 */
-+
-+	if (cmpxchg(lock, node, prev) == node) {
-+		/*
-+		 * We were still the last queued, we moved @lock back.  @prev
-+		 * will now observe @lock and will complete its unlock().
-+		 */
-+		return false;
-+	}
-+
-+	/*
-+	 * We're not the last to be queued, obtain ->next.
-+	 */
-+
-+	while (!(next = ACCESS_ONCE(node->next)))
-+		arch_mutex_cpu_relax();
-+
-+	ACCESS_ONCE(next->prev) = prev;
-+
-+	/*
-+	 * Ensure that @next->prev is written before we write @prev->next,
-+	 * this guarantees that when the cmpxchg at (A) fails we must
-+	 * observe the new prev value.
-+	 */
-+	smp_wmb(); /* B -> A */
-+
-+	/*
-+	 * And point @prev to our next, and we're unlinked. We can use an
-+	 * non-atomic op because only we modify @prev->next.
-+	 */
-+	ACCESS_ONCE(prev->next) = next;
-+
-+	return false;
-+}
-+
-+static void m_spin_unlock(struct m_spinlock **lock)
-+{
-+	struct m_spinlock *node = this_cpu_ptr(&m_node);
-+	struct m_spinlock *next = ACCESS_ONCE(node->next);
-+
-+	while (likely(!next)) {
-+		if (likely(cmpxchg(lock, node, NULL) == node))
-+			return;
-+
-+		arch_mutex_cpu_relax();
-+		next = ACCESS_ONCE(node->next);
-+	}
-+
-+	smp_store_release(&next->locked, 1);
-+}
-+
- /*
-  * Lock a mutex (possibly interruptible), slowpath:
-  */
-@@ -400,9 +531,11 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	if (!mutex_can_spin_on_owner(lock))
- 		goto slowpath;
- 
-+	if (!m_spin_lock(&lock->mcs_lock))
-+		goto slowpath;
-+
- 	for (;;) {
- 		struct task_struct *owner;
--		struct mcs_spinlock  node;
- 
- 		if (use_ww_ctx && ww_ctx->acquired > 0) {
- 			struct ww_mutex *ww;
-@@ -417,19 +550,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 			 * performed the optimistic spinning cannot be done.
- 			 */
- 			if (ACCESS_ONCE(ww->ctx))
--				goto slowpath;
-+				break;
- 		}
- 
- 		/*
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
--		mcs_spin_lock(&lock->mcs_lock, &node);
- 		owner = ACCESS_ONCE(lock->owner);
--		if (owner && !mutex_spin_on_owner(lock, owner)) {
--			mcs_spin_unlock(&lock->mcs_lock, &node);
--			goto slowpath;
--		}
-+		if (owner && !mutex_spin_on_owner(lock, owner))
-+			break;
- 
- 		if ((atomic_read(&lock->count) == 1) &&
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
-@@ -442,11 +572,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 			}
- 
- 			mutex_set_owner(lock);
--			mcs_spin_unlock(&lock->mcs_lock, &node);
-+			m_spin_unlock(&lock->mcs_lock);
- 			preempt_enable();
- 			return 0;
- 		}
--		mcs_spin_unlock(&lock->mcs_lock, &node);
- 
- 		/*
- 		 * When there's no owner, we might have preempted between the
-@@ -455,7 +584,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 * the owner complete.
- 		 */
- 		if (!owner && (need_resched() || rt_task(task)))
--			goto slowpath;
-+			break;
- 
- 		/*
- 		 * The cpu_relax() call is a compiler barrier which forces
-@@ -465,10 +594,19 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 */
- 		arch_mutex_cpu_relax();
- 	}
-+	m_spin_unlock(&lock->mcs_lock);
- slowpath:
- #endif
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
-+	/*
-+	 * XXX arguably, when need_resched() is set and there's other pending
-+	 * owners we should not try-acquire and simply queue and schedule().
-+	 *
-+	 * There's nothing worse than obtaining a lock only to get immediately
-+	 * scheduled out.
-+	 */
-+
- 	/* once more, can we acquire the lock? */
- 	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1))
- 		goto skip_wait;
+--
+Best Regards,
+Xiubo
