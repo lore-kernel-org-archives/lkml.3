@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaA2UOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:14:45 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:37293 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaA2UOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:14:43 -0500
-Date: Wed, 29 Jan 2014 15:14:40 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-cc: Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>, linux-pm@vger.kernel.org,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v2 5/6] X86: remove redundant cpuidle_idle_call()
-In-Reply-To: <CAOesGMjvOkuxCopog91SAV1-gB9GaEYXpuXwhV1EJQor_pKjBA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1401291434120.1652@knanqh.ubzr>
-References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org> <1391017513-12995-6-git-send-email-nicolas.pitre@linaro.org> <CAOesGMjvOkuxCopog91SAV1-gB9GaEYXpuXwhV1EJQor_pKjBA@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1751816AbaA2URo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:17:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879AbaA2URn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 15:17:43 -0500
+Date: Wed, 29 Jan 2014 15:17:17 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, perf, p4: Counter corruption when using lots of
+ perf groups
+Message-ID: <20140129201717.GB25953@redhat.com>
+References: <1391024270-19469-1-git-send-email-dzickus@redhat.com>
+ <20140129200657.GJ29846@moon>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140129200657.GJ29846@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jan 2014, Olof Johansson wrote:
-
-> Hi,
+On Thu, Jan 30, 2014 at 12:06:57AM +0400, Cyrill Gorcunov wrote:
+> On Wed, Jan 29, 2014 at 02:37:50PM -0500, Don Zickus wrote:
+> > On a P4 box stressing perf with
+> > 
+> > ./perf record -o perf.data ./perf stat -v ./perf bench all
+> > 
+> > it was noticed that a slew of unknown NMIs would pop out rather quickly.
+> > 
+> > Painfully debugging this ancient platform, led me to notice cross cpu counter
+> > corruption.
+> > 
+> > The P4 machine is special in that it has 18 counters, half are used for cpu0
+> > and the other half is for cpu1 (or all 18 if hyperthreading is disabled).  But
+> > the splitting of the counters has to be actively managed by the software.
+> > 
+> > In this particular bug, one of the cpu0 specific counters was being used by
+> > cpu1 and caused all sorts of random unknown nmis.
+> > 
+> > I am not entirely sure on the corruption path, but what happens is:
+> > 
+> > o perf schedules a group with p4_pmu_schedule_events()
+> > o inside p4_pmu_schedule_events(), it notices an hwc pointer is being reused
+> >   but for a different cpu, so it 'swaps' the config bits and returns the
+> >   updated 'assign' array with a _new_ index.
+> > o perf schedules another group with p4_pmu_schedule_events()
+> > o inside p4_pmu_schedule_events(), it notices an hwc pointer is being reused
+> >   (the same one as above) but for the _same_ cpu [BUG!!], so it updates the
+> >   'assign' array to use the _old_ (wrong cpu) index because the _new_ index is in
+> >   an earlier part of the 'assign' array (and hasn't been committed yet).
+> > o perf commits the transaction using the wrong index and corrupts the other cpu
 > 
-> On Wed, Jan 29, 2014 at 9:45 AM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > The core idle loop now takes care of it.
-> >
-> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> > Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > ---
-> >  arch/x86/kernel/process.c | 5 +----
-> >  1 file changed, 1 insertion(+), 4 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> > index 3fb8d95ab8..4505e2a950 100644
-> > --- a/arch/x86/kernel/process.c
-> > +++ b/arch/x86/kernel/process.c
-> > @@ -298,10 +298,7 @@ void arch_cpu_idle_dead(void)
-> >   */
-> >  void arch_cpu_idle(void)
-> >  {
-> > -       if (cpuidle_idle_call())
-> > -               x86_idle();
-> > -       else
-> > -               local_irq_enable();
-> > +       x86_idle();
-> 
-> You're taking out the local_irq_enable() here but I don't see the
-> equivalent of adding it back in the 1/6 patch that moves the
-> cpuidle_idle_call() up to common code. It seems that one of the call
-> paths through cpuidle_idle_call() don't re-enable it on its own.
+> Thanks for the fix Don! I fear I won't be able to look precisely tonight, so
+> could it wait until tomorrow? (If it's critical sure such fix should do the
+> trick).
 
-When cpuidle_idle_call() returns non-zero, IRQs are left disabled.  When 
-it returns zero then IRQs should be disabled.  Same goes for cpuidle 
-drivers.  That's the theory at least.
+There is no rush.  Early next week is fine too. :-)
 
-Looking into some cpuidle drivers for x86 I found at least one that 
-doesn't respect this convention.  Damn.
+Cheers,
+Don
 
-> Even if this is the right thing to do, why it's OK to do so should
-> probably be documented in the patch description.
-
-Better yet, I'm going to amend patch 1/6 with the below to make things 
-more reliable while still identifying misbehaving drivers.
-
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index ffcd3ee9af..14ca43430a 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -98,7 +98,8 @@ static void cpu_idle_loop(void)
- 					rcu_idle_enter();
- 					if (cpuidle_idle_call())
- 						arch_cpu_idle();
--					WARN_ON_ONCE(irqs_disabled());
-+					if (WARN_ON_ONCE(irqs_disabled()))
-+						local_irq_enable();
- 					rcu_idle_exit();
- 					start_critical_timings();
- 				} else {
