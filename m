@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaA2GiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 01:38:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:49822 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaA2GiS (ORCPT
+	id S1755696AbaA2GmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 01:42:05 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52287 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaA2GmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 01:38:18 -0500
-Message-ID: <1390977361.8072.29.camel@marge.simpson.net>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-From: Mike Galbraith <bitbucket@online.de>
-To: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Date: Wed, 29 Jan 2014 07:36:01 +0100
-In-Reply-To: <20140128210857.GA1377@redhat.com>
-References: <52E7D2E5.8090208@linux.intel.com> <52E7D9FF.1080506@nod.at>
-	 <52E7DB15.3090808@zytor.com>
-	 <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
-	 <20140128170507.GA16279@gmail.com>
-	 <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
-	 <20140128194823.GA18702@gmail.com>
-	 <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
-	 <20140128201536.GB5178@pd.tnic>
-	 <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
-	 <20140128210857.GA1377@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Wed, 29 Jan 2014 01:42:02 -0500
+Message-ID: <52E8A2AA.3090507@linux.vnet.ibm.com>
+Date: Wed, 29 Jan 2014 12:11:46 +0530
+From: Sohny Thomas <sthomas@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        yoshfuji@linux-ipv6.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        davem@davemloft.net, kumuda <kumuda@linux.vnet.ibm.com>
+Subject: [PATCH] ipv6: default route for link local address is not added while
+ assigning a address
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:qSRCx4Tc9UI6zxZS2wJAeBybw3Jd9UbYTY6ZfQVpNQH
- 742e29tBbt0JrsLr5BWDwlVgHjyxYqb71L0naCSK54/ZOtMIzf
- odqVihl1WudFKdv7Mgb3xXyrf8A98HINWvYAkqbsgG9kguvIWk
- 3JP2Ka63AaL/MvkxRFb8GYodWfOFA5nOFiwtfXe0xt2piciwg/
- EZMJe3BYmxR9QfSIcWn0LVB1RPdHUDP4VEXlnN+LM6qG4qhgmE
- Oresbcmik5at19rGBk+Fz7zbeNnfbAJg9ynRcmPIksWrPKElLs
- M2rVAZ12xedYjTXcFiqr5rLe94pgQ3Xs8+imGhsdi3yZY9BuTY
- vSFKEmxVSlkDcpO1NfU7kwk3HDOQbOkgR8RpfF8ppJ+/dYRuTu
- cjHxCcRO2ev9A==
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14012906-1618-0000-0000-000005565972
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-28 at 16:08 -0500, Dave Jones wrote: 
-> On Tue, Jan 28, 2014 at 12:25:15PM -0800, Linus Torvalds wrote:
->  > On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
->  > >
->  > > Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
->  > > Something like:
->  > >
->  > > "You don't need to enable this if you want symbolic names for kernel
->  > > objects. Enable CONFIG_KALLSYMS instead."
->  > 
->  > Probably. And then we should make sure that allyesconfig/allmodconfig
->  > don't pick it.
->  > 
->  > There *are* reasonable uses for DEBUG_INFO:
->  > 
->  >  - if you very actively and extensively use kgdb, DEBUG_INFO is very useful.
->  > 
->  >  - distros might want to build distro kernels with DEBUG_INFO for the
->  > kernel debug package
-> 
-> - objdump -S is kind of useful. I find myself using that quite often.
->   (like at least a dozen times each merge window)
+Resending this on netdev mailing list:
+Default route for link local address is configured automatically if 
+NETWORKING_IPV6=yes is in ifcfg-eth*.
+When the route table for the interface is flushed and a new address is 
+added to the same device with out removing linklocal addr, default route 
+for link local address has to added by default.
 
-For those with wimpy asm muscles (/me), it's very useful indeed, as are
-gdb list *foo()+0x10 or *0xfeedbabedeadbeef.  I always build with full
-DEBUG_INFO, just keep configs lean enough that lots of kernels fit in a
-2G /boot, and _never ever_ set a box up with a microscopic root.
+I have found the issue to be caused by this checkin
 
-> pretty sure it works with DEBUG_INFO_REDUCED though, which is somewhat
-> faster than full DEBUG_INFO
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/net/ipv6?id=62b54dd91567686a1cb118f76a72d5f4764a86dd
 
-Yeah, it does.
+According to this change :
+He removes adding a link local route if any other address is added , 
+applicable across all interfaces though there's mentioned only lo interface
+So below patch fixes for other devices
 
--Mike
+Signed-off-by: Sohny THomas <sohthoma@linux.vnet.ibm.com>
+
+-----
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index f62c72b..a8a4df9 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1763,6 +1763,16 @@ static int addrconf_ifid_infiniband(u8 *eui, 
+struct net_device *dev)
+         return 0;
+  }
+
++static void addrconf_add_lroute(struct net_device *dev)
++{
++       struct in6_addr addr;
++
++       ipv6_addr_set(&addr,  htonl(0xFE800000), 0, 0, 0);
++       addrconf_prefix_route(&addr, 64, dev, 0, 0);
++}
++
++
++
+  static int __ipv6_isatap_ifid(u8 *eui, __be32 addr)
+  {
+         if (addr == 0)
+@@ -2010,8 +2020,10 @@ static struct inet6_dev *addrconf_add_dev(struct 
+net_device *dev)
+                 return ERR_PTR(-EACCES);
+
+         /* Add default multicast route */
+-       if (!(dev->flags & IFF_LOOPBACK))
++       if (!(dev->flags & IFF_LOOPBACK)){
+                 addrconf_add_mroute(dev);
++               addrconf_add_lroute(dev);
++       }
+
+         return idev;
+  }
 
