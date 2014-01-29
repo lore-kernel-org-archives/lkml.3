@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaA2Ia2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 03:30:28 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:54762 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaA2Ia0 (ORCPT
+	id S1755300AbaA2Iam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 03:30:42 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33819 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751821AbaA2Iak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 03:30:26 -0500
-Date: Wed, 29 Jan 2014 00:30:19 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@sr71.net>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com, pshelar@nicira.com,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] mm: slub: fix page->_count corruption (again)
-In-Reply-To: <52E842CF.7090102@sr71.net>
-Message-ID: <alpine.DEB.2.02.1401290029120.12210@chino.kir.corp.google.com>
-References: <20140128231722.E7387E6B@viggo.jf.intel.com> <20140128152956.d5659f56ae279856731a1ac5@linux-foundation.org> <52E842CF.7090102@sr71.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 29 Jan 2014 03:30:40 -0500
+X-Sasl-enc: +9BiWSUI3Z0zW95nvaU/QOQ2b8cuEL1oj/oLBGnOs/jJ 1390984238
+User-Agent: K-9 Mail for Android
+In-Reply-To: <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com>
+References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com> <52E77282.4030303@ladisch.de> <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: WaitForMultipleObjects/etc. In Kernel
+From: Clemens Ladisch <clemens@ladisch.de>
+Date: Wed, 29 Jan 2014 09:30:35 +0100
+To: Network Nut <sillystack@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Message-ID: <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014, Dave Hansen wrote:
+Network Nut wrote:
+>I was looking at POSIX because it allows naming of the primitives.
 
-> It has measurable performance benefits, and the benefits go up as the
-> cost of en/disabling interrupts goes up (like if it takes you a hypercall).
-> 
-> Fengguang, could you run a set of tests for the top patch in this branch
-> to see if we'd be giving much up by axing the code?
-> 
-> 	https://github.com/hansendc/linux/tree/slub-nocmpxchg-for-Fengguang-20140128
-> 
-> I was talking with one of the distros about turning it off as well.
-> They mentioned that they saw a few performance regressions when it was
-> turned off.  I'll share details when I get them.
-> 
+Linux uses two orthogonal mechanisms for synchronization
+primitives and for naming/sharing.
 
-FWIW, I've compared netperf TCP_RR on all machine types I have available 
-with and without cmpxchg_double and I've never measured a regression.
+>I need to epoll_wait on inter-process {mutex, event, semaphore}.
+
+Use eventfd.
+
+>I need to reference inter-process {mutex, event, semaphore}, each
+>identified
+>by string, if feasible.
+
+Send the fd through a Unix domain socket.
+
+
+Regards,
+Clemens
+
