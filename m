@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaA2UsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:48:16 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:48870 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750851AbaA2UsP (ORCPT
+	id S1752077AbaA2Usn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:48:43 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:39751 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaA2Usl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:48:15 -0500
-Date: Wed, 29 Jan 2014 15:48:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: nicolas.dichtel@6wind.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        stable <stable@vger.kernel.org>, Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Willem de Bruijn <willemb@google.com>
-Subject: Re: [PATCH 0/2] [BUG FIXES - 3.10.27] sit: More backports
-Message-ID: <20140129154811.27fbaf13@gandalf.local.home>
-In-Reply-To: <52E9267C.90403@6wind.com>
-References: <20140128205756.074448668@goodmis.org>
-	<52E8E025.2060803@6wind.com>
-	<20140129075745.4227a2ed@gandalf.local.home>
-	<52E9267C.90403@6wind.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 29 Jan 2014 15:48:41 -0500
+Date: Thu, 30 Jan 2014 00:48:30 +0400
+From: Andrew Vagin <avagin@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Vagin <avagin@openvz.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        criu@openvz.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Borislav Petkov <bp@suse.de>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH] mm: don't lose the SOFT_DIRTY flag on mprotect
+Message-ID: <20140129204830.GB25429@gmail.com>
+References: <1391025899-25299-1-git-send-email-avagin@openvz.org>
+ <20140129121859.07da0df20daea6a1581e709a@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <20140129121859.07da0df20daea6a1581e709a@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jan 2014 17:04:12 +0100
-Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
- 
-> Your patch serie seems to be the good way to go (note that patch 1/2 does not
-> compile) but I think the fix is smaller because we don't have x-netns.
+On Wed, Jan 29, 2014 at 12:18:59PM -0800, Andrew Morton wrote:
+> On Thu, 30 Jan 2014 00:04:59 +0400 Andrey Vagin <avagin@openvz.org> wrote:
 > 
-> Here is my proposal, if you agree, I will send the same patch for ip6_tunnnel,
-> which have the netns leak.
+> > The SOFT_DIRTY bit shows that the content of memory was changed
+> > after a defined point in the past. mprotect() doesn't change the
+> > content of memory, so it must not change the SOFT_DIRTY bit.
+> > 
+> > This patch does nothing with _PAGE_SWP_SOFT_DIRTY, becase pte_modify()
+> > is called only for present pages.
 > 
+> Standard complaint: when fixing a bug, please describe the end-user
+> visible effects of that bug.
+> 
+> afaict the effects are minor: snapshotting will save/copy more pages
+> than it needs to, but there will be no malfunction.  Hence a -stable
+> backport is unneeded.  Agree?
 
-Hold on. Seems that the kernels that were being tested in QA had more
-code than what I was testing. Clark had backported "sit: fix use after
-free of fb_tunnel_dev" and that was what was causing the
-unlist_netdevice() to be missed.
+There will be malfunction. On the first iteration all pages are dumped.
+On other iterations only pages with the SOFT_DIRTY bit are dumped. So if
+the SOFT_DIRTY bit is cleared from a page by mistake, the page is not
+dumped and its content will be restored incorrectly.
+This patch should be cc'ed to stable. Sorry forgot to do this in first
+place.
 
-When I started working on vanilla 3.10.27 as well, I first did my
-original patch (which just removes the call to
-unregister_netdevice_queue() from sit_exit_net()). I asked to have that
-added to our kernel for testing, and they told me it was already there
-via Clark's backport. Then I did the full backport as well and looked
-for the leak. I'm now thinking that the full backport is not needed as
-that was what caused the leak.
+The following program is able to detect the problem:
+#include <sys/mman.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 
-According to commit 9434266f2c645d4fcf62a03a8e36ad8075e37943 "sit: fix
-use after free of fb_tunnel_dev", it states:
+#define PME_SOFT_DIRTY (1ULL << 55)
 
-    Bug: The fallback device is created in sit_init_net and assumed to
-    be freed in sit_exit_net. First, it is dereferenced in that
-    function, in sit_destroy_tunnels:
-    
-            struct net *net = dev_net(sitn->fb_tunnel_dev);
-    
-    Prior to this, rtnl_unlink_register has removed all devices that
-    match rtnl_link_ops == sit_link_ops.
+int main()
+{
+        unsigned long long v;
+        void *p;
+        int fd;
 
-    Commit 205983c43700 added the line
-    
-    +       sitn->fb_tunnel_dev->rtnl_link_ops = &sit_link_ops;
-    
-    which cases the fallback device to match here and be freed before it
-    is last dereferenced.
+        p = mmap(NULL, 4096, PROT_WRITE,
+				MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        if (p == MAP_FAILED)
+                return -1;
 
-Commit 205983c43700 was backported to 3.10, but without commit
-5e6700b3bf98 "sit: add support of x-netns" which was what added the
+        fd = open("/proc/self/clear_refs", O_WRONLY);
+        if (fd < 0)
+                return 1;
+        if (write(fd, "4\n", 2) < 2)
+                return 1;
+        close(fd);
 
-  net = dev_net(sitn->fb_tunnel_dev);
+        *((int *) p) = 5;
 
-Which looks to me that the only reason I need to port back commit
-5e6700b3bf98 is if I add the full backport of 9434266f2c645d4f.
+        fd = open("/proc/self/pagemap", O_RDONLY);
+        if (fd < 0)
+                return 1;
+        mprotect(p, 4096, PROT_READ);
+        lseek(fd, (unsigned long) p / 4096 * 8, SEEK_SET);
+        read(fd, &v, sizeof(v));
+        close(fd);
 
-Seems to me that my original patch may be good enough. The one that I
-said this series obsoletes.
+        printf("%8llx\n", v);
 
-Note, I've talked with the people that are doing the testing, and I'm
-having them revert all changes except for that one fix and rerun the
-tests again. I should know the results by tomorrow.
+        if (v & PME_SOFT_DIRTY) {
+                printf("PASS\n");
+                return 0;
+        }
 
-Let me know if "sit: fix use after free of fb_tunnel_dev" still needs
-to be backported due to some other way that the fallback device can be
-dereferenced after being freed.
-
--- Steve
+        printf("FAIL\n");
+        return 1;
+}
