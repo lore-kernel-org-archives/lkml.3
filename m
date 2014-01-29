@@ -1,130 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaA2Syx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:54:53 -0500
-Received: from fieldses.org ([174.143.236.118]:42673 "EHLO fieldses.org"
+	id S1752885AbaA2Sza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:55:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64808 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaA2Syw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:54:52 -0500
-Date: Wed, 29 Jan 2014 13:54:49 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: please pull nfsd changes for 3.14
-Message-ID: <20140129185449.GC30065@fieldses.org>
+	id S1752776AbaA2Sz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 13:55:28 -0500
+Date: Wed, 29 Jan 2014 13:54:53 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: mingo@elte.hu, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: x86: disabled interrupts on shutdown causing tlb flush WARNs
+Message-ID: <20140129185453.GA25953@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull nfsd changes for 3.14:
+Hi Ingo,
 
-git://linux-nfs.org/~bfields/linux.git for-3.14
+A while ago patch 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448 was committed
+to deal with WARN_ONs during shutdown in native_smp_send_reschedule() (in
+arch/x86/kernel/smp.c).
 
-	- Handle some loose ends from the vfs read delegation support.
-	  (For example nfsd can stop breaking leases on its own in a
-	  fewer places where it can now depend on the vfs to.)
-	- Make life a little easier for NFSv4-only configurations
-	  (thanks to Kinglong Mee).
-	- Fix some gss-proxy problems (thanks Jeff Layton).
+The solution at the time was to disable local interrupts to block the
+timer interrupt from calling the reschedule function during
+shutdown/reboot.
 
-And miscellaneous bug fixes and cleanup.
+Lately, we have a customer who says that patch is causing a new WARN_ON in
+kernel/smp.c::smp_call_function_many() because irqs are disabled.
 
-Stephen Rothwell noted a merge conflict:
+It seems to be related to iounmap calling flush_tlb_kernel_range.
 
-http://marc.info/?i=<20140129124238.6e1667abab08be8be2dafe01@canb.auug.org.au>
+stack is:
 
-I'm assuming as usual you'll handle it and let me know if you need
-anything from me.
+[ 3255.956295] WARNING: at kernel/smp.c:387 smp_call_function_many+0xaf/0x2c0()
+[ 3255.956295] Modules linked in: nf_conntrack_netbios_ns
+nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6table_security
+ip6table_raw ip6t_REJECT iptable_nat nf_nat_ipv4 iptable_mangle
+iptable_security iptable_raw ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
+xt_conntrack ebtable_filter ebtables ip6table_filter sg iptable_filter
+ip_tables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 nf_nat
+nf_conntrack ip6_tables coretemp kvm_intel kvm crc32_pclmul crc32c_intel
+ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper
+cryptd microcode pcspkr be2net iTCO_wdt iTCO_vendor_support ixgbe ses ptp
+enclosure pps_core hpilo hpwdt mdio lpc_ich mfd_core ioatdma shpchp dca
+vfat fat acpi_cpufreq mperf dm_service_time sd_mod lpfc mgag200
+syscopyarea qla2xxx crc_t10dif sysfillrect sysimgblt i2c_algo_bit
+drm_kms_helper scsi_transport_fc ttm scsi_tgt drm i2c_core dm_multipath
+dm_mirror dm_region_hash dm_log dm_mod
+[ 3255.956295] CPU: 0 PID: 19237 Comm: reboot Not tainted 3.10.0-33.el7.x86_64 #1
+[ 3255.956295]  0000000000000009 ffff901f4e42bb50 ffffffff815fdacb ffff901f4e42bb88
+[ 3255.956295]  ffffffff81058c61 0000000000000000 ffffffff81a08c20 0000000000000000
+[ 3255.956295]  0000000000000000 ffffffff81a08c20 ffff901f4e42bb98 ffffffff81058d3a
+[ 3255.956295] Call Trace:
+[ 3255.956295]  [<ffffffff815fdacb>] dump_stack+0x19/0x1b
+[ 3255.956295]  [<ffffffff81058c61>] warn_slowpath_common+0x61/0x80
+[ 3255.956295]  [<ffffffff81058d3a>] warn_slowpath_null+0x1a/0x20
+[ 3255.956295]  [<ffffffff810b843f>] smp_call_function_many+0xaf/0x2c0
+[ 3255.956295]  [<ffffffff811647ee>] ? __insert_vmap_area+0x8e/0xc0
+[ 3255.956295]  [<ffffffff8104c2a0>] ? flush_tlb_func+0xb0/0xb0
+[ 3255.956295]  [<ffffffff8104c2a0>] ? flush_tlb_func+0xb0/0xb0
+[ 3255.956295]  [<ffffffff810b86ad>] on_each_cpu+0x2d/0x60
+[ 3255.956295]  [<ffffffff8104c73a>] flush_tlb_kernel_range+0x4a/0x70
+[ 3255.956295]  [<ffffffff8116524c>] __purge_vmap_area_lazy+0x16c/0x1d0
+[ 3255.956295]  [<ffffffff8116549e>] free_vmap_area_noflush+0x5e/0x60
+[ 3255.956295]  [<ffffffff81166d5e>] remove_vm_area+0x5e/0x70
+[ 3255.956295]  [<ffffffff810478c7>] iounmap+0x67/0xa0
+[ 3255.956295]  [<ffffffff8134e3d6>] acpi_os_write_memory+0x89/0x9d
+[ 3255.956295]  [<ffffffff81368887>] acpi_hw_write+0x3d/0x4e
+[ 3255.956295]  [<ffffffff813691c6>] acpi_reset+0x4f/0x51
+[ 3255.956295]  [<ffffffff8134ed40>] acpi_reboot+0xb0/0xb8
+[ 3255.956295]  [<ffffffff81035cc6>] native_machine_emergency_restart+0x186/0x240
+[ 3255.956295]  [<ffffffff810383a2>] ? disconnect_bsp_APIC+0x82/0xc0
+[ 3255.956295]  [<ffffffff810357c7>] native_machine_restart+0x37/0x40
+[ 3255.956295]  [<ffffffff81035a3f>] machine_restart+0xf/0x20
+[ 3255.956295]  [<ffffffff81071375>] kernel_restart+0x45/0x60
+[ 3255.956295]  [<ffffffff810715b9>] SYSC_reboot+0x229/0x260
+[ 3255.956295]  [<ffffffff8119a3a6>] ? do_readv_writev+0x176/0x240
+[ 3255.956295]  [<ffffffff8119af93>] ? __fput+0x183/0x270
+[ 3255.956295]  [<ffffffff8119b1ae>] ? ____fput+0xe/0x10
+[ 3255.956295]  [<ffffffff8107161e>] SyS_reboot+0xe/0x10
+[ 3255.956295]  [<ffffffff8160cf99>] system_call_fastpath+0x16/0x1b
 
---b.
+I was wondering if in the above referenced commit
+(55c844a4dd16a4d1fdc0cf2), if changing the 'local_irqs_disabled()' to
+'preempt_disable()' would address the previous problem and the current
+problem.
 
-----------------------------------------------------------------
-Albert Fluegel (1):
-      nfsd: don't return high mode bits
+I think my real question is, does preempt_disable() block
+smp_send_reschedule() from executing?  If not, then I need to find a
+different solution.
 
-Andy Shevchenko (1):
-      net/sunrpc/cache: simplify code by using hex_pack_byte()
+Cheers,
+Don
 
-Christoph Hellwig (1):
-      nfsd: start documenting some XDR handling functions
-
-J. Bruce Fields (12):
-      nfsd4: update 4.1 nfsd status documentation
-      nfsd4: break only delegations when appropriate
-      nfsd4: better VERIFY comment
-      minor svcauth_gss.c cleanup
-      nfsd4: nfsd4_encode_fattr cleanup
-      nfsd4: encode_rdattr_error cleanup
-      nfsd4: simplify xdr encoding of nfsv4 names
-      nfsd: fix encode_entryplus_baggage stack usage
-      nfsd4: decrease nfsd4_encode_fattr stack usage
-      nfsd4: minor nfs4_setlease cleanup
-      nfsd4: delay setting current_fh in open
-      nfsd4: fix delegation-unlink/rename race
-
-Jeff Layton (4):
-      nfsd: don't try to reuse an expired DRC entry off the list
-      sunrpc: don't wait for write before allowing reads from use-gss-proxy file
-      sunrpc: fix potential race between setting use_gss_proxy and the upcall rpc_clnt
-      sunrpc: get rid of use_gssp_lock
-
-Kinglong Mee (15):
-      nfsd: calculate the missing length of bitmap in EXCHANGE_ID
-      nfsd: get rid of unused function definition
-      nfsd: clean up an xdr reserved space calculation
-      nfsd: using nfsd4_encode_noop for encoding destroy_session/free_stateid
-      nfsd: clean up unnecessary temporary variable in nfsd4_decode_fattr
-      nfsd: get rid of unused macro definition
-      Add missing recording of back channel attrs in nfsd4_session
-      NFSD: fix a leak which can cause CREATE_SESSION failures
-      NFSD: fix bad length checking for backchannel
-      SUNRPC/NFSD: Support a new option for ignoring the result of svc_register
-      NFSD: Don't start lockd when only NFSv4 is running
-      NFSD: fix compile warning without CONFIG_NFSD_V3
-      Define op_iattr for nfsd4_open instead using macro
-      nfsd: get rid of unused function definition
-      NFSD: Fix a memory leak in nfsd4_create_session
-
-Luis Henriques (1):
-      gss_krb5: use lcm from kernel lib
-
-Ming Chen (1):
-      nfsd: consider CLAIM_FH when handing out delegation
-
-Stanislav Kholmanskikh (1):
-      nfsd: revoking of suid/sgid bits after chown() in a consistent way
-
-Weng Meiling (1):
-      sunrpc: fix some typos
-
- Documentation/filesystems/nfs/nfs41-server.txt |   42 ++----
- fs/nfsd/acl.h                                  |    2 +-
- fs/nfsd/cache.h                                |    8 --
- fs/nfsd/idmap.h                                |    4 +-
- fs/nfsd/netns.h                                |    1 +
- fs/nfsd/nfs3xdr.c                              |   14 +-
- fs/nfsd/nfs4acl.c                              |   20 ++-
- fs/nfsd/nfs4idmap.c                            |   50 ++++---
- fs/nfsd/nfs4proc.c                             |   57 +++++---
- fs/nfsd/nfs4state.c                            |   40 ++++--
- fs/nfsd/nfs4xdr.c                              |  178 +++++++++---------------
- fs/nfsd/nfscache.c                             |   36 +----
- fs/nfsd/nfssvc.c                               |   30 +++-
- fs/nfsd/nfsxdr.c                               |    2 +-
- fs/nfsd/vfs.c                                  |   40 +-----
- fs/nfsd/vfs.h                                  |    2 -
- fs/nfsd/xdr3.h                                 |    3 +
- fs/nfsd/xdr4.h                                 |    4 +-
- include/linux/sunrpc/svc.h                     |    6 +-
- net/sunrpc/auth_gss/gss_krb5_keys.c            |   17 +--
- net/sunrpc/auth_gss/gss_rpc_upcall.c           |    2 -
- net/sunrpc/auth_gss/svcauth_gss.c              |   82 +++--------
- net/sunrpc/cache.c                             |    4 +-
- net/sunrpc/netns.h                             |    1 -
- net/sunrpc/svc.c                               |   25 ++--
- net/sunrpc/xprtsock.c                          |    7 +-
- 26 files changed, 284 insertions(+), 393 deletions(-)
