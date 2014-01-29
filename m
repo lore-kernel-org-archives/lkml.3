@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452AbaA2BMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 20:12:15 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:42829 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754026AbaA2BMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 20:12:14 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update #2 for 3.14-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20140129011209.253624266DC@whiskey.americas.sgi.com>
-Date: Tue, 28 Jan 2014 19:12:09 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1755650AbaA2BNT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 20:13:19 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51434 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755157AbaA2BNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 20:13:17 -0500
+Date: Wed, 29 Jan 2014 01:13:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the imx-mxs tree with the arm tree
+Message-ID: <20140129011310.GT15937@n2100.arm.linux.org.uk>
+References: <20140129113514.86275e22015dea313d78d5e1@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140129113514.86275e22015dea313d78d5e1@canb.auug.org.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Jan 29, 2014 at 11:35:14AM +1100, Stephen Rothwell wrote:
+> Hi Shawn,
+> 
+> Today's linux-next merge of the imx-mxs tree got a conflict in
+> arch/arm/boot/dts/Makefile between commits 208d7baf8085 ("ARM: imx:
+> initial SolidRun HummingBoard support") and 971488f1149f ("ARM: imx:
+> initial SolidRun Cubox-i support") from the arm tree and various commits
+> from the imx-mxs tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-   Please pull this xfs update for 3.14.  This is to allow logical sector sized
-   direct io on advanced format disks.
+Nice easy add/add which Linus won't complain about.  Thanks Stephen.
 
-Thanks,
-	Ben
+This should move to between Linus' and Shawn's tree over the next
+couple of days since I've now sent my final pull request for this
+window.
 
-The following changes since commit bf3964c188d686424ff7b69a45941851b9f437f0:
-
-  Merge branch 'xfs-extent-list-locking-fixes' into for-next (2014-01-09 16:03:18 -0600)
-
-are available in the git repository at:
-
-
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.14-rc1-2
-
-for you to fetch changes up to 7c71ee78031c248dca13fc94dea9a4cc217db6cf:
-
-  xfs: allow logical-sector sized O_DIRECT (2014-01-24 11:55:42 -0600)
-
-----------------------------------------------------------------
-xfs: update #2 for v3.14-rc1
-
-- allow logical sector sized direct io on 'advanced format' 4k/512 disk.
-
-----------------------------------------------------------------
-Eric Sandeen (3):
-      xfs: clean up xfs_buftarg
-      xfs: rename xfs_buftarg structure members
-      xfs: allow logical-sector sized O_DIRECT
-
- fs/xfs/xfs_buf.c   | 14 +++++++++-----
- fs/xfs/xfs_buf.h   | 20 +++++++++++++++++---
- fs/xfs/xfs_file.c  |  7 +++++--
- fs/xfs/xfs_ioctl.c |  2 +-
- 4 files changed, 32 insertions(+), 11 deletions(-)
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
