@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466AbaA2IZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 03:25:12 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52233 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaA2IZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 03:25:10 -0500
-Date: Wed, 29 Jan 2014 09:25:05 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140129082505.GB31489@gmail.com>
-References: <52E7DB15.3090808@zytor.com>
- <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
- <20140128170507.GA16279@gmail.com>
- <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
- <20140128194823.GA18702@gmail.com>
- <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
- <20140128201536.GB5178@pd.tnic>
- <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
- <52E812F4.50906@nod.at>
- <52E8153A.2000208@zytor.com>
+	id S1753822AbaA2I0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 03:26:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846AbaA2I0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 03:26:20 -0500
+Date: Wed, 29 Jan 2014 09:25:22 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        xen-devel@lists.xensource.com
+Subject: Re: [BUG?] Interrupts enabled after
+ xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+Message-ID: <20140129082521.GA1362@redhat.com>
+References: <20140128150848.GA1428@redhat.com>
+ <20140128160404.GA5732@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52E8153A.2000208@zytor.com>
+In-Reply-To: <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(Cc: correct Rafael email)
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 01/28/2014 12:28 PM, Richard Weinberger wrote:
-> > Am 28.01.2014 21:25, schrieb Linus Torvalds:
-> >> On Tue, Jan 28, 2014 at 12:15 PM, Borislav Petkov <bp@alien8.de> wrote:
-> >>>
-> >>> Shouldn't we hold that down in the Kconfig help text of DEBUG_INFO?
-> >>> Something like:
-> >>>
-> >>> "You don't need to enable this if you want symbolic names for kernel
-> >>> objects. Enable CONFIG_KALLSYMS instead."
-> >>
-> >> Probably. And then we should make sure that allyesconfig/allmodconfig
-> >> don't pick it.
-> > 
-> > Let's make it depend on CONFIG_EXPERT.
-> > 
+On Tue, Jan 28, 2014 at 09:24:57PM -0800, David Rientjes wrote:
+> On Tue, 28 Jan 2014, Konrad Rzeszutek Wilk wrote:
 > 
-> That doesn't solve all*config.  My scripts for all*config just 
-> overrides it, maybe we need to do something like that by default?
+> > diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+> > index 7231859..7602229 100644
+> > --- a/drivers/xen/xen-acpi-processor.c
+> > +++ b/drivers/xen/xen-acpi-processor.c
+> > @@ -46,7 +46,7 @@ module_param_named(off, no_hypercall, int, 0400);
+> >   */
+> >  static unsigned int nr_acpi_bits;
+> >  /* Mutex to protect the acpi_ids_done - for CPU hotplug use. */
+> > -static DEFINE_MUTEX(acpi_ids_mutex);
+> > +static DEFINE_SPINLOCK(acpi_ids_lock);
+> >  /* Which ACPI ID we have processed from 'struct acpi_processor'. */
+> >  static unsigned long *acpi_ids_done;
+> >  /* Which ACPI ID exist in the SSDT/DSDT processor definitions. */
+> > @@ -68,7 +68,7 @@ static int push_cxx_to_hypervisor(struct acpi_processor *_pr)
+> >  	int ret = 0;
+> >  
+> >  	dst_cx_states = kcalloc(_pr->power.count,
+> > -				sizeof(struct xen_processor_cx), GFP_KERNEL);
+> > +				sizeof(struct xen_processor_cx), GFP_ATOMIC);
+> >  	if (!dst_cx_states)
+> >  		return -ENOMEM;
+> >  
+> > @@ -149,7 +149,7 @@ xen_copy_pss_data(struct acpi_processor *_pr,
+> >  		     sizeof(struct acpi_processor_px));
+> >  
+> >  	dst_states = kcalloc(_pr->performance->state_count,
+> > -			     sizeof(struct xen_processor_px), GFP_KERNEL);
+> > +			     sizeof(struct xen_processor_px), GFP_ATOMIC);
+> >  	if (!dst_states)
+> >  		return ERR_PTR(-ENOMEM);
+> >  
+> > @@ -275,9 +275,9 @@ static int upload_pm_data(struct acpi_processor *_pr)
+> >  {
+> >  	int err = 0;
+> >  
+> > -	mutex_lock(&acpi_ids_mutex);
+> > +	spin_lock(&acpi_ids_lock);
+> >  	if (__test_and_set_bit(_pr->acpi_id, acpi_ids_done)) {
+> > -		mutex_unlock(&acpi_ids_mutex);
+> > +		spin_unlock(&acpi_ids_lock);
+> >  		return -EBUSY;
+> >  	}
+> >  	if (_pr->flags.power)
+> > @@ -286,7 +286,7 @@ static int upload_pm_data(struct acpi_processor *_pr)
+> >  	if (_pr->performance && _pr->performance->states)
+> >  		err |= push_pxx_to_hypervisor(_pr);
+> >  
+> > -	mutex_unlock(&acpi_ids_mutex);
+> > +	spin_unlock(&acpi_ids_lock);
+> >  	return err;
+> >  }
+> >  static unsigned int __init get_max_acpi_id(void)
+> 
+> Looks incomplete, what about the kzalloc() in 
+> xen_upload_processor_pm_data() and kcalloc()s in check_acpi_ids()?
 
-For features we want to exclude from allyesconfig we can define them 
-as logical negatives. (I've used this technique in the past to hide 
-silly options from allyesconfig and it works well.)
+Indeed and additionally from check_acpi_ids() we call
+acpi_walk_namespace(), which also take mutexes. Hence unfortunately
+making xen_upload_processor_pm_data() atomic is not easy, but possibly
+can be done by saving some data in memory after initialization.
 
-So to reign in debuginfo in allyesconfig/allmodconfig builds we could 
-do something like:
+Or perhaps this problem can be solved differently, by not using 
+yscore_ops->resume(), but some other resume callback from core, which
+allow to sleep. Than can require registering dummy device or sysfs
+class, but maybe there are simpler solutions.
 
- config SAVE_TIME_AND_DISK_SPACE
-	bool "Faster and leaner kernel build: compile without debug info"
-	default y
-
- choice
-        prompt "Choose DEBUGINFO bloat level"
-	depends on !SAVE_TIME_AND_DISK_SPACE
-        default DEBUG_INFO_REDUCED
-        help
-           This option allows to select the debuginfo model.
-
-   config DEBUG_INFO_REDUCED
-        bool "Reduced amount of debugging information"
-
-   config DEBUG_INFO
-        bool "Full DEBUG info, 'planet killer' version"
-
- endchoice
-
-(or so, perhaps with slightly more PC text.)
-
-That would default to Y and would disable debuginfo by default.
-
-( And yeah, it's a bit ugly, but it beats having to hack the kconfig 
-  language! )
-
-Thanks,
-
-	Ingo
+Thanks
+Stanislaw 
+ 
