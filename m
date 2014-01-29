@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaA2Xjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 18:39:45 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53030 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaA2Xjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751967AbaA2Xjn (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 29 Jan 2014 18:39:43 -0500
-Date: Wed, 29 Jan 2014 15:39:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@kernel.org
-Cc: josh@joshtriplett.org, peterz@infradead.org, oleg@redhat.com,
-        rostedt@goodmis.org, bitbucket@online.de, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL timers] Timer-wheel bandaids^Wcommits
-Message-ID: <20140129233936.GA11150@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:39960 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaA2Xjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 18:39:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012923-1542-0000-0000-0000059F68BD
+In-Reply-To: <CA+8MBbJjEUJKo2ip8bDzDRVbBT+yhzqZXV0BYP3X52OJ3zA6Pg@mail.gmail.com>
+References: <1390946665-2967-1-git-send-email-yinghai@kernel.org>
+	<52E82A40.3040104@intel.com>
+	<CAE9FiQVGuN0f5xo9fbfsurmO3E=45A3m0oS75HYPV7BSEwrvsg@mail.gmail.com>
+	<20140129015048.GA14629@konrad-lan.dumpdata.com>
+	<CA+8MBbJjEUJKo2ip8bDzDRVbBT+yhzqZXV0BYP3X52OJ3zA6Pg@mail.gmail.com>
+Date: Wed, 29 Jan 2014 15:39:41 -0800
+X-Google-Sender-Auth: RreNVxhwTAfQRuE-fHHiHcnSw6g
+Message-ID: <CAE9FiQWfZk7ogmORm7euBy1bncUhFW0Ms2hV_g8_9uBVU71RRQ@mail.gmail.com>
+Subject: Re: [PATCH] memblock: Add limit checking to memblock_virt_alloc
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+On Wed, Jan 29, 2014 at 3:07 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> Hmmph.  ia64 is broken too.  git bisect says:
+>
+> commit ad6492b80f60a2139fa9bf8fd79b182fe5e3647c
+> Author: Yinghai Lu <yinghai@kernel.org>
+> Date:   Mon Jan 27 17:06:49 2014 -0800
+>
+>     memblock, nobootmem: add memblock_virt_alloc_low()
+>
+> is to blame.  But this patch doesn't fix it.  Still dies with:
+>
+> PID hash table entries: 4096 (order: -1, 32768 bytes)
+> Sorting __ex_table...
+> kernel BUG at mm/bootmem.c:504!
 
-This pull request contains latency bandaids^Woptimizations to the
-timer-wheel code that are useful in conjunction with NO_HZ_FULL Kconfig
-option.  These optimizations reduce the jiffy-by-jiffy looping in cases
-where there is either zero or one timers in the timer wheel, which is
-a common case for NO_HZ_FULL "worker" CPUs that run almost entirely
-in usermode for a single task.
+that's another path with memblock_virt wrapper for bootmem.
 
-Each of these commits has at least two Reviewed-by, one Acked-by, and
-one Tested-by tag, so they are ready for more extensive testing in -tip.
-
-							Thanx, Paul
-
-The following changes since commit 00e2bcd6d35f59fce7fa0e76e24d08f74c6a8506:
-
-  clocksource: Timer-sun5i: Switch to sched_clock_register() (2014-01-19 13:23:23 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/timers
-
-for you to fetch changes up to 6f089d0be7fef9705b3a7755b05d1092e772b910:
-
-  timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0 (2014-01-29 15:25:16 -0800)
-
-----------------------------------------------------------------
-Oleg Nesterov (1):
-      timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0
-
-Paul E. McKenney (4):
-      timers: Track total number of timers in list
-      timers: Reduce __run_timers() latency for empty list
-      timers: Reduce future __run_timers() latency for newly emptied list
-      timers: Reduce future __run_timers() latency for first add to empty list
-
- kernel/timer.c | 30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
-
+Let's me check that.
