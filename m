@@ -1,303 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116AbaA2JGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:06:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25907 "EHLO mga09.intel.com"
+	id S1751162AbaA2JKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:10:43 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53462 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbaA2JGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:06:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,741,1384329600"; 
-   d="scan'208";a="466490270"
-Date: Wed, 29 Jan 2014 11:13:13 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HID: i2c-hid: add runtime PM support
-Message-ID: <20140129091313.GK18029@intel.com>
-References: <1389694438-18614-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAN+gG=Fa+H53V1evKXiWK6OpWj29pF4z8rGJAXWs3C7mHm1mLQ@mail.gmail.com>
- <20140128091258.GY18029@intel.com>
- <CAN+gG=GPHyWdM+G=dzswfqVT4Jm8kEbnQs58jq2M_7_-FVB0=w@mail.gmail.com>
+	id S1750834AbaA2JKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:10:39 -0500
+Message-ID: <52E8C586.7040907@ti.com>
+Date: Wed, 29 Jan 2014 11:10:30 +0200
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=GPHyWdM+G=dzswfqVT4Jm8kEbnQs58jq2M_7_-FVB0=w@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        <chf.fritz@googlemail.com>, <nm@ti.com>
+Subject: Re: [BISECTED] OMAP: DSS: clk rate mismatch
+References: <52E697C0.6000202@gmail.com> <52E7614E.8010903@ti.com> <52E76EE0.2060006@ti.com> <52E7F451.7040708@gmail.com>
+In-Reply-To: <52E7F451.7040708@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 09:19:33AM -0500, Benjamin Tissoires wrote:
-> On Tue, Jan 28, 2014 at 4:12 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > On Mon, Jan 27, 2014 at 10:36:25PM -0500, Benjamin Tissoires wrote:
-> >> On Tue, Jan 14, 2014 at 5:13 AM, Mika Westerberg
-> >> <mika.westerberg@linux.intel.com> wrote:
-> >> > This patch adds runtime PM support for the HID over I2C driver. When the
-> >> > i2c-hid device is first opened we power it on and on the last close we
-> >> > power it off.
-> >> >
-> >> > The implementation is not the most power efficient because it needs some
-> >> > interaction from the userspace (e.g close the device node whenever we are
-> >> > no more interested in getting events), nevertheless it allows us to save
-> >> > some power and works with devices that are not wake capable.
-> >> >
-> >>
-> >> Hi Mika,
-> >>
-> >> I am a little bit puzzled here. The commit message just says that you
-> >> changed the implementation of the power saving with the exact same
-> >> behavior...  At least that's what I understand.
-> >> Currently, the devices should be put on sleep if nobody is reading,
-> >> and back alive if a reader arrives.
-> >> I think there is a gain with the patch, but my knowledge of the pm
-> >> subsystem is far too limited to see it :(
-> >
-> > Yes, there should be gain. If there is power domain involved like, ACPI in
-> > our case, runtime suspending the device on close will let ACPI to move the
-> > device to D3cold (e.g full off) which saves more power.
-> 
-> Oh, right. So, if you could just put this last sentence in the commit
-> message, that would be great.
+On 01/28/2014 08:17 PM, Ivaylo Dimitrov wrote:
+>
+>
+> On 28.01.2014 10:48, Tomi Valkeinen wrote:
+>
+>> I made a somewhat hacky quickfix for beagle. Applying that and the
+>> clk-divider from the link above makes things work for me. However, as I
+>> said, the issue with n900 might be different, but it'd be interesting to
+>> hear if it has any effect.
+>>
+>>   Tomi
+>>
+>
+> Applying those 2 patches doesn't help, still get exactly the same warning.
+>
+> Find attached my clk_summary (with my hacky patch applied, otherwise I
+> cannot boot the device)
+>
+> Ivo
 
-Sure.
+It looks like the omap36xx version of the omap96m_alwon_fck is modelled 
+improperly in the dts files. I don't have access to omap36xx hardware 
+myself, but give a try for the following patch:
 
-> 
-> >
-> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> > ---
-> >> >  drivers/hid/i2c-hid/i2c-hid.c | 81 ++++++++++++++++++++++++++++---------------
-> >> >  1 file changed, 54 insertions(+), 27 deletions(-)
-> >> >
-> >> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> >> > index d1f81f52481a..ff767d03d60e 100644
-> >> > --- a/drivers/hid/i2c-hid/i2c-hid.c
-> >> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> >> > @@ -25,6 +25,7 @@
-> >> >  #include <linux/delay.h>
-> >> >  #include <linux/slab.h>
-> >> >  #include <linux/pm.h>
-> >> > +#include <linux/pm_runtime.h>
-> >> >  #include <linux/device.h>
-> >> >  #include <linux/wait.h>
-> >> >  #include <linux/err.h>
-> >> > @@ -454,10 +455,18 @@ static void i2c_hid_init_reports(struct hid_device *hid)
-> >> >                 return;
-> >> >         }
-> >> >
-> >> > +       /*
-> >> > +        * The device must be powered on while we fetch initial reports
-> >> > +        * from it.
-> >> > +        */
-> >> > +       pm_runtime_get_sync(&client->dev);
-> >> > +
-> >> >         list_for_each_entry(report,
-> >> >                 &hid->report_enum[HID_FEATURE_REPORT].report_list, list)
-> >> >                 i2c_hid_init_report(report, inbuf, ihid->bufsize);
-> >> >
-> >> > +       pm_runtime_put(&client->dev);
-> >> > +
-> >> >         kfree(inbuf);
-> >> >  }
-> >> >
-> >> > @@ -703,8 +712,8 @@ static int i2c_hid_open(struct hid_device *hid)
-> >> >
-> >> >         mutex_lock(&i2c_hid_open_mut);
-> >> >         if (!hid->open++) {
-> >> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
-> >> > -               if (ret) {
-> >> > +               ret = pm_runtime_get_sync(&client->dev);
-> >>
-> >> dummy question (kind of late here...). Is there a counter of how many
-> >> get/put has been called in pm_runtime which could allow us to get rid
-> >> of the hid->open count?
-> >
-> > There is a counter but I'm not sure if drivers are supposed to use that. I
-> > would prefer not to use that.
-> 
-> ok
-> 
-> >
-> >>
-> >> > +               if (ret < 0) {
-> >> >                         hid->open--;
-> >> >                         goto done;
-> >> >                 }
-> >> > @@ -712,7 +721,7 @@ static int i2c_hid_open(struct hid_device *hid)
-> >> >         }
-> >> >  done:
-> >> >         mutex_unlock(&i2c_hid_open_mut);
-> >> > -       return ret;
-> >> > +       return ret < 0 ? ret : 0;
-> >> >  }
-> >> >
-> >> >  static void i2c_hid_close(struct hid_device *hid)
-> >> > @@ -729,37 +738,17 @@ static void i2c_hid_close(struct hid_device *hid)
-> >> >                 clear_bit(I2C_HID_STARTED, &ihid->flags);
-> >> >
-> >> >                 /* Save some power */
-> >> > -               i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
-> >> > +               pm_runtime_put(&client->dev);
-> >> >         }
-> >> >         mutex_unlock(&i2c_hid_open_mut);
-> >> >  }
-> >> >
-> >> > -static int i2c_hid_power(struct hid_device *hid, int lvl)
-> >> > -{
-> >> > -       struct i2c_client *client = hid->driver_data;
-> >> > -       struct i2c_hid *ihid = i2c_get_clientdata(client);
-> >> > -       int ret = 0;
-> >> > -
-> >> > -       i2c_hid_dbg(ihid, "%s lvl:%d\n", __func__, lvl);
-> >> > -
-> >> > -       switch (lvl) {
-> >> > -       case PM_HINT_FULLON:
-> >> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
-> >> > -               break;
-> >> > -       case PM_HINT_NORMAL:
-> >> > -               ret = i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
-> >> > -               break;
-> >> > -       }
-> >> > -       return ret;
-> >> > -}
-> >> > -
-> >> >  static struct hid_ll_driver i2c_hid_ll_driver = {
-> >> >         .parse = i2c_hid_parse,
-> >> >         .start = i2c_hid_start,
-> >> >         .stop = i2c_hid_stop,
-> >> >         .open = i2c_hid_open,
-> >> >         .close = i2c_hid_close,
-> >> > -       .power = i2c_hid_power,
-> >>
-> >> If I understand correctly, here you are trying to fix hidraw (with
-> >> i2c_hid tramsport) which used to set_power on/off twice with the first
-> >> reader, right?
-> >
-> > Right.
-> >
-> >> I don't think we have other i2c_hid users of hid_hw_power, but I am a
-> >> little bit worried of simply removing the callback.
-> >
-> > OK.
-> >
-> >> What if we just change i2c_hid_set_power in i2c_hid_power by the
-> >> corresponding pm_runtime calls?
-> >
-> > Sure, I'll change that in the next version.
-> >
-> >>
-> >> >         .request = i2c_hid_request,
-> >> >  };
-> >> >
-> >> > @@ -973,13 +962,17 @@ static int i2c_hid_probe(struct i2c_client *client,
-> >> >         if (ret < 0)
-> >> >                 goto err;
-> >> >
-> >> > +       pm_runtime_get_noresume(&client->dev);
-> >> > +       pm_runtime_set_active(&client->dev);
-> >> > +       pm_runtime_enable(&client->dev);
-> >> > +
-> >> >         ret = i2c_hid_fetch_hid_descriptor(ihid);
-> >> >         if (ret < 0)
-> >> > -               goto err;
-> >> > +               goto err_pm;
-> >> >
-> >> >         ret = i2c_hid_init_irq(client);
-> >> >         if (ret < 0)
-> >> > -               goto err;
-> >> > +               goto err_pm;
-> >> >
-> >> >         hid = hid_allocate_device();
-> >> >         if (IS_ERR(hid)) {
-> >> > @@ -1010,6 +1003,7 @@ static int i2c_hid_probe(struct i2c_client *client,
-> >> >                 goto err_mem_free;
-> >> >         }
-> >> >
-> >> > +       pm_runtime_put(&client->dev);
-> >> >         return 0;
-> >> >
-> >> >  err_mem_free:
-> >> > @@ -1018,6 +1012,10 @@ err_mem_free:
-> >> >  err_irq:
-> >> >         free_irq(client->irq, ihid);
-> >> >
-> >> > +err_pm:
-> >> > +       pm_runtime_put_noidle(&client->dev);
-> >> > +       pm_runtime_disable(&client->dev);
-> >> > +
-> >> >  err:
-> >> >         i2c_hid_free_buffers(ihid);
-> >> >         kfree(ihid);
-> >> > @@ -1029,6 +1027,11 @@ static int i2c_hid_remove(struct i2c_client *client)
-> >> >         struct i2c_hid *ihid = i2c_get_clientdata(client);
-> >> >         struct hid_device *hid;
-> >> >
-> >> > +       pm_runtime_get_sync(&client->dev);
-> >> > +       pm_runtime_disable(&client->dev);
-> >> > +       pm_runtime_set_suspended(&client->dev);
-> >> > +       pm_runtime_put_noidle(&client->dev);
-> >> > +
-> >> >         hid = ihid->hid;
-> >> >         hid_destroy_device(hid);
-> >> >
-> >> > @@ -1074,7 +1077,31 @@ static int i2c_hid_resume(struct device *dev)
-> >> >  }
-> >> >  #endif
-> >> >
-> >> > -static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
-> >> > +#ifdef CONFIG_PM_RUNTIME
-> >> > +static int i2c_hid_runtime_suspend(struct device *dev)
-> >> > +{
-> >> > +       struct i2c_client *client = to_i2c_client(dev);
-> >> > +
-> >> > +       i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
-> >> > +       disable_irq(client->irq);
-> >> > +       return 0;
-> >> > +}
-> >> > +
-> >> > +static int i2c_hid_runtime_resume(struct device *dev)
-> >> > +{
-> >> > +       struct i2c_client *client = to_i2c_client(dev);
-> >> > +
-> >> > +       enable_irq(client->irq);
-> >> > +       i2c_hid_set_power(client, I2C_HID_PWR_ON);
-> >> > +       return 0;
-> >> > +}
-> >>
-> >> These two functions looks very similar to i2c_hid_suspend and
-> >> i2c_hid_resume, without the reset and the irq_wake :(
-> >> So, my question here is can we use some common code for them?
-> >> It may not be possible regarding CONFIG_PM_RUNTIME and
-> >> CONFIG_PM_SLEEP, but it still looks ugly to me.
-> >
-> > It looks ugly, I agree and we can probably reuse some code in the
-> > callbacks. I'll look into that.
-> 
-> well, anyway, if this involve something even more ugly, we can for
-> sure stick with this version :)
 
-It turned out that it is going to be ugly, no matter what :-( I'll keep the
-current version for now.
+From: Tero Kristo <t-kristo@ti.com>
+Date: Wed, 29 Jan 2014 11:03:46 +0200
+Subject: [PATCH] ARM: dts: omap36xx: fix omap96m_alwon_fck
 
-> 
-> >
-> >> I tested this today, and it works, so you should be right, but I'd
-> >> like to have your opinion on this.
-> >
-> > Thanks for testing and comments.
-> >
-> > I'll prepare a new version with the suggested changes if you are OK with my
-> > explanations ;-)
-> 
-> Sure I am. Thanks for handling the whole ACPI part of this module. I
-> was really pleased the other day to see that the touchscreen of a Bay
-> trail tablet is now working out of the box :) I still have many other
-> problems with this tablet, but still, having the input working is
-> always good with a tablet...
+OMAP36xx has different hardware implementation for the omap96m_alwon_fck
+compared to other OMAP3 variants. Reflect this properly in the dts file.
 
-If that's the Asus T100 tablet, we are going to fix rest of the problems
-soon :-)
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
+---
+  arch/arm/boot/dts/omap36xx-clocks.dtsi |    9 +++++++++
+  1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/omap36xx-clocks.dtsi 
+b/arch/arm/boot/dts/omap36xx-clocks.dtsi
+index 2fcf253..24ddf3f 100644
+--- a/arch/arm/boot/dts/omap36xx-clocks.dtsi
++++ b/arch/arm/boot/dts/omap36xx-clocks.dtsi
+@@ -88,3 +88,12 @@
+  			 <&mcbsp4_ick>, <&uart4_fck>;
+  	};
+  };
++
++&omap_96m_alwon_fck {
++	compatible = "ti,divider-clock";
++	clocks = <&omap_192m_alwon_fck>;
++	ti,bit-shift = <12>;
++	ti,max-div = <2>;
++	reg = <0x0a40>;
++	ti,index-starts-at-one;
++};
+-- 
+1.7.9.5
