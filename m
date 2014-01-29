@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaA2BSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 20:18:09 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:30675 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754026AbaA2BSG (ORCPT
+	id S1755732AbaA2BUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 20:20:01 -0500
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:33592 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708AbaA2BUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 20:18:06 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 29 Jan 2014 09:18:06 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the imx-mxs tree with the arm tree
-Message-ID: <20140129011803.GA13518@S2101-09.ap.freescale.net>
-References: <20140129113514.86275e22015dea313d78d5e1@canb.auug.org.au>
- <20140129011310.GT15937@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140129011310.GT15937@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Tue, 28 Jan 2014 20:20:00 -0500
+Message-ID: <1390958378.11839.37.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 3/8] mm, hugetlb: fix race in region tracking
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com, riel@redhat.com,
+        mgorman@suse.de, mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, hughd@google.com,
+        david@gibson.dropbear.id.au, js1304@gmail.com,
+        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
+        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 28 Jan 2014 17:19:38 -0800
+In-Reply-To: <1390955806-ljm7w9nq-mutt-n-horiguchi@ah.jp.nec.com>
+References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
+	 <1390794746-16755-4-git-send-email-davidlohr@hp.com>
+	 <1390856576-ud1qp3fm-mutt-n-horiguchi@ah.jp.nec.com>
+	 <1390859042.27421.4.camel@buesod1.americas.hpqcorp.net>
+	 <1390874021-48f5mo0m-mutt-n-horiguchi@ah.jp.nec.com>
+	 <1390876457.27421.19.camel@buesod1.americas.hpqcorp.net>
+	 <1390955806-ljm7w9nq-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 01:13:10AM +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 29, 2014 at 11:35:14AM +1100, Stephen Rothwell wrote:
-> > Hi Shawn,
+On Tue, 2014-01-28 at 19:36 -0500, Naoya Horiguchi wrote:
+> On Mon, Jan 27, 2014 at 06:34:17PM -0800, Davidlohr Bueso wrote:
+[...]
+> > > If this retry is really essential for the fix, please comment the reason
+> > > both in patch description and inline comment. It's very important for
+> > > future code maintenance.
 > > 
-> > Today's linux-next merge of the imx-mxs tree got a conflict in
-> > arch/arm/boot/dts/Makefile between commits 208d7baf8085 ("ARM: imx:
-> > initial SolidRun HummingBoard support") and 971488f1149f ("ARM: imx:
-> > initial SolidRun Cubox-i support") from the arm tree and various commits
-> > from the imx-mxs tree.
-> > 
-> > I fixed it up (see below) and can carry the fix as necessary (no action
-> > is required).
+> > So we locate the corresponding region in the reserve map, and if we are
+> > below the current region, then we allocate a new one. Since we dropped
+> > the lock to allocate memory, we have to make sure that we still need the
+> > new region and that we don't race with the new status of the reservation
+> > map. This is the whole point of the retry, and I don't see it being
+> > suboptimal.
 > 
-> Nice easy add/add which Linus won't complain about.  Thanks Stephen.
-> 
-> This should move to between Linus' and Shawn's tree over the next
-> couple of days since I've now sent my final pull request for this
-> window.
+> I'm afraid that you don't explain why you need drop the lock for memory
+> allocation. Are you saying that this unlocking comes from the difference
+> between rwsem and spin lock?
 
-I will rebase my branch on v3.14-rc1 once it's out.
+Because you cannot go to sleep while holding a spinlock, which is
+exactly what kmalloc(GFP_KERNEL) can do. We *might* get a way with it
+with GFP_ATOMIC, I dunno, but I certainly prefer this approach better.
 
-Shawn
+Thanks,
+Davidlohr
 
