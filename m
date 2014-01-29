@@ -1,86 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaA2QvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 11:51:24 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60938 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaA2QvS (ORCPT
+	id S1753205AbaA2Qvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 11:51:32 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59979 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758AbaA2Qv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 11:51:18 -0500
-Date: Wed, 29 Jan 2014 16:51:05 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Simon <horms@verge.net.au>, Magnus <magnus.damm@gmail.com>,
-        Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org
-Message-ID: <20140129165105.GD22609@sirena.org.uk>
-References: <87r47r6v48.wl%kuninori.morimoto.gx@gmail.com>
- <20140129124516.GZ11841@sirena.org.uk>
- <52E92943.8010401@codethink.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IMjqdzrDRly81ofr"
-Content-Disposition: inline
-In-Reply-To: <52E92943.8010401@codethink.co.uk>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: About gpio-regulator setting on DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 29 Jan 2014 11:51:28 -0500
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: catalin.marinas@arm.com, will.deacon@arm.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gregkh@linuxfoundation.org, akpm@linux-foundation.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: [PATCH 3/5] x86: align x86 arch with generic CPU modalias handling
+Date: Wed, 29 Jan 2014 17:50:44 +0100
+Message-Id: <1391014246-9715-4-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
+References: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The x86 CPU feature modalias handling existed before it was reimplemented
+generically. This patch aligns the x86 handling so that it
+(a) reuses some more code that is now generic;
+(b) uses the generic format for the modalias module metadata entry, i.e., it
+    now uses 'cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:,XXXX,YYYY' instead of
+    the 'x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature,XXXX,YYYY' that was
+    used before.
 
---IMjqdzrDRly81ofr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+---
+ arch/x86/Kconfig                  |  4 +---
+ arch/x86/include/asm/cpufeature.h |  7 +++++++
+ arch/x86/kernel/cpu/match.c       | 31 -------------------------------
+ drivers/base/Kconfig              |  5 -----
+ drivers/base/cpu.c                | 10 +++-------
+ include/linux/cpu.h               |  6 ------
+ scripts/mod/file2alias.c          | 10 +++++-----
+ 7 files changed, 16 insertions(+), 57 deletions(-)
 
-On Wed, Jan 29, 2014 at 04:16:03PM +0000, Ben Dooks wrote:
-> On 29/01/14 12:45, Mark Brown wrote:
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 940e50ebfafa..7d3b7907a10c 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -127,6 +127,7 @@ config X86
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
+ 	select HAVE_CC_STACKPROTECTOR
++	select GENERIC_CPU_AUTOPROBE
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+@@ -195,9 +196,6 @@ config ARCH_HAS_CPU_RELAX
+ config ARCH_HAS_CACHE_LINE_SIZE
+ 	def_bool y
+ 
+-config ARCH_HAS_CPU_AUTOPROBE
+-	def_bool y
+-
+ config HAVE_SETUP_PER_CPU_AREA
+ 	def_bool y
+ 
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index e099f9502ace..d86dc3deea6a 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -541,6 +541,13 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
+ #define static_cpu_has_bug(bit)	static_cpu_has((bit))
+ #define boot_cpu_has_bug(bit)	cpu_has_bug(&boot_cpu_data, (bit))
+ 
++#define MAX_CPU_FEATURES	(NCAPINTS * 32)
++#define cpu_have_feature	boot_cpu_has
++
++#define CPU_FEATURE_TYPEFMT	"x86,ven%04Xfam%04Xmod%04X"
++#define CPU_FEATURE_TYPEVAL	boot_cpu_data.x86_vendor, boot_cpu_data.x86, \
++				boot_cpu_data.x86_model
++
+ #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
+ 
+ #endif /* _ASM_X86_CPUFEATURE_H */
+diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
+index ab6082a9020e..afa9f0d487ea 100644
+--- a/arch/x86/kernel/cpu/match.c
++++ b/arch/x86/kernel/cpu/match.c
+@@ -47,34 +47,3 @@ const struct x86_cpu_id *x86_match_cpu(const struct x86_cpu_id *match)
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(x86_match_cpu);
+-
+-ssize_t arch_print_cpu_modalias(struct device *dev,
+-				struct device_attribute *attr,
+-				char *bufptr)
+-{
+-	int size = PAGE_SIZE;
+-	int i, n;
+-	char *buf = bufptr;
+-
+-	n = snprintf(buf, size, "x86cpu:vendor:%04X:family:%04X:"
+-		     "model:%04X:feature:",
+-		boot_cpu_data.x86_vendor,
+-		boot_cpu_data.x86,
+-		boot_cpu_data.x86_model);
+-	size -= n;
+-	buf += n;
+-	size -= 1;
+-	for (i = 0; i < NCAPINTS*32; i++) {
+-		if (boot_cpu_has(i)) {
+-			n = snprintf(buf, size, ",%04X", i);
+-			if (n >= size) {
+-				WARN(1, "x86 features overflow page\n");
+-				break;
+-			}
+-			size -= n;
+-			buf += n;
+-		}
+-	}
+-	*buf++ = '\n';
+-	return buf - bufptr;
+-}
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 3f0d3732df7f..8fa8deab6449 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -185,13 +185,8 @@ config GENERIC_CPU_DEVICES
+ 	bool
+ 	default n
+ 
+-config HAVE_CPU_AUTOPROBE
+-	def_bool ARCH_HAS_CPU_AUTOPROBE
+-
+ config GENERIC_CPU_AUTOPROBE
+ 	bool
+-	depends on !ARCH_HAS_CPU_AUTOPROBE
+-	select HAVE_CPU_AUTOPROBE
+ 
+ config SOC_BUS
+ 	bool
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 8a38bf8c792f..006b1bc5297d 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -287,7 +287,6 @@ static void cpu_device_release(struct device *dev)
+ 	 */
+ }
+ 
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+ #ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ static ssize_t print_cpu_modalias(struct device *dev,
+ 				  struct device_attribute *attr,
+@@ -310,9 +309,6 @@ static ssize_t print_cpu_modalias(struct device *dev,
+ 	buf[n++] = '\n';
+ 	return n;
+ }
+-#else
+-#define print_cpu_modalias	arch_print_cpu_modalias
+-#endif
+ 
+ static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+ {
+@@ -346,7 +342,7 @@ int register_cpu(struct cpu *cpu, int num)
+ 	cpu->dev.offline_disabled = !cpu->hotpluggable;
+ 	cpu->dev.offline = !cpu_online(num);
+ 	cpu->dev.of_node = of_get_cpu_node(num, NULL);
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ 	cpu->dev.bus->uevent = cpu_uevent;
+ #endif
+ 	cpu->dev.groups = common_cpu_attr_groups;
+@@ -370,7 +366,7 @@ struct device *get_cpu_device(unsigned cpu)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_device);
+ 
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+ #endif
+ 
+@@ -384,7 +380,7 @@ static struct attribute *cpu_root_attrs[] = {
+ 	&cpu_attrs[2].attr.attr,
+ 	&dev_attr_kernel_max.attr,
+ 	&dev_attr_offline.attr,
+-#ifdef CONFIG_HAVE_CPU_AUTOPROBE
++#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ 	&dev_attr_modalias.attr,
+ #endif
+ 	NULL
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index dcc4a0d9c45f..03e962e23eaf 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -46,12 +46,6 @@ extern ssize_t arch_cpu_release(const char *, size_t);
+ #endif
+ struct notifier_block;
+ 
+-#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+-extern ssize_t arch_print_cpu_modalias(struct device *dev,
+-				       struct device_attribute *attr,
+-				       char *bufptr);
+-#endif
+-
+ /*
+  * CPU notifier priorities.
+  */
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 8a69005228d8..5fdad833f951 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -1110,7 +1110,7 @@ static int do_amba_entry(const char *filename,
+ }
+ ADD_TO_DEVTABLE("amba", amba_id, do_amba_entry);
+ 
+-/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
++/* LOOKS like cpu:type:x86,venVVVVfamFFFFmodMMMM:feature:*,FEAT,*
+  * All fields are numbers. It would be nicer to use strings for vendor
+  * and feature, but getting those out of the build system here is too
+  * complicated.
+@@ -1124,10 +1124,10 @@ static int do_x86cpu_entry(const char *filename, void *symval,
+ 	DEF_FIELD(symval, x86_cpu_id, model);
+ 	DEF_FIELD(symval, x86_cpu_id, vendor);
+ 
+-	strcpy(alias, "x86cpu:");
+-	ADD(alias, "vendor:",  vendor != X86_VENDOR_ANY, vendor);
+-	ADD(alias, ":family:", family != X86_FAMILY_ANY, family);
+-	ADD(alias, ":model:",  model  != X86_MODEL_ANY,  model);
++	strcpy(alias, "cpu:type:x86,");
++	ADD(alias, "ven", vendor != X86_VENDOR_ANY, vendor);
++	ADD(alias, "fam", family != X86_FAMILY_ANY, family);
++	ADD(alias, "mod", model  != X86_MODEL_ANY,  model);
+ 	strcat(alias, ":feature:*");
+ 	if (feature != X86_FEATURE_ANY)
+ 		sprintf(alias + strlen(alias), "%04X*", feature);
+-- 
+1.8.3.2
 
-> >of_get_named_gpio() just looks up the GPIO number, it doesn't request
-> >the GPIO.
-
-> I think you've just run in to the same problem that we've found
-> with the GPIO regulator code for the vmmcq on the lager where the
-> DT probed version is getting 1800mV for MMC whereas the platform
-> probed version gets 3300mV for MMC (and thus works better).
-
-> My view is that we should really add an initialisation voltage
-> setting to the regulators so that if there is >2 states we can
-> select the state it starts in.
-
-The drivers using the regulator should be doing that if the regulator
-has variable supplies, the expectation is that trying to provide
-something outside of a driver that's actively managing this is just
-going to give more opportunity for the system to become fragile.  A
-write only driver like the GPIO regulator may want to provide something
-but it's not clear to me that this would help for generic regulators.
-
---IMjqdzrDRly81ofr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS6TF2AAoJELSic+t+oim9oxkP/1cbaeUt41RPMJr+fx6910ZT
-lT/sPTV/ADZXwh4n/XlUwIsni7VQuX7MbhNKJ3vLL6hglY8iUBgeW8WZeG2C7NTe
-Zrl9H+kBVsAv2xI4Od1TPMt2rLQET5C3zCxjTY/ol5bjHeBYv3ca0koRLnPYhy5U
-o6NEOW5nzsG3J+kAbndKETLDPl52RTqpSIjwj3FBIr+n9w7U4jjvFCfmmqk3ivWC
-EBBr2J0dFluRQ3v+Q+8kjskxIO1Td0SM5TB+wz/bflSZ7KCKY2SqN9FspCELus9c
-HjrGc2h/h5z695OPvxlte1nWRhReauCOqM0Gu2JaJpF4aeMCh6LUDyO0AbrELZXV
-YxzntMh/g4m23LeUY4jU+PySts5eQ86qJakEzcWPwzQckKe4RwMA69YblrqxNVwh
-yvp/a5vQhl8855Wv7Adds/c/GXD0Cq8NHhhvO9VuUpGf0hR3aI8bnAlSnDvIehBb
-+TRrMctq4i05glTSP9YMxDo6GVqH7LUs++0zXS0U/zWD+ORvsq+KYwu/soa7k6Y8
-R179RPI4aecAEN7CT460Isk8LDebbKdlDpK2qTzhzFkrJjVKZ6AeoUI1vMkfyTJ0
-SQRAuoyKaoDOJ7JafbnSf1vO6EcRLO+hlUSnblS8iePFj0yxEtpI/2GVjfETYMUg
-QptjXgpRPfPiN0mgxrFz
-=4sgu
------END PGP SIGNATURE-----
-
---IMjqdzrDRly81ofr--
