@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaA2UWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:22:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22203 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942AbaA2UWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:22:12 -0500
-Date: Wed, 29 Jan 2014 15:21:27 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Will.Deacon@arm.com, arndb@arndb.de,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        viro@zeniv.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
-Message-ID: <20140129202127.GA24068@madcap2.tricolour.ca>
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
- <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
- <20140123141808.GD27520@arm.com>
- <52E5EAC1.2070306@linaro.org>
+	id S1751744AbaA2U0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:26:40 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:49558 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaA2U0j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 15:26:39 -0500
+Date: Wed, 29 Jan 2014 15:26:33 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Frank Mayhar <fmayhar@google.com>
+Subject: [PATCH] block: __elv_next_request() shouldn't call into the elevator
+ if bypassing
+Message-ID: <20140129202633.GQ30842@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52E5EAC1.2070306@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/27, AKASHI Takahiro wrote:
-> [To audit maintainers]
-> 
-> On 01/23/2014 11:18 PM, Catalin Marinas wrote:
-> >On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
-> >>--- a/include/uapi/linux/audit.h
-> >>+++ b/include/uapi/linux/audit.h
-> >>@@ -327,6 +327,8 @@ enum {
-> >>  /* distinguish syscall tables */
-> >>  #define __AUDIT_ARCH_64BIT 0x80000000
-> >>  #define __AUDIT_ARCH_LE	   0x40000000
-> >>+#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> >>+#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
-> >>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> >>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
-> >>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
-> >>diff --git a/init/Kconfig b/init/Kconfig
-> >>index 79383d3..3aae602 100644
-> >>--- a/init/Kconfig
-> >>+++ b/init/Kconfig
-> >>@@ -284,7 +284,7 @@ config AUDIT
-> >>
-> >>  config AUDITSYSCALL
-> >>  	bool "Enable system-call auditing support"
-> >>-	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-> >>+	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
-> >
-> >The usual comment for such changes: could you please clean this up and
-> >just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
-> 
-> Do you agree to this change?
-> 
-> If so, I can create a patch, but have some concerns:
-> 1) I can't verify it on other architectures than (arm &) arm64.
-> 2) Some architectures (microblaze, mips, openrisc) are not listed here, but
->    their ptrace.c have a call to audit_syscall_entry/exit().
->    (audit_syscall_entry/exit are null if !AUDITSYSCALL, though)
+request_queue bypassing is used to suppress higher-level function of a
+request_queue so that they can be switched, reconfigured and shut
+down.  A request_queue does the followings while bypassing.
 
-I can try: ppc s390 x86_64 ppc64 i686 s390x
+* bypasses elevator and io_cq association and queues requests directly
+  to the FIFO dispatch queue.
 
-> So I'm afraid that the change might break someone's assumption.
-> 
-> Thanks,
-> -Takahiro AKASHI
+* bypasses block cgroup request_list lookup and always uses the root
+  request_list.
 
-- RGB
+Once confirmed to be bypassing, specific elevator and block cgroup
+policy implementations can assume that nothing is in flight for them
+and perform various operations which would be dangerous otherwise.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Such confirmation is acheived by short-circuiting all new requests
+directly to the dispatch queue and waiting for all the requests which
+were issued before to finish.  Unfortunately, while the request
+allocating and draining sides were properly handled, we forgot to
+actually plug the request dispatch path.  Even after bypassing mode is
+confirmed, if the attached driver tries to fetch a request and the
+dispatch queue is empty, __elv_next_request() would invoke the current
+elevator's elevator_dispatch_fn() callback.  As all in-flight requests
+were drained, the elevator wouldn't contain any request but once
+bypass is confirmed we don't even know whether the elevator is even
+there.  It might be in the process of being switched and half torn
+down.
+
+Frank Mayhar reports that this actually happened while switching
+elevators, leading to an oops.
+
+Let's fix it by making __elv_next_request() avoid invoking the
+elevator_dispatch_fn() callback if the queue is bypassing.  It already
+avoids invoking the callback if the queue is dying.  As a dying queue
+is guaranteed to be bypassing, we can simply replace blk_queue_dying()
+check with blk_queue_bypass().
+
+Reported-by: Frank Mayhar <fmayhar@google.com>
+References: http://lkml.kernel.org/g/1390319905.20232.38.camel@bobble.lax.corp.google.com
+Cc: stable@vger.kernel.org
+---
+Hello,
+
+Sorry about the delay.  Frank, if your test is still holding up, can
+you please reply with Tested-by?
+
+Thanks!
+
+ block/blk.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/block/blk.h b/block/blk.h
+index c90e1d8..d23b415 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -113,7 +113,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
+ 			q->flush_queue_delayed = 1;
+ 			return NULL;
+ 		}
+-		if (unlikely(blk_queue_dying(q)) ||
++		if (unlikely(blk_queue_bypass(q)) ||
+ 		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
+ 			return NULL;
+ 	}
