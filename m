@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaA2LPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 06:15:11 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:59626 "EHLO
+	id S1752107AbaA2LQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 06:16:12 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:59633 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750930AbaA2LPH (ORCPT
+	with ESMTP id S1750970AbaA2LPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 06:15:07 -0500
+	Wed, 29 Jan 2014 06:15:08 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         Emilio Lopez <emilio@elopez.com.ar>
@@ -16,9 +16,9 @@ Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         zhuzhenhua@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 2/5] ARM: sun6i: dt: Add PLL6 and SPI module clocks
-Date: Wed, 29 Jan 2014 12:10:47 +0100
-Message-Id: <1390993850-9054-3-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 1/5] clk: sunxi: Add support for PLL6 on the A31
+Date: Wed, 29 Jan 2014 12:10:46 +0100
+Message-Id: <1390993850-9054-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,80 +26,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The module clocks in the A31 are still compatible with the A10 one. Add the SPI
-module clocks and the PLL6 in the device tree to allow their use by the SPI
-controllers.
+The A31 has a slightly different PLL6 clock. Add support for this new clock in
+our driver.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun6i-a31.dtsi | 46 ++++++++++++++++++++++++++++++++--------
- 1 file changed, 37 insertions(+), 9 deletions(-)
+ Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
+ drivers/clk/sunxi/clk-sunxi.c                     | 45 +++++++++++++++++++++++
+ 2 files changed, 46 insertions(+)
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index 5256ad9..0eea325 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -73,16 +73,12 @@
- 			clocks = <&osc24M>;
- 		};
+diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+index c2cb762..954845c 100644
+--- a/Documentation/devicetree/bindings/clock/sunxi.txt
++++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+@@ -11,6 +11,7 @@ Required properties:
+ 	"allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
+ 	"allwinner,sun4i-pll5-clk" - for the PLL5 clock
+ 	"allwinner,sun4i-pll6-clk" - for the PLL6 clock
++	"allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
+ 	"allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
+ 	"allwinner,sun4i-axi-clk" - for the AXI clock
+ 	"allwinner,sun4i-axi-gates-clk" - for the AXI gates
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 659e4ea..990ad5d 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -249,7 +249,38 @@ static void sun4i_get_pll5_factors(u32 *freq, u32 parent_rate,
+ 	*n = DIV_ROUND_UP(div, (*k+1));
+ }
  
--		/*
--		 * This is a dummy clock, to be used as placeholder on
--		 * other mux clocks when a specific parent clock is not
--		 * yet implemented. It should be dropped when the driver
--		 * is complete.
--		 */
--		pll6: pll6 {
-+		pll6: clk@01c20028 {
- 			#clock-cells = <0>;
--			compatible = "fixed-clock";
--			clock-frequency = <0>;
-+			compatible = "allwinner,sun6i-a31-pll6-clk";
-+			reg = <0x01c20028 0x4>;
-+			clocks = <&osc24M>;
-+			clock-output-names = "pll6";
- 		};
++/**
++ * sun6i_a31_get_pll6_factors() - calculates n, k factors for A31 PLL6
++ * PLL6 rate is calculated as follows
++ * rate = parent_rate * n * (k + 1) / 2
++ * parent_rate is always 24Mhz
++ */
++
++static void sun6i_a31_get_pll6_factors(u32 *freq, u32 parent_rate,
++				       u8 *n, u8 *k, u8 *m, u8 *p)
++{
++	u8 div;
++
++	/*
++	 * We always have 24MHz / 2, so we can just say that our
++	 * parent clock is 12MHz.
++	 */
++	parent_rate = parent_rate / 2;
++
++	/* Normalize value to a parent_rate multiple (24M / 2) */
++	div = *freq / parent_rate;
++	*freq = parent_rate * div;
++
++	/* we were called to round the frequency, we can now return */
++	if (n == NULL)
++		return;
++
++	*k = div / 32;
++	if (*k > 3)
++		*k = 3;
  
- 		cpu: cpu@01c20050 {
-@@ -182,6 +178,38 @@
- 					"apb2_uart1", "apb2_uart2", "apb2_uart3",
- 					"apb2_uart4", "apb2_uart5";
- 		};
-+
-+		spi0_clk: clk@01c200a0 {
-+			#clock-cells = <0>;
-+			compatible = "allwinner,sun4i-mod0-clk";
-+			reg = <0x01c200a0 0x4>;
-+			clocks = <&osc24M>, <&pll6>;
-+			clock-output-names = "spi0";
-+		};
-+
-+		spi1_clk: clk@01c200a4 {
-+			#clock-cells = <0>;
-+			compatible = "allwinner,sun4i-mod0-clk";
-+			reg = <0x01c200a4 0x4>;
-+			clocks = <&osc24M>, <&pll6>;
-+			clock-output-names = "spi1";
-+		};
-+
-+		spi2_clk: clk@01c200a8 {
-+			#clock-cells = <0>;
-+			compatible = "allwinner,sun4i-mod0-clk";
-+			reg = <0x01c200a8 0x4>;
-+			clocks = <&osc24M>, <&pll6>;
-+			clock-output-names = "spi2";
-+		};
-+
-+		spi3_clk: clk@01c200ac {
-+			#clock-cells = <0>;
-+			compatible = "allwinner,sun4i-mod0-clk";
-+			reg = <0x01c200ac 0x4>;
-+			clocks = <&osc24M>, <&pll6>;
-+			clock-output-names = "spi3";
-+		};
- 	};
++	*n = DIV_ROUND_UP(div, (*k+1));
++}
  
- 	soc@01c00000 {
+ /**
+  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
+@@ -416,6 +447,13 @@ static struct clk_factors_config sun4i_pll5_config = {
+ 	.kwidth = 2,
+ };
+ 
++static struct clk_factors_config sun6i_a31_pll6_config = {
++	.nshift	= 8,
++	.nwidth = 5,
++	.kshift = 4,
++	.kwidth = 2,
++};
++
+ static struct clk_factors_config sun4i_apb1_config = {
+ 	.mshift = 0,
+ 	.mwidth = 5,
+@@ -457,6 +495,12 @@ static const struct factors_data sun4i_pll5_data __initconst = {
+ 	.getter = sun4i_get_pll5_factors,
+ };
+ 
++static const struct factors_data sun6i_a31_pll6_data __initconst = {
++	.enable = 31,
++	.table = &sun6i_a31_pll6_config,
++	.getter = sun6i_a31_get_pll6_factors,
++};
++
+ static const struct factors_data sun4i_apb1_data __initconst = {
+ 	.table = &sun4i_apb1_config,
+ 	.getter = sun4i_get_apb1_factors,
+@@ -972,6 +1016,7 @@ free_clkdata:
+ static const struct of_device_id clk_factors_match[] __initconst = {
+ 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
+ 	{.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
++	{.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
+ 	{.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
+ 	{.compatible = "allwinner,sun4i-mod0-clk", .data = &sun4i_mod0_data,},
+ 	{.compatible = "allwinner,sun7i-a20-out-clk", .data = &sun7i_a20_out_data,},
 -- 
 1.8.4.2
 
