@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbaA2RTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 12:19:54 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:54260 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaA2RTw (ORCPT
+	id S1752748AbaA2RV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 12:21:59 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:42376 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaA2RV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 12:19:52 -0500
+	Wed, 29 Jan 2014 12:21:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140129170403.GJ30842@htj.dyndns.org>
-References: <CAOJe8K20xx3o7HXH3E4pE3=G4pQ-nUf4LYF6sEwy5wYQE23+AA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1401291134070.11997-100000@netrider.rowland.org>
-	<20140129170403.GJ30842@htj.dyndns.org>
-Date: Wed, 29 Jan 2014 15:19:51 -0200
-Message-ID: <CAOMZO5Did0vDuHjVnSjor6AsMHeE0L1XPhT9s+h99Hbg_JmHWw@mail.gmail.com>
-Subject: Re: [PATCH driver-core-linus] kernfs: make kernfs_deactivate() honor
- KERNFS_LOCKDEP flag
-From: Fabio Estevam <festevam@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Denis Kirjanov <kda@linux-powerpc.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
+In-Reply-To: <52E9267C.90403@6wind.com>
+References: <20140128205756.074448668@goodmis.org> <52E8E025.2060803@6wind.com>
+ <20140129075745.4227a2ed@gandalf.local.home> <52E9267C.90403@6wind.com>
+From: Willem de Bruijn <willemb@google.com>
+Date: Wed, 29 Jan 2014 12:21:26 -0500
+Message-ID: <CA+FuTSeZ=ZFz4NmYvWfkU9B_NjqpHrd9-NUDv3b+kheGC-5ruQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] [BUG FIXES - 3.10.27] sit: More backports
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        stable <stable@vger.kernel.org>, Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        John Kacur <jkacur@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 3:04 PM, Tejun Heo <tj@kernel.org> wrote:
-> kernfs_deactivate() forgot to check whether KERNFS_LOCKDEP is set
-> before performing lockdep annotations and ends up feeding
-> uninitialized lockdep_map to lockdep triggering warning like the
-> following on USB stick hotunplug.
+> From d101450583c3a472a2a94904cfe13fd4e7d2f519 Mon Sep 17 00:00:00 2001
+> From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+> Date: Wed, 29 Jan 2014 16:40:30 +0100
+> Subject: [PATCH] sit: fix double free of fb_tunnel_dev on exit
 >
->  usb 1-2: USB disconnect, device number 2
->  INFO: trying to register non-static key.
->  the code is fine but needs lockdep annotation.
->  turning off the locking correctness validator.
->  CPU: 1 PID: 62 Comm: khubd Not tainted 3.13.0-work+ #82
->  Hardware name: empty empty/S3992, BIOS 080011  10/26/2007
->   ffff880065ca7f60 ffff88013a4ffa08 ffffffff81cfb6bd 0000000000000002
->   ffff88013a4ffac8 ffffffff810f8530 ffff88013a4fc710 0000000000000002
->   ffff880100000000 ffffffff82a3db50 0000000000000001 ffff88013a4fc710
->  Call Trace:
->   [<ffffffff81cfb6bd>] dump_stack+0x4e/0x7a
->   [<ffffffff810f8530>] __lock_acquire+0x1910/0x1e70
->   [<ffffffff810f931a>] lock_acquire+0x9a/0x1d0
->   [<ffffffff8127c75e>] kernfs_deactivate+0xee/0x130
->   [<ffffffff8127d4c8>] kernfs_addrm_finish+0x38/0x60
->   [<ffffffff8127d701>] kernfs_remove_by_name_ns+0x51/0xa0
->   [<ffffffff8127b4f1>] remove_files.isra.1+0x41/0x80
->   [<ffffffff8127b7e7>] sysfs_remove_group+0x47/0xa0
->   [<ffffffff8127b873>] sysfs_remove_groups+0x33/0x50
->   [<ffffffff8177d66d>] device_remove_attrs+0x4d/0x80
->   [<ffffffff8177e25e>] device_del+0x12e/0x1d0
->   [<ffffffff819722c2>] usb_disconnect+0x122/0x1a0
->   [<ffffffff819749b5>] hub_thread+0x3c5/0x1290
->   [<ffffffff810c6a6d>] kthread+0xed/0x110
->   [<ffffffff81d0a56c>] ret_from_fork+0x7c/0xb0
+> This problem was fixed upstream by commit 9434266f2c64 ("sit: fix use after free
+> of fb_tunnel_dev").
+> The upstream patch depends on upstream commit 5e6700b3bf98 ("sit: add support of
+> x-netns"), which was not backported into 3.10 branch.
 >
-> Fix it by making kernfs_deactivate() perform lockdep annotations only
-> if KERNFS_LOCKDEP is set.
+> First, explain the problem: when the sit module is unloaded, sit_cleanup() is
+> called.
+> rmmod sit
+> => sit_cleanup()
+>   => rtnl_link_unregister()
+>     => __rtnl_kill_links()
+>       => for_each_netdev(net, dev) {
+>         if (dev->rtnl_link_ops == ops)
+>                 ops->dellink(dev, &list_kill);
+>         }
+> At this point, the FB device is deleted (and all sit tunnels).
+>   => unregister_pernet_device()
+>     => unregister_pernet_operations()
+>       => ops_exit_list()
+>         => sit_exit_net()
+>           => sit_destroy_tunnels()
+>           In this function, no tunnel is found.
+>           => unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
+> We delete the FB device a second time here!
 >
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Fabio Estevam <festevam@gmail.com>
-> Reported-by: Alan Stern <stern@rowland.harvard.edu>
+> Because we cannot simply remove the second deletion (sit_exit_net() must remove
+> the FB device when a netns is deleted), we add an rtnl ops which delete all sit
+> device excepting the FB device and thus we can keep the explicit deletion in
+> sit_exit_net().
+>
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+> ---
+>  net/ipv6/sit.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+> index 0491264b8bfc..620d326e8fdd 100644
+> --- a/net/ipv6/sit.c
+> +++ b/net/ipv6/sit.c
+> @@ -1507,6 +1507,15 @@ static const struct nla_policy ipip6_policy[IFLA_IPTUN_MAX + 1] = {
+>  #endif
+>  };
+>
+> +static void ipip6_dellink(struct net_device *dev, struct list_head *head)
+> +{
+> +       struct net *net = dev_net(dev);
+> +       struct sit_net *sitn = net_generic(net, sit_net_id);
+> +
+> +       if (dev != sitn->fb_tunnel_dev)
+> +               unregister_netdevice_queue(dev, head);
+> +}
+> +
+>  static struct rtnl_link_ops sit_link_ops __read_mostly = {
+>         .kind           = "sit",
+>         .maxtype        = IFLA_IPTUN_MAX,
+> @@ -1517,6 +1526,7 @@ static struct rtnl_link_ops sit_link_ops __read_mostly = {
+>         .changelink     = ipip6_changelink,
+>         .get_size       = ipip6_get_size,
+>         .fill_info      = ipip6_fill_info,
+> +       .dellink        = ipip6_dellink,
+>  };
+>
+>  static struct xfrm_tunnel sit_handler __read_mostly = {
+> --
+> 1.8.4.1
 
-Thanks, Tejun. I don't get the warning after removing the USB stick
-after applying this patch:
 
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+This looks good to me. It is the same as the backport "sit: fix use
+after free of fb_tunnel_dev" (9434266f2c64), minus the small code
+cleanup at the end of that patch that is not relevant to 3.10.27 (do
+not define sit_net *sitn in sit_exit_net if it is not used there. But in
+3.10.27 it is used, in unregister_netdevice_queue).
