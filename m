@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaA2VUT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 16:20:19 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49643 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbaA2VUP (ORCPT
+	id S1752073AbaA2VXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 16:23:11 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:52196 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaA2VXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 16:20:15 -0500
-Date: Wed, 29 Jan 2014 13:20:12 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Subject: Linux Plumbers Conference Call for Refereed-Track Presentations
-Message-ID: <20140129212012.GA8944@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14012921-1542-0000-0000-0000059EBFF8
+	Wed, 29 Jan 2014 16:23:08 -0500
+Message-ID: <1391030586.24181.21.camel@bobble.lax.corp.google.com>
+Subject: Re: [PATCH] block: __elv_next_request() shouldn't call into the
+ elevator if bypassing
+From: Frank Mayhar <fmayhar@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Date: Wed, 29 Jan 2014 13:23:06 -0800
+In-Reply-To: <20140129202633.GQ30842@htj.dyndns.org>
+References: <20140129202633.GQ30842@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are pleased to announce the call for refereed track proposals for
-the 2014 edition of the Linux Plumbers Conference, which will be held
-in Düsseldorf Germany on October 15-17 in conjunction with LinuxCon
-(which takes place on the first three days of that same week).  Proposals
-are due on July 11, 2014 at 11:59PM Central Europe Time.
+On Wed, 2014-01-29 at 15:26 -0500, Tejun Heo wrote:
+> request_queue bypassing is used to suppress higher-level function of a
+> request_queue so that they can be switched, reconfigured and shut
+> down.  A request_queue does the followings while bypassing.
+> 
+> * bypasses elevator and io_cq association and queues requests directly
+>   to the FIFO dispatch queue.
+> 
+> * bypasses block cgroup request_list lookup and always uses the root
+>   request_list.
+> 
+> Once confirmed to be bypassing, specific elevator and block cgroup
+> policy implementations can assume that nothing is in flight for them
+> and perform various operations which would be dangerous otherwise.
+> 
+> Such confirmation is acheived by short-circuiting all new requests
+> directly to the dispatch queue and waiting for all the requests which
+> were issued before to finish.  Unfortunately, while the request
+> allocating and draining sides were properly handled, we forgot to
+> actually plug the request dispatch path.  Even after bypassing mode is
+> confirmed, if the attached driver tries to fetch a request and the
+> dispatch queue is empty, __elv_next_request() would invoke the current
+> elevator's elevator_dispatch_fn() callback.  As all in-flight requests
+> were drained, the elevator wouldn't contain any request but once
+> bypass is confirmed we don't even know whether the elevator is even
+> there.  It might be in the process of being switched and half torn
+> down.
+> 
+> Frank Mayhar reports that this actually happened while switching
+> elevators, leading to an oops.
+> 
+> Let's fix it by making __elv_next_request() avoid invoking the
+> elevator_dispatch_fn() callback if the queue is bypassing.  It already
+> avoids invoking the callback if the queue is dying.  As a dying queue
+> is guaranteed to be bypassing, we can simply replace blk_queue_dying()
+> check with blk_queue_bypass().
+> 
+> Reported-by: Frank Mayhar <fmayhar@google.com>
+> References: http://lkml.kernel.org/g/1390319905.20232.38.camel@bobble.lax.corp.google.com
+> Cc: stable@vger.kernel.org
+> ---
+> Hello,
+> 
+> Sorry about the delay.  Frank, if your test is still holding up, can
+> you please reply with Tested-by?
+> 
+> Thanks!
+> 
+>  block/blk.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/block/blk.h b/block/blk.h
+> index c90e1d8..d23b415 100644
+> --- a/block/blk.h
+> +++ b/block/blk.h
+> @@ -113,7 +113,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
+>  			q->flush_queue_delayed = 1;
+>  			return NULL;
+>  		}
+> -		if (unlikely(blk_queue_dying(q)) ||
+> +		if (unlikely(blk_queue_bypass(q)) ||
+>  		    !q->elevator->type->ops.elevator_dispatch_fn(q, 0))
+>  			return NULL;
+>  	}
 
-Refereed track presentations are similar to traditional presentations,
-but preferably involve significant face-to-face discussion and debate.
-These presentations should focus on some specific issue in the "plumbing"
-in the Linux system, where example Linux-plumbing components include core
-kernel subsystems, core libraries, windowing systems, management tools,
-device support, media creation/playback, and so on.  Presentations need
-not focus solely on a single specific Linux-plumbing component, in fact,
-the best presentations often involve issues that cut across multiple
-components.
-
-The Linux Plumbers refereed track will again be shared with LinuxCon,
-as it was last year in New Orleans.  Because LPC and LinuxCon Europe
-are colocated and overlap by one day (Wednesday, October 15), we are
-opening the refereed presentations to attendees of both conferences.
-As a result, refereed track talk proposals will be submitted via LinuxCon
-Europe as Developer presentations, with the top plumbing-related
-talks being accepted into the combined Plumbers/LinuxCon track on
-Wednesday, October 15th.
-
-Proposals will be reviewed by both the Plumbers and LinuxCon Europe
-program committees, which means that submissions might be accepted into
-LinuxCon Europe instead of the Plumbers refereed track, in which case they
-will be scheduled for either Monday October 13th or Tuesday October 14th
-as part of the three-day Developer track.  Although we cannot give a set
-of hard and fast rules in advance of reviewing the actual submissions,
-we can say that proposals covering completed work are more likely to
-be accepted into LinuxCon, while proposals that promise to generate
-significant cross-cutting discussion are more likely to be accepted into
-the Plumbers refereed track.
-
-For more details on how to submit your proposal, please see "Refereed
-Track Proposals" at http://www.linuxplumbersconf.org/2014/participate/.
-
-Of course, there is more to Plumbers than refereed-track
-presentations, so look for the call for Microconference proposals as
-well as upcoming calls for BoFs, hackfests, and lightning talks at
-http://www.linuxplumbersconf.org/2014/participate/.  This will be an
-exciting and important conference, and we hope to see you in Düsseldorf
-this coming October!
-
-
-					Thanx, Paul
-					(Chair, LPC Program Committee)
+Tested-by: Frank Mayhar <fmayhar@google.com>
+-- 
+Frank Mayhar
+310-460-4042
 
