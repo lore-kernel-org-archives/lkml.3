@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaA2VCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 16:02:24 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:33438 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169AbaA2VAM (ORCPT
+	id S1752139AbaA2VJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 16:09:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64285 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751398AbaA2VJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 16:00:12 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        linux-pwm@vger.kernel.org,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH 1/5] iio: add support for pulse width capture devices
-Date: Wed, 29 Jan 2014 15:59:55 -0500
-Message-Id: <1391029199-3670-2-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1391029199-3670-1-git-send-email-mporter@linaro.org>
-References: <1391029199-3670-1-git-send-email-mporter@linaro.org>
+	Wed, 29 Jan 2014 16:09:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/17] x86, ia64 NUMA cleanup
+Date: Wed, 29 Jan 2014 22:23:42 +0100
+Message-ID: <2252437.OFEY1u4TK8@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a channel type to support pulse width capture devices.
-These devices capture the timing of a PWM signal based on a
-configurable trigger
+On Wednesday, January 29, 2014 11:17:25 AM Bjorn Helgaas wrote:
+> This is all cleanup: it adds no new functionality and should make no
+> functional difference at all except a printk change or two.
+> 
+> The main ideas are:
+> 
+>   - Clean up the x86 PCI bus scanning interfaces.  We had:
+>       struct pci_bus *pci_scan_bus_on_node(int bus, struct pci_ops *, int node)
+>       struct pci_bus *pcibios_scan_root(int bus)
+>       struct pci_bus *pci_scan_bus_with_sysdata(int bus)
+>       void pcibios_scan_specific_bus(int bus)
+>     These were all basically the same, so I kept only pcibios_scan_root().
+> 
+>   - Get rid of mp_bus_to_node[].  This was basically a way of passing node
+>     info from the AMD "native host bridg driver" (amd_bus.c) into the PCI
+>     core.  It was clunky and inconsistent between x86-64 and i386.  I
+>     replaced it with x86_pci_root_bus_node(), analogous to the existing
+>     x86_pci_root_bus_resources().
+> 
+>   - Remove _PXM knowledge from the PCI host bridge, IOMMU, and APIC code.
+>     They really only care about the NUMA node number, not the raw _PXM
+>     value.
+> 
+> ---
+> 
+> Bjorn Helgaas (17):
+>       x86/PCI: Drop pcibios_scan_root() check for bus already scanned
+>       x86/PCI: Use pcibios_scan_root() instead of pci_scan_bus_with_sysdata()
+>       x86/PCI: Use pcibios_scan_root() instead of pci_scan_bus_on_node()
+>       x86/PCI: Merge pci_scan_bus_on_node() into pcibios_scan_root()
+>       x86/PCI: Drop return value of pcibios_scan_root()
+>       x86/PCI: Add x86_pci_root_bus_node() to look up NUMA node from PCI bus
+>       x86/PCI: Use x86_pci_root_bus_node() instead of get_mp_bus_to_node()
+>       x86/PCI: Remove mp_bus_to_node[], set_mp_bus_to_node(), get_mp_bus_to_node()
+>       x86/PCI: Remove unnecessary list_empty(&pci_root_infos) check
+>       x86/PCI: Use NUMA_NO_NODE, not -1, for unknown node
+>       x86/PCI: Remove acpi_get_pxm() usage
+>       ia64 / sba_iommu: Use NUMA_NO_NODE, not MAX_NUMNODES, for unknown node
+>       ia64: Remove acpi_get_pxm() usage
+>       ACPI / numa: Fix acpi_get_node() prototype
+>       ACPI / numa: Simplify acpi_get_node() style
+>       ACPI / numa: Make __acpi_map_pxm_to_node(), acpi_get_pxm() static
+>       ACPI / numa: Use __weak, not the gcc-specific version
+> 
+> 
+>  arch/ia64/hp/common/sba_iommu.c |   32 +++-------
+>  arch/ia64/include/asm/pci.h     |    2 -
+>  arch/ia64/kernel/acpi.c         |   28 ++-------
+>  arch/ia64/pci/pci.c             |   10 +--
+>  arch/x86/include/asm/pci.h      |    7 --
+>  arch/x86/include/asm/topology.h |   14 ----
+>  arch/x86/pci/acpi.c             |   29 ++-------
+>  arch/x86/pci/amd_bus.c          |   10 ---
+>  arch/x86/pci/bus_numa.c         |   13 +++-
+>  arch/x86/pci/common.c           |  128 +++++----------------------------------
+>  arch/x86/pci/fixup.c            |    6 +-
+>  arch/x86/pci/irq.c              |    6 --
+>  arch/x86/pci/legacy.c           |    4 -
+>  arch/x86/pci/numaq_32.c         |    6 +-
+>  arch/x86/pci/visws.c            |    4 +
+>  drivers/acpi/numa.c             |   16 ++---
+>  include/acpi/acpi_numa.h        |    1 
+>  include/linux/acpi.h            |    9 +--
+>  18 files changed, 75 insertions(+), 250 deletions(-)
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- drivers/iio/industrialio-core.c | 1 +
- include/linux/iio/types.h       | 1 +
- 2 files changed, 2 insertions(+)
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index acc911a..6ea0cf8 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
- 	[IIO_CCT] = "cct",
- 	[IIO_PRESSURE] = "pressure",
- 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
-+	[IIO_PULSE] = "pulse",
- };
- 
- static const char * const iio_modifier_names[] = {
-diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-index 084d882..4fa8840 100644
---- a/include/linux/iio/types.h
-+++ b/include/linux/iio/types.h
-@@ -30,6 +30,7 @@ enum iio_chan_type {
- 	IIO_CCT,
- 	IIO_PRESSURE,
- 	IIO_HUMIDITYRELATIVE,
-+	IIO_PULSE,
- };
- 
- enum iio_modifier {
+for the whole series.
+
+Thanks!
+
 -- 
-1.8.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
