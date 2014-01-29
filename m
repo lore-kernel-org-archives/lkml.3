@@ -1,110 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaA2NG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 08:06:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57626 "EHLO
+	id S1752507AbaA2NHP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 08:07:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaA2NGz (ORCPT
+	with ESMTP id S1752437AbaA2NHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 08:06:55 -0500
-Date: Wed, 29 Jan 2014 05:08:09 -0800
+	Wed, 29 Jan 2014 08:07:09 -0500
+Date: Wed, 29 Jan 2014 05:08:23 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.13.1
-Message-ID: <20140129130809.GA3063@kroah.com>
+Subject: Re: Linux 3.13.1
+Message-ID: <20140129130823.GB3063@kroah.com>
+References: <20140129130809.GA3063@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140129130809.GA3063@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.13.1 kernel.
-
-All users of the 3.13 kernel series must upgrade.
-
-The updated 3.13.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.13.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                        |    2 +-
- drivers/extcon/extcon-gpio.c                    |   11 ++++++-----
- drivers/md/raid5.c                              |    9 +++++----
- drivers/staging/comedi/comedi_fops.c            |    2 ++
- drivers/staging/comedi/drivers/addi_apci_1032.c |    4 ++--
- drivers/staging/comedi/drivers/adl_pci9111.c    |    2 +-
- drivers/tty/serial/amba-pl011.c                 |    6 ++++++
- fs/gfs2/inode.c                                 |   16 +++++++++++++++-
- include/linux/mm.h                              |   13 ++++++++-----
- sound/pci/hda/patch_hdmi.c                      |    6 +++++-
- 10 files changed, 51 insertions(+), 20 deletions(-)
-
-Bernd Porr (1):
-      staging: comedi: fix result of memdup_user for user chanlist
-
-Bob Peterson (1):
-      GFS2: Increase i_writecount during gfs2_setattr_chown
-
-David Henningsson (1):
-      ALSA: hda - Explicitly keep codec powered up in hdmi_present_sense
-
-Geert Uytterhoeven (1):
-      mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-
-Greg Kroah-Hartman (1):
-      Linux 3.13.1
-
-Guenter Roeck (1):
-      extcon: gpio: Request gpio pin before modifying its state
-
-H Hartley Sweeten (2):
-      staging: comedi: addi_apci_1032: fix subdevice type/flags bug
-      staging: comedi: adl_pci9111: fix incorrect irq passed to request_irq()
-
-Jon Medhurst (1):
-      serial: amba-pl011: use port lock to guard control register access
-
-NeilBrown (2):
-      md/raid5: fix long-standing problem with bitmap handling on write failure.
-      md/raid5: close recently introduced race in stripe_head management.
-
-
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS6P05AAoJEDjbvchgkmk+bs0P/2kmw4oPmOB8X66+MTf2gRmR
-mqzN2vUO/Vs8qnSdPLABM3xvCUKkApXrI8J/k7USw4Szpl1cvoFhs2ZY0/+MQhnL
-xYIRqUC0CBWTtYoUvdd40MSy+3yUdQ6rA0La2gkUvQxv9UoYcgunvO5XNkKEjCyF
-vtQ5cqVwBokJMSgDvM7HC10XsYx7cSOsz0yTxOoL0RXfb7zLnenaZeQ9Q60+wq0O
-PCgdfQiz1yotf2Yv1fUJLHaPZ9/k78lzkRBZ3GdKv+8LaG2RHHcIWh6e1c3MYZLY
-aTkPluy8nV1gPIOIpEikYI4BEW2NB/PFcm6CjndEQF7kX9rNLLcSdj9tJ4IcJX+C
-4UjTzaATFRgx9rLDvQO5GB7+wLedTFKjZMKMBfG1ogAaLqcQu3fia+f0HfHfCx0I
-8bWuhqfZnD6bSVg7LHx5UsJ+Bs0h4kdAgnSsoMbXp6hauDeliBeFPuR21dvBACt1
-Pqyg21GJwAalEq+3MiFWlIaFy+8+F/NEZldGVm8ujJW+Jfx2MbdBLb0sRf4+T1jg
-HC3GdCkjNEiLESrBgW/bBmWQ7jxZwWfjT/nZCUtF7ayJZPscBncQqSFTYjwC3KjZ
-EXfswMp058AFyGSZC4Y9EeFGb8UsVAAKxEzg9TwYZLT9ptO6BGnYGqIo311zohLp
-ijxjP8dkkiYKBFYyzr2E
-=drLG
------END PGP SIGNATURE-----
-
---FL5UXtIhxfXey3p5--
+diff --git a/Makefile b/Makefile
+index b8b7f74696b4..de4cda986be2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 13
+-SUBLEVEL = 0
++SUBLEVEL = 1
+ EXTRAVERSION =
+ NAME = One Giant Leap for Frogkind
+ 
+diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+index 7e0dff58e494..4736a9c57efa 100644
+--- a/drivers/extcon/extcon-gpio.c
++++ b/drivers/extcon/extcon-gpio.c
+@@ -105,6 +105,12 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	extcon_data->state_off = pdata->state_off;
+ 	if (pdata->state_on && pdata->state_off)
+ 		extcon_data->edev.print_state = extcon_gpio_print_state;
++
++	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
++				    pdev->name);
++	if (ret < 0)
++		return ret;
++
+ 	if (pdata->debounce) {
+ 		ret = gpio_set_debounce(extcon_data->gpio,
+ 					pdata->debounce * 1000);
+@@ -117,11 +123,6 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
+-				    pdev->name);
+-	if (ret < 0)
+-		goto err;
+-
+ 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
+ 
+ 	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index cbb15716a5db..03f82ab87d9e 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -675,8 +675,10 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+ 					 || !conf->inactive_blocked),
+ 					*(conf->hash_locks + hash));
+ 				conf->inactive_blocked = 0;
+-			} else
++			} else {
+ 				init_stripe(sh, sector, previous);
++				atomic_inc(&sh->count);
++			}
+ 		} else {
+ 			spin_lock(&conf->device_lock);
+ 			if (atomic_read(&sh->count)) {
+@@ -695,13 +697,11 @@ get_active_stripe(struct r5conf *conf, sector_t sector,
+ 					sh->group = NULL;
+ 				}
+ 			}
++			atomic_inc(&sh->count);
+ 			spin_unlock(&conf->device_lock);
+ 		}
+ 	} while (sh == NULL);
+ 
+-	if (sh)
+-		atomic_inc(&sh->count);
+-
+ 	spin_unlock_irq(conf->hash_locks + hash);
+ 	return sh;
+ }
+@@ -2111,6 +2111,7 @@ static void raid5_end_write_request(struct bio *bi, int error)
+ 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
+ 	} else {
+ 		if (!uptodate) {
++			set_bit(STRIPE_DEGRADED, &sh->state);
+ 			set_bit(WriteErrorSeen, &rdev->flags);
+ 			set_bit(R5_WriteError, &sh->dev[i].flags);
+ 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index f3d59e2a1152..341decfb81d1 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1425,6 +1425,7 @@ static int do_cmd_ioctl(struct comedi_device *dev,
+ 					  async->cmd.chanlist_len * sizeof(int));
+ 	if (IS_ERR(async->cmd.chanlist)) {
+ 		ret = PTR_ERR(async->cmd.chanlist);
++		async->cmd.chanlist = NULL;
+ 		DPRINTK("memdup_user failed with code %d\n", ret);
+ 		goto cleanup;
+ 	}
+@@ -1547,6 +1548,7 @@ static int do_cmdtest_ioctl(struct comedi_device *dev,
+ 				       cmd.chanlist_len * sizeof(int));
+ 		if (IS_ERR(chanlist)) {
+ 			ret = PTR_ERR(chanlist);
++			chanlist = NULL;
+ 			DPRINTK("memdup_user exited with code %d", ret);
+ 			goto cleanup;
+ 		}
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1032.c b/drivers/staging/comedi/drivers/addi_apci_1032.c
+index 34ab0679e992..b95a8b3395ae 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1032.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
+@@ -325,8 +325,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
+ 	s = &dev->subdevices[1];
+ 	if (dev->irq) {
+ 		dev->read_subdev = s;
+-		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
+-		s->subdev_flags	= SDF_READABLE;
++		s->type		= COMEDI_SUBD_DI;
++		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
+ 		s->n_chan	= 1;
+ 		s->maxdata	= 1;
+ 		s->range_table	= &range_digital;
+diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
+index eab8da2c3d66..a270a86a45ba 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -859,7 +859,7 @@ static int pci9111_auto_attach(struct comedi_device *dev,
+ 	pci9111_reset(dev);
+ 
+ 	if (pcidev->irq > 0) {
+-		ret = request_irq(dev->irq, pci9111_interrupt,
++		ret = request_irq(pcidev->irq, pci9111_interrupt,
+ 				  IRQF_SHARED, dev->board_name, dev);
+ 		if (ret)
+ 			return ret;
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 7203864992a5..a0dfb86f9880 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1537,6 +1537,8 @@ static int pl011_startup(struct uart_port *port)
+ 	/*
+ 	 * Provoke TX FIFO interrupt into asserting.
+ 	 */
++	spin_lock_irq(&uap->port.lock);
++
+ 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 	writew(0, uap->port.membase + UART011_FBRD);
+@@ -1561,6 +1563,8 @@ static int pl011_startup(struct uart_port *port)
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
+ 
++	spin_unlock_irq(&uap->port.lock);
++
+ 	/*
+ 	 * initialise the old status of the modem signals
+ 	 */
+@@ -1629,11 +1633,13 @@ static void pl011_shutdown(struct uart_port *port)
+ 	 * it during startup().
+ 	 */
+ 	uap->autorts = false;
++	spin_lock_irq(&uap->port.lock);
+ 	cr = readw(uap->port.membase + UART011_CR);
+ 	uap->old_cr = cr;
+ 	cr &= UART011_CR_RTS | UART011_CR_DTR;
+ 	cr |= UART01x_CR_UARTEN | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);
++	spin_unlock_irq(&uap->port.lock);
+ 
+ 	/*
+ 	 * disable break condition and fifos
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index 7119504159f1..87bc2290a400 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -1607,10 +1607,22 @@ static int setattr_chown(struct inode *inode, struct iattr *attr)
+ 	if (!(attr->ia_valid & ATTR_GID) || gid_eq(ogid, ngid))
+ 		ogid = ngid = NO_GID_QUOTA_CHANGE;
+ 
+-	error = gfs2_quota_lock(ip, nuid, ngid);
++	error = get_write_access(inode);
+ 	if (error)
+ 		return error;
+ 
++	error = gfs2_rs_alloc(ip);
++	if (error)
++		goto out;
++
++	error = gfs2_rindex_update(sdp);
++	if (error)
++		goto out;
++
++	error = gfs2_quota_lock(ip, nuid, ngid);
++	if (error)
++		goto out;
++
+ 	if (!uid_eq(ouid, NO_UID_QUOTA_CHANGE) ||
+ 	    !gid_eq(ogid, NO_GID_QUOTA_CHANGE)) {
+ 		error = gfs2_quota_check(ip, nuid, ngid);
+@@ -1637,6 +1649,8 @@ out_end_trans:
+ 	gfs2_trans_end(sdp);
+ out_gunlock_q:
+ 	gfs2_quota_unlock(ip);
++out:
++	put_write_access(inode);
+ 	return error;
+ }
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 35527173cf50..9fac6dd69b11 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -846,11 +846,14 @@ static __always_inline void *lowmem_page_address(const struct page *page)
+ #endif
+ 
+ #if defined(WANT_PAGE_VIRTUAL)
+-#define page_address(page) ((page)->virtual)
+-#define set_page_address(page, address)			\
+-	do {						\
+-		(page)->virtual = (address);		\
+-	} while(0)
++static inline void *page_address(const struct page *page)
++{
++	return page->virtual;
++}
++static inline void set_page_address(struct page *page, void *address)
++{
++	page->virtual = address;
++}
+ #define page_address_init()  do { } while(0)
+ #endif
+ 
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index f281c8068557..314b77eb1216 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1496,11 +1496,14 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
+ 	 * specification worked this way. Hence, we just ignore the data in
+ 	 * the unsolicited response to avoid custom WARs.
+ 	 */
+-	int present = snd_hda_pin_sense(codec, pin_nid);
++	int present;
+ 	bool update_eld = false;
+ 	bool eld_changed = false;
+ 	bool ret;
+ 
++	snd_hda_power_up(codec);
++	present = snd_hda_pin_sense(codec, pin_nid);
++
+ 	mutex_lock(&per_pin->lock);
+ 	pin_eld->monitor_present = !!(present & AC_PINSENSE_PRESENCE);
+ 	if (pin_eld->monitor_present)
+@@ -1573,6 +1576,7 @@ static bool hdmi_present_sense(struct hdmi_spec_per_pin *per_pin, int repoll)
+ 		jack->block_report = !ret;
+ 
+ 	mutex_unlock(&per_pin->lock);
++	snd_hda_power_down(codec);
+ 	return ret;
+ }
+ 
