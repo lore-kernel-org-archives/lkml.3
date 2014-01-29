@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaA2LQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 06:16:12 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:59633 "EHLO
+	id S1752056AbaA2LQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 06:16:10 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:59643 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750970AbaA2LPI (ORCPT
+	with ESMTP id S1751151AbaA2LPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 06:15:08 -0500
+	Wed, 29 Jan 2014 06:15:09 -0500
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         Emilio Lopez <emilio@elopez.com.ar>
@@ -16,9 +16,9 @@ Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         zhuzhenhua@allwinnertech.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 1/5] clk: sunxi: Add support for PLL6 on the A31
-Date: Wed, 29 Jan 2014 12:10:46 +0100
-Message-Id: <1390993850-9054-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI controller driver
+Date: Wed, 29 Jan 2014 12:10:48 +0100
+Message-Id: <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,105 +26,566 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 has a slightly different PLL6 clock. Add support for this new clock in
-our driver.
+The Allwinner A31 has a new SPI controller IP compared to the older Allwinner
+SoCs.
+
+It supports DMA, but the driver only does PIO for now, and DMA will be
+supported eventually.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
- drivers/clk/sunxi/clk-sunxi.c                     | 45 +++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
+ .../devicetree/bindings/spi/spi-sun6i.txt          |  24 ++
+ drivers/spi/Kconfig                                |   7 +
+ drivers/spi/Makefile                               |   1 +
+ drivers/spi/spi-sun6i.c                            | 478 +++++++++++++++++++++
+ 4 files changed, 510 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi-sun6i.txt
+ create mode 100644 drivers/spi/spi-sun6i.c
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-index c2cb762..954845c 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -11,6 +11,7 @@ Required properties:
- 	"allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
- 	"allwinner,sun4i-pll5-clk" - for the PLL5 clock
- 	"allwinner,sun4i-pll6-clk" - for the PLL6 clock
-+	"allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
- 	"allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
- 	"allwinner,sun4i-axi-clk" - for the AXI clock
- 	"allwinner,sun4i-axi-gates-clk" - for the AXI gates
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 659e4ea..990ad5d 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -249,7 +249,38 @@ static void sun4i_get_pll5_factors(u32 *freq, u32 parent_rate,
- 	*n = DIV_ROUND_UP(div, (*k+1));
- }
+diff --git a/Documentation/devicetree/bindings/spi/spi-sun6i.txt b/Documentation/devicetree/bindings/spi/spi-sun6i.txt
+new file mode 100644
+index 0000000..21de73d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi-sun6i.txt
+@@ -0,0 +1,24 @@
++Allwinner A31 SPI controller
++
++Required properties:
++- compatible: Should be "allwinner,sun6i-a31-spi".
++- reg: Should contain register location and length.
++- interrupts: Should contain interrupt.
++- clocks: phandle to the clocks feeding the SPI controller. Two are
++          needed:
++  - "ahb": the gated AHB parent clock
++  - "mod": the parent module clock
++- clock-names: Must contain the clock names described just above
++- resets: phandle to the reset controller asserting this device in
++          reset
++
++Example:
++
++spi1: spi@01c69000 {
++	compatible = "allwinner,sun6i-a31-spi";
++	reg = <0x01c69000 0x1000>;
++	interrupts = <0 66 4>;
++	clocks = <&ahb1_gates 21>, <&spi1_clk>;
++	clock-names = "ahb", "mod";
++	resets = <&ahb1_rst 21>;
++};
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index eb1f1ef..004e3b0 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -438,6 +438,13 @@ config SPI_SIRF
+ 	help
+ 	  SPI driver for CSR SiRFprimaII SoCs
  
-+/**
-+ * sun6i_a31_get_pll6_factors() - calculates n, k factors for A31 PLL6
-+ * PLL6 rate is calculated as follows
-+ * rate = parent_rate * n * (k + 1) / 2
-+ * parent_rate is always 24Mhz
++config SPI_SUN6I
++	tristate "Allwinner A31 SPI controller"
++	depends on ARCH_SUNXI || COMPILE_TEST
++	select PM_RUNTIME
++	help
++	  This enables using the SPI controller on the Allwinner A31 SoCs.
++
+ config SPI_MXS
+ 	tristate "Freescale MXS SPI controller"
+ 	depends on ARCH_MXS
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index ab8d864..658ec64 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_SPI_SH_HSPI)		+= spi-sh-hspi.o
+ obj-$(CONFIG_SPI_SH_MSIOF)		+= spi-sh-msiof.o
+ obj-$(CONFIG_SPI_SH_SCI)		+= spi-sh-sci.o
+ obj-$(CONFIG_SPI_SIRF)		+= spi-sirf.o
++obj-$(CONFIG_SPI_SUN6I)			+= spi-sun6i.o
+ obj-$(CONFIG_SPI_TEGRA114)		+= spi-tegra114.o
+ obj-$(CONFIG_SPI_TEGRA20_SFLASH)	+= spi-tegra20-sflash.o
+ obj-$(CONFIG_SPI_TEGRA20_SLINK)		+= spi-tegra20-slink.o
+diff --git a/drivers/spi/spi-sun6i.c b/drivers/spi/spi-sun6i.c
+new file mode 100644
+index 0000000..32f3fc7
+--- /dev/null
++++ b/drivers/spi/spi-sun6i.c
+@@ -0,0 +1,478 @@
++/*
++ * Copyright (C) 2012 - 2014 Allwinner Tech
++ * Pan Nan <pannan@allwinnertech.com>
++ *
++ * Copyright (C) 2014 Maxime Ripard
++ * Maxime Ripard <maxime.ripard@free-electrons.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
 + */
 +
-+static void sun6i_a31_get_pll6_factors(u32 *freq, u32 parent_rate,
-+				       u8 *n, u8 *k, u8 *m, u8 *p)
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
++#include <linux/reset.h>
++#include <linux/workqueue.h>
++
++#include <linux/spi/spi.h>
++
++#define SUN6I_FIFO_DEPTH		128
++
++#define SUN6I_GBL_CTL_REG		0x04
++#define SUN6I_GBL_CTL_BUS_ENABLE		BIT(0)
++#define SUN6I_GBL_CTL_MASTER			BIT(1)
++#define SUN6I_GBL_CTL_TP			BIT(7)
++#define SUN6I_GBL_CTL_RST			BIT(31)
++
++#define SUN6I_TFR_CTL_REG		0x08
++#define SUN6I_TFR_CTL_CPHA			BIT(0)
++#define SUN6I_TFR_CTL_CPOL			BIT(1)
++#define SUN6I_TFR_CTL_SPOL			BIT(2)
++#define SUN6I_TFR_CTL_CS_MASK			0x3
++#define SUN6I_TFR_CTL_CS(cs)			(((cs) & SUN6I_TFR_CTL_CS_MASK) << 4)
++#define SUN6I_TFR_CTL_DHB			BIT(8)
++#define SUN6I_TFR_CTL_FBS			BIT(12)
++#define SUN6I_TFR_CTL_XCH			BIT(31)
++
++#define SUN6I_INT_CTL_REG		0x10
++#define SUN6I_INT_CTL_RF_OVF			BIT(8)
++#define SUN6I_INT_CTL_TC			BIT(12)
++
++#define SUN6I_INT_STA_REG		0x14
++
++#define SUN6I_FIFO_CTL_REG		0x18
++#define SUN6I_FIFO_CTL_RF_RST			BIT(15)
++#define SUN6I_FIFO_CTL_TF_RST			BIT(31)
++
++#define SUN6I_FIFO_STA_REG		0x1c
++#define SUN6I_FIFO_STA_RF_CNT_MASK		0x7f
++#define SUN6I_FIFO_STA_RF_CNT_BITS		0
++#define SUN6I_FIFO_STA_TF_CNT_MASK		0x7f
++#define SUN6I_FIFO_STA_TF_CNT_BITS		16
++
++#define SUN6I_CLK_CTL_REG		0x24
++#define SUN6I_CLK_CTL_CDR2_MASK			0xff
++#define SUN6I_CLK_CTL_CDR2(div)			(((div) & SUN6I_CLK_CTL_CDR2_MASK) << 0)
++#define SUN6I_CLK_CTL_CDR1_MASK			0xf
++#define SUN6I_CLK_CTL_CDR1(div)			(((div) & SUN6I_CLK_CTL_CDR1_MASK) << 8)
++#define SUN6I_CLK_CTL_DRS			BIT(12)
++
++#define SUN6I_BURST_CNT_REG		0x30
++#define SUN6I_BURST_CNT(cnt)			((cnt) & 0xffffff)
++
++#define SUN6I_XMIT_CNT_REG		0x34
++#define SUN6I_XMIT_CNT(cnt)			((cnt) & 0xffffff)
++
++#define SUN6I_BURST_CTL_CNT_REG		0x38
++#define SUN6I_BURST_CTL_CNT_STC(cnt)		((cnt) & 0xffffff)
++
++#define SUN6I_TXDATA_REG		0x200
++#define SUN6I_RXDATA_REG		0x300
++
++struct sun6i_spi {
++	struct spi_master	*master;
++	void __iomem		*base_addr;
++	struct clk		*hclk;
++	struct clk		*mclk;
++	struct reset_control	*rstc;
++
++	struct completion	done;
++
++	const u8		*tx_buf;
++	u8			*rx_buf;
++	int			len;
++};
++
++static inline u32 sun6i_spi_read(struct sun6i_spi *sspi, u32 reg)
 +{
-+	u8 div;
++	return readl(sspi->base_addr + reg);
++}
 +
-+	/*
-+	 * We always have 24MHz / 2, so we can just say that our
-+	 * parent clock is 12MHz.
-+	 */
-+	parent_rate = parent_rate / 2;
++static inline void sun6i_spi_write(struct sun6i_spi *sspi, u32 reg, u32 value)
++{
++	writel(value, sspi->base_addr + reg);
++}
 +
-+	/* Normalize value to a parent_rate multiple (24M / 2) */
-+	div = *freq / parent_rate;
-+	*freq = parent_rate * div;
++static inline void sun6i_spi_drain_fifo(struct sun6i_spi *sspi, int len)
++{
++	u32 reg, cnt;
++	u8 byte;
 +
-+	/* we were called to round the frequency, we can now return */
-+	if (n == NULL)
++	/* See how much data is available */
++	reg = sun6i_spi_read(sspi, SUN6I_FIFO_STA_REG);
++	reg &= SUN6I_FIFO_STA_RF_CNT_MASK;
++	cnt = reg >> SUN6I_FIFO_STA_RF_CNT_BITS;
++
++	if (len > cnt)
++		len = cnt;
++
++	while (len--) {
++		byte = readb(sspi->base_addr + SUN6I_RXDATA_REG);
++		if (sspi->rx_buf)
++			*sspi->rx_buf++ = byte;
++	}
++}
++
++static inline void sun6i_spi_fill_fifo(struct sun6i_spi *sspi, int len)
++{
++	u8 byte;
++
++	if (len > sspi->len)
++		len = sspi->len;
++
++	while (len--) {
++		byte = sspi->tx_buf ? *sspi->tx_buf++ : 0;
++		writeb(byte, sspi->base_addr + SUN6I_TXDATA_REG);
++		sspi->len--;
++	}
++}
++
++static void sun6i_spi_set_cs(struct spi_device *spi, bool enable)
++{
++	struct sun6i_spi *sspi = spi_master_get_devdata(spi->master);
++	u32 reg;
++
++	if (!enable)
 +		return;
 +
-+	*k = div / 32;
-+	if (*k > 3)
-+		*k = 3;
- 
-+	*n = DIV_ROUND_UP(div, (*k+1));
++	reg = sun6i_spi_read(sspi, SUN6I_TFR_CTL_REG);
++	reg &= ~SUN6I_TFR_CTL_CS_MASK;
++	reg |= SUN6I_TFR_CTL_CS(spi->chip_select);
++	sun6i_spi_write(sspi, SUN6I_TFR_CTL_REG, reg);
 +}
- 
- /**
-  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-@@ -416,6 +447,13 @@ static struct clk_factors_config sun4i_pll5_config = {
- 	.kwidth = 2,
- };
- 
-+static struct clk_factors_config sun6i_a31_pll6_config = {
-+	.nshift	= 8,
-+	.nwidth = 5,
-+	.kshift = 4,
-+	.kwidth = 2,
++
++
++static int sun6i_spi_transfer_one(struct spi_master *master,
++				  struct spi_device *spi,
++				  struct spi_transfer *tfr)
++{
++	struct sun6i_spi *sspi = spi_master_get_devdata(master);
++	unsigned int mclk_rate, div, timeout;
++	unsigned int tx_len = 0;
++	int ret = 0;
++	u32 reg;
++
++	/* We don't support transfer larger than the FIFO */
++	if (tfr->len > SUN6I_FIFO_DEPTH)
++		return -EINVAL;
++
++	reinit_completion(&sspi->done);
++	sspi->tx_buf = tfr->tx_buf;
++	sspi->rx_buf = tfr->rx_buf;
++	sspi->len = tfr->len;
++
++	/* Clear pending interrupts */
++	sun6i_spi_write(sspi, SUN6I_INT_STA_REG, ~0);
++
++	/* Reset FIFO */
++	sun6i_spi_write(sspi, SUN6I_FIFO_CTL_REG,
++			SUN6I_FIFO_CTL_RF_RST | SUN6I_FIFO_CTL_TF_RST);
++
++	/*
++	 * Setup the transfer control register: Chip Select,
++	 * polarities, etc.
++	 */
++	reg = sun6i_spi_read(sspi, SUN6I_TFR_CTL_REG);
++
++	if (spi->mode & SPI_CPOL)
++		reg |= SUN6I_TFR_CTL_CPOL;
++	else
++		reg &= ~SUN6I_TFR_CTL_CPOL;
++
++	if (spi->mode & SPI_CPHA)
++		reg |= SUN6I_TFR_CTL_CPHA;
++	else
++		reg &= ~SUN6I_TFR_CTL_CPHA;
++
++	if (spi->mode & SPI_CS_HIGH)
++		reg &= ~SUN6I_TFR_CTL_SPOL;
++	else
++		reg |= SUN6I_TFR_CTL_SPOL;
++
++	if (spi->mode & SPI_LSB_FIRST)
++		reg |= SUN6I_TFR_CTL_FBS;
++	else
++		reg &= ~SUN6I_TFR_CTL_FBS;
++
++	/*
++	 * If it's a TX only transfer, we don't want to fill the RX
++	 * FIFO with bogus data
++	 */
++	if (sspi->rx_buf)
++		reg &= ~SUN6I_TFR_CTL_DHB;
++	else
++		reg |= SUN6I_TFR_CTL_DHB;
++
++	sun6i_spi_write(sspi, SUN6I_TFR_CTL_REG, reg);
++
++	/* Ensure that we have a parent clock fast enough */
++	mclk_rate = clk_get_rate(sspi->mclk);
++	if (mclk_rate < (2 * spi->max_speed_hz)) {
++		clk_set_rate(sspi->mclk, 2 * spi->max_speed_hz);
++		mclk_rate = clk_get_rate(sspi->mclk);
++	}
++
++	/*
++	 * Setup clock divider.
++	 *
++	 * We have two choices there. Either we can use the clock
++	 * divide rate 1, which is calculated thanks to this formula:
++	 * SPI_CLK = MOD_CLK / (2 ^ cdr)
++	 * Or we can use CDR2, which is calculated with the formula:
++	 * SPI_CLK = MOD_CLK / (2 * (cdr + 1))
++	 * Wether we use the former or the latter is set through the
++	 * DRS bit.
++	 *
++	 * First try CDR2, and if we can't reach the expected
++	 * frequency, fall back to CDR1.
++	 */
++	div = mclk_rate / (2 * spi->max_speed_hz);
++	if (div <= (SUN6I_CLK_CTL_CDR2_MASK + 1)) {
++		if (div > 0)
++			div--;
++
++		reg = SUN6I_CLK_CTL_CDR2(div) | SUN6I_CLK_CTL_DRS;
++	} else {
++		div = ilog2(mclk_rate) - ilog2(spi->max_speed_hz);
++		reg = SUN6I_CLK_CTL_CDR1(div);
++	}
++
++	sun6i_spi_write(sspi, SUN6I_CLK_CTL_REG, reg);
++
++	/* Setup the transfer now... */
++	if (sspi->tx_buf)
++		tx_len = tfr->len;
++
++	/* Setup the counters */
++	sun6i_spi_write(sspi, SUN6I_BURST_CNT_REG, SUN6I_BURST_CNT(tfr->len));
++	sun6i_spi_write(sspi, SUN6I_XMIT_CNT_REG, SUN6I_XMIT_CNT(tx_len));
++	sun6i_spi_write(sspi, SUN6I_BURST_CTL_CNT_REG,
++			SUN6I_BURST_CTL_CNT_STC(tx_len));
++
++	/* Fill the TX FIFO */
++	sun6i_spi_fill_fifo(sspi, SUN6I_FIFO_DEPTH);
++
++	/* Enable the interrupts */
++	sun6i_spi_write(sspi, SUN6I_INT_CTL_REG, SUN6I_INT_CTL_TC);
++
++	/* Start the transfer */
++	reg = sun6i_spi_read(sspi, SUN6I_TFR_CTL_REG);
++	sun6i_spi_write(sspi, SUN6I_TFR_CTL_REG, reg | SUN6I_TFR_CTL_XCH);
++
++	timeout = wait_for_completion_timeout(&sspi->done,
++					      msecs_to_jiffies(1000));
++	if (!timeout) {
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	sun6i_spi_drain_fifo(sspi, SUN6I_FIFO_DEPTH);
++
++out:
++	sun6i_spi_write(sspi, SUN6I_INT_CTL_REG, 0);
++
++	return ret;
++}
++
++static irqreturn_t sun6i_spi_handler(int irq, void *dev_id)
++{
++	struct sun6i_spi *sspi = dev_id;
++	u32 status = sun6i_spi_read(sspi, SUN6I_INT_STA_REG);
++
++	/* Transfer complete */
++	if (status & SUN6I_INT_CTL_TC) {
++		sun6i_spi_write(sspi, SUN6I_INT_STA_REG, SUN6I_INT_CTL_TC);
++		complete(&sspi->done);
++		return IRQ_HANDLED;
++	}
++
++	return IRQ_NONE;
++}
++
++static int sun6i_spi_runtime_resume(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct sun6i_spi *sspi = spi_master_get_devdata(master);
++	int ret;
++
++	ret = clk_prepare_enable(sspi->hclk);
++	if (ret) {
++		dev_err(dev, "Couldn't enable clock 'ahb spi'\n");
++		goto out;
++	}
++
++	ret = clk_prepare_enable(sspi->mclk);
++	if (ret) {
++		dev_err(dev, "Couldn't enable clock 'ahb spi'\n");
++		goto err;
++	}
++
++	ret = reset_control_deassert(sspi->rstc);
++	if (ret) {
++		dev_err(dev, "Couldn't deassert the device from reset\n");
++		goto err2;
++	}
++
++	sun6i_spi_write(sspi, SUN6I_GBL_CTL_REG,
++			SUN6I_GBL_CTL_BUS_ENABLE | SUN6I_GBL_CTL_MASTER | SUN6I_GBL_CTL_TP);
++
++	return 0;
++
++err2:
++	clk_disable_unprepare(sspi->mclk);
++err:
++	clk_disable_unprepare(sspi->hclk);
++out:
++	return ret;
++}
++
++static int sun6i_spi_runtime_suspend(struct device *dev)
++{
++	struct spi_master *master = dev_get_drvdata(dev);
++	struct sun6i_spi *sspi = spi_master_get_devdata(master);
++
++	reset_control_assert(sspi->rstc);
++	clk_disable_unprepare(sspi->mclk);
++	clk_disable_unprepare(sspi->hclk);
++
++	return 0;
++}
++
++static int sun6i_spi_probe(struct platform_device *pdev)
++{
++	struct spi_master *master;
++	struct sun6i_spi *sspi;
++	struct resource	*res;
++	int ret = 0, irq;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(struct sun6i_spi));
++	if (!master) {
++		dev_err(&pdev->dev, "Unable to allocate SPI Master\n");
++		return -ENOMEM;
++	}
++
++	platform_set_drvdata(pdev, master);
++	sspi = spi_master_get_devdata(master);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	sspi->base_addr = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(sspi->base_addr)) {
++		ret = PTR_ERR(sspi->base_addr);
++		goto err;
++	}
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_err(&pdev->dev, "No spi IRQ specified\n");
++		ret = -ENXIO;
++		goto err;
++	}
++
++	ret = devm_request_irq(&pdev->dev, irq, sun6i_spi_handler,
++			       0, "sun6i-spi", sspi);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot request IRQ\n");
++		goto err;
++	}
++
++	sspi->master = master;
++	master->bus_num	= -1;
++	master->set_cs = sun6i_spi_set_cs;
++	master->transfer_one = sun6i_spi_transfer_one;
++	master->num_chipselect = 4;
++	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LSB_FIRST;
++	master->dev.of_node = pdev->dev.of_node;
++	master->auto_runtime_pm = true;
++
++	/* Setup clocks */
++	sspi->hclk = devm_clk_get(&pdev->dev, "ahb");
++	if (IS_ERR(sspi->hclk)) {
++		dev_err(&pdev->dev, "Unable to acquire AHB clock\n");
++		ret = PTR_ERR(sspi->hclk);
++		goto err;
++	}
++
++	sspi->mclk = devm_clk_get(&pdev->dev, "mod");
++	if (IS_ERR(sspi->mclk)) {
++		dev_err(&pdev->dev, "Unable to acquire module clock\n");
++		ret = PTR_ERR(sspi->mclk);
++		goto err2;
++	}
++
++	init_completion(&sspi->done);
++
++	sspi->rstc = devm_reset_control_get(&pdev->dev, NULL);
++	if (IS_ERR(sspi->rstc)) {
++		dev_err(&pdev->dev, "Couldn't get reset controller\n");
++		ret = PTR_ERR(sspi->rstc);
++		goto err3;
++	}
++
++	pm_runtime_enable(&pdev->dev);
++
++	ret = spi_register_master(master);
++	if (ret) {
++		dev_err(&pdev->dev, "cannot register SPI master\n");
++		goto err4;
++	}
++
++	return 0;
++
++err4:
++	pm_runtime_disable(&pdev->dev);
++err3:
++	clk_disable_unprepare(sspi->mclk);
++err2:
++	clk_disable_unprepare(sspi->hclk);
++err:
++	spi_master_put(master);
++
++	return ret;
++}
++
++static int sun6i_spi_remove(struct platform_device *pdev)
++{
++	struct spi_master *master = spi_master_get(platform_get_drvdata(pdev));
++
++	spi_unregister_master(master);
++	pm_runtime_disable(&pdev->dev);
++	spi_master_put(master);
++
++	return 0;
++}
++
++static const struct of_device_id sun6i_spi_match[] = {
++	{ .compatible = "allwinner,sun6i-a31-spi", },
++	{}
++};
++MODULE_DEVICE_TABLE(of, sun6i_spi_match);
++
++static const struct dev_pm_ops sun6i_spi_pm_ops = {
++	.runtime_resume		= sun6i_spi_runtime_resume,
++	.runtime_suspend	= sun6i_spi_runtime_suspend,
 +};
 +
- static struct clk_factors_config sun4i_apb1_config = {
- 	.mshift = 0,
- 	.mwidth = 5,
-@@ -457,6 +495,12 @@ static const struct factors_data sun4i_pll5_data __initconst = {
- 	.getter = sun4i_get_pll5_factors,
- };
- 
-+static const struct factors_data sun6i_a31_pll6_data __initconst = {
-+	.enable = 31,
-+	.table = &sun6i_a31_pll6_config,
-+	.getter = sun6i_a31_get_pll6_factors,
++static struct platform_driver sun6i_spi_driver = {
++	.probe	= sun6i_spi_probe,
++	.remove	= sun6i_spi_remove,
++	.driver	= {
++		.name		= "sun6i-spi",
++		.owner		= THIS_MODULE,
++		.of_match_table	= sun6i_spi_match,
++		.pm		= &sun6i_spi_pm_ops,
++	},
 +};
++module_platform_driver(sun6i_spi_driver);
 +
- static const struct factors_data sun4i_apb1_data __initconst = {
- 	.table = &sun4i_apb1_config,
- 	.getter = sun4i_get_apb1_factors,
-@@ -972,6 +1016,7 @@ free_clkdata:
- static const struct of_device_id clk_factors_match[] __initconst = {
- 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
- 	{.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
-+	{.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
- 	{.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
- 	{.compatible = "allwinner,sun4i-mod0-clk", .data = &sun4i_mod0_data,},
- 	{.compatible = "allwinner,sun7i-a20-out-clk", .data = &sun7i_a20_out_data,},
++MODULE_AUTHOR("Pan Nan <pannan@allwinnertech.com>");
++MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
++MODULE_DESCRIPTION("Allwinner A31 SPI controller driver");
++MODULE_LICENSE("GPL");
 -- 
 1.8.4.2
 
