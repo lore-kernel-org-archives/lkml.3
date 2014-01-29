@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaA2Jgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:36:45 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37029 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbaA2Jgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:36:41 -0500
-Date: Wed, 29 Jan 2014 10:36:33 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jenny Tc <jenny.tc@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Rupesh Kumar <rupesh.kumar@stericsson.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali Roh?r <pali.rohar@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>,
-        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
-        "freemangordon@abv.bg" <freemangordon@abv.bg>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/4] power_supply: bq24261 charger driver
-Message-ID: <20140129093633.GA16691@amd.pavel.ucw.cz>
-References: <1390411194-21410-1-git-send-email-jenny.tc@intel.com>
- <1390411194-21410-5-git-send-email-jenny.tc@intel.com>
- <20140128141445.GC8713@xo-6d-61-c0.localdomain>
- <20140129132334.GB15355@jenny-desktop>
+	id S1752079AbaA2JiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:38:21 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37565 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882AbaA2JiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:38:19 -0500
+Message-ID: <52E8CC03.7080207@ti.com>
+Date: Wed, 29 Jan 2014 11:38:11 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140129132334.GB15355@jenny-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tero Kristo <t-kristo@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        <chf.fritz@googlemail.com>, <nm@ti.com>
+Subject: Re: [BISECTED] OMAP: DSS: clk rate mismatch
+References: <52E697C0.6000202@gmail.com> <52E7614E.8010903@ti.com> <52E76EE0.2060006@ti.com> <52E7F451.7040708@gmail.com> <52E8C586.7040907@ti.com> <52E8CA00.7060303@gmail.com>
+In-Reply-To: <52E8CA00.7060303@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="cNF331xgUCMqlk5jKevrdGI2kPNOVSJKx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-01-29 18:53:34, Jenny Tc wrote:
-> On Tue, Jan 28, 2014 at 07:14:45AM -0700, Pavel Machek wrote:
-> > > +#define BQ24261_ICHRG_MASK		(0x1F << 3)
-> > > +#define BQ24261_ICHRG_100ma		(0x01 << 3)
-> > > +#define BQ24261_ICHRG_200ma		(0x01 << 4)
-> > > +#define BQ24261_ICHRG_400ma		(0x01 << 5)
-> > > +#define BQ24261_ICHRG_800ma		(0x01 << 6)
-> > > +#define BQ24261_ICHRG_1600ma		(0x01 << 7)
-> > 
-> > First, its mA, not ma.
-> 
-> Camel Case allowed? Ignore Checkpatch.pl warning?
+--cNF331xgUCMqlk5jKevrdGI2kPNOVSJKx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This is not camel case, this is mili ampers. 
+On 2014-01-29 11:29, Ivaylo Dimitrov wrote:
+>=20
+>=20
+> On 29.01.2014 11:10, Tero Kristo wrote:
+>=20
+>>
+>> It looks like the omap36xx version of the omap96m_alwon_fck is modelle=
+d
+>> improperly in the dts files. I don't have access to omap36xx hardware
+>> myself, but give a try for the following patch:
+>>
+>>
+>=20
+> It could be that 36xx omap96m_alwon_fck clock is wrongly modeled, but I=
 
-> > (x/50) << 3, right ?
-> 
-> Few register settings need table mapping, but some can have logic as your
-> comment say. Just wanted to keep same logic for all register settings.
-> Doesn't it make more readable?
+> am testing on 1) 3430es2 (Nokia N900) and 2) legacy boot, so I guess
+> that patch won't help much (unless I am missing something and DT is use=
+d
+> even with legacy boot and 36xx clocks are used on 3430es2)
 
-No, it is definitely not readable. Please use logic where you can.
+I think Tero's reply was to Christoph. I believe the issues you see and
+what Christoph sees are totally different.
 
-Thanks,
-									Pavel
+ Tomi
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+
+--cNF331xgUCMqlk5jKevrdGI2kPNOVSJKx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS6MwDAAoJEPo9qoy8lh71vTAQAItUBDXwX5rx/K7RtNdKCZSy
+Um8aT4BPFYvP7yLadMi1JI/b3zVb1WHEzCTWQ4tJKaRv1gFOJXtj9/ufuTMvdT1A
+oGRzYFk1vOA3IKfuVXWiQbusA0A+uJVwyNt+dXQnb7YynfsZRYrBSbLpR5wMJVxt
+SPbIPdwpplVzPZq7FvgBJR167H80+fbGNMz+Mgw7M+ytO2AN/OoJM8nhFEMnSVPf
+PFvzjgcrdURy29gP1gcnMx00Rufvn4Jmv0b4eD4iBCRrCiKmbmBEY/3AyUm4//aG
+O6bxm2Nn5vdeTaKznkd3ptNNhWJySNSGoY5l37PdLKurgRFGU1X9WKWE6qESqrD8
+ukjZCsvgDLF+3kTTYB4yPzzXwlFYnha1kxbVgM2tyXChEvoc0uWcRqIgYAVqk2oH
+ba7o2IDBfmTbCZglEMpKRCtwOwjy4EjSmYwwdjqPODoAzjZsibtO65vOjEoefNkM
+Z22i5H9tMfeTsh1tNCrxYlXuTRHVRyzxCDu/iU86IQZ3XWywRb50KZxfwgACTJI3
+fm658WH5PNkzr49UikwMsK2hPez8OjIH9rScxMxufCQS7zZT2NJtWxZxOsfY5rEU
+192wRVsdq84efVoeahGUXD4mAQ+3Oe/tph7FRaIRBaR8/OGVkct67tC8Bn1PmCX5
+mYZy8BrVPZjdn0ZXIhnv
+=eath
+-----END PGP SIGNATURE-----
+
+--cNF331xgUCMqlk5jKevrdGI2kPNOVSJKx--
