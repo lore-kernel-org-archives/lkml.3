@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaA2RwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 12:52:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45646 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaA2RwB (ORCPT
+	id S1752684AbaA2Rxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 12:53:37 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:33266 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752150AbaA2Rxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 12:52:01 -0500
-Date: Wed, 29 Jan 2014 09:51:26 -0800
-From: tip-bot for David Woodhouse <tipbot@zytor.com>
-Message-ID: <tip-372cb9eef903d1e18961d2c1a34c75f027f0bd8f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
-        David.Woodhouse@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
-        David.Woodhouse@intel.com
-In-Reply-To: <1390997807.20153.133.camel@i7.infradead.org>
-References: <1390997807.20153.133.camel@i7.infradead.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, build:
-  Build 16-bit code with -m16 where possible
-Git-Commit-ID: 372cb9eef903d1e18961d2c1a34c75f027f0bd8f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 29 Jan 2014 12:53:35 -0500
+Date: Wed, 29 Jan 2014 14:53:32 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, Pekon Gupta <pekon@ti.com>
+Subject: Re: [RFC PATCH v2 03/14] of: mtd: add documentation for
+ nand-ecc-level property
+Message-ID: <20140129175331.GA27143@localhost>
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+ <1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 29 Jan 2014 09:51:32 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  372cb9eef903d1e18961d2c1a34c75f027f0bd8f
-Gitweb:     http://git.kernel.org/tip/372cb9eef903d1e18961d2c1a34c75f027f0bd8f
-Author:     David Woodhouse <dwmw2@infradead.org>
-AuthorDate: Wed, 29 Jan 2014 12:16:47 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 29 Jan 2014 09:47:49 -0800
+On Wed, Jan 29, 2014 at 03:34:13PM +0100, Boris BREZILLON wrote:
+> nand-ecc-level property statically defines NAND chip's ECC requirements.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+> ---
+>  Documentation/devicetree/bindings/mtd/nand.txt |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
+> index 03855c8..0c962296 100644
+> --- a/Documentation/devicetree/bindings/mtd/nand.txt
+> +++ b/Documentation/devicetree/bindings/mtd/nand.txt
+> @@ -3,5 +3,8 @@
+>  - nand-ecc-mode : String, operation mode of the NAND ecc mode.
+>    Supported values are: "none", "soft", "hw", "hw_syndrome", "hw_oob_first",
+>    "soft_bch".
+> +- nand-ecc-level : Two cells property defining the ECC level requirements.
+> +  The first cell represent the strength and the second cell the ECC block size.
+> +  E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
+>  - nand-bus-width : 8 or 16 bus width if not present 8
+>  - nand-on-flash-bbt: boolean to enable on flash bbt option if not present false
 
-x86, build: Build 16-bit code with -m16 where possible
+Hm.. when was this proposal agreed? It seems I've missed the
+discussion...
 
-Both clang 3.5 and GCC 4.9 will support this (as of r199754 and r207196
-respectively). Both have been tested to produce booting kernels when the
-16-bit code is built with -m16. (Modulo LLVM PR3997, at least.)
+FWIW, we've already proposed an equivalent one, but it received no
+feedback from the devicetree maintainers:
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Link: http://lkml.kernel.org/r/1390997807.20153.133.camel@i7.infradead.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Makefile | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+http://comments.gmane.org/gmane.linux.drivers.devicetree/58764
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 9ecbc1c..dbc9b2b 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -13,14 +13,22 @@ endif
- 
- # How to compile the 16-bit code.  Note we always compile for -march=i386;
- # that way we can complain to the user if the CPU is insufficient.
--REALMODE_CFLAGS	:= -m32 -g -Os -D__KERNEL__ -DDISABLE_BRANCH_PROFILING \
-+#
-+# The -m16 option is supported by GCC >= 4.9 and clang >= 3.5. For
-+# older versions of GCC, we need to play evil and unreliable tricks to
-+# attempt to ensure that our asm(".code16gcc") is first in the asm
-+# output.
-+CODE16GCC_CFLAGS := -m32 -include $(srctree)/arch/x86/boot/code16gcc.h \
-+		    $(call cc-option, -fno-toplevel-reorder,\
-+		      $(call cc-option, -fno-unit-at-a-time))
-+M16_CFLAGS	 := -m16
-+
-+REALMODE_CFLAGS	:= -g -Os -D__KERNEL__ -DDISABLE_BRANCH_PROFILING \
-+		   $(call cc-option, $(M16_CFLAGS), $(CODE16GCC_CFLAGS)) \
- 		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
--		   -include $(srctree)/arch/x86/boot/code16gcc.h \
- 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
- 		   -mno-mmx -mno-sse \
- 		   $(call cc-option, -ffreestanding) \
--		   $(call cc-option, -fno-toplevel-reorder,\
--		   $(call cc-option, -fno-unit-at-a-time)) \
- 		   $(call cc-option, -fno-stack-protector) \
- 		   $(call cc-option, -mpreferred-stack-boundary=2)
- export REALMODE_CFLAGS
+Maybe we can discuss about it now?
+
+  nand-ecc-strength : integer ECC required strength.
+  nand-ecc-size : integer step size associated to the ECC strength.
+
+  vs.
+
+  nand-ecc-level : Two cells property defining the ECC level requirements.
+  The first cell represent the strength and the second cell the ECC block size.
+  E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
+
+It's really the same proposal but with a different format, right?
+IMHO, the former is more human-readable, but other than that I see no
+difference.
+
+Brian? DT-guys?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
