@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaA2GIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 01:08:24 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:52624 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaA2GIW (ORCPT
+	id S1751631AbaA2GRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 01:17:48 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:59517 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaA2GRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 01:08:22 -0500
-Date: Tue, 28 Jan 2014 22:08:22 -0800 (PST)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [GIT PULL] Ceph updates for -rc1
-In-Reply-To: <CA+55aFxmQZ+sAC+_a=QXUSVQ1e=cSVkeZVL4d8kawFp9N5eS-w@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1401282145410.17720@cobra.newdream.net>
-References: <alpine.DEB.2.00.1401281032560.16427@cobra.newdream.net> <20140128211021.GB1377@redhat.com> <CA+55aFxmQZ+sAC+_a=QXUSVQ1e=cSVkeZVL4d8kawFp9N5eS-w@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 29 Jan 2014 01:17:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 29 Jan 2014 10:17:46 +0400
+Message-ID: <CAMo8BfKwxKZDfwDcezyfAX73UTiSw7Q_u5Ki=0WNXSYRYF5z0Q@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] OpenCores 10/100 MAC fixes for gigabit environment
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Max Filippov <jcmvbkbc@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Fixed the subject.
 
-On Tue, 28 Jan 2014, Linus Torvalds wrote:
-> On Tue, Jan 28, 2014 at 1:10 PM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > This breaks the build for me.
-> 
-> It is my merge (Christoph's ACL changes came in today through the VFS
-> tree from Al).
-> 
-> I was doing the merges today on my laptop (I had jury duty yesterday
-> and today), and so I didn't do the allmodconfig build I would normally
-> do on my (much faster) desktop. Well, actually I did do the full fs
-> builds for the earlier pulls that actually had some conflicts, but not
-> for the ceph pull. The conflict was hidden by the fact that the whole
-> cifs ACL support is new, so there was no data conflict, just a silent
-> semantic conflict between the new smarter ACL helpers and the new ACL
-> use in CIFS.
-
-s/cifs/ceph/ :)
-
-> I'm back home now (yay, all the afternoon cases got settled), and I
-> see the problem now. I should have done an allmodconfig build
-> immediately after coming home, but I never even thought of it.
+On Wed, Jan 29, 2014 at 10:00 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+> Hello David, Ben, Florian, Chris and everybody,
 >
-> Anyway, here's an *untested* conversion to the new posix acl helper
-> infrastructure. I do wonder if ceph_init_acl() could be converted to
-> posix_acl_create(), right now that part is a "non-conversion" - it's
-> just made to use __posix_acl_create() that implements the old
-> interface.
-> 
-> Al, Christoph, can you please check my conversion for sanity from a
-> generic posix-acl standpoint?
-> 
-> Sage, Guangliang, Li, can you check the actual cifs usage/sanity of
-> the attached patch?
+> this series improves ethoc behavior in gigabit environment:
+> - first patch introduces two phylib setters for 'advertising' and 'supported'
+>   fields of struct phy_device;
+> - second patch disables gigabit advertisement in the attached PHY making
+>   possible to use gigabit link without any additional setup;
+> - third patch adds support to set up MII management bus frequency, adding
+>   new fields to platform data and to OF bindings;
+> - fourth patch adds basic ethtool support to ethoc driver.
+>
+> These changes allow to use KC-705 board with 50MHz xtensa core and OpenCores
+> 10/100 Mbps MAC connected to gigabit network without any additional setup.
+>
+> Changes v1->v2:
+> - new patch "phy: provide accessors for 'advertising' and 'supported' fields";
+> - disable both gigabit advertisement and support;
+> - drop MDIO bus frequency configurability, always configure for standard
+>   2.5MHz;
+> - allow using common clock framework to provide ethoc clock;
+> - new patch: "net: ethoc: implement ethtool operations";
+> - drop device tree bindings documentation patch until common bindings format
+>   for network drivers is decided.
+>
+> Max Filippov (4):
+>   phy: provide accessors for 'advertising' and 'supported' fields
+>   net: ethoc: don't advertise gigabit speed on attached PHY
+>   net: ethoc: set up MII management bus clock
+>   net: ethoc: implement ethtool operations
+>
+>  drivers/net/ethernet/ethoc.c | 130 ++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/phy.h          |  12 ++++
+>  include/net/ethoc.h          |   1 +
+>  3 files changed, 141 insertions(+), 2 deletions(-)
+>
+> --
+> 1.8.1.4
 
-Superficially at least the conversion looks okay to me, but it's not 
-passing my smoke test (it's giving me EOPNOTSUPP for chmod and setxattr 
-when setting an ACL).  I'll look at it tomorrow if Guangliang, Li, or Yan 
-don't get there first.
-
-I should have caught this before--I knew the ACL changes were coming and 
-forgot to check the merged build beforehand!
-
-sage
+-- 
+Thanks.
+-- Max
