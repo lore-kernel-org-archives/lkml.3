@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbaA2T5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 14:57:47 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:38167 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaA2T5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 14:57:07 -0500
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Gauthier <marc@cadence.com>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3/4] net: ethoc: implement ethtool get registers
-Date: Wed, 29 Jan 2014 23:56:36 +0400
-Message-Id: <1391025397-14965-4-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1391025397-14965-1-git-send-email-jcmvbkbc@gmail.com>
-References: <1391025397-14965-1-git-send-email-jcmvbkbc@gmail.com>
+	id S1752311AbaA2T6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 14:58:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6932 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaA2T6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 14:58:07 -0500
+Date: Wed, 29 Jan 2014 14:57:56 -0500
+From: Dave Jones <davej@redhat.com>
+To: mkrufky@kernellabs.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: mlx111sf: Fix unintentional garbage stack read.
+Message-ID: <20140129195756.GB30316@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, mkrufky@kernellabs.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
----
- drivers/net/ethernet/ethoc.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+mxl111sf_read_reg takes an address of a variable to write to as an argument.
+drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c:mxl111sf_config_pin_mux_modes passes
+several uninitialized stack variables to this routine, expecting them to be
+filled in.  In the event that something unexpected happens when reading from
+the chip, we end up doing a pr_debug of the value passed in, revealing whatever
+garbage happened to be on the stack.
 
-diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
-index 9518023..0bf297b 100644
---- a/drivers/net/ethernet/ethoc.c
-+++ b/drivers/net/ethernet/ethoc.c
-@@ -52,6 +52,7 @@ MODULE_PARM_DESC(buffer_size, "DMA buffer allocation size");
- #define	ETH_HASH0	0x48
- #define	ETH_HASH1	0x4c
- #define	ETH_TXCTRL	0x50
-+#define	ETH_END		0x54
+Change the pr_debug to match what happens in the 'success' case, where we assign
+buf[1] to *data.
+
+Spotted with Coverity (Bugs 731910 through 731917)
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+
+diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf.c b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+index 08240e498451..ccd854afd2f8 100644
+--- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+@@ -105,7 +105,7 @@ int mxl111sf_read_reg(struct mxl111sf_state *state, u8 addr, u8 *data)
+ 		ret = -EINVAL;
+ 	}
  
- /* mode register */
- #define	MODER_RXEN	(1 <<  0) /* receive enable */
-@@ -922,9 +923,28 @@ static int ethoc_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
- 	return phy_ethtool_sset(phydev, cmd);
+-	pr_debug("R: (0x%02x, 0x%02x)\n", addr, *data);
++	pr_debug("R: (0x%02x, 0x%02x)\n", addr, buf[1]);
+ fail:
+ 	return ret;
  }
- 
-+static int ethoc_get_regs_len(struct net_device *netdev)
-+{
-+	return ETH_END;
-+}
-+
-+static void ethoc_get_regs(struct net_device *dev, struct ethtool_regs *regs,
-+			   void *p)
-+{
-+	struct ethoc *priv = netdev_priv(dev);
-+	u32 *regs_buff = p;
-+	unsigned i;
-+
-+	regs->version = 0;
-+	for (i = 0; i < ETH_END / sizeof(u32); ++i)
-+		regs_buff[i] = ethoc_read(priv, i * sizeof(u32));
-+}
-+
- const struct ethtool_ops ethoc_ethtool_ops = {
- 	.get_settings = ethoc_get_settings,
- 	.set_settings = ethoc_set_settings,
-+	.get_regs_len = ethoc_get_regs_len,
-+	.get_regs = ethoc_get_regs,
- 	.get_link = ethtool_op_get_link,
- 	.get_ts_info = ethtool_op_get_ts_info,
- };
--- 
-1.8.1.4
-
