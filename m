@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaA2Gn4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 01:43:56 -0500
-Received: from mga03.intel.com ([143.182.124.21]:5328 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929AbaA2Gnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 01:43:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,740,1384329600"; 
-   d="scan'208";a="466399215"
-Date: Wed, 29 Jan 2014 14:43:50 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com, pshelar@nicira.com
-Subject: Re: [PATCH] mm: slub: fix page->_count corruption (again)
-Message-ID: <20140129064350.GA20252@localhost>
-References: <20140128231722.E7387E6B@viggo.jf.intel.com>
- <20140128152956.d5659f56ae279856731a1ac5@linux-foundation.org>
- <52E842CF.7090102@sr71.net>
+	id S1755940AbaA2Gqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 01:46:52 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:43274 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaA2Gqv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 01:46:51 -0500
+Message-ID: <52E8A407.1020809@gmail.com>
+Date: Tue, 28 Jan 2014 22:47:35 -0800
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E842CF.7090102@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Max Filippov <jcmvbkbc@gmail.com>, linux-xtensa@linux-xtensa.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH v2 2/4] net: ethoc: don't advertise gigabit speed on attached
+ PHY
+References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com> <1390975218-13863-3-git-send-email-jcmvbkbc@gmail.com>
+In-Reply-To: <1390975218-13863-3-git-send-email-jcmvbkbc@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 03:52:47PM -0800, Dave Hansen wrote:
-> On 01/28/2014 03:29 PM, Andrew Morton wrote:
-> > On Tue, 28 Jan 2014 15:17:22 -0800 Dave Hansen <dave@sr71.net> wrote:
-> > This code is borderline insane.
-> 
-> No argument here.
-> 
-> > Yes, struct page is special and it's worth spending time and doing
-> > weird things to optimise it.  But sheesh.
-> > 
-> > An alternative is to make that cmpxchg quietly go away.  Is it more
-> > trouble than it is worth?
-> 
-> It has measurable performance benefits, and the benefits go up as the
-> cost of en/disabling interrupts goes up (like if it takes you a hypercall).
-> 
-> Fengguang, could you run a set of tests for the top patch in this branch
-> to see if we'd be giving much up by axing the code?
-> 
-> 	https://github.com/hansendc/linux/tree/slub-nocmpxchg-for-Fengguang-20140128
+Hi Max,
 
-Sure, I've queued tests for the branch. Will report back after 1-2
-days.
+Le 28/01/2014 22:00, Max Filippov a écrit :
+> OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but does
+> not disable advertisement when PHY supports them. This results in
+> non-functioning network when the MAC is connected to a gigabit PHY connected
+> to a gigabit switch.
+>
+> The fix is to disable gigabit speed advertisement on attached PHY
+> unconditionally.
+>
+> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+> ---
+> Changes v1->v2:
+> - disable both gigabit advertisement and support.
+>
+>   drivers/net/ethernet/ethoc.c | 8 ++++++++
+>   1 file changed, 8 insertions(+)
+>
+> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+> index 4de8cfd..5643b2d 100644
+> --- a/drivers/net/ethernet/ethoc.c
+> +++ b/drivers/net/ethernet/ethoc.c
+> @@ -688,6 +688,14 @@ static int ethoc_mdio_probe(struct net_device *dev)
+>   	}
+>
+>   	priv->phy = phy;
+> +	phy_update_advert(phy,
+> +			  ADVERTISED_1000baseT_Full |
+> +			  ADVERTISED_1000baseT_Half, 0);
+> +	phy_start_aneg(phy);
 
-Thanks,
-Fengguang
+This does not look necessary, you should not have to call 
+phy_start_aneg() because the PHY state machine is not yet started, at 
+best this calls does nothing.
 
-> I was talking with one of the distros about turning it off as well.
-> They mentioned that they saw a few performance regressions when it was
-> turned off.  I'll share details when I get them.
+> +	phy_update_supported(phy,
+> +			     SUPPORTED_1000baseT_Full |
+> +			     SUPPORTED_1000baseT_Half, 0);
+> +
+>   	return 0;
+>   }
+>
+>
+
