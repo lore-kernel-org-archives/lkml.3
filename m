@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaA2N5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 08:57:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42598 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086AbaA2N5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 08:57:43 -0500
-Date: Wed, 29 Jan 2014 14:59:06 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Kalle Valo <kvalo@qca.qualcomm.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brian King <brking@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        wil6210@qca.qualcomm.com, ath10k@lists.infradead.org,
-        linux-nvme@lists.infradead.org,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v2 0/9] Phase out pci_enable_msi_block()
-Message-ID: <20140129135906.GA3495@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
+	id S1752417AbaA2OAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:00:18 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:50465 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaA2OAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 09:00:16 -0500
+Message-ID: <52E9096D.9070800@codeaurora.org>
+Date: Wed, 29 Jan 2014 09:00:13 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5ztnyyceeN38XzLasLV6eJqdbqEV0viPp3Af8U=ts23w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Will Deacon <will.deacon@arm.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: hw_breakpoint: Add ARMv8 support
+References: <20140128183851.GK2885@mudshark.cambridge.arm.com> <1390935112-28465-1-git-send-email-cov@codeaurora.org> <20140129105722.GD26622@mudshark.cambridge.arm.com>
+In-Reply-To: <20140129105722.GD26622@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 17, 2014 at 02:00:32PM -0700, Bjorn Helgaas wrote:
-> > Bjorn,
-> >
-> > As the release is supposedly this weekend, do you prefer
-> > the patches to go to your tree or to individual trees after
-> > the release?
+Hi Will,
+
+On 01/29/2014 05:57 AM, Will Deacon wrote:
+> Hi Christopher,
 > 
-> I'd be happy to merge them, except for the fact that they probably
-> wouldn't have any time in -next before I ask Linus to pull them.  So
-> how about if we wait until after the release, ask the area maintainers
-> to take them, and if they don't take them, I'll put them in my tree
-> for v3.15?
+> On Tue, Jan 28, 2014 at 06:51:51PM +0000, Christopher Covington wrote:
+>> Add the trivial support necessary to get hardware breakpoints
+>> working for GDB on ARMv8 simulators running in AArch32 mode.
+>>
+>> Acked-by: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+>> ---
+>>
+>>  v3: assume for now that ARMv9 and later will update FSR
+> 
+> Please can you stick this into the patch system? I don't have any other
+> hw_breakpoint changes queued, so I doubt I'll send a pull for 3.15.
 
-Hi Gentleman,
+Thanks for your review. Sounds good; will do.
 
-As the prerequisite commit 302a252 ("PCI/MSI: Add pci_enable_msi_range()
-and pci_enable_msix_range()") is in mainline now, could you please take
-the ACKed patches to your trees?
-
-Thanks!
-
-> Bjorn
+Regards,
+Christopher
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
