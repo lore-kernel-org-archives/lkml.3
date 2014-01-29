@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082AbaA2DA5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 22:00:57 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14942 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017AbaA2DAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 22:00:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,739,1384329600"; 
-   d="scan'208";a="474138992"
-Subject: [PATCH regression] dma-debug: fix overlap detection
-From: Dan Williams <dan.j.williams@intel.com>
-To: akpm@linux-foundation.org
-Cc: Sander Eikelenboom <linux@eikelenboom.it>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Francois Romieu <romieu@fr.zoreil.com>
-Date: Tue, 28 Jan 2014 19:00:54 -0800
-Message-ID: <20140129025817.10334.73833.stgit@viggo.jf.intel.com>
-User-Agent: StGit/0.17.1-3-g7cb9
+	id S932370AbaA2DG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 22:06:26 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:32857 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432AbaA2DGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 22:06:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140127000305.GA14236@electric-eye.fr.zoreil.com>
+References: <1859471893.20140126115521@eikelenboom.it>
+	<20140127000305.GA14236@electric-eye.fr.zoreil.com>
+Date: Tue, 28 Jan 2014 19:06:24 -0800
+X-Google-Sender-Auth: PHyWZrUHc_brV-77wD8_yzx-xdg
+Message-ID: <CAA9_cme2hgJ=jCDkPh5n5RP8fiJE-dVwbFr-apKv1=mNGPHYZg@mail.gmail.com>
+Subject: Re: 3.14-mw regression: rtl8169 WARNING: DMA-API: exceeded 7
+ overlapping mappings of pfn 55ebe
+From: Dan Williams <dan.j.williams@intel.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0abdd7a81b7e "dma-debug: introduce debug_dma_assert_idle()" was
-reworked to expand the overlap counter to the full range expressable by
-3 tag bits, but it has a thinko in treating the overlap counter as a
-pure reference count for the entry.
+On Sun, Jan 26, 2014 at 4:03 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
+> Sander Eikelenboom <linux@eikelenboom.it> :
+> [...]
+>> I have got a regression with a 3.14-mw kernel (last commit is 4ba9920e5e9c0e16b5ed24292d45322907bb9035):
+>> It looks like it's related to the rtl8169 ...
+>>
+>> --
+>> Sander
+>>
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.105537] ------------[ cut here ]------------
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.116779] WARNING: CPU: 0 PID: 0 at lib/dma-debug.c:491 add_dma_entry+0x103/0x130()
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.128148] DMA-API: exceeded 7 overlapping mappings of pfn 55ebe
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.139397] Modules linked in:
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.150535] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-20140125-mw-pcireset+ #1
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.161784] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS V1.8B1 09/13/2010
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.172965]  0000000000000009 ffff88005f603838 ffffffff81acbcfa ffffffff822134e0
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.184156]  ffff88005f603888 ffff88005f603878 ffffffff810bdf62 ffff880000000000
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.195186]  0000000000055ebe 00000000ffffffef 0000000000000200 ffff8800592ea098
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.206227] Call Trace:
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.217027]  <IRQ>  [<ffffffff81acbcfa>] dump_stack+0x46/0x58
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.227907]  [<ffffffff810bdf62>] warn_slowpath_common+0x82/0xb0
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.238678]  [<ffffffff810be031>] warn_slowpath_fmt+0x41/0x50
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.249336]  [<ffffffff81471c5a>] ? active_pfn_read_overlap+0x3a/0x70
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.259904]  [<ffffffff814729e3>] add_dma_entry+0x103/0x130
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.270416]  [<ffffffff81472de6>] debug_dma_map_page+0x126/0x150
+>> Jan 26 11:36:26 serveerstertje kernel: [   89.280840]  [<ffffffff81714686>] rtl8169_start_xmit+0x216/0xa20
+> [r8169 and xen stuff]
+>
+> Dan, I miss the part of the debug code that tells where the mappings were
+> previously set.
 
-Instead of deleting when the reference-count drops to zero, we need to
-delete when the overlap-count drops below zero.  Also, when detecting
-overflow we can just test the overlap-count > MAX rather than applying
-special meaning to 0.
+In this case it was a facepalm mistake on my part.  The mappings were
+not being properly accounted in the last revision of the patch I sent.
+ I copied you on the fix [1].
 
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
+--
+Dan
 
-Regression report available here:
-http://marc.info/?l=linux-netdev&m=139073373932386&w=2
-
-This patch, now tested on the original net_dma case, sees the expected
-handful of reports before the eventual data corruption occurs.
-
- lib/dma-debug.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/lib/dma-debug.c b/lib/dma-debug.c
-index c38083871f11..2defd1308b04 100644
---- a/lib/dma-debug.c
-+++ b/lib/dma-debug.c
-@@ -463,7 +463,7 @@ static int active_pfn_set_overlap(unsigned long pfn, int overlap)
- 	int i;
- 
- 	if (overlap > ACTIVE_PFN_MAX_OVERLAP || overlap < 0)
--		return 0;
-+		return overlap;
- 
- 	for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
- 		if (overlap & 1 << i)
-@@ -486,7 +486,7 @@ static void active_pfn_inc_overlap(unsigned long pfn)
- 	 * debug_dma_assert_idle() as the pfn may be marked idle
- 	 * prematurely.
- 	 */
--	WARN_ONCE(overlap == 0,
-+	WARN_ONCE(overlap > ACTIVE_PFN_MAX_OVERLAP,
- 		  "DMA-API: exceeded %d overlapping mappings of pfn %lx\n",
- 		  ACTIVE_PFN_MAX_OVERLAP, pfn);
- }
-@@ -517,7 +517,11 @@ static void active_pfn_remove(struct dma_debug_entry *entry)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&radix_lock, flags);
--	if (active_pfn_dec_overlap(entry->pfn) == 0)
-+	/* since we are counting overlaps the final put of the
-+	 * entry->pfn will occur when the overlap count is 0.
-+	 * active_pfn_dec_overlap() returns -1 in that case
-+	 */
-+	if (active_pfn_dec_overlap(entry->pfn) < 0)
- 		radix_tree_delete(&dma_active_pfn, entry->pfn);
- 	spin_unlock_irqrestore(&radix_lock, flags);
- }
-
+[1]: http://marc.info/?l=linux-netdev&m=139096447627032&w=2
