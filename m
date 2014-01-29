@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaA3CFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 21:05:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54107 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212AbaA3CFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 21:05:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,746,1384329600"; 
-   d="scan'208";a="472995192"
-Date: Wed, 29 Jan 2014 18:05:33 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: linux-next: manual merge of the tip tree with Linus' tree
-Message-ID: <20140130020533.GG9804@tassilo.jf.intel.com>
-References: <20140130124201.d24b784b6483a11fe3057bd9@canb.auug.org.au>
- <20140130014914.GC9804@tassilo.jf.intel.com>
- <20140130125835.5b7809ec9dcaa040b690095f@canb.auug.org.au>
+	id S1752227AbaA3CKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 21:10:03 -0500
+Received: from email.greberag.ch ([62.202.39.226]:36864 "EHLO greberag.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750879AbaA3CKA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 21:10:00 -0500
+X-Greylist: delayed 30023 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jan 2014 21:10:00 EST
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140130125835.5b7809ec9dcaa040b690095f@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Contact Me Please
+To: Recipients <test@vger.kernel.org>
+From: test@vger.kernel.org
+Date: Wed, 29 Jan 2014 15:19:34 +0100
+Reply-To: sun.zhijun@yahoo.com.hk
+Message-ID: <SRVCOPALaNHi9u5tojw0000bdb2@greberag.ch>
+X-OriginalArrivalTime: 29 Jan 2014 14:19:52.0618 (UTC) FILETIME=[2D1C80A0:01CF1CFD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 12:58:35PM +1100, Stephen Rothwell wrote:
-> Hi Andi,
-> 
-> On Wed, 29 Jan 2014 17:49:14 -0800 Andi Kleen <ak@linux.intel.com> wrote:
-> >
-> > > I fixed it up (see below) and can carry the fix as necessary (no action
-> > > is required).
-> > 
-> > I don't think the fix is correct, both sysctls need to be kept. They
-> > do different things.
-> 
-> The tip tree commit 52bf84aa206c ("sched/numa,mm: Remove
-> p->numa_migrate_deferred") explicitly removed the
-> numa_balancing_migrate_deferred sysctl.
+Guten Tag,
 
-Okay, sorry for the noise then.
+Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: sun.zhijun@yahoo.com.hk
 
--Andi
+1. Vollständiger Name
+2.Private Telefonnummer
+3.Current Wohnadresse
+
+Mit freundlichen Grüßen,
+Mr.SUN Zhijun
