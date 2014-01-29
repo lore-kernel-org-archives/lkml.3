@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaA2UTD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:19:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33503 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126AbaA2UTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:19:01 -0500
-Date: Wed, 29 Jan 2014 12:18:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>, criu@openvz.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Borislav Petkov <bp@suse.de>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH] mm: don't lose the SOFT_DIRTY flag on mprotect
-Message-Id: <20140129121859.07da0df20daea6a1581e709a@linux-foundation.org>
-In-Reply-To: <1391025899-25299-1-git-send-email-avagin@openvz.org>
-References: <1391025899-25299-1-git-send-email-avagin@openvz.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751710AbaA2UWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:22:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaA2UWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 15:22:12 -0500
+Date: Wed, 29 Jan 2014 15:21:27 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, Will.Deacon@arm.com, arndb@arndb.de,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        viro@zeniv.linux.org.uk, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
+Message-ID: <20140129202127.GA24068@madcap2.tricolour.ca>
+References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
+ <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
+ <20140123141808.GD27520@arm.com>
+ <52E5EAC1.2070306@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E5EAC1.2070306@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014 00:04:59 +0400 Andrey Vagin <avagin@openvz.org> wrote:
-
-> The SOFT_DIRTY bit shows that the content of memory was changed
-> after a defined point in the past. mprotect() doesn't change the
-> content of memory, so it must not change the SOFT_DIRTY bit.
+On 14/01/27, AKASHI Takahiro wrote:
+> [To audit maintainers]
 > 
-> This patch does nothing with _PAGE_SWP_SOFT_DIRTY, becase pte_modify()
-> is called only for present pages.
+> On 01/23/2014 11:18 PM, Catalin Marinas wrote:
+> >On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
+> >>--- a/include/uapi/linux/audit.h
+> >>+++ b/include/uapi/linux/audit.h
+> >>@@ -327,6 +327,8 @@ enum {
+> >>  /* distinguish syscall tables */
+> >>  #define __AUDIT_ARCH_64BIT 0x80000000
+> >>  #define __AUDIT_ARCH_LE	   0x40000000
+> >>+#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> >>+#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
+> >>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+> >>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
+> >>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
+> >>diff --git a/init/Kconfig b/init/Kconfig
+> >>index 79383d3..3aae602 100644
+> >>--- a/init/Kconfig
+> >>+++ b/init/Kconfig
+> >>@@ -284,7 +284,7 @@ config AUDIT
+> >>
+> >>  config AUDITSYSCALL
+> >>  	bool "Enable system-call auditing support"
+> >>-	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
+> >>+	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
+> >
+> >The usual comment for such changes: could you please clean this up and
+> >just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
+> 
+> Do you agree to this change?
+> 
+> If so, I can create a patch, but have some concerns:
+> 1) I can't verify it on other architectures than (arm &) arm64.
+> 2) Some architectures (microblaze, mips, openrisc) are not listed here, but
+>    their ptrace.c have a call to audit_syscall_entry/exit().
+>    (audit_syscall_entry/exit are null if !AUDITSYSCALL, though)
 
-Standard complaint: when fixing a bug, please describe the end-user
-visible effects of that bug.
+I can try: ppc s390 x86_64 ppc64 i686 s390x
 
-afaict the effects are minor: snapshotting will save/copy more pages
-than it needs to, but there will be no malfunction.  Hence a -stable
-backport is unneeded.  Agree?
+> So I'm afraid that the change might break someone's assumption.
+> 
+> Thanks,
+> -Takahiro AKASHI
 
+- RGB
 
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
