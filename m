@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaA2SRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:17:48 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:45041 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaA2SRo (ORCPT
+	id S1753075AbaA2SR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:17:59 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:43157 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031AbaA2SRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:17:44 -0500
-Subject: [PATCH 02/17] x86/PCI: Use pcibios_scan_root() instead of
- pci_scan_bus_with_sysdata()
+	Wed, 29 Jan 2014 13:17:52 -0500
+Subject: [PATCH 03/17] x86/PCI: Use pcibios_scan_root() instead of
+ pci_scan_bus_on_node()
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-acpi@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 29 Jan 2014 11:17:41 -0700
-Message-ID: <20140129181741.15476.52860.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Wed, 29 Jan 2014 11:17:49 -0700
+Message-ID: <20140129181749.15476.64115.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -25,120 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pci_scan_bus_with_sysdata() and pcibios_scan_root() are quite similar:
-
-  pci_scan_bus_with_sysdata
-    pci_scan_bus_on_node(..., &pci_root_ops, -1)
-
-  pcibios_scan_root
-    pci_scan_bus_on_node(..., &pci_root_ops, get_mp_bus_to_node(busnum))
-
-get_mp_bus_to_node() returns -1 if it couldn't find the node number, so
-this removes pci_scan_bus_with_sysdata() and uses pcibios_scan_root()
-instead.
+pcibios_scan_root() looks up the bus's NUMA node, then calls
+pci_scan_bus_on_node().  This uses pcibios_scan_root() directly and drops
+the node lookup in the callers.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/x86/include/asm/pci.h |    1 -
- arch/x86/pci/common.c      |    5 -----
- arch/x86/pci/fixup.c       |    6 +++---
- arch/x86/pci/numaq_32.c    |    6 +++---
- arch/x86/pci/visws.c       |    4 ++--
- 5 files changed, 8 insertions(+), 14 deletions(-)
+ arch/x86/pci/irq.c    |    4 +---
+ arch/x86/pci/legacy.c |    4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 1ac6114c9ea5..4e891abf8b48 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -29,7 +29,6 @@ extern int noioapicreroute;
- /* scan a bus after allocating a pci_sysdata for it */
- extern struct pci_bus *pci_scan_bus_on_node(int busno, struct pci_ops *ops,
- 					    int node);
--extern struct pci_bus *pci_scan_bus_with_sysdata(int busno);
- 
- #ifdef CONFIG_PCI
- 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index c47bb2288bb9..f530c7e93250 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -697,11 +697,6 @@ struct pci_bus *pci_scan_bus_on_node(int busno, struct pci_ops *ops, int node)
- 	return bus;
- }
- 
--struct pci_bus *pci_scan_bus_with_sysdata(int busno)
--{
--	return pci_scan_bus_on_node(busno, &pci_root_ops, -1);
--}
--
- /*
-  * NUMA info for PCI busses
-  *
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index bca9e85daaa5..201833f5f1bc 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -25,9 +25,9 @@ static void pci_fixup_i450nx(struct pci_dev *d)
- 		dev_dbg(&d->dev, "i450NX PXB %d: %02x/%02x/%02x\n", pxb, busno,
- 			suba, subb);
- 		if (busno)
--			pci_scan_bus_with_sysdata(busno);	/* Bus A */
-+			pcibios_scan_root(busno);	/* Bus A */
- 		if (suba < subb)
--			pci_scan_bus_with_sysdata(suba+1);	/* Bus B */
-+			pcibios_scan_root(suba+1);	/* Bus B */
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 372e9b8989b3..8658874165c2 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -136,11 +136,9 @@ static void __init pirq_peer_trick(void)
+ 		busmap[e->bus] = 1;
  	}
- 	pcibios_last_bus = -1;
- }
-@@ -42,7 +42,7 @@ static void pci_fixup_i450gx(struct pci_dev *d)
- 	u8 busno;
- 	pci_read_config_byte(d, 0x4a, &busno);
- 	dev_info(&d->dev, "i440KX/GX host bridge; secondary bus %02x\n", busno);
--	pci_scan_bus_with_sysdata(busno);
-+	pcibios_scan_root(busno);
- 	pcibios_last_bus = -1;
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82454GX, pci_fixup_i450gx);
-diff --git a/arch/x86/pci/numaq_32.c b/arch/x86/pci/numaq_32.c
-index 72c229f9ebcf..080eb0374fff 100644
---- a/arch/x86/pci/numaq_32.c
-+++ b/arch/x86/pci/numaq_32.c
-@@ -135,11 +135,11 @@ static void pci_fixup_i450nx(struct pci_dev *d)
- 			pxb, busno, suba, subb);
- 		if (busno) {
- 			/* Bus A */
--			pci_scan_bus_with_sysdata(QUADLOCAL2BUS(quad, busno));
-+			pcibios_scan_root(QUADLOCAL2BUS(quad, busno));
- 		}
- 		if (suba < subb) {
- 			/* Bus B */
--			pci_scan_bus_with_sysdata(QUADLOCAL2BUS(quad, suba+1));
-+			pcibios_scan_root(QUADLOCAL2BUS(quad, suba+1));
+ 	for (i = 1; i < 256; i++) {
+-		int node;
+ 		if (!busmap[i] || pci_find_bus(0, i))
+ 			continue;
+-		node = get_mp_bus_to_node(i);
+-		if (pci_scan_bus_on_node(i, &pci_root_ops, node))
++		if (pcibios_scan_root(i))
+ 			printk(KERN_INFO "PCI: Discovered primary peer "
+ 			       "bus %02x [IRQ]\n", i);
+ 	}
+diff --git a/arch/x86/pci/legacy.c b/arch/x86/pci/legacy.c
+index 4db96fb1c232..5b662c0faf8c 100644
+--- a/arch/x86/pci/legacy.c
++++ b/arch/x86/pci/legacy.c
+@@ -37,19 +37,17 @@ int __init pci_legacy_init(void)
+ void pcibios_scan_specific_bus(int busn)
+ {
+ 	int devfn;
+-	long node;
+ 	u32 l;
+ 
+ 	if (pci_find_bus(0, busn))
+ 		return;
+ 
+-	node = get_mp_bus_to_node(busn);
+ 	for (devfn = 0; devfn < 256; devfn += 8) {
+ 		if (!raw_pci_read(0, busn, devfn, PCI_VENDOR_ID, 2, &l) &&
+ 		    l != 0x0000 && l != 0xffff) {
+ 			DBG("Found device at %02x:%02x [%04x]\n", busn, devfn, l);
+ 			printk(KERN_INFO "PCI: Discovered peer bus %02x\n", busn);
+-			pci_scan_bus_on_node(busn, &pci_root_ops, node);
++			pcibios_scan_root(busn);
+ 			return;
  		}
  	}
- 	pcibios_last_bus = -1;
-@@ -159,7 +159,7 @@ int __init pci_numaq_init(void)
- 				continue;
- 			printk("Scanning PCI bus %d for quad %d\n", 
- 				QUADLOCAL2BUS(quad,0), quad);
--			pci_scan_bus_with_sysdata(QUADLOCAL2BUS(quad, 0));
-+			pcibios_scan_root(QUADLOCAL2BUS(quad, 0));
- 		}
- 	return 0;
- }
-diff --git a/arch/x86/pci/visws.c b/arch/x86/pci/visws.c
-index 3e6d2a6db866..cd9d4d1681d2 100644
---- a/arch/x86/pci/visws.c
-+++ b/arch/x86/pci/visws.c
-@@ -78,8 +78,8 @@ int __init pci_visws_init(void)
- 		"bridge B (PIIX4) bus: %u\n", pci_bus1, pci_bus0);
- 
- 	raw_pci_ops = &pci_direct_conf1;
--	pci_scan_bus_with_sysdata(pci_bus0);
--	pci_scan_bus_with_sysdata(pci_bus1);
-+	pcibios_scan_root(pci_bus0);
-+	pcibios_scan_root(pci_bus1);
- 	pci_fixup_irqs(pci_common_swizzle, visws_map_irq);
- 	pcibios_resource_survey();
- 	/* Request bus scan */
 
