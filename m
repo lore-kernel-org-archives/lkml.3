@@ -1,130 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbaA2TIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 14:08:50 -0500
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:59934 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101AbaA2TIs (ORCPT
+	id S1753195AbaA2TJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 14:09:00 -0500
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:35487 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108AbaA2TI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 14:08:48 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
-References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
-Date: Wed, 29 Jan 2014 11:08:46 -0800
-In-Reply-To: <1386771355-21805-1-git-send-email-mhocko@suse.cz> (Michal
-	Hocko's message of "Wed, 11 Dec 2013 15:15:51 +0100")
-Message-ID: <xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.130007 (Ma Gnus v0.7) Emacs/23.3 (gnu/linux)
+	Wed, 29 Jan 2014 14:08:57 -0500
+Date: Wed, 29 Jan 2014 16:08:50 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 8/9] perf tools: Adjust kallsyms for relocated kernel
+Message-ID: <20140129190850.GF3998@ghostprotocols.net>
+References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
+ <1391004884-10334-9-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391004884-10334-9-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11 2013, Michal Hocko wrote:
+Em Wed, Jan 29, 2014 at 04:14:43PM +0200, Adrian Hunter escreveu:
+> If the kernel is relocated at boot time, kallsyms
+> will not match data recorded previously.  That
+> does not matter for modules because they are
+> corrected anyway.  It also does not matter if
+> vmlinux is being used for symbols. But if perf
+> tools has only kallsyms then the symbols will not
+> match.  Fix by applying the delta gained by
+> comparing the old and current addresses of the
+> relocation reference symbol.
 
-> Hi,
-> previous discussions have shown that soft limits cannot be reformed
-> (http://lwn.net/Articles/555249/). This series introduces an alternative
-> approach to protecting memory allocated to processes executing within
-> a memory cgroup controller. It is based on a new tunable that was
-> discussed with Johannes and Tejun held during the last kernel summit.
->
-> This patchset introduces such low limit that is functionally similar to a
-> minimum guarantee. Memcgs which are under their lowlimit are not considered
-> eligible for the reclaim (both global and hardlimit). The default value of
-> the limit is 0 so all groups are eligible by default and an interested
-> party has to explicitly set the limit.
->
-> The primary use case is to protect an amount of memory allocated to a
-> workload without it being reclaimed by an unrelated activity. In some
-> cases this requirement can be fulfilled by mlock but it is not suitable
-> for many loads and generally requires application awareness. Such
-> application awareness can be complex. It effectively forbids the
-> use of memory overcommit as the application must explicitly manage
-> memory residency.
-> With low limits, such workloads can be placed in a memcg with a low
-> limit that protects the estimated working set.
->
-> Another use case might be unreclaimable groups. Some loads might be so
-> sensitive to reclaim that it is better to kill and start it again (or
-> since checkpoint) rather than trash. This would be trivial with low
-> limit set to unlimited and the OOM killer will handle the situation as
-> required (e.g. kill and restart).
->
-> The hierarchical behavior of the lowlimit is described in the first
-> patch. It is followed by a direct reclaim fix which is necessary to
-> handle situation when a no group is eligible because all groups are
-> below low limit. This is not a big deal for hardlimit reclaim because
-> we simply retry the reclaim few times and then trigger memcg OOM killer
-> path. It would blow up in the global case when we would loop without
-> doing any progress or trigger OOM killer. I would consider configuration
-> leading to this state invalid but we should handle that gracefully.
->
-> The third patch finally allows setting the lowlimit.
->
-> The last patch tries expedites OOM if it is clear that no group is
-> eligible for reclaim. It basically breaks out of loops in the direct
-> reclaim and lets kswapd sleep because it wouldn't do any progress anyway.
->
-> Thoughts?
->
-> Short log says:
-> Michal Hocko (4):
->       memcg, mm: introduce lowlimit reclaim
->       mm, memcg: allow OOM if no memcg is eligible during direct reclaim
->       memcg: Allow setting low_limit
->       mm, memcg: expedite OOM if no memcg is reclaimable
->
-> And a diffstat
->  include/linux/memcontrol.h  | 14 +++++++++++
->  include/linux/res_counter.h | 40 ++++++++++++++++++++++++++++++
->  kernel/res_counter.c        |  2 ++
->  mm/memcontrol.c             | 60 ++++++++++++++++++++++++++++++++++++++++++++-
->  mm/vmscan.c                 | 59 +++++++++++++++++++++++++++++++++++++++++---
->  5 files changed, 170 insertions(+), 5 deletions(-)
+Don't we have map->reloc? Can't we use it here, i.e. be consistent and
+have the unrelocated address + the relocation, and then, when using
+map->{map,unmap} take that into account, as you did to the objdump
+variants, no?
 
-The series looks useful.  We (Google) have been using something similar.
-In practice such a low_limit (or memory guarantee), doesn't nest very
-well.
+I applied the others, testing now.
 
-Example:
-  - parent_memcg: limit 500, low_limit 500, usage 500
-    1 privately charged non-reclaimable page (e.g. mlock, slab)
-  - child_memcg: limit 500, low_limit 500, usage 499
-
-If a streaming file cache workload (e.g. sha1sum) starts gobbling up
-page cache it will lead to an oom kill instead of reclaiming.  One could
-argue that this is working as intended because child_memcg was promised
-500 but can only get 499.  So child_memcg is oom killed rather than
-being forced to operate below its promised low limit.
-
-This has led to various internal workarounds like:
-- don't charge any memory to interior tree nodes (e.g. parent_memcg);
-  only charge memory to cgroup leafs.  This gets tricky when dealing
-  with reparented memory inherited to parent from child during cgroup
-  deletion.
-- don't set low_limit on non leafs (e.g. do not set low limit on
-  parent_memcg).  This constrains the cgroup layout a bit.  Some
-  customers want to purchase $MEM and setup their workload with a few
-  child cgroups.  A system daemon hands out $MEM by setting low_limit
-  for top-level containers (e.g. parent_memcg).  Thereafter such
-  customers are able to partition their workload with sub memcg below
-  child_memcg.  Example:
-     parent_memcg
-         \
-          child_memcg
-            /     \
-        server   backup
-  Thereafter customers often want some weak isolation between server and
-  backup.  To avoid undesired oom kills the server/backup isolation is
-  provided with a softer memory guarantee (e.g. soft_limit).  The soft
-  limit acts like the low_limit until priority becomes desperate.
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/symbol.c | 40 ++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 38 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index 4ac1f87..a9d758a 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -627,7 +627,7 @@ static int dso__split_kallsyms_for_kcore(struct dso *dso, struct map *map,
+>   * kernel range is broken in several maps, named [kernel].N, as we don't have
+>   * the original ELF section names vmlinux have.
+>   */
+> -static int dso__split_kallsyms(struct dso *dso, struct map *map,
+> +static int dso__split_kallsyms(struct dso *dso, struct map *map, u64 delta,
+>  			       symbol_filter_t filter)
+>  {
+>  	struct map_groups *kmaps = map__kmap(map)->kmaps;
+> @@ -692,6 +692,12 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+>  			char dso_name[PATH_MAX];
+>  			struct dso *ndso;
+>  
+> +			if (delta) {
+> +				/* Kernel was relocated at boot time */
+> +				pos->start -= delta;
+> +				pos->end -= delta;
+> +			}
+> +
+>  			if (count == 0) {
+>  				curr_map = map;
+>  				goto filter_symbol;
+> @@ -721,6 +727,10 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+>  			curr_map->map_ip = curr_map->unmap_ip = identity__map_ip;
+>  			map_groups__insert(kmaps, curr_map);
+>  			++kernel_range;
+> +		} else if (delta) {
+> +			/* Kernel was relocated at boot time */
+> +			pos->start -= delta;
+> +			pos->end -= delta;
+>  		}
+>  filter_symbol:
+>  		if (filter && filter(curr_map, pos)) {
+> @@ -1130,15 +1140,41 @@ out_err:
+>  	return -EINVAL;
+>  }
+>  
+> +/*
+> + * If the kernel is relocated at boot time, kallsyms won't match.  Compute the
+> + * delta based on the relocation reference symbol.
+> + */
+> +static int kallsyms__delta(struct map *map, const char *filename, u64 *delta)
+> +{
+> +	struct kmap *kmap = map__kmap(map);
+> +	u64 addr;
+> +
+> +	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->name)
+> +		return 0;
+> +
+> +	addr = kallsyms__get_function_start(filename,
+> +					    kmap->ref_reloc_sym->name);
+> +	if (!addr)
+> +		return -1;
+> +
+> +	*delta = addr - kmap->ref_reloc_sym->addr;
+> +	return 0;
+> +}
+> +
+>  int dso__load_kallsyms(struct dso *dso, const char *filename,
+>  		       struct map *map, symbol_filter_t filter)
+>  {
+> +	u64 delta = 0;
+> +
+>  	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+>  		return -1;
+>  
+>  	if (dso__load_all_kallsyms(dso, filename, map) < 0)
+>  		return -1;
+>  
+> +	if (kallsyms__delta(map, filename, &delta))
+> +		return -1;
+> +
+>  	symbols__fixup_duplicate(&dso->symbols[map->type]);
+>  	symbols__fixup_end(&dso->symbols[map->type]);
+>  
+> @@ -1150,7 +1186,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
+>  	if (!dso__load_kcore(dso, map, filename))
+>  		return dso__split_kallsyms_for_kcore(dso, map, filter);
+>  	else
+> -		return dso__split_kallsyms(dso, map, filter);
+> +		return dso__split_kallsyms(dso, map, delta, filter);
+>  }
+>  
+>  static int dso__load_perf_map(struct dso *dso, struct map *map,
+> -- 
+> 1.7.11.7
