@@ -1,142 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaA2LWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 06:22:55 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:35562 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaA2LWy (ORCPT
+	id S1751304AbaA2LaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 06:30:21 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59486 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaA2LaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 06:22:54 -0500
-Message-ID: <52E8E487.2090007@hitachi.com>
-Date: Wed, 29 Jan 2014 20:22:47 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 29 Jan 2014 06:30:19 -0500
+Message-ID: <52E8E643.60408@ti.com>
+Date: Wed, 29 Jan 2014 13:30:11 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, linux-arch@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v6 00/22] kprobes: introduce NOKPROBE_SYMBOL(), cleanup
- and fixes crash bugs
-References: <20131219090353.14309.15496.stgit@kbuild-fedora.novalocal> <y0m38loefhx.fsf@fche.csb> <52B3C5E6.2040802@hitachi.com> <20131220082056.GA15934@gmail.com> <52B40E79.8040701@hitachi.com> <20131220104615.GA22609@gmail.com>
-In-Reply-To: <20131220104615.GA22609@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        <chf.fritz@googlemail.com>, Tero Kristo <t-kristo@ti.com>, <nm@ti.com>
+Subject: Re: [BISECTED] OMAP: DSS: clk rate mismatch
+References: <52E697C0.6000202@gmail.com> <52E7614E.8010903@ti.com> <52E76EE0.2060006@ti.com> <52E7F451.7040708@gmail.com>
+In-Reply-To: <52E7F451.7040708@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="3qQcAOrURL6exX3dCugF5If6S98H58eXg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+--3qQcAOrURL6exX3dCugF5If6S98H58eXg
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-(2013/12/20 19:46), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2013/12/20 17:20), Ingo Molnar wrote:
->>>
->>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>>>  But a closer look indicates that the insertion of kprobes is 
->>>>> taking about three (!!) orders of magnitude longer than before, as 
->>>>> judged by the rate of increase of 'wc -l 
->>>>> /sys/kernel/debug/kprobes/list'.
->>>>
->>>> Right, because kprobes are not designed for thousands of probes.
->>>
->>> Then this needs to be fixed, because right now this bug is making it 
->>> near impossible to properly test kprobes robustness.
->>>
->>> For example a hash table (hashed by probe address) could be used in 
->>> addition to the list, to speed up basic operations.
+On 2014-01-28 20:17, Ivaylo Dimitrov wrote:
+>=20
+>=20
+> On 28.01.2014 10:48, Tomi Valkeinen wrote:
+>=20
+>> I made a somewhat hacky quickfix for beagle. Applying that and the
+>> clk-divider from the link above makes things work for me. However, as =
+I
+>> said, the issue with n900 might be different, but it'd be interesting =
+to
+>> hear if it has any effect.
 >>
->> kprobe itself is already using hlist (6bits hash table).
->> Maybe we'd better expand the table bits. However, the iteration
->> of the list on debugfs is just doing seq_printf()s. I'm not exactly
->> sure what Frank complaints about...
-> 
-> Well, Frank reported that the test he performed takes hours to finish, 
-> and he mentioned a specific script line he used to produce that:
-> 
->   # stap -te "probe kprobe.function("*") {}"
-> 
-> I suspect an equivalent perf probe sequence would be something like:
-> 
->   # for FUNC in $(grep -iw t /proc/kallsyms | cut -d' ' -f3); do date; perf probe -a $FUNC; done
-> 
-> (totally untested.)
-> 
-> Can you reproduce that slowdown, using his method?
+>>   Tomi
+>>
+>=20
+> Applying those 2 patches doesn't help, still get exactly the same warni=
+ng.
+>=20
+> Find attached my clk_summary (with my hacky patch applied, otherwise I
+> cannot boot the device)
 
-OK, when I used ftrace interface, it didn't slows things down at all
-(at this point :))
-  ----
-  # time (grep -iw t /proc/kallsyms | awk '{print "p:"$3,"0x"$1}' | xargs --max-lines=1 echo >> /sys/kernel/debug/tracing/kprobe_events )
+Can you try this one:
 
-  real    0m36.303s
-  user    0m0.420s
-  sys     0m2.428s
+=46rom e511789f7be00beeeee0712910c60a57c51b2705 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Date: Wed, 29 Jan 2014 13:28:53 +0200
+Subject: [PATCH] clkoutx2 fix
 
-  # wc -l /sys/kernel/debug/tracing/kprobe_events
-  26980 /sys/kernel/debug/tracing/kprobe_events
+---
+ arch/arm/mach-omap2/cclock3xxx_data.c |  7 +++++++
+ arch/arm/mach-omap2/dpll3xxx.c        | 20 ++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-  # time cat /sys/kernel/debug/tracing/kprobe_events > /dev/null
-
-  real    0m0.054s
-  user    0m0.000s
-  sys     0m0.052s
-  ----
-
-This is because of two reasons:
- - ftrace interface doesn't access any files, it just parses the event
-   and sets it up.
- - ftrace (and perf probe) doesn't enable the event while setting.
-
-I guess the second reason is why the stap takes so long time to set
-probes. stap tries to register kprobes without disabled flag, that
-means we enables thousands of probes (overheads).
-
-So the similar thing happens when we enables events as below;
-
-  # for i in /sys/kernel/debug/tracing/events/kprobes/* ; do date; echo 1 > $i; done
-  Wed Jan 29 10:44:50 UTC 2014
-  ...
-
-I tried it and canceled after 4 min passed. It enabled about 17k events
-and slowed down my system very much(I almost got hang check timer).
-
-I think we should have some performance statistics (hit count?) and
-if it goes over a threshold, we should stop enabling other events.
-(Note that kprobes and other events take a time, one event may just
- consume a small amount of time, usually less than 0.5usec. but what
- happens if it hits 1,000,000 times per 1 sec...?)
-
-
-> I can reproduce one weirdness, with just 13 probes added, 'perf probe 
-> -l' [which should really be 'perf probe list'!] executes very slowly:
-> 
->  # perf stat --null --repeat 3 perf probe -l
-> 
->  Performance counter stats for 'perf probe -l' (3 runs):
-> 
->        0.763640098 seconds time elapsed                                          ( +-  1.61% )
-> 
-> 0.7 seconds is ridiculously long.
-
-As you can see, listing up the probes via ftrace interface just
-takes 0.05sec/26980probes. Perf probe may take a time for
-list up events because it tries to find symbols/lines from
-kallsyms or debuginfo.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/arch/arm/mach-omap2/cclock3xxx_data.c b/arch/arm/mach-omap2/=
+cclock3xxx_data.c
+index 3b05aea56d1f..49247701a56c 100644
+--- a/arch/arm/mach-omap2/cclock3xxx_data.c
++++ b/arch/arm/mach-omap2/cclock3xxx_data.c
+@@ -428,12 +428,19 @@ static const char *dpll4_m5x2_ck_parent_names[] =3D=
+ {
+ 	"dpll4_m5_ck",
+ };
+=20
++int omap3_clkoutx2_set_rate(struct clk_hw *hw, unsigned long rate,
++					unsigned long parent_rate);
++long omap3_clkoutx2_round_rate(struct clk_hw *hw, unsigned long target_r=
+ate,
++		unsigned long *parent_rate);
++
+ static const struct clk_ops dpll4_m5x2_ck_ops =3D {
+ 	.init		=3D &omap2_init_clk_clkdm,
+ 	.enable		=3D &omap2_dflt_clk_enable,
+ 	.disable	=3D &omap2_dflt_clk_disable,
+ 	.is_enabled	=3D &omap2_dflt_clk_is_enabled,
++	.set_rate	=3D &omap3_clkoutx2_set_rate,
+ 	.recalc_rate	=3D &omap3_clkoutx2_recalc,
++	.round_rate	=3D &omap3_clkoutx2_round_rate,
+ };
+=20
+ static const struct clk_ops dpll4_m5x2_ck_3630_ops =3D {
+diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xx=
+x.c
+index 3a0296cfcace..794665fe234b 100644
+--- a/arch/arm/mach-omap2/dpll3xxx.c
++++ b/arch/arm/mach-omap2/dpll3xxx.c
+@@ -669,6 +669,26 @@ unsigned long omap3_clkoutx2_recalc(struct clk_hw *h=
+w,
+ 	return rate;
+ }
+=20
++int omap3_clkoutx2_set_rate(struct clk_hw *hw, unsigned long rate,
++					unsigned long parent_rate)
++{
++	return 0;
++}
++
++long omap3_clkoutx2_round_rate(struct clk_hw *hw, unsigned long rate,
++		unsigned long *prate)
++{
++	if (__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT) {
++		unsigned long best_parent;
++
++		best_parent =3D (rate / 2);
++		*prate =3D __clk_round_rate(__clk_get_parent(hw->clk),
++				best_parent);
++	}
++
++	return *prate * 2;
++}
++
+ /* OMAP3/4 non-CORE DPLL clkops */
+ const struct clk_hw_omap_ops clkhwops_omap3_dpll =3D {
+ 	.allow_idle	=3D omap3_dpll_allow_idle,
+--=20
+1.8.3.2
 
 
+
+
+--3qQcAOrURL6exX3dCugF5If6S98H58eXg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS6OZDAAoJEPo9qoy8lh71YFYP/RQkvtDneum1Cmw3Yua0k+J6
+udV4qeNhbDVA8lJgrGFWihIN7UYyC4X6kn84uiXePZZ6Vfe0K9UfP2LkFfZvhv8l
+I4GChupl1sslV+eKtCBTWG2Hlbix4/nUqfkbAHiA7ljeDs7HtEQtUnWz9L0lAQYH
+WPspFOZJ/KMjX3Z4try9do+nyM3uze+vjEOk22a25zhsbrVDoKv2gI4yT/4+RCUc
+rVmLlZ2XLo0GNTykHuIurJnG4AWgMHH/GbIRNuRZ+gmy6UYXDtLw03p/yFqSFt8i
+tjvtFS9Svl36EMkdya3meC9UPpxHtdSZqNOVvib0dRBDY2ZsK7/VPN3hlkYOJXWO
+V15CQuS1MPGRGrRv2ARMZwEmabFbc4mhyKpqaSqn55PlnYirAxVGfJ0mcS+PWB00
+orZ2yl1O/Z/TPaQR9DxOyCKxIi4csC15BofqH3ZytHMbJkPi6HawCWxs8Epkr12q
+w2Zh+U2Kt3DVDqHm3j6lhtc4LPutqpoBtNYhtSemHQ508d5dWH74U0UYIQt2z4NU
+u1oAsgnUE3VqppqYQyU4B+yAz5J9ttdS4u5HMcKvXm7QBtUOQrkD9PzIckhkblEH
+0EV8TJU8+4Q1Fis+I87RREqEVBnaXio5tKAOjKTBlputokwhgKre69PdpCPgEYe5
+imS82XIUZxK1ggbRJqNx
+=hsce
+-----END PGP SIGNATURE-----
+
+--3qQcAOrURL6exX3dCugF5If6S98H58eXg--
