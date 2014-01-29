@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaA2IOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 03:14:12 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:46815 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaA2IOF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 03:14:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1401282328360.10321@chino.kir.corp.google.com>
-References: <1390110907-29918-1-git-send-email-sj38.park@gmail.com>
- <20140119173712.GA26481@kroah.com> <CAPtuhTikj38yKy-=uF7O+VFG_N4AWee23f9woemM318fM3V4VQ@mail.gmail.com>
- <CAEjAshoh5ucPJA6pG1sx+7HGCYjHzCKtbzmH+GYJwpefDYLwJg@mail.gmail.com>
- <CAEjAshozB4S0ZGqEn41ROfZwGTV+_GZRRTZ8cssi0VdH8Uhr_w@mail.gmail.com>
- <20140122045937.GB23869@kroah.com> <CAEjAshrxXLJ-zFsTO9TnewYBBEPzFR1cixbLnD6U-U1EKdByxg@mail.gmail.com>
- <alpine.DEB.2.02.1401282328360.10321@chino.kir.corp.google.com>
-From: SeongJae Park <sj38.park@gmail.com>
-Date: Wed, 29 Jan 2014 17:13:45 +0900
-Message-ID: <CAEjAshoLRjZJ4M=C8H5rL8rgm8BBE2Ab2emC_xqU1YDtKfdwVQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: export __clk_get_hw for re-use in others
-To: David Rientjes <rientjes@google.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755100AbaA2IPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 03:15:24 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:59344 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100AbaA2IPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 03:15:20 -0500
+Message-ID: <1390983246.28998.24.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v3 0/2] Qualcomm Universal Peripheral (QUP) I2C
+ controller
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        James Ralston <james.d.ralston@intel.com>,
+        Bill Brown <bill.e.brown@intel.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
+Date: Wed, 29 Jan 2014 10:14:06 +0200
+In-Reply-To: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1389999819-10648-1-git-send-email-bjorn.andersson@sonymobile.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wed, Jan 29, 2014 at 4:29 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 22 Jan 2014, SeongJae Park wrote:
->
->> Oops, I've forgot about the merge window. Thank you very much for your
->> kind answer.
->> Sorry if I bothered you while you're in busy time.
->> Because the build problem is not a big deal because it exists only in
->> -next tree,
->
-> This problem exists in Linus's tree, not only in -next.
+Hi Bjorn,
 
-Yes, it looks like the problem caused commit is in Linus's tree
-now(Maybe between this merge window).
+On Fri, 2014-01-17 at 15:03 -0800, Bjorn Andersson wrote: 
+> Continuing on Ivans i2c-qup series.
+> 
 
-But, because similar and better patch was
-submitted(https://patchwork.kernel.org/patch/3507921/)
-before mine by Stephen and Mike said he will merge the patch during rc1 or rc2,
-looks like there is nothing we can rather than just waiting rc1 or rc2.
+Do you plan to send v4 of this driver? I would like to address
+the remaining errors and suggestions and send a new version.
 
-If there is anything I am thinking or doing wrong, please let me know.
+Regards,
+Ivan
 
-Thanks and Regards,
-SeongJae Park
