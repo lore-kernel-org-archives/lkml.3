@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaA2ML3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 07:11:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48730 "EHLO
+	id S1751764AbaA2MQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 07:16:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48824 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaA2ML2 (ORCPT
+	with ESMTP id S1750882AbaA2MQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 07:11:28 -0500
-Message-ID: <1390997485.20153.129.camel@i7.infradead.org>
-Subject: [PATCH] x86: Build 16-bit code with -m16 where possible
+	Wed, 29 Jan 2014 07:16:50 -0500
+Message-ID: <1390997807.20153.133.camel@i7.infradead.org>
+Subject: [PATCH v2] x86: Build 16-bit code with -m16 where possible
 From: David Woodhouse <dwmw2@infradead.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, llvmlinux@lists.linuxfoundation.org
-Date: Wed, 29 Jan 2014 12:11:25 +0000
-In-Reply-To: <1389180083-23249-3-git-send-email-David.Woodhouse@intel.com>
+Date: Wed, 29 Jan 2014 12:16:47 +0000
+In-Reply-To: <1390997485.20153.129.camel@i7.infradead.org>
 References: <1389180083-23249-1-git-send-email-David.Woodhouse@intel.com>
 	 <1389180083-23249-3-git-send-email-David.Woodhouse@intel.com>
+	 <1390997485.20153.129.camel@i7.infradead.org>
 Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
-	boundary="=-7F5b8qf6eAh072Zm9jST"
+	boundary="=-rMpzb+fjaviJc4bLxFHT"
 X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
 Mime-Version: 1.0
 X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by merlin.infradead.org
@@ -27,21 +28,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-7F5b8qf6eAh072Zm9jST
+--=-rMpzb+fjaviJc4bLxFHT
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Both clang 3.5 and GCC 4.9 will support this (as of r207196 and r199754
+Both clang 3.5 and GCC 4.9 will support this (as of r199754 and r207196
 respectively). Both have been tested to produce booting kernels when the
 16-bit code is built with -m16. (Modulo LLVM PR3997, at least.)
 
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 ---
-Updated comments, and retested, now that GCC supports it too. I think
-the two preparatory patches already made it into tip:x86/build?
+v2: Get the revision numbers for GCC and clang the right way round.
 
-Note that for clang -m16 to work you do need the patch I just posted to
-fix has_eflag() too. And a workaround for PR3997 as before.
+v1: Patch rescued from an earlier series which was applied up to this point=
+.
+    Updated comments, and retested, now that GCC supports it too.
 
  arch/x86/Makefile | 16 ++++++++++++----
  1 file changed, 12 insertions(+), 4 deletions(-)
@@ -83,10 +84,11 @@ index 0f68712..0141cb0 100644
 
 
 
+
 --=20
 dwmw2
 
---=-7F5b8qf6eAh072Zm9jST
+--=-rMpzb+fjaviJc4bLxFHT
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -180,19 +182,19 @@ bhXkgdT2t1V1bNAxggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
 Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
 BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMG
 hc4wCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTQwMTI5MTIxMTI1WjAjBgkqhkiG9w0BCQQxFgQUwYzVaO1Ue/plck/GppBRhdUaw74wgaUG
+DxcNMTQwMTI5MTIxNjQ3WjAjBgkqhkiG9w0BCQQxFgQU4+yJgfzCv+jA01dv8A2hf0eRapIwgaUG
 CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
 KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
 YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMGhc4wgacGCyqG
 SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
 MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
 cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwaFzjANBgkqhkiG
-9w0BAQEFAASCAQA2XkE1tuMud/8U4JwqyVcsjeOQBCGGljh7Z0VmOP4W3alHmjfRvxihmXKVS+oZ
-Jk7FaMBfg4kJJdLZyHmc4QEm57vx+9e3e9XJVoU2M777r5YKJtWsAqAR7HZtsl02GDjXwoaNfA9W
-tLi+afmXjTKzpKQDl5ktWmO+f6VOD3yURyfyArKoZc2Gz4+SFGyiOBJiipGBNP+Sik2fxBSkftcB
-lrdDuXkvDRMtuCU+rIr9wS/k9cOcv+ee9flnlcK/Ld0v4elfalNmihSwIC968vPvbrwGHOX231m0
-5kRFY4L/9HW1qh/WOFYv85qEWiirWPS01TIHfqnleVgdOtD928yPAAAAAAAA
+9w0BAQEFAASCAQAzbZLUcJJ5Wkk1dfLZBDm5MnQr6I/5jHxIZd+iO8wMqqCWQ+juN2kj9ES3/T7P
+c9Mys/DlEUdrUOmInN3buGTG0njDvXnK+ZehFrFHGeeL5nefhKxXBNNYOTrfa0Ajt/kD73hFMyUR
+qEtqf9bnSnTudFs6AZhqrK6M06CRBJTG9Vds9J1rXkH+IAJWNYU45jxsOvmjWEucx7OmhJZmwXaV
+9P6JUj3trjC8rXaFf4pOkYaI/wq7vuaP6g9vnBommQjvEHXpQkA+DrLusPaG78VxUbap7MX6yCWZ
+WMgLaeZB5g6d1eGblbcxRGuSIMlwjiXDw/Js6MRcaYHRFoeR78RxAAAAAAAA
 
 
---=-7F5b8qf6eAh072Zm9jST--
+--=-rMpzb+fjaviJc4bLxFHT--
 
