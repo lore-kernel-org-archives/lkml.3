@@ -1,270 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251AbaA2Qwb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 11:52:31 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:58379 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116AbaA2QvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 11:51:15 -0500
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: catalin.marinas@arm.com, will.deacon@arm.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: [PATCH 2/5] cpu: add generic support for CPU feature based module autoloading
-Date: Wed, 29 Jan 2014 17:50:43 +0100
-Message-Id: <1391014246-9715-3-git-send-email-ard.biesheuvel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
-References: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
+	id S1753265AbaA2Qwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 11:52:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55264 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867AbaA2Qws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 11:52:48 -0500
+Message-ID: <52E931D9.8050002@suse.cz>
+Date: Wed, 29 Jan 2014 17:52:41 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>, Andi Kleen <ak@linux.intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] improve robustness on handling migratetype
+References: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com> <20140109092720.GM27046@suse.de> <20140110084854.GA22058@lge.com>
+In-Reply-To: <20140110084854.GA22058@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for advertising optional CPU features over udev using
-the modalias, and for declaring compatibility with/dependency upon such a
-feature in a module.
+On 01/10/2014 09:48 AM, Joonsoo Kim wrote:
+> On Thu, Jan 09, 2014 at 09:27:20AM +0000, Mel Gorman wrote:
+>> On Thu, Jan 09, 2014 at 04:04:40PM +0900, Joonsoo Kim wrote:
+>>> Hello,
+>>>
+>>> I found some weaknesses on handling migratetype during code review and
+>>> testing CMA.
+>>>
+>>> First, we don't have any synchronization method on get/set pageblock
+>>> migratetype. When we change migratetype, we hold the zone lock. So
+>>> writer-writer race doesn't exist. But while someone changes migratetype,
+>>> others can get migratetype. This may introduce totally unintended value
+>>> as migratetype. Although I haven't heard of any problem report about
+>>> that, it is better to protect properly.
+>>>
+>>
+>> This is deliberate. The migratetypes for the majority of users are advisory
+>> and aimed for fragmentation avoidance. It was important that the cost of
+>> that be kept as low as possible and the general case is that migration types
+>> change very rarely. In many cases, the zone lock is held. In other cases,
+>> such as splitting free pages, the cost is simply not justified.
+>>
+>> I doubt there is any amount of data you could add in support that would
+>> justify hammering the free fast paths (which call get_pageblock_type).
+>
+> Hello, Mel.
+>
+> There is a possibility that we can get unintended value such as 6 as migratetype
+> if reader-writer (get/set pageblock_migratetype) race happends. It can be
+> possible, because we read the value without any synchronization method. And
+> this migratetype, 6, has no place in buddy freelist, so array index overrun can
+> be possible and the system can break, although I haven't heard that it occurs.
 
-This feature can be enabled by setting CONFIG_GENERIC_CPU_AUTOPROBE for the
-architecture, and supplying a file <asm/cpufeature.h> which defines how the
-numbers used in the modalias string map to actual CPU features.
+Hello,
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
----
- drivers/base/Kconfig              |  8 ++++++
- drivers/base/cpu.c                | 39 +++++++++++++++++++++----
- include/linux/cpufeature.h        | 60 +++++++++++++++++++++++++++++++++++++++
- include/linux/mod_devicetable.h   |  9 ++++++
- scripts/mod/devicetable-offsets.c |  3 ++
- scripts/mod/file2alias.c          | 10 +++++++
- 6 files changed, 123 insertions(+), 6 deletions(-)
- create mode 100644 include/linux/cpufeature.h
+it seems this can indeed happen. I'm working on memory compaction 
+improvements and in a prototype patch, I'm basically adding calls of 
+start_isolate_page_range() undo_isolate_page_range() some functions 
+under compact_zone(). With this I've seen occurrences of NULL pointers 
+in move_freepages(), free_one_page() in places where 
+free_list[migratetype] is manipulated by e.g. list_move(). That lead me 
+to question the value of migratetype and I found this thread. Adding 
+some debugging in get_pageblock_migratetype() and voila, I get a value 
+of 6 being read.
 
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index ec36e7772e57..3f0d3732df7f 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -185,6 +185,14 @@ config GENERIC_CPU_DEVICES
- 	bool
- 	default n
- 
-+config HAVE_CPU_AUTOPROBE
-+	def_bool ARCH_HAS_CPU_AUTOPROBE
-+
-+config GENERIC_CPU_AUTOPROBE
-+	bool
-+	depends on !ARCH_HAS_CPU_AUTOPROBE
-+	select HAVE_CPU_AUTOPROBE
-+
- config SOC_BUS
- 	bool
- 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 270649012e64..8a38bf8c792f 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -15,6 +15,7 @@
- #include <linux/percpu.h>
- #include <linux/acpi.h>
- #include <linux/of.h>
-+#include <linux/cpufeature.h>
- 
- #include "base.h"
- 
-@@ -286,12 +287,38 @@ static void cpu_device_release(struct device *dev)
- 	 */
- }
- 
--#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
-+#ifdef CONFIG_HAVE_CPU_AUTOPROBE
-+#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
-+static ssize_t print_cpu_modalias(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	ssize_t n;
-+	u32 i;
-+
-+	n = sprintf(buf, "cpu:type:" CPU_FEATURE_TYPEFMT ":feature:",
-+		    CPU_FEATURE_TYPEVAL);
-+
-+	for (i = 0; i < MAX_CPU_FEATURES; i++)
-+		if (cpu_have_feature(i)) {
-+			if (PAGE_SIZE < n + sizeof(",XXXX\n")) {
-+				WARN(1, "CPU features overflow page\n");
-+				break;
-+			}
-+			n += sprintf(&buf[n], ",%04X", i);
-+		}
-+	buf[n++] = '\n';
-+	return n;
-+}
-+#else
-+#define print_cpu_modalias	arch_print_cpu_modalias
-+#endif
-+
- static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
- {
- 	char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
- 	if (buf) {
--		arch_print_cpu_modalias(NULL, NULL, buf);
-+		print_cpu_modalias(NULL, NULL, buf);
- 		add_uevent_var(env, "MODALIAS=%s", buf);
- 		kfree(buf);
- 	}
-@@ -319,7 +346,7 @@ int register_cpu(struct cpu *cpu, int num)
- 	cpu->dev.offline_disabled = !cpu->hotpluggable;
- 	cpu->dev.offline = !cpu_online(num);
- 	cpu->dev.of_node = of_get_cpu_node(num, NULL);
--#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
-+#ifdef CONFIG_HAVE_CPU_AUTOPROBE
- 	cpu->dev.bus->uevent = cpu_uevent;
- #endif
- 	cpu->dev.groups = common_cpu_attr_groups;
-@@ -343,8 +370,8 @@ struct device *get_cpu_device(unsigned cpu)
- }
- EXPORT_SYMBOL_GPL(get_cpu_device);
- 
--#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
--static DEVICE_ATTR(modalias, 0444, arch_print_cpu_modalias, NULL);
-+#ifdef CONFIG_HAVE_CPU_AUTOPROBE
-+static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
- #endif
- 
- static struct attribute *cpu_root_attrs[] = {
-@@ -357,7 +384,7 @@ static struct attribute *cpu_root_attrs[] = {
- 	&cpu_attrs[2].attr.attr,
- 	&dev_attr_kernel_max.attr,
- 	&dev_attr_offline.attr,
--#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
-+#ifdef CONFIG_HAVE_CPU_AUTOPROBE
- 	&dev_attr_modalias.attr,
- #endif
- 	NULL
-diff --git a/include/linux/cpufeature.h b/include/linux/cpufeature.h
-new file mode 100644
-index 000000000000..c4d4eb8ac9fe
---- /dev/null
-+++ b/include/linux/cpufeature.h
-@@ -0,0 +1,60 @@
-+/*
-+ * Copyright (C) 2014 Linaro Ltd. <ard.biesheuvel@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __LINUX_CPUFEATURE_H
-+#define __LINUX_CPUFEATURE_H
-+
-+#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
-+
-+#include <linux/mod_devicetable.h>
-+#include <asm/cpufeature.h>
-+
-+/*
-+ * Macros imported from <asm/cpufeature.h>:
-+ * - cpu_feature(x)		ordinal value of feature called 'x'
-+ * - cpu_have_feature(u32 n)	whether feature #n is available
-+ * - MAX_CPU_FEATURES		upper bound for feature ordinal values
-+ * Optional:
-+ * - CPU_FEATURE_TYPEFMT	format string fragment for printing the cpu type
-+ * - CPU_FEATURE_TYPEVAL	set of values matching the format string above
-+ */
-+
-+#ifndef CPU_FEATURE_TYPEFMT
-+#define CPU_FEATURE_TYPEFMT	"%s"
-+#endif
-+
-+#ifndef CPU_FEATURE_TYPEVAL
-+#define CPU_FEATURE_TYPEVAL	ELF_PLATFORM
-+#endif
-+
-+/*
-+ * Use module_cpu_feature_match(feature, module_init_function) to
-+ * declare that
-+ * a) the module shall be probed upon discovery of CPU feature 'feature'
-+ *    (typically at boot time using udev)
-+ * b) the module must not be loaded if CPU feature 'feature' is not present
-+ *    (not even by manual insmod).
-+ *
-+ * For a list of legal values for 'feature', please consult the file
-+ * 'asm/cpufeature.h' of your favorite architecture.
-+ */
-+#define module_cpu_feature_match(x, __init)			\
-+static struct cpu_feature const cpu_feature_match_ ## x[] =	\
-+	{ { .feature = cpu_feature(x) }, { } };			\
-+MODULE_DEVICE_TABLE(cpu, cpu_feature_match_ ## x);		\
-+								\
-+static int cpu_feature_match_ ## x ## _init(void)		\
-+{								\
-+	if (!cpu_have_feature(cpu_feature(x)))			\
-+		return -ENODEV;					\
-+	return __init();					\
-+}								\
-+module_init(cpu_feature_match_ ## x ## _init)
-+
-+#endif
-+#endif
-diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-index 45e921401b06..f2ac87c613a5 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -564,6 +564,15 @@ struct x86_cpu_id {
- #define X86_MODEL_ANY  0
- #define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
- 
-+/*
-+ * Generic table type for matching CPU features.
-+ * @feature:	the bit number of the feature (0 - 65535)
-+ */
-+
-+struct cpu_feature {
-+	__u16	feature;
-+};
-+
- #define IPACK_ANY_FORMAT 0xff
- #define IPACK_ANY_ID (~0)
- struct ipack_device_id {
-diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
-index bb5d115ca671..f282516acc7b 100644
---- a/scripts/mod/devicetable-offsets.c
-+++ b/scripts/mod/devicetable-offsets.c
-@@ -174,6 +174,9 @@ int main(void)
- 	DEVID_FIELD(x86_cpu_id, model);
- 	DEVID_FIELD(x86_cpu_id, vendor);
- 
-+	DEVID(cpu_feature);
-+	DEVID_FIELD(cpu_feature, feature);
-+
- 	DEVID(mei_cl_device_id);
- 	DEVID_FIELD(mei_cl_device_id, name);
- 
-diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
-index 23708636b05c..8a69005228d8 100644
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@ -1135,6 +1135,16 @@ static int do_x86cpu_entry(const char *filename, void *symval,
- }
- ADD_TO_DEVTABLE("x86cpu", x86_cpu_id, do_x86cpu_entry);
- 
-+/* LOOKS like cpu:type:*:feature:*FEAT* */
-+static int do_cpu_entry(const char *filename, void *symval, char *alias)
-+{
-+	DEF_FIELD(symval, cpu_feature, feature);
-+
-+	sprintf(alias, "cpu:type:*:feature:*%04X*", feature);
-+	return 1;
-+}
-+ADD_TO_DEVTABLE("cpu", cpu_feature, do_cpu_entry);
-+
- /* Looks like: mei:S */
- static int do_mei_entry(const char *filename, void *symval,
- 			char *alias)
--- 
-1.8.3.2
+So is it just my patch adding a dangerous situation, or does it exist in
+mainline as well? By looking at free_one_page(), it uses zone->lock, but
+get_pageblock_migratetype() is called by its callers 
+(free_hot_cold_page() or __free_pages_ok()) outside of the lock. This 
+determined migratetype is then used under free_one_page() to access a 
+free_list.
+
+It seems that this could race with set_pageblock_migratetype() called 
+from try_to_steal_freepages() (despite the latter being properly 
+locked). There are also other callers but those seem to be either 
+limited to initialization and isolation, which should be rare (?).
+However, try_to_steal_freepages can occur repeatedly.
+So I assume that the race happens but never manifests as a fatal error 
+as long as MIGRATE_UNMOVABLE, MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE
+values are used. Only MIGRATE_CMA and MIGRATE_ISOLATE have values with 
+bit 4 enabled and can thus result in invalid values due to non-atomic 
+access.
+
+Does that make sense to you and should we thus proceed with patching 
+this race?
+
+Vlastimil
+
+> I think that my solution is too expensive. However, I think that we need
+> solution. aren't we? Do you have any better idea?
+>
+>>
+>>> Second, (get/set)_freepage_migrate isn't used properly. I guess that it
+>>> would be introduced for per cpu page(pcp) performance, but, it is also
+>>> used by memory isolation, now. For that case, the information isn't
+>>> enough to use, so we need to fix it.
+>>>
+>>> Third, there is the problem on buddy allocator. It doesn't consider
+>>> migratetype when merging buddy, so pages from cma or isolate region can
+>>> be moved to other migratetype freelist. It makes CMA failed over and over.
+>>> To prevent it, the buddy allocator should consider migratetype if
+>>> CMA/ISOLATE is enabled.
+>>
+>> Without loioing at the patches, this is likely to add some cost to the
+>> page free fast path -- heavy cost if it's a pageblock lookup and lighter
+>> cost if you are using cached page information which is potentially stale.
+>> Why not force CMA regions to be aligned on MAX_ORDER_NR_PAGES boundary
+>> instead to avoid any possibility of merging issues?
+>>
+>
+> There was my mistake. CMA region is aligned on MAX_ORDER_NR_PAGES, so it
+> can't happed. Sorry for noise.
+>
+>>> This patchset is aimed at fixing these problems and based on v3.13-rc7.
+>>>
+>>>    mm/page_alloc: synchronize get/set pageblock
+>>
+>> cost with no justification.
+>>
+>>>    mm/cma: fix cma free page accounting
+>>
+>> sounds like it would be a fix but unrelated to the leader and should be
+>> seperated out on its own
+>
+> Yes, it is not related to this topic and it is wrong patch as Laura
+> pointed out, so I will drop it.
+>
+>>>    mm/page_alloc: move set_freepage_migratetype() to better place
+>>
+>> Very vague. If this does something useful then it could do with a better
+>> subject.
+>
+> Okay.
+>
+>>>    mm/isolation: remove invalid check condition
+>>
+>> Looks harmless.
+>>
+>>>    mm/page_alloc: separate interface to set/get migratetype of freepage
+>>>    mm/page_alloc: store freelist migratetype to the page on buddy
+>>>      properly
+>>
+>> Potentially sounds useful
+>>
+>
+> I made these two patches for last patch to reduce performance effect of it.
+> In case of dropping last patch, it is better to remove the last callsite
+> using freelist migratetype to know the buddy freelist type. I will do respin.
+>
+> Thanks.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
