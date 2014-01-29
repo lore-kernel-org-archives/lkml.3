@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaA2Cdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 21:33:51 -0500
-Received: from ozlabs.org ([203.10.76.45]:50124 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669AbaA2Cdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 21:33:50 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Tom Gundersen <teg@jklm.no>, linux-kernel@vger.kernel.org
-Cc: linux-input@vger.kernel.org, kay@vrfy.org, Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] module: allow multiple calls to MODULE_DEVICE_TABLE() per module
-In-Reply-To: <1390916546-27155-1-git-send-email-teg@jklm.no>
-References: <87k3dkzy4t.fsf@rustcorp.com.au> <1390916546-27155-1-git-send-email-teg@jklm.no>
-User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 29 Jan 2014 12:05:50 +1030
-Message-ID: <87bnyvzi15.fsf@rustcorp.com.au>
+	id S1755432AbaA2Cod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 21:44:33 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:49677 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaA2Coc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 21:44:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140127214338.4167.57312@quantum>
+References: <20140127214338.4167.57312@quantum>
+Date: Tue, 28 Jan 2014 18:44:31 -0800
+X-Google-Sender-Auth: PTveKDhjqr8lXsAPb0nWHVio-ZM
+Message-ID: <CA+55aFyXFJO_sMD+74F1sSmbxO-tKXGr-vetKYacUeLODBv-pw@mail.gmail.com>
+Subject: Re: [GIT PULL] clk: changes for 3.14, part 2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tom Gundersen <teg@jklm.no> writes:
-> Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
-> second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
-> the modaliases being exposed.
+On Mon, Jan 27, 2014 at 1:43 PM, Mike Turquette <mturquette@linaro.org> wrote:
 >
-> This fixes the problem by including the name of the device_id table in the
-> __mod_*_device_table alias, allowing us to export several device_id tables
-> per module.
+>   git://git.linaro.org/people/mike.turquette/linux.git tags/clk-for-linus-3.14-part2
 
-Thanks, applied.
+Dammit, this is pure shit, and after having to deal with yet another
+pointless merge conflict due to stupid "cleanups" in Makefiles, IT
+DOES NOT EVEN COMPILE.
 
-I also put this on top:
+drivers/clk/clk-si5351.c: In function ‘si5351_i2c_probe’:
+drivers/clk/clk-si5351.c:1314:2: error: too many arguments to function
+‘si5351_dt_parse’
+  ret = si5351_dt_parse(client, variant);
+  ^
+drivers/clk/clk-si5351.c:1296:12: note: declared here
+ static int si5351_dt_parse(struct i2c_client *client)
 
-module: remove MODULE_GENERIC_TABLE
+And no, that's not due to a merge error of mine. It was that way in your tree.
 
-MODULE_DEVICE_TABLE() calles MODULE_GENERIC_TABLE(); make it do the
-work directly.  This also removes a wart introduced in the last patch,
-where the alias is defined to be an unknown struct type "struct
-type##__##name##_device_id" instead of "struct type##_device_id" (it's
-an extern so GCC doesn't care, but it's wrong).
+Hulk angry. Hulk smash.
 
-The other user of MODULE_GENERIC_TABLE (ISAPNP_CARD_TABLE) is unused,
-so delete it.
+I fixed it up in the merge, but I shouldn't need to. This should have
+been caught in -next, and even if you compile for ARM as your primary
+target, I know *damn* well that no sane ARM developer actually
+compiles *on* ARM (because there are no machines where it's worth the
+pain), so you should make sure that the x86-64 build works too.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+If I can find compile errors within a couple of minutes of pulling and
+it's not a merge error of mine, the tree I'm pulling from is clearly
+crap.
 
-diff --git a/include/linux/isapnp.h b/include/linux/isapnp.h
-index e2d28b026a8c..3c77bf9b1efd 100644
---- a/include/linux/isapnp.h
-+++ b/include/linux/isapnp.h
-@@ -56,10 +56,6 @@
- #define ISAPNP_DEVICE_ID(_va, _vb, _vc, _function) \
- 		{ .vendor = ISAPNP_VENDOR(_va, _vb, _vc), .function = ISAPNP_FUNCTION(_function) }
- 
--/* export used IDs outside module */
--#define ISAPNP_CARD_TABLE(name) \
--		MODULE_GENERIC_TABLE(isapnp_card, name)
--
- struct isapnp_card_id {
- 	unsigned long driver_data;	/* data private to the driver */
- 	unsigned short card_vendor, card_device;
-diff --git a/include/linux/module.h b/include/linux/module.h
-index ad18f6006f86..5686b37e11d6 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -82,15 +82,6 @@ void sort_extable(struct exception_table_entry *start,
- void sort_main_extable(void);
- void trim_init_extable(struct module *m);
- 
--#ifdef MODULE
--#define MODULE_GENERIC_TABLE(gtype, name)			\
--extern const struct gtype##_id __mod_##gtype##_table		\
--  __attribute__ ((unused, alias(__stringify(name))))
--
--#else  /* !MODULE */
--#define MODULE_GENERIC_TABLE(gtype, name)
--#endif
--
- /* Generic info of form tag = "info" */
- #define MODULE_INFO(tag, info) __MODULE_INFO(tag, tag, info)
- 
-@@ -141,8 +132,14 @@ extern const struct gtype##_id __mod_##gtype##_table		\
- /* What your module does. */
- #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
- 
--#define MODULE_DEVICE_TABLE(type, name)		\
--  MODULE_GENERIC_TABLE(type##__##name##_device, name)
-+#ifdef MODULE
-+/* Creates an alias so file2alias.c can find device table. */
-+#define MODULE_DEVICE_TABLE(type, name)					\
-+  extern const struct type##_device_id __mod_##type##__##name##_device_table \
-+  __attribute__ ((unused, alias(__stringify(name))))
-+#else  /* !MODULE */
-+#define MODULE_DEVICE_TABLE(type, name)
-+#endif
- 
- /* Version of form [<epoch>:]<version>[-<extra-version>].
-  * Or for CVS/RCS ID version, everything but the number is stripped.
+So I'm more than a bit grumpy. Get your act together, and don't send
+me any more shit.
+
+In fact, I would suggest you send nothing but obvious fixes from now
+on in this release. Because I won't be taking anything else.
+
+              Linus
