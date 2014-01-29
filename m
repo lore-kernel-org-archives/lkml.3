@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129AbaA2EDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 23:03:43 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58006 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaA2EDG (ORCPT
+	id S1755945AbaA2EJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 23:09:29 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:45726 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658AbaA2EJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 23:03:06 -0500
-From: Manish Badarkhe <badarkhe.manish@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, broonie@kernel.org, lgirdwood@gmail.com,
-        badarkhe.manish@gmail.com
-Subject: [PATCH V3 1/2] devres: introduce API "devm_kstrdup"
-Date: Wed, 29 Jan 2014 09:33:00 +0530
-Message-Id: <1390968181-31800-2-git-send-email-badarkhe.manish@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1390968181-31800-1-git-send-email-badarkhe.manish@gmail.com>
-References: <1390968181-31800-1-git-send-email-badarkhe.manish@gmail.com>
+	Tue, 28 Jan 2014 23:09:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140128164320.GB7596@redhat.com>
+References: <1390895840.8373.2.camel@beeld>
+	<20140128164320.GB7596@redhat.com>
+Date: Wed, 29 Jan 2014 10:09:26 +0600
+Message-ID: <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
+Subject: Re: Do we really need curr_target in signal_struct ?
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces "devm_kstrdup" API so that the
-device's driver can allocate memory and copy string.
+On Tue, Jan 28, 2014 at 10:43 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/28, Rakib Mullick wrote:
+>
+> You could simply do while_each_thread(p, t) to find a thread which
+> wants_signal(..).
+>
+Yes, while_each_thread() is much nicer than get_nr_thread(), thanks for
+the pointer.
 
-Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
----
-:100644 100644 545c4de... 6e88a3d... M	drivers/base/devres.c
-:100644 100644 952b010... 8fee649... M	include/linux/device.h
- drivers/base/devres.c  |   26 ++++++++++++++++++++++++++
- include/linux/device.h |    2 ++
- 2 files changed, 28 insertions(+)
+> But I guess ->curr_target was added exactly to avoid this loop if
+> possible, assuming that wants_signal(->current_targer) should be
+> likely true. Although perhaps this optimization is too simple.
+>
+Well, this code block will only hit when first check for wants_signal()
+will miss, that means we need to find some other thread of the group.
+AFAIU, ->current_target is only a loop breaker to avoid infinite loop,
+but - by using while_each_thread() we can remove it completely, thus
+helps to get rid from maintaining it too.
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index 545c4de..6e88a3d 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -791,6 +791,32 @@ void * devm_kmalloc(struct device *dev, size_t size, gfp_t gfp)
- EXPORT_SYMBOL_GPL(devm_kmalloc);
- 
- /**
-+ * devm_kstrdup - Allocate resource managed space and
-+ *                and copy an existing string
-+ * @dev: Device to allocate memory for
-+ * @s: the string to duplicate
-+ * @size: Allocation size
-+ * @gfp: the GFP mask used in the devm_kzalloc() call when
-+ *       allocating memory
-+ * RETURNS:
-+ * Pointer to allocated string on success, NULL on failure.
-+ */
-+char *devm_kstrdup(struct device *dev,
-+		   const char *s, size_t size, gfp_t gfp)
-+{
-+	char *buf;
-+
-+	if (!s)
-+		return NULL;
-+
-+	buf = devm_kzalloc(dev, size, gfp);
-+	if (buf)
-+		memcpy(buf, s, size);
-+	return buf;
-+}
-+EXPORT_SYMBOL_GPL(devm_kstrdup);
-+
-+/**
-  * devm_kfree - Resource-managed kfree
-  * @dev: Device this memory belongs to
-  * @p: Memory to free
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 952b010..8fee649 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -626,6 +626,8 @@ static inline void *devm_kcalloc(struct device *dev,
- 	return devm_kmalloc_array(dev, n, size, flags | __GFP_ZERO);
- }
- extern void devm_kfree(struct device *dev, void *p);
-+extern char *devm_kstrdup(struct device *dev, const char *s, size_t size,
-+			gfp_t gfp);
- 
- void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
- void __iomem *devm_request_and_ioremap(struct device *dev,
--- 
-1.7.10.4
+I'll prepare a proper patch with you suggestions for reviewing.
 
+Thanks,
+Rakib
