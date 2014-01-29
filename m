@@ -1,108 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaA2Tjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 14:39:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35848 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040AbaA2Tje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 14:39:34 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] x86, perf, p4: Counter corruption when using lots of perf groups
-Date: Wed, 29 Jan 2014 14:37:50 -0500
-Message-Id: <1391024270-19469-1-git-send-email-dzickus@redhat.com>
+	id S1751244AbaA2Tsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 14:48:33 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:35953 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaA2Tsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 14:48:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1390987476-1905-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1390987476-1905-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Wed, 29 Jan 2014 14:48:29 -0500
+Message-ID: <CAN+gG=HxhTy90C-VGPeETbsxV=8P50UKnXwehjmHJqXABL22xw@mail.gmail.com>
+Subject: Re: [PATCH v2] HID: i2c-hid: add runtime PM support
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a P4 box stressing perf with
+On Wed, Jan 29, 2014 at 4:24 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> This patch adds runtime PM support for the HID over I2C driver. When the
+> i2c-hid device is first opened we power it on and on the last close we
+> power it off. This is actually what the driver is already doing but in
+> addition it allows subsystems, like ACPI power domain to power off the
+> device during runtime PM suspend, which should save even more power.
+>
+> The implementation is not the most power efficient because it needs some
+> interaction from the userspace (e.g close the device node whenever we are
+> no more interested in getting events), nevertheless it allows us to save
+> some power and works with devices that are not wake capable.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+> v2:
+>   - Update changelog to mention that ACPI power domain for example can
+>     power off the device on suspend.
+>   - Make i2c_hid_power to just call RPM get/put
+>
 
-./perf record -o perf.data ./perf stat -v ./perf bench all
+Alright, tested this v2, and it also works flawlessly.
 
-it was noticed that a slew of unknown NMIs would pop out rather quickly.
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-Painfully debugging this ancient platform, led me to notice cross cpu counter
-corruption.
+Thanks Mika!
 
-The P4 machine is special in that it has 18 counters, half are used for cpu0
-and the other half is for cpu1 (or all 18 if hyperthreading is disabled).  But
-the splitting of the counters has to be actively managed by the software.
+Cheers,
+Benjamin
 
-In this particular bug, one of the cpu0 specific counters was being used by
-cpu1 and caused all sorts of random unknown nmis.
-
-I am not entirely sure on the corruption path, but what happens is:
-
-o perf schedules a group with p4_pmu_schedule_events()
-o inside p4_pmu_schedule_events(), it notices an hwc pointer is being reused
-  but for a different cpu, so it 'swaps' the config bits and returns the
-  updated 'assign' array with a _new_ index.
-o perf schedules another group with p4_pmu_schedule_events()
-o inside p4_pmu_schedule_events(), it notices an hwc pointer is being reused
-  (the same one as above) but for the _same_ cpu [BUG!!], so it updates the
-  'assign' array to use the _old_ (wrong cpu) index because the _new_ index is in
-  an earlier part of the 'assign' array (and hasn't been committed yet).
-o perf commits the transaction using the wrong index and corrupts the other cpu
-
-The [BUG!!] is because the 'hwc->config' is updated but not the 'hwc->idx'.  So
-the check for 'p4_should_swap_ts()' is correct the first time around but
-incorrect the second time around (because hwc->config was updated in between).
-
-I think the spirit of perf was to not modify anything until all the
-transactions had a chance to 'test' if they would succeed, and if so, commit
-atomically.  However, P4 breaks this spirit by touching the hwc->config
-element.
-
-So my fix is to continue the un-perf like breakage, by assigning hwc->idx to -1
-on swap to tell follow up group scheduling to find a new index.
-
-Of course if the transaction fails rolling this back will be difficult, but
-that is not different than how the current code works. :-)  And I wasn't sure
-how much effort to cleanup the code I should do for a platform that is almost
-10 years old by now.
-
-Hence the lazy fix.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/kernel/cpu/perf_event_p4.c |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 075f18c..dda02a1 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -1257,7 +1257,24 @@ again:
- 			pass++;
- 			goto again;
- 		}
--
-+		/*
-+		 * Perf does test runs to see if a whole group can be assigned
-+		 * together succesfully.  There can be multiple rounds of this.
-+		 * Unfortunately, p4_pmu_swap_config_ts touches the hwc->config
-+		 * bits, such that the next round of group assignments will
-+		 * cause the above p4_should_swap_ts to pass instead of fail.
-+		 * This leads to counters exclusive to thread0 being used by
-+		 * thread1.
-+		 *
-+		 * Solve this with a cheap hack, reset the idx back to -1 to
-+		 * force a new lookup (p4_next_cntr) to get the right counter
-+		 * for the right thread.
-+		 *
-+		 * This probably doesn't comply with the general spirit of how
-+		 * perf wants to work, but P4 is special. :-(
-+		 */
-+		if (p4_should_swap_ts(hwc->config, cpu))
-+			hwc->idx = -1;
- 		p4_pmu_swap_config_ts(hwc, cpu);
- 		if (assign)
- 			assign[i] = cntr_idx;
--- 
-1.7.1
-
+>  drivers/hid/i2c-hid/i2c-hid.c | 68 ++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 57 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index d1f81f52481a..923ff818a1bf 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/slab.h>
+>  #include <linux/pm.h>
+> +#include <linux/pm_runtime.h>
+>  #include <linux/device.h>
+>  #include <linux/wait.h>
+>  #include <linux/err.h>
+> @@ -454,10 +455,18 @@ static void i2c_hid_init_reports(struct hid_device *hid)
+>                 return;
+>         }
+>
+> +       /*
+> +        * The device must be powered on while we fetch initial reports
+> +        * from it.
+> +        */
+> +       pm_runtime_get_sync(&client->dev);
+> +
+>         list_for_each_entry(report,
+>                 &hid->report_enum[HID_FEATURE_REPORT].report_list, list)
+>                 i2c_hid_init_report(report, inbuf, ihid->bufsize);
+>
+> +       pm_runtime_put(&client->dev);
+> +
+>         kfree(inbuf);
+>  }
+>
+> @@ -703,8 +712,8 @@ static int i2c_hid_open(struct hid_device *hid)
+>
+>         mutex_lock(&i2c_hid_open_mut);
+>         if (!hid->open++) {
+> -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
+> -               if (ret) {
+> +               ret = pm_runtime_get_sync(&client->dev);
+> +               if (ret < 0) {
+>                         hid->open--;
+>                         goto done;
+>                 }
+> @@ -712,7 +721,7 @@ static int i2c_hid_open(struct hid_device *hid)
+>         }
+>  done:
+>         mutex_unlock(&i2c_hid_open_mut);
+> -       return ret;
+> +       return ret < 0 ? ret : 0;
+>  }
+>
+>  static void i2c_hid_close(struct hid_device *hid)
+> @@ -729,7 +738,7 @@ static void i2c_hid_close(struct hid_device *hid)
+>                 clear_bit(I2C_HID_STARTED, &ihid->flags);
+>
+>                 /* Save some power */
+> -               i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
+> +               pm_runtime_put(&client->dev);
+>         }
+>         mutex_unlock(&i2c_hid_open_mut);
+>  }
+> @@ -738,19 +747,18 @@ static int i2c_hid_power(struct hid_device *hid, int lvl)
+>  {
+>         struct i2c_client *client = hid->driver_data;
+>         struct i2c_hid *ihid = i2c_get_clientdata(client);
+> -       int ret = 0;
+>
+>         i2c_hid_dbg(ihid, "%s lvl:%d\n", __func__, lvl);
+>
+>         switch (lvl) {
+>         case PM_HINT_FULLON:
+> -               ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
+> +               pm_runtime_get_sync(&client->dev);
+>                 break;
+>         case PM_HINT_NORMAL:
+> -               ret = i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
+> +               pm_runtime_put(&client->dev);
+>                 break;
+>         }
+> -       return ret;
+> +       return 0;
+>  }
+>
+>  static struct hid_ll_driver i2c_hid_ll_driver = {
+> @@ -973,13 +981,17 @@ static int i2c_hid_probe(struct i2c_client *client,
+>         if (ret < 0)
+>                 goto err;
+>
+> +       pm_runtime_get_noresume(&client->dev);
+> +       pm_runtime_set_active(&client->dev);
+> +       pm_runtime_enable(&client->dev);
+> +
+>         ret = i2c_hid_fetch_hid_descriptor(ihid);
+>         if (ret < 0)
+> -               goto err;
+> +               goto err_pm;
+>
+>         ret = i2c_hid_init_irq(client);
+>         if (ret < 0)
+> -               goto err;
+> +               goto err_pm;
+>
+>         hid = hid_allocate_device();
+>         if (IS_ERR(hid)) {
+> @@ -1010,6 +1022,7 @@ static int i2c_hid_probe(struct i2c_client *client,
+>                 goto err_mem_free;
+>         }
+>
+> +       pm_runtime_put(&client->dev);
+>         return 0;
+>
+>  err_mem_free:
+> @@ -1018,6 +1031,10 @@ err_mem_free:
+>  err_irq:
+>         free_irq(client->irq, ihid);
+>
+> +err_pm:
+> +       pm_runtime_put_noidle(&client->dev);
+> +       pm_runtime_disable(&client->dev);
+> +
+>  err:
+>         i2c_hid_free_buffers(ihid);
+>         kfree(ihid);
+> @@ -1029,6 +1046,11 @@ static int i2c_hid_remove(struct i2c_client *client)
+>         struct i2c_hid *ihid = i2c_get_clientdata(client);
+>         struct hid_device *hid;
+>
+> +       pm_runtime_get_sync(&client->dev);
+> +       pm_runtime_disable(&client->dev);
+> +       pm_runtime_set_suspended(&client->dev);
+> +       pm_runtime_put_noidle(&client->dev);
+> +
+>         hid = ihid->hid;
+>         hid_destroy_device(hid);
+>
+> @@ -1074,7 +1096,31 @@ static int i2c_hid_resume(struct device *dev)
+>  }
+>  #endif
+>
+> -static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
+> +#ifdef CONFIG_PM_RUNTIME
+> +static int i2c_hid_runtime_suspend(struct device *dev)
+> +{
+> +       struct i2c_client *client = to_i2c_client(dev);
+> +
+> +       i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
+> +       disable_irq(client->irq);
+> +       return 0;
+> +}
+> +
+> +static int i2c_hid_runtime_resume(struct device *dev)
+> +{
+> +       struct i2c_client *client = to_i2c_client(dev);
+> +
+> +       enable_irq(client->irq);
+> +       i2c_hid_set_power(client, I2C_HID_PWR_ON);
+> +       return 0;
+> +}
+> +#endif
+> +
+> +static const struct dev_pm_ops i2c_hid_pm = {
+> +       SET_SYSTEM_SLEEP_PM_OPS(i2c_hid_suspend, i2c_hid_resume)
+> +       SET_RUNTIME_PM_OPS(i2c_hid_runtime_suspend, i2c_hid_runtime_resume,
+> +                          NULL)
+> +};
+>
+>  static const struct i2c_device_id i2c_hid_id_table[] = {
+>         { "hid", 0 },
+> --
+> 1.8.5.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
