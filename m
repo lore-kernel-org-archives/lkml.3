@@ -1,105 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241AbaA2IBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 03:01:02 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:53714
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750834AbaA2IBA (ORCPT
+	id S1751073AbaA2ILe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 03:11:34 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:53672 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaA2ILc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 03:01:00 -0500
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz936eIe0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h1082kzz1de098h17326ah8275bh8275dh1de097h186068hz2dh87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Steven Miao <realmz6@kernel.org>
-To: <torvalds@linux-foundation.org>
-CC: <adi-buildroot-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.14
-Date: Wed, 29 Jan 2014 16:06:02 +0800
-Message-ID: <1390982762-18697-1-git-send-email-realmz6@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 29 Jan 2014 03:11:32 -0500
+Date: Wed, 29 Jan 2014 09:11:28 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140129081128.GA31489@gmail.com>
+References: <20140128062806.GA20750@gmail.com>
+ <52E76997.40303@nod.at>
+ <52E7D2E5.8090208@linux.intel.com>
+ <52E7D9FF.1080506@nod.at>
+ <52E7DB15.3090808@zytor.com>
+ <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+ <20140128170507.GA16279@gmail.com>
+ <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+ <20140128194823.GA18702@gmail.com>
+ <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull blackfin updates for Linux 3.14, some minor changes and bug fixes.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-The following changes since commit d8ec26d7f8287f5788a494f56e8814210f0e64be:
+> On Tue, Jan 28, 2014 at 11:48 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > I really meant it when I said I build without debuginfo! :)
+> 
+> Ok, but so what?
+> 
+> As mentioned, nobody sane should build with DEBUG_INFO. But a normal 
+> vmlinux file has the symbol information even without it.
 
-  Linux 3.13 (2014-01-19 18:40:07 -0800)
+So, your mail sure read to me as a rant directed at me, so I thought 
+I'd defend myself or something :)
 
-are available in the git repository at:
+I now realize that the whole episode was caused by me calling the 
+vmlinux 'symbol-less':
 
-  http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git tags/blackfin-for-linus
+> > > > AFAICS this won't work in a symbol-less vmlinux. Is there some 
+> > > > trick to do it with gdb?
 
-for you to fetch changes up to 58095fdaaf1cee12d8e01aa20f94b976e3137d27:
+while I should have said 'debuginfo-less'. Mea culpa.
 
-  From: Eunbong Song <eunb.song@samsung.com> (2014-01-29 15:14:56 +0800)
+> > So, when I build a kernel, such as with a regular 'make defconfig',
+> > the following happens in gdb:
+> >
+> >   Reading symbols from /home/mingo/tip/vmlinux...(no debugging symbols found)...done.
+> >   (gdb) list schedule+0x45
+> >   No symbol table is loaded.  Use the "file" command.
+> >
+> > Is there a way to resolve schedule+0x45 in a regular vmlinux? It 
+> > was an honest question.
+> 
+> That seems to be just a gdb bug (or "UI feature"), in that gdb likes 
+> to give misleading error messages and requires odd syntax for some 
+> things.
 
-----------------------------------------------------------------
-blackfin updates for Linux 3.14
+Yeah. Almost as if they worked hard to make annoying users go away or 
+something. (LLVM is IMO a blessing because, despite its somewhat 
+broken licensing, it cured a similar attitude of the GCC folks. In a 
+way competition is more important than licensing details!)
 
-----------------------------------------------------------------
-Aaron Wu (2):
-      fix build error for bf527-ezkit_defconfig for old silicon
-      Add platfrom device resource for bfin-sport on bf533 stamp
+> But you can see that the symbol is perfectly fine:
+> 
+>   (gdb) list *(schedule+0x45)
 
-Chen Gang (1):
-      arch: blackfin: uapi: be sure of "_UAPI" prefix for all guard macros
+Oh, cool. Thanks for that trick - this will save me quite some time in 
+the future.
 
-Jiang Liu (1):
-      06/18] smp, blackfin: kill SMP single function call interrupt
+So we can strip absolute addresses just fine from oopses - cool.
 
-Paul Gortmaker (1):
-      blackfin: delete non-required instances of <linux/init.h>
+I'd even argue to strip the hex on non-randomized kernels as long as 
+there's kallsyms around, and only print hex if we don't have any 
+symbols.
 
-Sonic Zhang (2):
-      blackfin: bf609: update the anomaly list to Nov 2013
-      blackfin: Support L1 SRAM parity checking feature on bf60x
+> So my point is that the hex address doesn't give you *anything* that 
+> the symbolic address doesn't give you. [...]
 
-Steven Miao (2):
-      From: Paul Walmsley <pwalmsley@nvidia.com>
-      From: Eunbong Song <eunb.song@samsung.com>
+Yeah, and with your trick that's now the case for my debugging as 
+well, which is a nice touch.
 
- arch/blackfin/configs/BF527-EZKIT_defconfig     |    1 +
- arch/blackfin/configs/BF538-EZKIT_defconfig     |    1 -
- arch/blackfin/configs/BF561-ACVILON_defconfig   |    1 -
- arch/blackfin/configs/BlackStamp_defconfig      |    1 -
- arch/blackfin/configs/CM-BF533_defconfig        |    1 -
- arch/blackfin/configs/CM-BF548_defconfig        |    1 -
- arch/blackfin/configs/CM-BF561_defconfig        |    1 -
- arch/blackfin/configs/DNP5370_defconfig         |    1 -
- arch/blackfin/configs/H8606_defconfig           |    1 -
- arch/blackfin/configs/IP0X_defconfig            |    1 -
- arch/blackfin/configs/PNAV-10_defconfig         |    1 -
- arch/blackfin/configs/SRV1_defconfig            |    1 -
- arch/blackfin/configs/TCM-BF518_defconfig       |    1 -
- arch/blackfin/include/asm/def_LPBlackfin.h      |    1 +
- arch/blackfin/include/uapi/asm/byteorder.h      |    5 +++
- arch/blackfin/include/uapi/asm/cachectl.h       |    6 +--
- arch/blackfin/include/uapi/asm/fcntl.h          |    6 +--
- arch/blackfin/include/uapi/asm/ioctls.h         |    6 +--
- arch/blackfin/include/uapi/asm/poll.h           |    6 +--
- arch/blackfin/include/uapi/asm/posix_types.h    |    6 +--
- arch/blackfin/include/uapi/asm/sigcontext.h     |    6 +--
- arch/blackfin/include/uapi/asm/siginfo.h        |    6 +--
- arch/blackfin/include/uapi/asm/signal.h         |    6 +--
- arch/blackfin/include/uapi/asm/stat.h           |    6 +--
- arch/blackfin/include/uapi/asm/swab.h           |    6 +--
- arch/blackfin/mach-bf533/boards/stamp.c         |   47 +++++++++++++++++++-
- arch/blackfin/mach-bf609/Kconfig                |    6 +++
- arch/blackfin/mach-bf609/clock.c                |    3 +-
- arch/blackfin/mach-bf609/include/mach/anomaly.h |   54 ++++++++++++++++++-----
- arch/blackfin/mach-common/cache-c.c             |   11 ++++-
- arch/blackfin/mach-common/clocks-init.c         |    1 -
- arch/blackfin/mach-common/ints-priority.c       |   41 +++++++++--------
- arch/blackfin/mach-common/scb-init.c            |    1 -
- arch/blackfin/mach-common/smp.c                 |    6 +--
- 34 files changed, 166 insertions(+), 83 deletions(-)
+> [...] Unless you do truly crazy things like actively strip the 
+> kernel.
 
+Being crazy is something I try to avoid. (Beyond being a maintainer
+of a software project as busy and stressful as the Linux kernel that is.)
+
+Thanks,
+
+	Ingo
