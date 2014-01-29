@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaA2SWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:22:52 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:41988 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025AbaA2SWu (ORCPT
+	id S1753417AbaA2SXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:23:08 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:65300 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228AbaA2SXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:22:50 -0500
-Date: Wed, 29 Jan 2014 13:22:47 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernfs: lockdep complains about kernfs_addrm_ctx
-Message-ID: <20140129182247.GN30842@htj.dyndns.org>
-References: <alpine.LNX.2.00.1401221456080.27143@pobox.suse.cz>
+	Wed, 29 Jan 2014 13:23:04 -0500
+Date: Wed, 29 Jan 2014 19:22:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+Message-ID: <20140129182259.GA6711@dhcp22.suse.cz>
+References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+ <52E24956.3000007@yandex-team.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1401221456080.27143@pobox.suse.cz>
+In-Reply-To: <52E24956.3000007@yandex-team.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jiri.
+On Fri 24-01-14 15:07:02, Roman Gushchin wrote:
+> Hi, Michal!
 
-On Wed, Jan 22, 2014 at 03:01:38PM +0100, Jiri Kosina wrote:
-> booting with current Linus' tree (df32e43a5) gives me this:
+Hi,
+
+> As you can remember, I've proposed to introduce low limits about a year ago.
 > 
->  INFO: trying to register non-static key.
->  the code is fine but needs lockdep annotation.
->  turning off the locking correctness validator.
->  CPU: 1 PID: 105 Comm: udevd Not tainted 3.13.0-03477-gdf32e43 #1
->  Hardware name: LENOVO 7470BN2/7470BN2, BIOS 6DET38WW (2.02 ) 12/19/2008
->   0000000000000000 ffff880037ad3468 ffffffff8159701b ffff880037ad34e8
->   ffffffff8109e317 0000000000000000 ffff880037ad4fd0 ffff880037ad34e8
->   0000000000000000 ffff880037ad34b8 ffffffff00000000 0000000000000002
->  Call Trace:
->   [<ffffffff8159701b>] dump_stack+0x72/0x87
->   [<ffffffff8109e317>] register_lock_class+0x497/0x4c0
->   [<ffffffff810a1c2d>] __lock_acquire+0x7d/0x600
->   [<ffffffff810a0cdd>] ? trace_hardirqs_on_caller+0x13d/0x1e0
->   [<ffffffff810a22a1>] lock_acquire+0xf1/0x120
->   [<ffffffff81215460>] ? kernfs_addrm_finish+0x30/0x50
->   [<ffffffff81214cf9>] kernfs_deactivate+0xe9/0x130
-...
-> 
-> I have started to look into the kernfs code now to debug this, but as I 
-> haven't been following it closely during the review phase, it might take 
-> some time before I familiarize myself with it; hence sending this as a 
-> heads-up.
+> We had a small discussion at that time: http://marc.info/?t=136195226600004 .
 
-Oops, this got reported again and the fix patch has been posted
-earlier today.
+yes I remember that discussion and vaguely remember the proposed
+approach. I really wanted to prevent from introduction of a new knob but
+things evolved differently than I planned since then and it turned out
+that the knew knob is unavoidable. That's why I came with this approach
+which is quite different from yours AFAIR.
+ 
+> Since that time we intensively use low limits in our production
+> (on thousands of machines). So, I'm very interested to merge this
+> functionality into upstream.
 
- http://lkml.kernel.org/g/<20140129170403.GJ30842@htj.dyndns.org>
+Have you tried to use this implementation? Would this work as well?
+My very vague recollection of your patch is that it didn't cover both
+global and target reclaims and it didn't fit into the reclaim very
+naturally it used its own scaling method. I will have to refresh my
+memory though.
 
-Can you please see whether the above patch fixes the issue?
+> In my experience, low limits also require some changes in memcg page accounting
+> policy. For instance, an application in protected cgroup should have a guarantee
+> that it's filecache belongs to it's cgroup and is protected by low limit
+> therefore. If the filecache was created by another application in other cgroup,
+> it can be not so. I've solved this problem by implementing optional page
+> reaccouting on pagefaults and read/writes.
 
-Thanks.
+Memory sharing is a separate issue and we should discuss that
+separately. 
 
+> I can prepare my current version of patchset, if someone is interested.
+
+Sure, having something to compare with is always valuable.
+
+> Regards,
+> Roman
 -- 
-tejun
+Michal Hocko
+SUSE Labs
