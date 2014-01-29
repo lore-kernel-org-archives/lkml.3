@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792AbaA2R4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 12:56:23 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:57369 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaA2R4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 12:56:21 -0500
+	id S1752875AbaA2R5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 12:57:04 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:52210 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635AbaA2R5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 12:57:01 -0500
+Date: Wed, 29 Jan 2014 10:56:42 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        dev@linux-sunxi.org
+Subject: Re: [RFC PATCH v2 08/14] mtd: nand: add sunxi NAND flash controller
+ support
+Message-ID: <20140129175641.GF1427@obsidianresearch.com>
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+ <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140128175804.GA5287@netboy>
-References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
-	<20140113175114.GA4271@netboy>
-	<52D42D36.1020400@linaro.org>
-	<20140128175804.GA5287@netboy>
-Date: Wed, 29 Jan 2014 09:56:20 -0800
-Message-ID: <CALAqxLU21LNc2g_VnmGjZqqdjjKVZ3sRDQDdQmD2f=b13iV+pA@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
- better w/ nohz
-From: John Stultz <john.stultz@linaro.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 9:58 AM, Richard Cochran
-<richardcochran@gmail.com> wrote:
-> I tested for a regression using the patched kernel with the nohz=off
-> command line option...
->
-> On Mon, Jan 13, 2014 at 10:15:18AM -0800, John Stultz wrote:
->> On 01/13/2014 09:51 AM, Richard Cochran wrote:
->> >
->> > - Linux 3.12.7-nohz-plain-20140106                nohz-plain.log
->> > - Linux 3.12.7-nohz-plain-20140106 NOHZ=OFF       periodic-plain.log
->> > - Linux 3.12.7-nohz-fix-20140106-00001-gd753140   nohz-fix.log
->
-> Regression check:
->
->  - Linux homeboy 3.12.7-nohz-fix-20140106-00001-gd753140 NOHZ=OFF
->    nohz-fix-periodic.log
->
->> > The performance in the log files as reflected in the clock offset is
->> > summarized in this table. The values are in nanoseconds.
->> >
->> >  |         | periodic-plain |      nohz-fix |    nohz-plain |
->> >  |---------+----------------+---------------+---------------|
->> >  | minimum |  -1.599000e+03 | -1.051000e+03 | -5.373700e+04 |
->> >  | maximum |  +1.311000e+03 | +1.048000e+03 | +6.389500e+04 |
->> >  | mean    |  +9.880240e-02 | -7.747305e+01 | +1.597904e+01 |
->> >  | stddev  |  +4.610021e+02 | +3.960978e+02 | +1.491263e+04 |
->
-> Comparing the nohz=off case with and without the patch, the three hour
-> test looks like this.
->
->   |         | periodic-plain | nohz-fix-periodic |
->   |---------+----------------+-------------------+
->   | minimum |  -1.599000e+03 |     -1.427000e+03 |
->   | maximum |  +1.311000e+03 |     +1.279000e+03 |
->   | mean    |  +9.880240e-02 |     -2.710778e+01 |
->   | stddev  |  +4.610021e+02 |     +3.974372e+02 |
->
->> >    http://linuxptp.sourceforge.net/nohz-fix/current_nohz.png
->> >    http://linuxptp.sourceforge.net/nohz-fix/periodic_vs_fix.png
->
-> I also made a third graph showing before and after the patch.
->
->     http://linuxptp.sourceforge.net/nohz-fix/nohz_regression.png
->
->> If you do get a chance to look again, I'd also be interested if running
->> with nohz=off w/ the fix doesn't show any regression compared to the
->> unmodified nohz=off case.
->
-> Looks like there is no regression.
+On Wed, Jan 29, 2014 at 03:34:18PM +0100, Boris BREZILLON wrote:
 
-That's great to hear! Looks like we might be able to queue it for 3.15...
+> +static int sunxi_nand_chip_init_timings(struct sunxi_nand_chip *chip,
+> +					struct device_node *np)
+> +{
+> +	const struct nand_sdr_timings *timings;
+> +	u32 min_clk_period = 0;
+> +	int ret;
+> +
+> +	ret = onfi_get_async_timing_mode(&chip->nand);
+> +	if (ret == ONFI_TIMING_MODE_UNKNOWN) {
+> +		ret = of_get_nand_onfi_timing_mode(np);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
 
-Thanks so much again for the detailed testing! I really appreciate it!
+[..]
 
-thanks
--john
+> +static int sunxi_nand_chip_init(struct device *dev, struct sunxi_nfc *nfc,
+[..]
+> +       ret = sunxi_nand_chip_init_timings(chip, np);
+> +       if (ret)
+> +               return ret;
+[..]
+> +       ret = nand_scan_ident(mtd, nsels, NULL);
+
+This ordering looks a bit problematic, will onfi_get_async_timing_mode
+ever return anything other than ONFI_TIMING_MODE_UNKNOWN if it is
+called before nand_scan_ident ? What sets clk_rate to non-zero if there
+is no DT property?
+
+For a flow that uses onfi_get_async_timing_mode rather than DT the
+driver should set the interface to timing mode 0 (slowest) and then
+call nand_scan_ident, and then reset the interface to the detected
+timing mode.
+
+Maybe this should be implemented in the core code through a new
+callback (nand->set_timing_mode ?)
+
+Regards,
+Jason
