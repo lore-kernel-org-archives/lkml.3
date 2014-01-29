@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaA2J0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:26:38 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:44383 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953AbaA2J0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:26:35 -0500
-X-Mailbox-Line: From 46333b5b18b676ca298a817e70d982a7b13e2965 Mon Sep 17 00:00:00 2001
-Message-Id: <46333b5b18b676ca298a817e70d982a7b13e2965.1390986083.git.moinejf@free.fr>
-In-Reply-To: <cover.1390986082.git.moinejf@free.fr>
-References: <cover.1390986082.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Sat, 25 Jan 2014 18:14:36 +0100
-Subject: [PATCH v5 23/23] drm/i2c: tda998x: adjust the audio clock divider for
- S/PDIF
-To: dri-devel@lists.freedesktop.org
-Cc: Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+	id S1752654AbaA2J0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:26:50 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:48603 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaA2J0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:26:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140128225229.GH25989@kernel.dk>
+References: <20140128224336.GF25989@kernel.dk>
+	<20140128225229.GH25989@kernel.dk>
+Date: Wed, 29 Jan 2014 10:26:43 +0100
+X-Google-Sender-Auth: vXVZDbQsUBcvL13PaIP0g13-DjA
+Message-ID: <CAMuHMdUseSC+Roa5sTYfXtBxGn2OOCQpLAtdRgeoVAVdBrotWw@mail.gmail.com>
+Subject: Re: [GIT PULL] Core block IO changes for 3.14
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to some tests on the Cubox (Marvell Armada 510 + TDA19988),
-the S/PDIF input asks for a greater audio clock divider.
+On Tue, Jan 28, 2014 at 11:52 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> - Finally the immutable biovec changes from Kent Overstreet. This
+>>   enables some nice future work on making arbitrarily sized bios
+>>   possible, and splitting more efficient. Related fixes to immutable
+>>   bio_vecs:
+>>
+>>         - dm-cache immutable fixup from Mike Snitzer.
+>>         - btrfs immutable fixup from Muthu Kumar.
+>>
+>> - bio-integrity fix from Nic Bellinger, which is also going to stable.
+>>
+>>
+>> Please pull! There will be a bit of merge work for you, but it should be
+>> fairly straight forward. It's mostly related to changin:
+>>
+>> bio->bi_sector  -> bio->bi_iter.bi_sector
+>> bio->bi_size    -> bio->bi_iter.bi_size
+>>
+>>
+>> git://git.kernel.dk/linux-block.git for-3.14/core
+>
+> BTW, let me know if you want me to merge this. The above has been in
+> for-next since forever, and Stephen has carried a fix or two for new
+> merges.
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+arch/xtensa/platforms/iss/simdisk.c:108:23: error: 'struct bio' has no
+member named 'bi_sector'
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 4f1a047..2f97290 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -680,10 +680,14 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	 * There is no detailed info in the datasheet, so we just
- 	 * assume 100MHz requires larger divider.
- 	 */
-+	adiv = AUDIO_DIV_SERCLK_8;
- 	if (mode->clock > 100000)
--		adiv = AUDIO_DIV_SERCLK_16;
--	else
--		adiv = AUDIO_DIV_SERCLK_8;
-+		adiv++;			/* AUDIO_DIV_SERCLK_16 */
-+
-+	/* S/PDIF asks for a larger divider */
-+	if (p->audio_format == AFMT_SPDIF)
-+		adiv++;			/* AUDIO_DIV_SERCLK_16 or _32 */
-+
- 	reg_write(priv, REG_AUDIO_DIV, adiv);
- 
- 	/*
--- 
-1.9.rc1
+http://kisskb.ellerman.id.au/kisskb/buildresult/10542666/
 
+Reported before at:
+http://www.spinics.net/lists/dm-devel/msg20937.html
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
