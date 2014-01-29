@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaA2JWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 04:22:44 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:16121 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaA2JWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 04:22:41 -0500
-X-AuditID: cbfee690-b7f266d00000287c-20-52e8c8606205
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, devicetree@vger.kernel.org,
-        Naveen Krishna Ch <ch.naveen@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 4/9 v5] crypto:s5p-sss: Kconfig: Let Exynos SoCs select SSS
- driver
-Date: Wed, 29 Jan 2014 14:52:34 +0530
-Message-id: <1390987354-18665-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
-References: <1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI2JSo5tw4kWQQc8zDou7zw8zWrw8pGkx
-	53wLi8X8I+dYLbpfyVjcv/eTyeLyrjlsFjPO72OyWLTtP7PF2TmHmBy4PLasvMnksXPWXXaP
-	bQdUPfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugSvj9fd/LAV/uCvaVsxkamD8ydnFyMkhIWAi
-	0byilRnCFpO4cG89WxcjF4eQwFJGiS2t31lhitrb5rGD2EIC0xkl3t2rgyjqZ5KYfGkXWIJN
-	wEzi4KLVYLaIgLPE7+Y1rCBFzALfGSXmNE1lAUkIC4RIfJl5G8xmEVCVuNHUBlTEwcEr4Crx
-	d5sEiCkhoCAxZ5INSAWngJvE7rWPGCH2uko0f98GdegmdoklbyUhpghIfJt8iAWiVVZi0wGo
-	EkmJgytusExgFF7AyLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzD0T/97NmEH470D1ocY
-	k4HGTWSWEk3OB8ZOXkm8obGZkYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtSi+KLSnNS
-	iw8xMnFwSjUwmmz89dr41xErif26XatuXl4qftTn8Zp9Dh8eu834c7H62q0rU/Pl/2qc9Z4j
-	59G7TNaw78WLi5OKY30vL129q66icInSFb/S8GqVR9xGFXLLjizkFre/u1czvat0+fYXnsu3
-	l59dOo9nj1Rb/nVlu5tMb25Gfby+/hmHiFxAlwXHJ/6UG+3hL5VYijMSDbWYi4oTAYBJPKqT	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jQd34Ey+CDDa12ljcfX6Y0eLlIU2L
-	OedbWCzmHznHatH9Ssbi/r2fTBaXd81hs5hxfh+TxaJt/5ktzs45xOTA5bFl5U0mj52z7rJ7
-	bDug6tG3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJ
-	uam2Si4+AbpumTlANykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM15/
-	/8dS8Ie7om3FTKYGxp+cXYycHBICJhLtbfPYIWwxiQv31rOB2EIC0xkl3t2r62LkArL7mSQm
-	X9oFVsQmYCZxcNFqMFtEwFnid/MaVpAiZoHvjBJzmqaygCSEBUIkvsy8DWazCKhK3GhqAyri
-	4OAVcJX4u00CxJQQUJCYM8kGpIJTwE1i99pHjBB7XSWav29jnsDIu4CRYRWjaGpBckFxUnqu
-	kV5xYm5xaV66XnJ+7iZGcGw9k97BuKrB4hCjAAejEg/viovPg4RYE8uKK3MPMUpwMCuJ8J7Y
-	9CJIiDclsbIqtSg/vqg0J7X4EGMy0E0TmaVEk/OBcZ9XEm9obGJuamxqaWJhYmZJmrCSOO/B
-	VutAIYH0xJLU7NTUgtQimC1MHJxSDYy+/5WPhguv5VTWtZmv6PC2L2bn85cyrDFnDggtYlxz
-	/mCndHiwMNv8J/febjfcr/W8ar9GcM7lldrp+ppHuBs7jOTMMi9ah77O3Pz0YrwGa6joh5ir
-	7xm+X3rjEjdb7f2S/SV6811WzP8T7D3DZ7fWrKTVS6MP3uIPcf19zG3LFienM6aLdtsqsRRn
-	JBpqMRcVJwIAuY+JrPECAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751883AbaA2JWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 04:22:51 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:54708 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645AbaA2JWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 04:22:46 -0500
+X-Mailbox-Line: From 46333b5b18b676ca298a817e70d982a7b13e2965 Mon Sep 17 00:00:00 2001
+Message-Id: <cover.1390986082.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Wed, 29 Jan 2014 10:01:22 +0100
+Subject: [PATCH v5 00/23] 
+To: dri-devel@lists.freedesktop.org
+Cc: Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naveen Krishna Ch <ch.naveen@samsung.com>
+This patch set contains various extensions to the tda998x driver:
 
-This patch modifies Kconfig such that ARCH_EXYNOS SoCs
-which includes (Exynos4210, Exynos5250 and Exynos5420)
-can also select Samsung SSS(Security SubSystem) driver.
+- simplify the i2c read/write
+- code cleanup and fix some small errors
+- use global constants
+- don't read write-only registers
+- add DT support
+- use IRQ for connection status and EDID read
 
-Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: David S. Miller <davem@davemloft.net>
-CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-TO: <linux-crypto@vger.kernel.org>
-CC: <linux-samsung-soc@vger.kernel.org>
----
-Changes since v4:
-none
-Changes since v3:
-Modified description to use "Exynos" instead of individual SoC name
- drivers/crypto/Kconfig |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+- v5
+    - remarks from Russell King
+	- free the IRQ on encoder destroy (patch 14)
+	- fix bad comment (patch 23)
+    - removal of 'set the video mode from the adjusted value'
+	which was breaking tilcdc (Darren Etheridge)
+    - use the IRQ trigger type from platform/DT (patch 14)
 
-diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
-index f4fd837..cb38863 100644
---- a/drivers/crypto/Kconfig
-+++ b/drivers/crypto/Kconfig
-@@ -300,14 +300,14 @@ config CRYPTO_DEV_DCP
- 	  capabilities of the DCP co-processor
- 
- config CRYPTO_DEV_S5P
--	tristate "Support for Samsung S5PV210 crypto accelerator"
--	depends on ARCH_S5PV210
-+	tristate "Support for Samsung S5PV210/Exynos crypto accelerator"
-+	depends on ARCH_S5PV210 || ARCH_EXYNOS
- 	select CRYPTO_AES
- 	select CRYPTO_ALGAPI
- 	select CRYPTO_BLKCIPHER
- 	help
- 	  This option allows you to have support for S5P crypto acceleration.
--	  Select this to offload Samsung S5PV210 or S5PC110 from AES
-+	  Select this to offload Samsung S5PV210 or S5PC110, Exynos from AES
- 	  algorithms execution.
- 
- config CRYPTO_DEV_TEGRA_AES
+- v4
+    - remarks from Russell King (thank you, Russell)
+	- more comments about the patches
+	- remove 'fix a NULL pointer dereference'
+	- get the IRQ number from the i2c client
+	- remove 'get a better status of the connection'
+	- split the previous 'fix the ENABLE_SPACE register'
+	- add asounddef.h variables in 'change the frequence in the audio channel'
+    - add 'always enable EDID read IRQ'
+    - remove audio changes which will be in a next patch set about
+      information exchanges with the audio subsystem
+- v3
+    - remarks from Russell King
+	- more comments about the patches
+	- change variable name instead of copy (patch 7)
+	- add 'fix bad value in the AIF' (patch 8)
+	- add 'fix a NULL pointer dereference' (patch 13)
+	- add 'add DT documentation' (patch 16)
+	- remove 'use the tda998x video format when cea mode'
+	- remove 'change the video quantization
+	- remove 'fix the value of the TBG_CNTRL_1 register'
+	- remove 'tda998x: move the TBG_CNTRL_0 register setting'
+	- change fields of the register AIP_CLKSEL (patch 19)
+	- remove 'adjust the audio CTS to the mode clock'
+	- don't put a comment between field definition (patch 23)
+    - some more remarks may be found in the patches 10, 14, 15
+    - removal of the tda codec interface which will be the subject
+		of an other patch series
+- v2
+	- decompose patches with different topics
+	- fix some bad i2c register values
+	- add audio codec interface
+
+Jean-Francois Moine (23):
+  drm/i2c: tda998x: simplify the i2c read/write functions
+  drm/i2c: tda998x: check more I/O errors
+  drm/i2c: tda998x: code cleanup
+  drm/i2c: tda998x: change probe message origin
+  drm/i2c: tda998x: don't freeze the system at audio startup time
+  drm/i2c: tda998x: force the page register at startup time
+  drm/i2c: tda998x: fix bad value in the AIF
+  drm/i2c: tda998x: use HDMI constants
+  drm/i2c: tda998x: don't read write-only registers
+  drm/i2c: tda998x: free the CEC device on encoder_destroy
+  drm/i2c: tda998x: check the CEC device creation
+  drm/i2c: tda998x: add DT support
+  drm/i2c: tda998x: always enable EDID read IRQ
+  drm/i2c: tda998x: use irq for connection status and EDID read
+  drm/i2c: tda998x: add DT documentation
+  drm/i2c: tda998x: fix the ENABLE_SPACE register
+  drm/i2c: tda998x: set the PLL division factor in range 0..3
+  drm/i2c: tda998x: make the audio code more readable
+  drm/i2c: tda998x: remove the unused variable ca_i2s
+  drm/i2c: tda998x: add the active aspect in HDMI AVI frame
+  drm/i2c: tda998x: change the frequence in the audio channel
+  drm/i2c: tda998x: code optimization
+  drm/i2c: tda998x: adjust the audio clock divider for S/PDIF
+
+ .../devicetree/bindings/drm/i2c/tda998x.txt        |  27 +
+ drivers/gpu/drm/i2c/tda998x_drv.c                  | 609 +++++++++++++--------
+ 2 files changed, 416 insertions(+), 220 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+
 -- 
-1.7.9.5
+1.9.rc1
 
