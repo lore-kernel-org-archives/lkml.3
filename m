@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaA2I1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 03:27:14 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:33121 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860AbaA2I1N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 03:27:13 -0500
+	id S1755038AbaA2I26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 03:28:58 -0500
+Received: from mga02.intel.com ([134.134.136.20]:40722 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750851AbaA2I25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 03:28:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,741,1384329600"; 
+   d="scan'208";a="466470255"
+Date: Wed, 29 Jan 2014 10:35:48 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "xinhui.pan" <xinhuix.pan@intel.com>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        yanmin_zhang@linux.intel.com, bo.he@intel.com
+Subject: Re: [PATCH] i2c-designware-pcidrv: fix the incorrect return of idle
+ callback
+Message-ID: <20140129083548.GG18029@intel.com>
+References: <52E744AC.2050606@intel.com>
+ <20140128183035.GC20789@katana>
 MIME-Version: 1.0
-In-Reply-To: <20140129081128.GA31489@gmail.com>
-References: <20140128062806.GA20750@gmail.com>
-	<52E76997.40303@nod.at>
-	<52E7D2E5.8090208@linux.intel.com>
-	<52E7D9FF.1080506@nod.at>
-	<52E7DB15.3090808@zytor.com>
-	<CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
-	<20140128170507.GA16279@gmail.com>
-	<CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
-	<20140128194823.GA18702@gmail.com>
-	<CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
-	<20140129081128.GA31489@gmail.com>
-Date: Wed, 29 Jan 2014 09:27:08 +0100
-Message-ID: <CA+rthh93phituM24W8KrGygvKtUmByJUtOCS-sELj4QgLqS3cw@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-From: Mathias Krause <minipli@googlemail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140128183035.GC20789@katana>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 January 2014 09:11, Ingo Molnar <mingo@kernel.org> wrote:
->> But you can see that the symbol is perfectly fine:
->>
->>   (gdb) list *(schedule+0x45)
->
-> Oh, cool. Thanks for that trick - this will save me quite some time in
-> the future.
->
-> So we can strip absolute addresses just fine from oopses - cool.
->
-> I'd even argue to strip the hex on non-randomized kernels as long as
-> there's kallsyms around, and only print hex if we don't have any
-> symbols.
+On Tue, Jan 28, 2014 at 07:30:35PM +0100, Wolfram Sang wrote:
+> On Tue, Jan 28, 2014 at 01:48:28PM +0800, xinhui.pan wrote:
+> > From: "xinhui.pan" <xinhuix.pan@intel.com>
+> > 
+> > i2c_dw_pci_runtime_idle should return -EBUSY rather than zero if it do success.
+> 
+> I don't understand...
+> 
+> > Otherwise rpm_idle will call pm_suspend again and that may cause pm_schedule_suspend delay invalidate.
+> > 	
+> > Signed-off-by: bo.he <bo.he@intel.com>
+> > Signed-off-by: xinhui.pan <xinhuix.pan@intel.com>
+> > ---
+> >  drivers/i2c/busses/i2c-designware-pcidrv.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+> > index f6ed06c..96e81f6 100644
+> > --- a/drivers/i2c/busses/i2c-designware-pcidrv.c
+> > +++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+> > @@ -190,8 +190,8 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
+> >  	int err = pm_schedule_suspend(dev, 500);
+> >  	dev_dbg(dev, "runtime_idle called\n");
+> >  
+> > -	if (err != 0)
+> > -		return 0;
+> > +	if (err)
+> > +		return err;
+> >  	return -EBUSY;
+> 
+> ... it does return EBUSY when pm_schedule_suspend() succeeds? It only
+> returns 0 if it does not succeed (for which I don't know if this is an
+> apropriate behaviour). Mika?
 
-Please, don't do so! I do find the hex values in the backtrace *very*
-useful as I'm using 'objdump -wdr vmlinux | less' quite often to
-"browse around" in the kernel binary. Grepping for addresses from a
-backtrace works quite nicely this way. Having to lookup symbols and do
-base-16 arithmetics in the head (or a shell, for that matter) would
-only slow down this process. So, please leave the hex values in place.
-They do help a lot -- at least in the non-kASLR case.
+If I understand correctly, pm_schedule_suspend(dev, 500) is there because
+we want to runtime suspend in 500 ms. It then returns -EBUSY to prevent PM
+runtime from carrying on suspend on it's own. However, I have no idea where
+this magical 500 ms requirement comes from.
 
-Regards,
-Mathias
+If we fail to schedule suspend we let the PM core to do whatever it thinks
+suitable (in this case I suppose it suspends the device).
+
+I think the whole idle dance could be replaced with a use of runtime PM
+autosuspend, just like we do in the platform version of the driver.
+
+Xinghui,
+
+Is this a real problem that you are trying to solve?
