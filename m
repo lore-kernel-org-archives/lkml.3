@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaA2PQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 10:16:30 -0500
-Received: from smtprelay0157.hostedemail.com ([216.40.44.157]:45506 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751138AbaA2PQ3 (ORCPT
+	id S1752360AbaA2PRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 10:17:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54172 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896AbaA2PRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 10:16:29 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3870:3871:4321:5007:6120:7652:7901:7903:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13255:13311:13357:13972,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: board58_55448523b2209
-X-Filterd-Recvd-Size: 1611
-Message-ID: <1391008584.11756.59.camel@joe-AO722>
-Subject: Re: [PATCH v5 17/23] drm/i2c: tda998x: set the PLL division factor
- in range 0..3
-From: Joe Perches <joe@perches.com>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Date: Wed, 29 Jan 2014 07:16:24 -0800
-In-Reply-To: <d4ba259762605793aee726b5e33dcad6a8bd4777.1390986083.git.moinejf@free.fr>
-References: <cover.1390986082.git.moinejf@free.fr>
-	 <d4ba259762605793aee726b5e33dcad6a8bd4777.1390986083.git.moinejf@free.fr>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Jan 2014 10:17:18 -0500
+Date: Wed, 29 Jan 2014 08:17:14 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Core block IO changes for 3.14
+Message-ID: <20140129151710.GO25989@kernel.dk>
+References: <20140128224336.GF25989@kernel.dk>
+ <20140128225229.GH25989@kernel.dk>
+ <CAMuHMdUseSC+Roa5sTYfXtBxGn2OOCQpLAtdRgeoVAVdBrotWw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUseSC+Roa5sTYfXtBxGn2OOCQpLAtdRgeoVAVdBrotWw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-01-25 at 18:14 +0100, Jean-Francois Moine wrote:
-> The predivider division factor of the register PLL_SERIAL_2 is in the
-> range 0..3, the value 0 being used for a division by 1.
+On Wed, Jan 29 2014, Geert Uytterhoeven wrote:
+> On Tue, Jan 28, 2014 at 11:52 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> >> - Finally the immutable biovec changes from Kent Overstreet. This
+> >>   enables some nice future work on making arbitrarily sized bios
+> >>   possible, and splitting more efficient. Related fixes to immutable
+> >>   bio_vecs:
+> >>
+> >>         - dm-cache immutable fixup from Mike Snitzer.
+> >>         - btrfs immutable fixup from Muthu Kumar.
+> >>
+> >> - bio-integrity fix from Nic Bellinger, which is also going to stable.
+> >>
+> >>
+> >> Please pull! There will be a bit of merge work for you, but it should be
+> >> fairly straight forward. It's mostly related to changin:
+> >>
+> >> bio->bi_sector  -> bio->bi_iter.bi_sector
+> >> bio->bi_size    -> bio->bi_iter.bi_size
+> >>
+> >>
+> >> git://git.kernel.dk/linux-block.git for-3.14/core
+> >
+> > BTW, let me know if you want me to merge this. The above has been in
+> > for-next since forever, and Stephen has carried a fix or two for new
+> > merges.
+> 
+> arch/xtensa/platforms/iss/simdisk.c:108:23: error: 'struct bio' has no
+> member named 'bi_sector'
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/10542666/
 
-trivia:
+Does the below fix it for you? There's an existing bug in there where it
+kunmaps the wrong part (page instead of the address). Not sure that
+matters on xtensa or whether the kmaps are a no-op, but cleaned up none
+the less.
 
-> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-[]
-> @@ -886,6 +886,11 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
->  	}
->  
->  	div = 148500 / mode->clock;
-> +	if (div != 0) {
-> +		div--;
-> +		if (div > 3)
-> +			div = 3;
-> +	}
 
-perhaps
-	clamp(div, 1, 4)
-	div--;
+diff --git a/arch/xtensa/platforms/iss/simdisk.c b/arch/xtensa/platforms/iss/simdisk.c
+index 8c6e819cd8ed..48eebacdf5fe 100644
+--- a/arch/xtensa/platforms/iss/simdisk.c
++++ b/arch/xtensa/platforms/iss/simdisk.c
+@@ -103,18 +103,18 @@ static void simdisk_transfer(struct simdisk *dev, unsigned long sector,
+ 
+ static int simdisk_xfer_bio(struct simdisk *dev, struct bio *bio)
+ {
+-	int i;
+-	struct bio_vec *bvec;
+-	sector_t sector = bio->bi_sector;
++	struct bio_vec bvec;
++	struct bvec_iter iter;
++	sector_t sector = bio->bi_iter.bi_sector;
+ 
+-	bio_for_each_segment(bvec, bio, i) {
+-		char *buffer = __bio_kmap_atomic(bio, i);
+-		unsigned len = bvec->bv_len >> SECTOR_SHIFT;
++	bio_for_each_segment(bvec, bio, iter) {
++		char *buffer = __bio_kmap_atomic(bio, iter);
++		unsigned len = bvec.bv_len >> SECTOR_SHIFT;
+ 
+ 		simdisk_transfer(dev, sector, len, buffer,
+ 				bio_data_dir(bio) == WRITE);
+ 		sector += len;
+-		__bio_kunmap_atomic(bio);
++		__bio_kunmap_atomic(buffer);
+ 	}
+ 	return 0;
+ }
 
+-- 
+Jens Axboe
 
