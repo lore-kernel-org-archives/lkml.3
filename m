@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaA2OuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:50:25 -0500
-Received: from mail-ee0-f65.google.com ([74.125.83.65]:42040 "EHLO
-	mail-ee0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaA2OuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:50:23 -0500
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: [RFC PATCH v2 03/14] of: mtd: add documentation for nand-ecc-level property
-Date: Wed, 29 Jan 2014 15:34:13 +0100
-Message-Id: <1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+	id S1752486AbaA2OzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:55:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11188 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752080AbaA2OzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 09:55:23 -0500
+Date: Wed, 29 Jan 2014 15:55:35 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Do we really need curr_target in signal_struct ?
+Message-ID: <20140129145535.GA12562@redhat.com>
+References: <1390895840.8373.2.camel@beeld> <20140128164320.GB7596@redhat.com> <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nand-ecc-level property statically defines NAND chip's ECC requirements.
+On 01/29, Rakib Mullick wrote:
+>
+> On Tue, Jan 28, 2014 at 10:43 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > But I guess ->curr_target was added exactly to avoid this loop if
+> > possible, assuming that wants_signal(->current_targer) should be
+> > likely true. Although perhaps this optimization is too simple.
+> >
+> Well, this code block will only hit when first check for wants_signal()
+> will miss,
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
- Documentation/devicetree/bindings/mtd/nand.txt |    3 +++
- 1 file changed, 3 insertions(+)
+Yes,
 
-diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
-index 03855c8..0c962296 100644
---- a/Documentation/devicetree/bindings/mtd/nand.txt
-+++ b/Documentation/devicetree/bindings/mtd/nand.txt
-@@ -3,5 +3,8 @@
- - nand-ecc-mode : String, operation mode of the NAND ecc mode.
-   Supported values are: "none", "soft", "hw", "hw_syndrome", "hw_oob_first",
-   "soft_bch".
-+- nand-ecc-level : Two cells property defining the ECC level requirements.
-+  The first cell represent the strength and the second cell the ECC block size.
-+  E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
- - nand-bus-width : 8 or 16 bus width if not present 8
- - nand-on-flash-bbt: boolean to enable on flash bbt option if not present false
--- 
-1.7.9.5
+> that means we need to find some other thread of the group.
+
+Yes,
+
+> AFAIU, ->current_target is only a loop breaker to avoid infinite loop,
+
+No. It caches the last result of "find a thread which can handle this
+group-wide signal".
+
+> but - by using while_each_thread() we can remove it completely, thus
+> helps to get rid from maintaining it too.
+
+... and remove the optimization above.
+
+> I'll prepare a proper patch with you suggestions for reviewing.
+
+I am not sure we want this patch. Once again, I do not know how much
+->curr_target helps, and certainaly it can't help always. But you
+should not blindly remove it just because yes, sure, it is not strictly
+needed to find a wants_signal() thread.
+
+Oleg.
 
