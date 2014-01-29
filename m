@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaA2ECH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 23:02:07 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64966 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbaA2ECE (ORCPT
+	id S1756109AbaA2EDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 23:03:08 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56007 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083AbaA2EDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 23:02:04 -0500
+	Tue, 28 Jan 2014 23:03:06 -0500
+Message-ID: <52E87D64.30800@huawei.com>
+Date: Wed, 29 Jan 2014 12:02:44 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140127142400.GI3867@lukather>
-References: <1389941251-32692-1-git-send-email-wens@csie.org>
- <1389941251-32692-5-git-send-email-wens@csie.org> <20140127142400.GI3867@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Wed, 29 Jan 2014 12:01:42 +0800
-X-Google-Sender-Auth: ne1NA-WniTuTxCtEMvh-97eolWc
-Message-ID: <CAGb2v65cipUXbL52adDTYLqVJB5gMoDjfWVFa6AYYp0EKvkS6g@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH RFC 4/6] net: rfkill: gpio: add device
- tree support
-To: linux-sunxi <linux-sunxi@googlegroups.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] cgroup: move the one-off opts sanity check in cgroup_root_from_opts()
+ to parse_cgroupfs_options()
+References: <1390923125-4369-1-git-send-email-tj@kernel.org> <1390923125-4369-5-git-send-email-tj@kernel.org>
+In-Reply-To: <1390923125-4369-5-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2014/1/28 23:32, Tejun Heo wrote:
+> cgroup_root_from_opts() checks whether (!opts->subsys_mask &&
+> !opts->none) and returns NULL if so.  After that, if allocation fails,
+> returns ERR_PTR(-ENOMEM).  The caller, cgroup_mount(), doesn't treat
+> NULL as an error but set opts.new_root to NULL; however, later on,
+> cgroup_set_super() fails with -EINVAL if new_root is NULL.
 
-On Mon, Jan 27, 2014 at 10:24 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Hi,
->
-> On Fri, Jan 17, 2014 at 02:47:29PM +0800, Chen-Yu Tsai wrote:
->> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->> ---
->>  .../devicetree/bindings/rfkill/rfkill-gpio.txt     | 26 ++++++++++++++++++++++
->>  net/rfkill/rfkill-gpio.c                           | 23 +++++++++++++++++++
->>  2 files changed, 49 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
->>
->> diff --git a/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
->> new file mode 100644
->> index 0000000..8a07ea4
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
->> @@ -0,0 +1,26 @@
->> +GPIO controlled RFKILL devices
->> +
->> +Required properties:
->> +- compatible : Must be "rfkill-gpio".
->> +- rfkill-name        : Name of RFKILL device
->> +- rfkill-type        : Type of RFKILL device: 1 for WiFi, 2 for BlueTooth
->> +- NAME_shutdown-gpios        : GPIO phandle to shutdown control
->> +                       (phandle must be the second)
->
-> Can't it be handled by a regulator?
->
->> +- NAME_reset-gpios   : GPIO phandle to reset control
->
-> And this one using the reset framework?
+This patch changes mount semantics.
 
-The driver is already used in platform device and ACPI fashions.
-AFAIK, ACPI only passes the GPIO lines. Preferably the behavior
-and requirements between the different usages remain the same.
+If cgroup_root_from_opts() returns NULL, it means we should be looking
+for existing superblock only.
 
+This will fail:
 
-Cheers
-ChenYu
+  # mount -t cgroup -o name=abc xxx /mnt
+
+But this is ok:
+
+  # mount -t cgroup -o none,name=abc xxx /mnt
+  # mkdir /mnt/sub
+  # umount /mnt
+  # mount -t cgroup -o name=abc xxx /mnt   <-- this won't work with your patch
+
+> 
+> This is one bizarre error handling sequence especially when all other
+> opts sanity checks including the very close (!opts->subsys_mask &&
+> !opts->name) check are done in parse_cgroupfs_options().
+> 
+> Let's move the one-off check in cgroup_root_from_opts() to
+> parse_cgroupfs_options() where it can be combined with the
+> (!opts->subsys_mask && !opts->name) check.  cgroup_root_from_opts() is
+> updated to return NULL on memory allocation failure.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+
