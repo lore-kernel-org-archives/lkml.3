@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaA2K3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 05:29:11 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:13335 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaA2K3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 05:29:09 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-61-52e8d7f22dd5
-Message-id: <1390991344.2207.8.camel@AMDC1943>
-Subject: Re: [PATCH RESEND 1/4] clk: clk-s2mps11: Refactor for including
- support for  other MFD clocks
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Kgene Kim <kgene.kim@samsung.com>,
-        Patch Tracking <patches@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>
-Date: Wed, 29 Jan 2014 11:29:04 +0100
-In-reply-to: <mvd17-4vW-3@gated-at.bofh.it>
-References: <m8Uox-5kN-11@gated-at.bofh.it> <mtgmt-44E-3@gated-at.bofh.it>
- <mtgmu-44E-27@gated-at.bofh.it> <muwSe-WJ-17@gated-at.bofh.it>
- <muCkW-RP-15@gated-at.bofh.it> <mva3f-bR-7@gated-at.bofh.it>
- <mvd17-4vW-3@gated-at.bofh.it>
-References: <m8Uox-5kN-11@gated-at.bofh.it> <mtgmt-44E-3@gated-at.bofh.it>
- <mtgmu-44E-27@gated-at.bofh.it> <muwSe-WJ-17@gated-at.bofh.it>
- <muCkW-RP-15@gated-at.bofh.it> <mva3f-bR-7@gated-at.bofh.it>
- <mvd17-4vW-3@gated-at.bofh.it>
-In-reply-to: <mvd17-4vW-3@gated-at.bofh.it>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t/xa7qfrr8IMlj8TcFi6sMnbBa9C66y
-	Wdz/epTRYtPja6wWl3fNYbOYcX4fk8XTCRfZLKYc/sJi0f53L5sDp8emVZ1sHneu7WHz2Lyk
-	3qNvyypGj8+b5AJYo7hsUlJzMstSi/TtErgylhxsZSn4w1Zx/n8nSwPjFtYuRg4OCQETiau7
-	DbsYOYFMMYkL99azgdhCAksZJV5v1Oti5AKyPzNKHNj0mAWknldAT+LoOhGQGmGBDIlrN96y
-	gthsAsYSm5cvAesVEdCS2HaglQ2kl1ngDZPE3LXrmEASLAKqEtemnQQr4hTQlvg5dRs7xLLX
-	jBLr+2zQ2chqmAXUJSbNW8QMcaiSxO72Tqi4vMTmNW/B4rwCghI/Jt9jmcAoNAtJyywkZbOQ
-	lC1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERIlX3cwLj1mdYhRgINRiYd3w43nQUKs
-	iWXFlbmHGCU4mJVEeBkuvQgS4k1JrKxKLcqPLyrNSS0+xMjEwSnVwMhRudxh4b6QvphW164O
-	85Ki+flFdh/u7MvJMFt24VbZmRO71mVe/HP09KqXN4M/Xk3gZVVKv3TQ4Z3V6U8bQqqOL/PZ
-	qS821WfpBO2VD7u3ft5zXEXp7LFdbPkdi4O27H21X6JR02vR4apHDysvm3zj233aRH39ITYv
-	z0PyFTZvZ4touFgJ6LEpsRRnJBpqMRcVJwIAhaodX3ACAAA=
+	id S1751702AbaA2KbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 05:31:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52656 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaA2KbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 05:31:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,741,1384329600"; 
+   d="scan'208";a="474378608"
+Date: Wed, 29 Jan 2014 12:38:13 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "xinhui.pan" <xinhuix.pan@intel.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        yanmin_zhang@linux.intel.com, bo.he@intel.com
+Subject: Re: [PATCH] i2c-designware-pcidrv: fix the incorrect return of idle
+ callback
+Message-ID: <20140129103813.GN18029@intel.com>
+References: <52E744AC.2050606@intel.com>
+ <20140128183035.GC20789@katana>
+ <20140129083548.GG18029@intel.com>
+ <52E8D13A.1060100@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52E8D13A.1060100@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
+On Wed, Jan 29, 2014 at 06:00:26PM +0800, xinhui.pan wrote:
 > 
-> Quoting Mark Brown (2013-12-31 08:09:16)
-> > On Mon, Dec 30, 2013 at 09:33:50AM +0530, Tushar Behera wrote:
+> 
+> 于 2014年01月29日 16:35, Mika Westerberg 写道:
+> > On Tue, Jan 28, 2014 at 07:30:35PM +0100, Wolfram Sang wrote:
+> >> On Tue, Jan 28, 2014 at 01:48:28PM +0800, xinhui.pan wrote:
+> >>> From: "xinhui.pan" <xinhuix.pan@intel.com>
+> >>>
+> >>> i2c_dw_pci_runtime_idle should return -EBUSY rather than zero if it do success.
+> >>
+> >> I don't understand...
+> >>
+> >>> Otherwise rpm_idle will call pm_suspend again and that may cause pm_schedule_suspend delay invalidate.
+> >>> 	
+> >>> Signed-off-by: bo.he <bo.he@intel.com>
+> >>> Signed-off-by: xinhui.pan <xinhuix.pan@intel.com>
+> >>> ---
+> >>>  drivers/i2c/busses/i2c-designware-pcidrv.c |    4 ++--
+> >>>  1 file changed, 2 insertions(+), 2 deletions(-)
+> >>>
+> >>> diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+> >>> index f6ed06c..96e81f6 100644
+> >>> --- a/drivers/i2c/busses/i2c-designware-pcidrv.c
+> >>> +++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+> >>> @@ -190,8 +190,8 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
+> >>>  	int err = pm_schedule_suspend(dev, 500);
+> >>>  	dev_dbg(dev, "runtime_idle called\n");
+> >>>  
+> >>> -	if (err != 0)
+> >>> -		return 0;
+> >>> +	if (err)
+> >>> +		return err;
+> >>>  	return -EBUSY;
+> >>
+> >> ... it does return EBUSY when pm_schedule_suspend() succeeds? It only
+> >> returns 0 if it does not succeed (for which I don't know if this is an
+> >> apropriate behaviour). Mika?
 > > 
-> > > Commit 1b1ccee1e821 "mfd: s2mps11: Fix build after regmap field rename
-> > > in sec-core.c" is also touching this file, which is in Mark's tree
-> > > right now. If I rebase
+> > If I understand correctly, pm_schedule_suspend(dev, 500) is there because
+> > we want to runtime suspend in 500 ms. It then returns -EBUSY to prevent PM
+> > runtime from carrying on suspend on it's own. However, I have no idea where
+> > this magical 500 ms requirement comes from.
 > > 
-> > It's been in Linus' tree for a while now.
+> > If we fail to schedule suspend we let the PM core to do whatever it thinks
+> > suitable (in this case I suppose it suspends the device).
+> > 
 > 
-> OK, so I merged the two patches into clk-next, then merged clk-next into
-> next-20131224 and the merge is super trivial to resolve. So I propose
-> that we just let it get resolved in linux-next the usual way.
+> Hi ,Mika
+>   If the callback returns 0,it means pm_schedule_suspend fails,
+> also means rpm_check_suspend_allowed(pm_schedule_suspend calls it) 
+> returns nonzero value.As a result,rpm_suspend will be called by rpm_idle.
+>   However in rpm_idle, rpm_check_suspend_allowed is called at first,too.
+> and the return value is treated as it is.But rpm_idle just returns 
+> without doing anything(rpm_suspend is not called). 
+>   in both case above,why goes in different ways? I am confused.
+
+To be honest, I don't know ;-)
+
+> > I think the whole idle dance could be replaced with a use of runtime PM
+> > autosuspend, just like we do in the platform version of the driver.
+> > 
+> > Xinghui,
+> > 
+> > Is this a real problem that you are trying to solve?
+> > 
 > 
-> Any objections? If not I'll take these two patches into clk-next.
+> To be honest,we got many panic when testing.
+> But is not caused by this driver I think.
+> while checking problems,we found these confusing codes by accident.
 
-Did you merged these patches into clk-next? Unfortunately I couldn't
-find them (clk-next, next).
+OK, so if this is not a problem, I would suggest keeping the code as is for
+now as someone who introduced the pm_schedule_suspend() thing probably
+tested it and it worked then.
 
-I am asking because I want to send patches with support for S2MPS14
-clock (based on these patches).
-
-Best regards,
-Krzysztof
-
-
+In fact, I think that the PCI part of that driver needs an audit since it
+does some PCI power management magic itself which drivers aren't supposed
+to do anymore.
