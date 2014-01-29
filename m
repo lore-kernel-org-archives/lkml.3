@@ -1,54 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaA2KCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 05:02:30 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46804 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaA2KC1 (ORCPT
+	id S1751721AbaA2KDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 05:03:14 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:50514 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaA2KDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 05:02:27 -0500
-Message-ID: <52E8D1AB.7080002@gmail.com>
-Date: Wed, 29 Jan 2014 11:02:19 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the clk tree
-References: <20140129143203.3856df2abbf5f3c52b444ca5@canb.auug.org.au>
-In-Reply-To: <20140129143203.3856df2abbf5f3c52b444ca5@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Jan 2014 05:03:12 -0500
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: [PATCH trivial] Documentation: fix multiple typo occurences s/KenelVersion/KernelVersion/
+Date: Wed, 29 Jan 2014 11:02:57 +0100
+Message-Id: <1390989777-4660-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2014 04:32 AM, Stephen Rothwell wrote:
-> After merging the clk tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
->
-> drivers/clk/clk-si5351.c: In function 'si5351_i2c_probe':
-> drivers/clk/clk-si5351.c:1314:2: error: too many arguments to function 'si5351_dt_parse'
->    ret = si5351_dt_parse(client, variant);
->    ^
-> drivers/clk/clk-si5351.c:1296:12: note: declared here
->   static int si5351_dt_parse(struct i2c_client *client)
->              ^
->
-> Caused by commit 9d43dc7f403d ("clk: si5351: remove variant from
-> platform_data").
->
-> I have used the clk tree from next-20140128 for today.  (Yes, I know that
-> Linus already took this - I guess I won't have to worry about it
-> tomorrow.)
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+---
+ Documentation/ABI/testing/configfs-usb-gadget              | 12 ++++++------
+ Documentation/ABI/testing/configfs-usb-gadget-acm          |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-ecm          |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-eem          |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-ffs          |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-loopback     |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-mass-storage |  4 ++--
+ Documentation/ABI/testing/configfs-usb-gadget-ncm          |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-obex         |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-phonet       |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-rndis        |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-serial       |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-sourcesink   |  2 +-
+ Documentation/ABI/testing/configfs-usb-gadget-subset       |  2 +-
+ 14 files changed, 20 insertions(+), 20 deletions(-)
 
-I wasn't aware that Mike did not sent his PR for v3.14 yet and that
-Linus will pick it up that quickly. The patch had been lying around
-for a while but was obviously not well compile tested.
-
-Anyway, my patch, my fault: Thanks for fixing it up and sorry for the
-inconvenience.
-
-Sebastian
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget b/Documentation/ABI/testing/configfs-usb-gadget
+index 01e769d6984d..37559a06393b 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget
++++ b/Documentation/ABI/testing/configfs-usb-gadget
+@@ -1,13 +1,13 @@
+ What:		/config/usb-gadget
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		This group contains sub-groups corresponding to created
+ 		USB gadgets.
+ 
+ What:		/config/usb-gadget/gadget
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 
+ 		The attributes of a gadget:
+@@ -27,7 +27,7 @@ Description:
+ 
+ What:		/config/usb-gadget/gadget/configs
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		This group contains a USB gadget's configurations
+ 
+@@ -58,20 +58,20 @@ Description:
+ 
+ What:		/config/usb-gadget/gadget/functions
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		This group contains functions available to this USB gadget.
+ 
+ What:		/config/usb-gadget/gadget/strings
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		This group contains subdirectories for language-specific
+ 		strings for this gadget.
+ 
+ What:		/config/usb-gadget/gadget/strings/language
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-acm b/Documentation/ABI/testing/configfs-usb-gadget-acm
+index 5708a568b5f6..d21092d75a05 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-acm
++++ b/Documentation/ABI/testing/configfs-usb-gadget-acm
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/acm.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 
+ 		This item contains just one readonly attribute: port_num.
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-ecm b/Documentation/ABI/testing/configfs-usb-gadget-ecm
+index 6b9a582ce0b5..0addf7704b4c 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-ecm
++++ b/Documentation/ABI/testing/configfs-usb-gadget-ecm
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/ecm.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-eem b/Documentation/ABI/testing/configfs-usb-gadget-eem
+index dbddf36b48b3..a4c57158fcde 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-eem
++++ b/Documentation/ABI/testing/configfs-usb-gadget-eem
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/eem.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-ffs b/Documentation/ABI/testing/configfs-usb-gadget-ffs
+index 14343e237e83..e39b27653c65 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-ffs
++++ b/Documentation/ABI/testing/configfs-usb-gadget-ffs
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/ffs.name
+ Date:		Nov 2013
+-KenelVersion:	3.13
++KernelVersion:	3.13
+ Description:	The purpose of this directory is to create and remove it.
+ 
+ 		A corresponding USB function instance is created/removed.
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-loopback b/Documentation/ABI/testing/configfs-usb-gadget-loopback
+index 852b2365a5b5..9aae5bfb9908 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-loopback
++++ b/Documentation/ABI/testing/configfs-usb-gadget-loopback
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/Loopback.name
+ Date:		Nov 2013
+-KenelVersion:	3.13
++KernelVersion:	3.13
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-mass-storage b/Documentation/ABI/testing/configfs-usb-gadget-mass-storage
+index ad72a37ee9ff..9931fb0d63ba 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-mass-storage
++++ b/Documentation/ABI/testing/configfs-usb-gadget-mass-storage
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/mass_storage.name
+ Date:		Oct 2013
+-KenelVersion:	3.13
++KernelVersion:	3.13
+ Description:
+ 		The attributes:
+ 
+@@ -13,7 +13,7 @@ Description:
+ 
+ What:		/config/usb-gadget/gadget/functions/mass_storage.name/lun.name
+ Date:		Oct 2013
+-KenelVersion:	3.13
++KernelVersion:	3.13
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-ncm b/Documentation/ABI/testing/configfs-usb-gadget-ncm
+index bc309f42357d..6fe723effc78 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-ncm
++++ b/Documentation/ABI/testing/configfs-usb-gadget-ncm
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/ncm.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-obex b/Documentation/ABI/testing/configfs-usb-gadget-obex
+index aaa5c96fb7c6..a6a9327ed9ba 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-obex
++++ b/Documentation/ABI/testing/configfs-usb-gadget-obex
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/obex.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 
+ 		This item contains just one readonly attribute: port_num.
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-phonet b/Documentation/ABI/testing/configfs-usb-gadget-phonet
+index 3e3b742cdfd7..7037a358e6c4 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-phonet
++++ b/Documentation/ABI/testing/configfs-usb-gadget-phonet
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/phonet.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 
+ 		This item contains just one readonly attribute: ifname.
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-rndis b/Documentation/ABI/testing/configfs-usb-gadget-rndis
+index 822e6dad8fc0..e32879b84b4d 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-rndis
++++ b/Documentation/ABI/testing/configfs-usb-gadget-rndis
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/rndis.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-serial b/Documentation/ABI/testing/configfs-usb-gadget-serial
+index 16f130c1501f..474d249f760b 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-serial
++++ b/Documentation/ABI/testing/configfs-usb-gadget-serial
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/gser.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 
+ 		This item contains just one readonly attribute: port_num.
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-sourcesink b/Documentation/ABI/testing/configfs-usb-gadget-sourcesink
+index a30f3093ef6c..29477c319f61 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-sourcesink
++++ b/Documentation/ABI/testing/configfs-usb-gadget-sourcesink
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/SourceSink.name
+ Date:		Nov 2013
+-KenelVersion:	3.13
++KernelVersion:	3.13
+ Description:
+ 		The attributes:
+ 
+diff --git a/Documentation/ABI/testing/configfs-usb-gadget-subset b/Documentation/ABI/testing/configfs-usb-gadget-subset
+index 154ae597cd99..9373e2c51ea4 100644
+--- a/Documentation/ABI/testing/configfs-usb-gadget-subset
++++ b/Documentation/ABI/testing/configfs-usb-gadget-subset
+@@ -1,6 +1,6 @@
+ What:		/config/usb-gadget/gadget/functions/geth.name
+ Date:		Jun 2013
+-KenelVersion:	3.11
++KernelVersion:	3.11
+ Description:
+ 		The attributes:
+ 
+-- 
+1.8.3.2
 
