@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaA2Hff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 02:35:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:31019 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908AbaA2Hfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 02:35:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,740,1384329600"; 
-   d="scan'208";a="472478830"
-Message-ID: <52E8AF40.6000103@intel.com>
-Date: Wed, 29 Jan 2014 15:35:28 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        mika.westerberg@linux.intel.com, andriy.shevchenko@linux.intel.com,
-        yanmin_zhang@linux.intel.com, bo.he@intel.com
-Subject: Re: [PATCH] i2c-designware-pcidrv: fix the incorrect return of idle
- callback
-References: <52E744AC.2050606@intel.com> <20140128183035.GC20789@katana> <52E86175.6010300@intel.com>
-In-Reply-To: <52E86175.6010300@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756100AbaA2HhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 02:37:01 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49266 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432AbaA2Hg7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 02:36:59 -0500
+Date: Tue, 28 Jan 2014 23:36:58 -0800 (PST)
+Message-Id: <20140128.233658.2247744963083251365.davem@davemloft.net>
+To: rashika.kheria@gmail.com
+Cc: linux-kernel@vger.kernel.org, bp@alien8.de, linux-ide@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
+ ide-cd_verbose.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
+References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0T7b8am019250
 
+From: Rashika Kheria <rashika.kheria@gmail.com>
+Date: Tue, 17 Dec 2013 16:38:16 +0530
 
-
-äº 2014å¹´01æœˆ29æ—¥ 10:03, xinhui.pan å†™é“:
+> Include appropriate header file ide-cd.h in ide-cd_verbose.c because
+> function ide_cd_log_error() has its prototype declaration in ide-cd.h.
+> Also, include linux/ide.h because it contains certain declarations
+> necessary for including ide-cd.h.
 > 
->> On Tue, Jan 28, 2014 at 01:48:28PM +0800, xinhui.pan wrote:
->>> From: "xinhui.pan" <xinhuix.pan@intel.com>
->>>
->>> i2c_dw_pci_runtime_idle should return -EBUSY rather than zero if it do success.
->>
->> I don't understand...
->>
-> Sorry for my poor English. 
-> Even if i2c_dw_pci_runtime_idle succeed ,it should return -EBUSY.
->>> Otherwise rpm_idle will call pm_suspend again and that may cause pm_schedule_suspend delay invalidate.
->>> 	
->>> Signed-off-by: bo.he <bo.he@intel.com>
->>> Signed-off-by: xinhui.pan <xinhuix.pan@intel.com>
->>> ---
->>>  drivers/i2c/busses/i2c-designware-pcidrv.c |    4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
->>> index f6ed06c..96e81f6 100644
->>> --- a/drivers/i2c/busses/i2c-designware-pcidrv.c
->>> +++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
->>> @@ -190,8 +190,8 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
->>>  	int err = pm_schedule_suspend(dev, 500);
->>>  	dev_dbg(dev, "runtime_idle called\n");
->>>  
->>> -	if (err != 0)
->>> -		return 0;
->>> +	if (err)
->>> +		return err;
->>>  	return -EBUSY;
->>
->> ... it does return EBUSY when pm_schedule_suspend() succeeds? It only
->> returns 0 if it does not succeed (for which I don't know if this is an
->> apropriate behaviour). Mika?
->>
-hi ,
-I found one sentence in /Documentation/power/runtime_pm.txt
- "If there is no idle callback, or if the callback returns 0, 
-then the PM core will attempt to carry out a runtime suspend of the device,
-also respecting devices configured for autosuspend." 
-  so is this a right way to prevent this?
-Br. xinhui
->>>  }
->>>  
->>> -- 
->>> 1.7.9.5
+> This eliminates the following warnings in ide-cd_verbose.c:
+> drivers/ide/ide-cd_verbose.c:251:6: warning: no previous prototype for ¡ide_cd_log_error¢ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+
+Applied.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
