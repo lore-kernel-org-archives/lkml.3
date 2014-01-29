@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816AbaA2URo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:17:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaA2URn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:17:43 -0500
-Date: Wed, 29 Jan 2014 15:17:17 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, perf, p4: Counter corruption when using lots of
- perf groups
-Message-ID: <20140129201717.GB25953@redhat.com>
-References: <1391024270-19469-1-git-send-email-dzickus@redhat.com>
- <20140129200657.GJ29846@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140129200657.GJ29846@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751932AbaA2UTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:19:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33503 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaA2UTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 15:19:01 -0500
+Date: Wed, 29 Jan 2014 12:18:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>, criu@openvz.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Borislav Petkov <bp@suse.de>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: Re: [PATCH] mm: don't lose the SOFT_DIRTY flag on mprotect
+Message-Id: <20140129121859.07da0df20daea6a1581e709a@linux-foundation.org>
+In-Reply-To: <1391025899-25299-1-git-send-email-avagin@openvz.org>
+References: <1391025899-25299-1-git-send-email-avagin@openvz.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 12:06:57AM +0400, Cyrill Gorcunov wrote:
-> On Wed, Jan 29, 2014 at 02:37:50PM -0500, Don Zickus wrote:
-> > On a P4 box stressing perf with
-> > 
-> > ./perf record -o perf.data ./perf stat -v ./perf bench all
-> > 
-> > it was noticed that a slew of unknown NMIs would pop out rather quickly.
-> > 
-> > Painfully debugging this ancient platform, led me to notice cross cpu counter
-> > corruption.
-> > 
-> > The P4 machine is special in that it has 18 counters, half are used for cpu0
-> > and the other half is for cpu1 (or all 18 if hyperthreading is disabled).  But
-> > the splitting of the counters has to be actively managed by the software.
-> > 
-> > In this particular bug, one of the cpu0 specific counters was being used by
-> > cpu1 and caused all sorts of random unknown nmis.
-> > 
-> > I am not entirely sure on the corruption path, but what happens is:
-> > 
-> > o perf schedules a group with p4_pmu_schedule_events()
-> > o inside p4_pmu_schedule_events(), it notices an hwc pointer is being reused
-> >   but for a different cpu, so it 'swaps' the config bits and returns the
-> >   updated 'assign' array with a _new_ index.
-> > o perf schedules another group with p4_pmu_schedule_events()
-> > o inside p4_pmu_schedule_events(), it notices an hwc pointer is being reused
-> >   (the same one as above) but for the _same_ cpu [BUG!!], so it updates the
-> >   'assign' array to use the _old_ (wrong cpu) index because the _new_ index is in
-> >   an earlier part of the 'assign' array (and hasn't been committed yet).
-> > o perf commits the transaction using the wrong index and corrupts the other cpu
+On Thu, 30 Jan 2014 00:04:59 +0400 Andrey Vagin <avagin@openvz.org> wrote:
+
+> The SOFT_DIRTY bit shows that the content of memory was changed
+> after a defined point in the past. mprotect() doesn't change the
+> content of memory, so it must not change the SOFT_DIRTY bit.
 > 
-> Thanks for the fix Don! I fear I won't be able to look precisely tonight, so
-> could it wait until tomorrow? (If it's critical sure such fix should do the
-> trick).
+> This patch does nothing with _PAGE_SWP_SOFT_DIRTY, becase pte_modify()
+> is called only for present pages.
 
-There is no rush.  Early next week is fine too. :-)
+Standard complaint: when fixing a bug, please describe the end-user
+visible effects of that bug.
 
-Cheers,
-Don
+afaict the effects are minor: snapshotting will save/copy more pages
+than it needs to, but there will be no malfunction.  Hence a -stable
+backport is unneeded.  Agree?
+
 
