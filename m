@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100AbaA2HhB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 02:37:01 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49266 "EHLO
+	id S1756132AbaA2HhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 02:37:09 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49271 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432AbaA2Hg7 (ORCPT
+	with ESMTP id S1755432AbaA2HhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 02:36:59 -0500
-Date: Tue, 28 Jan 2014 23:36:58 -0800 (PST)
-Message-Id: <20140128.233658.2247744963083251365.davem@davemloft.net>
+	Wed, 29 Jan 2014 02:37:04 -0500
+Date: Tue, 28 Jan 2014 23:37:03 -0800 (PST)
+Message-Id: <20140128.233703.360671975054752022.davem@davemloft.net>
 To: rashika.kheria@gmail.com
-Cc: linux-kernel@vger.kernel.org, bp@alien8.de, linux-ide@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
         josh@joshtriplett.org
-Subject: Re: [PATCH 1/2] drivers: ide: Include appropriate header file in
- ide-cd_verbose.c
+Subject: Re: [PATCH 2/2] drivers: ide: Include appropriate header file in
+ ide-pio-blacklist.c
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
+In-Reply-To: <2ec755ae03ae9f912f40a12a241f997909f380a1.1387278225.git.rashika.kheria@gmail.com>
 References: <d24d7befadfbfb9501d0e873f13e39fd42ec893b.1387278225.git.rashika.kheria@gmail.com>
+	<2ec755ae03ae9f912f40a12a241f997909f380a1.1387278225.git.rashika.kheria@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=iso-8859-7
@@ -24,18 +25,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0T7b8am019250
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0T7bHTg019254
 
 From: Rashika Kheria <rashika.kheria@gmail.com>
-Date: Tue, 17 Dec 2013 16:38:16 +0530
+Date: Tue, 17 Dec 2013 16:41:11 +0530
 
-> Include appropriate header file ide-cd.h in ide-cd_verbose.c because
-> function ide_cd_log_error() has its prototype declaration in ide-cd.h.
-> Also, include linux/ide.h because it contains certain declarations
-> necessary for including ide-cd.h.
+> Include appropriate header file include/linux/ide.h in file
+> ide-pio-blacklist.c because function ide_scan_pio_blacklist() has it's
+> prototype declaration in include/linux/ide.h.
 > 
-> This eliminates the following warnings in ide-cd_verbose.c:
-> drivers/ide/ide-cd_verbose.c:251:6: warning: no previous prototype for ¡ide_cd_log_error¢ [-Wmissing-prototypes]
+> This eliminates the following warning in ide-pio-blacklist.c:
+> drivers/ide/ide-pio-blacklist.c:85:5: warning: no previous prototype for ¡ide_scan_pio_blacklist¢ [-Wmissing-prototypes]
 > 
 > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
