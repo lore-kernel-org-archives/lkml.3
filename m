@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaA2Rxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 12:53:37 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:33266 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752150AbaA2Rxf (ORCPT
+	id S1752792AbaA2R4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 12:56:23 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:57369 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaA2R4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 12:53:35 -0500
-Date: Wed, 29 Jan 2014 14:53:32 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, Pekon Gupta <pekon@ti.com>
-Subject: Re: [RFC PATCH v2 03/14] of: mtd: add documentation for
- nand-ecc-level property
-Message-ID: <20140129175331.GA27143@localhost>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
- <1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com>
+	Wed, 29 Jan 2014 12:56:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140128175804.GA5287@netboy>
+References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
+	<20140113175114.GA4271@netboy>
+	<52D42D36.1020400@linaro.org>
+	<20140128175804.GA5287@netboy>
+Date: Wed, 29 Jan 2014 09:56:20 -0800
+Message-ID: <CALAqxLU21LNc2g_VnmGjZqqdjjKVZ3sRDQDdQmD2f=b13iV+pA@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
+ better w/ nohz
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 03:34:13PM +0100, Boris BREZILLON wrote:
-> nand-ecc-level property statically defines NAND chip's ECC requirements.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
->  Documentation/devicetree/bindings/mtd/nand.txt |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
-> index 03855c8..0c962296 100644
-> --- a/Documentation/devicetree/bindings/mtd/nand.txt
-> +++ b/Documentation/devicetree/bindings/mtd/nand.txt
-> @@ -3,5 +3,8 @@
->  - nand-ecc-mode : String, operation mode of the NAND ecc mode.
->    Supported values are: "none", "soft", "hw", "hw_syndrome", "hw_oob_first",
->    "soft_bch".
-> +- nand-ecc-level : Two cells property defining the ECC level requirements.
-> +  The first cell represent the strength and the second cell the ECC block size.
-> +  E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
->  - nand-bus-width : 8 or 16 bus width if not present 8
->  - nand-on-flash-bbt: boolean to enable on flash bbt option if not present false
+On Tue, Jan 28, 2014 at 9:58 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> I tested for a regression using the patched kernel with the nohz=off
+> command line option...
+>
+> On Mon, Jan 13, 2014 at 10:15:18AM -0800, John Stultz wrote:
+>> On 01/13/2014 09:51 AM, Richard Cochran wrote:
+>> >
+>> > - Linux 3.12.7-nohz-plain-20140106                nohz-plain.log
+>> > - Linux 3.12.7-nohz-plain-20140106 NOHZ=OFF       periodic-plain.log
+>> > - Linux 3.12.7-nohz-fix-20140106-00001-gd753140   nohz-fix.log
+>
+> Regression check:
+>
+>  - Linux homeboy 3.12.7-nohz-fix-20140106-00001-gd753140 NOHZ=OFF
+>    nohz-fix-periodic.log
+>
+>> > The performance in the log files as reflected in the clock offset is
+>> > summarized in this table. The values are in nanoseconds.
+>> >
+>> >  |         | periodic-plain |      nohz-fix |    nohz-plain |
+>> >  |---------+----------------+---------------+---------------|
+>> >  | minimum |  -1.599000e+03 | -1.051000e+03 | -5.373700e+04 |
+>> >  | maximum |  +1.311000e+03 | +1.048000e+03 | +6.389500e+04 |
+>> >  | mean    |  +9.880240e-02 | -7.747305e+01 | +1.597904e+01 |
+>> >  | stddev  |  +4.610021e+02 | +3.960978e+02 | +1.491263e+04 |
+>
+> Comparing the nohz=off case with and without the patch, the three hour
+> test looks like this.
+>
+>   |         | periodic-plain | nohz-fix-periodic |
+>   |---------+----------------+-------------------+
+>   | minimum |  -1.599000e+03 |     -1.427000e+03 |
+>   | maximum |  +1.311000e+03 |     +1.279000e+03 |
+>   | mean    |  +9.880240e-02 |     -2.710778e+01 |
+>   | stddev  |  +4.610021e+02 |     +3.974372e+02 |
+>
+>> >    http://linuxptp.sourceforge.net/nohz-fix/current_nohz.png
+>> >    http://linuxptp.sourceforge.net/nohz-fix/periodic_vs_fix.png
+>
+> I also made a third graph showing before and after the patch.
+>
+>     http://linuxptp.sourceforge.net/nohz-fix/nohz_regression.png
+>
+>> If you do get a chance to look again, I'd also be interested if running
+>> with nohz=off w/ the fix doesn't show any regression compared to the
+>> unmodified nohz=off case.
+>
+> Looks like there is no regression.
 
-Hm.. when was this proposal agreed? It seems I've missed the
-discussion...
+That's great to hear! Looks like we might be able to queue it for 3.15...
 
-FWIW, we've already proposed an equivalent one, but it received no
-feedback from the devicetree maintainers:
+Thanks so much again for the detailed testing! I really appreciate it!
 
-http://comments.gmane.org/gmane.linux.drivers.devicetree/58764
-
-Maybe we can discuss about it now?
-
-  nand-ecc-strength : integer ECC required strength.
-  nand-ecc-size : integer step size associated to the ECC strength.
-
-  vs.
-
-  nand-ecc-level : Two cells property defining the ECC level requirements.
-  The first cell represent the strength and the second cell the ECC block size.
-  E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
-
-It's really the same proposal but with a different format, right?
-IMHO, the former is more human-readable, but other than that I see no
-difference.
-
-Brian? DT-guys?
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+thanks
+-john
