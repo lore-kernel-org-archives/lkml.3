@@ -1,106 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaA2M5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 07:57:50 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:51145 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751888AbaA2M5s convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752178AbaA2M5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 07:57:49 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:18379 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaA2M5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Jan 2014 07:57:48 -0500
-Date: Wed, 29 Jan 2014 07:57:45 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: nicolas.dichtel@6wind.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        stable <stable@vger.kernel.org>, Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH 0/2] [BUG FIXES - 3.10.27] sit: More backports
-Message-ID: <20140129075745.4227a2ed@gandalf.local.home>
-In-Reply-To: <52E8E025.2060803@6wind.com>
-References: <20140128205756.074448668@goodmis.org>
-	<52E8E025.2060803@6wind.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-AuditID: cbfec7f5-b7fc96d000004885-c7-52e8fac9506a
+Message-id: <52E8FAC8.90508@samsung.com>
+Date: Wed, 29 Jan 2014 13:57:44 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>, linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH trivial] Documentation: fix multiple typo occurences
+ s/KenelVersion/KernelVersion/
+References: <1390989777-4660-1-git-send-email-ard.biesheuvel@linaro.org>
+In-reply-to: <1390989777-4660-1-git-send-email-ard.biesheuvel@linaro.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xa7onf70IMmg6z20xZ/0aNov/H3Yz
+	WjQvXs9mcXnXHDYHFo871/aweZyY8ZvFY//cNewenzfJBbBEcdmkpOZklqUW6dslcGXMuXaI
+	rWCJV8WN6xeYGxhv2XUxcnJICJhIrJq5lh3CFpO4cG89WxcjF4eQwFJGiWWHvjKDJIQEPjNK
+	PJ7HDWLzCmhIHFp+A6iIg4NFQFViR48RSJhNwFhi78EORhBbVCBMYuqJqywQ5YISPybfA7NF
+	BHwk9uxazAZiMwtYSix58BUsLiyQIbF2egs7xCoPiZlPjjCB2JwCnhJ7fv1ghKg3k3jUso4Z
+	wpaX2LzmLfMERoFZSFbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghoft1
+	B+PSY1aHGAU4GJV4eDfceB4kxJpYVlyZe4hRgoNZSYQ3+cWLICHelMTKqtSi/Pii0pzU4kOM
+	TBycUg2Mqf7hXmGN59+c7EkyDT1zg+NI4cvfz8/Vfvy8YFrsX/PJkttk96/jb9Zz3SFTf+S3
+	gcm/L4vsDTIL0wvdMzKVAu+8VVk+qSl29t/TNQL6fAs3cM8yPXWuljmfbU7g7/ii1KWLag7L
+	Xcp1uRfy9e4E0wumO8xDlyveacvwMJYVSzzBLdXXVcunxFKckWioxVxUnAgAmXdSLTsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jan 2014 12:04:05 +0100
-Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-> Le 28/01/2014 21:57, Steven Rostedt a écrit :
-> > At Red Hat we base our real-time kernel off of 3.10.27 and do lots of
-> > stress testing on that kernel. This has discovered some bugs that we
-> > can hit with the vanilla 3.10.27 kernel (no -rt patches applied).
-> >
-> > I sent out a bug fix that can cause a crash with the current 3.10.27
-> > when you add and then remove the sit module. That patch is obsoleted by
-> > these patches, as that patch was not enough.
-> Can you explain a bit more which problem remains after that patch?
-> I wonder if a problem remains also with ip6_tunnel.ko (net/ipv6/ip6_tunnel.c),
-> the same problem was spotted into this module.
+Acked-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
-Hmm, OK it may only need the first version of the patch. It was one of
-those cases where it didn't fix the second bug, so we added the full
-patch as well. Then we found the second bug but never tried all the
-tests with the smaller version of the patch. I'll put back the first
-patch and then ask our QA to retest it with the older version and the
-other patch.
-
-> 
-> >
-> > A previous patch that was backported:
-> >
-> >    Upstream commit 205983c43700ac3a81e7625273a3fa83cd2759b5
-> >    sit: allow to use rtnl ops on fb tunnel
-> >
-> > Had a depenency on commit 5e6700b3bf98 ("sit: add support of x-netns")
-> > which was not backported. The dependency was only on part of that
-> > commit which is what I backported.
-> I cannot comment directly the patch, it was an attachement, hence I put my
-
-It's not really an attachment. It was sent with quilt mail, which only
-makes it look like one. What mail client are you using? mutt, alpine,
-evolution, claws-mail, and thunderbird all show it as a normal patch.
-I do know that k9-mail on android makes it into an attachment.
-
-> comments here.
-> In patch 0001-sit-Unregister-sit-devices-with-rtnl_link_ops.patch, I wonder how
-> 'if (dev_net(t->dev) != net)' can be wrong. If commit 5e6700b3bf98 ("sit: add
-> support of x-netns") has not been backported, this test is always true.
-
-Should it just be removed then? This has fixed our bugs, but perhaps it
-opened new ones we haven't detected yet. I can remove the if and
-unregister and see if it still works. Or perhaps calling unregister all
-the time isn't bad.
-
--- Steve
-
-
-> 
-> >
-> > The other upstream commit 9434266f2c645d4fcf62a03a8e36ad8075e37943
-> > sit: fix use after free of fb_tunnel_dev
-> >
-> > fixes another bug we encountered, it also fixes the 3.10.27 bug
-> > where removing the sit module cause the crash. This is the patch
-> > that obsoletes my previous patch.
-> >
-> > -- Steve
-> >
-> >
-> > Steven Rostedt (Red Hat) (1):
-> >        sit: Unregister sit devices with rtnl_link_ops
-> >
-> > Willem de Bruijn (1):
-> >        sit: fix use after free of fb_tunnel_dev
-> >
-> > ----
-> >   net/ipv6/sit.c | 30 +++++++++++++++++++++++++-----
-> >   1 file changed, 25 insertions(+), 5 deletions(-)
-> >
+> Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+> ---
+>   Documentation/ABI/testing/configfs-usb-gadget              | 12 ++++++------
+>   Documentation/ABI/testing/configfs-usb-gadget-acm          |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-ecm          |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-eem          |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-ffs          |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-loopback     |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-mass-storage |  4 ++--
+>   Documentation/ABI/testing/configfs-usb-gadget-ncm          |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-obex         |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-phonet       |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-rndis        |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-serial       |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-sourcesink   |  2 +-
+>   Documentation/ABI/testing/configfs-usb-gadget-subset       |  2 +-
+>   14 files changed, 20 insertions(+), 20 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget b/Documentation/ABI/testing/configfs-usb-gadget
+> index 01e769d6984d..37559a06393b 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget
+> @@ -1,13 +1,13 @@
+>   What:		/config/usb-gadget
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		This group contains sub-groups corresponding to created
+>   		USB gadgets.
+>
+>   What:		/config/usb-gadget/gadget
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>
+>   		The attributes of a gadget:
+> @@ -27,7 +27,7 @@ Description:
+>
+>   What:		/config/usb-gadget/gadget/configs
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		This group contains a USB gadget's configurations
+>
+> @@ -58,20 +58,20 @@ Description:
+>
+>   What:		/config/usb-gadget/gadget/functions
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		This group contains functions available to this USB gadget.
+>
+>   What:		/config/usb-gadget/gadget/strings
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		This group contains subdirectories for language-specific
+>   		strings for this gadget.
+>
+>   What:		/config/usb-gadget/gadget/strings/language
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-acm b/Documentation/ABI/testing/configfs-usb-gadget-acm
+> index 5708a568b5f6..d21092d75a05 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-acm
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-acm
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/acm.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>
+>   		This item contains just one readonly attribute: port_num.
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-ecm b/Documentation/ABI/testing/configfs-usb-gadget-ecm
+> index 6b9a582ce0b5..0addf7704b4c 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-ecm
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-ecm
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/ecm.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-eem b/Documentation/ABI/testing/configfs-usb-gadget-eem
+> index dbddf36b48b3..a4c57158fcde 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-eem
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-eem
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/eem.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-ffs b/Documentation/ABI/testing/configfs-usb-gadget-ffs
+> index 14343e237e83..e39b27653c65 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-ffs
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-ffs
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/ffs.name
+>   Date:		Nov 2013
+> -KenelVersion:	3.13
+> +KernelVersion:	3.13
+>   Description:	The purpose of this directory is to create and remove it.
+>
+>   		A corresponding USB function instance is created/removed.
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-loopback b/Documentation/ABI/testing/configfs-usb-gadget-loopback
+> index 852b2365a5b5..9aae5bfb9908 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-loopback
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-loopback
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/Loopback.name
+>   Date:		Nov 2013
+> -KenelVersion:	3.13
+> +KernelVersion:	3.13
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-mass-storage b/Documentation/ABI/testing/configfs-usb-gadget-mass-storage
+> index ad72a37ee9ff..9931fb0d63ba 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-mass-storage
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-mass-storage
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/mass_storage.name
+>   Date:		Oct 2013
+> -KenelVersion:	3.13
+> +KernelVersion:	3.13
+>   Description:
+>   		The attributes:
+>
+> @@ -13,7 +13,7 @@ Description:
+>
+>   What:		/config/usb-gadget/gadget/functions/mass_storage.name/lun.name
+>   Date:		Oct 2013
+> -KenelVersion:	3.13
+> +KernelVersion:	3.13
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-ncm b/Documentation/ABI/testing/configfs-usb-gadget-ncm
+> index bc309f42357d..6fe723effc78 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-ncm
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-ncm
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/ncm.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-obex b/Documentation/ABI/testing/configfs-usb-gadget-obex
+> index aaa5c96fb7c6..a6a9327ed9ba 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-obex
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-obex
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/obex.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>
+>   		This item contains just one readonly attribute: port_num.
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-phonet b/Documentation/ABI/testing/configfs-usb-gadget-phonet
+> index 3e3b742cdfd7..7037a358e6c4 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-phonet
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-phonet
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/phonet.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>
+>   		This item contains just one readonly attribute: ifname.
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-rndis b/Documentation/ABI/testing/configfs-usb-gadget-rndis
+> index 822e6dad8fc0..e32879b84b4d 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-rndis
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-rndis
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/rndis.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-serial b/Documentation/ABI/testing/configfs-usb-gadget-serial
+> index 16f130c1501f..474d249f760b 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-serial
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-serial
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/gser.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>
+>   		This item contains just one readonly attribute: port_num.
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-sourcesink b/Documentation/ABI/testing/configfs-usb-gadget-sourcesink
+> index a30f3093ef6c..29477c319f61 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-sourcesink
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-sourcesink
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/SourceSink.name
+>   Date:		Nov 2013
+> -KenelVersion:	3.13
+> +KernelVersion:	3.13
+>   Description:
+>   		The attributes:
+>
+> diff --git a/Documentation/ABI/testing/configfs-usb-gadget-subset b/Documentation/ABI/testing/configfs-usb-gadget-subset
+> index 154ae597cd99..9373e2c51ea4 100644
+> --- a/Documentation/ABI/testing/configfs-usb-gadget-subset
+> +++ b/Documentation/ABI/testing/configfs-usb-gadget-subset
+> @@ -1,6 +1,6 @@
+>   What:		/config/usb-gadget/gadget/functions/geth.name
+>   Date:		Jun 2013
+> -KenelVersion:	3.11
+> +KernelVersion:	3.11
+>   Description:
+>   		The attributes:
+>
+>
 
