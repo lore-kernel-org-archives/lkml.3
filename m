@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaA2R6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 12:58:25 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:1026 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaA2R6Y (ORCPT
+	id S1752901AbaA2SAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:00:21 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60948 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaA2SAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 12:58:24 -0500
-Message-ID: <52E94125.8010900@hp.com>
-Date: Wed, 29 Jan 2014 12:57:57 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 29 Jan 2014 13:00:18 -0500
+Date: Wed, 29 Jan 2014 18:00:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: devicetree@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140129180009.GF22609@sirena.org.uk>
+References: <1390900898-31579-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <1390933151-1797-2-git-send-email-Waiman.Long@hp.com> <20140129002048.GE11821@two.firstfloor.org>
-In-Reply-To: <20140129002048.GE11821@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6v9BRtpmy+umdQlo"
+Content-Disposition: inline
+In-Reply-To: <1390900898-31579-1-git-send-email-geert@linux-m68k.org>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5] spi: rspi: Add DT support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 07:20 PM, Andi Kleen wrote:
-> So the 1-2 threads case is the standard case on a small
-> system, isn't it? This may well cause regressions.
->
 
-Yes, it is possible that in a lightly contended case, the queue spinlock 
-maybe a bit slower because of the slowpath overhead. I observed some 
-slight slowdown in some of the lightly contended workloads. I will run 
-more test in a smaller 2-socket system or even a 1-socket system to see 
-if there is observed regression.
+--6v9BRtpmy+umdQlo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> In the extremely unlikely case that all the queue node entries are
->> used up, the current code will fall back to busy spinning without
->> waiting in a queue with warning message.
-> Traditionally we had some code which could take thousands
-> of locks in rare cases (e.g. all locks in a hash table or all locks of
-> a big reader lock)
->
-> The biggest offender was the mm for changing mmu
-> notifiers, but I believe that's a mutex now.
-> lglocks presumably still can do it on large enough
-> systems.  I wouldn't be surprised if there is
-> other code which e.g. make take all locks in a table.
->
-> I don't think the warning is valid and will
-> likely trigger in some obscure cases.
->
-> -Andi
+On Tue, Jan 28, 2014 at 10:21:38AM +0100, Geert Uytterhoeven wrote:
+> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-As explained by George, the queue node is only needed when the thread is 
-waiting to acquire the lock. Once it gets the lock, the node can be 
-released and be reused.
+Applied, thanks.  I was expecting your last patch to be resubmitted as
+well?
 
--Longman
+--6v9BRtpmy+umdQlo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS6UGmAAoJELSic+t+oim9LGYP/3UG1DnGnKPwXHPFG0Nc3D6r
+FmAFb30VLFltAYY2Ua7qdjKJDbhwRw0qyyNeTuRzJ4H9oaqtJ/VlGi1uh35WBufg
+jl+JlWeurL/ghI/4v8WW/ynoMm0w9nGzzXKDcQA+tXTPX76GL3gaGLlObb6yy0ye
+ewC7Nj6i2RzZa0HPx1j12soB+C6/3QwUWbmjxUL1a3Snj3hbYbP4vGt6f+G3Jd4/
+BPZc7a8Z6/HlIJpHZK5grK1jobv1DCVY6bMZRrbaQ8njg5o3OUNj2T0sHWV80jHb
+38wFTJ2BY4c48LBWUnNg43c30SJu7gElgX/OhA0zy1Ei49oTsI8HYZL65jl66/ja
+a88Mxe9YMcrueS3iR7uX0bOWeCh0PS0NEtQcgdUIZh/5UiH8dFUeZEhLhix4MXTk
++8y+U8waKE7kn64rCfMf6Fy227QyjFlTxY3lBdooWddQkRnY+aZEA/JQkonlzQex
+13pcVf9WdiemwXEI9YVnY43nXTpoDbfkTUaoTuuqxYwRF/mJxqPDDhKK3qTRXlfL
+//Ah3Po6flZ9kLB5wncnb9fGTVAkSZ1KE9ObBrH+LQTssciINaQAbPIvBM54KbE/
+8GFkM30TcI0XJxZPwNZmOVCCgOuO94ZgpQAuiW2ht0wfUba6N7hNTDxy0tu8WfWu
+nAZ/P/Nz4thA8xCu85Hp
+=u8DS
+-----END PGP SIGNATURE-----
+
+--6v9BRtpmy+umdQlo--
