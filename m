@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304AbaA2Uu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:50:56 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:46302 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaA2Uux (ORCPT
+	id S1751883AbaA2Uye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:54:34 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:37563 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaA2Uyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:50:53 -0500
+	Wed, 29 Jan 2014 15:54:32 -0500
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:b13b:1c47:4c90:eb03]
-In-Reply-To: <1391016574-25237-4-git-send-email-k.debski@samsung.com>
-References: <1391016574-25237-1-git-send-email-k.debski@samsung.com>
-	<1391016574-25237-4-git-send-email-k.debski@samsung.com>
-Date: Wed, 29 Jan 2014 12:50:53 -0800
-Message-ID: <CAOesGMh8qEumWGb_mVuiSTWE=tsEusntG5r9xL3Z+f_WUnBQSw@mail.gmail.com>
-Subject: Re: [PATCH v6 3/8] dts: Add usb2phy to Exynos 4
-From: Olof Johansson <olof@lixom.net>
-To: Kamil Debski <k.debski@samsung.com>
+In-Reply-To: <1390232575-4284-1-git-send-email-standby24x7@gmail.com>
+References: <1390232575-4284-1-git-send-email-standby24x7@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 29 Jan 2014 13:54:11 -0700
+Message-ID: <CAErSpo6B_o4Y_oASU3ZR+NVtk-XDw0CJS8RVeX6G9zgr8r3K_g@mail.gmail.com>
+Subject: Re: [PATCH][trivial] pci: Fix make htmldocs failure caused by msi.c
+To: Masanari Iida <standby24x7@gmail.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, mat.krawczuk@gmail.com,
-        yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, Jingoo Han <jg1.han@samsung.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matt Porter <matt.porter@linaro.org>, tjakobi@math.uni-bielefeld.de,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+        Jiri Kosina <trivial@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alexander Gordeev <agordeev@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 9:29 AM, Kamil Debski <k.debski@samsung.com> wrote:
-> Add support to PHY of USB2 of the Exynos 4 SoC.
+On Mon, Jan 20, 2014 at 8:42 AM, Masanari Iida <standby24x7@gmail.com> wrote:
+> An empty line in msi.c caused "make htmldocs" failure.
+> Warning(/home/iida/Repo/linux-next//drivers/pci/msi.c:962): bad line:
+> Remove the empty line fixed the issue.
 >
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+
+Applied to my pci/msi branch, thanks!
+
+>
 > ---
->  .../devicetree/bindings/arm/samsung/pmu.txt        |    2 ++
->  arch/arm/boot/dts/exynos4.dtsi                     |   31 ++++++++++++++++++++
->  arch/arm/boot/dts/exynos4210.dtsi                  |   17 +++++++++++
->  arch/arm/boot/dts/exynos4x12.dtsi                  |   17 +++++++++++
->  4 files changed, 67 insertions(+)
+>  drivers/pci/msi.c | 1 -
+>  1 file changed, 1 deletion(-)
 >
-> diff --git a/Documentation/devicetree/bindings/arm/samsung/pmu.txt b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> index 307e727..a76f91d 100644
-> --- a/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> +++ b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
-> @@ -3,6 +3,8 @@ SAMSUNG Exynos SoC series PMU Registers
->  Properties:
->   - name : should be 'syscon';
->   - compatible : should contain two values. First value must be one from following list:
-> +                  - "samsung,exynos4210-pmu" - for Exynos4210 SoC,
-> +                  - "samsung,exynos4x12-pmu" - for Exynos4212 SoC,
->                    - "samsung,exynos5250-pmu" - for Exynos5250 SoC,
->                    - "samsung,exynos5420-pmu" - for Exynos5420 SoC.
->                 second value must be always "syscon".
-
-This and other PMU related bindings/dts changes should probably go in
-separate patch(es) instead of being snuck in with USB changes.
-
-
--Olof
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 7a0fec6..a9d5176 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -959,7 +959,6 @@ EXPORT_SYMBOL(pci_disable_msi);
+>  /**
+>   * pci_msix_vec_count - return the number of device's MSI-X table entries
+>   * @dev: pointer to the pci_dev data structure of MSI-X device function
+> -
+>   * This function returns the number of device's MSI-X table entries and
+>   * therefore the number of MSI-X vectors device is capable of sending.
+>   * It returns a negative errno if the device is not capable of sending MSI-X
+> --
+> 1.9.rc0
+>
