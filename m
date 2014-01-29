@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaA2U7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:59:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14613 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaA2U7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:59:23 -0500
-Message-ID: <1391029124.2488.50.camel@deneb.redhat.com>
-Subject: Re: [PATCH v4 2/5] arm: add new asm macro update_sctlr
-From: Mark Salter <msalter@redhat.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 29 Jan 2014 15:58:44 -0500
-In-Reply-To: <20140129182805.GF11329@bivouac.eciton.net>
-References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
-	 <1389445524-30623-3-git-send-email-leif.lindholm@linaro.org>
-	 <20140122112055.GF1621@mudshark.cambridge.arm.com>
-	 <20140129182805.GF11329@bivouac.eciton.net>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752265AbaA2VAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 16:00:14 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:49653 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaA2VAK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 16:00:10 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-iio@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        linux-pwm@vger.kernel.org,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH 0/5] IIO pulse capture support for TI ECAP
+Date: Wed, 29 Jan 2014 15:59:54 -0500
+Message-Id: <1391029199-3670-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-29 at 18:28 +0000, Leif Lindholm wrote:
-> On Wed, Jan 22, 2014 at 11:20:55AM +0000, Will Deacon wrote:
-> > > +#ifdef CONFIG_CPU_CP15
-> > > +/* Macro for setting/clearing bits in sctlr */
-> > > +   .macro update_sctlr, set:req, clear:req, tmp:req, tmp2:req
-> > > +   mrc     p15, 0, \tmp, c1, c0, 0
-> > > +   ldr     \tmp2, =\set
-> > > +   orr     \tmp, \tmp, \tmp2
-> > > +   ldr     \tmp2, =\clear
-> > > +   mvn     \tmp2, \tmp2
-> > > +   and     \tmp, \tmp, \tmp2
-> > > +   mcr     p15, 0, \tmp, c1, c0, 0
-> > 
-> > I think this would be cleaner if you force the caller to put set and clear
-> > into registers beforehand, rather than have to do the literal load every
-> > time. Also, I don't think set and clear should be required (and then you can
-> > lose tmp2 as well).
-> 
-> I can't figure out how to make register-parameters non-required
-> (i.e. conditionalise on whether an optional parameter was provided),
-> so my attempt of refactoring actually ends up using an additional
-> register:
-> 
+This series adds support for PWM capture devices within IIO and
+adds a TI ECAP IIO driver.
 
-Register parameters are just strings, so how about this:
+PWM capture devices are supported using a new IIO "pulse" channel type.
 
-	.macro foo bar=, baz=
-	.ifnc \bar,
-	mov \bar,#0
-	.endif
-	.ifnc \baz,
-	mov \baz,#1
-	.endif
-	.endm
+The IIO ECAP driver implements interrupt driven triggered buffer capture
+only as raw sample reads are not applicable to this hardware.
+Initially, the driver supports a single pulse width measurement with
+configurable polarity. The ECAP hardware can support measurement of a
+complete period and duty cycle but this is not yet implemented.
 
-	foo x0
-	foo
-	foo x1, x2
-	foo ,x3
+Matt Porter (5):
+  iio: add support for pulse width capture devices
+  iio: pulse: add TI ECAP driver
+  iio: enable selection and build of pulse drivers
+  pwm: enable TI PWMSS if the IIO tiecap driver is selected
+  ARM: dts: AM33XX: Add ecap interrupt properties
 
-Results in:
+ arch/arm/boot/dts/am33xx.dtsi   |   6 +
+ drivers/iio/Kconfig             |   1 +
+ drivers/iio/Makefile            |   1 +
+ drivers/iio/industrialio-core.c |   1 +
+ drivers/iio/pulse/Kconfig       |  20 ++
+ drivers/iio/pulse/Makefile      |   6 +
+ drivers/iio/pulse/tiecap.c      | 493 ++++++++++++++++++++++++++++++++++++++++
+ drivers/pwm/Kconfig             |   2 +-
+ include/linux/iio/types.h       |   1 +
+ 9 files changed, 530 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/iio/pulse/Kconfig
+ create mode 100644 drivers/iio/pulse/Makefile
+ create mode 100644 drivers/iio/pulse/tiecap.c
 
-0000000000000000 <.text>:
-   0:	d2800000 	mov	x0, #0x0                   	// #0
-   4:	d2800001 	mov	x1, #0x0                   	// #0
-   8:	d2800022 	mov	x2, #0x1                   	// #1
-   c:	d2800023 	mov	x3, #0x1                   	// #1
-
+-- 
+1.8.4
 
