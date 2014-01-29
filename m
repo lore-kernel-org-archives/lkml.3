@@ -1,50 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaA2STs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 13:19:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46037 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439AbaA2STp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:19:45 -0500
-From: Nishanth Menon <nm@ti.com>
-To: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Tero Kristo <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 1/2] clk: ti: am335x: remove unecessary cpu0 clk node
-Date: Wed, 29 Jan 2014 12:19:16 -0600
-Message-ID: <1391019557-22313-2-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391019557-22313-1-git-send-email-nm@ti.com>
-References: <1391019557-22313-1-git-send-email-nm@ti.com>
+	id S1752859AbaA2SWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 13:22:18 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52862 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122AbaA2SWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 13:22:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <52CF1327.3090705@redhat.com>
+References: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
+ <CAG_cf+eYoK--k=z+f5xQBx0FP3_z5sbszrSZ1qYq7jR_Zi9Vaw@mail.gmail.com> <52CF1327.3090705@redhat.com>
+From: Andrew de los Reyes <adlr@chromium.org>
+Date: Wed, 29 Jan 2014 10:21:54 -0800
+X-Google-Sender-Auth: UrvfYqP1JkKL9E8N8C2jfiJPP_g
+Message-ID: <CAAfQ=8_r2Pc34qXhU874qV=38dk_gAEaji+mgjRY2BELBCb7Zw@mail.gmail.com>
+Subject: Re: [PATCH 0/5] HID logitech DJ fixes and preps for enabling extended features
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu0 clock node has no functionality, since cpufreq-cpu0 is already
-capable of picking up the clock from dts.
+Just curious, what is the status of these patches?
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/clk/ti/clk-33xx.c |    1 -
- 1 file changed, 1 deletion(-)
+Benjamin, should I rebase Chrome OS's Logitech patches on top of these
+and look at sending them upstream as well?
 
-diff --git a/drivers/clk/ti/clk-33xx.c b/drivers/clk/ti/clk-33xx.c
-index 776ee45..028b337 100644
---- a/drivers/clk/ti/clk-33xx.c
-+++ b/drivers/clk/ti/clk-33xx.c
-@@ -34,7 +34,6 @@ static struct ti_dt_clk am33xx_clks[] = {
- 	DT_CLK(NULL, "dpll_core_m5_ck", "dpll_core_m5_ck"),
- 	DT_CLK(NULL, "dpll_core_m6_ck", "dpll_core_m6_ck"),
- 	DT_CLK(NULL, "dpll_mpu_ck", "dpll_mpu_ck"),
--	DT_CLK("cpu0", NULL, "dpll_mpu_ck"),
- 	DT_CLK(NULL, "dpll_mpu_m2_ck", "dpll_mpu_m2_ck"),
- 	DT_CLK(NULL, "dpll_ddr_ck", "dpll_ddr_ck"),
- 	DT_CLK(NULL, "dpll_ddr_m2_ck", "dpll_ddr_m2_ck"),
--- 
-1.7.9.5
-
+On Thu, Jan 9, 2014 at 1:22 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> On 09/01/14 16:08, Andrew de los Reyes wrote:
+>> In general, I'm positive on the change to fix the USB3 issue (yay!),
+>> and for the others I'm happy it's going upstream. It seem to open up
+>> the possibility of user-space drivers, which is great, even though we
+>> don't need this on our team.
+>>
+>> One thing I want to double-check: on some devices (T651, at least),
+>> the raw data comes in not via HID++, but tacked onto the end of the
+>> normal mouse reports. Will a driver for this device be able to get all
+>> packets, not just HID++ ones? Sorry if this was clear and I missed it.
+>
+> Yeah, that is partly why I can not send the rest of the series right
+> now. Nestor already warned me about those funny devices, so I need to
+> double check how to implement HID++.
+>
+> On a technical point of view, a driver connected through the unifying
+> receiver currently only get the regular input reports, and this series
+> adds the HID++ reports to these ones. So yes, a device will receive all
+> reports dedicated to it.
+>
+> Cheers,
+> Benjamin
+>
+>>
+>> -andrew
+>>
+>> On Wed, Jan 8, 2014 at 2:18 PM, Benjamin Tissoires
+>> <benjamin.tissoires@redhat.com> wrote:
+>>> Hi Jiri,
+>>>
+>>> Well, this work is _not_ for 3.14 (except maybe patch 1), especially since it is
+>>> missing the biggest part where we enable the capabilities of Logitech devices.
+>>>
+>>> Long story short:
+>>> This work is based on the work I did back in Summer 2011. I worked at Logitech
+>>> for a few weeks to show up a demo of a driver for the Logitech Wireless Touchpad.
+>>> At that time, a first draft has been done, but due to a lack of resources, noone
+>>> upstreamed it.
+>>> Since then, the code marinated a little at Logitech and in the ChromeOS kernel
+>>> tree, but nobody tried to push it upstream. So here I am, trying to push this stuff
+>>> upstream.
+>>>
+>>> I can not send the full series right now because I am lacking most of the
+>>> testing hardware (I mean I only have the oldest Wireless Touchpad).
+>>> Hopefully, I should receive some other soon, and I'll be able to send the second
+>>> part then.
+>>>
+>>> Now, let me roughly explain the patches:
+>>> - patch 1 can be applied right now I think, but it's entirely up to you Jiri.
+>>>   This patch should fix the missing notifications with some USB 3.0 boards.
+>>> - patches 2 to 5 allows to forward in both direction the proprietary protocol
+>>>   used by Logitech (HID++ [1]) between the driver and the hardware.
+>>> - later patches will introduce a transport layer for HID++ and also a driver
+>>>   to support full multitouch on various Logitech touchpads.
+>>>
+>>> Nestor, Andrew, feel free to add your "Signed-off-by" whereever you want, I lost
+>>> a little bit the track of who added what.
+>>>
+>>> Cheers,
+>>> Benjamin
+>>>
+>>> [1] HID++: Documentation is provided at
+>>> https://drive.google.com/a/logitech.com/?tab=mo#folders/0BxbRzx7vEV7eWmgwazJ3NUFfQ28
+>>>
+>>> Benjamin Tisssoires (5):
+>>>   HID: logitech-dj: Fix USB 3.0 issue
+>>>   HID: core: do not scan reports if the group is already set
+>>>   HID: logitech-dj: rely on hid groups to separate receivers from dj
+>>>     devices
+>>>   HID: logitech-dj: forward incoming HID++ reports to the correct dj
+>>>     device
+>>>   HID: logitech-dj: add .request callback
+>>>
+>>>  drivers/hid/hid-core.c        |   3 +-
+>>>  drivers/hid/hid-logitech-dj.c | 161 +++++++++++++++++++++++++++++++++---------
+>>>  drivers/hid/hid-logitech-dj.h |  16 ++---
+>>>  include/linux/hid.h           |   1 +
+>>>  4 files changed, 136 insertions(+), 45 deletions(-)
+>>>
+>>> --
+>>> 1.8.4.2
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
