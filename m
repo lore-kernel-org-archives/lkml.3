@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaA2Ubm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 15:31:42 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:51293 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaA2Ubk (ORCPT
+	id S1752061AbaA2Udk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 15:33:40 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:37942 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaA2Udj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 15:31:40 -0500
-Date: Wed, 29 Jan 2014 15:31:36 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/6] idle: move the cpuidle entry point to the generic
- idle loop
-In-Reply-To: <1391017513-12995-2-git-send-email-nicolas.pitre@linaro.org>
-Message-ID: <alpine.LFD.2.11.1401291526320.1652@knanqh.ubzr>
-References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org> <1391017513-12995-2-git-send-email-nicolas.pitre@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Wed, 29 Jan 2014 15:33:39 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140129124132.GA3180@stfomichev-desktop>
+References: <20140127173149.GA8099@stfomichev-desktop>
+	<CAPcyv4gNdKqRYGfjNY0GyOysN-3WrTVRGbo-+6Jdb2ukFGPX9w@mail.gmail.com>
+	<20140129124132.GA3180@stfomichev-desktop>
+Date: Wed, 29 Jan 2014 12:33:38 -0800
+Message-ID: <CAPcyv4j1=TY6P97RTpfONLN6nHE0NjJeg_gGPQEhgFVEWXBdpA@mail.gmail.com>
+Subject: Re: [REGRESSION][BISECTED] 3.10.26: net_dma: mark broken (b69ec589136c)
+From: Dan Williams <dan.j.williams@intel.com>
+To: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        David Whipple <whipple@securedatainnovations.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jan 2014, Nicolas Pitre wrote:
+On Wed, Jan 29, 2014 at 4:41 AM, Stanislav Fomichev
+<stfomichev@yandex-team.ru> wrote:
+>> I wonder if we are simply racing the initialization of the completion
+>> vs when it is triggered by dma.
+> We have wmb() in the ioat2_tx_submit_unlock (before submitting work to dma,
+> but after init_completion), shouldn't it make race between interrupt handler
+> and our waiting thread impossible?
+>
+> I also believe I traced x->done in the do_wait_for_common
+> before and after 'timeout = action(timeout);' and it was as expected:
+> 0 - before and 1 - after.
+>
+>> I also think we need to be waiting
+>> for in-flight tasklet runs when stopping the channel.
+> Yes, I also thought that's the reason of the race, because tasklet is in
+> the queue, but it is disabled (on my weird trace I don't see the interrupt,
+> so I abandoned this idea).
+> But it seems to be possible only when we issue dma, wait_for_completion_timeout
+> waits and times out, we do cleanup (tasklet_disable), we get interrupt and
+> do tasklet_schedule. But (again) I don't see timeout and
+> interrupt on my trace (could it be corrupted?).
+>
+> Despite all this theory, the patch below (which just replaces tasklet_disable
+> with tasklet_kill in the cleanup routines) seems to be working (did about
+> 40 reboots and didn't see the issue).
+>
+> I think replacing tasklet_disable with tasklet_kill is reasonable anyway, so
+> should I send the patch rebased on 3.13 with comments or you'll take care
+> and merge it into mainline and stable yourself?
 
-> In order to integrate cpuidle with the scheduler, we must have a better
-> proximity in the core code with what cpuidle is doing and not delegate
-> such interaction to arch code.
-> 
-> Architectures implementing arch_cpu_idle() should simply enter
-> a cheap idle mode in the absence of a proper cpuidle driver.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+I'll take it from here and I'll add your Reported-by and Tested-by.
 
-As mentioned in my reply to Olof's comment on patch #5/6, here's a new 
-version of this patch adding the safety local_irq_enable() to the core 
-code.
+Thank you!
 
------ >8
+--
+Dan
 
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: idle: move the cpuidle entry point to the generic idle loop
-
-In order to integrate cpuidle with the scheduler, we must have a better
-proximity in the core code with what cpuidle is doing and not delegate
-such interaction to arch code.
-
-Architectures implementing arch_cpu_idle() should simply enter
-a cheap idle mode in the absence of a proper cpuidle driver.
-
-In both cases i.e. whether it is a cpuidle driver or the default
-arch_cpu_idle(), the calling convention expects IRQs to be disabled
-on entry and enabled on exit. There is a warning in place already but
-let's add a forced IRQ enable here as well.  This will allow for
-removing the forced IRQ enable some implementations do locally and 
-allowing for the warning to trig.
-
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index 988573a9a3..14ca43430a 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -3,6 +3,7 @@
-  */
- #include <linux/sched.h>
- #include <linux/cpu.h>
-+#include <linux/cpuidle.h>
- #include <linux/tick.h>
- #include <linux/mm.h>
- #include <linux/stackprotector.h>
-@@ -95,8 +96,10 @@ static void cpu_idle_loop(void)
- 				if (!current_clr_polling_and_test()) {
- 					stop_critical_timings();
- 					rcu_idle_enter();
--					arch_cpu_idle();
--					WARN_ON_ONCE(irqs_disabled());
-+					if (cpuidle_idle_call())
-+						arch_cpu_idle();
-+					if (WARN_ON_ONCE(irqs_disabled()))
-+						local_irq_enable();
- 					rcu_idle_exit();
- 					start_critical_timings();
- 				} else {
+>
+> ---
+> diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+> index 17a2393b3e25..6c62f4de02c0 100644
+> --- a/drivers/dma/ioat/dma.c
+> +++ b/drivers/dma/ioat/dma.c
+> @@ -379,7 +379,7 @@ static void ioat1_dma_free_chan_resources(struct dma_chan *c)
+>         if (ioat->desccount == 0)
+>                 return;
+>
+> -       tasklet_disable(&chan->cleanup_task);
+> +       tasklet_kill(&chan->cleanup_task);
+>         del_timer_sync(&chan->timer);
+>         ioat1_cleanup(ioat);
+>
+> diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+> index b925e1b1d139..268e93d1af2d 100644
+> --- a/drivers/dma/ioat/dma_v2.c
+> +++ b/drivers/dma/ioat/dma_v2.c
+> @@ -809,7 +809,7 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+>         if (!ioat->ring)
+>                 return;
+>
+> -       tasklet_disable(&chan->cleanup_task);
+> +       tasklet_kill(&chan->cleanup_task);
+>         del_timer_sync(&chan->timer);
+>         device->cleanup_fn((unsigned long) c);
+>         device->reset_hw(chan);
+> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+> index acb86507828a..94a5f04e114e 100644
