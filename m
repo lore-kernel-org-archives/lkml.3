@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986AbaA2Faf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 00:30:35 -0500
-Received: from ozlabs.org ([203.10.76.45]:33399 "EHLO ozlabs.org"
+	id S1756029AbaA2FbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 00:31:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:19555 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938AbaA2Fad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 00:30:33 -0500
-Date: Wed, 29 Jan 2014 16:30:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Jan 29
-Message-Id: <20140129163027.50f4184a6c57c67079b46bb5@canb.auug.org.au>
-In-Reply-To: <20140129162855.d232e4d964107fd3ce0ca5d8@canb.auug.org.au>
-References: <20140129162855.d232e4d964107fd3ce0ca5d8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_Jan_2014_16_30_27_+1100_5_=xdix6=aXbLGRM"
+	id S1750845AbaA2FbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 00:31:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,740,1384329600"; 
+   d="scan'208";a="446213019"
+Date: Wed, 29 Jan 2014 18:53:34 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Rupesh Kumar <rupesh.kumar@stericsson.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Pali Roh?r <pali.rohar@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>,
+        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
+        "freemangordon@abv.bg" <freemangordon@abv.bg>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 4/4] power_supply: bq24261 charger driver
+Message-ID: <20140129132334.GB15355@jenny-desktop>
+References: <1390411194-21410-1-git-send-email-jenny.tc@intel.com>
+ <1390411194-21410-5-git-send-email-jenny.tc@intel.com>
+ <20140128141445.GC8713@xo-6d-61-c0.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140128141445.GC8713@xo-6d-61-c0.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Jan_2014_16_30_27_+1100_5_=xdix6=aXbLGRM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 28, 2014 at 07:14:45AM -0700, Pavel Machek wrote:
+> > +#define BQ24261_ICHRG_MASK		(0x1F << 3)
+> > +#define BQ24261_ICHRG_100ma		(0x01 << 3)
+> > +#define BQ24261_ICHRG_200ma		(0x01 << 4)
+> > +#define BQ24261_ICHRG_400ma		(0x01 << 5)
+> > +#define BQ24261_ICHRG_800ma		(0x01 << 6)
+> > +#define BQ24261_ICHRG_1600ma		(0x01 << 7)
+> 
+> First, its mA, not ma.
 
-On Wed, 29 Jan 2014 16:28:55 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Non-merge commits (relative to Linus' tree): 2689
->  3435 files changed, 215376 insertions(+), 61940 deletions(-)
+Camel Case allowed? Ignore Checkpatch.pl warning?
+> > +u16 bq24261_iterm[][2] = {
+> > +	{0, 0x00}
+> > +	,
+> > +	{50, BQ24261_ITERM_50ma}
+> > +	,
+> > +	{100, BQ24261_ITERM_100ma}
+> > +	,
+> > +	{150, BQ24261_ITERM_100ma | BQ24261_ITERM_50ma}
+> 
+> ...this is very obscure way to do with table what can be done with
+> 
+> (x/50) << 3, right ?
 
-Actually:
+Few register settings need table mapping, but some can have logic as your
+comment say. Just wanted to keep same logic for all register settings.
+Doesn't it make more readable?
 
-Non-merge commits (relative to Linus' tree): 2751
- 3315 files changed, 222970 insertions(+), 63268 deletions(-)
+> > +u16 bq24261_cc[][2] = {
+> > +
+> > +	{500, 0x00}
+> > +	,
+> > +	{600, BQ24261_ICHRG_100ma}
+> > +	,
+> > +	{700, BQ24261_ICHRG_200ma}
+> > +	,
+> > +	{800, BQ24261_ICHRG_100ma | BQ24261_ICHRG_200ma}
+> > +	,
+> > +	{900, BQ24261_ICHRG_400ma}
+> 
+> I suspect you can get rid of this, too, if you expand macros.
+Same as above comment.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__29_Jan_2014_16_30_27_+1100_5_=xdix6=aXbLGRM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS6JH3AAoJEMDTa8Ir7ZwV9lkQAJYQsFnai13N1mUM0Mt5JpW6
-51NiUvgmLtvhJ9UXz5Lcdc3PB2Du2u/j8XwXByZEBgzkfDYvq4YGsyyISMBPV9NM
-o5yaXLd2m671ns3i4NgfgBoL/xCHPDWKcqCKfdm+LhapYwP4iLj2ntsaZ7hWxnGu
-eaQ6dYu7v3DYtcfzBfI1jSTH5DnHSA3P8J3Q6+UBDiZdgf3byzRNuGsEF5lK7YsG
-22fzcaaIBAliLqMAiTj51cKMk3BqbyZdrCL6m792XVmPhn+Hamym/pnxqmpRuKVc
-z+ZILMlmZcx21INiCMoXzt3dfhh0lfSwdJUD36seMvhVZD/WdR4iIFtr6wtJCGyn
-47HrmxMDuD07/kKaE4tpbYreFRu7c0oaA0x8e2HkcRpV3vq7CL6xNtfrwp4eayQC
-SgW4Py/d1n0n7LlOJV5Dof3UvA4t0tSVeXSgVysGEZASaaxW2yEwSJmvUJD4gUHx
-RhMseTg6qk+HzB97JLvEbAiK6PW0Gf58jzY0GDvh+JlaBFCLO4c1Ya/6p7mWsu/3
-XcU/btvao6G3N7Z2Rp14FPYrMgINTTDkKpJN6QDEA4hvdDF32NRPPTKgn6sLTmd+
-ri5FnBrQyl8HNeuxfxYrAdXyqZF7aPnYqoH8FPWiJ33/6FcyG0pRm2r1/YGJI79A
-k8kQf/eJMH1KomHccXA2
-=uGu8
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Jan_2014_16_30_27_+1100_5_=xdix6=aXbLGRM--
+-Jenny
