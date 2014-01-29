@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaA2ONQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 09:13:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:53968 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344AbaA2ONG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 09:13:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,742,1384329600"; 
-   d="scan'208";a="466608333"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V2 2/9] perf tools: Add kallsyms__get_function_start()
-Date: Wed, 29 Jan 2014 16:14:37 +0200
-Message-Id: <1391004884-10334-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
-References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1752151AbaA2OYz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 09:24:55 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:49629 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaA2OYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 09:24:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pratyush Anand <pratyush.anand@st.com>
+Subject: Re: Query: Phy: How to find consumer device on dt platform
+Date: Wed, 29 Jan 2014 15:24:35 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel@list.st.com
+References: <20140128141356.GC3519@pratyush-vbox> <52E894A4.8050303@ti.com> <20140129095031.GA2287@pratyush-vbox>
+In-Reply-To: <20140129095031.GA2287@pratyush-vbox>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401291524.36131.arnd@arndb.de>
+X-Provags-ID: V02:K0:9RTx/1//Jv6RPYJ8BRUkaIoAYN0ZrGAzeYp50i4I4zB
+ jJ3A+05oZy2z069seXPT0g4o6oKK8LWOnfo7aUgb2A7Y3MhSMZ
+ yy/TUnu9vJ53xyimtvYsl7hLTB8MmmD23jzJoaISRZs7QOYAB+
+ AN1N/lAjeOk7vFy9aVnTjQSlKQsaE7bNqbhLc68E/t87S/bySY
+ Tg7psMLQWEfM4+as7iAz4jpghqiGG/1wYY5J+GKZkxjFZhJHTa
+ OeVUErxZymLCmDZoEFzkCg2Rf27EkhFdKTOckC8nkwmwAQNTJa
+ zUAv1zSWZecsJJHegIzXu3JdFIT2yNThWgBosgitkhTe2d6ibM
+ OSjxEs4Owv9z7RWcq1Ft/IU0uQO/EWjChS/26I9lj
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate out the logic used to find the start
-address of the reference symbol used to track
-kernel relocation.  kallsyms__get_function_start()
-is used in subsequent patches.
+On Wednesday 29 January 2014, Pratyush Anand wrote:
+> On Wed, Jan 29, 2014 at 01:41:56PM +0800, Kishon Vijay Abraham I wrote:
+> > > 
+> > > I would instead recommend making the mode of the PHY device the
+> > > argument to the phy handle in DT, so that the sata node uses
+> > > 
+> > > 	phys = <&phyA 0>;
+> > > 
+> > > and the PCIe node uses
+> > > 
+> > > 	phys = <&phyB 1>;
+> > > 
+> > > Then the binding for the phy defines that an argument of '0' means sata mode,
+> > > while '1' means pcie mode, plus you should define all other valid modes.
+> 
+> Probably, it may  not help in this case. How would *phys* defining as
+> above with PCIe/SATA node help phy driver to decide whether current
+> phy instance is associated with PCIe or SATA. Actually, there is no
+> way to pass information from phy consumer driver(pcie/sata driver in
+> this case) to phy driver.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/event.c | 18 +++++++++++++++---
- tools/perf/util/event.h |  3 +++
- 2 files changed, 18 insertions(+), 3 deletions(-)
+I don't understand what is unclear about my example where I do just that.
+The argument (0 or 1) gets passed into the driver's xlate function
+when the consumer calls of_phy_get().
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 1fc1c2f..17476df 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -470,6 +470,17 @@ static int find_symbol_cb(void *arg, const char *name, char type,
- 	return 1;
- }
- 
-+u64 kallsyms__get_function_start(const char *kallsyms_filename,
-+				 const char *symbol_name)
-+{
-+	struct process_symbol_args args = { .name = symbol_name, };
-+
-+	if (kallsyms__parse(kallsyms_filename, &args, find_symbol_cb) <= 0)
-+		return 0;
-+
-+	return args.start;
-+}
-+
- int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 				       perf_event__handler_t process,
- 				       struct machine *machine,
-@@ -480,13 +491,13 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 	char path[PATH_MAX];
- 	char name_buff[PATH_MAX];
- 	struct map *map;
-+	u64 start;
- 	int err;
- 	/*
- 	 * We should get this from /sys/kernel/sections/.text, but till that is
- 	 * available use this, and after it is use this as a fallback for older
- 	 * kernels.
- 	 */
--	struct process_symbol_args args = { .name = symbol_name, };
- 	union perf_event *event = zalloc((sizeof(event->mmap) +
- 					  machine->id_hdr_size));
- 	if (event == NULL) {
-@@ -513,7 +524,8 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 		}
- 	}
- 
--	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0) {
-+	start = kallsyms__get_function_start(filename, symbol_name);
-+	if (!start) {
- 		free(event);
- 		return -ENOENT;
- 	}
-@@ -525,7 +537,7 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 	event->mmap.header.type = PERF_RECORD_MMAP;
- 	event->mmap.header.size = (sizeof(event->mmap) -
- 			(sizeof(event->mmap.filename) - size) + machine->id_hdr_size);
--	event->mmap.pgoff = args.start;
-+	event->mmap.pgoff = start;
- 	event->mmap.start = map->start;
- 	event->mmap.len   = map->end - event->mmap.start;
- 	event->mmap.pid   = machine->pid;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index faf6e21..66a0c03 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -279,4 +279,7 @@ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf_task(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf(union perf_event *event, FILE *fp);
- 
-+u64 kallsyms__get_function_start(const char *kallsyms_filename,
-+				 const char *symbol_name);
-+
- #endif /* __PERF_RECORD_H */
--- 
-1.7.11.7
+> > Anyway phyA and phyB points to different nodes and just from phyA and phyB we
+> > should be able to tell whether it is sata or pcie.
+> 
+> We have multiple instances (say 3) of same phy, which can be
+> programmed either for pcie or for sata. We have multiple instances of
+> ahci and pcie controller. phy_n will be connected to either ahci_n or
+> pcie_n.
+> 
+> What Kishon has suggested here is exactly what I was thinking.
+> I think, we should go with this.
 
+I still find it highly inconsistent.
+
+	Arnd
