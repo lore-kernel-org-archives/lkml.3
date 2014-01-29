@@ -1,149 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaA2CXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 21:23:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35117 "EHLO mga01.intel.com"
+	id S1755927AbaA2CZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 21:25:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:44603 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669AbaA2CXw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 21:23:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,739,1384329600"; 
-   d="scan'208,223";a="466284075"
-From: "Zhang, Jun" <jun.zhang@intel.com>
-To: "ming.lei@canonical.com" <ming.lei@canonical.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] firmware: give a protection when map page failed
-Thread-Topic: [PATCH] firmware: give a protection when map page failed
-Thread-Index: Ac8cmQE2MpqwD6ilTJ+iVo0NwKXMPg==
-Date: Wed, 29 Jan 2014 02:23:47 +0000
-Message-ID: <88DC34334CA3444C85D647DBFA962C271160BE8E@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754026AbaA2CZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 21:25:20 -0500
+Date: Wed, 29 Jan 2014 13:25:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the imx-mxs tree with the arm tree
+Message-Id: <20140129132513.3846b7eb56650e4208d2d24a@canb.auug.org.au>
+In-Reply-To: <20140129011803.GA13518@S2101-09.ap.freescale.net>
+References: <20140129113514.86275e22015dea313d78d5e1@canb.auug.org.au>
+	<20140129011310.GT15937@n2100.arm.linux.org.uk>
+	<20140129011803.GA13518@S2101-09.ap.freescale.net>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__29_Jan_2014_13_25_13_+1100_3YvLv9rBQtYXf16B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9c23aedc1c1a1446dae96ffec8f20a2f52942281 Mon Sep 17 00:00:00 2001
-From: jzha144 <jun.zhang@intel.com>
-Date: Wed, 29 Jan 2014 09:57:05 +0800
-Subject: [PATCH] firmware: give a protection when map page failed
+--Signature=_Wed__29_Jan_2014_13_25_13_+1100_3YvLv9rBQtYXf16B
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[ 7341.474236] [drm:do_intel_finish_page_flip] *ERROR* invalid or inactive unpin_work!
-[ 7341.494464] atomisp-css2400b0_v21 0000:00:03.0: unhandled css stored event: 0x20
-[ 7341.503627] vmap allocation for size 208896 failed: use vmalloc=<size> to increase size.<=================== map failed
-[ 7341.507135] [drm:do_intel_finish_page_flip] *ERROR* invalid or inactive unpin_work!
-[ 7341.503848] BUG: unable to handle kernel NULL pointer dereference at   (null)
-[ 7341.520394] IP: [<c18f5c1b>] sst_load_all_modules_elf+0x1bb/0x850
-[ 7341.527216] *pdpt = 0000000030dfe001 *pde = 0000000000000000
-[ 7341.533640] Oops: 0000 [#1] PREEMPT SMP
-[ 7341.540360] [drm:do_intel_finish_page_flip] *ERROR* invalid or inactive unpin_work!
-[ 7341.538037] Modules linked in: atomisp_css2400b0_v21 lm3554 ov2722 imx1x5 atmel_mxt_ts vxd392 videobuf_vmalloc videobuf_core lm_dump(O) bcm_bt_lpm hdmi_audio bcm4334x(O)
-[ 7341.563531] CPU: 1 PID: 525 Comm: mediaserver Tainted: G        W  O 3.10.20-262518-ga83c053 #1
-[ 7341.573253] task: f0994ec0 ti: f09f0000 task.ti: f09f0000
-[ 7341.579284] EIP: 0060:[<c18f5c1b>] EFLAGS: 00010246 CPU: 1
-[ 7341.585415] EIP is at sst_load_all_modules_elf+0x1bb/0x850
-[ 7341.591541] EAX: 00000000 EBX: e3595ba0 ECX: 00000000 EDX: 00031c1c
-[ 7341.598541] ESI: e04a0000 EDI: 00000000 EBP: f09f1d80 ESP: f09f1cf4
-[ 7341.605542]  DS: 007b ES: 007b FS: 00d8 GS: 003b SS: 0068
-[ 7341.611573] CR0: 80050033 CR2: 00000000 CR3: 30db4000 CR4: 001007f0
-[ 7341.618573] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[ 7341.625575] DR6: ffff0ff0 DR7: 00000400
-[ 7341.629856] Stack:
-[ 7341.632097]  f09f1d57 00000019 c1d656d7 c1d658d3 c1d56409 00000f28 c1d64af9 18000103
-[ 7341.640766]  01000001 00080000 c1f910a0 f326f4c8 00000034 f326f520 00000002 e04a02bc
-[ 7341.649465]  00000001 f326e014 c1f910b0 e04a0000 c0080100 00031c1c e3595ba0 c0080100
-[ 7341.658149] Call Trace:
-[ 7341.660888]  [<c18f6308>] sst_post_download_byt+0x58/0xb0
-[ 7341.666925]  [<c18f4fbc>] sst_load_fw+0xdc/0x510
-[ 7341.672086]  [<c1a7b2c0>] ? __mutex_lock_slowpath+0x250/0x370
-[ 7341.678507]  [<c1a80e05>] ? sub_preempt_count+0x55/0xe0
-[ 7341.684346]  [<c18f1294>] sst_download_fw+0x14/0x60
-[ 7341.689796]  [<c1a7b403>] ? mutex_lock+0x23/0x30
-[ 7341.694954]  [<c18f191c>] intel_sst_check_device+0x6c/0x120
-[ 7341.701181]  [<c18f1d08>] sst_set_generic_params+0x1b8/0x4a0
-[ 7341.707504]  [<c1a80e05>] ? sub_preempt_count+0x55/0xe0
-[ 7341.713341]  [<c1a80e05>] ? sub_preempt_count+0x55/0xe0
-[ 7341.719178]  [<c1a7b2c0>] ? __mutex_lock_slowpath+0x250/0x370
-[ 7341.725600]  [<c1320d84>] ? __kmalloc_track_caller+0xe4/0x1d0
-[ 7341.732022]  [<c18e35f5>] sst_set_mixer_param+0x25/0x40
-[ 7341.737859]  [<c18e3853>] lpe_mixer_ihf_set+0xb3/0x160
-[ 7341.743602]  [<c1855b99>] snd_ctl_ioctl+0xa89/0xb40
-[ 7341.749052]  [<c1331e65>] ? path_openat+0xa5/0x3d0
-[ 7341.754409]  [<c1447857>] ? avc_has_perm_flags+0xc7/0x170
-[ 7341.760441]  [<c1855110>] ? snd_ctl_elem_add_user+0x540/0x540
-[ 7341.766862]  [<c1334047>] do_vfs_ioctl+0x77/0x5e0
-[ 7341.772117]  [<c144842a>] ? inode_has_perm.isra.42.constprop.79+0x3a/0x50
-[ 7341.779705]  [<c14490a0>] ? file_has_perm+0xa0/0xb0
-[ 7341.785155]  [<c14493b8>] ? selinux_file_ioctl+0x48/0xe0
-[ 7341.791090]  [<c1334628>] SyS_ioctl+0x78/0x90
-[ 7341.795958]  [<c1a7dde8>] syscall_call+0x7/0xb
-[ 7341.800925]  [<c1a70000>] ? mm_fault_error+0x13c/0x198
+Hi Shawn,
 
-Signed-off-by: jzha144 <jun.zhang@intel.com>
----
- drivers/base/firmware_class.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+On Wed, 29 Jan 2014 09:18:06 +0800 Shawn Guo <shawn.guo@linaro.org> wrote:
+>
+> I will rebase my branch on v3.14-rc1 once it's out.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 8a97ddf..2ffd66f 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -619,6 +619,7 @@ static ssize_t firmware_loading_store(struct device *dev,
- 	struct firmware_buf *fw_buf;
- 	int loading = simple_strtol(buf, NULL, 10);
- 	int i;
-+	size_t size = count;
- 
- 	mutex_lock(&fw_lock);
- 	fw_buf = fw_priv->buf;
-@@ -649,7 +650,11 @@ static ssize_t firmware_loading_store(struct device *dev,
- 			 * see the mapped 'buf->data' once the loading
- 			 * is completed.
- 			 * */
--			fw_map_pages_buf(fw_buf);
-+			if (fw_map_pages_buf(fw_buf)) {
-+				size = 0;
-+				dev_err(dev, "%s: map pages failed\n",
-+					__func__);
-+			}
- 			list_del_init(&fw_buf->pending_list);
- 			complete_all(&fw_buf->completion);
- 			break;
-@@ -664,7 +669,7 @@ static ssize_t firmware_loading_store(struct device *dev,
- 	}
- out:
- 	mutex_unlock(&fw_lock);
--	return count;
-+	return size;
- }
- 
- static DEVICE_ATTR(loading, 0644, firmware_loading_show, firmware_loading_store);
-@@ -916,6 +921,8 @@ err_del_dev:
- 	device_del(f_dev);
- err_put_dev:
- 	put_device(f_dev);
-+	if (!buf->data)
-+		return -ENOMEM;
- 	return retval;
- }
- 
--- 
-1.7.9.5
+Um, does that mean that all that stuff is *not* destined for v3.14? ...
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
------------------------------------------------
-Best Regards
-Zhang, Jun
-Android System Integration Shanghai
-Tel: +86 (0)21 6116 4273
-Mob:+86 (0)15821507662
+--Signature=_Wed__29_Jan_2014_13_25_13_+1100_3YvLv9rBQtYXf16B
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJS6GaNAAoJEMDTa8Ir7ZwVG7EP/0eCLdWRFUJCbx2PRFqBc2lc
+sRc+oiwsxr+/5f8rPruBLsjBWXuKEkHeT0HzlAfTvPHI1HUm5KgnObObaCFhReue
+6ezGcyUg1SnOcJ7usF+562+9G0meUfRx+j5ZN/KKLsk9yoZdcLbKt8VRzaG166en
+F8Y+lydJGNPMqF+50UVc+lsVUoeZqm6Pnoi6+glmOxU3+1N2JJXGoZVBiPYmG/Km
+OasMmYZN7TI5ttoURYI3XiHrfVGLxeJPQNsxSmxBfWOQ7GZtJ/PBVZh5Ndy9f+WO
++RfVe4ajYKmaJQ+CU4tTeFI3K0axFtwk0X8f5beY7yJ3oCkUjqgI3gQWKygW4BIp
+X6YgPiY7hkehXX6F8MmT1UNCPzoEvDYJQMMCtvzBekeXGln7PCOT6k+q/a4xr/Wb
+Qs7KOP5qNN0Voxr8HRjfJCpLnPqEvnMFEDD6AlHmcyswzxwfR1Y1j6dJz5XW/cIa
+vx4fCxUbHwEspzbd1z1Vzhhz07IhvBzVllqhfSVuyCym2ZFmYOtBQl9eIbXQi1jY
+Y3SFAjFbP3RHZJGDaRP2EqjF+9pslGzOMXxsNdhiIXbbLrNYStwZbOywFkW6hOyD
+M8VmMx1RxCDMLD7aa27TGEluUo4gB2iTMTScR5vxUQmkMz352gHumXpQVLhoS2fo
+iAglgsHj6fYiqQJRb4CX
+=Jrnl
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_Jan_2014_13_25_13_+1100_3YvLv9rBQtYXf16B--
