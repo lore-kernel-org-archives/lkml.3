@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaA2VQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 16:16:27 -0500
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:34754
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751030AbaA2VQ0 convert rfc822-to-8bit (ORCPT
+	id S1752337AbaA2VT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 16:19:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33830 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaA2VT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 16:16:26 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: Drivers/hv
-Thread-Topic: Drivers/hv
-Thread-Index: AQHPHQPV07dRQOxvPUWFtrQXaUUm5ZqcNHQA////3IA=
-Date: Wed, 29 Jan 2014 21:16:06 +0000
-Message-ID: <0b31133f70084bc68961aa4c984968c5@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1391011049-10795-1-git-send-email-kys@microsoft.com>
- <20140129211532.GA9095@kroah.com>
-In-Reply-To: <20140129211532.GA9095@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:f02d:a33c:d588:13e7]
-x-forefront-prvs: 01068D0A20
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(24454002)(13464003)(199002)(189002)(51704005)(377454003)(85306002)(33646001)(2656002)(19580395003)(83072002)(87266001)(85852003)(92566001)(93516002)(86362001)(87936001)(76796001)(83322001)(19580405001)(74706001)(94946001)(93136001)(80976001)(74876001)(74502001)(47446002)(31966008)(74662001)(53806001)(74366001)(63696002)(51856001)(54316002)(56776001)(81542001)(76482001)(59766001)(81816001)(54356001)(77982001)(4396001)(50986001)(81686001)(80022001)(94316002)(81342001)(76576001)(76786001)(79102001)(47976001)(56816005)(65816001)(46102001)(90146001)(74316001)(47736001)(69226001)(49866001)(3826001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:2601:8:9b00:402:f02d:a33c:d588:13e7;FPR:F8CFF192.9EC3542A.59F1BBA8.44E1C9F8.201E1;InfoNoRecordsA:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Jan 2014 16:19:56 -0500
+Date: Wed, 29 Jan 2014 13:21:10 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        Denis Kirjanov <kda@linux-powerpc.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH driver-core-linus] kernfs: make kernfs_deactivate() honor
+ KERNFS_LOCKDEP flag
+Message-ID: <20140129212110.GD9095@kroah.com>
+References: <CAOJe8K20xx3o7HXH3E4pE3=G4pQ-nUf4LYF6sEwy5wYQE23+AA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1401291134070.11997-100000@netrider.rowland.org>
+ <20140129170403.GJ30842@htj.dyndns.org>
+ <CAOMZO5Did0vDuHjVnSjor6AsMHeE0L1XPhT9s+h99Hbg_JmHWw@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5Did0vDuHjVnSjor6AsMHeE0L1XPhT9s+h99Hbg_JmHWw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, January 29, 2014 1:16 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com
-> Subject: Re: Drivers/hv
-> 
-> On Wed, Jan 29, 2014 at 07:57:29AM -0800, K. Y. Srinivasan wrote:
+On Wed, Jan 29, 2014 at 03:19:51PM -0200, Fabio Estevam wrote:
+> On Wed, Jan 29, 2014 at 3:04 PM, Tejun Heo <tj@kernel.org> wrote:
+> > kernfs_deactivate() forgot to check whether KERNFS_LOCKDEP is set
+> > before performing lockdep annotations and ends up feeding
+> > uninitialized lockdep_map to lockdep triggering warning like the
+> > following on USB stick hotunplug.
 > >
-> > Greg,
+> >  usb 1-2: USB disconnect, device number 2
+> >  INFO: trying to register non-static key.
+> >  the code is fine but needs lockdep annotation.
+> >  turning off the locking correctness validator.
+> >  CPU: 1 PID: 62 Comm: khubd Not tainted 3.13.0-work+ #82
+> >  Hardware name: empty empty/S3992, BIOS 080011  10/26/2007
+> >   ffff880065ca7f60 ffff88013a4ffa08 ffffffff81cfb6bd 0000000000000002
+> >   ffff88013a4ffac8 ffffffff810f8530 ffff88013a4fc710 0000000000000002
+> >   ffff880100000000 ffffffff82a3db50 0000000000000001 ffff88013a4fc710
+> >  Call Trace:
+> >   [<ffffffff81cfb6bd>] dump_stack+0x4e/0x7a
+> >   [<ffffffff810f8530>] __lock_acquire+0x1910/0x1e70
+> >   [<ffffffff810f931a>] lock_acquire+0x9a/0x1d0
+> >   [<ffffffff8127c75e>] kernfs_deactivate+0xee/0x130
+> >   [<ffffffff8127d4c8>] kernfs_addrm_finish+0x38/0x60
+> >   [<ffffffff8127d701>] kernfs_remove_by_name_ns+0x51/0xa0
+> >   [<ffffffff8127b4f1>] remove_files.isra.1+0x41/0x80
+> >   [<ffffffff8127b7e7>] sysfs_remove_group+0x47/0xa0
+> >   [<ffffffff8127b873>] sysfs_remove_groups+0x33/0x50
+> >   [<ffffffff8177d66d>] device_remove_attrs+0x4d/0x80
+> >   [<ffffffff8177e25e>] device_del+0x12e/0x1d0
+> >   [<ffffffff819722c2>] usb_disconnect+0x122/0x1a0
+> >   [<ffffffff819749b5>] hub_thread+0x3c5/0x1290
+> >   [<ffffffff810c6a6d>] kthread+0xed/0x110
+> >   [<ffffffff81d0a56c>] ret_from_fork+0x7c/0xb0
 > >
-> > Some time back I had sent a buch of patches for
-> > Hyper-V drivers. Are they still in the queue or should I resend
-> > them.
+> > Fix it by making kernfs_deactivate() perform lockdep annotations only
+> > if KERNFS_LOCKDEP is set.
+> >
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Reported-by: Fabio Estevam <festevam@gmail.com>
+> > Reported-by: Alan Stern <stern@rowland.harvard.edu>
 > 
-> Which specific patches are you referring to?  I can't take anything
-> until after 3.14-rc1 is out, and I do see a few from you in my queue, so
-> if you want to resend, please do, but note I will not get to them until
-> sometime late next week at the earliest.
-
-Thanks Greg. If you already have them in your queue, I will not resend them.
-Late next week should be fine.
-
-Regards,
-
-K. Y
+> Thanks, Tejun. I don't get the warning after removing the USB stick
+> after applying this patch:
 > 
-> greg k-h
+> Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+
+Great, I'll queue this up and get it to Linus after 3.14-rc1 is out.
+
+thanks,
+
+greg k-h
