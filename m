@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaA2MZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 07:25:42 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60861 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaA2MZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 07:25:40 -0500
-Date: Wed, 29 Jan 2014 12:25:20 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Message-ID: <20140129122520.GY11841@sirena.org.uk>
-References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
- <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
+	id S1752098AbaA2M05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 07:26:57 -0500
+Received: from www.humilis.net ([80.100.93.5]:49344 "EHLO panda.humilis.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751341AbaA2M0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 07:26:55 -0500
+Date: Wed, 29 Jan 2014 13:26:51 +0100
+From: Sander <sander@humilis.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        David Garbett <David.Garbett@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
+Message-ID: <20140129122651.GB31980@panda>
+Reply-To: sander@humilis.net
+References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com>
+ <20140108143529.GB14122@mudshark.cambridge.arm.com>
+ <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
+ <20140108192028.GM27432@n2100.arm.linux.org.uk>
+ <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
+ <alpine.LFD.2.10.1401081600370.1851@knanqh.ubzr>
+ <CAD=FV=XqoSGpQ_Yrjj4hvV_0FSMfQGcGEsKkL1Stnm9m5s2Xvw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ngzzM5pmpwpXLzY5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Cookie: O.K., fine.
+In-Reply-To: <CAD=FV=XqoSGpQ_Yrjj4hvV_0FSMfQGcGEsKkL1Stnm9m5s2Xvw@mail.gmail.com>
+X-Uptime: 10:23:38 up 50 days, 13:37, 29 users,  load average: 2.00, 2.11,
+ 2.45
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI controller
- driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Doug Anderson wrote (ao):
+> On Wed, Jan 8, 2014 at 1:08 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> > On Wed, 8 Jan 2014, Doug Anderson wrote:
+> >> * If Joe Upstream wants to run an upstream kernel on some type of
+> >> exynos5250 product (Samsung ARM Chromebook, HP Chromebook 11, Nexus 10
+> >> are the ones I know of) then he will deal with the small number of
+> >> crashes or figure out a solution.
+> >
+> > If Joe Upstream wants to run an upstream kernel, doesn't he have to
+> > unscrew his write protect switch first, at which point the RO firmware
+> > can be updated as well?
+> 
+> Actually, no.  You can move your device into dev mode and run any
+> kernel you want.  You'll get an annoying "you're in dev mode" screen
+> at every bootup, but otherwise it works just fine.
+> 
+> Going into dev mode requires some special keystrokes at bootup and a
+> wipe of your hard disk but no screwdrivers.
 
---ngzzM5pmpwpXLzY5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+And there is http://www.arndaleboard.org/ where you just put an upstream
+kernel on sd and boot.
 
-On Wed, Jan 29, 2014 at 12:10:48PM +0100, Maxime Ripard wrote:
-
-> +config SPI_SUN6I
-> +	tristate "Allwinner A31 SPI controller"
-> +	depends on ARCH_SUNXI || COMPILE_TEST
-> +	select PM_RUNTIME
-> +	help
-> +	  This enables using the SPI controller on the Allwinner A31 SoCs.
-> +
-
-A select of PM_RUNTIME is both surprising and odd - why is that there?
-The usual idiom is that the device starts out powered up (flagged using
-pm_runtime_set_active()) and then runtime PM then suspends it when it's
-compiled in.  That way if for some reason people want to avoid runtime
-PM they can still use the device.
-
-> +static void sun6i_spi_set_cs(struct spi_device *spi, bool enable)
-> +{
-> +	struct sun6i_spi *sspi = spi_master_get_devdata(spi->master);
-> +	u32 reg;
-> +
-> +	if (!enable)
-> +		return;
-> +
-> +	reg = sun6i_spi_read(sspi, SUN6I_TFR_CTL_REG);
-> +	reg &= ~SUN6I_TFR_CTL_CS_MASK;
-> +	reg |= SUN6I_TFR_CTL_CS(spi->chip_select);
-> +	sun6i_spi_write(sspi, SUN6I_TFR_CTL_REG, reg);
-> +}
-
-The !enable means that it'll only ever be able to go one way.  Also note
-that the documentation was clarified here to make the enable flag be the
-absolute logic level, not if chip select was asserted.
-
-> +	timeout = wait_for_completion_timeout(&sspi->done,
-> +					      msecs_to_jiffies(1000));
-> +	if (!timeout) {
-> +		ret = -ETIMEDOUT;
-> +		goto out;
-> +	}
-> +
-> +	sun6i_spi_drain_fifo(sspi, SUN6I_FIFO_DEPTH);
-
-This means we can only transfer a single FIFO of data?  I didn't see a
-check on the transfer length.
-
---ngzzM5pmpwpXLzY5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS6PMtAAoJELSic+t+oim9xHwP/2J4oRaYPuNiNN5+qJ4d/szy
-5JWXyYZJ3Amd5h53/2mRXFWx00uQgzNa+OSmiVU+J84lYyhaxAdxSRans99DRbUo
-x0Kr5PjKWh3X+RKDo4NRYci/1/1wWdEJsZtjH/vLPgetlauk3Wl0TngHuR3ntE8x
-PYLvidrtLTppwX1WWe8NSBpzvkczG9U8nM7MMja/+LdHq2QUK/qgsWHZ1NNkCEiv
-rYudJxSWBhgkY0IR9BjtQ9a4Z6WI5R3XtwTGzLEmu6mPp1jGo/VSy/CD9yHJJvz8
-g6rPe50CHTM+z+8cu5VSQfYBtnb8X8WdguoZeE1b+jUPzg6ac25FZ8kDjmM8JgOZ
-o11SssGUdwj7BIdqkPxYIt4Y3qlYhK7nx7LvHdD1sKwpTO7LJNiSV4rOMYpeod09
-MOhE/NdzfCUIe4S6NzXE4Zp3IzXfRICJ+unztH5I+fmB1FfYnAx88uuHvGdOetIp
-FqEPt3030Ii+np3SWvlIje3tdqdrVemlwH+9HrAhKbthuIsaRd6+5yerUExwjDcH
-zDk4w+bfWRySWvmj6e6AX/XD6Q3CZHXsRQ9NH6qd0KL5c0s2b4QlAI87uErIMSXe
-AAQt09N5aQ4p1QSjymsfi1nXtbI9SaBNdQrbVfvUdZNTCZq2+xAa39cNzLLlUH70
-ZAswp5Id1OfEiWBkoh5q
-=VL1z
------END PGP SIGNATURE-----
-
---ngzzM5pmpwpXLzY5--
+	Sander
