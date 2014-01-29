@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911AbaA2Cab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 21:30:31 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47103 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026AbaA2Caa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 21:30:30 -0500
-Date: Tue, 28 Jan 2014 18:30:19 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: "Jan Beulich" <JBeulich@suse.com>
-Cc: <roger.pau@citrix.com>, "xen-devel" <xen-devel@lists.xenproject.org>,
-        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [V0 PATCH] pvh: Disable PSE feature for now
-Message-ID: <20140128183019.5b765f85@mantra.us.oracle.com>
-In-Reply-To: <52E796EB0200007800117804@nat28.tlf.novell.com>
-References: <1390875519-8667-1-git-send-email-mukesh.rathor@oracle.com>
-	<1390875519-8667-2-git-send-email-mukesh.rathor@oracle.com>
-	<52E796EB0200007800117804@nat28.tlf.novell.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1755936AbaA2Cdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 21:33:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:50124 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669AbaA2Cdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 21:33:50 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Tom Gundersen <teg@jklm.no>, linux-kernel@vger.kernel.org
+Cc: linux-input@vger.kernel.org, kay@vrfy.org, Tom Gundersen <teg@jklm.no>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] module: allow multiple calls to MODULE_DEVICE_TABLE() per module
+In-Reply-To: <1390916546-27155-1-git-send-email-teg@jklm.no>
+References: <87k3dkzy4t.fsf@rustcorp.com.au> <1390916546-27155-1-git-send-email-teg@jklm.no>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 29 Jan 2014 12:05:50 +1030
+Message-ID: <87bnyvzi15.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014 10:39:23 +0000
-"Jan Beulich" <JBeulich@suse.com> wrote:
+Tom Gundersen <teg@jklm.no> writes:
+> Commit 78551277e4df5: "Input: i8042 - add PNP modaliases" had a bug, where the
+> second call to MODULE_DEVICE_TABLE() overrode the first resulting in not all
+> the modaliases being exposed.
+>
+> This fixes the problem by including the name of the device_id table in the
+> __mod_*_device_table alias, allowing us to export several device_id tables
+> per module.
 
-> >>> On 28.01.14 at 03:18, Mukesh Rathor <mukesh.rathor@oracle.com>
-> >>> wrote:
-> > Until now, xen did not expose PSE to pvh guest, but a patch was
-> > submitted to xen list to enable bunch of features for a pvh guest.
-> > PSE has not been looked into for PVH, so until we can do that and
-> > test it to make sure it works, disable the feature to avoid flood
-> > of bugs.
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > ---
-> >  arch/x86/xen/enlighten.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index a4d7b64..4e952046 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1497,6 +1497,11 @@ static void __init
-> > xen_pvh_early_guest_init(void) xen_have_vector_callback = 1;
-> >  	xen_pvh_set_cr_flags(0);
-> >  
-> > +        /* pvh guests are not quite ready for large pages yet */
-> > +        setup_clear_cpu_cap(X86_FEATURE_PSE);
-> > +        setup_clear_cpu_cap(X86_FEATURE_PSE36);
-> 
-> And why would you not want to also turn of 1Gb pages then?
+Thanks, applied.
 
-Right, that should be turned off too, but Konrad thinks we should
-leave them on in linux and deal with issues as they come. I've not
-tested them, or looked/thought about them, so had thought would be 
-better to turn them on after I/someone gets to test them.
+I also put this on top:
 
-thanks
-Mukesh
+module: remove MODULE_GENERIC_TABLE
+
+MODULE_DEVICE_TABLE() calles MODULE_GENERIC_TABLE(); make it do the
+work directly.  This also removes a wart introduced in the last patch,
+where the alias is defined to be an unknown struct type "struct
+type##__##name##_device_id" instead of "struct type##_device_id" (it's
+an extern so GCC doesn't care, but it's wrong).
+
+The other user of MODULE_GENERIC_TABLE (ISAPNP_CARD_TABLE) is unused,
+so delete it.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/include/linux/isapnp.h b/include/linux/isapnp.h
+index e2d28b026a8c..3c77bf9b1efd 100644
+--- a/include/linux/isapnp.h
++++ b/include/linux/isapnp.h
+@@ -56,10 +56,6 @@
+ #define ISAPNP_DEVICE_ID(_va, _vb, _vc, _function) \
+ 		{ .vendor = ISAPNP_VENDOR(_va, _vb, _vc), .function = ISAPNP_FUNCTION(_function) }
+ 
+-/* export used IDs outside module */
+-#define ISAPNP_CARD_TABLE(name) \
+-		MODULE_GENERIC_TABLE(isapnp_card, name)
+-
+ struct isapnp_card_id {
+ 	unsigned long driver_data;	/* data private to the driver */
+ 	unsigned short card_vendor, card_device;
+diff --git a/include/linux/module.h b/include/linux/module.h
+index ad18f6006f86..5686b37e11d6 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -82,15 +82,6 @@ void sort_extable(struct exception_table_entry *start,
+ void sort_main_extable(void);
+ void trim_init_extable(struct module *m);
+ 
+-#ifdef MODULE
+-#define MODULE_GENERIC_TABLE(gtype, name)			\
+-extern const struct gtype##_id __mod_##gtype##_table		\
+-  __attribute__ ((unused, alias(__stringify(name))))
+-
+-#else  /* !MODULE */
+-#define MODULE_GENERIC_TABLE(gtype, name)
+-#endif
+-
+ /* Generic info of form tag = "info" */
+ #define MODULE_INFO(tag, info) __MODULE_INFO(tag, tag, info)
+ 
+@@ -141,8 +132,14 @@ extern const struct gtype##_id __mod_##gtype##_table		\
+ /* What your module does. */
+ #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
+ 
+-#define MODULE_DEVICE_TABLE(type, name)		\
+-  MODULE_GENERIC_TABLE(type##__##name##_device, name)
++#ifdef MODULE
++/* Creates an alias so file2alias.c can find device table. */
++#define MODULE_DEVICE_TABLE(type, name)					\
++  extern const struct type##_device_id __mod_##type##__##name##_device_table \
++  __attribute__ ((unused, alias(__stringify(name))))
++#else  /* !MODULE */
++#define MODULE_DEVICE_TABLE(type, name)
++#endif
+ 
+ /* Version of form [<epoch>:]<version>[-<extra-version>].
+  * Or for CVS/RCS ID version, everything but the number is stripped.
