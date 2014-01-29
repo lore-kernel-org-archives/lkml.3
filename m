@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582AbaA2Kiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 05:38:54 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59340 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaA2Kiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 05:38:50 -0500
-Message-ID: <52E8DA37.7010208@6wind.com>
-Date: Wed, 29 Jan 2014 11:38:47 +0100
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751888AbaA2Kk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 05:40:59 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:35124 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149AbaA2Kk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 05:40:57 -0500
+Date: Wed, 29 Jan 2014 11:40:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kees Cook <keescook@chromium.org>, Cong Ding <dinggnu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+Message-ID: <20140129104046.GB24887@pd.tnic>
+References: <CA+55aFzRJNEt-tOGgj-6OPB0cMW9ReM6y6kzCyR5bfts1de-Jg@mail.gmail.com>
+ <20140128170507.GA16279@gmail.com>
+ <CA+55aFw_xs1tUteDrXz21QZB7BFk5p+F5NZ-SpV=CUVjeFwapA@mail.gmail.com>
+ <20140128194823.GA18702@gmail.com>
+ <CA+55aFzqJe2XFCTu3Wb4hvZULuR97OOeEhQLYvFMF2bYTLb5Vw@mail.gmail.com>
+ <20140128201536.GB5178@pd.tnic>
+ <CA+55aFwpsAatO7dy_jQM1NdM5VfJy33RaQ0tJzx+KN_oJsHcBQ@mail.gmail.com>
+ <52E812F4.50906@nod.at>
+ <52E8153A.2000208@zytor.com>
+ <20140129082505.GB31489@gmail.com>
 MIME-Version: 1.0
-To: Sohny Thomas <sthomas@linux.vnet.ibm.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org,
-        davem@davemloft.net, kumuda <kumuda@linux.vnet.ibm.com>
-Subject: Re: [PATCH] ipv6: default route for link local address is not added
- while assigning a address
-References: <52E8A2AA.3090507@linux.vnet.ibm.com>
-In-Reply-To: <52E8A2AA.3090507@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140129082505.GB31489@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 29/01/2014 07:41, Sohny Thomas a écrit :
-> Resending this on netdev mailing list:
-> Default route for link local address is configured automatically if
-> NETWORKING_IPV6=yes is in ifcfg-eth*.
-> When the route table for the interface is flushed and a new address is added to
-> the same device with out removing linklocal addr, default route for link local
-> address has to added by default.
+On Wed, Jan 29, 2014 at 09:25:05AM +0100, Ingo Molnar wrote:
+> That would default to Y and would disable debuginfo by default.
 >
-> I have found the issue to be caused by this checkin
->
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/net/ipv6?id=62b54dd91567686a1cb118f76a72d5f4764a86dd
->
->
-> According to this change :
-> He removes adding a link local route if any other address is added , applicable
-> across all interfaces though there's mentioned only lo interface
-> So below patch fixes for other devices
->
-> Signed-off-by: Sohny THomas <sohthoma@linux.vnet.ibm.com>
-Your email client has corrupted the patch, it cannot be applied.
-Please read Documentation/email-clients.txt
+> ( And yeah, it's a bit ugly, but it beats having to hack the kconfig
+> language! )
 
-About the patch, I still think that the flush is too agressive. Link local
-routes are marked as 'proto kernel', removing them without the link local
-address is wrong.
+Yeah, that could be another solution - I came up with another hack last
+night: http://marc.info/?l=linux-kernel&m=139095226124549
 
-With this patch, you will add a link local route even if you don't have a link
-local address.
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
