@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010AbaA2DqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jan 2014 22:46:17 -0500
-Received: from ozlabs.org ([203.10.76.45]:55176 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755236AbaA2DqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jan 2014 22:46:15 -0500
-Date: Wed, 29 Jan 2014 14:46:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>,
-        =?UTF-8?B?IlBhbGkgUm9ow6FyIg==?= <pali.rohar@gmail.com>
-Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
-Message-Id: <20140129144600.772e7be42998c947203146b1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__29_Jan_2014_14_46_00_+1100_xuo5PaKfDKlNgGpO"
+	id S1755913AbaA2D7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jan 2014 22:59:19 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:41891 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631AbaA2D7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jan 2014 22:59:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyXFJO_sMD+74F1sSmbxO-tKXGr-vetKYacUeLODBv-pw@mail.gmail.com>
+References: <20140127214338.4167.57312@quantum> <CA+55aFyXFJO_sMD+74F1sSmbxO-tKXGr-vetKYacUeLODBv-pw@mail.gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Tue, 28 Jan 2014 19:58:56 -0800
+Message-ID: <CAPtuhTjaFZx4m=bEEfxudZmoGKi89pyZjTPq94dbJajHPpz1DQ@mail.gmail.com>
+Subject: Re: [GIT PULL] clk: changes for 3.14, part 2
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Jan_2014_14_46_00_+1100_xuo5PaKfDKlNgGpO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 28, 2014 at 6:44 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Jan 27, 2014 at 1:43 PM, Mike Turquette <mturquette@linaro.org> wrote:
+>>
+>>   git://git.linaro.org/people/mike.turquette/linux.git tags/clk-for-linus-3.14-part2
+>
+> Dammit, this is pure shit, and after having to deal with yet another
+> pointless merge conflict due to stupid "cleanups" in Makefiles, IT
+> DOES NOT EVEN COMPILE.
+>
+> drivers/clk/clk-si5351.c: In function 'si5351_i2c_probe':
+> drivers/clk/clk-si5351.c:1314:2: error: too many arguments to function
+> 'si5351_dt_parse'
+>   ret = si5351_dt_parse(client, variant);
+>   ^
+> drivers/clk/clk-si5351.c:1296:12: note: declared here
+>  static int si5351_dt_parse(struct i2c_client *client)
+>
+> And no, that's not due to a merge error of mine. It was that way in your tree.
+>
+> Hulk angry. Hulk smash.
 
-Hi Andrew,
+My apologies for making you hulk out. I did sneak some stuff in at the
+end and it bit us in the ass. Thank you for fixing it up.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-fs/afs/proc.c between commit b42d570c9fbe ("afs: get rid of junk in
-fs/afs/proc.c") from Linus' tree and commit 1a3459681f5c ("afs: proc
-cells and rootcell are writeable") from the akpm-current tree.
+>
+> I fixed it up in the merge, but I shouldn't need to. This should have
+> been caught in -next, and even if you compile for ARM as your primary
+> target, I know *damn* well that no sane ARM developer actually
+> compiles *on* ARM (because there are no machines where it's worth the
+> pain), so you should make sure that the x86-64 build works too.
+>
+> If I can find compile errors within a couple of minutes of pulling and
+> it's not a merge error of mine, the tree I'm pulling from is clearly
+> crap.
+>
+> So I'm more than a bit grumpy. Get your act together, and don't send
+> me any more shit.
+>
+> In fact, I would suggest you send nothing but obvious fixes from now
+> on in this release. Because I won't be taking anything else.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I only send fixes for actual regressions after -rc1. Additionally this
+weird two-part pull request was an anomaly and I don't plan to do it
+again.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Again thanks for your patience,
+Mike
 
-diff --cc fs/afs/proc.c
-index bddc5120ed40,276cb6ed0b93..000000000000
---- a/fs/afs/proc.c
-+++ b/fs/afs/proc.c
-@@@ -130,9 -147,13 +130,9 @@@ int afs_proc_init(void
-  	if (!proc_afs)
-  		goto error_dir;
- =20
-- 	if (!proc_create("cells", 0, proc_afs, &afs_proc_cells_fops) ||
-- 	    !proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops))
- -	p =3D proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_p=
-roc_cells_fops);
- -	if (!p)
- -		goto error_cells;
- -
- -	p =3D proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &af=
-s_proc_rootcell_fops);
- -	if (!p)
- -		goto error_rootcell;
-++	if (!proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_pr=
-oc_cells_fops) ||
-++	    !proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs=
-_proc_rootcell_fops))
- +		goto error_tree;
- =20
-  	_leave(" =3D 0");
-  	return 0;
-
---Signature=_Wed__29_Jan_2014_14_46_00_+1100_xuo5PaKfDKlNgGpO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS6HmFAAoJEMDTa8Ir7ZwVmO4QAIxEhdrS+2GhJCKNtHF59oy8
-9j+6EUKTvklQf08o2SNS/WBw9D8ZBeEieUxsurB8sLRRIcs/AS8/KrCf40JuMOYe
-6XeweO4IHopJIsvGq5A7L841IgXLKhuVdLuHBzoh/aSKuDGZmCklFTjcKTBE0W4j
-HgD3hYi3WNDwI6ToMNb4n7x7D00ZLyVVirup+j7nyh+8yO3cmt3Mj55IgY/LnnLs
-rX9jNJStG8ges1AlKNbny34XPTkPlROPaL6RteIAv5UYsvvPp1TsvABpibc1AdgU
-hRjjsDk358+5E2O+KeYfTD5NY9qWnDQJnU8hhmrQ8le6J4v/VOjRyC+af9P8gGOW
-An+Ga811uVrCSBEqnmBcn3JkQSdEnPvScxzBS5CVNnjlepJBAdTiB8kdbCNv4v6r
-Sqfmj5+5eW54+nNziJc0yZxW92zHrMYz74lNi/sNz2Ek7pYgOEUBzyO4eSFJ+FRV
-kDpCmDkb6XcTeA2K0HndcGDD/Cye+mGMkDFoChcm8RrOrqmQPZ/uciatjtHLZgiB
-ILqeZx0SExCx+tpvZPNOc3ShnBO1/Q8eQS5atc1xUd6k7Wn6eNcVu6b2hD94FErC
-Ymx95YwUH5VhlL5L3MDqqEtTe8jDV0qLZPlDdRGV1dumnUZXwSN5fLnl2EYpEzZY
-EV+RqbGcq86hSUpX/PlT
-=n5f5
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Jan_2014_14_46_00_+1100_xuo5PaKfDKlNgGpO--
+>
+>               Linus
