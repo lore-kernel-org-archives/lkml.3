@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaA3KvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 05:51:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39620 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202AbaA3Ku6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 05:50:58 -0500
-Date: Thu, 30 Jan 2014 10:50:52 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Chris Mason <clm@fb.com>, Dave Chinner <david@fromorbit.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "lsf-pc@lists.linux-foundation.org" 
-	<lsf-pc@lists.linux-foundation.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>
-Subject: Re: [Lsf-pc] [LSF/MM TOPIC] really large storage sectors - going
- beyond 4096 bytes
-Message-ID: <20140130105052.GP6732@suse.de>
-References: <1390410233.1198.7.camel@ret.masoncoding.com>
- <1390411300.2372.33.camel@dabdike.int.hansenpartnership.com>
- <1390413819.1198.20.camel@ret.masoncoding.com>
- <1390414439.2372.53.camel@dabdike.int.hansenpartnership.com>
- <20140123082734.GP13997@dastard>
- <1390492073.2372.118.camel@dabdike.int.hansenpartnership.com>
- <20140123164438.GL4963@suse.de>
- <1390506935.2402.8.camel@dabdike>
- <20140124105748.GQ4963@suse.de>
- <20140130045245.GH20939@parisc-linux.org>
+	id S1753277AbaA3KwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 05:52:23 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:42846 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257AbaA3KwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 05:52:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140130045245.GH20939@parisc-linux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140128171948.351282894@infradead.org>
+References: <20140128171634.974847076@infradead.org> <20140128171948.351282894@infradead.org>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 30 Jan 2014 11:52:01 +0100
+Message-ID: <CAKfTPtDv19H2EpjPRC1xuJU6CkDzddBe_VETRTtxKFXshkhSQg@mail.gmail.com>
+Subject: Re: [PATCH 8/9] sched: Clean up idle task SMP logic
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 09:52:46PM -0700, Matthew Wilcox wrote:
-> On Fri, Jan 24, 2014 at 10:57:48AM +0000, Mel Gorman wrote:
-> > So far on the table is
-> > 
-> > 1. major filesystem overhawl
-> > 2. major vm overhawl
-> > 3. use compound pages as they are today and hope it does not go
-> >    completely to hell, reboot when it does
-> 
-> Is the below paragraph an exposition of option 2, or is it an option 4,
-> change the VM unit of allocation?
+Hi Peter,
 
-Changing the VM unit of allocation is a major VM overhawl
+Acked-by: Vincent Guittot <vincent.guittot@linaro.org>
 
-> Other than the names you're using,
-> this is basically what I said to Kirill in an earlier thread; either
-> scrap the difference between PAGE_SIZE and PAGE_CACHE_SIZE, or start
-> making use of it.
-> 
+Vincent
 
-No. The PAGE_CACHE_SIZE would depend on the underlying address space and
-vary. The large block patchset would have to have done this but I did not
-go back and review the patches due to lack of time. With that it starts
-hitting into fragmentation problems that have to be addressed somehow and
-cannot just be waved away.
-
-> The fact that EVERYBODY in this thread has been using PAGE_SIZE when they
-> should have been using PAGE_CACHE_SIZE makes me wonder if part of the
-> problem is that the split in naming went the wrong way.  ie use PTE_SIZE
-> for 'the amount of memory pointed to by a pte_t' and use PAGE_SIZE for
-> 'the amount of memory described by a struct page'.
-> 
-> (we need to remove the current users of PTE_SIZE; sparc32 and powerpc32,
-> but that's just a detail)
-> 
-> And we need to fix all the places that are currently getting the
-> distinction wrong.  SMOP ... ;-)  What would help is correct typing of
-> variables, possibly with sparse support to help us out.  Big Job.
-> 
-
-That's taking the approach of the large block patchset (as I understand
-it, not reviewed, not working on this etc) without dealing with potential
-fragmentation problems. Of course they could be remapped virtually if
-necessary but that will be very constrained on 32-bit, the final transfer
-to hardware will require scatter/gather and there is a setup/teardown
-cost with virtual mappings such as faulting (setup) and IPIs to flush TLBs
-(teardown) that would add overhead.
-
--- 
-Mel Gorman
-SUSE Labs
+On 28 January 2014 18:16, Peter Zijlstra <peterz@infradead.org> wrote:
+> The idle post_schedule hook is just a vile waste of time, furthermore
+> it appears unneeded, move the idle_enter_fair() call into
+> pick_next_task_idle().
+>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> Cc: alex.shi@linaro.org
+> Cc: mingo@kernel.org
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/idle_task.c |    9 +--------
+>  1 file changed, 1 insertion(+), 8 deletions(-)
+>
+> --- a/kernel/sched/idle_task.c
+> +++ b/kernel/sched/idle_task.c
+> @@ -19,11 +19,6 @@ static void pre_schedule_idle(struct rq
+>         idle_exit_fair(rq);
+>         rq_last_tick_reset(rq);
+>  }
+> -
+> -static void post_schedule_idle(struct rq *rq)
+> -{
+> -       idle_enter_fair(rq);
+> -}
+>  #endif /* CONFIG_SMP */
+>  /*
+>   * Idle tasks are unconditionally rescheduled:
+> @@ -40,8 +35,7 @@ pick_next_task_idle(struct rq *rq, struc
+>
+>         schedstat_inc(rq, sched_goidle);
+>  #ifdef CONFIG_SMP
+> -       /* Trigger the post schedule to do an idle_enter for CFS */
+> -       rq->post_schedule = 1;
+> +       idle_enter_fair(rq);
+>  #endif
+>         return rq->idle;
+>  }
+> @@ -105,7 +99,6 @@ const struct sched_class idle_sched_clas
+>  #ifdef CONFIG_SMP
+>         .select_task_rq         = select_task_rq_idle,
+>         .pre_schedule           = pre_schedule_idle,
+> -       .post_schedule          = post_schedule_idle,
+>  #endif
+>
+>         .set_curr_task          = set_curr_task_idle,
+>
+>
