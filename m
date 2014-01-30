@@ -1,437 +1,596 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaA3Tb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:31:59 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:63840 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797AbaA3Tb4 (ORCPT
+	id S1753887AbaA3Tcj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:32:39 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43620 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860AbaA3Tci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:31:56 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv2 2/2] zram: use zram_comp compressing backends
-Date: Thu, 30 Jan 2014 22:28:08 +0300
-Message-Id: <1391110088-14830-3-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 1.9.rc1.183.g614c158
-In-Reply-To: <1391110088-14830-1-git-send-email-sergey.senozhatsky@gmail.com>
-References: <1391110088-14830-1-git-send-email-sergey.senozhatsky@gmail.com>
+	Thu, 30 Jan 2014 14:32:38 -0500
+Date: Thu, 30 Jan 2014 13:29:25 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] Remove ARM-specific set_irq_flags usage from irqdomain
+ implementations
+Message-ID: <20140130192925.GG20228@joshc.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) Use zram_comp in zram instead of direct LZO calls.
+Hey all-
 
-2) Introduce Kconfig ZRAM_LZO_COMPRESS and ZRAM_LZ4_COMPRESS
-options to enable/disable LZO and LZ4 backends respectively.
+Looking through a bunch of irqdomain implementations (and in some other
+places), it appears that the following pattern is distressingly common:
 
-3) Add compressor device attr that allows to list and select
-compression algorithms.
+	static int foo_map(struct irq_domain *d, unsigned int irq,
+			   irq_hw_number_t hw)
+	{
+		/*...*/
+	#ifdef CONFIG_ARM
+		set_irq_flags(irq, IRQF_VALID);
+	#else
+		irq_set_noprobe(irq);
+	#endif
+		return 0;
+	}
 
-usage example:
-List available compression algorithms (currently selected
-one is LZO):
-  cat /sys/block/zram0/compressor
-  <lzo> lz4
+Which, to someone unfamiliar with how ARM's set_irq_flags() (and ARM's
+ARCH_IRQ_INIT_FLAGS), is just confusing and ugly[1].
 
-Change compression algorithm to LZ4:
-  echo lz4 > /sys/block/zram0/compressor
-  cat /sys/block/zram0/compressor
-  lzo <lz4>
+I think there is an opportunity for some simplification here, based on
+the following assumptions[2]:
 
-iozone test `buffer_lock mutex' vs `single workmem and spinlock'
-(each test was performed on cold, freashly created zram device,
-ext4 file system, LZO):
-./iozone -t -T -R -l 3 -u 3 -r 16K -s 60M -I +Z
-        test        unpatсhed        patched
--------------------------------------------------
-  Initial write:    341274.03   |   465984.82
-        Rewrite:    527752.14   |   587844.27
-           Read:   2668083.00   |  3527865.95
-        Re-read:   2479428.12   |  3497152.56
-   Reverse Read:   1563745.16   |  2463020.33
-    Stride read:   1916311.84   |  2675575.14
-    Random read:   2099906.09   |  2758833.45
- Mixed workload:   1631288.54   |  2439302.68
-   Random write:    428555.50   |   578720.39
-         Pwrite:    339857.66   |   415078.43
-          Pread:   1523965.55   |  1417191.77
-         Fwrite:   1571574.03   |  1447609.02
-          Fread:   5449851.44   |  5563909.53
+  1. The irqdomain core already manages the IRQ_NOREQUEST bit, clearing
+     it after creating a association, and setting it on disassociation
+  2. No existing irqdomain implementations are relying on
+     set_irq_flags() to clear the IRQ_NOAUTOEN bit
 
-./iozone -t -T -R -l 3 -u 3 -r 16K -s 60M -I +Z
-        test        unpatсhed        patched
--------------------------------------------------
-  Initial write:    435205.70   |   513995.38
-        Rewrite:    617956.68   |   600445.49
-           Read:   3379175.66   |  3354820.31
-        Re-read:   3344446.66   |  3484581.59
-   Reverse Read:   2215915.09   |  2689347.80
-    Stride read:   2570020.28   |  2797849.55
-    Random read:   2751191.27   |  2830580.06
- Mixed workload:   1647681.38   |  2382402.29
-   Random write:    591968.77   |   597967.23
-         Pwrite:    441869.31   |   526409.72
-          Pread:   1530294.05   |  1466025.38
-         Fwrite:   1634969.22   |  1757762.27
-          Fread:   4782938.06   |  5643076.25
+If these two assumptions hold, then the following simplification can
+take place[3]:
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
----
- drivers/block/zram/Kconfig    | 20 ++++++++-
- drivers/block/zram/Makefile   |  6 ++-
- drivers/block/zram/zram_drv.c | 96 ++++++++++++++++++++++++++++---------------
- drivers/block/zram/zram_drv.h |  8 ++--
- 4 files changed, 90 insertions(+), 40 deletions(-)
+-#if CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
 
-diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
-index 3450be8..4de410d 100644
---- a/drivers/block/zram/Kconfig
-+++ b/drivers/block/zram/Kconfig
-@@ -1,8 +1,6 @@
- config ZRAM
- 	tristate "Compressed RAM block device support"
- 	depends on BLOCK && SYSFS && ZSMALLOC
--	select LZO_COMPRESS
--	select LZO_DECOMPRESS
- 	default n
- 	help
- 	  Creates virtual block devices called /dev/zramX (X = 0, 1, ...).
-@@ -15,6 +13,24 @@ config ZRAM
- 
- 	  See zram.txt for more information.
- 
-+config ZRAM_LZO_COMPRESS
-+	bool "Compressed RAM LZO support"
-+	depends on ZRAM
-+	select LZO_COMPRESS
-+	select LZO_DECOMPRESS
-+	default y
-+	help
-+	  This option adds LZO compression algorithm support.
-+
-+config ZRAM_LZ4_COMPRESS
-+	bool "Compressed RAM LZ4 support"
-+	depends on ZRAM
-+	select LZ4_COMPRESS
-+	select LZ4_DECOMPRESS
-+	default n
-+	help
-+	  This option adds LZ4 compression algorithm support.
-+
- config ZRAM_DEBUG
- 	bool "Compressed RAM block device debug support"
- 	depends on ZRAM
-diff --git a/drivers/block/zram/Makefile b/drivers/block/zram/Makefile
-index cb0f9ce..c649600 100644
---- a/drivers/block/zram/Makefile
-+++ b/drivers/block/zram/Makefile
-@@ -1,3 +1,7 @@
--zram-y	:=	zram_drv.o
-+zram-y	:=	zram_comp.o zram_drv.o
-+
-+zram-$(CONFIG_ZRAM_LZO_COMPRESS) += zcomp_lzo.o
-+
-+zram-$(CONFIG_ZRAM_LZ4_COMPRESS) += zcomp_lz4.o
- 
- obj-$(CONFIG_ZRAM)	+=	zram.o
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 9baac5b..46b1a44 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -29,15 +29,14 @@
- #include <linux/genhd.h>
- #include <linux/highmem.h>
- #include <linux/slab.h>
--#include <linux/lzo.h>
- #include <linux/string.h>
--#include <linux/vmalloc.h>
- 
- #include "zram_drv.h"
- 
- /* Globals */
- static int zram_major;
- static struct zram *zram_devices;
-+static const char *default_compressor = "lzo";
- 
- /* Module params (documentation at end) */
- static unsigned int num_devices = 1;
-@@ -108,6 +107,39 @@ static ssize_t mem_used_total_show(struct device *dev,
- 	return sprintf(buf, "%llu\n", val);
- }
- 
-+static ssize_t compressor_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct zram *zram = dev_to_zram(dev);
-+	ssize_t sz = 0;
-+	down_read(&zram->init_lock);
-+	sz = zcomp_available_show(zram->comp, buf);
-+	up_read(&zram->init_lock);
-+	return sz;
-+}
-+
-+static ssize_t compressor_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t len)
-+{
-+	struct zram *zram = dev_to_zram(dev);
-+
-+	down_write(&zram->init_lock);
-+	if (init_done(zram) || zram->comp) {
-+		up_write(&zram->init_lock);
-+		pr_info("Cannot change compressor for initialized device\n");
-+		return -EBUSY;
-+	}
-+
-+	zram->comp = zcomp_create(buf);
-+	if (!zram->comp) {
-+		up_write(&zram->init_lock);
-+		pr_info("Cannot initialise compressing backend");
-+		return -EINVAL;
-+	}
-+	up_write(&zram->init_lock);
-+	return len;
-+}
-+
- /* flag operations needs meta->tb_lock */
- static int zram_test_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
-@@ -160,8 +192,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
- static void zram_meta_free(struct zram_meta *meta)
- {
- 	zs_destroy_pool(meta->mem_pool);
--	kfree(meta->compress_workmem);
--	free_pages((unsigned long)meta->compress_buffer, 1);
- 	vfree(meta->table);
- 	kfree(meta);
- }
-@@ -173,22 +203,11 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
- 	if (!meta)
- 		goto out;
- 
--	meta->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
--	if (!meta->compress_workmem)
--		goto free_meta;
+The first assumption fairly clearly holds, looking at the irqdomain
+core.  I'm confident that the fact that IRQF_NOAUTOEN is not in
+ARCH_IRQ_INIT_FLAGS and that no existing IRQF_NOAUTOEN users appear to
+muck with irqdomains that it's a safe bet.  And...any code relying
+AUTOEN to be cleared would currently be broken on non-ARM platforms.
+
+Thoughts?  If this is a worthwhile simplification and my analysis is
+sane, I'll cook up the proper patches.
+
+Thanks,
+  Josh
+
+[1]: git grep 'kill me now'
+[2]: For reference, here's a truth table establishing the mapping between
+     ARM's IRQF_{VALID,PROBE,NOAUTOEN} flags and the generic flags:
+
+                      V P NA | NR NP NA
+                      0 0 0  |  1 1  0
+   ARM-specific       0 0 1  |  1 1  1    genirq irqflag
+    irqflags          0 1 0  |  1 0  0      definitions
+  V  - IRQF_VALID     0 1 1  |  1 0  1    NR - IRQ_NOREQUEST
+  P  - IRQF_PROBE     1 0 0  |  0 1  0    NP - IRQ_NOPROBE
+  NA - IRQF_NOAUTOEN  1 0 1  |  0 1  1    NA - IRQ_NOAUTOEN
+                      1 1 0  |  0 0  0
+                      1 1 1  |  0 0  1
+
+[3]: With the same justifications, on unmap:
+-#if CONFIG_ARM
+-	set_irq_flags(irq, 0);
+-#endif
+
+ ---
+ drivers/base/regmap/regmap-irq.c |  8 --------
+ drivers/gpio/gpio-adnp.c         |  6 ------
+ drivers/gpio/gpio-bcm-kona.c     |  5 -----
+ drivers/gpio/gpio-grgpio.c       |  8 --------
+ drivers/gpio/gpio-pca953x.c      |  5 -----
+ drivers/gpio/gpio-pcf857x.c      |  4 ----
+ drivers/gpio/gpio-stmpe.c        |  8 --------
+ drivers/gpio/gpio-tc3589x.c      |  8 --------
+ drivers/mfd/88pm860x-core.c      |  4 ----
+ drivers/mfd/ab8500-core.c        |  5 -----
+ drivers/mfd/arizona-irq.c        |  8 --------
+ drivers/mfd/lp8788-irq.c         |  6 ------
+ drivers/mfd/max77686-irq.c       |  4 ----
+ drivers/mfd/max77693-irq.c       |  4 ----
+ drivers/mfd/max8925-core.c       |  4 ----
+ drivers/mfd/max8997-irq.c        |  4 ----
+ drivers/mfd/max8998-irq.c        |  4 ----
+ drivers/mfd/stmpe.c              |  8 --------
+ drivers/mfd/tc3589x.c            |  8 --------
+ drivers/mfd/tps6586x.c           |  8 --------
+ drivers/mfd/twl6030-irq.c        | 14 --------------
+ drivers/mfd/wm831x-irq.c         |  8 --------
+ drivers/mfd/wm8994-irq.c         |  8 --------
+ drivers/pinctrl/pinctrl-single.c |  4 ----
+ 24 files changed, 153 deletions(-)
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 763c60d..cd3add8 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -306,15 +306,7 @@ static int regmap_irq_map(struct irq_domain *h, unsigned int virq,
+ 	irq_set_chip_data(virq, data);
+ 	irq_set_chip(virq, &data->irq_chip);
+ 	irq_set_nested_thread(virq, 1);
 -
--	meta->compress_buffer =
--		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
--	if (!meta->compress_buffer) {
--		pr_err("Error allocating compressor buffer space\n");
--		goto free_workmem;
--	}
+-	/* ARM needs us to explicitly flag the IRQ as valid
+-	 * and will set them noprobe when we do so. */
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
 -
- 	num_pages = disksize >> PAGE_SHIFT;
- 	meta->table = vzalloc(num_pages * sizeof(*meta->table));
- 	if (!meta->table) {
- 		pr_err("Error allocating zram address table\n");
--		goto free_buffer;
-+		goto free_meta;
- 	}
- 
- 	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
-@@ -198,15 +217,10 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
- 	}
- 
- 	rwlock_init(&meta->tb_lock);
--	mutex_init(&meta->buffer_lock);
- 	return meta;
- 
- free_table:
- 	vfree(meta->table);
--free_buffer:
--	free_pages((unsigned long)meta->compress_buffer, 1);
--free_workmem:
--	kfree(meta->compress_workmem);
- free_meta:
- 	kfree(meta);
- 	meta = NULL;
-@@ -280,7 +294,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 
- static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- {
--	int ret = LZO_E_OK;
-+	int ret = 0;
- 	size_t clen = PAGE_SIZE;
- 	unsigned char *cmem;
- 	struct zram_meta *meta = zram->meta;
-@@ -301,12 +315,12 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 	if (size == PAGE_SIZE)
- 		copy_page(mem, cmem);
- 	else
--		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
-+		ret = zram->comp->decompress(cmem, size, mem, &clen);
- 	zs_unmap_object(meta->mem_pool, handle);
- 	read_unlock(&meta->tb_lock);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
--	if (unlikely(ret != LZO_E_OK)) {
-+	if (unlikely(ret)) {
- 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
- 		atomic64_inc(&zram->stats.failed_reads);
- 		return ret;
-@@ -349,7 +363,7 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 
- 	ret = zram_decompress_page(zram, uncmem, index);
- 	/* Should NEVER happen. Return bio error if it does. */
--	if (unlikely(ret != LZO_E_OK))
-+	if (unlikely(ret))
- 		goto out_cleanup;
- 
- 	if (is_partial_io(bvec))
-@@ -374,11 +388,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	struct page *page;
- 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
- 	struct zram_meta *meta = zram->meta;
-+	struct zcomp_workmem *wm;
- 	bool locked = false;
- 
- 	page = bvec->bv_page;
--	src = meta->compress_buffer;
--
- 	if (is_partial_io(bvec)) {
- 		/*
- 		 * This is a partial IO. We need to read the full page
-@@ -394,7 +407,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			goto out;
- 	}
- 
--	mutex_lock(&meta->buffer_lock);
-+	wm = zram->comp->workmem_get(zram->comp);
-+	src = wm->buf;
- 	locked = true;
- 	user_mem = kmap_atomic(page);
- 
-@@ -420,15 +434,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		goto out;
- 	}
- 
--	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
--			       meta->compress_workmem);
-+	ret = zram->comp->compress(uncmem, PAGE_SIZE, src, &clen, wm->mem);
- 	if (!is_partial_io(bvec)) {
- 		kunmap_atomic(user_mem);
- 		user_mem = NULL;
- 		uncmem = NULL;
- 	}
- 
--	if (unlikely(ret != LZO_E_OK)) {
-+	if (unlikely(ret)) {
- 		pr_err("Compression failed! err=%d\n", ret);
- 		goto out;
- 	}
-@@ -457,6 +470,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		memcpy(cmem, src, clen);
- 	}
- 
-+	zram->comp->workmem_put(zram->comp, wm);
-+	locked = false;
- 	zs_unmap_object(meta->mem_pool, handle);
- 
- 	/*
-@@ -475,10 +490,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	atomic64_inc(&zram->stats.pages_stored);
- out:
- 	if (locked)
--		mutex_unlock(&meta->buffer_lock);
-+		zram->comp->workmem_put(zram->comp, wm);
- 	if (is_partial_io(bvec))
- 		kfree(uncmem);
--
- 	if (ret)
- 		atomic64_inc(&zram->stats.failed_writes);
- 	return ret;
-@@ -522,6 +536,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 		zs_free(meta->mem_pool, handle);
- 	}
- 
-+	if (zram->comp)
-+		zcomp_destroy(zram->comp);
-+	zram->comp = NULL;
-+
- 	zram_meta_free(zram->meta);
- 	zram->meta = NULL;
- 	/* Reset stats */
-@@ -550,6 +568,14 @@ static ssize_t disksize_store(struct device *dev,
- 		return -EBUSY;
- 	}
- 
-+	if (!zram->comp)
-+		zram->comp = zcomp_create(default_compressor);
-+	if (!zram->comp) {
-+		up_write(&zram->init_lock);
-+		pr_info("Cannot initialise compressing backend\n");
-+		return -EINVAL;
-+	}
-+
- 	disksize = PAGE_ALIGN(disksize);
- 	zram->meta = zram_meta_alloc(disksize);
- 	if (!zram->meta) {
-@@ -704,6 +730,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
- static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
- static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
- static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-+static DEVICE_ATTR(compressor, S_IRUGO | S_IWUSR,
-+		compressor_show, compressor_store);
- 
- ZRAM_ATTR_RO(num_reads);
- ZRAM_ATTR_RO(num_writes);
-@@ -718,6 +746,7 @@ static struct attribute *zram_disk_attrs[] = {
- 	&dev_attr_disksize.attr,
- 	&dev_attr_initstate.attr,
- 	&dev_attr_reset.attr,
-+	&dev_attr_compressor.attr,
- 	&dev_attr_num_reads.attr,
- 	&dev_attr_num_writes.attr,
- 	&dev_attr_failed_reads.attr,
-@@ -790,6 +819,7 @@ static int create_device(struct zram *zram, int device_id)
- 	}
- 
- 	zram->meta = NULL;
-+	zram->comp = NULL;
  	return 0;
+ }
  
- out_free_disk:
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index 1d5b1f5..a2e17d7 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -16,9 +16,10 @@
- #define _ZRAM_DRV_H_
+diff --git a/drivers/gpio/gpio-adnp.c b/drivers/gpio/gpio-adnp.c
+index b204033..d34f41d 100644
+--- a/drivers/gpio/gpio-adnp.c
++++ b/drivers/gpio/gpio-adnp.c
+@@ -423,13 +423,7 @@ static int adnp_irq_map(struct irq_domain *domain, unsigned int irq,
+ 	irq_set_chip_data(irq, domain->host_data);
+ 	irq_set_chip(irq, &adnp_irq_chip);
+ 	irq_set_nested_thread(irq, true);
+-
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+-
+ 	return 0;
+ }
  
- #include <linux/spinlock.h>
--#include <linux/mutex.h>
- #include <linux/zsmalloc.h>
+diff --git a/drivers/gpio/gpio-bcm-kona.c b/drivers/gpio/gpio-bcm-kona.c
+index 54c18c2..61dff06 100644
+--- a/drivers/gpio/gpio-bcm-kona.c
++++ b/drivers/gpio/gpio-bcm-kona.c
+@@ -480,12 +480,7 @@ static int bcm_kona_gpio_irq_map(struct irq_domain *d, unsigned int irq,
+ 		return ret;
+ 	irq_set_lockdep_class(irq, &gpio_lock_class);
+ 	irq_set_chip_and_handler(irq, &bcm_gpio_irq_chip, handle_simple_irq);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+-
+ 	return 0;
+ }
  
-+#include "zram_comp.h"
-+
- /*
-  * Some arbitrary value. This is just to catch
-  * invalid value for num_devices module parameter.
-@@ -81,17 +82,16 @@ struct zram_stats {
+diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
+index 84d2478..3f5496e 100644
+--- a/drivers/gpio/gpio-grgpio.c
++++ b/drivers/gpio/gpio-grgpio.c
+@@ -282,12 +282,7 @@ static int grgpio_irq_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_and_handler(irq, &grgpio_irq_chip,
+ 				 handle_simple_irq);
+ 	irq_clear_status_flags(irq, IRQ_NOREQUEST);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+-
+ 	return ret;
+ }
  
- struct zram_meta {
- 	rwlock_t tb_lock;	/* protect table */
--	void *compress_workmem;
--	void *compress_buffer;
- 	struct table *table;
- 	struct zs_pool *mem_pool;
--	struct mutex buffer_lock; /* protect compress buffers */
- };
+@@ -301,9 +296,6 @@ static void grgpio_irq_unmap(struct irq_domain *d, unsigned int irq)
+ 	int ngpio = priv->bgc.gc.ngpio;
+ 	int i;
  
- struct zram {
- 	struct zram_meta *meta;
- 	struct request_queue *queue;
- 	struct gendisk *disk;
-+	struct zram_comp *comp;
-+
- 	/* Prevent concurrent execution of device init, reset and R/W request */
- 	struct rw_semaphore init_lock;
- 	/*
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, 0);
+-#endif
+ 	irq_set_chip_and_handler(irq, NULL, NULL);
+ 	irq_set_chip_data(irq, NULL);
+ 
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index 6e48c07..05cbfa2 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -525,12 +525,7 @@ static int pca953x_gpio_irq_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_data(irq, d->host_data);
+ 	irq_set_chip(irq, &pca953x_irq_chip);
+ 	irq_set_nested_thread(irq, true);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index 1535686..5b3ab60 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -226,11 +226,7 @@ static int pcf857x_irq_domain_map(struct irq_domain *domain, unsigned int irq,
+ 	irq_set_chip_and_handler(irq,
+ 				 &dummy_irq_chip,
+ 				 handle_level_irq);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+ 	gpio->irq_mapped |= (1 << hw);
+ 
+ 	return 0;
+diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
+index 2647e24..dd661a99 100644
+--- a/drivers/gpio/gpio-stmpe.c
++++ b/drivers/gpio/gpio-stmpe.c
+@@ -284,20 +284,12 @@ static int stmpe_gpio_irq_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_and_handler(irq, &stmpe_gpio_irq_chip,
+ 				 handle_simple_irq);
+ 	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+ static void stmpe_gpio_irq_unmap(struct irq_domain *d, unsigned int irq)
+ {
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, 0);
+-#endif
+ 	irq_set_chip_and_handler(irq, NULL, NULL);
+ 	irq_set_chip_data(irq, NULL);
+ }
+diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+index ddb5fef..e5402f7 100644
+--- a/drivers/gpio/gpio-tc3589x.c
++++ b/drivers/gpio/gpio-tc3589x.c
+@@ -263,20 +263,12 @@ static int tc3589x_gpio_irq_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_and_handler(irq, &tc3589x_gpio_irq_chip,
+ 				handle_simple_irq);
+ 	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+ static void tc3589x_gpio_irq_unmap(struct irq_domain *d, unsigned int irq)
+ {
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, 0);
+-#endif
+ 	irq_set_chip_and_handler(irq, NULL, NULL);
+ 	irq_set_chip_data(irq, NULL);
+ }
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index c9b1f64..49d29ab 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -552,11 +552,7 @@ static int pm860x_irq_domain_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_data(virq, d->host_data);
+ 	irq_set_chip_and_handler(virq, &pm860x_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index b6c2cdc..f6b2b1e 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -563,12 +563,7 @@ static int ab8500_irq_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_and_handler(virq, &ab8500_irq_chip,
+ 				handle_simple_irq);
+ 	irq_set_nested_thread(virq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+index 88758ab..31e9c20 100644
+--- a/drivers/mfd/arizona-irq.c
++++ b/drivers/mfd/arizona-irq.c
+@@ -166,15 +166,7 @@ static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
+ 	irq_set_chip_data(virq, data);
+ 	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-
+-	/* ARM needs us to explicitly flag the IRQ as valid
+-	 * and will set them noprobe when we do so. */
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/lp8788-irq.c b/drivers/mfd/lp8788-irq.c
+index c84ded5..26b25ec 100644
+--- a/drivers/mfd/lp8788-irq.c
++++ b/drivers/mfd/lp8788-irq.c
+@@ -139,13 +139,7 @@ static int lp8788_irq_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_data(virq, irqd);
+ 	irq_set_chip_and_handler(virq, chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/max77686-irq.c b/drivers/mfd/max77686-irq.c
+index cdc3280..12fbbcb 100644
+--- a/drivers/mfd/max77686-irq.c
++++ b/drivers/mfd/max77686-irq.c
+@@ -230,11 +230,7 @@ static int max77686_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_data(irq, max77686);
+ 	irq_set_chip_and_handler(irq, &max77686_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/max77693-irq.c b/drivers/mfd/max77693-irq.c
+index 66b58fe..8c9c9e8 100644
+--- a/drivers/mfd/max77693-irq.c
++++ b/drivers/mfd/max77693-irq.c
+@@ -246,11 +246,7 @@ static int max77693_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_data(irq, max77693);
+ 	irq_set_chip_and_handler(irq, &max77693_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
+index f0cc402..f1d9b1e 100644
+--- a/drivers/mfd/max8925-core.c
++++ b/drivers/mfd/max8925-core.c
+@@ -648,11 +648,7 @@ static int max8925_irq_domain_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_data(virq, d->host_data);
+ 	irq_set_chip_and_handler(virq, &max8925_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
+index 43fa614..9425f80 100644
+--- a/drivers/mfd/max8997-irq.c
++++ b/drivers/mfd/max8997-irq.c
+@@ -295,11 +295,7 @@ static int max8997_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_data(irq, max8997);
+ 	irq_set_chip_and_handler(irq, &max8997_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
+index c469477..ef74d2a 100644
+--- a/drivers/mfd/max8998-irq.c
++++ b/drivers/mfd/max8998-irq.c
+@@ -206,11 +206,7 @@ static int max8998_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_data(irq, max8998);
+ 	irq_set_chip_and_handler(irq, &max8998_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(irq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index fff63a4..e65d36e 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -957,20 +957,12 @@ static int stmpe_irq_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_data(virq, stmpe);
+ 	irq_set_chip_and_handler(virq, chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+ static void stmpe_irq_unmap(struct irq_domain *d, unsigned int virq)
+ {
+-#ifdef CONFIG_ARM
+-		set_irq_flags(virq, 0);
+-#endif
+ 		irq_set_chip_and_handler(virq, NULL, NULL);
+ 		irq_set_chip_data(virq, NULL);
+ }
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index 87ea51d..a1e8d7b 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -213,20 +213,12 @@ static int tc3589x_irq_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_and_handler(virq, &dummy_irq_chip,
+ 				handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+ static void tc3589x_irq_unmap(struct irq_domain *d, unsigned int virq)
+ {
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, 0);
+-#endif
+ 	irq_set_chip_and_handler(virq, NULL, NULL);
+ 	irq_set_chip_data(virq, NULL);
+ }
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index ee61fd7..5d46fea 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -290,15 +290,7 @@ static int tps6586x_irq_map(struct irq_domain *h, unsigned int virq,
+ 	irq_set_chip_data(virq, tps6586x);
+ 	irq_set_chip_and_handler(virq, &tps6586x_irq_chip, handle_simple_irq);
+ 	irq_set_nested_thread(virq, 1);
+-
+-	/* ARM needs us to explicitly flag the IRQ as valid
+-	 * and will set them noprobe when we do so. */
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+index 517eda8..b355c20 100644
+--- a/drivers/mfd/twl6030-irq.c
++++ b/drivers/mfd/twl6030-irq.c
+@@ -349,26 +349,12 @@ static int twl6030_irq_map(struct irq_domain *d, unsigned int virq,
+ 	irq_set_chip_and_handler(virq,  &pdata->irq_chip, handle_simple_irq);
+ 	irq_set_nested_thread(virq, true);
+ 	irq_set_parent(virq, pdata->twl_irq);
+-
+-#ifdef CONFIG_ARM
+-	/*
+-	 * ARM requires an extra step to clear IRQ_NOREQUEST, which it
+-	 * sets on behalf of every irq_chip.  Also sets IRQ_NOPROBE.
+-	 */
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+-	/* same effect on other architectures */
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+ static void twl6030_irq_unmap(struct irq_domain *d, unsigned int virq)
+ {
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, 0);
+-#endif
+ 	irq_set_chip_and_handler(virq, NULL, NULL);
+ 	irq_set_chip_data(virq, NULL);
+ }
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index 64e512e..bd7635e 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -552,15 +552,7 @@ static int wm831x_irq_map(struct irq_domain *h, unsigned int virq,
+ 	irq_set_chip_data(virq, h->host_data);
+ 	irq_set_chip_and_handler(virq, &wm831x_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-
+-	/* ARM needs us to explicitly flag the IRQ as valid
+-	 * and will set them noprobe when we do so. */
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/mfd/wm8994-irq.c b/drivers/mfd/wm8994-irq.c
+index e74dedd..3d81759 100644
+--- a/drivers/mfd/wm8994-irq.c
++++ b/drivers/mfd/wm8994-irq.c
+@@ -172,15 +172,7 @@ static int wm8994_edge_irq_map(struct irq_domain *h, unsigned int virq,
+ 	irq_set_chip_data(virq, wm8994);
+ 	irq_set_chip_and_handler(virq, &wm8994_edge_irq_chip, handle_edge_irq);
+ 	irq_set_nested_thread(virq, 1);
+-
+-	/* ARM needs us to explicitly flag the IRQ as valid
+-	 * and will set them noprobe when we do so. */
+-#ifdef CONFIG_ARM
+-	set_irq_flags(virq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(virq);
+-#endif
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 829b98c..9755e01 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -1744,11 +1744,7 @@ static int pcs_irqdomain_map(struct irq_domain *d, unsigned int irq,
+ 	irq_set_chip_and_handler(irq, &pcs->chip,
+ 				 handle_level_irq);
+ 
+-#ifdef CONFIG_ARM
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+ 	irq_set_noprobe(irq);
+-#endif
+ 
+ 	return 0;
+ }
 -- 
-1.9.rc1.183.g614c158
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
