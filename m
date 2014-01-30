@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaA3OIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:08:43 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52916 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753388AbaA3OIl (ORCPT
+	id S1753615AbaA3OJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:09:26 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:59058 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129AbaA3OJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:08:41 -0500
-Date: Thu, 30 Jan 2014 14:08:34 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: NFS client broken in Linus' tip
-Message-ID: <20140130140834.GW15937@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 30 Jan 2014 09:09:23 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: nicolas.pitre@linaro.org, peterz@infradead.org, mingo@redhat.com,
+        tglx@linutronix.de, rjw@rjwysocki.net
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Subject: [RFC PATCH 0/3] cpuidle/sched: move main idle function in the idle.c
+Date: Thu, 30 Jan 2014 15:09:19 +0100
+Message-Id: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just booted Linus' tip (plus a few other patches to imx-drm and imx
-code), and stumbled into this interesting scenario:
+This patchset relies on the "setting the table for integration of cpuidle with
+the scheduler" from Nicolas Pitre where the idle.c file has been moved into the
+sched directory.
 
-# touch test
-touch: cannot touch `test': Operation not supported
+It encapsulate the cpuidle main code into three exported functions which are
+used by the cpuidle_idle_call function. This one is then moved into the idle.c
+file.
 
-I also tried mkdir and mknod, all result in the same error.  Hard and
-symlinks links are creatable.
+The third patch shows an example on how integrating cpuidle information in the
+scheduler is easier.
 
-However, I can chmod existing files and rename them.  Files can also be
-deleted, and the combination of this has left me without a /etc/mtab !
+Daniel Lezcano (3):
+  cpuidle: split cpuidle_idle_call main function into functions
+  cpuidle: move the cpuidle_idle_call function to idle.c
+  idle: store the idle state index in the struct rq
 
-The machine is a iMX6 based ARM, running root-nfs, which was mounted via
-ubuntu's initramfs (so not using the kernel's built-in root-nfs.)
-
-/proc/mounts for the root mount gives:
-192.168.1.123:/var/boot/ci / nfs rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,nolock,proto=tcp,port=2049,timeo=7,retrans=10,sec=sys,local_lock=all,addr=192.168.1.123 0 0
-
-CONFIG_NFS_FS=y
-CONFIG_NFS_V2=y
-CONFIG_NFS_V3=y
-CONFIG_NFS_V3_ACL=y
-CONFIG_NFS_V4=y
-# CONFIG_NFS_SWAP is not set
-# CONFIG_NFS_V4_1 is not set
-CONFIG_ROOT_NFS=y
-# CONFIG_NFS_USE_LEGACY_DNS is not set
-CONFIG_NFS_USE_KERNEL_DNS=y
-# CONFIG_NFSD is not set
-CONFIG_LOCKD=y
-CONFIG_LOCKD_V4=y
-CONFIG_NFS_ACL_SUPPORT=y
-CONFIG_NFS_COMMON=y
-CONFIG_SUNRPC=y
-CONFIG_SUNRPC_GSS=y
-
-tcpdumping, I see:
-
-13:59:51.713523 IP 192.168.1.252.1341245608 > 192.168.1.123.2049: 132 lookup fh Unknown/010007011040840000000000CC238FC8FBA0475D9D9F8356B4C44166CDC38700 "test"
-13:59:51.714345 IP 192.168.1.123.2049 > 192.168.1.252.1341245608: reply ok 120 lookup ERROR: No such file or directory
-13:59:51.751303 IP 192.168.1.252.797 > 192.168.1.123.nfs: . ack 3381 win 2625 <nop,nop,timestamp 474136 3431312924>
-
-which is the only NFS packet(s) I see which mention "test".
-
-and stracing touch:
-
-open("test", O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK|O_LARGEFILE, 0666) = -1 EOPNOTSUPP (Operation not supported)
-utimensat(AT_FDCWD, "test", NULL, 0)    = -1 ENOENT (No such file or directory)
-write(2, "touch: ", 7touch: )                  = 7
-write(2, "cannot touch `test'", 19cannot touch `test')     = 19
-write(2, ": Operation not supported", 25: Operation not supported) = 25
-write(2, "\n", 1
-)                       = 1
-
-I think it's down to this:
-
-commit 013cdf1088d7235da9477a2375654921d9b9ba9f
-Author: Christoph Hellwig <hch@infradead.org>
-Date:   Fri Dec 20 05:16:53 2013 -0800
-
-    nfs: use generic posix ACL infrastructure for v3 Posix ACLs
-
-    This causes a small behaviour change in that we don't bother to set
-    ACLs on file creation if the mode bit can express the access permissions
-    fully, and thus behaving identical to local filesystems.
-
-    Signed-off-by: Christoph Hellwig <hch@lst.de>
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-which adds:
-
-+       status = posix_acl_create(dir, &sattr->ia_mode, &default_acl, &acl);
-+       if (status)
-+               goto out;
-
-into nfs3_proc_create(), but this ends up calling down into nfs3_get_acl(),
-which does this:
-
-        if (!nfs_server_capable(inode, NFS_CAP_ACLS))
-                return ERR_PTR(-EOPNOTSUPP);
+ drivers/cpuidle/cpuidle.c |   80 +++++++++++++++++++++++++--------------------
+ include/linux/cpuidle.h   |    9 +++--
+ kernel/sched/idle.c       |   53 ++++++++++++++++++++++++++++++
+ kernel/sched/sched.h      |    3 ++
+ 4 files changed, 108 insertions(+), 37 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.7.9.5
+
