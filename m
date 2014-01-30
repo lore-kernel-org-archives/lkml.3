@@ -1,45 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaA3JZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 04:25:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44157 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaA3JZR (ORCPT
+	id S1752911AbaA3JZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 04:25:48 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:58039 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751165AbaA3JZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 04:25:17 -0500
-Date: Thu, 30 Jan 2014 10:24:38 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>, linux-pm@vger.kernel.org,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v2 5/6] X86: remove redundant cpuidle_idle_call()
-Message-ID: <20140130092438.GK11314@laptop.programming.kicks-ass.net>
-References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
- <1391017513-12995-6-git-send-email-nicolas.pitre@linaro.org>
- <CAOesGMjvOkuxCopog91SAV1-gB9GaEYXpuXwhV1EJQor_pKjBA@mail.gmail.com>
- <alpine.LFD.2.11.1401291434120.1652@knanqh.ubzr>
+	Thu, 30 Jan 2014 04:25:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AogIAI0Z6lJ5LGaB/2dsb2JhbABZgwyDPrUfhVCBBBd0giUBAQEEOhwjEAgDGAklDwUlAyETiATLWRcWjmkHhDgEmCeSIINBKA
+Date: Thu, 30 Jan 2014 20:25:37 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
+Message-ID: <20140130092537.GH13997@dastard>
+References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+ <20140130064230.GG13997@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1401291434120.1652@knanqh.ubzr>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140130064230.GG13997@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 03:14:40PM -0500, Nicolas Pitre wrote:
-> Looking into some cpuidle drivers for x86 I found at least one that 
-> doesn't respect this convention.  Damn.
+On Thu, Jan 30, 2014 at 05:42:30PM +1100, Dave Chinner wrote:
+> On Wed, Jan 15, 2014 at 08:24:18PM -0500, Matthew Wilcox wrote:
+> > This series of patches add support for XIP to ext4.  Unfortunately,
+> > it turns out to be necessary to rewrite the existing XIP support code
+> > first due to races that are unfixable in the current design.
+> > 
+> > Since v4 of this patchset, I've improved the documentation, fixed a
+> > couple of warnings that a newer version of gcc emitted, and fixed a
+> > bug where we would read/write the wrong address for I/Os that were not
+> > aligned to PAGE_SIZE.
+> 
+> Looks like there's something fundamentally broken with the patch set
+> as it stands. I get this same data corruption on both ext4 and XFS
+> with XIP using fsx. It's as basic as it gets - the first read after
+> a mmapped write fails to see the data written by mmap:
+> 
+> $ sudo mkfs.xfs -f /dev/ram0
+> meta-data=/dev/ram0              isize=256    agcount=4, agsize=256000 blks
+>          =                       sectsz=512   attr=2, projid32bit=1
+>          =                       crc=0
+> data     =                       bsize=4096   blocks=1024000, imaxpct=25
+>          =                       sunit=0      swidth=0 blks
+> naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+> log      =internal log           bsize=4096   blocks=12800, version=2
+>          =                       sectsz=512   sunit=0 blks, lazy-count=1
+> realtime =none                   extsz=4096   blocks=0, rtextents=0
+> $ sudo mount -o xip /dev/ram0 /mnt/scr
+> $ sudo chmod 777 /mnt/scr
+> $ ltp/fsx -d -N 1000 -S 0 /mnt/scr/fsx
+....
+> operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
+> LOG DUMP (9 total operations):
+> 1(  1 mod 256): MAPWRITE 0x3db39 thru 0x3ffff   (0x24c7 bytes)
+> 2(  2 mod 256): MAPREAD  0x2e947 thru 0x33163   (0x481d bytes)
+> 3(  3 mod 256): READ     0x2e836 thru 0x3cba1   (0xe36c bytes)
+> 4(  4 mod 256): PUNCH    0x2e7 thru 0x5c42      (0x595c bytes)
+> 5(  5 mod 256): MAPWRITE 0xcaea thru 0x13ba9    (0x70c0 bytes)  ******WWWW
+> 6(  6 mod 256): PUNCH    0x31645 thru 0x38d1c   (0x76d8 bytes)
+> 7(  7 mod 256): FALLOC   0x24f92 thru 0x2f2b7   (0xa325 bytes) INTERIOR
+> 8(  8 mod 256): FALLOC   0xbcf1 thru 0x171ac    (0xb4bb bytes) INTERIOR ******FFFF
+> 9(  9 mod 256): READ     0x126f thru 0x11136    (0xfec8 bytes)  ***RRRR***
+> Correct content saved for comparison
+> (maybe hexdump "/mnt/scr/fsx" vs "/mnt/scr/fsx.fsxgood")
+> 
+> XFS gives a good indication that we aren't doing something correctly
+> w.r.t. mapped XIP writes, as trying to fiemap the file ASSERT fails
+> with a delayed allocation extent somewhere inside the file after a
+> sync. I shall keep digging.
 
-Which one? We should probably fix it :-)
+Ok, I understand the XFS ASSERT failure, but I don't really
+understand the reason for the read failure. XFS assert failed
+because I was using the delayed allocation enabled xfs_get_blocks()
+to xip_fault/xip_mkwrite, so it was creating a delalloc extent
+rather than allocating blocks, and then not having any pages in the
+page cache to write back to convert the delalloc extent. This
+doesn't explain the zeros being read, though.
+
+So I changed to use the direct IO version, and that leaves me with
+an unwritten extent over the mapped write code. Why? Because there's
+no IO completion being run from either xip_fault() or xip_mkwrite()
+to zero the buffers and run IO completion to convert the extent to
+written....
+
+$ xfs_io -f -c "truncate 8k" -c "mmap 0 8k" -c "mwrite 0 4k" \
+> -c "bmap -vp" -c "pread -v 0 8k" -c "bmap -vp" /mnt/scr/foo
+....
+/mnt/scr/foo:
+ EXT: FILE-OFFSET      BLOCK-RANGE      AG AG-OFFSET        TOTAL FLAGS
+   0: [0..7]:          224..231          0 (224..231)           8 10000
+   1: [8..15]:         hole                                     8
+$
+
+We're trying to do something that the get_block callback has never
+supported.  I note that you added zeroing to ext4_map_blocks() when
+an unwritten extent is found and call xip_clear_blocks() from there
+to try and handle this within the allocation context without
+actually making it obvious why it is necessary.
+
+Essentially what we need get_blocks(create = 1) to do here is this:
+
+	if (hole)
+		transactionally allocate and zero block in requested region
+	if (unwritten)
+		transactionally convert to written and zero block
+	if (written)
+		map blocks
+
+I think we can get away with this from a crash recovery perspective
+because the zeroing of the blocks is synchronous and within the
+allocation transaction. I'm implementing a new xfs_get_blocks_xip to
+do keep this new behaviour "separate" from the direct IO path
+semantics.
+
+I also got rid of the read block map followed by the "create" block
+map. Just a single call with create set appropriately for the caller
+context is all that is required - the getblock call will do the
+correct thing for allocation/conversion cases and if there's already
+a block there it will just return the mapping....
+
+<hack, hack>
+
+OK, I've fixed something. The above xfs_io test returns the correct
+data on read now, fsx still fails. I'll keep working on it in the
+morning, and when I have something that works I'll post it....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
