@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaA3RwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:52:20 -0500
-Received: from v-183-181-54-133.ub-freebit.net ([183.181.54.133]:52215 "EHLO
-	com.cpanel.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751057AbaA3RwS (ORCPT
+	id S1753569AbaA3Ryf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:54:35 -0500
+Received: from [217.140.96.50] ([217.140.96.50]:37214 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752064AbaA3Ryd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:52:18 -0500
-X-Greylist: delayed 7657 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jan 2014 12:52:18 EST
-Message-ID: <bf142f94322aa72f01950a8804713e52.squirrel@nis.emailztool.com>
-Date: Fri, 31 Jan 2014 00:40:40 +0900
-Subject: noch darauf warten von Ihnen zu =?iso-8859-1?Q?h=F6ren?=
-From: "Dr Christopher Johnson" <outmail1@y7.net>
-Reply-To: johnson.c@blumail.org
-User-Agent: SquirrelMail/1.4.22
+	Thu, 30 Jan 2014 12:54:33 -0500
+Date: Thu, 30 Jan 2014 17:52:12 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        "will@willdeacon.co.uk" <will@willdeacon.co.uk>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
+ implementation
+Message-ID: <20140130175212.GM7575@mudshark.cambridge.arm.com>
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
+ <20140130130453.GB2936@laptop.programming.kicks-ass.net>
+ <20140130151715.GA5126@laptop.programming.kicks-ass.net>
+ <20140130154400.GB5126@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - com.cpanel.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - y7.net
-X-Get-Message-Sender-Via: com.cpanel.net: authenticated_id: info@nis.emailztool.com
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140130154400.GB5126@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Morgen,
+Hi Peter,
 
-Ich hoffe, Sie sind wohlauf heute: Das ist das zweite Mal, sende ich Ihnen
-diesen Brief ist, ist die Wahrheit, ich habe Ihre Email-Adressen im
-Internet und beschlossen, Sie zu diesem Geschäft Vorschlag zu
-kontaktieren.
+On Thu, Jan 30, 2014 at 03:44:00PM +0000, Peter Zijlstra wrote:
+> Something like this would work for ARM and PPC, although I didn't do the
+> PPC variant of atomic_sub_release().
+> 
+> 
+> --- a/arch/arm64/include/asm/atomic.h
+> +++ b/arch/arm64/include/asm/atomic.h
+> @@ -90,6 +90,21 @@ static inline void atomic_sub(int i, ato
+>  	: "cc");
+>  }
+>  
+> +static inline void atomic_sub_release(int i, atomic_t *v)
+> +{
+> +	unsigned long tmp;
+> +	int result;
+> +
+> +	asm volatile("// atomic_sub\n"
+> +"1:	ldxr	%w0, %2\n"
+> +"	sub	%w0, %w0, %w3\n"
+> +"	stlxr	%w1, %w0, %2\n"
+> +"	cbnz	%w1, 1b"
+> +	: "=&r" (result), "=&r" (tmp), "+Q" (v->counter)
+> +	: "Ir" (i)
+> +	: "cc");
 
-Ich bin Dr. Christopher Johnson Leiter Rechnungswesen Revision der Credit
-Suisse Bank, One Cabot Square, London E14 4QJ London, ich wende mich an
-Sie in Bezug zu einem Business-Vorschlag, der von einer immensen Nutzen
-für beide von uns sein wird
+Probably want to replace this "cc" with a "memory".
 
-In meiner Abteilung, entdeckte ich eine verlassene Summe von 16.5
-Millionen GBP (GBP 16.500.000 Pfund Sterling) in einem Konto, das zu einem
-unserer ausländischen Kunden spät Herr Moises Saba Masri, ein jüdisches
-Geschäft Mogul aus Mexiko, die ein Opfer war, gehört ein
-Hubschrauberabsturz am 10. Januar 2010, ihn zu töten und
-Familienmitgliedern, Herr Saba war 47-Jahre alt, auch in der Chopper zum
-Zeitpunkt des Absturzes war seine Frau Adela Tuachi, ihr Sohn Avraham
-(Alberto) und seine Tochter-in-law Judith, war der Pilot auch tot ist.
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/qrwlock.h
+> @@ -0,0 +1,21 @@
+> +#ifndef _ASM_ARM64_QRWLOCK_H
+> +#define _ASM_ARM64_QRWLOCK_H
+> +
+> +#include <asm-generic/qrwlock_types.h>
+> +
+> +#define queue_read_unlock queue_read_unlock
+> +static inline void queue_read_unlock(struct qrwlock *lock)
+> +{
+> +	atomic_sub_release(_QR_BIAS, &lock->cnts);
+> +}
+> +
+> +#define queue_write_unlock queue_write_unlock
+> +static inline void queue_write_unlock(struct qrwlock *lock)
+> +{
+> +	atomic_sub_release(_QW_LOCKED, &lock->cnts);
+> +}
+> +
+> +#include <asm-generic/qrwlock.h>
+> +
+> +#endif /* _ASM_ARM64_QRWLOCK_H */
 
-Die Wahl der Kontaktaufnahme mit Ihnen aus der geographischen Natur, wo
-Sie leben vor allem aufgrund der Sensibilität der Transaktion und die
-Vertraulichkeit hier geweckt. Jetzt ist unsere Bank hat für keine der
-Verwandten gewartet zu kommen für die Behauptung der Erbschaft Fonds aber
-leider alle Bemühungen hat sich abortive, ich persönlich wurde bei der
-Suche nach einem Verwandten oder nächsten Angehörigen von Herrn Saba
-erfolglos, ich suche Ihre Zustimmung an Sie als nächsten Angehörigen /
-Wird Empfänger an den Verstorbenen, so dass die Erlöse aus diesem Konto
-bei 16.5 Millionen GBP geschätzt, Sie können bezahlen präsentieren.
+It would be nice if these were default implementations of the unlock, then
+architectures just implement atomic_sub_release how they like.
 
-Dies wird ausgezahlt oder geteilt werden in diese Prozentsätze, 60% für
-mich und 40% für Sie.  Ich habe alle notwendigen rechtlichen Dokumente,
-die zur Sicherung dieser Forderung sind wir dabei, mit der Bank machen
-können gesichert werden. Alles was ich brauche ist in Ihrem Namen auf den
-Dokumenten zu füllen und zu legalisieren es in den Hof hier, um Sie als
-berechtigten Empfänger nachweisen. Alles was ich brauche, ist Ihre
-ehrliche Zusammenarbeit, Verschwiegenheit und Vertrauen, damit wir sehen
-diese Transaktion durch. Ich garantiere Ihnen 100% Erfolg in diesem
-Geschäft, Bitte seien Sie versichert, dass diese Transaktion unter einer
-legitimen Anordnung, die Sie von einer Verletzung des Gesetzes schützt
-ausgeführt wird.
+One thing worth mentioning: I have a fairly invasive set of changes pending
+for arch/arm64/include/asm/atomic.h, so if you do decide to go with this,
+I'm more than happy to take the sub_release part via the arm64 tree. I guess
+it depends on when this is likely to get merged.
 
-Wenn Sie an diesem Angebot interessiert sind, bitte geben Sie mir die
-folgenden Details, wie wir von sieben Werktagen, um dieses Angebot zu
-durchlaufen haben:
+Cheers,
 
-
-1. Ihren vollständigen Namen:
-2. Ihre Telefonnummer (Büro-und Mobilnetz)
-3. Ihre Fax-Nummer:
-4. Ihre volle Adresse:
-5. Ihr Alter / Geschlecht:
-6. Ihre Aufgabe / Tätigkeit:
-7. Ihre private / alternative E-Mail-Adresse (sehr wichtig)
-8. Ihre Nationalität
-
-Nachdem durch eine methodische Suche gegangen, ich, Sie zu kontaktieren
-hoffen, dass Sie diesen Vorschlag interessant finden beschlossen, Bitte
-auf Ihrer Bestätigung dieser Nachricht und geben Sie Ihr Interesse werde
-ich Ihnen weitere Informationen liefern. Bitte kontaktieren Sie mich per
-Telefon: +447017515810 oder per E-Mail, bemühen sich, lassen Sie mich
-wissen, Ihre Entscheidung zu halten, anstatt mich warten. Sie können auch
-schreiben Sie mir in Englisch, wenn möglich, weil mein Deutsch ist nicht
-so gut.
-
-
-Mit besten Grüßen
-
-Dr Christopher Johnson
-Leiter Rechnungswesen Revision
-Credit Suisse Bank-
-One Cabot Square, London E14 4QJ London
-TELEFON : +447561845072
-
-
-
-
-
-
+Will
