@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517AbaA3Pw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:52:29 -0500
-Received: from www84.your-server.de ([213.133.104.84]:48070 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848AbaA3Pw2 (ORCPT
+	id S1753561AbaA3PyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:54:06 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53650 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108AbaA3PyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:52:28 -0500
-Message-ID: <1391097193.2898.6.camel@wall-e.seibold.net>
-Subject: Re: [PATCH 3/4] Add 32 bit VDSO support for 32 kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, ak@linux.intel.com,
-        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
-        xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Thu, 30 Jan 2014 16:53:13 +0100
-In-Reply-To: <52EA7000.8010002@zytor.com>
-References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
-	 <1391078953-1575-4-git-send-email-stefani@seibold.net>
-	 <52EA7000.8010002@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 30 Jan 2014 10:54:04 -0500
+Date: Thu, 30 Jan 2014 16:53:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
+ implementation
+Message-ID: <20140130155344.GE5002@laptop.programming.kicks-ass.net>
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
+ <20140130130453.GB2936@laptop.programming.kicks-ass.net>
+ <20140130151715.GA5126@laptop.programming.kicks-ass.net>
+ <52EA7309.7070605@hp.com>
+ <52EA74D1.3040109@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EA74D1.3040109@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 30.01.2014, 07:30 -0800 schrieb H. Peter Anvin:
-> On 01/30/2014 02:49 AM, stefani@seibold.net wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> > 
-> > This patch add the support for 32 bit VDSO to a 32 bit kernel.
-> > 
-> > For 32 bit programs running on a 32 bit kernel, the same mechanism is
-> > used as for 64 bit programs running on a 64 bit kernel.
-> > 
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
+On Thu, Jan 30, 2014 at 10:50:41AM -0500, Waiman Long wrote:
+> One more thing, I often see line like
 > 
-> The subject line of these two patches is misleading as hell... we
-> already have a vdso.
+> #define queue_write_unlock queue_write_unlock
 > 
+> So exactly what effect does this macro have?
 
-Yes, a very tiny one. I will fix it in the next version.
+Makes sure the below doesn't emit another version.
 
-
+#ifndef queue_write_unlock
+/**
+ * queue_write_unlock - release write lock of a queue rwlock
+ * @lock : Pointer to queue rwlock structure
+ */
+static inline void queue_write_unlock(struct qrwlock *lock)
+{
+	/*
+	 * If the writer field is atomic, it can be cleared directly.
+	 * Otherwise, an atomic subtraction will be used to clear it.
+	 */
+	smp_mb__before_atomic_dec();
+	atomic_sub(_QW_LOCKED, &lock->cnts);
+}
+#endif
