@@ -1,124 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaA3ROD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:14:03 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28919 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751154AbaA3ROB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:14:01 -0500
-Message-ID: <52EA8853.8080709@arm.com>
-Date: Thu, 30 Jan 2014 17:13:55 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Ian Campbell <ian.campbell@citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: document "mach-virt" platform.
-References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
-In-Reply-To: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753556AbaA3ROL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:14:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154AbaA3ROI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 12:14:08 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, ghudson@mit.edu, simo@redhat.com, sgallagh@redhat.com,
+        keys@linux-nfs.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: RFC: KEYS: Is this too-big a behavioural change for a system call?
+From: David Howells <dhowells@redhat.com>
+Date: Thu, 30 Jan 2014 17:14:00 +0000
+Message-ID: <4268.1391102040@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ian,
 
-On 30/01/14 16:11, Ian Campbell wrote:
-> mach-virt has existed for a while but it is not written down what it actually
-> consists of. Although it seems a bit unusual to document a binding for an
-> entire platform since mach-virt is entirely virtual it is helpful to have
-> something to refer to in the absence of a single concrete implementation.
-> 
-> I've done my best to capture the requirements based on the git log and my
-> memory/understanding.
-> 
-> While here remove the xenvm dts example, the Xen tools will now build a
-> suitable mach-virt compatible dts when launching the guest.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
-> I'm not sure which tree this sort of thing should go though, sorry for the
-> huge Cc.
-> ---
->  .../devicetree/bindings/arm/mach-virt.txt          |   32 ++++++++
->  arch/arm/boot/dts/xenvm-4.2.dts                    |   81 --------------------
->  2 files changed, 32 insertions(+), 81 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/mach-virt.txt
->  delete mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/mach-virt.txt b/Documentation/devicetree/bindings/arm/mach-virt.txt
-> new file mode 100644
-> index 0000000..562bcda
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
-> @@ -0,0 +1,32 @@
-> +* Mach-virt "Dummy Virtual Machine" platform
-> +
-> +"mach-virt" is the smallest, dumbest platform possible, to be used as
-> +a guest for Xen, KVM and other hypervisors. It has no
-> +properties/functionality of its own and is driven entirely by device
-> +tree.
-> +
-> +This document defines the requirements for such a platform.
-> +
-> +* Required properties:
-> +
-> +- compatible: should be one of:
-> +	"linux,dummy-virt"
-> +	"xen,xenvm"
-> +
-> +In addition to the standard nodes (chosen, cpus, memory etc) the
-> +platform is required to provide certain other basic functionality
-> +which must be described in the device tree:
-> +
-> +    The platform must provide an ARM Generic Interrupt Controller
-> +    (GIC), defined in Documentation/devicetree/bindings/arm/gic.txt.
-> +
-> +    The platform must provide ARM architected timer, defined in
-> +    Documentation/devicetree/bindings/arm/arch_timer.txt.
-> +
-> +    If the platform is SMP then it must provide the Power State
-> +    Coordination Interface (PSCI) described in
-> +    Documentation/devicetree/bindings/arm/psci.txt.
+[Sent again, this time with Linus's address correct]
 
-I'm afraid I disagree with most of the above. The whole point of
-mach-virt is to provide a shell for DT platforms. None of this hardware
-is mandated. Instead, all the necessary information should be described
-in DT.
+Hi Linus,
 
-Actually, mach-virt doesn't really stand for Virtual Machine. It stands
-for virtual mach-* directory! Eventually, mach-virt should become the
-default platform, the one we use when we don't match anything else in
-the kernel
+I've been asked by Kerberos developers to slightly change the behaviour of the
+add_key() and request_key() system calls and a couple of the keyctl() functions
+- and I'm wondering if you'd be okay with it.
 
-What you've described here are requirements for a hypervisor like Xen or
-KVM. mach-virt itself shouldn't have any of that.
+The current behaviour can be illustrated thusly:
 
-Cheers,
+ (*) The add_key() syscall, for example, takes a destination keyring into which
+     the newly created key will be placed.
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+ (*) There's a special value that can be passed as the destination keyring ID
+     to indicate a process's session keyring without actually needing to know
+     the ID of that keyring.
+
+ (*) A process can have no session keyring.  If it didn't inherit one from its
+     parent or if it didn't explicitly or implicitly create one, then it won't
+     have one.
+
+ (*) A process can have its session keyring pointer pointing to the default
+     user-session keyring for its owner UID.
+
+     [! A process can also have some other session keyring, but that's
+     	irrelevant to this problem]
+
+ (*) When the kernel looks up a key ID to turn it into a keyring, it calls
+     lookup_user_key() and can pass a flag (KEY_LOOKUP_CREATE) to request that
+     the keyring be created if it doesn't exist yet.
+
+     Typically, KEY_LOOKUP_CREATE is set if we're going to modify the keyring
+     in some way (eg. it's the destination for add_key()).  It's also possible
+     for userspace to explicitly set this with:
+
+	keyctl(KEYCTL_GET_KEYRING_ID, <id>, 1).
+
+ (*) If a process has no session keyring or is using the user-session _and_ it
+     makes a system call that requests use of the session keyring then one of
+     two things happens:
+
+     (a) If KEY_LOOKUP_CREATE set then an empty keyring will be created and
+     	 assigned as this process's session keyring.
+
+	 This will forcibly displace the user-session keyring from the session
+	 pointer, even if the user explicitly joined that keyring as their
+	 session.
+
+     (b) If KEY_LOOKUP_CREATE was not set then the user-session keyring will be
+     	 installed as the session keyring and then will be used as the session
+     	 keyring until (a) applies.
+
+ (*) If a process with no session keyring creates a key and attaches it to its
+     session keyring, a session keyring will be created, the key will be added
+     to it - and then the keyring and the key added to it will be deleted when
+     the process exits.
+
+
+The problem the Kerberos developers have is that they would like libkrb5 to
+fall back to using the session keyring if keyctl(KEYCTL_GET_PERSISTENT) fails
+with EOPNOTSUPP (say if CONFIG_PERSISTENT_KEYRINGS=n).  However, this means
+that if you don't have a session keyring, kinit has one forcibly created for it
+by the kernel and then your credentials cache is deleted when kinit exits.
+
+If you have pam_keyinit properly set in your PAM configuration then this isn't
+a problem for processes derived from a login shell of some sort (ssh, login, X,
+etc.).
+
+However, processes that aren't started from a PAM aware process - such as the
+Kerberos developers' testfarm - don't get a session keyring unless they
+explicitly create one.
+
+
+Now, there are several solutions:
+
+ (1) Don't use the session keyring as a fallback in libkrb5.
+
+ (2) Explicitly use the user-session keyring as a fall back in libkrb5 instead
+     of the session keyring.
+
+ (3) Manually create a session keyring somewhere before it is needed.  The
+     keyutils testsuite does this by running its tests from "keyctl session"
+
+ (4) Don't implicitly create a new anonymous keyring, but always set the
+     user-session keyring as a process's session keyring if the latter is
+     unset.
+
+ (5) Don't implicitly create a new anonymous keyring and don't implicitly set
+     the session keyring to the user-session keyring, but rather just fall back
+     to using the user-session keyring if there isn't a session keyring.
+
+ (6) Don't implicitly create a new anonymous keyring and never use the
+     user-session keyring instead, but rather reject requests with ENOKEY.
+
+The first three don't require kernel changes.
+
+In (5) and (6) a session keyring should still be created if userspace
+explicitly asks for one with KEYCTL_GET_KEYRING_ID.
+
+
+I think the best thing course would be (3).  I have reservations about using
+the user and user-session keyrings:
+
+ (*) They depend on what UID your process currently is and are thus subject to
+     setuid() and SUID-exec.
+
+ (*) I'm not keen on system daemons sharing automatically keys by the user and
+     user-session keyrings - and sharing them with other root processes.
+
+ (*) How do these interact with the SELinux?
+
+ (*) Do you want the output of test programs dumping where everyone else can
+     make use of it?
+
+
+That said, I do think that the Kerberos people have a valid point.  The current
+behaviour is poor.  I'm inclined to implement (5) or (6), probably (5).
+
+This won't make any difference to most processes, ie.:
+
+ (*) Those run from pam_keyinit-managed login shells.
+
+ (*) Those that don't make use of libkrb5 or keyrings.
+
+
+In many ways, I'd like to just get rid of the user and user-session keyrings
+from the kernel entirely and have them created and maintained by pam_keyinit.
+The special keyring IDs:
+
+	KEY_SPEC_USER_KEYRING
+	KEY_SPEC_USER_SESSION_KEYRING
+
+and:
+
+	KEY_REQKEY_DEFL_USER_KEYRING
+	KEY_REQKEY_DEFL_USER_SESSION_KEYRING
+
+would then search your session keyring for keyrings called "_uid" and
+"_uid_ses" and return those.  Unfortunately, I think this is probably a
+much-too-big change at this point.
+
+Any thoughts?
+
+Thanks,
+David
+
