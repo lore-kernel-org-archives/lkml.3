@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751075AbaA3FxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 00:53:24 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43309 "EHLO comal.ext.ti.com"
+	id S1751872AbaA3Fx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 00:53:57 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:36451 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849AbaA3FxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 00:53:22 -0500
-Message-ID: <52E9E8B0.2020000@ti.com>
-Date: Thu, 30 Jan 2014 11:22:48 +0530
-From: Satish Patel <satish.patel@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751063AbaA3Fxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 00:53:54 -0500
+Message-ID: <52E9E819.4040002@linux.vnet.ibm.com>
+Date: Thu, 30 Jan 2014 11:20:17 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Satish Patel <satish.patel@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <rob@landley.net>, <tony@atomide.com>
-CC: <grant.likely@linaro.org>, <robh+dt@kernel.org>
-Subject: Re: [PATCH v2 0/5] Smart Card(SC) interface, TI USIM & NxP SC phy
- driver
-References: <1390192434-19386-1-git-send-email-satish.patel@ti.com>
-In-Reply-To: <1390192434-19386-1-git-send-email-satish.patel@ti.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/6] idle: move the cpuidle entry point to the generic
+ idle loop
+References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org> <1391017513-12995-2-git-send-email-nicolas.pitre@linaro.org> <alpine.LFD.2.11.1401291526320.1652@knanqh.ubzr> <52E9C946.50704@linux.vnet.ibm.com> <alpine.LFD.2.11.1401300021530.1652@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1401300021530.1652@knanqh.ubzr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14013005-0320-0000-0000-0000025582FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Nicolas,
 
-On 1/20/2014 10:03 AM, Satish Patel wrote:
-> Changes from v1:
-> * RFC(v1) comments are fixed
->
-> ** removed "gpio_to_irq" as GPIO controller process  cell from DT and
-> give it to DT node
-> ** comments on documentation
-> ** few other comments on null checks are resolved
->
-> * BWT timing configuration is added to ti-usim driver
->
-> v1 cover letter link#
-> https://lkml.org/lkml/2014/1/6/250
->
-> Satish Patel (5):
->   sc_phy:SmartCard(SC) PHY interface to SC controller
->   misc: tda8026: Add NXP TDA8026 PHY driver
->   char: ti-usim: Add driver for USIM module on AM43xx
->   ARM: dts: AM43xx: DT entries added for ti-usim
->   ARM: dts: AM43xx-epos-evm: DT entries  for ti-usim and phy
->
->  Documentation/devicetree/bindings/misc/tda8026.txt |   19 +
->  .../devicetree/bindings/ti-usim/ti-usim.txt        |   31 +
->  Documentation/sc_phy.txt                           |  171 ++
->  arch/arm/boot/dts/am4372.dtsi                      |   10 +
->  arch/arm/boot/dts/am43x-epos-evm.dts               |   43 +
->  drivers/char/Kconfig                               |    7 +
->  drivers/char/Makefile                              |    1 +
->  drivers/char/ti-usim-hw.h                          |  863 +++++++++
->  drivers/char/ti-usim.c                             | 1859 ++++++++++++++++++++
->  drivers/misc/Kconfig                               |    7 +
->  drivers/misc/Makefile                              |    1 +
->  drivers/misc/tda8026.c                             | 1255 +++++++++++++
->  include/linux/sc_phy.h                             |  132 ++
->  include/linux/ti-usim.h                            |   98 +
->  14 files changed, 4497 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/misc/tda8026.txt
->  create mode 100644 Documentation/devicetree/bindings/ti-usim/ti-usim.txt
->  create mode 100644 Documentation/sc_phy.txt
->  create mode 100644 drivers/char/ti-usim-hw.h
->  create mode 100644 drivers/char/ti-usim.c
->  create mode 100644 drivers/misc/tda8026.c
->  create mode 100644 include/linux/sc_phy.h
->  create mode 100644 include/linux/ti-usim.h
-Any comments on this patch series ?
+On 01/30/2014 10:58 AM, Nicolas Pitre wrote:
+> On Thu, 30 Jan 2014, Preeti U Murthy wrote:
+> 
+>> Hi Nicolas,
+>>
+>> On 01/30/2014 02:01 AM, Nicolas Pitre wrote:
+>>> On Wed, 29 Jan 2014, Nicolas Pitre wrote:
+>>>
+>>>> In order to integrate cpuidle with the scheduler, we must have a better
+>>>> proximity in the core code with what cpuidle is doing and not delegate
+>>>> such interaction to arch code.
+>>>>
+>>>> Architectures implementing arch_cpu_idle() should simply enter
+>>>> a cheap idle mode in the absence of a proper cpuidle driver.
+>>>>
+>>>> Signed-off-by: Nicolas Pitre <nico@linaro.org>
+>>>> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>>
+>>> As mentioned in my reply to Olof's comment on patch #5/6, here's a new 
+>>> version of this patch adding the safety local_irq_enable() to the core 
+>>> code.
+>>>
+>>> ----- >8
+>>>
+>>> From: Nicolas Pitre <nicolas.pitre@linaro.org>
+>>> Subject: idle: move the cpuidle entry point to the generic idle loop
+>>>
+>>> In order to integrate cpuidle with the scheduler, we must have a better
+>>> proximity in the core code with what cpuidle is doing and not delegate
+>>> such interaction to arch code.
+>>>
+>>> Architectures implementing arch_cpu_idle() should simply enter
+>>> a cheap idle mode in the absence of a proper cpuidle driver.
+>>>
+>>> In both cases i.e. whether it is a cpuidle driver or the default
+>>> arch_cpu_idle(), the calling convention expects IRQs to be disabled
+>>> on entry and enabled on exit. There is a warning in place already but
+>>> let's add a forced IRQ enable here as well.  This will allow for
+>>> removing the forced IRQ enable some implementations do locally and 
+>>
+>> Why would this patch allow for removing the forced IRQ enable that are
+>> being done on some archs in arch_cpu_idle()? Isn't this patch expecting
+>> the default arch_cpu_idle() to have re-enabled the interrupts after
+>> exiting from the default idle state? Its supposed to only catch faulty
+>> cpuidle drivers that haven't enabled IRQs on exit from idle state but
+>> are expected to have done so, isn't it?
+> 
+> Exact.  However x86 currently does this:
+> 
+> 	if (cpuidle_idle_call())
+> 	        x86_idle();
+> 	else
+> 	        local_irq_enable();
+> 
+> So whenever cpuidle_idle_call() is successful then IRQs are 
+> unconditionally enabled whether or not the underlying cpuidle driver has 
+> properly done it or not.  And the reason is that some of the x86 cpuidle 
+> do fail to enable IRQs before returning.
+> 
+> So the idea is to get rid of this unconditional IRQ enabling and let the 
+> core issue a warning instead (as well as enabling IRQs to allow the 
+> system to run).
 
-If not,
-Can you accept these patches for next merge window
+Oh ok, thank you for clarifying this:)
 
-Thanks
-Satish
-
->
->
+Regards
+Preeti U Murthy
+> 
+> 
+> Nicolas
+> 
 
