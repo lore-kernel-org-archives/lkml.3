@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaA3I5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 03:57:46 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60682 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaA3I5o (ORCPT
+	id S1752719AbaA3I7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 03:59:52 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:49192 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaA3I7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 03:57:44 -0500
-Message-ID: <52EA1405.8060801@gmail.com>
-Date: Thu, 30 Jan 2014 09:57:41 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 30 Jan 2014 03:59:51 -0500
+Date: Thu, 30 Jan 2014 09:59:40 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 1/9] perf tools: Fix symbol annotation for relocated
+ kernel
+Message-ID: <20140130085940.GA2643@gmail.com>
+References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
+ <1391004884-10334-2-git-send-email-adrian.hunter@intel.com>
+ <20140129185747.GE3998@ghostprotocols.net>
+ <52E9FD31.108@intel.com>
 MIME-Version: 1.0
-To: linux-sunxi@googlegroups.com,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-doc@vger.kernel.org,
-        dev@linux-sunxi.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 08/14] mtd: nand: add sunxi NAND
- flash controller support
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com> <1391006064-28890-9-git-send-email-b.brezillon.dev@gmail.com> <20140129175641.GF1427@obsidianresearch.com> <20140129184619.GC27143@localhost> <20140129191005.GG1427@obsidianresearch.com>
-In-Reply-To: <20140129191005.GG1427@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E9FD31.108@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/01/2014 20:10, Jason Gunthorpe wrote:
-> On Wed, Jan 29, 2014 at 03:46:20PM -0300, Ezequiel Garcia wrote:
->
->> After CE# has been pulled high and then transitioned low again, the host
->> should issue a Set Features to select the appropriate asynchronous timing mode.
->> """
-> Oh, I had forgot you should do a set feature too
->
-> Boris, I think the core core should handle this dance and the driver
-> should just implement a call back to change the timing mode on the
-> interface..
->
-> If I ever get a moment I can work on support for timing setting in the
-> mvebu driver, I have boards here with ONFI NAND..
 
-Okay, I'll wait :).
+* Adrian Hunter <adrian.hunter@intel.com> wrote:
 
-Thanks.
+> On 29/01/14 20:57, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Jan 29, 2014 at 04:14:36PM +0200, Adrian Hunter escreveu:
+> >> Kernel maps map memory addresses to file offsets.
+> >> For symbol annotation, objdump needs the object VMA
+> >> addresses.  For an unrelocated kernel, that is the
+> >> same as the memory address.
+> >>
+> >> The addresses passed to objdump for symbol annotation
+> >> did not take into account kernel relocation.  This
+> >> patch fixes that.
+> > 
+> > Question: To fix the problem reported by Linus, i.e. the very minimal
+> > fix, we only need this patch, right?
+> 
+> Yes but the other fixes are needed too.
 
->
-> Regards,
-> Jason
->
+So, for the specific case of kernel address layout randomization, how 
+does this fix Linus's bug with KASLR enabled? How does the code 
+recover the random, runtime offset of the relocated kernel, which 
+varies from boot to boot?
 
+Thanks,
+
+	Ingo
