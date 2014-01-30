@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaA3WqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:46:14 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37742 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348AbaA3WqM (ORCPT
+	id S1753988AbaA3WrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:47:09 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:63976 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522AbaA3WrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:46:12 -0500
-Date: Thu, 30 Jan 2014 14:46:07 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Subject: Linux Plumbers Conference Call for Microconference Proposals
-Message-ID: <20140130224607.GA3067@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Thu, 30 Jan 2014 17:47:07 -0500
+Date: Thu, 30 Jan 2014 14:47:05 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <edumazet@google.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Jan Kara <jack@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] kthread: ensure locality of task_struct allocations
+In-Reply-To: <1391062491.28432.68.camel@edumazet-glaptop2.roam.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1401301446320.12223@chino.kir.corp.google.com>
+References: <20140128183808.GB9315@linux.vnet.ibm.com> <alpine.DEB.2.02.1401290012460.10268@chino.kir.corp.google.com> <alpine.DEB.2.10.1401290957350.23856@nuc> <alpine.DEB.2.02.1401291622550.22974@chino.kir.corp.google.com>
+ <1391062491.28432.68.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14013022-1344-0000-0000-000005542D15
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are pleased to announce the Call for Microconferences for the 2014
-edition of the Linux Plumbers Conference, which will be held in Düsseldorf
-Germany on October 15-17 in conjunction with LinuxCon (which takes
-place on the first three days of that same week).
+On Wed, 29 Jan 2014, Eric Dumazet wrote:
 
-A microconference is a collection of collaborative sessions focused on
-problems in a particular area of the Linux plumbing, which includes the
-kernel, libraries, utilities, UI, and so forth, but can also focus on
-cross-cutting concerns such as security, scaling, energy efficiency, and
-so forth.  Good microconferences result in solutions to these problems
-and concerns, while the very best microconferences of course result in
-patches that implement those solutions.  Topics that require significant
-slideware are probably better candidates for the refereed track than for
-a microconference.  For more information on submitting a microconference
-proposal, see http://www.linuxplumbersconf.org/2014/participate/#cfmc.
+> > Eric, did you try this when writing 207205a2ba26 ("kthread: NUMA aware 
+> > kthread_create_on_node()") or was it always numa_node_id() from the 
+> > beginning?
+> 
+> Hmm, I think I did not try this, its absolutely possible NUMA_NO_NODE
+> was better here.
+> 
 
-Of course, there is more to Plumbers than microconferences, so see the
-call for refereed-track presentations (http://lwn.net/Articles/583226/),
-as well as upcoming calls for BoFs, hackfests, and lightening talks.
-We hope to see you in Düsseldorf this coming October!
-
-					Thanx, Paul
-					(Chair, LPC Program Committee)
-
+Nishanth, could you change your patch to just return NUMA_NO_NODE for the 
+non-kthreadd case?
