@@ -1,103 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaA3CCv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 21:02:51 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:47554 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486AbaA3CCu (ORCPT
+	id S1752494AbaA3CEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 21:04:23 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:53898 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaA3CEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 21:02:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140129133714.GE8749@quack.suse.cz>
-References: <20140127142520.GD10323@ZenIV.linux.org.uk>
-	<CA+55aFyuC11WPBh0bWu_K3+CooAVAUbSTfk2aw5sks8eJRAhDQ@mail.gmail.com>
-	<20140129133714.GE8749@quack.suse.cz>
-Date: Thu, 30 Jan 2014 11:02:49 +0900
-Message-ID: <CAOtxgyd_T8eXpQ89KhMCLRhy6ebO55dXscVikhuX2a9HCdGTQA@mail.gmail.com>
-Subject: Re: [git pull] vfs pile 1
-From: Kim Jaegeuk <jaegeuk.kim@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Jan 2014 21:04:21 -0500
+Date: Wed, 29 Jan 2014 21:04:17 -0500
+From: Michael Krufky <mkrufky@linuxtv.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-media@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        mkrufky@linuxtv.org
+Subject: [PATCH] update Michael Krufky's email address
+Message-ID: <20140129210417.71833f4b@vujade>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-29 Jan Kara <jack@suse.cz>:
-> On Tue 28-01-14 19:26:08, Linus Torvalds wrote:
->> On Mon, Jan 27, 2014 at 6:25 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> >         Assorted stuff; the biggest pile here is Christoph's ACL series.
->> > Plus assorted cleanups and fixes all over the place...  There will be
->> > another pile later this week.
->>
->> The posix_acl_chmod() code looks wrong.
->>
->> Not that it looked right before either, but whatever. The code
->> basically looks like some variation of this in most setattr()
->> implementations:
->>
->>         if (ia_valid & ATTR_MODE)
->>                 rc = posix_acl_chmod(inode, inode->i_mode);
->>
->> but the mode we're changing to (and what ATTR_MODE guards) is actually
->> attr->ia_mode, not inode->i_mode.
->   Yes, but posix_acl_chmod() is called after setattr_copy() was done so
-> inode->i_mode should be the same as attr->ia_mode. Whether i_mode or
-> ia_mode is mode logical depends on whether you view posix_acl_chmod() as
-> "sync current i_mode into acls" or "reflect this i_mode change in acls".
-> I agree the function name suggests more the latter semantics.
->
->> And quite frankly, passing in inode->i_mode looks stupid, since we're
->> already passing in the inode pointer, so that's just redundant and
->> pointless information.
->   Yes, it looks stupid. We could almost drop that argument, except that f2fs
-> tries to play some tricks with i_mode and stores i_mode in a different
-> place when acls are enabled. Huh? Jaegeuk, can you explain why are you
-> doing that?
+I am no longer available at the kernellabs.com or m1k.net email
+addresses.  Update each instance of my email to my linuxtv.org
+account.
 
-As described to Christoph before, the reason is for acl consistency
-between on-disk xattr->mode and on-disk inode->mode.
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
 
-Previously, there are three i_modes managed by:
-                       inode->mode   on-disk xattr->mode  on-disk->i_mode
-f2fs_setattr            [x]                       y                       y
-[update_inode]       x                        y                      [x]
-[checkpoint]            x                       [y]                      x
-__f2fs_setxattr        x                       [x]                      x
-
-In this flow, f2fs is able to break the consistency between on-disk
-xattr->mode and on-disk->i_mode after checkpoint followed by
-sudden-power-off.
-
-So, fi->i_mode was introduced to address the problem.
-The new f2fs_setattr triggers:
-                inode->mode   fi->i_mode  on-disk xattr->mode  on-disk->i_mode
-f2fs_setattr             y                [x]                     y
-                      y
-[update_inode]       y                 x                      y
-                  y
-[checkpoint]            y                 x                      y
-                     y
-__f2fs_setxattr       [x]                x                     [x]
-                   [x]
-
-Finally, __f2fs_setxattr synchronizes inode->mode, on-disk xattr->mode,
-and on-disk inode->i_mode all together.
-
-Am I missing something?
-
-Thanks,
-
->
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/Documentation/dvb/contributors.txt
+b/Documentation/dvb/contributors.txt index 47c3009..731a009 100644
+--- a/Documentation/dvb/contributors.txt
++++ b/Documentation/dvb/contributors.txt
+@@ -78,7 +78,7 @@ Peter Beutner <p.beutner@gmx.net>
+ Wilson Michaels <wilsonmichaels@earthlink.net>
+   for the lgdt330x frontend driver, and various bugfixes
+ 
+-Michael Krufky <mkrufky@m1k.net>
++Michael Krufky <mkrufky@linuxtv.org>
+   for maintaining v4l/dvb inter-tree dependencies
+ 
+ Taylor Jacob <rtjacob@earthlink.net>
+diff --git a/drivers/media/dvb-frontends/nxt200x.c
+b/drivers/media/dvb-frontends/nxt200x.c index fbca985..67bdb5b 100644
+--- a/drivers/media/dvb-frontends/nxt200x.c
++++ b/drivers/media/dvb-frontends/nxt200x.c
+@@ -2,7 +2,7 @@
+  *    Support for NXT2002 and NXT2004 - VSB/QAM
+  *
+  *    Copyright (C) 2005 Kirk Lapray <kirk.lapray@gmail.com>
+- *    Copyright (C) 2006 Michael Krufky <mkrufky@m1k.net>
++ *    Copyright (C) 2006-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *    based on nxt2002 by Taylor Jacob <rtjacob@earthlink.net>
+  *    and nxt2004 by Jean-Francois Thibert <jeanfrancois@sagetv.com>
+  *
+diff --git a/drivers/media/pci/bt8xx/bttv-cards.c
+b/drivers/media/pci/bt8xx/bttv-cards.c index d85cb0a..6662b49 100644
+--- a/drivers/media/pci/bt8xx/bttv-cards.c
++++ b/drivers/media/pci/bt8xx/bttv-cards.c
+@@ -2426,7 +2426,7 @@ struct tvcard bttv_tvcards[] = {
+ 	},
+ 		/* ---- card 0x87---------------------------------- */
+ 	[BTTV_BOARD_DVICO_FUSIONHDTV_5_LITE] = {
+-		/* Michael Krufky <mkrufky@m1k.net> */
++		/* Michael Krufky <mkrufky@linuxtv.org> */
+ 		.name           = "DViCO FusionHDTV 5 Lite",
+ 		.tuner_type     = TUNER_LG_TDVS_H06XF, /* TDVS-H064F */
+ 		.tuner_addr	= ADDR_UNSET,
+diff --git a/drivers/media/pci/saa7134/saa7134-cards.c
+b/drivers/media/pci/saa7134/saa7134-cards.c index d45e7f6..c9b2350
+100644 --- a/drivers/media/pci/saa7134/saa7134-cards.c
++++ b/drivers/media/pci/saa7134/saa7134-cards.c
+@@ -2590,7 +2590,7 @@ struct saa7134_board saa7134_boards[] = {
+ 		}},
+ 	},
+ 	[SAA7134_BOARD_AVERMEDIA_AVERTVHD_A180] = {
+-		/* Michael Krufky <mkrufky@m1k.net>
++		/* Michael Krufky <mkrufky@linuxtv.org>
+ 		 * Uses Alps Electric TDHU2, containing NXT2004 ATSC
+Decoder
+ 		 * AFAIK, there is no analog demod, thus,
+ 		 * no support for analog television.
+diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.c
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.c index d83df4b..0a98d04
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.c
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-demod.c - driver for the MaxLinear MXL111SF DVB-T
+demodulator *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by @@ -601,7 +601,7 @@ struct dvb_frontend
+*mxl111sf_demod_attach(struct mxl111sf_state *mxl_state,
+EXPORT_SYMBOL_GPL(mxl111sf_demod_attach); 
+ MODULE_DESCRIPTION("MaxLinear MxL111SF DVB-T demodulator driver");
+-MODULE_AUTHOR("Michael Krufky <mkrufky@kernellabs.com>");
++MODULE_AUTHOR("Michael Krufky <mkrufky@linuxtv.org>");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION("0.1");
+ 
+diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.h index 3f3f8bf..2d4530f
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-demod.h
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-demod.h - driver for the MaxLinear MXL111SF DVB-T
+demodulator *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c index e4121cb..a619410
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.c
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-gpio.c - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.h index 0220f54..b85a577
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-gpio.h
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-gpio.h - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.c
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.c index 3443455..a101d06
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.c
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-i2c.c - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.h index a57a45f..4657621
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-i2c.h
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-i2c.h - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.c
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.c index b741b3a..f6b3480
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.c
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-phy.c - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.h index f075607..0643738
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-phy.h
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-phy.h - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-reg.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-reg.h index 17831b0..89bf115
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-reg.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-reg.h
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-reg.h - driver for the MaxLinear MXL111SF
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.c
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.c index 879c529..a8d2c70
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.c
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-tuner.c - driver for the MaxLinear MXL111SF CMOS tuner
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by @@ -512,7 +512,7 @@ struct dvb_frontend
+*mxl111sf_tuner_attach(struct dvb_frontend *fe,
+EXPORT_SYMBOL_GPL(mxl111sf_tuner_attach); 
+ MODULE_DESCRIPTION("MaxLinear MxL111SF CMOS tuner driver");
+-MODULE_AUTHOR("Michael Krufky <mkrufky@kernellabs.com>");
++MODULE_AUTHOR("Michael Krufky <mkrufky@linuxtv.org>");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION("0.1");
+ 
+diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h index 90f583e..5fc0121
+100644 --- a/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf-tuner.h
+@@ -1,7 +1,7 @@
+ /*
+  *  mxl111sf-tuner.h - driver for the MaxLinear MXL111SF CMOS tuner
+  *
+- *  Copyright (C) 2010 Michael Krufky <mkrufky@kernellabs.com>
++ *  Copyright (C) 2010-2014 Michael Krufky <mkrufky@linuxtv.org>
+  *
+  *  This program is free software; you can redistribute it and/or
+modify
+  *  it under the terms of the GNU General Public License as published
+by diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+b/drivers/media/usb/dvb-usb-v2/mxl111sf.c index 08240e4..8ceff42 100644
+--- a/drivers/media/usb/dvb-usb-v2/mxl111sf.c
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010 Michael Krufky (mkrufky@kernellabs.com)
++ * Copyright (C) 2010-2014 Michael Krufky (mkrufky@linuxtv.org)
+  *
+  *   This program is free software; you can redistribute it and/or
+modify it
+  *   under the terms of the GNU General Public License as published by
+the Free @@ -1421,7 +1421,7 @@ static struct usb_driver
+mxl111sf_usb_driver = { 
+ module_usb_driver(mxl111sf_usb_driver);
+ 
+-MODULE_AUTHOR("Michael Krufky <mkrufky@kernellabs.com>");
++MODULE_AUTHOR("Michael Krufky <mkrufky@linuxtv.org>");
+ MODULE_DESCRIPTION("Driver for MaxLinear MxL111SF");
+ MODULE_VERSION("1.0");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/media/usb/dvb-usb-v2/mxl111sf.h
+b/drivers/media/usb/dvb-usb-v2/mxl111sf.h index 9816de8..8516c01 100644
+--- a/drivers/media/usb/dvb-usb-v2/mxl111sf.h
++++ b/drivers/media/usb/dvb-usb-v2/mxl111sf.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2010 Michael Krufky (mkrufky@kernellabs.com)
++ * Copyright (C) 2010-2014 Michael Krufky (mkrufky@linuxtv.org)
+  *
+  *   This program is free software; you can redistribute it and/or
+modify it
+  *   under the terms of the GNU General Public License as published by
+the Free
