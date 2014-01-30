@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578AbaA3QSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:18:06 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:49972 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418AbaA3QSD (ORCPT
+	id S1753262AbaA3Q14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:27:56 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:36970 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025AbaA3Q1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:18:03 -0500
-From: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Michel Dagenais <michel.dagenais@polymtl.ca>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V3 0/5] ARM CoreSight: ETM: Fix a vmalloc/vfree failure and enhance tracing control
-Date: Thu, 30 Jan 2014 11:11:05 -0500
-Message-Id: <1391098270-8867-1-git-send-email-adrienverge@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
+	Thu, 30 Jan 2014 11:27:55 -0500
+Message-ID: <52EA7D8A.6080604@linaro.org>
+Date: Thu, 30 Jan 2014 17:27:54 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: nicolas.pitre@linaro.org, mingo@redhat.com, tglx@linutronix.de,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
+ rq
+References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140130153150.GD5002@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On 01/30/2014 04:31 PM, Peter Zijlstra wrote:
+> On Thu, Jan 30, 2014 at 03:09:22PM +0100, Daniel Lezcano wrote:
+>> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+>> index 90aef084..130debf 100644
+>> --- a/kernel/sched/sched.h
+>> +++ b/kernel/sched/sched.h
+>> @@ -654,6 +654,9 @@ struct rq {
+>>   #endif
+>>
+>>   	struct sched_avg avg;
+>> +#ifdef CONFIG_CPU_IDLE
+>> +	int idle_index;
+>> +#endif
+>>   };
+>
+> So my 'problem' with this is that I've no ff'ing clue what the
+> idle_index is and what I can do with it.
 
-Different ARM users have shown their interest in this patch, so I made
-a third version that is compatible with PID namespaces.
+The cpuidle framework works with index corresponding to the index in the 
+idle states array. This array contains all the idle states the backend 
+driver supports. The cpuidle framework will ask for the governor what 
+idle state it should uses for the cpu, the governor will look at the 
+different characteristics of the idle states + timing information and 
+returns an index corresponding to the idle state the governor thinks 
+suit better. This step is the 'cpuidle_select'.
 
-Mainly:
-- It fixes a "vmalloc: allocation failure: 0 bytes" when reading an
-  ETB buffer that is empty.
-- It extends current support of CoreSight ETM, that is currently
-  very limited.
+Then the cpuidle framework calls the idle callback associated with the 
+idle state at the index location. The cpu will stay blocked on this 
+callback until an interrupt occurs. This step is the 'cpuidle_enter'.
 
-ETM is a dedicated hardware that provides program tracing, a
-cycle-precise and low-overhead solution that software tools such as
-'perf record' cannot provide.
+Between the 'cpuidle_select' and 'cpuidle_enter', this patch stores the 
+current idle state the cpu is about to enter (it stores the index). So 
+from the scheduler and the current cpuidle api it is easy to get 
+information about the idle state a cpu is:
 
-Usage of ETM tracing facility is presently limited to start and stop
-tracing.  This set of patches enables management of address combinations
-and PIDs that trigger tracing, thus allowing to trace specific
-functions and processes.  ETM management was done via sysfs entries
-(trace_info, trace_running...), this code adds trace_addrrange and
-trace_pid to let the user read/write custom values.
+struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
 
-Changes in V2:
-- Fix a vmalloc/vfree failure when ETB is empty
-- Use device attributes rather than raw kobjects
-- Make PID_IN_CONTEXTIDR incompatible with PID_NS in Kconfig
-- Use pid_t instead of long
+struct cpuidle_state *state = &drv->states[rq->index];
 
-Changes in V3:
-- Support tracing processes by their PID in PID namespaces
-- Reset PID_IN_CONTEXTIDR and PID_NS independent
+And from the state, we have the following informations:
 
-This series of patches applies to v3.13.
+struct cpuidle_state {
 
-Adrien Vergé (5):
-  ARM CoreSight: ETM: Fix a memory allocation failure
-  ARM CoreSight: ETM: Use device attributes
-  ARM CoreSight: ETM: Rename 'comparator' to 'address comparator'
-  ARM CoreSight: ETM: Add address control support
-  ARM CoreSight: ETM: Add PID control support
+	[ ... ]
 
- arch/arm/include/asm/hardware/coresight.h |   9 +-
- arch/arm/kernel/etm.c                     | 257 ++++++++++++++++++++++++------
- 2 files changed, 216 insertions(+), 50 deletions(-)
+         unsigned int    exit_latency; /* in US */
+         int             power_usage; /* in mW */
+         unsigned int    target_residency; /* in US */
+         bool            disabled; /* disabled on all CPUs */
+
+	[ ... ]
+};
+
+IIRC, Alex Shi sent a patchset to improve the choosing of the idlest cpu 
+and the exit_latency was needed.
+
+
 
 -- 
-1.8.5.3
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
