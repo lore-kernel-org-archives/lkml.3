@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaA3ORF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:17:05 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:60830 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917AbaA3ORD convert rfc822-to-8bit (ORCPT
+	id S1753313AbaA3OSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:18:31 -0500
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:61299 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaA3OSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:17:03 -0500
+	Thu, 30 Jan 2014 09:18:30 -0500
+Date: Thu, 30 Jan 2014 11:18:21 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 9/9] perf buildid-cache: Check relocation when
+ checking for existing kcore
+Message-ID: <20140130141821.GA30054@ghostprotocols.net>
+References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
+ <1391004884-10334-10-git-send-email-adrian.hunter@intel.com>
+ <20140129191454.GG3998@ghostprotocols.net>
+ <52EA1CAE.7060801@intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: NFS client broken in Linus' tip
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <20140130140834.GW15937@n2100.arm.linux.org.uk>
-Date: Thu, 30 Jan 2014 09:17:00 -0500
-Cc: linuxnfs <linux-nfs@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Viro Alexander <viro@zeniv.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <960A8F94-BDD4-4ED0-95EC-0D71D4AC27E7@primarydata.com>
-References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-X-Mailer: Apple Mail (2.1827)
+Content-Disposition: inline
+In-Reply-To: <52EA1CAE.7060801@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Thu, Jan 30, 2014 at 11:34:38AM +0200, Adrian Hunter escreveu:
+> On 29/01/14 21:14, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Jan 29, 2014 at 04:14:44PM +0200, Adrian Hunter escreveu:
+> >> perf buildid-cache does not make another
+> >> copy of kcore if the buildid and modules
+> >> match an existing copy.  That does not
 
-On Jan 30, 2014, at 9:08, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > Humm, what is the problem? Having the ref reloc symbol we can fix things
+> > up, no? I.e. just using map->reloc the old kcore copy should be ok to
+> > use, no need to replace the kcore copy in the cache. Or am I missing
+> > something?
 
-> I just booted Linus' tip (plus a few other patches to imx-drm and imx
-> code), and stumbled into this interesting scenario:
-> 
-> # touch test
-> touch: cannot touch `test': Operation not supported
-> 
-> I also tried mkdir and mknod, all result in the same error.  Hard and
-> symlinks links are creatable.
-> 
-> However, I can chmod existing files and rename them.  Files can also be
-> deleted, and the combination of this has left me without a /etc/mtab !
-> 
-> The machine is a iMX6 based ARM, running root-nfs, which was mounted via
-> ubuntu's initramfs (so not using the kernel's built-in root-nfs.)
-> 
-> /proc/mounts for the root mount gives:
-> 192.168.1.123:/var/boot/ci / nfs rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,nolock,proto=tcp,port=2049,timeo=7,retrans=10,sec=sys,local_lock=all,addr=192.168.1.123 0 0
-> 
-> CONFIG_NFS_FS=y
-> CONFIG_NFS_V2=y
-> CONFIG_NFS_V3=y
-> CONFIG_NFS_V3_ACL=y
-> CONFIG_NFS_V4=y
-> # CONFIG_NFS_SWAP is not set
-> # CONFIG_NFS_V4_1 is not set
-> CONFIG_ROOT_NFS=y
-> # CONFIG_NFS_USE_LEGACY_DNS is not set
-> CONFIG_NFS_USE_KERNEL_DNS=y
-> # CONFIG_NFSD is not set
-> CONFIG_LOCKD=y
-> CONFIG_LOCKD_V4=y
-> CONFIG_NFS_ACL_SUPPORT=y
-> CONFIG_NFS_COMMON=y
-> CONFIG_SUNRPC=y
-> CONFIG_SUNRPC_GSS=y
-> 
-> tcpdumping, I see:
-> 
-> 13:59:51.713523 IP 192.168.1.252.1341245608 > 192.168.1.123.2049: 132 lookup fh Unknown/010007011040840000000000CC238FC8FBA0475D9D9F8356B4C44166CDC38700 "test"
-> 13:59:51.714345 IP 192.168.1.123.2049 > 192.168.1.252.1341245608: reply ok 120 lookup ERROR: No such file or directory
-> 13:59:51.751303 IP 192.168.1.252.797 > 192.168.1.123.nfs: . ack 3381 win 2625 <nop,nop,timestamp 474136 3431312924>
-> 
-> which is the only NFS packet(s) I see which mention "test".
-> 
-> and stracing touch:
-> 
-> open("test", O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK|O_LARGEFILE, 0666) = -1 EOPNOTSUPP (Operation not supported)
-> utimensat(AT_FDCWD, "test", NULL, 0)    = -1 ENOENT (No such file or directory)
-> write(2, "touch: ", 7touch: )                  = 7
-> write(2, "cannot touch `test'", 19cannot touch `test')     = 19
-> write(2, ": Operation not supported", 25: Operation not supported) = 25
-> write(2, "\n", 1
-> )                       = 1
-> 
-> I think it's down to this:
-> 
-> commit 013cdf1088d7235da9477a2375654921d9b9ba9f
-> Author: Christoph Hellwig <hch@infradead.org>
-> Date:   Fri Dec 20 05:16:53 2013 -0800
-> 
->    nfs: use generic posix ACL infrastructure for v3 Posix ACLs
-> 
->    This causes a small behaviour change in that we don't bother to set
->    ACLs on file creation if the mode bit can express the access permissions
->    fully, and thus behaving identical to local filesystems.
-> 
->    Signed-off-by: Christoph Hellwig <hch@lst.de>
->    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> which adds:
-> 
-> +       status = posix_acl_create(dir, &sattr->ia_mode, &default_acl, &acl);
-> +       if (status)
-> +               goto out;
+> The current implementation works on the basis that kcore matches the
+> perf data recorded.  This is just a fix for that.
 
-Right, this should clearly not cause nfs4_proc_create to fail if it returns EOPNOTSUPP.
+> I am afraid it is that way because it meets my needs.
 
-> into nfs3_proc_create(), but this ends up calling down into nfs3_get_acl(),
-> which does this:
-> 
->        if (!nfs_server_capable(inode, NFS_CAP_ACLS))
->                return ERR_PTR(-EOPNOTSUPP);
+> I did not think of allowing for relocation because I need to be able
+> to walk the code.  Relocation was one of the things I was trying to
+> avoid.
+ 
+> For me making a copy of kcore is far superior because it can be made
+> to have the jump labels mostly the right way around too. e.g. run a
+> dummy perf record while making the copy.
 
-Just for completeness sake: is the server you were running against supposed to support POSIX acls?
+Yes, it is superior, no question about it, I'm just trying to figure out
+how this fits into the build-id cache thing, i.e. it should have files
+keyed by its build-id, that are inserted, but not replaced, since it
+expects its contents to be constant.
 
---
-Trond Myklebust
-Linux NFS client maintainer
+So you have a need to get the matching kcore at the time you did the
+record, because we're dealing with self modifying code, the kernel (soon
+if not already, userspace as well)...
 
+So at least we need to make this abundantly clear to users, that what is
+in the build-id cache may be the latest snapshot of some DSO that had a
+build-id at, well, build time.
+
+We need to add support for looking up in the binary where are places
+that are modifiable and then mark those in the UI using some visual cue.
+
+Till then, at least a paragraph in the documentation stating what
+happens is needed, I'll look into it.
+
+And then right now this is just for kcore, that is clearly marked as
+such in the build-id cache, IIRC it is in a separate directory, etc,
+right?
+
+- Arnaldo
