@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaA3U0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 15:26:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60782 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997AbaA3U0Y (ORCPT
+	id S1753209AbaA3UeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 15:34:12 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:24856 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaA3UeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 15:26:24 -0500
-Message-ID: <52EAB56E.2030102@infradead.org>
-Date: Thu, 30 Jan 2014 12:26:22 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 30 Jan 2014 15:34:10 -0500
+X-IronPort-AV: E=Sophos;i="4.95,752,1384329600"; 
+   d="scan'208";a="12326108"
+Subject: Re: igb and bnx2: "NETDEV WATCHDOG: transmit queue timed out" when
+ skb has huge linear buffer
+From: Michael Chan <mchan@broadcom.com>
+To: Zoltan Kiss <zoltan.kiss@schaman.hu>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+In-Reply-To: <52EAA31B.1090606@schaman.hu>
+References: <52EAA31B.1090606@schaman.hu>
+Content-Type: text/plain; charset="cp1252"
+Date: Thu, 30 Jan 2014 12:34:08 -0800
+Message-ID: <1391114048.4804.2.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-To: Andiry Xu <andiry@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>,
-        Linux MM <linux-mm@kvack.org>
-Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
-References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>	<52EAA714.3080809@infradead.org> <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>
-In-Reply-To: <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2014 11:33 AM, Andiry Xu wrote:
-> On Thu, Jan 30, 2014 at 11:25 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
->> [adding linux-mm mailing list]
->>
->> On 01/30/2014 08:52 AM, Andiry Xu wrote:
->>> Hi,
->>>
->>> In kernel-parameters.txt, there is following description:
->>>
->>> memmap=nn[KMG]$ss[KMG]
->>>                         [KNL,ACPI] Mark specific memory as reserved.
->>>                         Region of memory to be used, from ss to ss+nn.
->>
->> Should be:
->>                           Region of memory to be reserved, from ss to ss+nn.
->>
->> but that doesn't help with the problem that you describe, does it?
->>
-> 
-> Actually it should be:
->                              Region of memory to be reserved, from nn to nn+ss.
-> 
-> That is, exchange nn and ss.
+On Thu, 2014-01-30 at 19:08 +0000, Zoltan Kiss wrote:
+> I've experienced some queue timeout problems mentioned in the subject 
+> with igb and bnx2 cards. 
 
-Yes, I understand that that's what you are reporting.  I just haven't yet
-worked out how the code manages to exchange those 2 values.
+Please provide the full tx timeout dmesg.  bnx2 dumps some diagnostic
+information during tx timeout that may be useful.  Thanks.
 
->>
->>> Unfortunately this is incorrect. The meaning of nn and ss is reversed.
->>> For example:
->>>
->>> Command                  Expected                 Result
->>> memmap 2G$6G        6G - 8G reserved      2G - 8G reserved
->>> memmap 6G$2G        2G - 8G reserved      6G - 8G reserved
->>
->> Are you testing on x86?
->> The code in arch/x86/kernel/e820.c always parses mem_size followed by start address.
->> I don't (yet) see where it goes wrong...
->>
-> 
-> Yes, it's a x86 machine.
-> 
->>
->>> Test kernel version 3.13, but I believe the issue has been there long ago.
->>>
->>> I'm not sure whether the description or implementation should be
->>> fixed, but apparently they do not match.
->>
->> I prefer to change the documentation and leave the implementation as is.
->>
-> 
-> That's fine. memmap itself works OK, it's just the description is
-> wrong and people like me get confused.
-> 
-> Thanks,
-> Andiry
-
-
--- 
-~Randy
