@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649AbaA3ShL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 13:37:11 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:39502 "EHLO
+	id S1753730AbaA3Shf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 13:37:35 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:39507 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064AbaA3ShJ (ORCPT
+	with ESMTP id S1753137AbaA3ShK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 13:37:09 -0500
+	Thu, 30 Jan 2014 13:37:10 -0500
 From: Kumar Gala <galak@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org
-Cc: Kumar Gala <galak@codeaurora.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] clocksource: qcom: split building of legacy vs multiplatform support
-Date: Thu, 30 Jan 2014 12:36:41 -0600
-Message-Id: <1391107002-21470-4-git-send-email-galak@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kumar Gala <galak@codeaurora.org>, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH 4/4] tty: serial: msm: Enable building msm_serial for ARCH_QCOM
+Date: Thu, 30 Jan 2014 12:36:42 -0600
+Message-Id: <1391107002-21470-5-git-send-email-galak@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1391107002-21470-1-git-send-email-galak@codeaurora.org>
 References: <1391107002-21470-1-git-send-email-galak@codeaurora.org>
@@ -23,74 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The majority of the clocksource code for the Qualcomm platform is shared
-between newer (multiplatform) and older platforms.  However there is a bit
-of code that isn't, so only build it for the appropriate config.
+We've split Qualcomm MSM support into legacy and multiplatform.  So add
+the ability to build the serial driver on the newer ARCH_QCOM
+multiplatform.
 
 Signed-off-by: Kumar Gala <galak@codeaurora.org>
 ---
- drivers/clocksource/qcom-timer.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+Greg,
 
-diff --git a/drivers/clocksource/qcom-timer.c b/drivers/clocksource/qcom-timer.c
-index dca829e..e807acf 100644
---- a/drivers/clocksource/qcom-timer.c
-+++ b/drivers/clocksource/qcom-timer.c
-@@ -106,15 +106,6 @@ static notrace cycle_t msm_read_timer_count(struct clocksource *cs)
- 	return readl_relaxed(source_base + TIMER_COUNT_VAL);
- }
+If we can get an ack on this, will probably go via the arm-soc tree to keep
+the patchset together.
+
+thanks
+
+- k
+
+ drivers/tty/serial/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index a3815ea..ce9b12d 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1024,7 +1024,7 @@ config SERIAL_SGI_IOC3
  
--static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
--{
--	/*
--	 * Shift timer count down by a constant due to unreliable lower bits
--	 * on some targets.
--	 */
--	return msm_read_timer_count(cs) >> MSM_DGT_SHIFT;
--}
--
- static struct clocksource msm_clocksource = {
- 	.name	= "dg_timer",
- 	.rating	= 300,
-@@ -228,7 +219,7 @@ err:
- 	sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
- }
+ config SERIAL_MSM
+ 	bool "MSM on-chip serial port support"
+-	depends on ARCH_MSM
++	depends on ARCH_MSM || ARCH_QCOM
+ 	select SERIAL_CORE
  
--#ifdef CONFIG_OF
-+#ifdef CONFIG_ARCH_QCOM
- static void __init msm_dt_timer_init(struct device_node *np)
- {
- 	u32 freq;
-@@ -281,7 +272,7 @@ static void __init msm_dt_timer_init(struct device_node *np)
- }
- CLOCKSOURCE_OF_DECLARE(kpss_timer, "qcom,kpss-timer", msm_dt_timer_init);
- CLOCKSOURCE_OF_DECLARE(scss_timer, "qcom,scss-timer", msm_dt_timer_init);
--#endif
-+#else
- 
- static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
- 				u32 sts)
-@@ -301,6 +292,15 @@ static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
- 	return 0;
- }
- 
-+static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
-+{
-+	/*
-+	 * Shift timer count down by a constant due to unreliable lower bits
-+	 * on some targets.
-+	 */
-+	return msm_read_timer_count(cs) >> MSM_DGT_SHIFT;
-+}
-+
- void __init msm7x01_timer_init(void)
- {
- 	struct clocksource *cs = &msm_clocksource;
-@@ -327,3 +327,4 @@ void __init qsd8x50_timer_init(void)
- 		return;
- 	msm_timer_init(19200000 / 4, 32, 7, false);
- }
-+#endif
+ config SERIAL_MSM_CONSOLE
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
