@@ -1,161 +1,505 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaA3PQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:16:58 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:37208 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751165AbaA3PQ4 (ORCPT
+	id S1753410AbaA3PRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:17:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52691 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321AbaA3PRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:16:56 -0500
-Date: Thu, 30 Jan 2014 12:17:04 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Root NFS panicing on Linus' tip (Re: NFS client broken in Linus' tip)
-Message-ID: <20140130151703.GA20594@localhost>
-References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
+	Thu, 30 Jan 2014 10:17:48 -0500
+Date: Thu, 30 Jan 2014 16:17:15 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
+ implementation
+Message-ID: <20140130151715.GA5126@laptop.programming.kicks-ass.net>
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
+ <20140130130453.GB2936@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140130140834.GW15937@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140130130453.GB2936@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell, Trond:
-
-On Thu, Jan 30, 2014 at 02:08:34PM +0000, Russell King - ARM Linux wrote:
-> I just booted Linus' tip (plus a few other patches to imx-drm and imx
-> code), and stumbled into this interesting scenario:
+On Thu, Jan 30, 2014 at 02:04:53PM +0100, Peter Zijlstra wrote:
 > 
-[..]
+> So I took out that ugly union and rewrote the code to be mostly
+> atomic_*(), gcc generates acceptable code and its smaller too.
+> 
+>     824       0       0     824     338 defconfig-build/kernel/locking/qrwlock.o
+>     776       0       0     776     308 defconfig-build/kernel/locking/qrwlock.o
+> 
+> I don't think I wrecked it, but I've not actually tried it yet.
 
-> CONFIG_NFS_FS=y
-> CONFIG_NFS_V2=y
-> CONFIG_NFS_V3=y
-> CONFIG_NFS_V3_ACL=y
+I did wreck it.. :-)
 
-Just came across another issue, but a bit more problematic, as my
-kernel (Linus' tip as well) panics, after mounting the rootfs:
+The below is still small and actually works.
 
-IP-Config: Complete:
-     device=eth0, hwaddr=00:50:43:50:1c:15, ipaddr=192.168.0.159, mask=255.255.255.0, gw=192.168.0.1
-     host=develboard, domain=, nis-domain=(none)
-     bootserver=192.168.0.45, rootserver=192.168.0.45, rootpath=
-VFS: Mounted root (nfs filesystem) on device 0:11.
-devtmpfs: mounted
-Freeing unused kernel memory: 136K (c0465000 - c0487000)
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c0004000
-[00000000] *pgd=00000000
-Internal error: Oops: 5 [#1] ARM
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.13.0-10094-g9b0cd30 #276
-task: ed839a40 ti: ed83a000 task.ti: ed83a000
-PC is at xattr_resolve_name+0x14/0x94
-LR is at generic_getxattr+0x2c/0x64
-pc : [<c00a7ab0>]    lr : [<c00a7b5c>]    psr: a0000113
-sp : ed83be5c  ip : ed83be74  fp : ed10ebc0
-r10: ed83a000  r9 : ed43d980  r8 : ed81b800
-r7 : c034dad8  r6 : 00000000  r5 : c03f3dcc  r4 : ed43d980
-r3 : 00000014  r2 : ed83be8c  r1 : ed83be74  r0 : 00000000
-Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c53c7d  Table: 00004059  DAC: 00000015
-Process swapper (pid: 1, stack limit = 0xed83a238)
-Stack: (0xed83be5c to 0xed83c000)
-be40:                                                                ed43d980
-be60: 00000014 ed83be8c 00000000 00000000 c04bc22c c03f3dcc ed83bf14 ed43f340
-be80: ed43d980 c01115cc 00000000 00000041 c04bba6c 00000000 00000000 002040d0
-bea0: ed81bc00 ed10ebc0 ed81bc30 c01116f8 00000000 000004d0 ed8172d0 ed43d980
-bec0: 45878fd4 00000007 bfe01007 ef7f8fc0 c04bba6c ed43d6d8 c04bba6c 00000101
-bee0: 00000000 ed809fd0 ed809fc0 ed809f50 ed809f40 00000000 edb045d8 c0078bcc
-bf00: ed0e5dc0 edb045d8 00000000 bf000000 ed0e5dc0 00000000 00000000 00000000
-bf20: 00000000 00000000 bf000000 ed10ebc0 ed0e5dc0 00000001 edb045d8 c04926d0
-bf40: ed83a000 c0492758 ed10ebc0 c008fc54 00000001 ed0e5dc0 00000002 c0090cec
-bf60: c03ec85c ed0e5df4 00000000 ed839c00 c0487000 c04bcec0 c03e4f08 00000000
-bf80: 00000000 00000000 00000000 00000000 00000000 c00086a8 00000000 c04bcec0
-bfa0: c0344f5c c0345004 00000000 c000e398 00000000 00000000 00000000 00000000
-bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
-[<c00a7ab0>] (xattr_resolve_name) from [<00000000>] (  (null))
-Code: e1a06000 e5915000 e3550000 0a00001d (e5900000) 
----[ end trace 15c15b4afa9eff90 ]---
-swapper (1) used greatest stack depth: 5104 bytes left
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+---
+ arch/x86/Kconfig                      |    1 
+ arch/x86/include/asm/spinlock.h       |    2 
+ arch/x86/include/asm/spinlock_types.h |    4 
+ b/arch/x86/include/asm/qrwlock.h      |   18 +++
+ b/include/asm-generic/qrwlock.h       |  174 ++++++++++++++++++++++++++++++++++
+ b/include/asm-generic/qrwlock_types.h |   17 +++
+ b/kernel/locking/qrwlock.c            |  157 ++++++++++++++++++++++++++++++
+ kernel/Kconfig.locks                  |    7 +
+ kernel/locking/Makefile               |    1 
+ 9 files changed, 381 insertions(+)
 
-Adding a little hack, and could produce a better strack trace.
-See the diff and the stack trace below:
-
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 3377dff..bd2b173 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -740,6 +740,10 @@ xattr_resolve_name(const struct xattr_handler **handlers, const char **name)
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -119,6 +119,7 @@ config X86
+ 	select MODULES_USE_ELF_RELA if X86_64
+ 	select CLONE_BACKWARDS if X86_32
+ 	select ARCH_USE_BUILTIN_BSWAP
++	select ARCH_USE_QUEUE_RWLOCK
+ 	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
+ 	select OLD_SIGACTION if X86_32
+ 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
+--- /dev/null
++++ b/arch/x86/include/asm/qrwlock.h
+@@ -0,0 +1,18 @@
++#ifndef _ASM_X86_QRWLOCK_H
++#define _ASM_X86_QRWLOCK_H
++
++#include <asm-generic/qrwlock_types.h>
++
++#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
++#define queue_write_unlock queue_write_unlock
++static inline void queue_write_unlock(struct qrwlock *lock)
++{
++        barrier();
++        ACCESS_ONCE(*(u8 *)&lock->cnts) = 0;
++}
++#endif
++
++#include <asm-generic/qrwlock.h>
++
++#endif /* _ASM_X86_QRWLOCK_H */
++
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -188,6 +188,7 @@ static inline void arch_spin_unlock_wait
+ 		cpu_relax();
+ }
  
- 	if (!*name)
- 		return NULL;
-+	if(!handlers) {
-+		dump_stack();
-+		panic("ouch");
++#ifndef CONFIG_QUEUE_RWLOCK
+ /*
+  * Read-write spinlocks, allowing multiple readers
+  * but only one writer.
+@@ -270,6 +271,7 @@ static inline void arch_write_unlock(arc
+ 	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
+ 		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
+ }
++#endif /* CONFIG_QUEUE_RWLOCK */
+ 
+ #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
+ #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -34,6 +34,10 @@ typedef struct arch_spinlock {
+ 
+ #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
+ 
++#ifdef CONFIG_QUEUE_RWLOCK
++#include <asm/qrwlock.h>
++#else
+ #include <asm/rwlock.h>
++#endif
+ 
+ #endif /* _ASM_X86_SPINLOCK_TYPES_H */
+--- /dev/null
++++ b/include/asm-generic/qrwlock.h
+@@ -0,0 +1,174 @@
++/*
++ * Queue read/write lock
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.
++ *
++ * Authors: Waiman Long <waiman.long@hp.com>
++ */
++#ifndef __ASM_GENERIC_QRWLOCK_H
++#define __ASM_GENERIC_QRWLOCK_H
++
++#include <linux/types.h>
++#include <linux/atomic.h>
++#include <asm/barrier.h>
++#include <asm/processor.h>
++
++#include <asm-generic/qrwlock_types.h>
++
++/*
++ * Writer states & reader shift and bias
++ */
++#define	_QW_WAITING	1		/* A writer is waiting	   */
++#define	_QW_LOCKED	0xff		/* A writer holds the lock */
++#define	_QW_WMASK	0xff		/* Writer mask		   */
++#define	_QR_SHIFT	8		/* Reader count shift	   */
++#define _QR_BIAS	(1U << _QR_SHIFT)
++
++/*
++ * External function declarations
++ */
++extern void queue_read_lock_slowpath(struct qrwlock *lock);
++extern void queue_write_lock_slowpath(struct qrwlock *lock);
++
++/**
++ * queue_read_can_lock- would read_trylock() succeed?
++ * @lock: Pointer to queue rwlock structure
++ */
++static inline int queue_read_can_lock(struct qrwlock *lock)
++{
++	return !(atomic_read(&lock->cnts) & _QW_WMASK);
++}
++
++/**
++ * queue_write_can_lock- would write_trylock() succeed?
++ * @lock: Pointer to queue rwlock structure
++ */
++static inline int queue_write_can_lock(struct qrwlock *lock)
++{
++	return !atomic_read(&lock->cnts);
++}
++
++/**
++ * queue_read_trylock - try to acquire read lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ * Return: 1 if lock acquired, 0 if failed
++ */
++static inline int queue_read_trylock(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	cnts = atomic_read(&lock->cnts);
++	if (likely(!(cnts & _QW_WMASK))) {
++		cnts = (u32)atomic_add_return(_QR_BIAS, &lock->cnts);
++		if (likely(!(cnts & _QW_WMASK)))
++			return 1;
++		atomic_sub(_QR_BIAS, &lock->cnts);
 +	}
- 
- 	for_each_xattr_handler(handlers, handler) {
- 		const char *n = strcmp_prefix(*name, handler->prefix);
-
-CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.13.0-10094-g9b0cd30-dirty #279
-[<c0012f40>] (unwind_backtrace) from [<c00107b8>] (show_stack+0x10/0x14)
-[<c00107b8>] (show_stack) from [<c00a8160>] (xattr_resolve_name+0x9c/0xa8)
-[<c00a8160>] (xattr_resolve_name) from [<c00a8274>] (generic_getxattr+0x2c/0x64)
-[<c00a8274>] (generic_getxattr) from [<c01115e0>] (get_vfs_caps_from_disk+0x4c/0xf4)
-[<c01115e0>] (get_vfs_caps_from_disk) from [<c011170c>] (cap_bprm_set_creds+0x84/0x408)
-[<c011170c>] (cap_bprm_set_creds) from [<c008fc54>] (prepare_binprm+0x80/0x11c)
-[<c008fc54>] (prepare_binprm) from [<c0090cec>] (do_execve+0x33c/0x46c)
-[<c0090cec>] (do_execve) from [<c00086a8>] (try_to_run_init_process+0x1c/0x50)
-[<c00086a8>] (try_to_run_init_process) from [<c0345024>] (kernel_init+0xa8/0x110)
-[<c0345024>] (kernel_init) from [<c000e398>] (ret_from_fork+0x14/0x3c)
-Kernel panic - not syncing: ouch
-
-FWIW, here's my piece of NFS config:
-
-CONFIG_NFS_FS=y
-CONFIG_NFS_V2=y
-CONFIG_NFS_V3=y
-# CONFIG_NFS_V3_ACL is not set
-# CONFIG_NFS_V4 is not set
-# CONFIG_NFS_SWAP is not set
-CONFIG_ROOT_NFS=y
-# CONFIG_NFSD is not set
-CONFIG_LOCKD=y
-CONFIG_LOCKD_V4=y
-CONFIG_NFS_COMMON=y
-CONFIG_SUNRPC=y
-
-> I think it's down to this:
-> 
-> commit 013cdf1088d7235da9477a2375654921d9b9ba9f
-> Author: Christoph Hellwig <hch@infradead.org>
-> Date:   Fri Dec 20 05:16:53 2013 -0800
-> 
->     nfs: use generic posix ACL infrastructure for v3 Posix ACLs
-> 
->     This causes a small behaviour change in that we don't bother to set
->     ACLs on file creation if the mode bit can express the access permissions
->     fully, and thus behaving identical to local filesystems.
-> 
->     Signed-off-by: Christoph Hellwig <hch@lst.de>
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-And also here, reverting the above seem to fix the panic.
-
-Ideas?
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
++	return 0;
++}
++
++/**
++ * queue_write_trylock - try to acquire write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ * Return: 1 if lock acquired, 0 if failed
++ */
++static inline int queue_write_trylock(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	cnts = atomic_read(&lock->cnts);
++	if (unlikely(cnts))
++		return 0;
++
++	return likely(atomic_cmpxchg(&lock->cnts,
++				     cnts, cnts | _QW_LOCKED) == cnts);
++}
++/**
++ * queue_read_lock - acquire read lock of a queue rwlock
++ * @lock: Pointer to queue rwlock structure
++ */
++static inline void queue_read_lock(struct qrwlock *lock)
++{
++	u32 cnts;
++
++	cnts = atomic_add_return(_QR_BIAS, &lock->cnts);
++	if (likely(!(cnts & _QW_WMASK)))
++		return;
++
++	/* The slowpath will decrement the reader count, if necessary. */
++	queue_read_lock_slowpath(lock);
++}
++
++/**
++ * queue_write_lock - acquire write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++static inline void queue_write_lock(struct qrwlock *lock)
++{
++	/* Optimize for the unfair lock case where the fair flag is 0. */
++	if (atomic_cmpxchg(&lock->cnts, 0, _QW_LOCKED) == 0)
++		return;
++
++	queue_write_lock_slowpath(lock);
++}
++
++/**
++ * queue_read_unlock - release read lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++static inline void queue_read_unlock(struct qrwlock *lock)
++{
++	/*
++	 * Atomically decrement the reader count
++	 */
++	smp_mb__before_atomic_dec();
++	atomic_sub(_QR_BIAS, &lock->cnts);
++}
++
++#ifndef queue_write_unlock
++/**
++ * queue_write_unlock - release write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++static inline void queue_write_unlock(struct qrwlock *lock)
++{
++	/*
++	 * If the writer field is atomic, it can be cleared directly.
++	 * Otherwise, an atomic subtraction will be used to clear it.
++	 */
++	smp_mb__before_atomic_dec();
++	atomic_sub(_QW_LOCKED, &lock->cnts);
++}
++#endif
++
++typedef struct qrwlock arch_rwlock_t;
++
++/*
++ * Initializier
++ */
++#define	__ARCH_RW_LOCK_UNLOCKED	{ .cnts = ATOMIC_INIT(0), .waitq = NULL, }
++
++/*
++ * Remapping rwlock architecture specific functions to the corresponding
++ * queue rwlock functions.
++ */
++#define arch_read_can_lock(l)	queue_read_can_lock(l)
++#define arch_write_can_lock(l)	queue_write_can_lock(l)
++#define arch_read_lock(l)	queue_read_lock(l)
++#define arch_write_lock(l)	queue_write_lock(l)
++#define arch_read_trylock(l)	queue_read_trylock(l)
++#define arch_write_trylock(l)	queue_write_trylock(l)
++#define arch_read_unlock(l)	queue_read_unlock(l)
++#define arch_write_unlock(l)	queue_write_unlock(l)
++
++#endif /* __ASM_GENERIC_QRWLOCK_H */
+--- /dev/null
++++ b/include/asm-generic/qrwlock_types.h
+@@ -0,0 +1,17 @@
++#ifndef __ASM_GENERIC_QRWLOCK_TYPES_H
++#define __ASM_GENERIC_QRWLOCK_TYPES_H
++
++#include <linux/atomic.h>
++
++struct mcs_spinlock;
++
++/*
++ * The queue read/write lock data structure
++ */
++
++struct qrwlock {
++	atomic_t		cnts;
++	struct mcs_spinlock	*waitq;
++};
++
++#endif /* __ASM_GENERIC_QRWLOCK_TYPES_H */
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -223,3 +223,10 @@ endif
+ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+ 	depends on SMP && !DEBUG_MUTEXES
++
++config ARCH_USE_QUEUE_RWLOCK
++	bool
++
++config QUEUE_RWLOCK
++	def_bool y if ARCH_USE_QUEUE_RWLOCK
++	depends on SMP
+--- a/kernel/locking/Makefile
++++ b/kernel/locking/Makefile
+@@ -23,3 +23,4 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock
+ obj-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+ obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem-xadd.o
+ obj-$(CONFIG_PERCPU_RWSEM) += percpu-rwsem.o
++obj-$(CONFIG_QUEUE_RWLOCK) += qrwlock.o
+--- /dev/null
++++ b/kernel/locking/qrwlock.c
+@@ -0,0 +1,157 @@
++/*
++ * Queue read/write lock
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * (C) Copyright 2013-2014 Hewlett-Packard Development Company, L.P.
++ *
++ * Authors: Waiman Long <waiman.long@hp.com>
++ */
++#include <linux/smp.h>
++#include <linux/bug.h>
++#include <linux/cpumask.h>
++#include <linux/percpu.h>
++#include <linux/hardirq.h>
++#include <linux/mutex.h>
++#include <linux/mcs_spinlock.h>
++#include <asm/qrwlock.h>
++
++/*
++ * Compared with regular rwlock, the queue rwlock has has the following
++ * advantages:
++ * 1. Even though there is a slight chance of stealing the lock if come at
++ *    the right moment, the granting of the lock is mostly in FIFO order.
++ * 2. It is usually faster in high contention situation.
++ *
++ * The only downside is that the lock is 4 bytes larger in 32-bit systems
++ * and 12 bytes larger in 64-bit systems.
++ *
++ * There are two queues for writers. The writer field of the lock is a
++ * one-slot wait queue. The writers that follow will have to wait in the
++ * combined reader/writer queue (waitq).
++ *
++ * Compared with x86 ticket spinlock, the queue rwlock is faster in high
++ * contention situation. The writer lock is also faster in single thread
++ * operations. Therefore, queue rwlock can be considered as a replacement
++ * for those spinlocks that are highly contended as long as an increase
++ * in lock size is not an issue.
++ */
++
++/**
++ * rspin_until_writer_unlock - inc reader count & spin until writer is gone
++ * @lock  : Pointer to queue rwlock structure
++ * @writer: Current queue rwlock writer status byte
++ *
++ * In interrupt context or at the head of the queue, the reader will just
++ * increment the reader count & wait until the writer releases the lock.
++ */
++static __always_inline void
++rspin_until_writer_unlock(struct qrwlock *lock, u32 cnts)
++{
++	while ((cnts & _QW_WMASK) == _QW_LOCKED) {
++		arch_mutex_cpu_relax();
++		cnts = smp_load_acquire((u32 *)&lock->cnts);
++	}
++}
++
++/**
++ * queue_read_lock_slowpath - acquire read lock of a queue rwlock
++ * @lock: Pointer to queue rwlock structure
++ */
++void queue_read_lock_slowpath(struct qrwlock *lock)
++{
++	struct mcs_spinlock node;
++	u32 cnts;
++
++	/*
++	 * Readers come here when they cannot get the lock without waiting
++	 */
++	if (unlikely(in_interrupt())) {
++		/*
++		 * Readers in interrupt context will spin until the lock is
++		 * available without waiting in the queue.
++		 */
++		cnts = smp_load_acquire((u32 *)&lock->cnts);
++		rspin_until_writer_unlock(lock, cnts);
++		return;
++	}
++	atomic_sub(_QR_BIAS, &lock->cnts);
++
++	/*
++	 * Put the reader into the wait queue
++	 */
++	mcs_spin_lock(&lock->waitq, &node);
++
++	/*
++	 * At the head of the wait queue now, wait until the writer state
++	 * goes to 0 and then try to increment the reader count and get
++	 * the lock. It is possible that an incoming writer may steal the
++	 * lock in the interim, so it is necessary to check the writer byte
++	 * to make sure that the write lock isn't taken.
++	 */
++	while (atomic_read(&lock->cnts) & _QW_WMASK)
++		arch_mutex_cpu_relax();
++
++	cnts = atomic_add_return(_QR_BIAS, &lock->cnts) - _QR_BIAS;
++	rspin_until_writer_unlock(lock, cnts);
++
++	/*
++	 * Signal the next one in queue to become queue head
++	 */
++	mcs_spin_unlock(&lock->waitq, &node);
++}
++EXPORT_SYMBOL(queue_read_lock_slowpath);
++
++/**
++ * queue_write_lock_slowpath - acquire write lock of a queue rwlock
++ * @lock : Pointer to queue rwlock structure
++ */
++void queue_write_lock_slowpath(struct qrwlock *lock)
++{
++	struct mcs_spinlock node;
++	u32 cnts;
++
++	/* Put the writer into the wait queue */
++	mcs_spin_lock(&lock->waitq, &node);
++
++	/* Try to acquire the lock directly if no reader is present */
++	if (!atomic_read(&lock->cnts) &&
++	    (atomic_cmpxchg(&lock->cnts, 0, _QW_LOCKED) == 0))
++		goto unlock;
++
++	/*
++	 * Set the waiting flag to notify readers that a writer is pending,
++	 * or wait for a previous writer to go away.
++	 */
++	for (;;) {
++		cnts = atomic_read(&lock->cnts);
++		if (!(cnts & _QW_WMASK) &&
++		    (atomic_cmpxchg(&lock->cnts, cnts,
++				    cnts | _QW_WAITING) == cnts))
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++
++	/* When no more readers, set the locked flag */
++	for (;;) {
++		cnts = atomic_read(&lock->cnts);
++		if ((cnts == _QW_WAITING) &&
++		    (atomic_cmpxchg(&lock->cnts, _QW_WAITING,
++				    _QW_LOCKED) == _QW_WAITING))
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++unlock:
++	mcs_spin_unlock(&lock->waitq, &node);
++}
++EXPORT_SYMBOL(queue_write_lock_slowpath);
