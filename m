@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaA3Mat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:30:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42059 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbaA3Mar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:30:47 -0500
-Date: Thu, 30 Jan 2014 13:30:44 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Greg Thelen <gthelen@google.com>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
-Message-ID: <20140130123044.GB13509@dhcp22.suse.cz>
-References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
- <xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752983AbaA3Mdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:33:35 -0500
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:63451 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751567AbaA3Mde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 07:33:34 -0500
+Message-ID: <1391085212.5170.9.camel@x41>
+Subject: Re: [git pull] drm next tree
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christian =?ISO-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Thu, 30 Jan 2014 13:33:32 +0100
+In-Reply-To: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 30 Jan 2014 12:33:33.0061 (UTC) FILETIME=[7D031B50:01CF1DB7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-01-14 11:08:46, Greg Thelen wrote:
-[...]
-> The series looks useful.  We (Google) have been using something similar.
-> In practice such a low_limit (or memory guarantee), doesn't nest very
-> well.
-> 
-> Example:
->   - parent_memcg: limit 500, low_limit 500, usage 500
->     1 privately charged non-reclaimable page (e.g. mlock, slab)
->   - child_memcg: limit 500, low_limit 500, usage 499
+Dave Airlie schreef op do 30-01-2014 om 02:49 [+0000]:
+> Christian König (10):
+>       [...]
+>       drm/radeon: add GART debugfs access v3
+>       [...]
 
-I am not sure this is a good example. Your setup basically say that no
-single page should be reclaimed. I can imagine this might be useful in
-some cases and I would like to allow it but it sounds too extreme (e.g.
-a load which would start trashing heavily once the reclaim starts and it
-makes more sense to start it again rather than crowl - think about some
-mathematical simulation which might diverge).
- 
-> If a streaming file cache workload (e.g. sha1sum) starts gobbling up
-> page cache it will lead to an oom kill instead of reclaiming. 
+That one generates a bit of (warning) noise when building on 32 bits
+x86:
 
-Does it make any sense to protect all of such memory although it is
-easily reclaimable?
+In file included from include/asm-generic/bug.h:13:0,
+                 from [...]/linux/arch/x86/include/asm/bug.h:38,
+                 from include/linux/bug.h:4,
+                 from include/drm/drm_mm.h:39,
+                 from include/drm/drm_vma_manager.h:26,
+                 from include/drm/ttm/ttm_bo_api.h:35,
+                 from drivers/gpu/drm/radeon/radeon_ttm.c:32:
+drivers/gpu/drm/radeon/radeon_ttm.c: In function 'radeon_ttm_gtt_read':
+include/linux/kernel.h:712:17: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+  (void) (&_min1 == &_min2);  \
+                 ^
+drivers/gpu/drm/radeon/radeon_ttm.c:938:22: note: in expansion of macro 'min'
+   ssize_t cur_size = min(size, PAGE_SIZE - off);
+                      ^
 
-> One could
-> argue that this is working as intended because child_memcg was promised
-> 500 but can only get 499.  So child_memcg is oom killed rather than
-> being forced to operate below its promised low limit.
-> 
-> This has led to various internal workarounds like:
-> - don't charge any memory to interior tree nodes (e.g. parent_memcg);
->   only charge memory to cgroup leafs.  This gets tricky when dealing
->   with reparented memory inherited to parent from child during cgroup
->   deletion.
+I suppose the last line should read
+   ssize_t cur_size = min(size, (size_t) PAGE_SIZE - off);
 
-Do those need any protection at all?
+to silence this. But I haven't tested yet.
 
-> - don't set low_limit on non leafs (e.g. do not set low limit on
->   parent_memcg).  This constrains the cgroup layout a bit.  Some
->   customers want to purchase $MEM and setup their workload with a few
->   child cgroups.  A system daemon hands out $MEM by setting low_limit
->   for top-level containers (e.g. parent_memcg).  Thereafter such
->   customers are able to partition their workload with sub memcg below
->   child_memcg.  Example:
->      parent_memcg
->          \
->           child_memcg
->             /     \
->         server   backup
 
-I think that the low_limit makes sense where you actually want to
-protect something from reclaim. And backup sounds like a bad fit for
-that.
+Paul Bolle
 
->   Thereafter customers often want some weak isolation between server and
->   backup.  To avoid undesired oom kills the server/backup isolation is
->   provided with a softer memory guarantee (e.g. soft_limit).  The soft
->   limit acts like the low_limit until priority becomes desperate.
-
-Johannes was already suggesting that the low_limit should allow for a
-weaker semantic as well. I am not very much inclined to that but I can
-leave with a knob which would say oom_on_lowlimit (on by default but
-allowed to be set to 0). We would fallback to the full reclaim if
-no groups turn out to be reclaimable.
--- 
-Michal Hocko
-SUSE Labs
