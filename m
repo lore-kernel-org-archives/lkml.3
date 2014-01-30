@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaA3Qw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:52:56 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:60052 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168AbaA3Qwy (ORCPT
+	id S1753508AbaA3Qxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:53:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55123 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342AbaA3Qxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:52:54 -0500
+	Thu, 30 Jan 2014 11:53:31 -0500
+Date: Thu, 30 Jan 2014 17:52:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 6/6] cpu/idle.c: move to sched/idle.c
+Message-ID: <20140130165258.GC2936@laptop.programming.kicks-ass.net>
+References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
+ <1391017513-12995-7-git-send-email-nicolas.pitre@linaro.org>
+ <20140130152500.GB5002@laptop.programming.kicks-ass.net>
+ <alpine.LFD.2.11.1401301102210.1652@knanqh.ubzr>
+ <20140130162753.GF5002@laptop.programming.kicks-ass.net>
+ <1391100076.2422.56.camel@joe-AO722>
 MIME-Version: 1.0
-Date: Thu, 30 Jan 2014 08:52:54 -0800
-Message-ID: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>
-Subject: [BUG] Description for memmap in kernel-parameters.txt is wrong
-From: Andiry Xu <andiry@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andiry Xu <andiry.xu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391100076.2422.56.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 30, 2014 at 08:41:16AM -0800, Joe Perches wrote:
+> Perhaps you could use a newer version of patch
+> 
+> GNU patch version 2.7 released
 
-In kernel-parameters.txt, there is following description:
-
-memmap=nn[KMG]$ss[KMG]
-                        [KNL,ACPI] Mark specific memory as reserved.
-                        Region of memory to be used, from ss to ss+nn.
-
-Unfortunately this is incorrect. The meaning of nn and ss is reversed.
-For example:
-
-Command                  Expected                 Result
-memmap 2G$6G        6G - 8G reserved      2G - 8G reserved
-memmap 6G$2G        2G - 8G reserved      6G - 8G reserved
-
-Test kernel version 3.13, but I believe the issue has been there long ago.
-
-I'm not sure whether the description or implementation should be
-fixed, but apparently they do not match.
-
-Thanks,
-Andiry
+Yeah, I know about that, I'll wait until its common in all distros,
+updating all machines I use by hand is just painful.
