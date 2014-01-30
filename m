@@ -1,94 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbaA3XwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:52:19 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:63901 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795AbaA3XwR (ORCPT
+	id S1753563AbaAaAAQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:00:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37602 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaAaAAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:52:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140129133227.GQ3867@lukather>
-References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
-	<20140129122520.GY11841@sirena.org.uk>
-	<20140129133227.GQ3867@lukather>
-Date: Thu, 30 Jan 2014 15:52:16 -0800
-Message-ID: <CAGa+x854huSmiWmEv2EgOPUgZKcp3iitNaBvKXt8DiEj8msSVg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI controller driver
-From: Kevin Hilman <khilman@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
-        linux-spi@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 30 Jan 2014 19:00:14 -0500
+Date: Thu, 30 Jan 2014 15:59:48 -0800
+Message-Id: <201401302359.s0UNxmu8017092@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/build additional for v3.14
+Cc: David Woodhouse <David.Woodhouse@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 30 Jan 2014 15:59:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 5:32 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Wed, Jan 29, 2014 at 12:25:20PM +0000, Mark Brown wrote:
->> On Wed, Jan 29, 2014 at 12:10:48PM +0100, Maxime Ripard wrote:
->>
->> > +config SPI_SUN6I
->> > +   tristate "Allwinner A31 SPI controller"
->> > +   depends on ARCH_SUNXI || COMPILE_TEST
->> > +   select PM_RUNTIME
->> > +   help
->> > +     This enables using the SPI controller on the Allwinner A31 SoCs.
->> > +
->>
->> A select of PM_RUNTIME is both surprising and odd - why is that there?
->> The usual idiom is that the device starts out powered up (flagged using
->> pm_runtime_set_active()) and then runtime PM then suspends it when it's
->> compiled in.  That way if for some reason people want to avoid runtime
->> PM they can still use the device.
->
-> Since pm_runtime_set_active and all the pm_runtime* callbacks in
-> general are defined to pretty much empty functions, how the
-> suspend/resume callbacks are called then? Obviously, we need them to
-> be run, hence why I added the select here, but now I'm seeing a
-> construct like what's following acceptable then?
+Hi Linus,
 
-Even with your 'select', The runtime PM callbacks will never be called
-in the current driver.  pm_runtime_enable() doesn't do any runtime PM
-transitions.  It just allows transitions to happen when they're
-triggered by _get()/_put()/etc.
+Various build-related minor bits.
 
-> pm_runtime_enable(&pdev->dev);
-> if (!pm_runtime_enabled(&pdev->dev))
->    sun6i_spi_runtime_resume(&pdev->dev);
+Most of this is work by David Woodhouse to be able to compile the
+early boot code with clang/llvm; we have also managed to push an
+actual -m16 option into gcc 4.9 so this makes us use that option if
+available instead of hacking it.
 
-Similarily here, it's not the pm_runtime_enable that will fail when
-runtime PM is disabled (or not built-in), it's a pm_runtime_get_sync()
-that will fail.
+The balance is a patch from Michael Davidson to the relocs program to
+help manual debugging.
 
-What you want is something like this in ->probe()
+None of these should change the actual compiled binary with currently
+released compilers.
 
-   sun6i_spi_runtime_resume();
-   /* now, device is always activated whether or not runtime PM is enabled */
-   pm_runtime_enable();
-   pm_runtime_set_active();  /* tells runtime PM core device is
-already active */
-   pm_runtime_get_sync();
+The following changes since commit f4bcd8ccddb02833340652e9f46f5127828eb79d:
 
-This 'get' will increase the usecount, but not actually call the
-callbacks because we told the RPM core that the device was already
-activated with _set_active().
+  Merge branch 'x86-kaslr-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2014-01-20 14:45:50 -0800)
 
-And then, in ->remove(), you'll want
+are available in the git repository at:
 
-   pm_runtime_put();
-   pm_runtime_disable();
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-build-for-linus
 
-And if runtime PM is not enabled in the kernel, then the device will
-be left on (which is kinda what you want if you didn't build runtime
-PM into the kernel.)
+for you to fetch changes up to de3accdaec88851874c573031de007283e90b199:
 
-Kevin
+  x86, build: Build 16-bit code with -m16 where possible (2014-01-30 08:05:36 -0800)
+
+----------------------------------------------------------------
+David Woodhouse (4):
+      x86: Remove duplication of 16-bit CFLAGS
+      x86, boot: Use __attribute__((used)) to ensure videocard structs are emitted
+      x86, boot: Fix word-size assumptions in has_eflag() inline asm
+      x86, build: Build 16-bit code with -m16 where possible
+
+H. Peter Anvin (1):
+      Merge commit 'f4bcd8ccddb02833340652e9f46f5127828eb79d' into x86/build
+
+Michael Davidson (1):
+      x86, relocs: Add manual debug mode
+
+ arch/x86/Makefile              | 22 ++++++++++++++++++++++
+ arch/x86/boot/Makefile         | 15 +--------------
+ arch/x86/boot/cpuflags.c       | 25 ++++++++++++++++++++-----
+ arch/x86/boot/video.h          |  2 +-
+ arch/x86/realmode/rm/Makefile  | 17 ++---------------
+ arch/x86/tools/relocs.c        | 30 +++++++++++++++++++++++++++++-
+ arch/x86/tools/relocs.h        |  7 ++++---
+ arch/x86/tools/relocs_common.c | 16 ++++++++++++----
+ 8 files changed, 91 insertions(+), 43 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 13b22e0f681d..eeda43abed6e 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -11,6 +11,28 @@ else
+         KBUILD_DEFCONFIG := $(ARCH)_defconfig
+ endif
+ 
++# How to compile the 16-bit code.  Note we always compile for -march=i386;
++# that way we can complain to the user if the CPU is insufficient.
++#
++# The -m16 option is supported by GCC >= 4.9 and clang >= 3.5. For
++# older versions of GCC, we need to play evil and unreliable tricks to
++# attempt to ensure that our asm(".code16gcc") is first in the asm
++# output.
++CODE16GCC_CFLAGS := -m32 -include $(srctree)/arch/x86/boot/code16gcc.h \
++		    $(call cc-option, -fno-toplevel-reorder,\
++		      $(call cc-option, -fno-unit-at-a-time))
++M16_CFLAGS	 := $(call cc-option, -m16, $(CODE16GCC_CFLAGS))
++
++REALMODE_CFLAGS	:= $(M16_CFLAGS) -g -Os -D__KERNEL__ \
++		   -DDISABLE_BRANCH_PROFILING \
++		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
++		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
++		   -mno-mmx -mno-sse \
++		   $(call cc-option, -ffreestanding) \
++		   $(call cc-option, -fno-stack-protector) \
++		   $(call cc-option, -mpreferred-stack-boundary=2)
++export REALMODE_CFLAGS
++
+ # BITS is used as extension for files which are available in a 32 bit
+ # and a 64 bit version to simplify shared Makefiles.
+ # e.g.: obj-y += foo_$(BITS).o
+diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
+index de7066918005..878df7e88cd4 100644
+--- a/arch/x86/boot/Makefile
++++ b/arch/x86/boot/Makefile
+@@ -51,20 +51,7 @@ $(obj)/cpustr.h: $(obj)/mkcpustr FORCE
+ 
+ # ---------------------------------------------------------------------------
+ 
+-# How to compile the 16-bit code.  Note we always compile for -march=i386,
+-# that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(USERINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ \
+-		   -DDISABLE_BRANCH_PROFILING \
+-		   -Wall -Wstrict-prototypes \
+-		   -march=i386 -mregparm=3 \
+-		   -include $(srctree)/$(src)/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+-		   -mno-mmx -mno-sse \
+-		   $(call cc-option, -ffreestanding) \
+-		   $(call cc-option, -fno-toplevel-reorder,\
+-		   $(call cc-option, -fno-unit-at-a-time)) \
+-		   $(call cc-option, -fno-stack-protector) \
+-		   $(call cc-option, -mpreferred-stack-boundary=2)
++KBUILD_CFLAGS	:= $(USERINCLUDE) $(REALMODE_CFLAGS) -D_SETUP
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+ 
+diff --git a/arch/x86/boot/cpuflags.c b/arch/x86/boot/cpuflags.c
+index a9fcb7cfb241..431fa5f84537 100644
+--- a/arch/x86/boot/cpuflags.c
++++ b/arch/x86/boot/cpuflags.c
+@@ -28,20 +28,35 @@ static int has_fpu(void)
+ 	return fsw == 0 && (fcw & 0x103f) == 0x003f;
+ }
+ 
++/*
++ * For building the 16-bit code we want to explicitly specify 32-bit
++ * push/pop operations, rather than just saying 'pushf' or 'popf' and
++ * letting the compiler choose. But this is also included from the
++ * compressed/ directory where it may be 64-bit code, and thus needs
++ * to be 'pushfq' or 'popfq' in that case.
++ */
++#ifdef __x86_64__
++#define PUSHF "pushfq"
++#define POPF "popfq"
++#else
++#define PUSHF "pushfl"
++#define POPF "popfl"
++#endif
++
+ int has_eflag(unsigned long mask)
+ {
+ 	unsigned long f0, f1;
+ 
+-	asm volatile("pushf	\n\t"
+-		     "pushf	\n\t"
++	asm volatile(PUSHF "	\n\t"
++		     PUSHF "	\n\t"
+ 		     "pop %0	\n\t"
+ 		     "mov %0,%1	\n\t"
+ 		     "xor %2,%1	\n\t"
+ 		     "push %1	\n\t"
+-		     "popf	\n\t"
+-		     "pushf	\n\t"
++		     POPF "	\n\t"
++		     PUSHF "	\n\t"
+ 		     "pop %1	\n\t"
+-		     "popf"
++		     POPF
+ 		     : "=&r" (f0), "=&r" (f1)
+ 		     : "ri" (mask));
+ 
+diff --git a/arch/x86/boot/video.h b/arch/x86/boot/video.h
+index ff339c5db311..0bb25491262d 100644
+--- a/arch/x86/boot/video.h
++++ b/arch/x86/boot/video.h
+@@ -80,7 +80,7 @@ struct card_info {
+ 	u16 xmode_n;		/* Size of unprobed mode range */
+ };
+ 
+-#define __videocard struct card_info __attribute__((section(".videocards")))
++#define __videocard struct card_info __attribute__((used,section(".videocards")))
+ extern struct card_info video_cards[], video_cards_end[];
+ 
+ int mode_defined(u16 mode);	/* video.c */
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index 9cac82588cbc..3497f14e4dea 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -64,20 +64,7 @@ $(obj)/realmode.relocs: $(obj)/realmode.elf FORCE
+ 
+ # ---------------------------------------------------------------------------
+ 
+-# How to compile the 16-bit code.  Note we always compile for -march=i386,
+-# that way we can complain to the user if the CPU is insufficient.
+-KBUILD_CFLAGS	:= $(LINUXINCLUDE) -m32 -g -Os -D_SETUP -D__KERNEL__ -D_WAKEUP \
+-		   -I$(srctree)/arch/x86/boot \
+-		   -DDISABLE_BRANCH_PROFILING \
+-		   -Wall -Wstrict-prototypes \
+-		   -march=i386 -mregparm=3 \
+-		   -include $(srctree)/$(src)/../../boot/code16gcc.h \
+-		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+-		   -mno-mmx -mno-sse \
+-		   $(call cc-option, -ffreestanding) \
+-		   $(call cc-option, -fno-toplevel-reorder,\
+-		   $(call cc-option, -fno-unit-at-a-time)) \
+-		   $(call cc-option, -fno-stack-protector) \
+-		   $(call cc-option, -mpreferred-stack-boundary=2)
++KBUILD_CFLAGS	:= $(LINUXINCLUDE) $(REALMODE_CFLAGS) -D_SETUP -D_WAKEUP \
++		   -I$(srctree)/arch/x86/boot
+ KBUILD_AFLAGS	:= $(KBUILD_CFLAGS) -D__ASSEMBLY__
+ GCOV_PROFILE := n
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index 11f9285a2ff6..cfbdbdb4e173 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -1025,6 +1025,29 @@ static void emit_relocs(int as_text, int use_real_mode)
+ 	}
+ }
+ 
++/*
++ * As an aid to debugging problems with different linkers
++ * print summary information about the relocs.
++ * Since different linkers tend to emit the sections in
++ * different orders we use the section names in the output.
++ */
++static int do_reloc_info(struct section *sec, Elf_Rel *rel, ElfW(Sym) *sym,
++				const char *symname)
++{
++	printf("%s\t%s\t%s\t%s\n",
++		sec_name(sec->shdr.sh_info),
++		rel_type(ELF_R_TYPE(rel->r_info)),
++		symname,
++		sec_name(sym->st_shndx));
++	return 0;
++}
++
++static void print_reloc_info(void)
++{
++	printf("reloc section\treloc type\tsymbol\tsymbol section\n");
++	walk_relocs(do_reloc_info);
++}
++
+ #if ELF_BITS == 64
+ # define process process_64
+ #else
+@@ -1032,7 +1055,8 @@ static void emit_relocs(int as_text, int use_real_mode)
+ #endif
+ 
+ void process(FILE *fp, int use_real_mode, int as_text,
+-	     int show_absolute_syms, int show_absolute_relocs)
++	     int show_absolute_syms, int show_absolute_relocs,
++	     int show_reloc_info)
+ {
+ 	regex_init(use_real_mode);
+ 	read_ehdr(fp);
+@@ -1050,5 +1074,9 @@ void process(FILE *fp, int use_real_mode, int as_text,
+ 		print_absolute_relocs();
+ 		return;
+ 	}
++	if (show_reloc_info) {
++		print_reloc_info();
++		return;
++	}
+ 	emit_relocs(as_text, use_real_mode);
+ }
+diff --git a/arch/x86/tools/relocs.h b/arch/x86/tools/relocs.h
+index 07cdb1eca4fa..f59590645b68 100644
+--- a/arch/x86/tools/relocs.h
++++ b/arch/x86/tools/relocs.h
+@@ -29,8 +29,9 @@ enum symtype {
+ };
+ 
+ void process_32(FILE *fp, int use_real_mode, int as_text,
+-		int show_absolute_syms, int show_absolute_relocs);
++		int show_absolute_syms, int show_absolute_relocs,
++		int show_reloc_info);
+ void process_64(FILE *fp, int use_real_mode, int as_text,
+-		int show_absolute_syms, int show_absolute_relocs);
+-
++		int show_absolute_syms, int show_absolute_relocs,
++		int show_reloc_info);
+ #endif /* RELOCS_H */
+diff --git a/arch/x86/tools/relocs_common.c b/arch/x86/tools/relocs_common.c
+index 44d396823a53..acab636bcb34 100644
+--- a/arch/x86/tools/relocs_common.c
++++ b/arch/x86/tools/relocs_common.c
+@@ -11,12 +11,13 @@ void die(char *fmt, ...)
+ 
+ static void usage(void)
+ {
+-	die("relocs [--abs-syms|--abs-relocs|--text|--realmode] vmlinux\n");
++	die("relocs [--abs-syms|--abs-relocs|--reloc-info|--text|--realmode]" \
++	    " vmlinux\n");
+ }
+ 
+ int main(int argc, char **argv)
+ {
+-	int show_absolute_syms, show_absolute_relocs;
++	int show_absolute_syms, show_absolute_relocs, show_reloc_info;
+ 	int as_text, use_real_mode;
+ 	const char *fname;
+ 	FILE *fp;
+@@ -25,6 +26,7 @@ int main(int argc, char **argv)
+ 
+ 	show_absolute_syms = 0;
+ 	show_absolute_relocs = 0;
++	show_reloc_info = 0;
+ 	as_text = 0;
+ 	use_real_mode = 0;
+ 	fname = NULL;
+@@ -39,6 +41,10 @@ int main(int argc, char **argv)
+ 				show_absolute_relocs = 1;
+ 				continue;
+ 			}
++			if (strcmp(arg, "--reloc-info") == 0) {
++				show_reloc_info = 1;
++				continue;
++			}
+ 			if (strcmp(arg, "--text") == 0) {
+ 				as_text = 1;
+ 				continue;
+@@ -67,10 +73,12 @@ int main(int argc, char **argv)
+ 	rewind(fp);
+ 	if (e_ident[EI_CLASS] == ELFCLASS64)
+ 		process_64(fp, use_real_mode, as_text,
+-			   show_absolute_syms, show_absolute_relocs);
++			   show_absolute_syms, show_absolute_relocs,
++			   show_reloc_info);
+ 	else
+ 		process_32(fp, use_real_mode, as_text,
+-			   show_absolute_syms, show_absolute_relocs);
++			   show_absolute_syms, show_absolute_relocs,
++			   show_reloc_info);
+ 	fclose(fp);
+ 	return 0;
+ }
