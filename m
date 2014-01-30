@@ -1,41 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaA3WYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:24:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36818 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278AbaA3WYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:24:13 -0500
-Message-ID: <52EAD0F2.7090101@zytor.com>
-Date: Thu, 30 Jan 2014 14:23:46 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753916AbaA3WYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:24:15 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:36570 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945AbaA3WYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 17:24:12 -0500
 MIME-Version: 1.0
-To: Alex Thorlton <athorlton@sgi.com>, Borislav Petkov <bp@alien8.de>
-CC: Matt Fleming <matt@console-pimps.org>, Russ Anderson <rja@sgi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
-References: <52E2ADB1.2030007@zytor.com> <20140124183730.GC11788@pd.tnic> <20140124184842.GD11788@pd.tnic> <20140124191709.GT18196@sgi.com> <20140127222129.GK6839@pd.tnic> <20140128110552.GA815@pd.tnic> <20140128200754.GZ18196@sgi.com> <20140128225905.GN815@pd.tnic> <20140128234036.GB18196@sgi.com> <20140129141822.GC24887@pd.tnic> <20140130221950.GJ3105@sgi.com>
-In-Reply-To: <20140130221950.GJ3105@sgi.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+Date: Thu, 30 Jan 2014 14:24:12 -0800
+X-Google-Sender-Auth: NEUNdzDX6jm6mE4K-pdYhS3a7B4
+Message-ID: <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
+Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt flag
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Nate Eldredge <nate@thatsmathematics.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
+        George Spelvin <linux@horizon.com>, sbsiddha@gmail.com,
+        Pekka Riikonen <priikone@iki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2014 02:19 PM, Alex Thorlton wrote:
-> 
-> The quick answer is I think it is a virtual address, because                                                                                                                                                                                                                                                                 
-> it does not work in physical mode.  If you ever see "virtefi"                                                                                                                                                                                                                                                                
-> on the RHEL bootline it is because RH switched the default                                                                                                                                                                                                                                                                   
-> to physical mode, which caused UV to not boot.  "virtefi"                                                                                                                                                                                                                                                                    
-> forced it back to virtual mode.
-> 
+On Thu, Jan 30, 2014 at 2:01 PM, Nate Eldredge
+<nate@thatsmathematics.com> wrote:
+>
+> If math_state_restore() is called in a task that has not used math, it
+> needs to allocate some memory (via init_fpu()).  Since this can sleep,
+> it enables interrupts first.  Currently, it always disables them
+> afterwards, regardless of whether or not they were enabled on entry.
+> (See commit aa283f4927 where this was introduced.)  This doesn't make
+> sense, so instead have it put interrupts back the way they were.
 
-That is interesting, as it is definitely not the direction we have been
-going in within the Linux community.
+Hmm. What doesn't make sense is to have interrupts disabled in the
+caller - since clearly math_state_restore() may actually let
+interrupts in.
 
-	-hpa
+So while I definitely think your patch fixes a bug, I'm wondering if
+we shouldn't look deeper at this issue. The comment above says
 
+ * Must be called with kernel preemption disabled (eg with local
+ * local interrupts as in the case of do_device_not_available).
 
+which *kind* of makes sense, but at the same time only reinforces that
+whole "if there are reasons why the irq has to be disabled, we can't
+just randomly enable it for allocations".
+
+So I really get the feeling that there are more bugs than just the "it
+exits with irqs disabled" issue.
+
+>                 The aesni-intel code (encrypting the core
+> file that we are writing) needs the FPU and quite properly wraps its
+> code in kernel_fpu_{begin,end}(), the latter of which calls
+> math_state_restore().
+
+Ok, and this is interesting too.
+
+kernel_fpu_{begin|end}() shouldn't mess around with tsk_used_math(), I
+feel. If the task hasn't used math, no reason to allocate any
+save-space, because kernel_fpu_end() will just throw it all away
+anyway.
+
+Plus we want to be able to do those things from interrupts, and:
+ - we can't have blocking allocations
+ - we should try to not mess with these kinds of process states from
+interrupts anyway
+
+So I think that math_state_restore() and the use_eager_fpu() changes
+were actually seriously buggy here wrt that whole !tsk_used_math()
+case.
+
+I'm adding in some people here, because I think in the end this bug
+was introduced by commit 304bceda6a18 ("x86, fpu: use non-lazy fpu
+restore for processors supporting xsave") that introduced that
+math_state_restore() in kernel_fpu_end(), but we have other commits
+(like 5187b28ff08: "x86: Allow FPU to be used at interrupt time even
+with eagerfpu") that seem tangential too and might be part of why it
+actually *triggers* now.
+
+Comments?
+
+               Linus
