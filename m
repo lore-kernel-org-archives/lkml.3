@@ -1,192 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaA3QLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:11:09 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:43070 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605AbaA3QLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:11:04 -0500
-X-IronPort-AV: E=Sophos;i="4.95,750,1384300800"; 
-   d="scan'208";a="98154827"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Ian Campbell <ian.campbell@citrix.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] arm: document "mach-virt" platform.
-Date: Thu, 30 Jan 2014 16:11:02 +0000
-Message-ID: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753694AbaA3QLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:11:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56694 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623AbaA3QLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 11:11:10 -0500
+Date: Thu, 30 Jan 2014 08:10:29 -0800
+From: tip-bot for David Woodhouse <tipbot@zytor.com>
+Message-ID: <tip-de3accdaec88851874c573031de007283e90b199@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
+        David.Woodhouse@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
+        David.Woodhouse@intel.com
+In-Reply-To: <1390997807.20153.133.camel@i7.infradead.org>
+References: <1390997807.20153.133.camel@i7.infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/build] x86, build:
+  Build 16-bit code with -m16 where possible
+Git-Commit-ID: de3accdaec88851874c573031de007283e90b199
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 30 Jan 2014 08:10:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mach-virt has existed for a while but it is not written down what it actually
-consists of. Although it seems a bit unusual to document a binding for an
-entire platform since mach-virt is entirely virtual it is helpful to have
-something to refer to in the absence of a single concrete implementation.
+Commit-ID:  de3accdaec88851874c573031de007283e90b199
+Gitweb:     http://git.kernel.org/tip/de3accdaec88851874c573031de007283e90b199
+Author:     David Woodhouse <dwmw2@infradead.org>
+AuthorDate: Wed, 29 Jan 2014 12:16:47 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 30 Jan 2014 08:05:36 -0800
 
-I've done my best to capture the requirements based on the git log and my
-memory/understanding.
+x86, build: Build 16-bit code with -m16 where possible
 
-While here remove the xenvm dts example, the Xen tools will now build a
-suitable mach-virt compatible dts when launching the guest.
+Both clang 3.5 and GCC 4.9 will support this (as of r199754 and r207196
+respectively). Both have been tested to produce booting kernels when the
+16-bit code is built with -m16. (Modulo LLVM PR3997, at least.)
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
+[ hpa: folded test for -m16 into M16_CFLAGS ]
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Link: http://lkml.kernel.org/r/1390997807.20153.133.camel@i7.infradead.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
-I'm not sure which tree this sort of thing should go though, sorry for the
-huge Cc.
----
- .../devicetree/bindings/arm/mach-virt.txt          |   32 ++++++++
- arch/arm/boot/dts/xenvm-4.2.dts                    |   81 --------------------
- 2 files changed, 32 insertions(+), 81 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/mach-virt.txt
- delete mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
+ arch/x86/Makefile | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/mach-virt.txt b/Documentation/devicetree/bindings/arm/mach-virt.txt
-new file mode 100644
-index 0000000..562bcda
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
-@@ -0,0 +1,32 @@
-+* Mach-virt "Dummy Virtual Machine" platform
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 9ecbc1c..eeda43a 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -13,14 +13,22 @@ endif
+ 
+ # How to compile the 16-bit code.  Note we always compile for -march=i386;
+ # that way we can complain to the user if the CPU is insufficient.
+-REALMODE_CFLAGS	:= -m32 -g -Os -D__KERNEL__ -DDISABLE_BRANCH_PROFILING \
++#
++# The -m16 option is supported by GCC >= 4.9 and clang >= 3.5. For
++# older versions of GCC, we need to play evil and unreliable tricks to
++# attempt to ensure that our asm(".code16gcc") is first in the asm
++# output.
++CODE16GCC_CFLAGS := -m32 -include $(srctree)/arch/x86/boot/code16gcc.h \
++		    $(call cc-option, -fno-toplevel-reorder,\
++		      $(call cc-option, -fno-unit-at-a-time))
++M16_CFLAGS	 := $(call cc-option, -m16, $(CODE16GCC_CFLAGS))
 +
-+"mach-virt" is the smallest, dumbest platform possible, to be used as
-+a guest for Xen, KVM and other hypervisors. It has no
-+properties/functionality of its own and is driven entirely by device
-+tree.
-+
-+This document defines the requirements for such a platform.
-+
-+* Required properties:
-+
-+- compatible: should be one of:
-+	"linux,dummy-virt"
-+	"xen,xenvm"
-+
-+In addition to the standard nodes (chosen, cpus, memory etc) the
-+platform is required to provide certain other basic functionality
-+which must be described in the device tree:
-+
-+    The platform must provide an ARM Generic Interrupt Controller
-+    (GIC), defined in Documentation/devicetree/bindings/arm/gic.txt.
-+
-+    The platform must provide ARM architected timer, defined in
-+    Documentation/devicetree/bindings/arm/arch_timer.txt.
-+
-+    If the platform is SMP then it must provide the Power State
-+    Coordination Interface (PSCI) described in
-+    Documentation/devicetree/bindings/arm/psci.txt.
-+
-+The platform may also provide hypervisor specific functionality
-+(e.g. PV I/O), if it does so then this functionality must be
-+discoverable (directly or indirectly) via device tree.
-diff --git a/arch/arm/boot/dts/xenvm-4.2.dts b/arch/arm/boot/dts/xenvm-4.2.dts
-deleted file mode 100644
-index 3369151..0000000
---- a/arch/arm/boot/dts/xenvm-4.2.dts
-+++ /dev/null
-@@ -1,81 +0,0 @@
--/*
-- * Xen Virtual Machine for unprivileged guests
-- *
-- * Based on ARM Ltd. Versatile Express CoreTile Express (single CPU)
-- * Cortex-A15 MPCore (V2P-CA15)
-- *
-- */
--
--/dts-v1/;
--
--/ {
--	model = "XENVM-4.2";
--	compatible = "xen,xenvm-4.2", "xen,xenvm";
--	interrupt-parent = <&gic>;
--	#address-cells = <2>;
--	#size-cells = <2>;
--
--	chosen {
--		/* this field is going to be adjusted by the hypervisor */
--		bootargs = "console=hvc0 root=/dev/xvda";
--	};
--
--	cpus {
--		#address-cells = <1>;
--		#size-cells = <0>;
--
--		cpu@0 {
--			device_type = "cpu";
--			compatible = "arm,cortex-a15";
--			reg = <0>;
--		};
--
--		cpu@1 {
--			device_type = "cpu";
--			compatible = "arm,cortex-a15";
--			reg = <1>;
--		};
--	};
--
--	psci {
--		compatible      = "arm,psci";
--		method          = "hvc";
--		cpu_off         = <1>;
--		cpu_on          = <2>;
--	};
--
--	memory@80000000 {
--		device_type = "memory";
--		/* this field is going to be adjusted by the hypervisor */
--		reg = <0 0x80000000 0 0x08000000>;
--	};
--
--	gic: interrupt-controller@2c001000 {
--		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
--		#interrupt-cells = <3>;
--		#address-cells = <0>;
--		interrupt-controller;
--		reg = <0 0x2c001000 0 0x1000>,
--		      <0 0x2c002000 0 0x100>;
--	};
--
--	timer {
--		compatible = "arm,armv7-timer";
--		interrupts = <1 13 0xf08>,
--			     <1 14 0xf08>,
--			     <1 11 0xf08>,
--			     <1 10 0xf08>;
--	};
--
--	hypervisor {
--		compatible = "xen,xen-4.2", "xen,xen";
--		/* this field is going to be adjusted by the hypervisor */
--		reg = <0 0xb0000000 0 0x20000>;
--		/* this field is going to be adjusted by the hypervisor */
--		interrupts = <1 15 0xf08>;
--	};
--
--	motherboard {
--		arm,v2m-memory-map = "rs1";
--	};
--};
--- 
-1.7.10.4
-
++REALMODE_CFLAGS	:= $(M16_CFLAGS) -g -Os -D__KERNEL__ \
++		   -DDISABLE_BRANCH_PROFILING \
+ 		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
+-		   -include $(srctree)/arch/x86/boot/code16gcc.h \
+ 		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
+ 		   -mno-mmx -mno-sse \
+ 		   $(call cc-option, -ffreestanding) \
+-		   $(call cc-option, -fno-toplevel-reorder,\
+-		   $(call cc-option, -fno-unit-at-a-time)) \
+ 		   $(call cc-option, -fno-stack-protector) \
+ 		   $(call cc-option, -mpreferred-stack-boundary=2)
+ export REALMODE_CFLAGS
