@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaA3TdO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:33:14 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:49199 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384AbaA3TdN (ORCPT
+	id S1753916AbaA3TeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:34:00 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33089 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaA3Td7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:33:13 -0500
+	Thu, 30 Jan 2014 14:33:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5Cg3c1YNoyLwQROF0n_kMzKuyg5zw4x706ner6aPLBS8g@mail.gmail.com>
-References: <CA+5PVA555XRvPfnJpDU2t-iCA1Ay2F-pxWACO_Hj_XBzjScK1w@mail.gmail.com>
-	<CAOMZO5Cg3c1YNoyLwQROF0n_kMzKuyg5zw4x706ner6aPLBS8g@mail.gmail.com>
-Date: Thu, 30 Jan 2014 14:33:12 -0500
-X-Google-Sender-Auth: ebMa3XrtXCu7Z1pha93GYtspsbU
-Message-ID: <CA+5PVA6Q+wOLMVdsON0yyP2FHvdxSBF3TX3fXw8Y23t8O704Nw@mail.gmail.com>
-Subject: Re: imx-hdmi fails to build with v3.13-10094-g9b0cd30
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Airlie <airlied@gmail.com>, devel@driverdev.osuosl.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
+In-Reply-To: <52EAA714.3080809@infradead.org>
+References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>
+	<52EAA714.3080809@infradead.org>
+Date: Thu, 30 Jan 2014 11:33:59 -0800
+Message-ID: <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>
+Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
+From: Andiry Xu <andiry@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>,
+        Linux MM <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 2:31 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> On Thu, Jan 30, 2014 at 5:28 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->> Hi All,
->>
->> After the DRM merge the imx-hdmi driver fails to build with the error
->> below.  I'm somewhat surprised this wasn't hit in linux-next.
->>
+On Thu, Jan 30, 2014 at 11:25 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> [adding linux-mm mailing list]
 >
-> Sachin has already sent a patch to fix this issue:
-> http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2014-January/045167.html
+> On 01/30/2014 08:52 AM, Andiry Xu wrote:
+>> Hi,
+>>
+>> In kernel-parameters.txt, there is following description:
+>>
+>> memmap=nn[KMG]$ss[KMG]
+>>                         [KNL,ACPI] Mark specific memory as reserved.
+>>                         Region of memory to be used, from ss to ss+nn.
+>
+> Should be:
+>                           Region of memory to be reserved, from ss to ss+nn.
+>
+> but that doesn't help with the problem that you describe, does it?
+>
 
-Wonderful.  Thanks for the quick response.
+Actually it should be:
+                             Region of memory to be reserved, from nn to nn+ss.
 
-Out of curiosity, was this hit in linux-next?  Or is the config option
-not enabled in any of the configs built there?
+That is, exchange nn and ss.
 
-josh
+>
+>> Unfortunately this is incorrect. The meaning of nn and ss is reversed.
+>> For example:
+>>
+>> Command                  Expected                 Result
+>> memmap 2G$6G        6G - 8G reserved      2G - 8G reserved
+>> memmap 6G$2G        2G - 8G reserved      6G - 8G reserved
+>
+> Are you testing on x86?
+> The code in arch/x86/kernel/e820.c always parses mem_size followed by start address.
+> I don't (yet) see where it goes wrong...
+>
+
+Yes, it's a x86 machine.
+
+>
+>> Test kernel version 3.13, but I believe the issue has been there long ago.
+>>
+>> I'm not sure whether the description or implementation should be
+>> fixed, but apparently they do not match.
+>
+> I prefer to change the documentation and leave the implementation as is.
+>
+
+That's fine. memmap itself works OK, it's just the description is
+wrong and people like me get confused.
+
+Thanks,
+Andiry
