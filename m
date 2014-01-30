@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaA3UuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 15:50:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36002 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaA3UuE (ORCPT
+	id S1753390AbaA3UuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 15:50:19 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33053 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728AbaA3UuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 15:50:04 -0500
-Date: Thu, 30 Jan 2014 21:50:00 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: delicious quinoa <delicious.quinoa@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Subject: Re: [PATCH v9] gpio: add a driver for Synopsys DesignWare APB GPIO
-Message-ID: <20140130205000.GB26861@pengutronix.de>
-References: <1386364179-28650-1-git-send-email-delicious.quinoa@gmail.com>
- <CANk1AXS=CADN53aO5KVN3UorddJ0wZ2PTqwo2XmeRuxYe_DoLg@mail.gmail.com>
- <20131212090838.GD25478@pengutronix.de>
- <CANk1AXRxTGRMJMvXe4jgG2GfuELsDTNJnRLXK-MGe3gGxinmLA@mail.gmail.com>
+	Thu, 30 Jan 2014 15:50:14 -0500
+Date: Thu, 30 Jan 2014 20:50:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Message-ID: <20140130205000.GX22609@sirena.org.uk>
+References: <1391108240-16161-1-git-send-email-broonie@kernel.org>
+ <1391108694.2422.59.camel@joe-AO722>
+ <1391114256.2422.71.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6JAe/4X0qssghT2u"
 Content-Disposition: inline
-In-Reply-To: <CANk1AXRxTGRMJMvXe4jgG2GfuELsDTNJnRLXK-MGe3gGxinmLA@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 21:45:00 up 159 days,  6:15, 32 users,  load average: 0,02, 0,04,
- 0,05
+In-Reply-To: <1391114256.2422.71.camel@joe-AO722>
+X-Cookie: PARDON me, am I speaking ENGLISH?
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] pinctrl: Avoid kasprintf/kfree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-On Thu, Jan 30, 2014 at 01:40:04PM -0600, delicious quinoa wrote:
-> On Thu, Dec 12, 2013 at 3:08 AM, Steffen Trumtrar
-> <s.trumtrar@pengutronix.de> wrote:
-> 
-> > Second: The interrupt is registered as "GIC 37", which is a real interrupt on
-> > the Socfpga. I would expect it to be marked as "GPIO 2xx" (or something in that
-> > range). The interrupt from the gpiochip itself isn't registered at all ?!
-> 
-> Hi Stephen,
-> 
-> Did you export the gpio lines and set the edge in sysfs?  Because the
-> interrupts aren't allocated otherwise.
-> 
-> For instance:
-> 
-> root@socfpga_cyclone5:~# echo 195 > /sys/class/gpio/export
-> root@socfpga_cyclone5:~# echo rising > /sys/class/gpio/gpio195/edge
-> 
-> Now I can see a pretty nicely named interrupt in /proc/interrupts:
-> 
-> 256:          0          0  gpio-dwapb  24  gpiolib
-> 
+--6JAe/4X0qssghT2u
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I didn't try that and I think this behaviour is pretty uncommon.
-This should be fixed in the driver. I never wrote a gpiochip-driver,
-so I don't know what is missing, but maybe just some functioncall ?!
-All other drivers I came across have that entry from probing without
-any fiddling.
+On Thu, Jan 30, 2014 at 12:37:36PM -0800, Joe Perches wrote:
 
-Thanks,
-Steffen
+> +	char propname[9 + sizeof(int) * 2 + 4] = "pinctrl-";
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I'm not sure this is a triumph of legibility - there's several magic
+numbers there and it's not blindlingly obvious where the caclculation
+came from.  Is this really a hot enough code path to benefit from an
+optimisation like this?
+
+--6JAe/4X0qssghT2u
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS6rr1AAoJELSic+t+oim91lwP+QHDsdkkRD7rSi3kT4/JjN3y
+np34UjR52gWCkGkju8EQYzPEuQVwYXHaL80cFhVtIUUxuBbaiK7mN0vgj6+rkxRg
+xxhisuAIEK8G1T4BCs1eXjqmbf3QbxYoqbHwEXrWqOOJzDT5ql7QDZrJnPY4Igtq
+HmLqhFEPIBf3dMb99YNuJPcVRieBdFn6HtgnUxNBqgw7sCxDg+jcYaicpWOs4R//
+pfswoyfQCyeHnI2+FV08wExxtDixQeP0cDgBDgPxBnTb72Ww3UOOgVA/KOhPzSpu
+d6wVDAxWu5QJVbJvK5Nq9nuNtFx95qYydbQqprJBiYyJ1+YZ0oSmysulBG2Y7jWp
+GagOrNurwgmsDcorn7eHnAXJbTIzaYXC+uuMSsG/bmHrt2NJCn3LwTyblMb1i3na
+NMTZq+Jm+dec9HTF3+F3GD2wC2DVc9OswqKkpsUNEU0QJgoUjCUKyTS/08IwEvJf
+LU61ap7exLSXasCqFNAPt0Njai1xBhuMCnSxfpOzb1jJmaRmCn/oAvvd1yMSvJWn
+1ceT09PSUCyzDhKaCqsPPPhlFtdy9R/fF+FdylDySflX5Jzeh8I1m5LMxaxWRg9h
+pWYVhjCEcvmuPgfL90Ey85d7zqTZq10K1M9eCs16Yn134D1QKq2wbooCVq0NxYRD
+lP06lWUZxfCkIUAZKnI/
+=n8mx
+-----END PGP SIGNATURE-----
+
+--6JAe/4X0qssghT2u--
