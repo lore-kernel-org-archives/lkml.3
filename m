@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaA3N7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:59:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36600 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753237AbaA3N7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:59:39 -0500
-Message-ID: <1391090377.4405.58.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 1/4] net: ethoc: implement basic ethtool operations
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Gauthier <marc@cadence.com>
-Date: Thu, 30 Jan 2014 13:59:37 +0000
-In-Reply-To: <1391025397-14965-2-git-send-email-jcmvbkbc@gmail.com>
-References: <1391025397-14965-1-git-send-email-jcmvbkbc@gmail.com>
-	 <1391025397-14965-2-git-send-email-jcmvbkbc@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2zox673OzisFMBe6uq5/"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753352AbaA3OBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:01:16 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:38567 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752873AbaA3OBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 09:01:15 -0500
+Date: Thu, 30 Jan 2014 08:01:13 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch 1/2] gru: unlocking should be conditional in
+ gru_dump_context()
+Message-ID: <20140130140113.GC15484@sgi.com>
+References: <20140130121044.GB13267@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140130121044.GB13267@elgon.mountain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-by: Dimitri Sivanich <sivanich@sgi.com>
 
---=-2zox673OzisFMBe6uq5/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2014-01-29 at 23:56 +0400, Max Filippov wrote:
-> The following methods are implemented:
-> - get link state (standard implementation);
-> - get timestamping info (standard implementation).
->=20
-> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-
-> ---
->  drivers/net/ethernet/ethoc.c | 6 ++++++
->  1 file changed, 6 insertions(+)
->=20
-> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
-> index 5854d41..6de6352 100644
-> --- a/drivers/net/ethernet/ethoc.c
-> +++ b/drivers/net/ethernet/ethoc.c
-> @@ -900,6 +900,11 @@ out:
->  	return NETDEV_TX_OK;
+On Thu, Jan 30, 2014 at 03:10:44PM +0300, Dan Carpenter wrote:
+> I was reviewing this and noticed that unlocking should be conditional on
+> the error path.  I've changed it to unlock and return directly since we
+> only do it once and it seems unlikely to change in the near future.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/misc/sgi-gru/grukdump.c b/drivers/misc/sgi-gru/grukdump.c
+> index 9b2062d17327..2bef3f76032a 100644
+> --- a/drivers/misc/sgi-gru/grukdump.c
+> +++ b/drivers/misc/sgi-gru/grukdump.c
+> @@ -139,8 +139,11 @@ static int gru_dump_context(struct gru_state *gru, int ctxnum,
+>  
+>  	ubuf += sizeof(hdr);
+>  	ubufcch = ubuf;
+> -	if (gru_user_copy_handle(&ubuf, cch))
+> -		goto fail;
+> +	if (gru_user_copy_handle(&ubuf, cch)) {
+> +		if (cch_locked)
+> +			unlock_cch_handle(cch);
+> +		return -EFAULT;
+> +	}
+>  	if (cch_locked)
+>  		ubufcch->delresp = 0;
+>  	bytes = sizeof(hdr) + GRU_CACHE_LINE_BYTES;
+> @@ -179,10 +182,6 @@ static int gru_dump_context(struct gru_state *gru, int ctxnum,
+>  		ret = -EFAULT;
+>  
+>  	return ret ? ret : bytes;
+> -
+> -fail:
+> -	unlock_cch_handle(cch);
+> -	return -EFAULT;
 >  }
-> =20
-> +const struct ethtool_ops ethoc_ethtool_ops =3D {
-> +	.get_link =3D ethtool_op_get_link,
-> +	.get_ts_info =3D ethtool_op_get_ts_info,
-> +};
-> +
->  static const struct net_device_ops ethoc_netdev_ops =3D {
->  	.ndo_open =3D ethoc_open,
->  	.ndo_stop =3D ethoc_stop,
-> @@ -1148,6 +1153,7 @@ static int ethoc_probe(struct platform_device *pdev=
-)
->  	netdev->netdev_ops =3D &ethoc_netdev_ops;
->  	netdev->watchdog_timeo =3D ETHOC_TIMEOUT;
->  	netdev->features |=3D 0;
-> +	netdev->ethtool_ops =3D &ethoc_ethtool_ops;
-> =20
->  	/* setup NAPI */
->  	netif_napi_add(netdev, &priv->napi, ethoc_poll, 64);
-
---=20
-Ben Hutchings
-It is a miracle that curiosity survives formal education. - Albert Einstein
-
---=-2zox673OzisFMBe6uq5/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUupayee/yOyVhhEJAQpDzg/9E9/H9g+LWQ2RycxGcL5XS7J3gadGaUJ3
-jKGrF5d0fxg8GcMAgDxAdSzPQVv2W8eP8RFFhdP84fERW+GbgawFvd7UoV8jVEGP
-tUi9ovX4Ce/s+4GHEoQf+qrQ+N+C1wN2xyWLL9hGoKspH7+zUb7Z/taGlnFoYBbj
-Ey9Z+8RF2er8Ma9fdlxQqMCiu/9griiv07tnDRH+1eMnHb+AKklmWfEAWSMX2Dif
-3K31D73BdQZDhcM4aFxDNc5eb8wcq6636P06ZUUTMnWEzfN+qbUOge3oWIpL96+y
-WHQUx5+rlBLtbaw7VIo6aMMdWydb3FyczFGam/iYymonuHsvlmwYKKLHYUJxWMvq
-4ES90/9BJE1G6Lnw2DY4zXGYU/HvnUXrPbwUoFwo6t4KNGW/bNjYq/O3KOHgOsz2
-eGreIdJ6jvt9CULqq/sRA3YbkHObnyXjqxC7cj2NqJQPbzHLF59wSHf+JlhdvnpE
-9+Ec9DvUIVMe76oGvrPxVyJke35BHpksJAt6f8BzFU6zCSeNGOl8EJbACEnmKHsu
-iMLY/nDrn/E0llzCrHEGZcr5M9FerKG89Fz/XJDK2ltk5W9ijqBC8xXU9VMNGSIF
-mNSuiq8zRYjUex/Ly84Wd06qwMaW5jLyzgGazMsCTphARNiIi2QZIRuXUEQNR4KH
-mjPfFdA3hSY=
-=5iuX
------END PGP SIGNATURE-----
-
---=-2zox673OzisFMBe6uq5/--
+>  
+>  int gru_dump_chiplet_request(unsigned long arg)
