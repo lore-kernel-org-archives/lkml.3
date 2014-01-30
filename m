@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244AbaA3Ism (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 03:48:42 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53500 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaA3Isk (ORCPT
+	id S1752741AbaA3Itl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 03:49:41 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50759 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaA3Itj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 03:48:40 -0500
-Date: Thu, 30 Jan 2014 00:48:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: mingo@kernel.org, josh@joshtriplett.org,
-        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com,
-        rostedt@goodmis.org, bitbucket@online.de,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL timers] Timer-wheel bandaids^Wcommits
-Message-ID: <20140130084835.GC9012@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140129233936.GA11150@linux.vnet.ibm.com>
- <CAM4v1pM_6G9ELtwdDe6K+4=MCT2giKSx-jok0RioDy7auJxegA@mail.gmail.com>
+	Thu, 30 Jan 2014 03:49:39 -0500
+Message-ID: <52EA139C.8040106@linux.vnet.ibm.com>
+Date: Thu, 30 Jan 2014 14:25:56 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM4v1pM_6G9ELtwdDe6K+4=MCT2giKSx-jok0RioDy7auJxegA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Waiman Long <Waiman.Long@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 0/2] qspinlock: Introducing a 4-byte queue spinlock
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14013008-0928-0000-0000-0000061868D4
+x-cbid: 14013008-2674-0000-0000-00000C7E3B37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 11:14:57AM +0530, Preeti Murthy wrote:
-> Hi Paul,
-> 
-> The commit id:e1d690cdc07637131ba4334: timers: Track total number of
-> timers in list has
-> a minor glitch in the changelog.
-> 
-> I am referring to your
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> rcu/timers branch.
-> 
-> "even if ->active_timers is zero, there might well be *non-deferrable*
-> timers in the list"
-> 
-> s/non-deferrable/deferrable.
+On 01/28/2014 11:49 PM, Waiman Long wrote:
+> v2->v3:
+>   - Simplify the code by using numerous mode only without an unfair option.
+>   - Use the latest smp_load_acquire()/smp_store_release() barriers.
+>   - Move the queue spinlock code to kernel/locking.
+>   - Make the use of queue spinlock the default for x86-64 without user
+>     configuration.
+>   - Additional performance tuning.
+>
 
-Good catch, fixed!  New pull request below, very similar to the last one.
+Could you please point me to any dependency patches I am missing?
+I am getting the compilation error (latest linus tree with 
+9b0cd304f26b9fca140de15deeac2bf357d1f388)
 
-							Thanx, Paul
-------------------------------------------------------------------------
+Got something like below
 
-Hello, Ingo,
-
-This pull request contains latency bandaids^Woptimizations to the
-timer-wheel code that are useful in conjunction with NO_HZ_FULL Kconfig
-option.  These optimizations reduce the jiffy-by-jiffy looping in cases
-where there is either zero or one timers in the timer wheel, which is
-a common case for NO_HZ_FULL "worker" CPUs that run almost entirely
-in usermode for a single task.
-
-Each of these commits has at least two Reviewed-by, one Acked-by, and
-one Tested-by tag, so they are ready for more extensive testing in -tip.
-
-                                                        Thanx, Paul
-
-The following changes since commit 00e2bcd6d35f59fce7fa0e76e24d08f74c6a8506:
-
-  clocksource: Timer-sun5i: Switch to sched_clock_register() (2014-01-19 13:23:23 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/timers
-
-for you to fetch changes up to 73bffac4cf615295055df086e95d0284754aa708
-
-  timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0 (2014-01-30 00:41:53 -0800)
-
-----------------------------------------------------------------
-Oleg Nesterov (1):
-      timers: Make internal_add_timer() update ->next_timer if ->active_timers == 0
-
-Paul E. McKenney (4):
-      timers: Track total number of timers in list
-      timers: Reduce __run_timers() latency for empty list
-      timers: Reduce future __run_timers() latency for newly emptied list
-      timers: Reduce future __run_timers() latency for first add to empty list
-
- kernel/timer.c | 30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+make[1]: Nothing to be done for `all'.
+   CHK     include/config/kernel.release
+   CHK     include/generated/uapi/linux/version.h
+   CHK     include/generated/utsrelease.h
+make[1]: Nothing to be done for `relocs'.
+   CC      kernel/bounds.s
+In file included from include/asm-generic/getorder.h:7:0,
+                  from /test/master/arch/x86/include/asm/page.h:71,
+                  from /test/master/arch/x86/include/asm/processor.h:17,
+                  from /test/master/arch/x86/include/asm/atomic.h:6,
+                  from include/linux/atomic.h:4,
+                  from include/asm-generic/qspinlock.h:22,
+                  from 
+/test/master/arch/x86/include/asm/spinlock_types.h:15,
+                  from 
+/test/master/arch/x86/include/asm/paravirt_types.h:331,
+                  from /test/master/arch/x86/include/asm/ptrace.h:65,
+                  from /test/master/arch/x86/include/asm/alternative.h:8,
+                  from /test/master/arch/x86/include/asm/bitops.h:16,
+                  from include/linux/bitops.h:33,
+                  from include/linux/kernel.h:10,
+                  from include/asm-generic/bug.h:13,
+                  from /test/master/arch/x86/include/asm/bug.h:38,
+                  from include/linux/bug.h:4,
+                  from include/linux/page-flags.h:9,
+                  from kernel/bounds.c:9:
+include/linux/log2.h: In function ‘__ilog2_u32’:
+include/linux/log2.h:34:2: error: implicit declaration of function ‘fls’ 
+[-Werror=implicit-function-declaration]
+include/linux/log2.h: In function ‘__ilog2_u64’:
+include/linux/log2.h:42:2: error: implicit declaration of function 
+‘fls64’ [-Werror=implicit-function-declaration]
+include/linux/log2.h: In function ‘__roundup_pow_of_two’:
+.
+.
+[trimmed]
 
