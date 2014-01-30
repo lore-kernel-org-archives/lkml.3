@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaA3RLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:11:40 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:52390 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842AbaA3RLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:11:37 -0500
-Message-ID: <52EA8834.8010302@mm-sol.com>
-Date: Thu, 30 Jan 2014 19:13:24 +0200
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753522AbaA3RMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:12:48 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:59439 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaA3RMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 12:12:46 -0500
+X-IronPort-AV: E=Sophos;i="4.95,751,1384300800"; 
+   d="scan'208";a="96217640"
+Date: Thu, 30 Jan 2014 17:12:39 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Christopher Covington <cov@codeaurora.org>
+CC: Ian Campbell <ian.campbell@citrix.com>, <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: document "mach-virt" platform.
+In-Reply-To: <52EA83D6.9050506@codeaurora.org>
+Message-ID: <alpine.DEB.2.02.1401301710210.4373@kaball.uk.xensource.com>
+References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com> <52EA83D6.9050506@codeaurora.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "subhashj@codeaurora.org" <subhashj@codeaurora.org>
-Subject: Re: [PATCH v7 2/2] mmc: sdhci-msm: Initial support for MSM chipsets
-References: <1383753405-23631-1-git-send-email-gdjakov@mm-sol.com> <1383753405-23631-3-git-send-email-gdjakov@mm-sol.com> <20131205102740.GI29200@e106331-lin.cambridge.arm.com> <52A1BCEF.30505@mm-sol.com> <20131209094644.GC28379@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131209094644.GC28379@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 11:46 AM, Mark Rutland wrote:
->>> [...]
->>>
->>>> +       /*
->>>> +        * CORE_SW_RST above may trigger power irq if previous status of PWRCTL
->>>> +        * was either BUS_ON or IO_HIGH_V. So before we enable the power irq
->>>> +        * interrupt in GIC (by registering the interrupt handler), we need to
->>>> +        * ensure that any pending power irq interrupt status is acknowledged
->>>> +        * otherwise power irq interrupt handler would be fired prematurely.
->>>> +        */
->>>> +       irq_status = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_STATUS);
->>>> +       writel_relaxed(irq_status, (msm_host->core_mem + CORE_PWRCTL_CLEAR));
->>>> +       irq_ctl = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_CTL);
->>>> +       if (irq_status & (CORE_PWRCTL_BUS_ON | CORE_PWRCTL_BUS_OFF))
->>>> +               irq_ctl |= CORE_PWRCTL_BUS_SUCCESS;
->>>> +       if (irq_status & (CORE_PWRCTL_IO_HIGH | CORE_PWRCTL_IO_LOW))
->>>> +               irq_ctl |= CORE_PWRCTL_IO_SUCCESS;
->>>> +       writel_relaxed(irq_ctl, (msm_host->core_mem + CORE_PWRCTL_CTL));
->>>> +       /*
->>>> +        * Ensure that above writes are propogated before interrupt enablement
->>>> +        * in GIC.
->>>> +        */
->>>> +       mb();
->>>
->>> Does this guarantee that the device has finished responding to the write
->>> and deasserted the interrupt line (i.e. does the device only acknowledge
->>> the write once that is true)?
->>>
->>
->> I am not sure that i understand your concern. The write to
->> CORE_PWRCTL_CTL should acknowledge and deassert the interrupt.
->
-> The mb() ensures that the write has reached the device, and the device's
-> slave interface has acknowledged the write. On some devices this
-> acknowledgement of the write can be asynchronous with respect to the
-> device changing state in response to the write (i.e. the interrupt might
-> get deasserted a short time after the write completes). Typically there
-> is a register that should be polled to see whether the state change has
-> completed.
->
-> Does the acknowledgement of the write only occur once the device has
-> changed state? Or might it change state in the background?
->
+On Thu, 30 Jan 2014, Christopher Covington wrote:
+> Hi Ian,
+> 
+> On 01/30/2014 11:11 AM, Ian Campbell wrote:
+> > mach-virt has existed for a while but it is not written down what it actually
+> > consists of. Although it seems a bit unusual to document a binding for an
+> > entire platform since mach-virt is entirely virtual it is helpful to have
+> > something to refer to in the absence of a single concrete implementation.
+> > 
+> > I've done my best to capture the requirements based on the git log and my
+> > memory/understanding.
+> > 
+> > While here remove the xenvm dts example, the Xen tools will now build a
+> > suitable mach-virt compatible dts when launching the guest.
+> 
+> [...]
+> 
+> > +++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
+> > @@ -0,0 +1,32 @@
+> > +* Mach-virt "Dummy Virtual Machine" platform
+> > +
+> > +"mach-virt" is the smallest, dumbest platform possible, to be used as
+> > +a guest for Xen, KVM and other hypervisors.
+> 
+> The platform is also useful to, and used by, simulators like QEMU in TCG mode.
+> 
+> >                                              It has no
+> > +properties/functionality of its own and is driven entirely by device
+> > +tree.
+> 
+> I find this wording confusing. I read it as saying the platform has no
+> properties or functionality. Perhaps you could phrase it slightly differently,
+> such as having no properties or functionality beyond what's described in the
+> device tree.
 
-Thanks for clarifying this. All this is correct, but it will be 
-difficult to answer, because i don't have documentation and i can only 
-be guessing how exactly the hardware behaves internally.
-I can remove this fragment from the initial version to keep it more 
-simple. Meanwhile i can do some tests reading/polling the status 
-register to see how and when exactly it changes.
+Right, something like making no assumptions on the presence of devices
+or hardware interfaces beyond what is described on device tree.
 
-Thanks,
-Georgi
+
+> > +This document defines the requirements for such a platform.
+> > +
+> > +* Required properties:
+> > +
+> > +- compatible: should be one of:
+> > +	"linux,dummy-virt"
+> > +	"xen,xenvm"
+> > +
+> > +In addition to the standard nodes (chosen, cpus, memory etc) the
+> > +platform is required to provide certain other basic functionality
+> > +which must be described in the device tree:
+> > +
+> > +    The platform must provide an ARM Generic Interrupt Controller
+> > +    (GIC), defined in Documentation/devicetree/bindings/arm/gic.txt.
+> > +
+> > +    The platform must provide ARM architected timer, defined in
+> > +    Documentation/devicetree/bindings/arm/arch_timer.txt.
+> > +
+> > +    If the platform is SMP then it must provide the Power State
+> > +    Coordination Interface (PSCI) described in
+> > +    Documentation/devicetree/bindings/arm/psci.txt.
+> > +
+> > +The platform may also provide hypervisor specific functionality
+> > +(e.g. PV I/O), if it does so then this functionality must be
+> > +discoverable (directly or indirectly) via device tree.
+> 
+> I think it would be informative to provide pointers here to commonly used
+> paravirtualized devices, especially VirtIO PCI/MMIO.
+
+In that case I would appreciate a link to the Xen hypervisor node:
+
+Documentation/devicetree/bindings/arm/xen.txt
