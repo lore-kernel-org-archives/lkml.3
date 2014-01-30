@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaA3Xkj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:40:39 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:60493 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097AbaA3Xkh (ORCPT
+	id S1753826AbaA3Xnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 18:43:52 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:38522 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968AbaA3Xnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:40:37 -0500
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Subject: [RFC PATCH] net: ipv4: move inetpeer garbage collector work to power efficient workqueue
-Date: Thu, 30 Jan 2014 15:40:13 -0800
-Message-Id: <1391125213-8119-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 30 Jan 2014 18:43:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <52EAD810.40204@infradead.org>
+References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>
+	<52EAA714.3080809@infradead.org>
+	<CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>
+	<52EAB56E.2030102@infradead.org>
+	<alpine.DEB.2.02.1401301416030.15271@chino.kir.corp.google.com>
+	<52EAD810.40204@infradead.org>
+Date: Thu, 30 Jan 2014 15:43:50 -0800
+Message-ID: <CAOmQrk1aghJrFb6RNO1yTwN51Brk_88O9k8OuCm_QshP3zag-Q@mail.gmail.com>
+Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
+From: Andiry Xu <andiry.xu@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: David Rientjes <rientjes@google.com>, Andiry Xu <andiry@gmail.com>,
+        linux-kernel@vger.kernel.org, Linux MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+On Thu, Jan 30, 2014 at 2:54 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 01/30/2014 02:17 PM, David Rientjes wrote:
+>> On Thu, 30 Jan 2014, Randy Dunlap wrote:
+>>
+>>>>>> Hi,
+>>>>>>
+>>>>>> In kernel-parameters.txt, there is following description:
+>>>>>>
+>>>>>> memmap=nn[KMG]$ss[KMG]
+>>>>>>                         [KNL,ACPI] Mark specific memory as reserved.
+>>>>>>                         Region of memory to be used, from ss to ss+nn.
+>>>>>
+>>>>> Should be:
+>>>>>                           Region of memory to be reserved, from ss to ss+nn.
+>>>>>
+>>>>> but that doesn't help with the problem that you describe, does it?
+>>>>>
+>>>>
+>>>> Actually it should be:
+>>>>                              Region of memory to be reserved, from nn to nn+ss.
+>>>>
+>>>> That is, exchange nn and ss.
+>>>
+>>> Yes, I understand that that's what you are reporting.  I just haven't yet
+>>> worked out how the code manages to exchange those 2 values.
+>>>
+>>
+>> It doesn't, the documentation is correct as written and could be improved
+>> by your suggestion of "Region of memory to be reserved, from ss to ss+nn."
+>> I think Andiry probably is having a problem with his bootloader
+>> interpreting the '$' incorrectly (or variable expansion if coming from the
+>> shell) or interpreting the resulting user-defined e820 map incorrectly.
+>> --
+>
+> Yeah, I certainly don't see a problem with the code and I would want to
+> see/understand that before I exchanged the 2 values in the documentation.
+>
+> I'll submit a patch to make the wording a bit better.
+>
 
-Garbage collector work does not have to be bound to the CPU that scheduled
-it. By moving work to the power-efficient workqueue, the selection of
-CPU executing the work is left to the scheduler. This extends idle
-residency times and conserves power.
+I'm using Ubuntu 13.04 with GRUB2. If it's a bootloader issue, what should I do?
 
-This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
-[zoran.markovic@linaro.org: Rebased to latest kernel version. Added
-commit message.]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- net/ipv4/inetpeer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
-index 48f4244..87155aa 100644
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -161,7 +161,8 @@ static void inetpeer_gc_worker(struct work_struct *work)
- 	list_splice(&list, &gc_list);
- 	spin_unlock_bh(&gc_lock);
- 
--	schedule_delayed_work(&gc_work, gc_delay);
-+	queue_delayed_work(system_power_efficient_wq,
-+		&gc_work, gc_delay);
- }
- 
- /* Called from ip_output.c:ip_init  */
-@@ -576,7 +577,8 @@ static void inetpeer_inval_rcu(struct rcu_head *head)
- 	list_add_tail(&p->gc_list, &gc_list);
- 	spin_unlock_bh(&gc_lock);
- 
--	schedule_delayed_work(&gc_work, gc_delay);
-+	queue_delayed_work(system_power_efficient_wq,
-+		&gc_work, gc_delay);
- }
- 
- void inetpeer_invalidate_tree(struct inet_peer_base *base)
--- 
-1.7.9.5
-
+Thanks,
+Andiry
