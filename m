@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaA3Vrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 16:47:39 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:64250 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaA3Vrh (ORCPT
+	id S1753758AbaA3VtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 16:49:05 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:60487 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374AbaA3VtD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 16:47:37 -0500
+	Thu, 30 Jan 2014 16:49:03 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org,
+        Pali =?utf-8?Q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
+Date: Thu, 30 Jan 2014 13:48:48 -0800
+In-Reply-To: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> (David
+	Howells's message of "Sun, 26 Jan 2014 12:27:29 +0000")
+Message-ID: <8761p1m98f.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAGa+x85md++qtw5n7c_4L-MvaK8nB3c8GpFf+OLb4p--8N=+og@mail.gmail.com>
-References: <20140130111919.afc7f4e5b58e409aaabf7550@canb.auug.org.au> <CAGa+x85md++qtw5n7c_4L-MvaK8nB3c8GpFf+OLb4p--8N=+og@mail.gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Thu, 30 Jan 2014 13:47:15 -0800
-Message-ID: <CAPtuhTgAF7u-yZi3OpmAPikhp25nu+ooqEQXbJELVKTkAaJh4A@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with Linus' tree
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Alex Elder <elder@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-AID: U2FsdGVkX19SaNpQT6RSeUBsVMXquv6OoHm1X6yU4R8=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0203]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Howells <dhowells@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 9:33 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> On Wed, Jan 29, 2014 at 4:19 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi all,
->>
->> Today's linux-next merge of the arm-soc tree got a conflict in
->> drivers/clk/Makefile between commit fd3fdaf09f26 ("clk: sort Makefile")
->> from Linus' tree and commit 7ee2c5117483 ("clk: bcm281xx: add initial
->> clock framework support") from the arm-soc tree.
+David Howells <dhowells@redhat.com> writes:
+
+> From: Pali Rohár <pali.rohar@gmail.com>
 >
-> Ugh.  Looks like some last minute cleanup stuff went into clk-next
-> that didn't spend time in linux-next, and now causes conflicts with
-> some clk stuff we still have queued in arm-soc (ack'd by Mike.)
+> Both proc files are writeable and used for configuring cells. But
+> there is missing correct mode flag for writeable files. Without
+> this patch both proc files are read only.
+
+Dumb question.  Is this worth fixing?  Should we perhaps instead remove
+the write methods?
+
+These files have been read-only since this code was merged in 2002.
+Over a decade of not being used seems like a strong indication that no
+one cares about the write path.
+
+Eric
+
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
 >
-> Now, based on the Hulk's response to Mike's pull request, if we submit
-> this, introducing yet more conflicts in the Makefile, it will surely
-> be Hulk angry, Hulk smash.
-
-Well this is clearly my fault. Please place appropriate blame on me
-for sneaking in that Makefile cleanup.
-
-/me prepares to be smashed.
-
-Regards,
-Mike
-
+>  fs/afs/proc.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 >
-> Kevin
+> diff --git a/fs/afs/proc.c b/fs/afs/proc.c
+> index 526e4bbbde59..276cb6ed0b93 100644
+> --- a/fs/afs/proc.c
+> +++ b/fs/afs/proc.c
+> @@ -147,11 +147,11 @@ int afs_proc_init(void)
+>  	if (!proc_afs)
+>  		goto error_dir;
+>  
+> -	p = proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
+> +	p = proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_cells_fops);
+>  	if (!p)
+>  		goto error_cells;
+>  
+> -	p = proc_create("rootcell", 0, proc_afs, &afs_proc_rootcell_fops);
+> +	p = proc_create("rootcell", S_IFREG | S_IRUGO | S_IWUSR, proc_afs, &afs_proc_rootcell_fops);
+>  	if (!p)
+>  		goto error_rootcell;
+>  
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
