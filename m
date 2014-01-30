@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaA3NqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:46:10 -0500
-Received: from mail-ea0-f195.google.com ([209.85.215.195]:57173 "EHLO
-	mail-ea0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaA3NqI (ORCPT
+	id S1753337AbaA3Nqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 08:46:44 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32704 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaA3Nqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:46:08 -0500
-X-Greylist: delayed 83483 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jan 2014 08:46:07 EST
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Boris BREZILLON <b.brezillon.dev@gmail.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: =?UTF-8?q?=5BRFC=20PATCH=20pre-v3=2007/14=5D=20of=3A=20mtd=3A=20add=20documentation=20for=20the=20ONFI=20NAND=20timing=20mode=20property?=
-Date: Thu, 30 Jan 2014 14:46:02 +0100
-Message-Id: <1391089562-8385-1-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>
+	Thu, 30 Jan 2014 08:46:44 -0500
+Message-ID: <52EA57AC.3090700@oracle.com>
+Date: Thu, 30 Jan 2014 08:46:20 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm, hugetlb: gimme back my page
+References: <1391063823.2931.3.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1391063823.2931.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for the ONFI NAND timing mode property.
+On 01/30/2014 01:37 AM, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso<davidlohr@hp.com>
+>
+> While testing some changes, I noticed an issue triggered by the libhugetlbfs
+> test-suite. This is caused by commit 309381fe (mm: dump page when hitting a
+> VM_BUG_ON using VM_BUG_ON_PAGE), where an application can unexpectedly OOM due
+> to another program that using, or reserving, pool_size-1 pages later triggers
+> a VM_BUG_ON_PAGE and thus greedly leaves no memory to the rest of the hugetlb
+> aware tasks. For example, in libhugetlbfs 2.14:
+>
+> mmap-gettest 10 32783 (2M: 64): <---- hit VM_BUG_ON_PAGE
+> mmap-cow 32782 32783 (2M: 32):  FAIL    Failed to create shared mapping: Cannot allocate memory
+> mmap-cow 32782 32783 (2M: 64):  FAIL    Failed to create shared mapping: Cannot allocate memory
+>
+> While I have not looked into why 'mmap-gettest' keeps failing, it is of no
+> importance to this particular issue. This problem is similar to why we have
+> the hugetlb_instantiation_mutex, hugepages are quite finite.
+>
+> Revert the use of VM_BUG_ON_PAGE back to just VM_BUG_ON.
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
-Changes since v2:
- - fix description of the nand-timing-mode property: the mode property is
-   a mask containing all supported modes, each mode is encoded as a bit
-   position
+VM_BUG_ON_PAGE is just a VM_BUG_ON that does dump_page before the BUG().
 
- Documentation/devicetree/bindings/mtd/nand.txt |    7 +++++++
- 1 file changed, 7 insertions(+)
+The only reason to use VM_BUG_ON instead of VM_BUG_ON_PAGE is if the page you're working
+with doesn't make sense/isn't useful as debug output.
 
-diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
-index 0c962296..60c7112 100644
---- a/Documentation/devicetree/bindings/mtd/nand.txt
-+++ b/Documentation/devicetree/bindings/mtd/nand.txt
-@@ -8,3 +8,10 @@
-   E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
- - nand-bus-width : 8 or 16 bus width if not present 8
- - nand-on-flash-bbt: boolean to enable on flash bbt option if not present false
-+- onfi,nand-timing-mode: an integer encoding the supported ONFI timing modes of
-+  the NAND chip. Each supported mode is represented as a bit position (i.e. :
-+  mode 0 and 1 => (1 << 0) | (1 << 1) = 0x3).
-+  This is only used when the chip does not support the ONFI standard.
-+  The last bit set represent the closest mode fulfilling the NAND chip timings.
-+  For a full description of the different timing modes see this document:
-+  www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf‎
--- 
-1.7.9.5
+If doing a dump_page is causing issues somewhere then dump_pages should be fixed - instead
+of hiding the problem under the rug by not using it.
 
+
+Thanks,
+sasha
