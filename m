@@ -1,160 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaA3B7r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 20:59:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35072 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751724AbaA3B7p (ORCPT
+	id S1752475AbaA3CCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 21:02:51 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:47554 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486AbaA3CCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 20:59:45 -0500
-Message-ID: <1391047176.4405.43.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v2 4/4] net: ethoc: implement ethtool operations
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: linux-xtensa@linux-xtensa.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        Marc Gauthier <marc@cadence.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 30 Jan 2014 01:59:36 +0000
-In-Reply-To: <1390975218-13863-5-git-send-email-jcmvbkbc@gmail.com>
-References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
-	 <1390975218-13863-5-git-send-email-jcmvbkbc@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-WNTOtI8zIiLeG1LCjeOb"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 29 Jan 2014 21:02:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140129133714.GE8749@quack.suse.cz>
+References: <20140127142520.GD10323@ZenIV.linux.org.uk>
+	<CA+55aFyuC11WPBh0bWu_K3+CooAVAUbSTfk2aw5sks8eJRAhDQ@mail.gmail.com>
+	<20140129133714.GE8749@quack.suse.cz>
+Date: Thu, 30 Jan 2014 11:02:49 +0900
+Message-ID: <CAOtxgyd_T8eXpQ89KhMCLRhy6ebO55dXscVikhuX2a9HCdGTQA@mail.gmail.com>
+Subject: Re: [git pull] vfs pile 1
+From: Kim Jaegeuk <jaegeuk.kim@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-01-29 Jan Kara <jack@suse.cz>:
+> On Tue 28-01-14 19:26:08, Linus Torvalds wrote:
+>> On Mon, Jan 27, 2014 at 6:25 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> >         Assorted stuff; the biggest pile here is Christoph's ACL series.
+>> > Plus assorted cleanups and fixes all over the place...  There will be
+>> > another pile later this week.
+>>
+>> The posix_acl_chmod() code looks wrong.
+>>
+>> Not that it looked right before either, but whatever. The code
+>> basically looks like some variation of this in most setattr()
+>> implementations:
+>>
+>>         if (ia_valid & ATTR_MODE)
+>>                 rc = posix_acl_chmod(inode, inode->i_mode);
+>>
+>> but the mode we're changing to (and what ATTR_MODE guards) is actually
+>> attr->ia_mode, not inode->i_mode.
+>   Yes, but posix_acl_chmod() is called after setattr_copy() was done so
+> inode->i_mode should be the same as attr->ia_mode. Whether i_mode or
+> ia_mode is mode logical depends on whether you view posix_acl_chmod() as
+> "sync current i_mode into acls" or "reflect this i_mode change in acls".
+> I agree the function name suggests more the latter semantics.
+>
+>> And quite frankly, passing in inode->i_mode looks stupid, since we're
+>> already passing in the inode pointer, so that's just redundant and
+>> pointless information.
+>   Yes, it looks stupid. We could almost drop that argument, except that f2fs
+> tries to play some tricks with i_mode and stores i_mode in a different
+> place when acls are enabled. Huh? Jaegeuk, can you explain why are you
+> doing that?
 
---=-WNTOtI8zIiLeG1LCjeOb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+As described to Christoph before, the reason is for acl consistency
+between on-disk xattr->mode and on-disk inode->mode.
 
-On Wed, 2014-01-29 at 10:00 +0400, Max Filippov wrote:
-> The following methods are implemented:
-> - get/set settings;
-> - get registers length/registers;
-> - get link state (standard implementation);
-> - get/set ring parameters;
-> - get timestamping info (standard implementation).
-[...]
-> --- a/drivers/net/ethernet/ethoc.c
-> +++ b/drivers/net/ethernet/ethoc.c
-> [...]
-> +static int ethoc_get_settings(struct net_device *dev, struct ethtool_cmd=
- *cmd)
-> +{
-> +	struct ethoc *priv =3D netdev_priv(dev);
-> +	struct phy_device *phydev =3D priv->phy;
-> +
-> +	if (!phydev)
-> +		return -ENODEV;
-> +
-> +	return phy_ethtool_gset(phydev, cmd);
-> +}
-> +
-> +static int ethoc_set_settings(struct net_device *dev, struct ethtool_cmd=
- *cmd)
-> +{
-> +	struct ethoc *priv =3D netdev_priv(dev);
-> +	struct phy_device *phydev =3D priv->phy;
-> +
-> +	if (!phydev)
-> +		return -ENODEV;
-> +
-> +	return phy_ethtool_sset(phydev, cmd);
-> +}
+Previously, there are three i_modes managed by:
+                       inode->mode   on-disk xattr->mode  on-disk->i_mode
+f2fs_setattr            [x]                       y                       y
+[update_inode]       x                        y                      [x]
+[checkpoint]            x                       [y]                      x
+__f2fs_setxattr        x                       [x]                      x
 
-I think these should return -EOPNOTSUPP in the PHY-less case, just as if
-the set_settings pointer was not set.
+In this flow, f2fs is able to break the consistency between on-disk
+xattr->mode and on-disk->i_mode after checkpoint followed by
+sudden-power-off.
 
-[...]
-> +static void ethoc_get_ringparam(struct net_device *dev,
-> +				struct ethtool_ringparam *ring)
-> +{
-> +	struct ethoc *priv =3D netdev_priv(dev);
-> +
-> +	ring->rx_max_pending =3D priv->num_bd;
-> +	ring->rx_mini_max_pending =3D 0;
-> +	ring->rx_jumbo_max_pending =3D 0;
-> +	ring->tx_max_pending =3D priv->num_bd;
-> +
-> +	ring->rx_pending =3D priv->num_rx;
-> +	ring->rx_mini_pending =3D 0;
-> +	ring->rx_jumbo_pending =3D 0;
-> +	ring->tx_pending =3D priv->num_tx;
-> +}
-> +
-> +static int ethoc_set_ringparam(struct net_device *dev,
-> +			       struct ethtool_ringparam *ring)
-> +{
-> +	struct ethoc *priv =3D netdev_priv(dev);
-> +
-> +	if (netif_running(dev))
-> +		return -EBUSY;
+So, fi->i_mode was introduced to address the problem.
+The new f2fs_setattr triggers:
+                inode->mode   fi->i_mode  on-disk xattr->mode  on-disk->i_mode
+f2fs_setattr             y                [x]                     y
+                      y
+[update_inode]       y                 x                      y
+                  y
+[checkpoint]            y                 x                      y
+                     y
+__f2fs_setxattr       [x]                x                     [x]
+                   [x]
 
-This is unhelpful.  Most implementations of this operation will restart
-the interface if it's running.
+Finally, __f2fs_setxattr synchronizes inode->mode, on-disk xattr->mode,
+and on-disk inode->i_mode all together.
 
-> +	priv->num_tx =3D rounddown_pow_of_two(ring->tx_pending);
+Am I missing something?
 
-Range check?
+Thanks,
 
-> +	priv->num_rx =3D priv->num_bd - priv->num_tx;
-> +	if (priv->num_rx > ring->rx_pending)
-> +		priv->num_rx =3D ring->rx_pending;
-
-So the RX ring may only ever be shrunk?!  Did you mean to compare with
-priv->num_bd instead?
-
-> +	return 0;
-> +}
-> +
-> +const struct ethtool_ops ethoc_ethtool_ops =3D {
-
-static
-
-> +	.get_settings =3D ethoc_get_settings,
-> +	.set_settings =3D ethoc_set_settings,
-> +	.get_regs_len =3D ethoc_get_regs_len,
-> +	.get_regs =3D ethoc_get_regs,
-> +	.get_link =3D ethtool_op_get_link,
-> +	.get_ringparam =3D ethoc_get_ringparam,
-> +	.set_ringparam =3D ethoc_set_ringparam,
-> +	.get_ts_info =3D ethtool_op_get_ts_info,
-> +};
-[...]
-
---=20
-Ben Hutchings
-It is a miracle that curiosity survives formal education. - Albert Einstein
-
---=-WNTOtI8zIiLeG1LCjeOb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUumyCOe/yOyVhhEJAQrYNg/+LLced1E/VabGqvofrIOxN0a55Nz7UeAf
-q2aIyDDsRa+n/vOgKeuzeFLtaAYlrVN7cgjY8PNZUq81E0chUnWhJ3tWrhJTH+uI
-5DROchdSJmW+B+xsOoFHf9eM+5Wshr12hFGZlIjLfaQ4+uJHRW/DelsYlLO7kOhG
-kBxV1iGtowOuHgKpUybJUvnwpdx6JGc/6DvL3YhYyWzroGZO2UhBijUVWoRx8oEu
-vpiYsLg2qJPi+BlAmpBZvCHgjm4lMYRCO8uJV9t2xejkMvqoACjxYD2MT0O1FW8u
-ycijS4IMXsEF9ldfNJhlQEukPO7PpLqS/uhwJoxlqnkWlv1XlOtgJ/5CMiebY/Z9
-cfAB9lpy89fbTLJU5A6Scq/dZKBhD+0H+YtSfhsLh+7yVO7FfnWSba+eppwcW3dm
-wAYaN94J/9gX5LtO6dQCtq+cPBis7jt988kC8WzHvsANS8ac+UY4mLVFezSQ2hCe
-z8G1EPHiGR6Uz5ZPyau/nBNqVnbg3gy1ZXuDDC+BJHhn1Nc15djZbe6FazslzAnb
-3N9/cID9SjB3fWPbBO6RS2AGAlYL1bX5Y5/Ab2PiZrO/5/Un0s+LWkNFSagidXCm
-ZQMsSI9W9yepm/VFifMKwuzwP3nl1XqjdNTR3bBlMFPBK1ODk6Fk/60VaLOzFG70
-iAQMffBFcYk=
-=oMyP
------END PGP SIGNATURE-----
-
---=-WNTOtI8zIiLeG1LCjeOb--
+>
+>                                                                 Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
