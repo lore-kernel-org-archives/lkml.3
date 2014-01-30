@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaA3JTg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 04:19:36 -0500
-Received: from gate.crashing.org ([63.228.1.57]:52443 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751097AbaA3JTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 04:19:32 -0500
-Message-ID: <1391073314.8524.115.camel@pasglop>
-Subject: Re: [PATCH] kconfig: consolidate arch-specific seccomp options
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, sfr@canb.auug.org.au,
-        zohar@linux.vnet.ibm.com, linux@arm.linux.org.uk, monstr@monstr.eu,
-        ralf@linux-mips.org, paulus@samba.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, lethal@linux-sh.org, x86@kernel.org,
-        james.l.morris@oracle.com
-Date: Thu, 30 Jan 2014 20:15:14 +1100
-In-Reply-To: <20140130085551.GB2024@gmail.com>
-References: <20140129191011.8FB63DFA@viggo.jf.intel.com>
-	 <20140130085551.GB2024@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752867AbaA3JUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 04:20:43 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:53265 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097AbaA3JUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 04:20:41 -0500
+Date: Thu, 30 Jan 2014 10:20:36 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 1/9] perf tools: Fix symbol annotation for relocated
+ kernel
+Message-ID: <20140130092036.GA2862@gmail.com>
+References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
+ <1391004884-10334-2-git-send-email-adrian.hunter@intel.com>
+ <20140129185747.GE3998@ghostprotocols.net>
+ <52E9FD31.108@intel.com>
+ <20140130085940.GA2643@gmail.com>
+ <52EA1988.9050100@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EA1988.9050100@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-30 at 09:55 +0100, Ingo Molnar wrote:
-> * Dave Hansen <dave@sr71.net> wrote:
 
-> > From: Dave Hansen <dave.hansen@linux.intel.com>
+* Adrian Hunter <adrian.hunter@intel.com> wrote:
+
+> On 30/01/14 10:59, Ingo Molnar wrote:
 > > 
-> > There are 7 architecures with "config SECCOMP".  They all have
-> > virtually the same help text except for those referencing the
-> > /proc interface.  The /proc interface was removed in 2007.
+> > * Adrian Hunter <adrian.hunter@intel.com> wrote:
 > > 
-> > There is *NOTHING* architecture-specific about SECCOMP except
-> > that the syscalls have per-architecture definitions, like every
-> > other syscall.  It is absurd to have the option in the
-> > arch-specific menus.
+> >> On 29/01/14 20:57, Arnaldo Carvalho de Melo wrote:
+> >>> Em Wed, Jan 29, 2014 at 04:14:36PM +0200, Adrian Hunter escreveu:
+> >>>> Kernel maps map memory addresses to file offsets.
+> >>>> For symbol annotation, objdump needs the object VMA
+> >>>> addresses.  For an unrelocated kernel, that is the
+> >>>> same as the memory address.
+> >>>>
+> >>>> The addresses passed to objdump for symbol annotation
+> >>>> did not take into account kernel relocation.  This
+> >>>> patch fixes that.
+> >>>
+> >>> Question: To fix the problem reported by Linus, i.e. the very minimal
+> >>> fix, we only need this patch, right?
+> >>
+> >> Yes but the other fixes are needed too.
 > > 
-> > Move it to the security menu, consolidate the 7 down to one, and
-> > remove the embarassingly-ancient help text references and
-> > dependencies on /proc.
-> > 
-> > Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> > Cc: linux-security-module@vger.kernel.org
-> > Cc: linux-arch@vger.kernel.org
-> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Michal Simek <monstr@monstr.eu>
-> > Cc: Ralf Baechle <ralf@linux-mips.org> 
+> > So, for the specific case of kernel address layout randomization, how 
+> > does this fix Linus's bug with KASLR enabled? How does the code 
+> > recover the random, runtime offset of the relocated kernel, which 
+> > varies from boot to boot?
+> 
+> By comparing the address of a symbol ("_text" or "_stext")
+> in /proc/kallsyms (or perf.data - see below) with the same
+> symbol in vmlinux.
+> 
+> perf tools call this the ref_reloc_sym and stores it in
+> perf.data hidden in the synthesized kernel mmap record.
+> e.g.
+> 
+> 0xd8 [0x50]: event: 1
+> .
+> . ... raw event: size 80 bytes
+> .  0000:  01 00 00 00 01 00 50 00 ff ff ff ff 00 00 00 00  ......P.........
+> .  0010:  00 00 00 17 00 00 00 00 ff ff ff a8 ff ff ff ff  ................
+> .  0020:  c8 01 00 98 ff ff ff ff 5b 6b 65 72 6e 65 6c 2e  ........[kernel.
+> .  0030:  6b 61 6c 6c 73 79 6d 73 5d 5f 73 74 65 78 74 00  kallsyms]_stext.
+> .  0040:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+> .
+> 0 0xd8 [0x50]: PERF_RECORD_MMAP -1/0: [0x17000000(0xffffffffa8ffffff) @ 0xffffffff980001c8]: x [kernel.kallsyms]_stext
+> 
+> That tells perf tools that _stext was 0xffffffff980001c8.
+> Compare to vmlinux:
+> 
+> $ objdump -t vmlinux | grep _stext
+> ffffffff810001c8 g       .text	0000000000000000 _stext
+> 
+> So the relocation is 0xffffffff980001c8 - 0xffffffff810001c8
+> = 0x17000000
 
-For powerpc:
+Ok, cool, thanks!
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+I'd suggest the whole fix series if perf/urgent material.
 
+Thanks,
 
+	Ingo
