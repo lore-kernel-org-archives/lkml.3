@@ -1,127 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaA3DEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 22:04:42 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:54115 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaA3DEk (ORCPT
+	id S1752189AbaA3DVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 22:21:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:65078 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaA3DVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 22:04:40 -0500
+	Wed, 29 Jan 2014 22:21:22 -0500
+Message-ID: <52E9C525.6000603@vlnb.net>
+Date: Wed, 29 Jan 2014 19:21:09 -0800
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1391047176.4405.43.camel@deadeye.wl.decadent.org.uk>
-References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
-	<1390975218-13863-5-git-send-email-jcmvbkbc@gmail.com>
-	<1391047176.4405.43.camel@deadeye.wl.decadent.org.uk>
-Date: Thu, 30 Jan 2014 07:04:40 +0400
-Message-ID: <CAMo8Bf+9A-yh-_EBmZeJqMhUKrHN5+BPtckFj_gnZ44tfnX__w@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] net: ethoc: implement ethtool operations
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: scst-devel <scst-devel@lists.sourceforge.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE]: SCST iSER target driver is available for testing
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:LSx8gWouU88AxByd1waPItdER0L3kdlP4F/VzmT7yD6
+ 66qa5vyyrt86Vs3NTXVJtJ1v4SXrf4mcgaKsvhtKFTn+AmKrSj
+ X3iSc2XNon+oeiUtLu7LoNn+B0WytLaNQ7qsCgIMLJ/IlQHE9E
+ AHMfzte8I4de2wnuVb/+hTLgsXBNKHJsDVkyAaeuYgGa96xWPf
+ 21zSFjqGztqYzOovfmPWwQiVDqo1MQNneMLOhqgtY6kVHrxhXq
+ wlzJ0s4CMsidOh7fkILylb3kv74qLoOo2iCiqDdLtInGtD923h
+ wZhARVR7fajC+JM48FADUwE5tATV0cO7ftdVtN3F+PEubiAvaD
+ jaeja7GyP1vMTqcZn874=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 5:59 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Wed, 2014-01-29 at 10:00 +0400, Max Filippov wrote:
->> The following methods are implemented:
->> - get/set settings;
->> - get registers length/registers;
->> - get link state (standard implementation);
->> - get/set ring parameters;
->> - get timestamping info (standard implementation).
-> [...]
->> --- a/drivers/net/ethernet/ethoc.c
->> +++ b/drivers/net/ethernet/ethoc.c
->> [...]
->> +static int ethoc_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
->> +{
->> +     struct ethoc *priv = netdev_priv(dev);
->> +     struct phy_device *phydev = priv->phy;
->> +
->> +     if (!phydev)
->> +             return -ENODEV;
->> +
->> +     return phy_ethtool_gset(phydev, cmd);
->> +}
->> +
->> +static int ethoc_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
->> +{
->> +     struct ethoc *priv = netdev_priv(dev);
->> +     struct phy_device *phydev = priv->phy;
->> +
->> +     if (!phydev)
->> +             return -ENODEV;
->> +
->> +     return phy_ethtool_sset(phydev, cmd);
->> +}
->
-> I think these should return -EOPNOTSUPP in the PHY-less case, just as if
-> the set_settings pointer was not set.
+I'm glad to announce that SCST iSER target driver is available for testing from the SCST SVN iser branch. You can download it either by command:
 
-Ok
+$ svn checkout svn://svn.code.sf.net/p/scst/svn/branches/iser iser-scst-branch
 
-> [...]
->> +static void ethoc_get_ringparam(struct net_device *dev,
->> +                             struct ethtool_ringparam *ring)
->> +{
->> +     struct ethoc *priv = netdev_priv(dev);
->> +
->> +     ring->rx_max_pending = priv->num_bd;
->> +     ring->rx_mini_max_pending = 0;
->> +     ring->rx_jumbo_max_pending = 0;
->> +     ring->tx_max_pending = priv->num_bd;
->> +
->> +     ring->rx_pending = priv->num_rx;
->> +     ring->rx_mini_pending = 0;
->> +     ring->rx_jumbo_pending = 0;
->> +     ring->tx_pending = priv->num_tx;
->> +}
->> +
->> +static int ethoc_set_ringparam(struct net_device *dev,
->> +                            struct ethtool_ringparam *ring)
->> +{
->> +     struct ethoc *priv = netdev_priv(dev);
->> +
->> +     if (netif_running(dev))
->> +             return -EBUSY;
->
-> This is unhelpful.  Most implementations of this operation will restart
-> the interface if it's running.
+or by clicking on "Download Snapshot" button on http://sourceforge.net/p/scst/svn/HEAD/tree/branches/iser page.
 
-Ok
+Big thanks to Yan Burman and Mellanox Technologies who developed it!
 
->> +     priv->num_tx = rounddown_pow_of_two(ring->tx_pending);
->
-> Range check?
+SCST is SCSI target mode stack for Linux. SCST allows creation of sophisticated storage devices, which provide advanced functionality, like replication, thin provisioning, deduplication, high availability, automatic backup, etc. Majority of recently developed SAN appliances, especially higher end ones, are SCST based. It might well be that your favorite storage appliance running SCST in the firmware.
 
-May there be requested more than ring->tx_max_pending that we
-indicated in the get_ringparam?
+More info about SCST and its modules you can find on: http://scst.sourceforge.net
 
->> +     priv->num_rx = priv->num_bd - priv->num_tx;
->> +     if (priv->num_rx > ring->rx_pending)
->> +             priv->num_rx = ring->rx_pending;
->
-> So the RX ring may only ever be shrunk?!  Did you mean to compare with
-> priv->num_bd instead?
-
-First all non-TX descriptors are made RX, and if that's more than user
-requested I trim it.
-
->> +     return 0;
->> +}
->> +
->> +const struct ethtool_ops ethoc_ethtool_ops = {
->
-> static
-
-Ok
-
--- 
-Thanks.
--- Max
+Vlad
