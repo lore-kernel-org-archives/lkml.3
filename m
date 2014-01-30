@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbaA3PyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:54:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53650 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108AbaA3PyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:54:04 -0500
-Date: Thu, 30 Jan 2014 16:53:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
- implementation
-Message-ID: <20140130155344.GE5002@laptop.programming.kicks-ass.net>
-References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
- <20140130130453.GB2936@laptop.programming.kicks-ass.net>
- <20140130151715.GA5126@laptop.programming.kicks-ass.net>
- <52EA7309.7070605@hp.com>
- <52EA74D1.3040109@hp.com>
+	id S1753609AbaA3PzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:55:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56477 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636AbaA3PzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 10:55:01 -0500
+Message-ID: <52EA75A9.1010304@zytor.com>
+Date: Thu, 30 Jan 2014 07:54:17 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EA74D1.3040109@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stefani Seibold <stefani@seibold.net>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, ak@linux.intel.com,
+        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH 0/4] Add 32 bit VDSO time function support
+References: <1391078953-1575-1-git-send-email-stefani@seibold.net>	 <52EA704D.2000809@zytor.com> <1391097131.2898.5.camel@wall-e.seibold.net>
+In-Reply-To: <1391097131.2898.5.camel@wall-e.seibold.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 10:50:41AM -0500, Waiman Long wrote:
-> One more thing, I often see line like
+On 01/30/2014 07:52 AM, Stefani Seibold wrote:
 > 
-> #define queue_write_unlock queue_write_unlock
+> The reason is that i get need than an additional VMA for HPET and VVAR. 
 > 
-> So exactly what effect does this macro have?
+> I seen no break of applications since the __FIXADDR_TOP is not on a fix
+> place. Lguest, XEN, OPLC and the reservetop Kernel Parameter will change
+> the VDSO Page Address.
+> 
 
-Makes sure the below doesn't emit another version.
+Oh, right, the vdso header.
 
-#ifndef queue_write_unlock
-/**
- * queue_write_unlock - release write lock of a queue rwlock
- * @lock : Pointer to queue rwlock structure
- */
-static inline void queue_write_unlock(struct qrwlock *lock)
-{
-	/*
-	 * If the writer field is atomic, it can be cleared directly.
-	 * Otherwise, an atomic subtraction will be used to clear it.
-	 */
-	smp_mb__before_atomic_dec();
-	atomic_sub(_QW_LOCKED, &lock->cnts);
-}
-#endif
+I agree, this thing does move around already.
+
+	-hpa
+
+
