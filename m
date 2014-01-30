@@ -1,201 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaA3AOd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 19:14:33 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:63103 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaA3AOc convert rfc822-to-8bit (ORCPT
+	id S1752584AbaA3APf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 19:15:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25491 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaA3APd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 19:14:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <52E8A74F.9060603@gmail.com>
-References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
-	<1390975218-13863-4-git-send-email-jcmvbkbc@gmail.com>
-	<52E8A74F.9060603@gmail.com>
-Date: Thu, 30 Jan 2014 04:14:31 +0400
-Message-ID: <CAMo8Bf+5W6mE8sbnN=_xpeU8wOe2-HQoD32LV+mDT-=rq3ZB7w@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] net: ethoc: set up MII management bus clock
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Zankel <chris@zankel.net>, Marc Gauthier <marc@cadence.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Jan 2014 19:15:33 -0500
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: konrad.wilk@oracle.com
+Cc: roger.pau@citrix.com, Xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V0] linux PVH: Set CR4 flags 
+Date: Wed, 29 Jan 2014 16:15:17 -0800
+Message-Id: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 11:01 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> Le 28/01/2014 22:00, Max Filippov a écrit :
->
->> MII management bus clock is derived from the MAC clock by dividing it by
->> MIIMODER register CLKDIV field value. This value may need to be set up
->> in case it is undefined or its default value is too high (and
->> communication with PHY is too slow) or too low (and communication with
->> PHY is impossible). The value of CLKDIV is not specified directly, but
->> is derived from the MAC clock for the default MII management bus frequency
->> of 2.5MHz. The MAC clock may be specified in the platform data, or as
->> either 'clock-frequency' or 'clocks' device tree attribute.
->>
->> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
->> ---
->> Changes v1->v2:
->> - drop MDIO bus frequency configurability, always configure for standard
->>    2.5MHz;
->> - allow using common clock framework to provide ethoc clock.
->>
->>   drivers/net/ethernet/ethoc.c | 37 +++++++++++++++++++++++++++++++++++--
->>   include/net/ethoc.h          |  1 +
->>   2 files changed, 36 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
->> index 5643b2d..5854d41 100644
->> --- a/drivers/net/ethernet/ethoc.c
->> +++ b/drivers/net/ethernet/ethoc.c
->> @@ -13,6 +13,7 @@
->>
->>   #include <linux/dma-mapping.h>
->>   #include <linux/etherdevice.h>
->> +#include <linux/clk.h>
->>   #include <linux/crc32.h>
->>   #include <linux/interrupt.h>
->>   #include <linux/io.h>
->> @@ -216,6 +217,7 @@ struct ethoc {
->>
->>         struct phy_device *phy;
->>         struct mii_bus *mdio;
->> +       struct clk *clk;
->>         s8 phy_id;
->>   };
->>
->> @@ -925,6 +927,8 @@ static int ethoc_probe(struct platform_device *pdev)
->>         int num_bd;
->>         int ret = 0;
->>         bool random_mac = false;
->> +       u32 eth_clkfreq = 0;
->> +       struct ethoc_platform_data *pdata = dev_get_platdata(&pdev->dev);
->>
->>         /* allocate networking device */
->>         netdev = alloc_etherdev(sizeof(struct ethoc));
->> @@ -1038,8 +1042,7 @@ static int ethoc_probe(struct platform_device *pdev)
->>         }
->>
->>         /* Allow the platform setup code to pass in a MAC address. */
->> -       if (dev_get_platdata(&pdev->dev)) {
->> -               struct ethoc_platform_data *pdata =
->> dev_get_platdata(&pdev->dev);
->> +       if (pdata) {
->>                 memcpy(netdev->dev_addr, pdata->hwaddr, IFHWADDRLEN);
->>                 priv->phy_id = pdata->phy_id;
->>         } else {
->> @@ -1077,6 +1080,32 @@ static int ethoc_probe(struct platform_device
->> *pdev)
->>         if (random_mac)
->>                 netdev->addr_assign_type = NET_ADDR_RANDOM;
->>
->> +       /* Allow the platform setup code to adjust MII management bus
->> clock. */
->> +       if (pdata)
->> +               eth_clkfreq = pdata->eth_clkfreq;
->
-> Since this is a new member, why not make it a struct clk pointer directly so
-> you could simplify the code path?
+Konrad,
 
-Basically this is to provide flexibility for the user: it may be more
-appropriate to
-specify frequency if it's known and fixed, otherwise clk_get below
-would find the
-clock registered for this device/generic clock.
+The CR4 settings were dropped from my earlier patch because you didn't
+wanna enable them. But since you do now, we need to set them in the APs
+also. If you decide not too again, please apply my prev patch
+"pvh: disable pse feature for now".
 
->> +       else
->> +               of_property_read_u32(pdev->dev.of_node,
->> +                                    "clock-frequency", &eth_clkfreq);
->> +       if (!eth_clkfreq) {
->> +               struct clk *clk = clk_get(&pdev->dev, NULL);
+thanks
+Mukesh
 
-This should have been devm_clk_get.
-
->> +
->> +               if (!IS_ERR(clk)) {
->> +                       priv->clk = clk;
->> +                       clk_prepare_enable(clk);
->> +                       eth_clkfreq = clk_get_rate(clk);
->> +               }
->> +       }
->> +       if (eth_clkfreq) {
->> +               u32 clkdiv = MIIMODER_CLKDIV(eth_clkfreq / 2500000 + 1);
->> +
->> +               if (!clkdiv)
->> +                       clkdiv = 2;
->> +               dev_dbg(&pdev->dev, "setting MII clkdiv to %u\n", clkdiv);
->> +               ethoc_write(priv, MIIMODER,
->> +                           (ethoc_read(priv, MIIMODER) & MIIMODER_NOPRE)
->> |
->> +                           clkdiv);
->> +       }
->
->
-> This does look a bit convoluted, and it looks like the clk_get() or getting
-> the clock-frequency property should boil down to being the same thing with
-> of_clk_get() as it should resolve all clocks phandles and fetch their
-> frequencies appropriately.
-
-I can drop clock-frequency property checking to encourage usage of common
-clock framework. I don't quite understand the rest of the objection, could you
-please rephrase it? clk_get calls of_clk_get internally.
-
->> +
->>         /* register MII bus */
->>         priv->mdio = mdiobus_alloc();
->>         if (!priv->mdio) {
->> @@ -1141,6 +1170,8 @@ free_mdio:
->>         kfree(priv->mdio->irq);
->>         mdiobus_free(priv->mdio);
->>   free:
->> +       if (priv->clk)
->> +               clk_disable_unprepare(priv->clk);
->
->
-> This should probbaly be if (!IS_ERR(priv-clk)).
-
-No, I haven't changed priv->clk when get_clk returned error.
-
->>         free_netdev(netdev);
->>   out:
->>         return ret;
->> @@ -1165,6 +1196,8 @@ static int ethoc_remove(struct platform_device
->> *pdev)
->>                         kfree(priv->mdio->irq);
->>                         mdiobus_free(priv->mdio);
->>                 }
->> +               if (priv->clk)
->> +                       clk_disable_unprepare(priv->clk);
->
->
-> Same here
-
-Ditto.
-
->>                 unregister_netdev(netdev);
->>                 free_netdev(netdev);
->>         }
->> diff --git a/include/net/ethoc.h b/include/net/ethoc.h
->> index 96f3789..2a2d6bb 100644
->> --- a/include/net/ethoc.h
->> +++ b/include/net/ethoc.h
->> @@ -16,6 +16,7 @@
->>   struct ethoc_platform_data {
->>         u8 hwaddr[IFHWADDRLEN];
->>         s8 phy_id;
->> +       u32 eth_clkfreq;
->>   };
->>
->>   #endif /* !LINUX_NET_ETHOC_H */
->>
-
--- 
-Thanks.
--- Max
