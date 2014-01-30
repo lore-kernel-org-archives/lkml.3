@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaA3Pb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:31:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53091 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950AbaA3Pb4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:31:56 -0500
-Date: Thu, 30 Jan 2014 16:31:50 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: nicolas.pitre@linaro.org, mingo@redhat.com, tglx@linutronix.de,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140130153150.GD5002@laptop.programming.kicks-ass.net>
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
- <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
+	id S1753486AbaA3PcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:32:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56234 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848AbaA3PcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 10:32:06 -0500
+Message-ID: <52EA704D.2000809@zytor.com>
+Date: Thu, 30 Jan 2014 07:31:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: stefani@seibold.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, ak@linux.intel.com, aarcange@redhat.com,
+        john.stultz@linaro.org, luto@amacapital.net, xemul@parallels.com,
+        gorcunov@openvz.org, andriy.shevchenko@linux.intel.com
+CC: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH 0/4] Add 32 bit VDSO time function support
+References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+In-Reply-To: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 03:09:22PM +0100, Daniel Lezcano wrote:
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 90aef084..130debf 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -654,6 +654,9 @@ struct rq {
->  #endif
->  
->  	struct sched_avg avg;
-> +#ifdef CONFIG_CPU_IDLE
-> +	int idle_index;
-> +#endif
->  };
+On 01/30/2014 02:49 AM, stefani@seibold.net wrote:
+> The VDSO page for a 32 bit resided now on 0xffffc000, followed by the VVAR and
+> HPET page.
 
-So my 'problem' with this is that I've no ff'ing clue what the
-idle_index is and what I can do with it.
+Any reason to not move the vdso base page to the top, in order to avoid
+breaking broken applications?  It seems a fairly innocuous shuffle...
+probably little gain, but very little cost.
+
+	-hpa
+
+
