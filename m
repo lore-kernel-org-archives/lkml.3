@@ -1,133 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaA3V3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 16:29:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42810 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108AbaA3V3l (ORCPT
+	id S1753783AbaA3Vcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 16:32:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39750 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042AbaA3Vcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 16:29:41 -0500
-Date: Thu, 30 Jan 2014 13:29:39 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, mhocko@suse.cz,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix mutex not unlocked on
- memcg_create_kmem_cache fail path
-Message-Id: <20140130132939.96a25a37016a12f9a0093a90@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com>
-References: <1391097693-31401-1-git-send-email-vdavydov@parallels.com>
-	<20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org>
-	<alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Jan 2014 16:32:35 -0500
+Date: Thu, 30 Jan 2014 22:32:32 +0100
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: delicious quinoa <delicious.quinoa@gmail.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: Re: [PATCH v9] gpio: add a driver for Synopsys DesignWare APB GPIO
+Message-ID: <20140130213232.GC26861@pengutronix.de>
+References: <1386364179-28650-1-git-send-email-delicious.quinoa@gmail.com>
+ <CANk1AXS=CADN53aO5KVN3UorddJ0wZ2PTqwo2XmeRuxYe_DoLg@mail.gmail.com>
+ <20131212090838.GD25478@pengutronix.de>
+ <CANk1AXRxTGRMJMvXe4jgG2GfuELsDTNJnRLXK-MGe3gGxinmLA@mail.gmail.com>
+ <20140130205000.GB26861@pengutronix.de>
+ <CANk1AXS9fbNafLxiUz8OoPVUtwPDhHhYx7+MGi_JyDdG6J9F-Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANk1AXS9fbNafLxiUz8OoPVUtwPDhHhYx7+MGi_JyDdG6J9F-Q@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:23:41 up 159 days,  6:54, 38 users,  load average: 0,01, 0,08,
+ 0,19
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014 13:14:46 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
-
-> On Thu, 30 Jan 2014, Andrew Morton wrote:
+On Thu, Jan 30, 2014 at 03:15:11PM -0600, delicious quinoa wrote:
+> On Thu, Jan 30, 2014 at 2:50 PM, Steffen Trumtrar
+> <s.trumtrar@pengutronix.de> wrote:
+> > Hi!
+> >
+> > On Thu, Jan 30, 2014 at 01:40:04PM -0600, delicious quinoa wrote:
+> >> On Thu, Dec 12, 2013 at 3:08 AM, Steffen Trumtrar
+> >> <s.trumtrar@pengutronix.de> wrote:
+> >>
+> >> > Second: The interrupt is registered as "GIC 37", which is a real interrupt on
+> >> > the Socfpga. I would expect it to be marked as "GPIO 2xx" (or something in that
+> >> > range). The interrupt from the gpiochip itself isn't registered at all ?!
+> >>
+> >> Hi Stephen,
+> >>
+> >> Did you export the gpio lines and set the edge in sysfs?  Because the
+> >> interrupts aren't allocated otherwise.
+> >>
+> >> For instance:
+> >>
+> >> root@socfpga_cyclone5:~# echo 195 > /sys/class/gpio/export
+> >> root@socfpga_cyclone5:~# echo rising > /sys/class/gpio/gpio195/edge
+> >>
+> >> Now I can see a pretty nicely named interrupt in /proc/interrupts:
+> >>
+> >> 256:          0          0  gpio-dwapb  24  gpiolib
+> >>
+> >
+> > I didn't try that and I think this behaviour is pretty uncommon.
+> > This should be fixed in the driver. I never wrote a gpiochip-driver,
+> > so I don't know what is missing, but maybe just some functioncall ?!
+> > All other drivers I came across have that entry from probing without
+> > any fiddling.
 > 
-> > Well gee, how did that one get through?
-> > 
-> > What was the point in permanently allocating tmp_name, btw?  "This
-> > static temporary buffer is used to prevent from pointless shortliving
-> > allocation"?  That's daft - memcg_create_kmem_cache() is not a fastpath
-> > and there are a million places in the kernel where we could permanently
-> > leak memory because it is "pointless" to allocate on demand.
-> > 
-> > The allocation of PATH_MAX bytes is unfortunate - kasprintf() wouild
-> > work well here, but cgroup_name()'s need for rcu_read_lock() screws us
-> > up.
-> > 
+> Hi Steffen,
 > 
-> What's funnier is that tmp_name isn't required at all since 
-> kmem_cache_create_memcg() is just going to do a kstrdup() on it anyway, so 
-> you could easily just pass in the pointer to memory that has been 
-> allocated for s->name rather than allocating memory twice.
+> Do you mean 'all other gpio drivers' or 'all other non-gpio drivers'?
 
-We need a buffer to sprintf() into.
+I meant gpio drivers (at least the ones I have used).
 
-> > --- a/mm/memcontrol.c~mm-memcontrolc-memcg_create_kmem_cache-tweaks
-> > +++ a/mm/memcontrol.c
-> > @@ -3401,17 +3401,14 @@ static struct kmem_cache *memcg_create_k
-> >  						  struct kmem_cache *s)
-> >  {
-> >  	struct kmem_cache *new = NULL;
-> > -	static char *tmp_name = NULL;
-> > +	static char *tmp_name;
 > 
-> You're keeping it static and the mutex so you're still keeping it global, 
-> ok...
+> This is the behavior that is implemented in the community gpio
+> framework drivers/gpio/gpiolib.c, not anything special implemented in
+> this dw gpio driver.
+> 
+> It's documented in Documentation/gpio/sysfs.txt and
+> Documentation/ABI/testing/sysfs-gpio.
+> 
+> You get userspace control of a gpio by 'export'ing it in sysfs.  And
+> then by default, the interrupt edge is set to 'none' (no irq) until
+> you set the edge in sysfs.
+> 
 
-oop, I forgot to remove the `static'.
+Hm, okay...for GPIOs I'm with you. But when I specify a gpio as
+interrupt for a device, I have to first export it manually before I can
+use the device? Sounds weird.
 
-And I suppose the mutex now doesn't do anything, so...
+Steffen
 
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm/memcontrol.c: memcg_create_kmem_cache() tweaks
-
-Allocate tmp_name on demand rather than permanently consuming PATH_MAX
-bytes of memory.  Remove the mutex which protected the static tmp_name.
-
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/memcontrol.c |   23 ++++++++---------------
- 1 file changed, 8 insertions(+), 15 deletions(-)
-
-diff -puN mm/memcontrol.c~mm-memcontrolc-memcg_create_kmem_cache-tweaks mm/memcontrol.c
---- a/mm/memcontrol.c~mm-memcontrolc-memcg_create_kmem_cache-tweaks
-+++ a/mm/memcontrol.c
-@@ -3400,24 +3400,18 @@ void mem_cgroup_destroy_cache(struct kme
- static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 						  struct kmem_cache *s)
- {
--	struct kmem_cache *new = NULL;
--	static char *tmp_name = NULL;
--	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
-+	struct kmem_cache *new;
-+	char *tmp_name;
- 
- 	BUG_ON(!memcg_can_account_kmem(memcg));
- 
--	mutex_lock(&mutex);
- 	/*
--	 * kmem_cache_create_memcg duplicates the given name and
--	 * cgroup_name for this name requires RCU context.
--	 * This static temporary buffer is used to prevent from
--	 * pointless shortliving allocation.
-+	 * kmem_cache_create_memcg duplicates the given name and cgroup_name()
-+	 * for this name requires rcu_read_lock().
- 	 */
--	if (!tmp_name) {
--		tmp_name = kmalloc(PATH_MAX, GFP_KERNEL);
--		if (!tmp_name)
--			goto out;
--	}
-+	tmp_name = kmalloc(PATH_MAX, GFP_KERNEL);
-+	if (!tmp_name)
-+		return NULL;
- 
- 	rcu_read_lock();
- 	snprintf(tmp_name, PATH_MAX, "%s(%d:%s)", s->name,
-@@ -3430,8 +3424,7 @@ static struct kmem_cache *memcg_create_k
- 		new->allocflags |= __GFP_KMEMCG;
- 	else
- 		new = s;
--out:
--	mutex_unlock(&mutex);
-+	kfree(tmp_name);
- 	return new;
- }
- 
-_
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
