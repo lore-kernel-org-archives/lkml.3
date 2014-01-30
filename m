@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaA3TZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:25:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:59607 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728AbaA3TZK (ORCPT
+	id S1753733AbaA3T0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:26:07 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:43816 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337AbaA3T0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:25:10 -0500
-Message-ID: <52EAA714.3080809@infradead.org>
-Date: Thu, 30 Jan 2014 11:25:08 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 30 Jan 2014 14:26:05 -0500
 MIME-Version: 1.0
-To: Andiry Xu <andiry@gmail.com>, linux-kernel@vger.kernel.org
-CC: Andiry Xu <andiry.xu@gmail.com>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
-References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>
-In-Reply-To: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1390956313.25542.64.camel@kjgkr>
+References: <20140128224336.GF25989@kernel.dk>
+	<20140128225229.GH25989@kernel.dk>
+	<20140129110536.00ce3c9e580f747fd0f1d0e6@canb.auug.org.au>
+	<1390956313.25542.64.camel@kjgkr>
+Date: Thu, 30 Jan 2014 11:26:04 -0800
+X-Google-Sender-Auth: J0MSbUznEJ3hxgDMkUYf9Df9SsY
+Message-ID: <CA+55aFwYxdqf3EZNr_Z1EUADi4ExL8aZc_HCR-X6XRv1r223yQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Core block IO changes for 3.14
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: jaegeuk.kim@samsung.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding linux-mm mailing list]
+On Tue, Jan 28, 2014 at 4:45 PM, Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
+>
+> In the case of f2fs, could you please check the following code changes?
 
-On 01/30/2014 08:52 AM, Andiry Xu wrote:
-> Hi,
-> 
-> In kernel-parameters.txt, there is following description:
-> 
-> memmap=nn[KMG]$ss[KMG]
->                         [KNL,ACPI] Mark specific memory as reserved.
->                         Region of memory to be used, from ss to ss+nn.
+So I ended up doing the merge differently wrt the f2fs_write_end_io() function.
 
-Should be:
-                          Region of memory to be reserved, from ss to ss+nn.
+As far as I can tell, we can just initialize the f2fs_sb_info directly
+and unconditionally using the first bio_vec entry, giving us the
+simpler
 
-but that doesn't help with the problem that you describe, does it?
+    struct f2fs_sb_info *sbi =
+F2FS_SB(bio->bi_io_vec->bv_page->mapping->host->i_sb);
 
+which is still ugly, but whatever. I'm not quite seeing why f2fs
+doesn't just set bio->private to the superblock pointer and avoid this
+whole complex and long pointer chasing, but there's probably some
+reason.
 
-> Unfortunately this is incorrect. The meaning of nn and ss is reversed.
-> For example:
-> 
-> Command                  Expected                 Result
-> memmap 2G$6G        6G - 8G reserved      2G - 8G reserved
-> memmap 6G$2G        2G - 8G reserved      6G - 8G reserved
+Anyway, it compiles for me, and looks simpler than the alternate
+resolutions, but maybe there is some reason I miss why you guys did it
+the way you did. And while I could test that it compiles and looks
+sane, I don't have a f2fs to actually *test* it on, and maybe I
+screwed up royally.
 
-Are you testing on x86?
-The code in arch/x86/kernel/e820.c always parses mem_size followed by start address.
-I don't (yet) see where it goes wrong...
+I'll push it out once I've done the rest of the allmodconfig build-test.
 
-
-> Test kernel version 3.13, but I believe the issue has been there long ago.
-> 
-> I'm not sure whether the description or implementation should be
-> fixed, but apparently they do not match.
-
-I prefer to change the documentation and leave the implementation as is.
-
-
--- 
-~Randy
+                 Linus
