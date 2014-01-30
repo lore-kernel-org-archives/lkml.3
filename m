@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaA3GWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 01:22:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52149 "EHLO
+	id S1752696AbaA3GWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 01:22:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52151 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaA3GW3 (ORCPT
+	with ESMTP id S1752548AbaA3GWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 01:22:29 -0500
-Date: Wed, 29 Jan 2014 22:22:10 -0800
+	Thu, 30 Jan 2014 01:22:30 -0500
+Date: Wed, 29 Jan 2014 22:22:20 -0800
 From: tip-bot for Andi Kleen <tipbot@zytor.com>
-Message-ID: <tip-dd41f818e581bc8244d34d594e20331fcb835524@git.kernel.org>
+Message-ID: <tip-07ba06d9d293d3c0a512f1cb9189645c6e0424e2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, gleb@kernel.org,
-        raghavendra.kt@linux.vnet.ibm.com, ak@linux.intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
+        konrad.wilk@oracle.com, ak@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, gleb@kernel.org,
-        raghavendra.kt@linux.vnet.ibm.com, ak@linux.intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1382458079-24450-7-git-send-email-andi@firstfloor.org>
-References: <1382458079-24450-7-git-send-email-andi@firstfloor.org>
+        konrad.wilk@oracle.com, ak@linux.intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1382458079-24450-8-git-send-email-andi@firstfloor.org>
+References: <1382458079-24450-8-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asmlinkage] x86, asmlinkage, xen, kvm: Make {xen,
- kvm}_lock_spinning global and visible
-Git-Commit-ID: dd41f818e581bc8244d34d594e20331fcb835524
+Subject: [tip:x86/asmlinkage] x86, asmlinkage, xen: Fix type of NMI
+Git-Commit-ID: 07ba06d9d293d3c0a512f1cb9189645c6e0424e2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,57 +29,52 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 29 Jan 2014 22:22:16 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 29 Jan 2014 22:22:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dd41f818e581bc8244d34d594e20331fcb835524
-Gitweb:     http://git.kernel.org/tip/dd41f818e581bc8244d34d594e20331fcb835524
+Commit-ID:  07ba06d9d293d3c0a512f1cb9189645c6e0424e2
+Gitweb:     http://git.kernel.org/tip/07ba06d9d293d3c0a512f1cb9189645c6e0424e2
 Author:     Andi Kleen <ak@linux.intel.com>
-AuthorDate: Tue, 22 Oct 2013 09:07:58 -0700
+AuthorDate: Tue, 22 Oct 2013 09:07:59 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Wed, 29 Jan 2014 22:17:18 -0800
 
-x86, asmlinkage, xen, kvm: Make {xen,kvm}_lock_spinning global and visible
+x86, asmlinkage, xen: Fix type of NMI
 
-These functions are called from inline assembler stubs, thus
-need to be global and visible.
+LTO requires consistent types of symbols over all files.
+
+So "nmi" cannot be declared as a char [] here, need to use the
+correct function type.
 
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1382458079-24450-7-git-send-email-andi@firstfloor.org
+Link: http://lkml.kernel.org/r/1382458079-24450-8-git-send-email-andi@firstfloor.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/kvm.c   | 2 +-
- arch/x86/xen/spinlock.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/xen/setup.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 6dd802c..cd1b362 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -673,7 +673,7 @@ static cpumask_t waiting_cpus;
- /* Track spinlock on which a cpu is waiting */
- static DEFINE_PER_CPU(struct kvm_lock_waiting, klock_waiting);
- 
--static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+__visible void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 68c054f..518ab4a 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -34,7 +34,7 @@
+ extern const char xen_hypervisor_callback[];
+ extern const char xen_failsafe_callback[];
+ #ifdef CONFIG_X86_64
+-extern const char nmi[];
++extern asmlinkage void nmi(void);
+ #endif
+ extern void xen_sysenter_target(void);
+ extern void xen_syscall_target(void);
+@@ -559,7 +559,7 @@ void xen_enable_syscall(void)
+ void xen_enable_nmi(void)
  {
- 	struct kvm_lock_waiting *w;
- 	int cpu;
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 0e36cde..581521c 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -106,7 +106,7 @@ static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
- static cpumask_t waiting_cpus;
- 
- static bool xen_pvspin = true;
--static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+__visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	int irq = __this_cpu_read(lock_kicker_irq);
- 	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
+ #ifdef CONFIG_X86_64
+-	if (register_callback(CALLBACKTYPE_nmi, nmi))
++	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
+ 		BUG();
+ #endif
+ }
