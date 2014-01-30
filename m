@@ -1,168 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaA3RDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:03:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37867 "EHLO mx1.redhat.com"
+	id S1753022AbaA3RG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:06:58 -0500
+Received: from mail.lang.hm ([64.81.33.126]:34007 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025AbaA3RDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:03:17 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.com
-cc: dhowells@redhat.com, ghudson@mit.edu, simo@redhat.com, sgallagh@redhat.com,
-        keys@linux-nfs.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: RFC: KEYS: Is this too-big a behavioural change for a system call?
-Date: Thu, 30 Jan 2014 17:03:07 +0000
-Message-ID: <4185.1391101387@warthog.procyon.org.uk>
+	id S1751148AbaA3RG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 12:06:56 -0500
+Date: Thu, 30 Jan 2014 09:06:54 -0800 (PST)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Igor Podlesny <for.poige+linux@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: That greedy Linux VM cache
+In-Reply-To: <CA+sTkh4fYZr-8vBuhA0c1BRt5D7oNiK=KrSF+kJ2KRW7e_LFaA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1401300902260.11623@nftneq.ynat.uz>
+References: <CA+sTkh4fYZr-8vBuhA0c1BRt5D7oNiK=KrSF+kJ2KRW7e_LFaA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 31 Jan 2014, Igor Podlesny wrote:
 
-Hi Linus,
+>   Hello!
+>
+>   Probably every Linux newcomer's going to have concerns regarding
+> low free memory and hear an explanation from Linux old fellows that's
+> actually there's plenty of -- it's just cached, but when it's needed
+> for applications it's gonna be used -- on demand. I also thought so
+> until recently I noticed that even when free memory's is almost
+> exhausted (~ 75 Mib)
 
-I've been asked by Kerberos developers to slightly change the behaviour of the
-add_key() and request_key() system calls and a couple of the keyctl() functions
-- and I'm wondering if you'd be okay with it.
+that's actually quite a bit of free memory, it's very common for servers to be 
+far lower than that.
 
-The current behaviour can be illustrated thusly:
+> , and processes are in sleep_on_page_killable, the
+> cache is somewhat like ~ 500 MiB and it's not going to return back
+> what it's gained. Naturally, vm.drop_caches 3 doesn't squeeze it as
+> well.
 
- (*) The add_key() syscall, for example, takes a destination keyring into which
-     the newly created key will be placed.
+this is telling you that this data isn't clean cache that can just be dropped, 
+it's dirty cache that is waiting to be written, or is otherwise locked.
 
- (*) There's a special value that can be passed as the destination keyring ID
-     to indicate a process's session keyring without actually needing to know
-     the ID of that keyring.
+rather than looking at the memory numbers, instead look at the swap numbers. If 
+you are doing any noticable amount of swapping (si so in vmstat), then you are 
+out of memory and the cache that can be dropped has been dropped.
 
- (*) A process can have no session keyring.  If it didn't inherit one from its
-     parent or if it didn't explicitly or implicitly create one, then it won't
-     have one.
+this does mean that you ahve a hard time telling when you are getting close to 
+running out of memory, but it's easy to see when you have.
 
- (*) A process can have its session keyring pointer pointing to the default
-     user-session keyring for its owner UID.
+> That drama has been happening on rather
+> outdated-but-yet-still-has-2GiB-of-RAM notebook with kernel from 3.10
+> till 3.12.9 (3.13 is the first release for a long time which simply
+> freezes the notebook so cold, that SysRq_B's not working, but that's
+> another story). Everything RAM demanding just yet crawls, load average
+> is getting higher and there's no paging out, but on going disk mostly
+> _read_ and a bit write activity. If vm.swaPPineSS not 0, it's swapping
+> out, but not much, right now I ran Chromium (in addition to long-run
+> Firefox) and only 32 MiB went to swap, load avg. ~ 7
 
-     [! A process can also have some other session keyring, but that's
-     	irrelevant to this problem]
+that much read activity probably means that you are swapping pages in to use 
+them, then dropping them to swap in another page, which you then drop to go back 
+and fetch the first page.
 
- (*) When the kernel looks up a key ID to turn it into a keyring, it calls
-     lookup_user_key() and can pass a flag (KEY_LOOKUP_CREATE) to request that
-     the keyring be created if it doesn't exist yet.
+David Lang
 
-     Typically, KEY_LOOKUP_CREATE is set if we're going to modify the keyring
-     in some way (eg. it's the destination for add_key()).  It's also possible
-     for userspace to explicitly set this with:
-
-	keyctl(KEYCTL_GET_KEYRING_ID, <id>, 1).
-
- (*) If a process has no session keyring or is using the user-session _and_ it
-     makes a system call that requests use of the session keyring then one of
-     two things happens:
-
-     (a) If KEY_LOOKUP_CREATE set then an empty keyring will be created and
-     	 assigned as this process's session keyring.
-
-	 This will forcibly displace the user-session keyring from the session
-	 pointer, even if the user explicitly joined that keyring as their
-	 session.
-
-     (b) If KEY_LOOKUP_CREATE was not set then the user-session keyring will be
-     	 installed as the session keyring and then will be used as the session
-     	 keyring until (a) applies.
-
- (*) If a process with no session keyring creates a key and attaches it to its
-     session keyring, a session keyring will be created, the key will be added
-     to it - and then the keyring and the key added to it will be deleted when
-     the process exits.
-
-
-The problem the Kerberos developers have is that they would like libkrb5 to
-fall back to using the session keyring if keyctl(KEYCTL_GET_PERSISTENT) fails
-with EOPNOTSUPP (say if CONFIG_PERSISTENT_KEYRINGS=n).  However, this means
-that if you don't have a session keyring, kinit has one forcibly created for it
-by the kernel and then your credentials cache is deleted when kinit exits.
-
-If you have pam_keyinit properly set in your PAM configuration then this isn't
-a problem for processes derived from a login shell of some sort (ssh, login, X,
-etc.).
-
-However, processes that aren't started from a PAM aware process - such as the
-Kerberos developers' testfarm - don't get a session keyring unless they
-explicitly create one.
-
-
-Now, there are several solutions:
-
- (1) Don't use the session keyring as a fallback in libkrb5.
-
- (2) Explicitly use the user-session keyring as a fall back in libkrb5 instead
-     of the session keyring.
-
- (3) Manually create a session keyring somewhere before it is needed.  The
-     keyutils testsuite does this by running its tests from "keyctl session"
-
- (4) Don't implicitly create a new anonymous keyring, but always set the
-     user-session keyring as a process's session keyring if the latter is
-     unset.
-
- (5) Don't implicitly create a new anonymous keyring and don't implicitly set
-     the session keyring to the user-session keyring, but rather just fall back
-     to using the user-session keyring if there isn't a session keyring.
-
- (6) Don't implicitly create a new anonymous keyring and never use the
-     user-session keyring instead, but rather reject requests with ENOKEY.
-
-The first three don't require kernel changes.
-
-In (5) and (6) a session keyring should still be created if userspace
-explicitly asks for one with KEYCTL_GET_KEYRING_ID.
-
-
-I think the best thing course would be (3).  I have reservations about using
-the user and user-session keyrings:
-
- (*) They depend on what UID your process currently is and are thus subject to
-     setuid() and SUID-exec.
-
- (*) I'm not keen on system daemons sharing automatically keys by the user and
-     user-session keyrings - and sharing them with other root processes.
-
- (*) How do these interact with the SELinux?
-
- (*) Do you want the output of test programs dumping where everyone else can
-     make use of it?
-
-
-That said, I do think that the Kerberos people have a valid point.  The current
-behaviour is poor.  I'm inclined to implement (5) or (6), probably (5).
-
-This won't make any difference to most processes, ie.:
-
- (*) Those run from pam_keyinit-managed login shells.
-
- (*) Those that don't make use of libkrb5 or keyrings.
-
-
-In many ways, I'd like to just get rid of the user and user-session keyrings
-from the kernel entirely and have them created and maintained by pam_keyinit.
-The special keyring IDs:
-
-	KEY_SPEC_USER_KEYRING
-	KEY_SPEC_USER_SESSION_KEYRING
-
-and:
-
-	KEY_REQKEY_DEFL_USER_KEYRING
-	KEY_REQKEY_DEFL_USER_SESSION_KEYRING
-
-would then search your session keyring for keyrings called "_uid" and
-"_uid_ses" and return those.  Unfortunately, I think this is probably a
-much-too-big change at this point.
-
-Any thoughts?
-
-Thanks,
-David
+>   Again: 25 % is told (by top, free and finally /proc/meminfo) to be
+> cached, but kinda greedy.
+>
+>   I came across similar issue report:
+> http://www.spinics.net/lists/linux-btrfs/msg11723.html but still
+> questions remain:
+>
+>   * How to analyze it? slabtop doesn't mention even 100 MiB of slab
+>   * Why that's possible?
+>   * The system is on Btrfs but /home is on XFS, so disk I/O might be
+> related to text segment paging? But anyway this leads us to question,
+> hey, there's 500 MiB free^Wcached.
+>
+>   While I'm thinking about moving system back to XFS...
+>
+>   P. S. While writing these, swapped ~ 100 MiB, and cache reduced(!)
+> to 377 MiB, Firefox is mostly in "D" -- sleep_on_page_killable, so is
+> Chrome, load avg. ~ 7. I had to close Skype to be able to finish that
+> letter, and cached mem. now is 439 MiB. :) I know it's time to
+> upgrade, but hey, cached memory is free memory, right?
+>
+>
