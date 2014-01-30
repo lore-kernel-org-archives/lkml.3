@@ -1,37 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388AbaA3Gzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 01:55:43 -0500
-Received: from nbd.name ([46.4.11.11]:43962 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaA3Gzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 01:55:41 -0500
-Message-ID: <52E9F757.3040306@openwrt.org>
-Date: Thu, 30 Jan 2014 07:55:19 +0100
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751567AbaA3HCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 02:02:16 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:55843 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaA3HCP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 02:02:15 -0500
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        QCA ath9k Development <ath9k-devel@qca.qualcomm.com>
-CC: linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ath9k: Fix uninitialized variable in ath9k_has_tx_pending()
-References: <1390733601-11244-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1390733601-11244-1-git-send-email-geert@linux-m68k.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140129183204.GA22808@redhat.com>
+References: <1390895840.8373.2.camel@beeld>
+	<20140128164320.GB7596@redhat.com>
+	<CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
+	<20140129145535.GA12562@redhat.com>
+	<CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com>
+	<20140129183204.GA22808@redhat.com>
+Date: Thu, 30 Jan 2014 13:02:11 +0600
+Message-ID: <CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com>
+Subject: Re: Do we really need curr_target in signal_struct ?
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-26 11:53, Geert Uytterhoeven wrote:
-> drivers/net/wireless/ath/ath9k/main.c: In function ‘ath9k_has_tx_pending’:
-> drivers/net/wireless/ath/ath9k/main.c:1869: warning: ‘npend’ may be used uninitialized in this function
-> 
-> Introduced by commit 10e2318103f5941aa70c318afe34bc41f1b98529 ("ath9k:
-> optimize ath9k_flush").
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Acked-by: Felix Fietkau <nbd@openwrt.org>
+On Thu, Jan 30, 2014 at 12:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/29, Rakib Mullick wrote:
+
+>> Are you thinking that , since things are not broken, then we shouldn't
+>> try to do anything?
+>
+> Hmm. No.
+>
+> I am thinking that, since you misunderstood the purpose of ->curr_target,
+> I should probably try to argue with your patch which blindly removes this
+> optimization ?
+>
+Since the optimization (usages of ->curr_target) isn't perfect, so there's
+chance of being misunderstood. This optimization is misleading too (I think),
+cause curr_target don't have anything to do with wants_signal() and
+ ->curr_target is used only for this optimization and to get this optimization
+needs to maintain it properly, and this maintenance does have cost and if
+we don't get benefited too much, then it doesn't worth it (my pov).
+
+> I also think that this logic doesn't look perfect, but this is another
+> story.
+
+Yes, this logic seems need to improve.
+
+Thanks,
+Rakib
