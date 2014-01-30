@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaA3Iue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 03:50:34 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:48349 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaA3Iub (ORCPT
+	id S1752535AbaA3Iz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 03:55:59 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:33160 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaA3Iz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 03:50:31 -0500
-Date: Thu, 30 Jan 2014 09:50:28 +0100
+	Thu, 30 Jan 2014 03:55:56 -0500
+Date: Thu, 30 Jan 2014 09:55:51 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Feng Tang <feng.tang@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: x86: disabled interrupts on shutdown causing tlb flush WARNs
-Message-ID: <20140130085027.GA2024@gmail.com>
-References: <20140129185453.GA25953@redhat.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        sfr@canb.auug.org.au, zohar@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        lethal@linux-sh.org, x86@kernel.org, james.l.morris@oracle.com
+Subject: Re: [PATCH] kconfig: consolidate arch-specific seccomp options
+Message-ID: <20140130085551.GB2024@gmail.com>
+References: <20140129191011.8FB63DFA@viggo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140129185453.GA25953@redhat.com>
+In-Reply-To: <20140129191011.8FB63DFA@viggo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Don Zickus <dzickus@redhat.com> wrote:
+* Dave Hansen <dave@sr71.net> wrote:
 
-> Hi Ingo,
 > 
-> A while ago patch 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448 was committed
-> to deal with WARN_ONs during shutdown in native_smp_send_reschedule() (in
-> arch/x86/kernel/smp.c).
+> There are some minor updates here from last time:
+>  * added a def_bool instead of separate lines in config
+>  * clarified that the /proc interface is *GONE*
 > 
-> The solution at the time was to disable local interrupts to block the
-> timer interrupt from calling the reschedule function during
-> shutdown/reboot.
+> cc'ing a bunch of folks directly now instead of depending
+> on linux-arch@ to awaken them.  I think it's most appropriate
+> for this to go in via the security tree, but I guess it
+> could also go directly to Linus.
 > 
-> Lately, we have a customer who says that patch is causing a new WARN_ON in
-> kernel/smp.c::smp_call_function_many() because irqs are disabled.
+> --
 > 
-> It seems to be related to iounmap calling flush_tlb_kernel_range.
+> From: Dave Hansen <dave.hansen@linux.intel.com>
 > 
-> stack is:
+> There are 7 architecures with "config SECCOMP".  They all have
+> virtually the same help text except for those referencing the
+> /proc interface.  The /proc interface was removed in 2007.
 > 
-> [ 3255.956295] WARNING: at kernel/smp.c:387 smp_call_function_many+0xaf/0x2c0()
-> [ 3255.956295] Modules linked in: nf_conntrack_netbios_ns
-> nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6table_security
-> ip6table_raw ip6t_REJECT iptable_nat nf_nat_ipv4 iptable_mangle
-> iptable_security iptable_raw ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
-> xt_conntrack ebtable_filter ebtables ip6table_filter sg iptable_filter
-> ip_tables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 nf_nat
-> nf_conntrack ip6_tables coretemp kvm_intel kvm crc32_pclmul crc32c_intel
-> ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper
-> cryptd microcode pcspkr be2net iTCO_wdt iTCO_vendor_support ixgbe ses ptp
-> enclosure pps_core hpilo hpwdt mdio lpc_ich mfd_core ioatdma shpchp dca
-> vfat fat acpi_cpufreq mperf dm_service_time sd_mod lpfc mgag200
-> syscopyarea qla2xxx crc_t10dif sysfillrect sysimgblt i2c_algo_bit
-> drm_kms_helper scsi_transport_fc ttm scsi_tgt drm i2c_core dm_multipath
-> dm_mirror dm_region_hash dm_log dm_mod
-> [ 3255.956295] CPU: 0 PID: 19237 Comm: reboot Not tainted 3.10.0-33.el7.x86_64 #1
-> [ 3255.956295]  0000000000000009 ffff901f4e42bb50 ffffffff815fdacb ffff901f4e42bb88
-> [ 3255.956295]  ffffffff81058c61 0000000000000000 ffffffff81a08c20 0000000000000000
-> [ 3255.956295]  0000000000000000 ffffffff81a08c20 ffff901f4e42bb98 ffffffff81058d3a
-> [ 3255.956295] Call Trace:
-> [ 3255.956295]  [<ffffffff815fdacb>] dump_stack+0x19/0x1b
-> [ 3255.956295]  [<ffffffff81058c61>] warn_slowpath_common+0x61/0x80
-> [ 3255.956295]  [<ffffffff81058d3a>] warn_slowpath_null+0x1a/0x20
-> [ 3255.956295]  [<ffffffff810b843f>] smp_call_function_many+0xaf/0x2c0
-> [ 3255.956295]  [<ffffffff811647ee>] ? __insert_vmap_area+0x8e/0xc0
-> [ 3255.956295]  [<ffffffff8104c2a0>] ? flush_tlb_func+0xb0/0xb0
-> [ 3255.956295]  [<ffffffff8104c2a0>] ? flush_tlb_func+0xb0/0xb0
-> [ 3255.956295]  [<ffffffff810b86ad>] on_each_cpu+0x2d/0x60
-> [ 3255.956295]  [<ffffffff8104c73a>] flush_tlb_kernel_range+0x4a/0x70
-> [ 3255.956295]  [<ffffffff8116524c>] __purge_vmap_area_lazy+0x16c/0x1d0
-> [ 3255.956295]  [<ffffffff8116549e>] free_vmap_area_noflush+0x5e/0x60
-> [ 3255.956295]  [<ffffffff81166d5e>] remove_vm_area+0x5e/0x70
-> [ 3255.956295]  [<ffffffff810478c7>] iounmap+0x67/0xa0
-> [ 3255.956295]  [<ffffffff8134e3d6>] acpi_os_write_memory+0x89/0x9d
-> [ 3255.956295]  [<ffffffff81368887>] acpi_hw_write+0x3d/0x4e
-> [ 3255.956295]  [<ffffffff813691c6>] acpi_reset+0x4f/0x51
-> [ 3255.956295]  [<ffffffff8134ed40>] acpi_reboot+0xb0/0xb8
-> [ 3255.956295]  [<ffffffff81035cc6>] native_machine_emergency_restart+0x186/0x240
-> [ 3255.956295]  [<ffffffff810383a2>] ? disconnect_bsp_APIC+0x82/0xc0
-> [ 3255.956295]  [<ffffffff810357c7>] native_machine_restart+0x37/0x40
-> [ 3255.956295]  [<ffffffff81035a3f>] machine_restart+0xf/0x20
-> [ 3255.956295]  [<ffffffff81071375>] kernel_restart+0x45/0x60
-> [ 3255.956295]  [<ffffffff810715b9>] SYSC_reboot+0x229/0x260
-> [ 3255.956295]  [<ffffffff8119a3a6>] ? do_readv_writev+0x176/0x240
-> [ 3255.956295]  [<ffffffff8119af93>] ? __fput+0x183/0x270
-> [ 3255.956295]  [<ffffffff8119b1ae>] ? ____fput+0xe/0x10
-> [ 3255.956295]  [<ffffffff8107161e>] SyS_reboot+0xe/0x10
-> [ 3255.956295]  [<ffffffff8160cf99>] system_call_fastpath+0x16/0x1b
+> There is *NOTHING* architecture-specific about SECCOMP except
+> that the syscalls have per-architecture definitions, like every
+> other syscall.  It is absurd to have the option in the
+> arch-specific menus.
+> 
+> Move it to the security menu, consolidate the 7 down to one, and
+> remove the embarassingly-ancient help text references and
+> dependencies on /proc.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Cc: linux-security-module@vger.kernel.org
+> Cc: linux-arch@vger.kernel.org
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Michal Simek <monstr@monstr.eu>
+> Cc: Ralf Baechle <ralf@linux-mips.org> 
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Paul Mundt <lethal@linux-sh.org> 
+> Cc: x86@kernel.org
+> Cc: James Morris <james.l.morris@oracle.com>
+> 
+> ---
+> 
+>  b/arch/arm/Kconfig        |   15 +--------------
+>  b/arch/microblaze/Kconfig |   18 +-----------------
+>  b/arch/mips/Kconfig       |   18 +-----------------
+>  b/arch/powerpc/Kconfig    |   18 +-----------------
+>  b/arch/s390/Kconfig       |   18 +-----------------
+>  b/arch/sh/Kconfig         |   17 +----------------
+>  b/arch/sparc/Kconfig      |   18 +-----------------
+>  b/arch/x86/Kconfig        |   17 +----------------
 
-I think a low level reboot method like acpi_reboot() calling 
-on_each_cpu() is unrobust, and it is the source of the problem.
+> --- a/security/Kconfig~consolidate-seccomp-options	2014-01-29 11:02:31.607008738 -0800
+> +++ b/security/Kconfig	2014-01-29 11:02:31.616009147 -0800
+> @@ -167,5 +167,24 @@ config DEFAULT_SECURITY
+>  	default "yama" if DEFAULT_SECURITY_YAMA
+>  	default "" if DEFAULT_SECURITY_DAC
+>  
+> -endmenu
+> +config HAVE_ARCH_SECCOMP
+> +	bool
+> +
+
+
+> +config SECCOMP
+> +	def_bool y
+> +	depends on HAVE_ARCH_SECCOMP
+> +	prompt "Enable seccomp to safely compute untrusted bytecode"
+> +	---help---
+> +	  This kernel feature is useful for number crunching applications
+> +	  that may need to compute untrusted bytecode during their
+> +	  execution. By using pipes or other transports made available to
+
+I'd change and simplify the first sentence to:
+
+> +	  This kernel feature is useful to sandbox runtimes that need
+> +	  to execute untrusted machine code.
+
+Seccomp isn't primarily about number crunching anymore, and it's 
+definitely not about 'bytecode' in the classical sense either.
+
+> +	  the process as file descriptors supporting the read/write
+> +	  syscalls, it's possible to isolate those applications in
+> +	  their own address space using seccomp. Once seccomp is
+> +	  enabled via prctl(PR_SET_SECCOMP), it cannot be disabled
+> +	  and the task is only allowed to execute a few safe syscalls
+> +	  defined by each seccomp mode.
+>  
+> +	  If unsure, say Y. Only embedded should say N here.
+> +
+> +endmenu
+
+Other than that:
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
 Thanks,
 
