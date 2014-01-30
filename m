@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaA3Q6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:58:48 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:44635 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168AbaA3Q6r (ORCPT
+	id S1753392AbaA3RB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:01:27 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:39080 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaA3RB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:58:47 -0500
+	Thu, 30 Jan 2014 12:01:26 -0500
+Date: Thu, 30 Jan 2014 18:01:20 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, pmladek@suse.cz,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] block: Stop abusing rq->csd.list in blk-softirq
+Message-ID: <20140130170119.GB5339@localhost.localdomain>
+References: <1387831171-5264-1-git-send-email-jack@suse.cz>
+ <1387831171-5264-3-git-send-email-jack@suse.cz>
+ <20140130123917.GA5339@localhost.localdomain>
+ <20140130154523.GC12687@quack.suse.cz>
 MIME-Version: 1.0
-Reply-To: for.poige+linux@gmail.com
-From: Igor Podlesny <for.poige+linux@gmail.com>
-Date: Fri, 31 Jan 2014 00:58:16 +0800
-X-Google-Sender-Auth: oOJ_x9ZYPF_AZ4lxLwwVAQuQXQQ
-Message-ID: <CA+sTkh4fYZr-8vBuhA0c1BRt5D7oNiK=KrSF+kJ2KRW7e_LFaA@mail.gmail.com>
-Subject: That greedy Linux VM cache
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140130154523.GC12687@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   Hello!
+On Thu, Jan 30, 2014 at 04:45:23PM +0100, Jan Kara wrote:
+>   Hi,
+> 
+> On Thu 30-01-14 13:39:18, Frederic Weisbecker wrote:
+> > I'm currently working on some cleanups on IPI code too and working on top
+> > of these patches, just have a few comments:
+>   Great, thanks!
+> 
+> > On Mon, Dec 23, 2013 at 09:39:23PM +0100, Jan Kara wrote:
+> > > Abusing rq->csd.list for a list of requests to complete is rather ugly.
+> > > Especially since using queuelist should be safe and much cleaner.
+> > 
+> > It would be nice to have a few more details that explain why doing so is safe
+> > wrt a block request lifecycle. At least something that tells why rq->queuelist
+> > can't be ever used concurrently by the time we send the IPI and we trigger/raise
+> > the softirq.
+>   Sure. Should I send the patch to you with an updated changelog and added
+> comment you requested?
 
-   Probably every Linux newcomer's going to have concerns regarding
-low free memory and hear an explanation from Linux old fellows that's
-actually there's plenty of -- it's just cached, but when it's needed
-for applications it's gonna be used -- on demand. I also thought so
-until recently I noticed that even when free memory's is almost
-exhausted (~ 75 Mib), and processes are in sleep_on_page_killable, the
-cache is somewhat like ~ 500 MiB and it's not going to return back
-what it's gained. Naturally, vm.drop_caches 3 doesn't squeeze it as
-well. That drama has been happening on rather
-outdated-but-yet-still-has-2GiB-of-RAM notebook with kernel from 3.10
-till 3.12.9 (3.13 is the first release for a long time which simply
-freezes the notebook so cold, that SysRq_B's not working, but that's
-another story). Everything RAM demanding just yet crawls, load average
-is getting higher and there's no paging out, but on going disk mostly
-_read_ and a bit write activity. If vm.swaPPineSS not 0, it's swapping
-out, but not much, right now I ran Chromium (in addition to long-run
-Firefox) and only 32 MiB went to swap, load avg. ~ 7
+Yeah that would be nice!
 
-   Again: 25 % is told (by top, free and finally /proc/meminfo) to be
-cached, but kinda greedy.
+For more precision, I would like to apply these:
 
-   I came across similar issue report:
-http://www.spinics.net/lists/linux-btrfs/msg11723.html but still
-questions remain:
+1) block: Stop abusing csd.list for fifo_time
+2) block: Stop abusing rq->csd.list in blk-softirq
+3) kernel: use lockless list for smp_call_function_single()
+4) smp: Teach __smp_call_function_single() to check for offline cpus
 
-   * How to analyze it? slabtop doesn't mention even 100 MiB of slab
-   * Why that's possible?
-   * The system is on Btrfs but /home is on XFS, so disk I/O might be
-related to text segment paging? But anyway this leads us to question,
-hey, there's 500 MiB free^Wcached.
+This is because I need to tweak a bit the IPI code for some nohz
+functionnality. I'm not sure about the result but in any case these
+llist based cleanups look very nice, so lets try to push them. I'm also
+working on some consolidation between __smp_call_function_single()
+and smp_call_function_single() since they share almost the same code.
 
-   While I'm thinking about moving system back to XFS...
+Also this shouldn't conflict with Andrew's tree if he applies these as well
+since -mm is based on -next. And the printk part should still go through his
+tree I think.
 
-   P. S. While writing these, swapped ~ 100 MiB, and cache reduced(!)
-to 377 MiB, Firefox is mostly in "D" -- sleep_on_page_killable, so is
-Chrome, load avg. ~ 7. I had to close Skype to be able to finish that
-letter, and cached mem. now is 439 MiB. :) I know it's time to
-upgrade, but hey, cached memory is free memory, right?
+> 
+> > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > > ---
+> > >  block/blk-softirq.c | 12 ++++++------
+> > >  1 file changed, 6 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/block/blk-softirq.c b/block/blk-softirq.c
+> > > index 57790c1a97eb..7ea5534096d5 100644
+> > > --- a/block/blk-softirq.c
+> > > +++ b/block/blk-softirq.c
+> > > @@ -30,8 +30,8 @@ static void blk_done_softirq(struct softirq_action *h)
+> > >  	while (!list_empty(&local_list)) {
+> > >  		struct request *rq;
+> > >  
+> > > -		rq = list_entry(local_list.next, struct request, csd.list);
+> > > -		list_del_init(&rq->csd.list);
+> > > +		rq = list_entry(local_list.next, struct request, queuelist);
+> > > +		list_del_init(&rq->queuelist);
+> > >  		rq->q->softirq_done_fn(rq);
+> > >  	}
+> > >  }
+> > > @@ -45,9 +45,9 @@ static void trigger_softirq(void *data)
+> > >  
+> > >  	local_irq_save(flags);
+> > >  	list = this_cpu_ptr(&blk_cpu_done);
+> > > -	list_add_tail(&rq->csd.list, list);
+> > > +	list_add_tail(&rq->queuelist, list);
+> > 
+> > And given that's an alternate use of rq->queuelist, perhaps add a comment
+> > to unconfuse people.
+>   Good idea, will do.
 
--- 
-End of message. Next message?
+Thanks!
