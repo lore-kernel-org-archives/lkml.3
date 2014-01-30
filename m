@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaA3JJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 04:09:44 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:47586 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaA3JJk (ORCPT
+	id S1752404AbaA3JQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 04:16:52 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:45256 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaA3JQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 04:09:40 -0500
-Message-ID: <52EA16CD.7070807@linux.vnet.ibm.com>
-Date: Thu, 30 Jan 2014 10:09:33 +0100
-From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 30 Jan 2014 04:16:49 -0500
+Date: Thu, 30 Jan 2014 10:16:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Aristeu Rozanski <aris@redhat.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Thomas Graf <tgraf@suug.ch>
+Subject: Re: [PATCH 3/6] cgroup: clean up cgroup_subsys names and
+ initialization
+Message-ID: <20140130091644.GB2749@gmail.com>
+References: <1390952641-15950-1-git-send-email-tj@kernel.org>
+ <1390952641-15950-4-git-send-email-tj@kernel.org>
+ <20140129104648.GC9636@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] virtio_blk: don't crash, report error if virtqueue
- is broken.
-References: <1389753371-26469-1-git-send-email-rusty@rustcorp.com.au> <1389753371-26469-2-git-send-email-rusty@rustcorp.com.au>
-In-Reply-To: <1389753371-26469-2-git-send-email-rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14013009-0342-0000-0000-00000799C9BE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140129104648.GC9636@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/14 03:36, Rusty Russell wrote:
-> A bad implementation of virtio might cause us to mark the virtqueue
-> broken: we'll dev_err() in that case, and the device is useless, but
-> let's not BUG_ON().
->
-> ENOMEM or ENOSPC implies the ring is full, and we should try again
-> later (-ENOMEM is documented to happen, but doesn't, as we fall
-> through to ENOSPC).
->
-> EIO means it's broken.
->
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->   drivers/block/virtio_blk.c | 10 ++++++++--
->   1 file changed, 8 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 6a680d4de7f1..704d6c814c17 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -158,6 +158,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
->   	unsigned long flags;
->   	unsigned int num;
->   	const bool last = (req->cmd_flags & REQ_END) != 0;
-> +	int err;
->
->   	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
->
-> @@ -198,11 +199,16 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
->   	}
->
->   	spin_lock_irqsave(&vblk->vq_lock, flags);
-> -	if (__virtblk_add_req(vblk->vq, vbr, vbr->sg, num) < 0) {
-> +	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
-> +	if (err) {
->   		virtqueue_kick(vblk->vq);
 
-the kick might fail here after a request was successfully added.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
->   		spin_unlock_irqrestore(&vblk->vq_lock, flags);
->   		blk_mq_stop_hw_queue(hctx);
-> -		return BLK_MQ_RQ_QUEUE_BUSY;
-> +		/* Out of mem doesn't actually happen, since we fall back
-> +		 * to direct descriptors */
-> +		if (err == -ENOMEM || err == -ENOSPC)
-> +			return BLK_MQ_RQ_QUEUE_BUSY;
-> +		return BLK_MQ_RQ_QUEUE_ERROR;
->   	}
->
->   	if (last)
->
+> On Tue, Jan 28, 2014 at 06:43:58PM -0500, Tejun Heo wrote:
+> > * With the above, renaming subsys identifiers to match the userland
+> >   visible names doesn't cause any naming conflicts.  All non-matching
+> >   identifiers are renamed to match the official names.
+> > 
+> >   cpu_cgroup -> cpu
+> >   perf -> perf_event
+> > 
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
 
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
