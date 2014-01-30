@@ -1,148 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaA3TUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:20:47 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:53696 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569AbaA3TUl (ORCPT
+	id S1753812AbaA3TUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:20:51 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:38912 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724AbaA3TUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:20:41 -0500
+	Thu, 30 Jan 2014 14:20:47 -0500
+Subject: [PATCH 2/2] PCI: Remove unused SR-IOV VF Migration support
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: e1000-devel@lists.sourceforge.net,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
+Date: Thu, 30 Jan 2014 12:20:45 -0700
+Message-ID: <20140130192044.25426.56360.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <20140130185645.GC4437@mudshark.cambridge.arm.com>
-References: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
-	<1391014246-9715-6-git-send-email-ard.biesheuvel@linaro.org>
-	<20140130185645.GC4437@mudshark.cambridge.arm.com>
-Date: Thu, 30 Jan 2014 20:20:38 +0100
-Message-ID: <CAKv+Gu_NdVHawdVz3KUeZPHUL4ZPNSpeq7EWAgsVy+DfS6Kaqw@mail.gmail.com>
-Subject: Re: [PATCH 5/5] arm64: add Crypto Extensions based synchronous core
- AES cipher
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 January 2014 19:56, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Ard,
->
-> On Wed, Jan 29, 2014 at 04:50:46PM +0000, Ard Biesheuvel wrote:
->> diff --git a/arch/arm64/crypto/aes-ce-cipher.c b/arch/arm64/crypto/aes-ce-cipher.c
->> new file mode 100644
->> index 000000000000..b5a5d5d6e4b8
->> --- /dev/null
->> +++ b/arch/arm64/crypto/aes-ce-cipher.c
->> @@ -0,0 +1,103 @@
->> +/*
->> + * linux/arch/arm64/crypto/aes-ce-cipher.c
->> + *
->> + * Copyright (C) 2013 Linaro Ltd <ard.biesheuvel@linaro.org>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <asm/neon.h>
->> +#include <crypto/aes.h>
->> +#include <linux/crypto.h>
->> +#include <linux/module.h>
->> +#include <linux/cpufeature.h>
->> +
->> +MODULE_DESCRIPTION("Synchronous AES cipher using ARMv8 Crypto Extensions");
->> +MODULE_AUTHOR("Ard Biesheuvel <ard.biesheuvel@linaro.org>");
->> +MODULE_LICENSE("GPL");
->> +
->> +static void aes_cipher_encrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
->> +{
->> +     struct crypto_aes_ctx *ctx = crypto_tfm_ctx(tfm);
->> +     u32 rounds = 6 + ctx->key_length / 4;
->
-> Can you document these constants please?
->
+This reverts commit 74bb1bcc7dbb ("PCI: handle SR-IOV Virtual Function
+Migration"), removing this exported interface:
 
-Sure.
+  pci_sriov_migration()
 
->> +
->> +     kernel_neon_begin();
->> +
->> +     __asm__("       ld1             {v0.16b}, [%[in]]               ;"
->> +             "       ld1             {v1.16b}, [%[key]], #16         ;"
->> +             "0:     aese            v0.16b, v1.16b                  ;"
->> +             "       subs            %[rounds], %[rounds], #1        ;"
->> +             "       ld1             {v1.16b}, [%[key]], #16         ;"
->> +             "       beq             1f                              ;"
->> +             "       aesmc           v0.16b, v0.16b                  ;"
->> +             "       b               0b                              ;"
->> +             "1:     eor             v0.16b, v0.16b, v1.16b          ;"
->> +             "       st1             {v0.16b}, [%[out]]              ;"
->> +     : :
->> +             [out]           "r"(dst),
->> +             [in]            "r"(src),
->> +             [rounds]        "r"(rounds),
->> +             [key]           "r"(ctx->key_enc)
->> +     :                       "cc");
->
-> You probably need a memory output to stop this being re-ordered by the
-> compiler. Can GCC not generate the addressing modes you need directly,
-> allowing you to avoid moving everything into registers?
->
+Since pci_sriov_migration() is unused, it is impossible to schedule
+sriov_migration_task() or use any of the other migration infrastructure.
 
-Would a memory clobber work as well?
+This is based on Stephen Hemminger's patch (see link below), but goes a bit
+further.
 
-Re addressing modes: I would prefer to explicitly use v0 and v1, I
-have another patch pending that allows partial saves/restores of the
-NEON register file when called from interrupt context. I suppose I
-could use 'register asm("v0")' or something like that, but that won't
-make it any prettier.
+Link: http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.net
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Stephen Hemminger <stephen@networkplumber.org>
+---
+ Documentation/PCI/pci-iov-howto.txt |    4 -
+ drivers/pci/iov.c                   |  119 -----------------------------------
+ drivers/pci/pci.h                   |    4 -
+ include/linux/pci.h                 |    4 -
+ 4 files changed, 131 deletions(-)
 
->
->> +     kernel_neon_end();
->> +}
->> +
->> +static void aes_cipher_decrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
->> +{
->> +     struct crypto_aes_ctx *ctx = crypto_tfm_ctx(tfm);
->> +     u32 rounds = 6 + ctx->key_length / 4;
->> +
->> +     kernel_neon_begin();
->> +
->> +     __asm__("       ld1             {v0.16b}, [%[in]]               ;"
->> +             "       ld1             {v1.16b}, [%[key]], #16         ;"
->> +             "0:     aesd            v0.16b, v1.16b                  ;"
->> +             "       ld1             {v1.16b}, [%[key]], #16         ;"
->> +             "       subs            %[rounds], %[rounds], #1        ;"
->> +             "       beq             1f                              ;"
->> +             "       aesimc          v0.16b, v0.16b                  ;"
->> +             "       b               0b                              ;"
->> +             "1:     eor             v0.16b, v0.16b, v1.16b          ;"
->> +             "       st1             {v0.16b}, [%[out]]              ;"
->> +     : :
->> +             [out]           "r"(dst),
->> +             [in]            "r"(src),
->> +             [rounds]        "r"(rounds),
->> +             [key]           "r"(ctx->key_dec)
->> +     :                       "cc");
->
-> Same comments here.
->
-> FWIW: I spoke to the guy at ARM who designed the crypto instructions and he
-> reckons your code works :)
->
+diff --git a/Documentation/PCI/pci-iov-howto.txt b/Documentation/PCI/pci-iov-howto.txt
+index 86551cc72e03..2d91ae251982 100644
+--- a/Documentation/PCI/pci-iov-howto.txt
++++ b/Documentation/PCI/pci-iov-howto.txt
+@@ -68,10 +68,6 @@ To disable SR-IOV capability:
+ 	echo  0 > \
+         /sys/bus/pci/devices/<DOMAIN:BUS:DEVICE.FUNCTION>/sriov_numvfs
+ 
+-To notify SR-IOV core of Virtual Function Migration:
+-(a) In the driver:
+-	irqreturn_t pci_sriov_migration(struct pci_dev *dev);
+-
+ 3.2 Usage example
+ 
+ Following piece of code illustrates the usage of the SR-IOV API.
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index 9dce7c5e2a77..de7a74782f92 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -170,97 +170,6 @@ static void virtfn_remove(struct pci_dev *dev, int id, int reset)
+ 	pci_dev_put(dev);
+ }
+ 
+-static int sriov_migration(struct pci_dev *dev)
+-{
+-	u16 status;
+-	struct pci_sriov *iov = dev->sriov;
+-
+-	if (!iov->num_VFs)
+-		return 0;
+-
+-	if (!(iov->cap & PCI_SRIOV_CAP_VFM))
+-		return 0;
+-
+-	pci_read_config_word(dev, iov->pos + PCI_SRIOV_STATUS, &status);
+-	if (!(status & PCI_SRIOV_STATUS_VFM))
+-		return 0;
+-
+-	schedule_work(&iov->mtask);
+-
+-	return 1;
+-}
+-
+-static void sriov_migration_task(struct work_struct *work)
+-{
+-	int i;
+-	u8 state;
+-	u16 status;
+-	struct pci_sriov *iov = container_of(work, struct pci_sriov, mtask);
+-
+-	for (i = iov->initial_VFs; i < iov->num_VFs; i++) {
+-		state = readb(iov->mstate + i);
+-		if (state == PCI_SRIOV_VFM_MI) {
+-			writeb(PCI_SRIOV_VFM_AV, iov->mstate + i);
+-			state = readb(iov->mstate + i);
+-			if (state == PCI_SRIOV_VFM_AV)
+-				virtfn_add(iov->self, i, 1);
+-		} else if (state == PCI_SRIOV_VFM_MO) {
+-			virtfn_remove(iov->self, i, 1);
+-			writeb(PCI_SRIOV_VFM_UA, iov->mstate + i);
+-			state = readb(iov->mstate + i);
+-			if (state == PCI_SRIOV_VFM_AV)
+-				virtfn_add(iov->self, i, 0);
+-		}
+-	}
+-
+-	pci_read_config_word(iov->self, iov->pos + PCI_SRIOV_STATUS, &status);
+-	status &= ~PCI_SRIOV_STATUS_VFM;
+-	pci_write_config_word(iov->self, iov->pos + PCI_SRIOV_STATUS, status);
+-}
+-
+-static int sriov_enable_migration(struct pci_dev *dev, int nr_virtfn)
+-{
+-	int bir;
+-	u32 table;
+-	resource_size_t pa;
+-	struct pci_sriov *iov = dev->sriov;
+-
+-	if (nr_virtfn <= iov->initial_VFs)
+-		return 0;
+-
+-	pci_read_config_dword(dev, iov->pos + PCI_SRIOV_VFM, &table);
+-	bir = PCI_SRIOV_VFM_BIR(table);
+-	if (bir > PCI_STD_RESOURCE_END)
+-		return -EIO;
+-
+-	table = PCI_SRIOV_VFM_OFFSET(table);
+-	if (table + nr_virtfn > pci_resource_len(dev, bir))
+-		return -EIO;
+-
+-	pa = pci_resource_start(dev, bir) + table;
+-	iov->mstate = ioremap(pa, nr_virtfn);
+-	if (!iov->mstate)
+-		return -ENOMEM;
+-
+-	INIT_WORK(&iov->mtask, sriov_migration_task);
+-
+-	iov->ctrl |= PCI_SRIOV_CTRL_VFM | PCI_SRIOV_CTRL_INTR;
+-	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
+-
+-	return 0;
+-}
+-
+-static void sriov_disable_migration(struct pci_dev *dev)
+-{
+-	struct pci_sriov *iov = dev->sriov;
+-
+-	iov->ctrl &= ~(PCI_SRIOV_CTRL_VFM | PCI_SRIOV_CTRL_INTR);
+-	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
+-
+-	cancel_work_sync(&iov->mtask);
+-	iounmap(iov->mstate);
+-}
+-
+ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+ {
+ 	int rc;
+@@ -351,12 +260,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+ 			goto failed;
+ 	}
+ 
+-	if (iov->cap & PCI_SRIOV_CAP_VFM) {
+-		rc = sriov_enable_migration(dev, nr_virtfn);
+-		if (rc)
+-			goto failed;
+-	}
+-
+ 	kobject_uevent(&dev->dev.kobj, KOBJ_CHANGE);
+ 	iov->num_VFs = nr_virtfn;
+ 
+@@ -387,9 +290,6 @@ static void sriov_disable(struct pci_dev *dev)
+ 	if (!iov->num_VFs)
+ 		return;
+ 
+-	if (iov->cap & PCI_SRIOV_CAP_VFM)
+-		sriov_disable_migration(dev);
+-
+ 	for (i = 0; i < iov->num_VFs; i++)
+ 		virtfn_remove(dev, i, 0);
+ 
+@@ -688,25 +588,6 @@ void pci_disable_sriov(struct pci_dev *dev)
+ EXPORT_SYMBOL_GPL(pci_disable_sriov);
+ 
+ /**
+- * pci_sriov_migration - notify SR-IOV core of Virtual Function Migration
+- * @dev: the PCI device
+- *
+- * Returns IRQ_HANDLED if the IRQ is handled, or IRQ_NONE if not.
+- *
+- * Physical Function driver is responsible to register IRQ handler using
+- * VF Migration Interrupt Message Number, and call this function when the
+- * interrupt is generated by the hardware.
+- */
+-irqreturn_t pci_sriov_migration(struct pci_dev *dev)
+-{
+-	if (!dev->is_physfn)
+-		return IRQ_NONE;
+-
+-	return sriov_migration(dev) ? IRQ_HANDLED : IRQ_NONE;
+-}
+-EXPORT_SYMBOL_GPL(pci_sriov_migration);
+-
+-/**
+  * pci_num_vf - return number of VFs associated with a PF device_release_driver
+  * @dev: the PCI device
+  *
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 4df38df224f4..6bd082299e31 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -1,8 +1,6 @@
+ #ifndef DRIVERS_PCI_H
+ #define DRIVERS_PCI_H
+ 
+-#include <linux/workqueue.h>
+-
+ #define PCI_CFG_SPACE_SIZE	256
+ #define PCI_CFG_SPACE_EXP_SIZE	4096
+ 
+@@ -240,8 +238,6 @@ struct pci_sriov {
+ 	struct pci_dev *dev;	/* lowest numbered PF */
+ 	struct pci_dev *self;	/* this PF */
+ 	struct mutex lock;	/* lock for VF bus */
+-	struct work_struct mtask; /* VF Migration task */
+-	u8 __iomem *mstate;	/* VF Migration State Array */
+ };
+ 
+ #ifdef CONFIG_PCI_ATS
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index b3cd9d58f5a9..bd0e268c80b5 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -29,7 +29,6 @@
+ #include <linux/atomic.h>
+ #include <linux/device.h>
+ #include <linux/io.h>
+-#include <linux/irqreturn.h>
+ #include <uapi/linux/pci.h>
+ 
+ #include <linux/pci_ids.h>
+@@ -1574,7 +1573,6 @@ void __iomem *pci_ioremap_bar(struct pci_dev *pdev, int bar);
+ #ifdef CONFIG_PCI_IOV
+ int pci_enable_sriov(struct pci_dev *dev, int nr_virtfn);
+ void pci_disable_sriov(struct pci_dev *dev);
+-irqreturn_t pci_sriov_migration(struct pci_dev *dev);
+ int pci_num_vf(struct pci_dev *dev);
+ int pci_vfs_assigned(struct pci_dev *dev);
+ int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs);
+@@ -1583,8 +1581,6 @@ int pci_sriov_get_totalvfs(struct pci_dev *dev);
+ static inline int pci_enable_sriov(struct pci_dev *dev, int nr_virtfn)
+ { return -ENODEV; }
+ static inline void pci_disable_sriov(struct pci_dev *dev) { }
+-static inline irqreturn_t pci_sriov_migration(struct pci_dev *dev)
+-{ return IRQ_NONE; }
+ static inline int pci_num_vf(struct pci_dev *dev) { return 0; }
+ static inline int pci_vfs_assigned(struct pci_dev *dev)
+ { return 0; }
 
-Good!
-
-Care to comment on the rest of the series?
-
-Cheers.
-Ard.
