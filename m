@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaA3Lhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 06:37:31 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54863 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567AbaA3Lha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 06:37:30 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <santosh.shilimkar@ti.com>
-CC: <mturquette@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH] clk: keystone: gate: fix clk_init_data initialization
-Date: Thu, 30 Jan 2014 13:37:01 +0200
-Message-ID: <1391081821-13306-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752881AbaA3Lkp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 06:40:45 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:43766 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaA3Lko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 06:40:44 -0500
+X-IronPort-AV: E=Sophos;i="4.95,749,1384300800"; 
+   d="scan'208";a="96084099"
+Message-ID: <52EA3A3C.4030209@citrix.com>
+Date: Thu, 30 Jan 2014 11:40:44 +0000
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mukesh Rathor <mukesh.rathor@oracle.com>, <konrad.wilk@oracle.com>
+CC: <Xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V0] linux PVH: Set CR4 flags
+References: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.3.227]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In clk_register_psc() function clk_init_data struct is allocated
-in the stack. All members of this struct should be initialized
-before using otherwise it will contain garbage. So initialize flags
-in this structure too.
+On 30/01/14 00:15, Mukesh Rathor wrote:
+> Konrad,
+> 
+> The CR4 settings were dropped from my earlier patch because you didn't
+> wanna enable them. But since you do now, we need to set them in the APs
+> also. If you decide not too again, please apply my prev patch
+> "pvh: disable pse feature for now".
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- drivers/clk/keystone/gate.c | 1 +
- 1 file changed, 1 insertion(+)
+Hello Mukesh,
 
-diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
-index 17a5983..86f1e36 100644
---- a/drivers/clk/keystone/gate.c
-+++ b/drivers/clk/keystone/gate.c
-@@ -179,6 +179,7 @@ static struct clk *clk_register_psc(struct device *dev,
- 
- 	init.name = name;
- 	init.ops = &clk_psc_ops;
-+	init.flags = 0;
- 	init.parent_names = (parent_name ? &parent_name : NULL);
- 	init.num_parents = (parent_name ? 1 : 0);
- 
--- 
-1.8.3.2
+Could you push your CR related patches to a git repo branch? I'm
+currently having a bit of a mess in figuring out which ones should be
+applied and in which order.
+
+Thanks, Roger.
 
