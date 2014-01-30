@@ -1,61 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaA3Mdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:33:35 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:63451 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751567AbaA3Mde (ORCPT
+	id S1752848AbaA3MhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:37:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47951 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaA3MhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:33:34 -0500
-Message-ID: <1391085212.5170.9.camel@x41>
-Subject: Re: [git pull] drm next tree
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Christian =?ISO-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Date: Thu, 30 Jan 2014 13:33:32 +0100
-In-Reply-To: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1401300249130.13810@skynet.skynet.ie>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 30 Jan 2014 12:33:33.0061 (UTC) FILETIME=[7D031B50:01CF1DB7]
-X-RcptDomain: vger.kernel.org
+	Thu, 30 Jan 2014 07:37:18 -0500
+Date: Thu, 30 Jan 2014 13:37:10 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: Re: [PATCH 7/9] sched/fair: Optimize cgroup pick_next_task_fair
+Message-ID: <20140130123710.GA2936@laptop.programming.kicks-ass.net>
+References: <20140128171634.974847076@infradead.org>
+ <20140128171948.287518863@infradead.org>
+ <CAKfTPtAgR5xdr-Vj14t+RRVoLACrvTsHw_mXgimUDKsuNBUKJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtAgR5xdr-Vj14t+RRVoLACrvTsHw_mXgimUDKsuNBUKJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie schreef op do 30-01-2014 om 02:49 [+0000]:
-> Christian König (10):
->       [...]
->       drm/radeon: add GART debugfs access v3
->       [...]
+On Thu, Jan 30, 2014 at 01:18:09PM +0100, Vincent Guittot wrote:
+> On 28 January 2014 18:16, Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> [snip]
+> 
+> >
+> > @@ -4662,9 +4682,86 @@ static void check_preempt_wakeup(struct
+> >  static struct task_struct *
+> >  pick_next_task_fair(struct rq *rq, struct task_struct *prev)
+> >  {
+> > -       struct task_struct *p;
+> >         struct cfs_rq *cfs_rq = &rq->cfs;
+> >         struct sched_entity *se;
+> > +       struct task_struct *p;
+> > +
+> > +#ifdef CONFIG_FAIR_GROUP_SCHED
+> > +       if (!cfs_rq->nr_running)
+> > +               return NULL;
+> 
+> Couldn't you move the test above out of the CONFIG_FAIR_GROUP_SCHED
+> and remove the same test that is done after the simple label
 
-That one generates a bit of (warning) noise when building on 32 bits
-x86:
+No, we have to check it twice because..
+> 
+> > +
+> > +       if (prev->sched_class != &fair_sched_class)
+> > +               goto simple;
+> > +
+> > +       /*
+> > +        * Because of the set_next_buddy() in dequeue_task_fair() it is rather
+> > +        * likely that a next task is from the same cgroup as the current.
+> > +        *
+> > +        * Therefore attempt to avoid putting and setting the entire cgroup
+> > +        * hierarchy, only change the part that actually changes.
+> > +        */
+> > +
+> > +       do {
+> > +               struct sched_entity *curr = cfs_rq->curr;
+> > +
+> > +               /*
+> > +                * Since we got here without doing put_prev_entity() we also
+> > +                * have to consider cfs_rq->curr. If it is still a runnable
+> > +                * entity, update_curr() will update its vruntime, otherwise
+> > +                * forget we've ever seen it.
+> > +                */
+> > +               if (curr && curr->on_rq)
+> > +                       update_curr(cfs_rq);
+> > +               else
+> > +                       curr = NULL;
+> > +
+> > +               /*
+> > +                * This call to check_cfs_rq_runtime() will do the throttle and
+> > +                * dequeue its entity in the parent(s). Therefore the 'simple'
+> > +                * nr_running test will indeed be correct.
+> > +                */
+> > +               if (unlikely(check_cfs_rq_runtime(cfs_rq)))
+> > +                       goto simple;
 
-In file included from include/asm-generic/bug.h:13:0,
-                 from [...]/linux/arch/x86/include/asm/bug.h:38,
-                 from include/linux/bug.h:4,
-                 from include/drm/drm_mm.h:39,
-                 from include/drm/drm_vma_manager.h:26,
-                 from include/drm/ttm/ttm_bo_api.h:35,
-                 from drivers/gpu/drm/radeon/radeon_ttm.c:32:
-drivers/gpu/drm/radeon/radeon_ttm.c: In function 'radeon_ttm_gtt_read':
-include/linux/kernel.h:712:17: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-  (void) (&_min1 == &_min2);  \
-                 ^
-drivers/gpu/drm/radeon/radeon_ttm.c:938:22: note: in expansion of macro 'min'
-   ssize_t cur_size = min(size, PAGE_SIZE - off);
-                      ^
+... here if you read the comment above, we could have modified the
+nr_running.
 
-I suppose the last line should read
-   ssize_t cur_size = min(size, (size_t) PAGE_SIZE - off);
+> > +               se = pick_next_entity(cfs_rq, curr);
+> > +               cfs_rq = group_cfs_rq(se);
+> > +       } while (cfs_rq);
+> > +
+> > +       p = task_of(se);
+> > +
+> > +       /*
+> > +        * Since we haven't yet done put_prev_entity and if the selected task
+> > +        * is a different task than we started out with, try and touch the
+> > +        * least amount of cfs_rqs.
+> > +        */
+> > +       if (prev != p) {
+> > +               struct sched_entity *pse = &prev->se;
+> > +
+> > +               while (!(cfs_rq = is_same_group(se, pse))) {
+> > +                       int se_depth = se->depth;
+> > +                       int pse_depth = pse->depth;
+> > +
+> > +                       if (se_depth <= pse_depth) {
+> > +                               put_prev_entity(cfs_rq_of(pse), pse);
+> > +                               pse = parent_entity(pse);
+> > +                       }
+> > +                       if (se_depth >= pse_depth) {
+> > +                               set_next_entity(cfs_rq_of(se), se);
+> > +                               se = parent_entity(se);
+> > +                       }
+> > +               }
+> > +
+> > +               put_prev_entity(cfs_rq, pse);
+> > +               set_next_entity(cfs_rq, se);
+> > +       }
+> > +
+> > +       if (hrtick_enabled(rq))
+> > +               hrtick_start_fair(rq, p);
+> > +
+> > +       return p;
+> > +simple:
+> > +       cfs_rq = &rq->cfs;
+> > +#endif
+> >
+> >         if (!cfs_rq->nr_running)
+> >                 return NULL;
 
-to silence this. But I haven't tested yet.
-
-
-Paul Bolle
-
+And therefore this test needs to stay.
