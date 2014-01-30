@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903AbaA3XJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:09:50 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:44879 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672AbaA3XJs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:09:48 -0500
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Subject: [RFC PATCH] net: wireless: move regulatory timeout work to power efficient workqueue
-Date: Thu, 30 Jan 2014 15:08:30 -0800
-Message-Id: <1391123310-6425-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753935AbaA3XK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 18:10:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45208 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374AbaA3XKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 18:10:23 -0500
+Date: Thu, 30 Jan 2014 18:10:13 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
+        Nick Piggin <npiggin@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
+Subject: Re: [PATCH] block devices: validate block device capacity
+In-Reply-To: <1391122163.2181.103.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.LRH.2.02.1401301805590.19506@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com> <1391122163.2181.103.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-For better use of CPU idle time, allow the scheduler to select the CPU
-on which the timeout work of regulatory settings would be executed.
-This extends CPU idle residency time and saves power.
 
-This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
+On Thu, 30 Jan 2014, James Bottomley wrote:
 
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
-[zoran.markovic@linaro.org: Rebased to latest kernel. Added commit message.]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- net/wireless/reg.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+> Why is this?  the whole reason for CONFIG_LBDAF is supposed to be to
+> allow 64 bit offsets for block devices on 32 bit.  It sounds like
+> there's somewhere not using sector_t ... or using it wrongly which needs
+> fixing.
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index 9b897fc..6e21011 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1703,7 +1703,8 @@ static void reg_process_hint(struct regulatory_request *reg_request)
- 		if (treatment == REG_REQ_OK ||
- 		    treatment == REG_REQ_ALREADY_SET)
- 			return;
--		schedule_delayed_work(&reg_timeout, msecs_to_jiffies(3142));
-+		queue_delayed_work(system_power_efficient_wq,
-+				   &reg_timeout, msecs_to_jiffies(3142));
- 		return;
- 	case NL80211_REGDOM_SET_BY_DRIVER:
- 		treatment = reg_process_hint_driver(wiphy, reg_request);
-@@ -2294,7 +2295,8 @@ static int reg_set_rd_driver(const struct ieee80211_regdomain *rd,
- 
- 	request_wiphy = wiphy_idx_to_wiphy(driver_request->wiphy_idx);
- 	if (!request_wiphy) {
--		schedule_delayed_work(&reg_timeout, 0);
-+		queue_delayed_work(system_power_efficient_wq,
-+				   &reg_timeout, 0);
- 		return -ENODEV;
- 	}
- 
-@@ -2354,7 +2356,8 @@ static int reg_set_rd_country_ie(const struct ieee80211_regdomain *rd,
- 
- 	request_wiphy = wiphy_idx_to_wiphy(country_ie_request->wiphy_idx);
- 	if (!request_wiphy) {
--		schedule_delayed_work(&reg_timeout, 0);
-+		queue_delayed_work(system_power_efficient_wq,
-+				   &reg_timeout, 0);
- 		return -ENODEV;
- 	}
- 
--- 
-1.7.9.5
+The page cache uses unsigned long as a page index. Therefore, if unsigned 
+long is 32-bit, the block device may have at most 2^32-1 pages.
 
+> > On 32-bit architectures, we must limit block device size to
+> > PAGE_SIZE*(2^32-1).
+> 
+> So you're saying CONFIG_LBDAF can never work, why?
+> 
+> James
+
+CONFIG_LBDAF works, but it doesn't allow unlimited capacity: on x86, 
+without CONFIG_LBDAF, the limit is 2TiB. With CONFIG_LBDAF, the limit is 
+16TiB (4096*2^32).
+
+Mikulas
