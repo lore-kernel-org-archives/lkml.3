@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaA3WHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:07:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56935 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753743AbaA3WHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:07:31 -0500
-Date: Thu, 30 Jan 2014 17:07:08 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Subject: Re: [GIT PULL] x86/kaslr for v3.14
-Message-ID: <20140130220708.GP9951@redhat.com>
-References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
- <CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
- <52E5EFAF.3060609@linux.intel.com>
- <CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
- <52E601DA.7010605@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E601DA.7010605@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753935AbaA3WJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:09:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43032 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaA3WJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 17:09:03 -0500
+Date: Thu, 30 Jan 2014 14:09:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, mhocko@suse.cz,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix mutex not unlocked on
+ memcg_create_kmem_cache fail path
+Message-Id: <20140130140902.93d35d866f9ea1c697811f6e@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1401301403090.15271@chino.kir.corp.google.com>
+References: <1391097693-31401-1-git-send-email-vdavydov@parallels.com>
+	<20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org>
+	<alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com>
+	<20140130132939.96a25a37016a12f9a0093a90@linux-foundation.org>
+	<alpine.DEB.2.02.1401301336530.15271@chino.kir.corp.google.com>
+	<20140130135002.22ce1c12b7136f75e5985df6@linux-foundation.org>
+	<alpine.DEB.2.02.1401301403090.15271@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 10:51:06PM -0800, H. Peter Anvin wrote:
-> On 01/26/2014 10:49 PM, Richard Weinberger wrote:
-> >>
-> >> No, because that information is available to user space unless we panic.
+On Thu, 30 Jan 2014 14:04:12 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+
+> On Thu, 30 Jan 2014, Andrew Morton wrote:
+> 
+> > > Yeah, it shouldn't be temporary it should be the one and only allocation.  
+> > > We should construct the name in memcg_create_kmem_cache() and be done with 
+> > > it.
 > > 
-> > Didn't you mean non-root?
-> > I thought one has to set dmesg_restrict anyways if kASLR is used.
-> > 
-> > And isn't the offset available to perf too?
-> > Of course only for root, but still user space.
+> > Could.  That would require converting memcg_create_kmem_cache() to take 
+> > a va_list and call kasprintf() on it.
 > > 
 > 
-> For certain system security levels one want to protect even from a rogue
-> root.  In those cases, leaking that information via dmesg and perf isn't
-> going to work, either.
-> 
-> With lower security settings, by all means...
+> Why?  We already construct the name in memcg_create_kmem_cache() 
+> appropriately, we just want to avoid the kstrdup() in 
+> kmem_cache_create_memcg() since it's pointless like my patch does.
 
-I am wondering if kdump functionality is impacted with this change.
+oh, OK, missed that.
 
-Kexec tools prepares ELF headers for kernel memory ranges and for the
-range where kernel text is mapped. So it needs to know virtual address
-of the region where kernel is mapped (obtained by /proc/kcore) and
-it gets the physical address where kernel is loaded from /proc/iomem.
+The problem now is that the string at kmem_cache.name is PATH_MAX
+bytes, and PATH_MAX is huuuuuuuge.
 
-So with this change are we planning to hide kernel text virtual address and
-physical address information information from root in /proc/kcore and
-/proc/iomem in anyway?
-
-Thanks
-Vivek
