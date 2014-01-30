@@ -1,66 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaA3JxG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 04:53:06 -0500
-Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:47078 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751097AbaA3JxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 04:53:04 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:966:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:2901:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:4385:4605:5007:6119:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stick32_548a9876ebb2d
-X-Filterd-Recvd-Size: 2092
-Message-ID: <1391075579.2422.53.camel@joe-AO722>
-Subject: Re: [PATCH v4] HID: New hid-cp2112 driver
-From: Joe Perches <joe@perches.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: David Barksdale <dbarksdale@uplogix.com>,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jakub =?ISO-8859-1?Q?K=E1kona?= <kjakub@gmail.com>,
+	id S1752832AbaA3J7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 04:59:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37894 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaA3J7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 04:59:10 -0500
+Date: Thu, 30 Jan 2014 10:59:07 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 30 Jan 2014 01:52:59 -0800
-In-Reply-To: <1391067307.11310.3.camel@linux-fkkt.site>
-References: <1391037975-26253-1-git-send-email-dbarksdale@uplogix.com>
-	 <1391039165.2422.11.camel@joe-AO722>
-	 <1391067307.11310.3.camel@linux-fkkt.site>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm, hugetlb: gimme back my page
+Message-ID: <20140130095907.GA13574@dhcp22.suse.cz>
+References: <1391063823.2931.3.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391063823.2931.3.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-30 at 08:35 +0100, Oliver Neukum wrote:
-> On Wed, 2014-01-29 at 15:46 -0800, Joe Perches wrote:
+On Wed 29-01-14 22:37:03, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
 > 
-> > > +static int cp2112_hid_get(struct hid_device *hdev, unsigned char report_number,
-> > > +			  u8 *data, size_t count, unsigned char report_type)
-> > > +{
-> > > +	u8 *buf;
-> > > +	int ret;
-> > > +
-> > > +	buf = kmalloc(count, GFP_KERNEL);
-> > > +	if (!buf)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	ret = hdev->hid_get_raw_report(hdev, report_number, buf, count,
-> > > +				       report_type);
-> > > +	memcpy(data, buf, count);
-> > > +	kfree(buf);
-> > > +	return ret;
-> > 
-> > if the data is going to be copied in data,
-> > why not just use data in hid_get_raw_report
-> > and avoid the malloc?
+> While testing some changes, I noticed an issue triggered by the libhugetlbfs
+> test-suite. This is caused by commit 309381fe (mm: dump page when hitting a
+> VM_BUG_ON using VM_BUG_ON_PAGE), where an application can unexpectedly OOM due
+> to another program that using, or reserving, pool_size-1 pages later triggers
+> a VM_BUG_ON_PAGE and thus greedly leaves no memory to the rest of the hugetlb
+> aware tasks. For example, in libhugetlbfs 2.14:
 > 
-> He must not. It would violate the DMA rules. This function is passed
-> pointers to parts of structures. Access to the structures may race
-> with a DMA to/from the buffer. That violates the DMA rules.
+> mmap-gettest 10 32783 (2M: 64): <---- hit VM_BUG_ON_PAGE
+> mmap-cow 32782 32783 (2M: 32):  FAIL    Failed to create shared mapping: Cannot allocate memory
+> mmap-cow 32782 32783 (2M: 64):  FAIL    Failed to create shared mapping: Cannot allocate memory
+> 
+> While I have not looked into why 'mmap-gettest' keeps failing, it is of no
+> importance to this particular issue. This problem is similar to why we have
+> the hugetlb_instantiation_mutex, hugepages are quite finite.
+> 
+> Revert the use of VM_BUG_ON_PAGE back to just VM_BUG_ON.
 
-If this is going to be used to DMA, doesn't
-the alloc need to be GFP_KERNEL | GFP_DMA ?
+I do not understand what VM_BUG_ON_PAGE has to do with the above
+failure. Could you be more specific.
 
+Hmm, now that I am looking into dump_page_badflags it shouldn't call
+mem_cgroup_print_bad_page for hugetlb pages because it doesn't make any
+sense. I will post a patch for that but that still doesn't explain the
+above changelog.
 
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  include/linux/hugetlb.h        |  3 +--
+>  include/linux/hugetlb_cgroup.h |  5 ++---
+>  mm/hugetlb.c                   | 10 +++++-----
+>  mm/hugetlb_cgroup.c            |  2 +-
+>  4 files changed, 9 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 8c43cc4..d01cc97 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -2,7 +2,6 @@
+>  #define _LINUX_HUGETLB_H
+>  
+>  #include <linux/mm_types.h>
+> -#include <linux/mmdebug.h>
+>  #include <linux/fs.h>
+>  #include <linux/hugetlb_inline.h>
+>  #include <linux/cgroup.h>
+> @@ -355,7 +354,7 @@ static inline pte_t arch_make_huge_pte(pte_t entry, struct vm_area_struct *vma,
+>  
+>  static inline struct hstate *page_hstate(struct page *page)
+>  {
+> -	VM_BUG_ON_PAGE(!PageHuge(page), page);
+> +	VM_BUG_ON(!PageHuge(page));
+>  	return size_to_hstate(PAGE_SIZE << compound_order(page));
+>  }
+>  
+> diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+> index 787bba3..ce8217f 100644
+> --- a/include/linux/hugetlb_cgroup.h
+> +++ b/include/linux/hugetlb_cgroup.h
+> @@ -15,7 +15,6 @@
+>  #ifndef _LINUX_HUGETLB_CGROUP_H
+>  #define _LINUX_HUGETLB_CGROUP_H
+>  
+> -#include <linux/mmdebug.h>
+>  #include <linux/res_counter.h>
+>  
+>  struct hugetlb_cgroup;
+> @@ -29,7 +28,7 @@ struct hugetlb_cgroup;
+>  
+>  static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>  {
+> -	VM_BUG_ON_PAGE(!PageHuge(page), page);
+> +	VM_BUG_ON(!PageHuge(page));
+>  
+>  	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
+>  		return NULL;
+> @@ -39,7 +38,7 @@ static inline struct hugetlb_cgroup *hugetlb_cgroup_from_page(struct page *page)
+>  static inline
+>  int set_hugetlb_cgroup(struct page *page, struct hugetlb_cgroup *h_cg)
+>  {
+> -	VM_BUG_ON_PAGE(!PageHuge(page), page);
+> +	VM_BUG_ON(!PageHuge(page));
+>  
+>  	if (compound_order(page) < HUGETLB_CGROUP_MIN_ORDER)
+>  		return -1;
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index c01cb9f..04306b9 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -584,7 +584,7 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+>  				1 << PG_active | 1 << PG_reserved |
+>  				1 << PG_private | 1 << PG_writeback);
+>  	}
+> -	VM_BUG_ON_PAGE(hugetlb_cgroup_from_page(page), page);
+> +	VM_BUG_ON(hugetlb_cgroup_from_page(page));
+>  	set_compound_page_dtor(page, NULL);
+>  	set_page_refcounted(page);
+>  	arch_release_hugepage(page);
+> @@ -1089,7 +1089,7 @@ retry:
+>  		 * no users -- drop the buddy allocator's reference.
+>  		 */
+>  		put_page_testzero(page);
+> -		VM_BUG_ON_PAGE(page_count(page), page);
+> +		VM_BUG_ON(page_count(page));
+>  		enqueue_huge_page(h, page);
+>  	}
+>  free:
+> @@ -3503,7 +3503,7 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+>  
+>  bool isolate_huge_page(struct page *page, struct list_head *list)
+>  {
+> -	VM_BUG_ON_PAGE(!PageHead(page), page);
+> +	VM_BUG_ON(!PageHead(page));
+>  	if (!get_page_unless_zero(page))
+>  		return false;
+>  	spin_lock(&hugetlb_lock);
+> @@ -3514,7 +3514,7 @@ bool isolate_huge_page(struct page *page, struct list_head *list)
+>  
+>  void putback_active_hugepage(struct page *page)
+>  {
+> -	VM_BUG_ON_PAGE(!PageHead(page), page);
+> +	VM_BUG_ON(!PageHead(page));
+>  	spin_lock(&hugetlb_lock);
+>  	list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
+>  	spin_unlock(&hugetlb_lock);
+> @@ -3523,7 +3523,7 @@ void putback_active_hugepage(struct page *page)
+>  
+>  bool is_hugepage_active(struct page *page)
+>  {
+> -	VM_BUG_ON_PAGE(!PageHuge(page), page);
+> +	VM_BUG_ON(!PageHuge(page));
+>  	/*
+>  	 * This function can be called for a tail page because the caller,
+>  	 * scan_movable_pages, scans through a given pfn-range which typically
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index cb00829..d747a84 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -390,7 +390,7 @@ void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
+>  	if (hugetlb_cgroup_disabled())
+>  		return;
+>  
+> -	VM_BUG_ON_PAGE(!PageHuge(oldhpage), oldhpage);
+> +	VM_BUG_ON(!PageHuge(oldhpage));
+>  	spin_lock(&hugetlb_lock);
+>  	h_cg = hugetlb_cgroup_from_page(oldhpage);
+>  	set_hugetlb_cgroup(oldhpage, NULL);
+> -- 
+> 1.8.1.4
+> 
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
