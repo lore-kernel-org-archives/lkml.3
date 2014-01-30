@@ -1,132 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaA3OIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:08:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393AbaA3OIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753506AbaA3OIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:08:43 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52916 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753388AbaA3OIl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jan 2014 09:08:41 -0500
-Date: Thu, 30 Jan 2014 15:10:32 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Brian King <brking@linux.vnet.ibm.com>
-Cc: linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Subject: [PATCH v2 2/2] ipr: Use pci_enable_msi_range() and
- pci_enable_msix_range()
-Message-ID: <20140130141031.GC32349@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <eb0b62be65c050533f2565fcf3f1d673770dfd67.1389904166.git.agordeev@redhat.com>
- <20140128095441.GA6951@dhcp-26-207.brq.redhat.com>
- <52E7CCAD.5070008@linux.vnet.ibm.com>
- <20140129132651.GA27764@dhcp-26-207.brq.redhat.com>
- <20140130140630.GA32349@dhcp-26-207.brq.redhat.com>
+Date: Thu, 30 Jan 2014 14:08:34 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: NFS client broken in Linus' tip
+Message-ID: <20140130140834.GW15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140130140630.GA32349@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+I just booted Linus' tip (plus a few other patches to imx-drm and imx
+code), and stumbled into this interesting scenario:
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/scsi/ipr.c |   47 ++++++++++++++++++-----------------------------
- 1 files changed, 18 insertions(+), 29 deletions(-)
+# touch test
+touch: cannot touch `test': Operation not supported
 
-diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
-index 48d0cfc..70f40ca 100644
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -9317,51 +9317,40 @@ static void ipr_wait_for_pci_err_recovery(struct ipr_ioa_cfg *ioa_cfg)
- static int ipr_enable_msix(struct ipr_ioa_cfg *ioa_cfg)
- {
- 	struct msix_entry entries[IPR_MAX_MSIX_VECTORS];
--	int i, err, vectors;
-+	int i, vectors;
- 
- 	for (i = 0; i < ARRAY_SIZE(entries); ++i)
- 		entries[i].entry = i;
- 
--	vectors = ipr_number_of_msix;
--
--	while ((err = pci_enable_msix(ioa_cfg->pdev, entries, vectors)) > 0)
--			vectors = err;
--
--	if (err < 0) {
-+	vectors = pci_enable_msix_range(ioa_cfg->pdev,
-+					entries, 1, ipr_number_of_msix);
-+	if (vectors < 0) {
- 		ipr_wait_for_pci_err_recovery(ioa_cfg);
--		return err;
-+		return vectors;
- 	}
- 
--	if (!err) {
--		for (i = 0; i < vectors; i++)
--			ioa_cfg->vectors_info[i].vec = entries[i].vector;
--		ioa_cfg->nvectors = vectors;
--	}
-+	for (i = 0; i < vectors; i++)
-+		ioa_cfg->vectors_info[i].vec = entries[i].vector;
-+	ioa_cfg->nvectors = vectors;
- 
--	return err;
-+	return 0;
- }
- 
- static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
- {
--	int i, err, vectors;
-+	int i, vectors;
- 
--	vectors = ipr_number_of_msix;
--
--	while ((err = pci_enable_msi_block(ioa_cfg->pdev, vectors)) > 0)
--			vectors = err;
--
--	if (err < 0) {
-+	vectors = pci_enable_msi_range(ioa_cfg->pdev, 1, ipr_number_of_msix);
-+	if (vectors < 0) {
- 		ipr_wait_for_pci_err_recovery(ioa_cfg);
--		return err;
-+		return vectors;
- 	}
- 
--	if (!err) {
--		for (i = 0; i < vectors; i++)
--			ioa_cfg->vectors_info[i].vec = ioa_cfg->pdev->irq + i;
--		ioa_cfg->nvectors = vectors;
--	}
-+	for (i = 0; i < vectors; i++)
-+		ioa_cfg->vectors_info[i].vec = ioa_cfg->pdev->irq + i;
-+	ioa_cfg->nvectors = vectors;
- 
--	return err;
-+	return 0;
- }
- 
- static void name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
-@@ -9426,7 +9415,7 @@ static irqreturn_t ipr_test_intr(int irq, void *devp)
-  * ipr_test_msi - Test for Message Signaled Interrupt (MSI) support.
-  * @pdev:		PCI device struct
-  *
-- * Description: The return value from pci_enable_msi() can not always be
-+ * Description: The return value from pci_enable_msi_range() can not always be
-  * trusted.  This routine sets up and initiates a test interrupt to determine
-  * if the interrupt is received via the ipr_test_intr() service routine.
-  * If the tests fails, the driver will fall back to LSI.
--- 
-1.7.7.6
+I also tried mkdir and mknod, all result in the same error.  Hard and
+symlinks links are creatable.
+
+However, I can chmod existing files and rename them.  Files can also be
+deleted, and the combination of this has left me without a /etc/mtab !
+
+The machine is a iMX6 based ARM, running root-nfs, which was mounted via
+ubuntu's initramfs (so not using the kernel's built-in root-nfs.)
+
+/proc/mounts for the root mount gives:
+192.168.1.123:/var/boot/ci / nfs rw,relatime,vers=3,rsize=65536,wsize=65536,namlen=255,hard,nolock,proto=tcp,port=2049,timeo=7,retrans=10,sec=sys,local_lock=all,addr=192.168.1.123 0 0
+
+CONFIG_NFS_FS=y
+CONFIG_NFS_V2=y
+CONFIG_NFS_V3=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+# CONFIG_NFS_SWAP is not set
+# CONFIG_NFS_V4_1 is not set
+CONFIG_ROOT_NFS=y
+# CONFIG_NFS_USE_LEGACY_DNS is not set
+CONFIG_NFS_USE_KERNEL_DNS=y
+# CONFIG_NFSD is not set
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_ACL_SUPPORT=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_SUNRPC_GSS=y
+
+tcpdumping, I see:
+
+13:59:51.713523 IP 192.168.1.252.1341245608 > 192.168.1.123.2049: 132 lookup fh Unknown/010007011040840000000000CC238FC8FBA0475D9D9F8356B4C44166CDC38700 "test"
+13:59:51.714345 IP 192.168.1.123.2049 > 192.168.1.252.1341245608: reply ok 120 lookup ERROR: No such file or directory
+13:59:51.751303 IP 192.168.1.252.797 > 192.168.1.123.nfs: . ack 3381 win 2625 <nop,nop,timestamp 474136 3431312924>
+
+which is the only NFS packet(s) I see which mention "test".
+
+and stracing touch:
+
+open("test", O_WRONLY|O_CREAT|O_NOCTTY|O_NONBLOCK|O_LARGEFILE, 0666) = -1 EOPNOTSUPP (Operation not supported)
+utimensat(AT_FDCWD, "test", NULL, 0)    = -1 ENOENT (No such file or directory)
+write(2, "touch: ", 7touch: )                  = 7
+write(2, "cannot touch `test'", 19cannot touch `test')     = 19
+write(2, ": Operation not supported", 25: Operation not supported) = 25
+write(2, "\n", 1
+)                       = 1
+
+I think it's down to this:
+
+commit 013cdf1088d7235da9477a2375654921d9b9ba9f
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Fri Dec 20 05:16:53 2013 -0800
+
+    nfs: use generic posix ACL infrastructure for v3 Posix ACLs
+
+    This causes a small behaviour change in that we don't bother to set
+    ACLs on file creation if the mode bit can express the access permissions
+    fully, and thus behaving identical to local filesystems.
+
+    Signed-off-by: Christoph Hellwig <hch@lst.de>
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+which adds:
+
++       status = posix_acl_create(dir, &sattr->ia_mode, &default_acl, &acl);
++       if (status)
++               goto out;
+
+into nfs3_proc_create(), but this ends up calling down into nfs3_get_acl(),
+which does this:
+
+        if (!nfs_server_capable(inode, NFS_CAP_ACLS))
+                return ERR_PTR(-EOPNOTSUPP);
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
