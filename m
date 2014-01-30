@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358AbaA3Q22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:28:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54715 "EHLO
+	id S1753265AbaA3QfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:35:09 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54822 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaA3Q20 (ORCPT
+	with ESMTP id S1751058AbaA3QfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:28:26 -0500
-Date: Thu, 30 Jan 2014 17:27:53 +0100
+	Thu, 30 Jan 2014 11:35:08 -0500
+Date: Thu, 30 Jan 2014 17:35:01 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: nicolas.pitre@linaro.org, mingo@redhat.com, tglx@linutronix.de,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 6/6] cpu/idle.c: move to sched/idle.c
-Message-ID: <20140130162753.GF5002@laptop.programming.kicks-ass.net>
-References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
- <1391017513-12995-7-git-send-email-nicolas.pitre@linaro.org>
- <20140130152500.GB5002@laptop.programming.kicks-ass.net>
- <alpine.LFD.2.11.1401301102210.1652@knanqh.ubzr>
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
+Message-ID: <20140130163501.GG5002@laptop.programming.kicks-ass.net>
+References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
+ <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
+ <20140130153150.GD5002@laptop.programming.kicks-ass.net>
+ <52EA7D8A.6080604@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1401301102210.1652@knanqh.ubzr>
+In-Reply-To: <52EA7D8A.6080604@linaro.org>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 11:03:31AM -0500, Nicolas Pitre wrote:
-> > This is not a valid patch for PATCH(1). Please try again.
+On Thu, Jan 30, 2014 at 05:27:54PM +0100, Daniel Lezcano wrote:
+> struct cpuidle_state *state = &drv->states[rq->index];
 > 
-> Don't you use git?  ;-)
+> And from the state, we have the following informations:
+> 
+> struct cpuidle_state {
+> 
+> 	[ ... ]
+> 
+>         unsigned int    exit_latency; /* in US */
+>         int             power_usage; /* in mW */
+>         unsigned int    target_residency; /* in US */
+>         bool            disabled; /* disabled on all CPUs */
+> 
+> 	[ ... ]
+> };
 
-Nah, git and me don't get along well.
+Right, but can we say that a higher index will save more power and have
+a higher exit latency? Or is a driver free to have a random mapping from
+idle_index to state?
 
-> Here's a plain patch:
+Also, we should probably create a pretty function to get that state,
+just like you did in patch 1.
 
-Thanks!
+> IIRC, Alex Shi sent a patchset to improve the choosing of the idlest cpu and
+> the exit_latency was needed.
+
+Right. However if we have a 'natural' order in the state array the index
+itself might often be sufficient to find the least idle state, in this
+specific case the absolute exit latency doesn't matter, all we want is
+the lowest one.
+
+Not dereferencing the state array saves hitting cold cachelines.
