@@ -1,64 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaA3ODj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:03:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46012 "EHLO mx2.suse.de"
+	id S1753475AbaA3ODB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:03:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43983 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816AbaA3ODi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:03:38 -0500
-Date: Thu, 30 Jan 2014 15:03:32 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] /dev/mem: handle out-of-bounds read/write
-Message-ID: <20140130150332.64419aee@hananiah.suse.cz>
-In-Reply-To: <20140130132827.GA22557@kroah.com>
-References: <20140130094802.4ee29435@hananiah.suse.cz>
-	<20140130132827.GA22557@kroah.com>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753453AbaA3OC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 09:02:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,750,1384329600"; 
+   d="scan'208";a="475123418"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <linux-usb@vger.kernel.org>
+Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFCv2 09/10] xhci: Use completion and status in global command queue
+Date: Thu, 30 Jan 2014 16:10:26 +0200
+Message-Id: <1391091027-31783-10-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014 05:28:27 -0800
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+Remove the per-device command list and handle_cmd_in_cmd_wait_list()
+and use the completion and status variables found in the
+command structure in the global command list.
 
-> On Thu, Jan 30, 2014 at 09:48:02AM +0100, Petr Tesarik wrote:
-> > The loff_t type may be wider than phys_addr_t (e.g. on 32-bit systems).
-> > Consequently, the file offset may be truncated in the assignment.
-> > Currently, /dev/mem wraps around, which may cause applications to read
-> > or write incorrect regions of memory by accident.
-> 
-> Does that really happen?  If so, that's a userspace bug, right?
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-hub.c  | 11 ------
+ drivers/usb/host/xhci-mem.c  |  1 -
+ drivers/usb/host/xhci-ring.c | 79 ++++++++------------------------------------
+ drivers/usb/host/xhci.c      | 20 ++---------
+ drivers/usb/host/xhci.h      |  3 --
+ 5 files changed, 17 insertions(+), 97 deletions(-)
 
-In my case, it was a userspace bug, indeed. But debugging would have
-been much easier if I saw read() fail with an EOF condition, rather
-than pretend that it actually read some bytes (from above 4G) on a
-32-bit box.
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 4342ec3..1079cc6 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -299,7 +299,6 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 						 suspend);
+ 		}
+ 	}
+-	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, cmd, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -311,18 +310,8 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for stop endpoint command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		spin_lock_irqsave(&xhci->lock, flags);
+-		/* The timeout might have raced with the event ring handler, so
+-		 * only delete from the list if the item isn't poisoned.
+-		 */
+-		if (cmd->cmd_list.next != LIST_POISON1)
+-			list_del(&cmd->cmd_list);
+-		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		ret = -ETIME;
+-		goto command_cleanup;
+ 	}
+-
+-command_cleanup:
+ 	xhci_free_command(xhci, cmd);
+ 	return ret;
+ }
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 7f8e4c3..80b9c11 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -919,7 +919,6 @@ int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id,
+ 	dev->num_rings_cached = 0;
+ 
+ 	init_completion(&dev->cmd_completion);
+-	INIT_LIST_HEAD(&dev->cmd_list);
+ 	dev->udev = udev;
+ 
+ 	/* Point to output device context in dcbaa. */
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 5ccf642..6b61787 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -69,10 +69,6 @@
+ #include "xhci.h"
+ #include "xhci-trace.h"
+ 
+-static int handle_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+-		struct xhci_virt_device *virt_dev,
+-		struct xhci_event_cmd *event);
+-
+ /*
+  * Returns zero if the TRB isn't in this segment, otherwise it returns the DMA
+  * address of the TRB.
+@@ -761,7 +757,6 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 		union xhci_trb *trb, struct xhci_event_cmd *event)
+ {
+ 	unsigned int ep_index;
+-	struct xhci_virt_device *virt_dev;
+ 	struct xhci_ring *ep_ring;
+ 	struct xhci_virt_ep *ep;
+ 	struct list_head *entry;
+@@ -771,11 +766,7 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 	struct xhci_dequeue_state deq_state;
+ 
+ 	if (unlikely(TRB_TO_SUSPEND_PORT(le32_to_cpu(trb->generic.field[3])))) {
+-		virt_dev = xhci->devs[slot_id];
+-		if (virt_dev)
+-			handle_cmd_in_cmd_wait_list(xhci, virt_dev,
+-				event);
+-		else
++		if (!xhci->devs[slot_id])
+ 			xhci_warn(xhci, "Stop endpoint command "
+ 				"completion for disabled slot %u\n",
+ 				slot_id);
+@@ -1203,29 +1194,6 @@ static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+ }
+ 
+ 
+-/* Check to see if a command in the device's command queue matches this one.
+- * Signal the completion or free the command, and return 1.  Return 0 if the
+- * completed command isn't at the head of the command list.
+- */
+-static int handle_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+-		struct xhci_virt_device *virt_dev,
+-		struct xhci_event_cmd *event)
+-{
+-	struct xhci_command *command;
+-
+-	if (list_empty(&virt_dev->cmd_list))
+-		return 0;
+-
+-	command = list_entry(virt_dev->cmd_list.next,
+-			struct xhci_command, cmd_list);
+-	if (xhci->cmd_ring->dequeue != command->command_trb)
+-		return 0;
+-
+-	xhci_complete_cmd_in_cmd_wait_list(xhci, command,
+-			GET_COMP_CODE(le32_to_cpu(event->status)));
+-	return 1;
+-}
+-
+ /*
+  * Finding the command trb need to be cancelled and modifying it to
+  * NO OP command. And if the command is in device's command wait
+@@ -1377,7 +1345,6 @@ static void xhci_handle_cmd_enable_slot(struct xhci_hcd *xhci, int slot_id,
+ 		xhci->slot_id = slot_id;
+ 	else
+ 		xhci->slot_id = 0;
+-	complete(&xhci->addr_dev);
+ }
+ 
+ static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id)
+@@ -1402,9 +1369,6 @@ static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id,
+ 	unsigned int ep_state;
+ 	u32 add_flags, drop_flags;
+ 
+-	virt_dev = xhci->devs[slot_id];
+-	if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
+-		return;
+ 	/*
+ 	 * Configure endpoint commands can come from the USB core
+ 	 * configuration or alt setting changes, or because the HW
+@@ -1413,6 +1377,7 @@ static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id,
+ 	 * If the command was for a halted endpoint, the xHCI driver
+ 	 * is not waiting on the configure endpoint command.
+ 	 */
++	virt_dev = xhci->devs[slot_id];
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
+ 	if (!ctrl_ctx) {
+ 		xhci_warn(xhci, "Could not get input context, bad type.\n");
+@@ -1448,35 +1413,11 @@ static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id,
+ 	return;
+ }
+ 
+-static void xhci_handle_cmd_eval_ctx(struct xhci_hcd *xhci, int slot_id,
+-		struct xhci_event_cmd *event, u32 cmd_comp_code)
+-{
+-	struct xhci_virt_device *virt_dev;
+-
+-	virt_dev = xhci->devs[slot_id];
+-	if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
+-		return;
+-	virt_dev->cmd_status = cmd_comp_code;
+-	complete(&virt_dev->cmd_completion);
+-}
+-
+-static void xhci_handle_cmd_addr_dev(struct xhci_hcd *xhci, int slot_id,
+-		u32 cmd_comp_code)
+-{
+-	xhci->devs[slot_id]->cmd_status = cmd_comp_code;
+-	complete(&xhci->addr_dev);
+-}
+-
+ static void xhci_handle_cmd_reset_dev(struct xhci_hcd *xhci, int slot_id,
+ 		struct xhci_event_cmd *event)
+ {
+-	struct xhci_virt_device *virt_dev;
+-
+ 	xhci_dbg(xhci, "Completed reset device command.\n");
+-	virt_dev = xhci->devs[slot_id];
+-	if (virt_dev)
+-		handle_cmd_in_cmd_wait_list(xhci, virt_dev, event);
+-	else
++	if (!xhci->devs[slot_id])
+ 		xhci_warn(xhci, "Reset device command completion "
+ 				"for disabled slot %u\n", slot_id);
+ }
+@@ -1558,13 +1499,13 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		xhci_handle_cmd_disable_slot(xhci, slot_id);
+ 		break;
+ 	case TRB_CONFIG_EP:
+-		xhci_handle_cmd_config_ep(xhci, slot_id, event, cmd_comp_code);
++		if (!cmd->completion)
++			xhci_handle_cmd_config_ep(xhci, slot_id, event,
++						  cmd_comp_code);
+ 		break;
+ 	case TRB_EVAL_CONTEXT:
+-		xhci_handle_cmd_eval_ctx(xhci, slot_id, event, cmd_comp_code);
+ 		break;
+ 	case TRB_ADDR_DEV:
+-		xhci_handle_cmd_addr_dev(xhci, slot_id, cmd_comp_code);
+ 		break;
+ 	case TRB_STOP_RING:
+ 		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+@@ -1599,6 +1540,14 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 
+ 	list_del(&cmd->cmd_list);
+ 
++	if (cmd->completion) {
++		/* the caller waiting for completion should free the command */
++		cmd->status = cmd_comp_code;
++		complete(cmd->completion);
++	} else {
++		kfree(cmd);
++	}
++
+ 	inc_deq(xhci, xhci->cmd_ring);
+ }
+ 
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 393d658..e02c80e 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2618,8 +2618,6 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 		return -ENOMEM;
+ 	}
+ 
+-	list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+-
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, command,
+ 				command->in_ctx->dma,
+@@ -2629,7 +2627,6 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 				command->in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+ 	if (ret < 0) {
+-		list_del(&command->cmd_list);
+ 		if ((xhci->quirks & XHCI_EP_LIMIT_QUIRK))
+ 			xhci_free_host_resources(xhci, ctrl_ctx);
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3469,11 +3466,9 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 
+-	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, reset_device_cmd, slot_id);
+ 	if (ret) {
+ 		xhci_dbg(xhci, "FIXME: allocate a command ring segment\n");
+-		list_del(&reset_device_cmd->cmd_list);
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		goto command_cleanup;
+ 	}
+@@ -3487,13 +3482,6 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for reset device command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		spin_lock_irqsave(&xhci->lock, flags);
+-		/* The timeout might have raced with the event ring handler, so
+-		 * only delete from the list if the item isn't poisoned.
+-		 */
+-		if (reset_device_cmd->cmd_list.next != LIST_POISON1)
+-			list_del(&reset_device_cmd->cmd_list);
+-		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		ret = -ETIME;
+ 		goto command_cleanup;
+ 	}
+@@ -3700,7 +3688,6 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 				timeleft == 0 ? "Timeout" : "Signal");
+ 		/* cancel the enable slot request */
+ 		ret = xhci_cancel_cmd(xhci, NULL, command->command_trb);
+-		kfree(command);
+ 		return ret;
+ 	}
+ 
+@@ -3855,13 +3842,12 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 				timeleft == 0 ? "Timeout" : "Signal");
+ 		/* cancel the address device command */
+ 		ret = xhci_cancel_cmd(xhci, NULL, command->command_trb);
+-		kfree(command);
+ 		if (ret < 0)
+ 			return ret;
+ 		return -ETIME;
+ 	}
+ 
+-	switch (virt_dev->cmd_status) {
++	switch (command->status) {
+ 	case COMP_CTX_STATE:
+ 	case COMP_EBADSLT:
+ 		xhci_err(xhci, "Setup ERROR: address device command for slot %d.\n",
+@@ -3882,8 +3868,8 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 				"Successful Address Device command");
+ 		break;
+ 	default:
+-		xhci_err(xhci, "ERROR: unexpected command completion "
+-				"code 0x%x.\n", virt_dev->cmd_status);
++		xhci_err(xhci, "ERROR: unexpected command completion code 0x%x\n.",
++				command->status);
+ 		xhci_dbg(xhci, "Slot ID %d Output Context:\n", udev->slot_id);
+ 		xhci_dbg_ctx(xhci, virt_dev->out_ctx, 2);
+ 		trace_xhci_address_ctx(xhci, virt_dev->out_ctx, 1);
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 71aed35..afff1da 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -938,9 +938,6 @@ struct xhci_virt_device {
+ #define	XHCI_MAX_RINGS_CACHED	31
+ 	struct xhci_virt_ep		eps[31];
+ 	struct completion		cmd_completion;
+-	/* Status of the last command issued for this device */
+-	u32				cmd_status;
+-	struct list_head		cmd_list;
+ 	u8				fake_port;
+ 	u8				real_port;
+ 	struct xhci_interval_bw_table	*bw_table;
+-- 
+1.8.1.2
 
-> > Let's follow POSIX file semantics here and return 0 when reading from
-> > and -EFBIG when writing to an offset that cannot be represented by a
-> > phys_addr_t.
-> > 
-> > Note that the conditional is optimized out by the compiler if loff_t
-> > has the same size as phys_addr_t.
-> > 
-> > Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> > ---
-> >  drivers/char/mem.c | 6 ++++++
-> >  1 file changed, 6 insertions(+)
-> 
-> What is going to break if we apply this patch?  :)
-
-Nothing, unless it was broken already. I mean, if anyone is trying to
-play dirty tricks with 32-bit file offset overflow, I'd call such code
-sick and broken.
-
-And on 64-bit platforms, the patch does not even change the generated
-code.
-
-Petr T
