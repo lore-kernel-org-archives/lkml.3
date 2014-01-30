@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaA3Hh1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 02:37:27 -0500
-Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:3180 "EHLO
-	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaA3HhZ (ORCPT
+	id S1752666AbaA3Hkk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 02:40:40 -0500
+Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:2753 "EHLO
+	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025AbaA3Hkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 02:37:25 -0500
-Message-ID: <52EA00E5.10303@xs4all.nl>
-Date: Thu, 30 Jan 2014 08:36:05 +0100
+	Thu, 30 Jan 2014 02:40:39 -0500
+Message-ID: <52EA01AC.3000706@xs4all.nl>
+Date: Thu, 30 Jan 2014 08:39:24 +0100
 From: Hans Verkuil <hverkuil@xs4all.nl>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
@@ -21,10 +21,10 @@ CC: linux-media@vger.kernel.org, linux-doc@vger.kernel.org,
         Rrob@landley.net, andrew.smirnov@gmail.com, anatol.pomozov@gmail.com,
         jmccrohan@gmail.com, joe@perches.com, awalls@md.metrocast.net,
         arun.kk@samsung.com, austin.lobo@samsung.com
-Subject: Re: [PATCH v2 1/2] drivers/media: v4l2: Add settings for Horizontal
- and Vertical MV Search Range
-References: <52E0ED10.2020901@samsung.com> <1391060563-27015-1-git-send-email-amit.grover@samsung.com> <1391060563-27015-2-git-send-email-amit.grover@samsung.com>
-In-Reply-To: <1391060563-27015-2-git-send-email-amit.grover@samsung.com>
+Subject: Re: [PATCH v2 2/2] drivers/media: s5p-mfc: Add Horizontal and Vertical
+ MV Search Range
+References: <52E0ED10.2020901@samsung.com> <1391060563-27015-1-git-send-email-amit.grover@samsung.com> <1391060563-27015-3-git-send-email-amit.grover@samsung.com>
+In-Reply-To: <1391060563-27015-3-git-send-email-amit.grover@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,103 +32,113 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 01/30/2014 06:42 AM, Amit Grover wrote:
-> Adding V4L2 controls for horizontal and vertical search range in pixels
-> for motion estimation module in video encoder.
+> This patch adds Controls to set Horizontal and Vertical search range
+> for Motion Estimation block for Samsung MFC video Encoders.
 > 
 > Signed-off-by: Swami Nathan <swaminath.p@samsung.com>
 > Signed-off-by: Amit Grover <amit.grover@samsung.com>
 > ---
->  Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c         |   14 ++++++++++++++
->  include/uapi/linux/v4l2-controls.h           |    2 ++
->  3 files changed, 36 insertions(+)
+>  drivers/media/platform/s5p-mfc/regs-mfc-v6.h    |    1 +
+>  drivers/media/platform/s5p-mfc/s5p_mfc_common.h |    2 ++
+>  drivers/media/platform/s5p-mfc/s5p_mfc_enc.c    |   24 +++++++++++++++++++++++
+>  drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c |    8 ++------
+>  4 files changed, 29 insertions(+), 6 deletions(-)
 > 
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index 7a3b49b..be04d18 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -2258,6 +2258,26 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
->  VBV buffer control.</entry>
->  	      </row>
+> diff --git a/drivers/media/platform/s5p-mfc/regs-mfc-v6.h b/drivers/media/platform/s5p-mfc/regs-mfc-v6.h
+> index 2398cdf..8d0b686 100644
+> --- a/drivers/media/platform/s5p-mfc/regs-mfc-v6.h
+> +++ b/drivers/media/platform/s5p-mfc/regs-mfc-v6.h
+> @@ -229,6 +229,7 @@
+>  #define S5P_FIMV_E_PADDING_CTRL_V6		0xf7a4
+>  #define S5P_FIMV_E_MV_HOR_RANGE_V6		0xf7ac
+>  #define S5P_FIMV_E_MV_VER_RANGE_V6		0xf7b0
+> +#define S5P_FIMV_E_MV_RANGE_V6_MASK		0x3fff
 >  
-> +		  <row><entry></entry></row>
-> +	      <row id=""v4l2-mpeg-video-hor-search-range">
-> +		<entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE</constant>&nbsp;</entry>
-> +		<entry>integer</entry>
-> +	      </row>
-> +		<row><entry spanname="descr">Horizontal search range defines maximum horizontal search area in pixels
-> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
-> +horizontal search range for motion estimation module in video encoder.</entry>
-> +	      </row>
-> +
-> +		 <row><entry></entry></row>
-> +	      <row id="v4l2-mpeg-video-vert-search-range">
-> +		<entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE</constant>&nbsp;</entry>
-> +		<entry>integer</entry>
-
-These two controls sound very mfc specific as opposed to being part of the standard.
-If so, then they should be named V4L2_CID_MPEG_MFC51_*. Also, for which codecs are
-these controls applicable?
-
-> +	      </row>
-> +		<row><entry spanname="descr">Vertical search range defines maximum vertical search area in pixels
-> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
-> +vertical search range for motion estimation module in video encoder.</entry>
-> +	      </row>
-> +
->  	      <row><entry></entry></row>
->  	      <row>
->  		<entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE</constant>&nbsp;</entry>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index fb46790..e775388 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -735,6 +735,8 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_MPEG_VIDEO_DEC_PTS:			return "Video Decoder PTS";
->  	case V4L2_CID_MPEG_VIDEO_DEC_FRAME:			return "Video Decoder Frame Count";
->  	case V4L2_CID_MPEG_VIDEO_VBV_DELAY:			return "Initial Delay for VBV Control";
-> +	case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:		return "Horizontal MV Search Range";
-> +	case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:		return "Vertical MV Search Range";
->  	case V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER:		return "Repeat Sequence Header";
+>  #define S5P_FIMV_E_VBV_BUFFER_SIZE_V6		0xf84c
+>  #define S5P_FIMV_E_VBV_INIT_DELAY_V6		0xf850
+> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+> index 6920b54..b90ee34 100644
+> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_common.h
+> @@ -430,6 +430,8 @@ struct s5p_mfc_vp8_enc_params {
+>  struct s5p_mfc_enc_params {
+>  	u16 width;
+>  	u16 height;
+> +	u32 mv_h_range;
+> +	u32 mv_v_range;
 >  
->  	/* VPX controls */
-> @@ -905,6 +907,18 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  		*min = 0;
->  		*max = *step = 1;
->  		break;
-> +	case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:
-> +		*type = V4L2_CTRL_TYPE_INTEGER;
-> +		*min = 16;
-> +		*max = 128;
-> +		*step = 16;
+>  	u16 gop_size;
+>  	enum v4l2_mpeg_video_multi_slice_mode slice_mode;
+> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c b/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
+> index 4ff3b6c..704f30c1 100644
+> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
+> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_enc.c
+> @@ -208,6 +208,24 @@ static struct mfc_control controls[] = {
+>  		.default_value = 0,
+>  	},
+>  	{
+> +		.id = V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE,
+> +		.type = V4L2_CTRL_TYPE_INTEGER,
+> +		.name = "Horizontal MV Search Range",
 
-Weird range, why not use range 1-8?
-
-> +		break;
-> +	case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:
-> +		*type = V4L2_CTRL_TYPE_INTEGER;
-> +		*min = 16;
-> +		*max = 128;
-> +		*step = 16;
-> +		break;
->  	case V4L2_CID_PAN_RESET:
->  	case V4L2_CID_TILT_RESET:
->  	case V4L2_CID_FLASH_STROBE:
-> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-> index 1666aab..80e1def 100644
-> --- a/include/uapi/linux/v4l2-controls.h
-> +++ b/include/uapi/linux/v4l2-controls.h
-> @@ -372,6 +372,8 @@ enum v4l2_mpeg_video_multi_slice_mode {
->  #define V4L2_CID_MPEG_VIDEO_DEC_FRAME			(V4L2_CID_MPEG_BASE+224)
->  #define V4L2_CID_MPEG_VIDEO_VBV_DELAY			(V4L2_CID_MPEG_BASE+225)
->  #define V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER		(V4L2_CID_MPEG_BASE+226)
-> +#define V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE		(V4L2_CID_MPEG_BASE+227)
-> +#define V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE		(V4L2_CID_MPEG_BASE+228)
->  
->  #define V4L2_CID_MPEG_VIDEO_H263_I_FRAME_QP		(V4L2_CID_MPEG_BASE+300)
->  #define V4L2_CID_MPEG_VIDEO_H263_P_FRAME_QP		(V4L2_CID_MPEG_BASE+301)
-> 
+Don't set the name here if the control is also defined in v4l2-ctrls.
+That way the string from v4l2-ctrls is the leading definition.
 
 Regards,
 
 	Hans
+
+> +		.minimum = 16,
+> +		.maximum = 128,
+> +		.step = 16,
+> +		.default_value = 32,
+> +	},
+> +	{
+> +		.id = V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE,
+> +		.type = V4L2_CTRL_TYPE_INTEGER,
+> +		.name = "Vertical MV Search Range",
+> +		.minimum = 16,
+> +		.maximum = 128,
+> +		.step = 16,
+> +		.default_value = 32,
+> +	},
+> +	{
+>  		.id = V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE,
+>  		.type = V4L2_CTRL_TYPE_INTEGER,
+>  		.minimum = 0,
+> @@ -1377,6 +1395,12 @@ static int s5p_mfc_enc_s_ctrl(struct v4l2_ctrl *ctrl)
+>  	case V4L2_CID_MPEG_VIDEO_VBV_SIZE:
+>  		p->vbv_size = ctrl->val;
+>  		break;
+> +	case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:
+> +		p->mv_h_range = ctrl->val;
+> +		break;
+> +	case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:
+> +		p->mv_v_range = ctrl->val;
+> +		break;
+>  	case V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE:
+>  		p->codec.h264.cpb_size = ctrl->val;
+>  		break;
+> diff --git a/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c b/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
+> index 461358c..3c10188 100644
+> --- a/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
+> +++ b/drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
+> @@ -727,14 +727,10 @@ static int s5p_mfc_set_enc_params(struct s5p_mfc_ctx *ctx)
+>  	WRITEL(reg, S5P_FIMV_E_RC_CONFIG_V6);
+>  
+>  	/* setting for MV range [16, 256] */
+> -	reg = 0;
+> -	reg &= ~(0x3FFF);
+> -	reg = 256;
+> +	reg = (p->mv_h_range & S5P_FIMV_E_MV_RANGE_V6_MASK);
+>  	WRITEL(reg, S5P_FIMV_E_MV_HOR_RANGE_V6);
+>  
+> -	reg = 0;
+> -	reg &= ~(0x3FFF);
+> -	reg = 256;
+> +	reg = (p->mv_v_range & S5P_FIMV_E_MV_RANGE_V6_MASK);
+>  	WRITEL(reg, S5P_FIMV_E_MV_VER_RANGE_V6);
+>  
+>  	WRITEL(0x0, S5P_FIMV_E_FRAME_INSERTION_V6);
+> 
+
