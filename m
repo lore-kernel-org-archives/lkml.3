@@ -1,118 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaA3OBS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:01:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36612 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753348AbaA3OBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:01:16 -0500
-Message-ID: <1391090475.4405.60.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3/4] net: ethoc: implement ethtool get registers
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Marc Gauthier <marc@cadence.com>
-Date: Thu, 30 Jan 2014 14:01:15 +0000
-In-Reply-To: <1391025397-14965-4-git-send-email-jcmvbkbc@gmail.com>
-References: <1391025397-14965-1-git-send-email-jcmvbkbc@gmail.com>
-	 <1391025397-14965-4-git-send-email-jcmvbkbc@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-JLnwgeMfi7hQ2xFEhuF8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753388AbaA3OCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:02:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62160 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752853AbaA3OCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 09:02:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,750,1384329600"; 
+   d="scan'208";a="475123310"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <linux-usb@vger.kernel.org>
+Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFCv2 02/10] xhci: use a command structure internally in xhci_address_device()
+Date: Thu, 30 Jan 2014 16:10:19 +0200
+Message-Id: <1391091027-31783-3-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Preparing for the global command queue by using command strucure
+in xhci_address_device
 
---=-JLnwgeMfi7hQ2xFEhuF8
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci.c | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
-On Wed, 2014-01-29 at 23:56 +0400, Max Filippov wrote:
-> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index a40485e..5bf0f94 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3734,7 +3734,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u64 temp_64;
+-	union xhci_trb *cmd_trb;
++	struct xhci_command *command;
+ 
+ 	if (!udev->slot_id) {
+ 		xhci_dbg_trace(xhci, trace_xhci_dbg_address,
+@@ -3755,11 +3755,19 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 		return -EINVAL;
+ 	}
+ 
++	command = xhci_alloc_command(xhci, false, false, GFP_KERNEL);
++	if (!command)
++		return -ENOMEM;
++
++	command->in_ctx = virt_dev->in_ctx;
++	command->completion = &xhci->addr_dev;
++
+ 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
+ 	if (!ctrl_ctx) {
+ 		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",
+ 				__func__);
++		kfree(command);
+ 		return -EINVAL;
+ 	}
+ 	/*
+@@ -3781,20 +3789,22 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 				slot_ctx->dev_info >> 27);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
++	command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		xhci_dbg_trace(xhci, trace_xhci_dbg_address,
+ 				"FIXME: allocate a command ring segment");
++		kfree(command);
+ 		return ret;
+ 	}
+ 	xhci_ring_cmd_db(xhci);
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+-	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
++	timeleft = wait_for_completion_interruptible_timeout(
++			command->completion,
+ 			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+@@ -3804,7 +3814,8 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 		xhci_warn(xhci, "%s while waiting for address device command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+ 		/* cancel the address device command */
+-		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
++		ret = xhci_cancel_cmd(xhci, NULL, command->command_trb);
++		kfree(command);
+ 		if (ret < 0)
+ 			return ret;
+ 		return -ETIME;
+@@ -3840,6 +3851,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 		break;
+ 	}
+ 	if (ret) {
++		kfree(command);
+ 		return ret;
+ 	}
+ 	temp_64 = xhci_read_64(xhci, &xhci->op_regs->dcbaa_ptr);
+@@ -3874,7 +3886,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	xhci_dbg_trace(xhci, trace_xhci_dbg_address,
+ 		       "Internal device address = %d",
+ 		       le32_to_cpu(slot_ctx->dev_state) & DEV_ADDR_MASK);
+-
++	kfree(command);
+ 	return 0;
+ }
+ 
+-- 
+1.8.1.2
 
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-
-> ---
->  drivers/net/ethernet/ethoc.c | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->=20
-> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
-> index 9518023..0bf297b 100644
-> --- a/drivers/net/ethernet/ethoc.c
-> +++ b/drivers/net/ethernet/ethoc.c
-> @@ -52,6 +52,7 @@ MODULE_PARM_DESC(buffer_size, "DMA buffer allocation si=
-ze");
->  #define	ETH_HASH0	0x48
->  #define	ETH_HASH1	0x4c
->  #define	ETH_TXCTRL	0x50
-> +#define	ETH_END		0x54
-> =20
->  /* mode register */
->  #define	MODER_RXEN	(1 <<  0) /* receive enable */
-> @@ -922,9 +923,28 @@ static int ethoc_set_settings(struct net_device *dev=
-, struct ethtool_cmd *cmd)
->  	return phy_ethtool_sset(phydev, cmd);
->  }
-> =20
-> +static int ethoc_get_regs_len(struct net_device *netdev)
-> +{
-> +	return ETH_END;
-> +}
-> +
-> +static void ethoc_get_regs(struct net_device *dev, struct ethtool_regs *=
-regs,
-> +			   void *p)
-> +{
-> +	struct ethoc *priv =3D netdev_priv(dev);
-> +	u32 *regs_buff =3D p;
-> +	unsigned i;
-> +
-> +	regs->version =3D 0;
-> +	for (i =3D 0; i < ETH_END / sizeof(u32); ++i)
-> +		regs_buff[i] =3D ethoc_read(priv, i * sizeof(u32));
-> +}
-> +
->  const struct ethtool_ops ethoc_ethtool_ops =3D {
->  	.get_settings =3D ethoc_get_settings,
->  	.set_settings =3D ethoc_set_settings,
-> +	.get_regs_len =3D ethoc_get_regs_len,
-> +	.get_regs =3D ethoc_get_regs,
->  	.get_link =3D ethtool_op_get_link,
->  	.get_ts_info =3D ethtool_op_get_ts_info,
->  };
-
---=20
-Ben Hutchings
-It is a miracle that curiosity survives formal education. - Albert Einstein
-
---=-JLnwgeMfi7hQ2xFEhuF8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIVAwUAUupbK+e/yOyVhhEJAQpF3RAAuzw8YJRD4hb/4qXZsUv14Hf2TcJRHiCM
-r6ynYjiX3rcEAGHnQp+hUmGbLRfz8tXxy6lA2DL1NSOjtbN8scC+Kmf+yRka0FB1
-qRr5cVktKe4fCyM5SWCKtmH/a1GHKu/+DYjm93fqLd3TZzLT08nZ87bxXIsxGvf4
-DDf/Onl8Sk2q9JTCymfc9Vj7avqrlfjJYPQLvCaTwUO6gpLFwHp50LVnwU9t7GVd
-w/ZoFezMyds9cKBhuQ0Uw2/X7E5usKnVbjpK3RL202ScVp2Yf1S2grmiIdJt39/Z
-Zk8Gvseb3FXy2+baIH5u+5HzbRsOgltrquSnsKDv0wlUaraowbSY3z5C4fH+NO4l
-4cSglGQWCLvN51xiN+A4cJlQ9OXfrS8MUkvbU0MaJLL8RXdoIUo9VNFkIDdjEuCq
-CpoH02defxfstdde4zZKK4q/U4kjM23Q4+AvpKv+fVlrMQ5PcOYKVTjD8s9Gn2gx
-xFH+lT0AEdgRlkYc0rpKuPdcTp7myLCK2rPcNTFa3SYuagY1r/eGi5kQN8/NY+Fj
-y6S2CCLrPUenZzL2qWSMW+qAT/IfSvStgIFT0n8tuXoJYznV7wuTQ7XRsWBHnI+O
-rLfgm+CU5YngEplpWhyjyIYHSRUKUbRoR42hmG4vuOHRzvyInbmiDg9v+ULS9sbi
-5C5KBL2gVzM=
-=R8lE
------END PGP SIGNATURE-----
-
---=-JLnwgeMfi7hQ2xFEhuF8--
