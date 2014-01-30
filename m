@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786AbaA3Xtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:49:45 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:61117 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaA3Xtn convert rfc822-to-8bit (ORCPT
+	id S1753922AbaA3XuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 18:50:10 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35844 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853AbaA3Xtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:49:43 -0500
-From: "Network Nut" <sillystack@gmail.com>
-To: "'Clemens Ladisch'" <clemens@ladisch.de>
-Cc: <linux-kernel@vger.kernel.org>
-References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com> <52E77282.4030303@ladisch.de> <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com> <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com>
-In-Reply-To: <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com>
-Subject: RE: WaitForMultipleObjects/etc. In Kernel
-Date: Thu, 30 Jan 2014 17:49:39 -0600
-Message-ID: <00f201cf1e15$f134ce70$d39e6b50$@gmail.com>
+	Thu, 30 Jan 2014 18:49:55 -0500
+Message-ID: <52EAE51D.4030709@infradead.org>
+Date: Thu, 30 Jan 2014 15:49:49 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQNT3acP/4y+UoGLob+8VizidhBl0AFz54/xAX6FO6UBfOQBmQGmz+ZcAX4/+oICHvy7eQGGlUFQlzqd5SA=
-Content-Language: en-us
+To: Andiry Xu <andiry.xu@gmail.com>
+CC: David Rientjes <rientjes@google.com>, Andiry Xu <andiry@gmail.com>,
+        linux-kernel@vger.kernel.org, Linux MM <linux-mm@kvack.org>
+Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
+References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>	<52EAA714.3080809@infradead.org>	<CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>	<52EAB56E.2030102@infradead.org>	<alpine.DEB.2.02.1401301416030.15271@chino.kir.corp.google.com>	<52EAD810.40204@infradead.org> <CAOmQrk1aghJrFb6RNO1yTwN51Brk_88O9k8OuCm_QshP3zag-Q@mail.gmail.com>
+In-Reply-To: <CAOmQrk1aghJrFb6RNO1yTwN51Brk_88O9k8OuCm_QshP3zag-Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Clemens Ladisch [mailto:clemens@ladisch.de]
-> Sent: Wednesday, January 29, 2014 2:31 AM
-> To: Network Nut
-> Cc: linux-kernel@vger.kernel.org
-> Subject: RE: WaitForMultipleObjects/etc. In Kernel
+On 01/30/2014 03:43 PM, Andiry Xu wrote:
+> On Thu, Jan 30, 2014 at 2:54 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On 01/30/2014 02:17 PM, David Rientjes wrote:
+>>> On Thu, 30 Jan 2014, Randy Dunlap wrote:
+>>>
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> In kernel-parameters.txt, there is following description:
+>>>>>>>
+>>>>>>> memmap=nn[KMG]$ss[KMG]
+>>>>>>>                         [KNL,ACPI] Mark specific memory as reserved.
+>>>>>>>                         Region of memory to be used, from ss to ss+nn.
+>>>>>>
+>>>>>> Should be:
+>>>>>>                           Region of memory to be reserved, from ss to ss+nn.
+>>>>>>
+>>>>>> but that doesn't help with the problem that you describe, does it?
+>>>>>>
+>>>>>
+>>>>> Actually it should be:
+>>>>>                              Region of memory to be reserved, from nn to nn+ss.
+>>>>>
+>>>>> That is, exchange nn and ss.
+>>>>
+>>>> Yes, I understand that that's what you are reporting.  I just haven't yet
+>>>> worked out how the code manages to exchange those 2 values.
+>>>>
+>>>
+>>> It doesn't, the documentation is correct as written and could be improved
+>>> by your suggestion of "Region of memory to be reserved, from ss to ss+nn."
+>>> I think Andiry probably is having a problem with his bootloader
+>>> interpreting the '$' incorrectly (or variable expansion if coming from the
+>>> shell) or interpreting the resulting user-defined e820 map incorrectly.
+>>> --
+>>
+>> Yeah, I certainly don't see a problem with the code and I would want to
+>> see/understand that before I exchanged the 2 values in the documentation.
+>>
+>> I'll submit a patch to make the wording a bit better.
+>>
 > 
-> Network Nut wrote:
-> >I was looking at POSIX because it allows naming of the primitives.
-> 
-> Linux uses two orthogonal mechanisms for synchronization primitives and for
-> naming/sharing.
-> 
-> >I need to epoll_wait on inter-process {mutex, event, semaphore}.
-> 
-> Use eventfd.
-> 
-> >I need to reference inter-process {mutex, event, semaphore}, each
-> >identified by string, if feasible.
-> 
-> Send the fd through a Unix domain socket.
+> I'm using Ubuntu 13.04 with GRUB2. If it's a bootloader issue, what should I do?
 
-Hi Again,
+See https://bugs.launchpad.net/ubuntu/+source/grub2/+bug/448413
 
-I was thinking that, rather than as for specifics, I should present my general problem, and ask how long-time Linux experts would solve it.
+i.e., use shell escape '\' character.
 
-I have a master process M, that executes continually, from the birth to death of user-session.
-
-I have many (distinct) processes that will be launched, and these processes, P1, P2, ...Pn, expect to see that M is executing. These processes:
-
-1. expect to have access to a shared-memory section that already exists because M created it
-2. expect to use a semaphore that already exists because M created it
-3. expect to use a mutex that exists because M created it
-
-P1, P2, ...Pn all know the path of image on disk of M. They are also permitted to maintain a fixed string that can be used to "get at" the mutex and semaphore.
-
-How would P1, P2, ...Pn get at the semaphore that M created?
-
-Please note that M cannot have any prior knowledge at all of P1, P2, ...Pn. P1...etc. must initiate  communication with M.
-
-[I don't want to misuse/abuse linux-kernel with my personal questions, so if there is a more appropriate group, please let me know.]
-
-Regards,
-
--Net
-
-
-
+-- 
+~Randy
