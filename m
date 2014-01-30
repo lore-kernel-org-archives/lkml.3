@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaA3IiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 03:38:21 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:43030 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaA3IiT (ORCPT
+	id S1752261AbaA3Iqn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 03:46:43 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:57110 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaA3Iql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 03:38:19 -0500
-Message-ID: <52EA0F76.6000300@gmail.com>
-Date: Thu, 30 Jan 2014 09:38:14 +0100
+	Thu, 30 Jan 2014 03:46:41 -0500
+Message-ID: <52EA116E.3030100@gmail.com>
+Date: Thu, 30 Jan 2014 09:46:38 +0100
 From: boris brezillon dev <b.brezillon.dev@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -27,7 +27,7 @@ CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         linux-mtd@lists.infradead.org, dev@linux-sunxi.org,
-        Rob Herring <rob.herring@calxeda.com>
+        Rob Herring <robherring2@gmail.com>
 Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 09/14] mtd: nand: add sunxi NFC
  dt bindings doc
 References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>	 <1391006064-28890-10-git-send-email-b.brezillon.dev@gmail.com>	 <CAL_JsqLVr1gSLArqtfOiHce+u6ZK8FiKMX0o9bvMrMoGGhATvg@mail.gmail.com> <1391035079.14902.3.camel@localhost>
@@ -39,6 +39,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello Henrik,
+
+Sorry for the noise, I sent the mail to Rob's old address.
 
 On 29/01/2014 23:37, Henrik Nordström wrote:
 > ons 2014-01-29 klockan 11:11 -0600 skrev Rob Herring:
