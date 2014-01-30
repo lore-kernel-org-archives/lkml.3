@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674AbaA3X3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:29:12 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:48008 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaA3X3K (ORCPT
+	id S1753834AbaA3Xbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 18:31:50 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44349 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374AbaA3Xbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:29:10 -0500
-Date: Fri, 31 Jan 2014 00:29:09 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: Sohny Thomas <sthomas@linux.vnet.ibm.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org,
-        davem@davemloft.net, kumuda <kumuda@linux.vnet.ibm.com>
-Subject: Re: [PATCH] ipv6: default route for link local address is not added while assigning a address
-Message-ID: <20140130232909.GH25336@order.stressinduktion.org>
-Mail-Followup-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-	Sohny Thomas <sthomas@linux.vnet.ibm.com>,
-	netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
-	yoshfuji@linux-ipv6.org, davem@davemloft.net,
-	kumuda <kumuda@linux.vnet.ibm.com>
-References: <52E8A2AA.3090507@linux.vnet.ibm.com> <52E8DA37.7010208@6wind.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52E8DA37.7010208@6wind.com>
+	Thu, 30 Jan 2014 18:31:49 -0500
+Date: Thu, 30 Jan 2014 15:31:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Eric Dumazet <edumazet@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Jan Kara <jack@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] kthread: ensure locality of task_struct allocations
+In-Reply-To: <20140130230812.GA874@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1401301531280.16167@chino.kir.corp.google.com>
+References: <20140128183808.GB9315@linux.vnet.ibm.com> <alpine.DEB.2.02.1401290012460.10268@chino.kir.corp.google.com> <alpine.DEB.2.10.1401290957350.23856@nuc> <alpine.DEB.2.02.1401291622550.22974@chino.kir.corp.google.com>
+ <1391062491.28432.68.camel@edumazet-glaptop2.roam.corp.google.com> <alpine.DEB.2.02.1401301446320.12223@chino.kir.corp.google.com> <20140130230812.GA874@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for replying so late...
+On Thu, 30 Jan 2014, Nishanth Aravamudan wrote:
 
-On Wed, Jan 29, 2014 at 11:38:47AM +0100, Nicolas Dichtel wrote:
-> Le 29/01/2014 07:41, Sohny Thomas a écrit :
-> >Resending this on netdev mailing list:
-> >Default route for link local address is configured automatically if
-> >NETWORKING_IPV6=yes is in ifcfg-eth*.
-> >When the route table for the interface is flushed and a new address is 
-> >added to
-> >the same device with out removing linklocal addr, default route for link 
-> >local
-> >address has to added by default.
-> >
-> >I have found the issue to be caused by this checkin
-> >
-> >http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/net/ipv6?id=62b54dd91567686a1cb118f76a72d5f4764a86dd
-> >
-> >
-> >According to this change :
-> >He removes adding a link local route if any other address is added , 
-> >applicable
-> >across all interfaces though there's mentioned only lo interface
-> >So below patch fixes for other devices
-> >
-> >Signed-off-by: Sohny THomas <sohthoma@linux.vnet.ibm.com>
-> Your email client has corrupted the patch, it cannot be applied.
-> Please read Documentation/email-clients.txt
+> In the presence of memoryless nodes, numa_node_id() will return the
+> current CPU's NUMA node, but that may not be where we expect to allocate
+> from memory from. Instead, we should rely on the fallback code in the
+> memory allocator itself, by using NUMA_NO_NODE. Also, when calling
+> kthread_create_on_node(), use the nearest node with memory to the cpu in
+> question, rather than the node it is running on.
 > 
-> About the patch, I still think that the flush is too agressive. Link local
-> routes are marked as 'proto kernel', removing them without the link local
-> address is wrong.
+> Signed-off-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 
-Actually I am not so sure, there is no defined semantic of flush. I would
-be ok with all three solutions: leave it as is, always add link-local
-address (it does not matter if we don't have a link-local address on
-that interface, as a global scoped one is just fine enough) or make flush not
-remove the link-local address (but this seems a bit too special cased for me).
-
-Greetings,
-
-  Hannes
+Acked-by: David Rientjes <rientjes@google.com>
