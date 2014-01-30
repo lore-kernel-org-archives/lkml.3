@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaA3Nzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:55:36 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:62853 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752921AbaA3Nzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:55:35 -0500
-Date: Thu, 30 Jan 2014 08:55:33 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-Message-ID: <20140130085533.5436dc2a@gandalf.local.home>
-In-Reply-To: <20140130053232.GA14856@redhat.com>
-References: <20140130041622.GA23875@redhat.com>
-	<cbf0c86a-317e-451f-9bb4-48c582ab4e1e@email.android.com>
-	<20140130053232.GA14856@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1753247AbaA3N70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 08:59:26 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58739 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752666AbaA3N7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 08:59:25 -0500
+Message-ID: <52EA5A8F.7070107@ti.com>
+Date: Thu, 30 Jan 2014 15:58:39 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>
+CC: "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: keystone: dts: disable "msmcsram" clock
+References: <1391082343-13371-1-git-send-email-ivan.khoronzhuk@ti.com> <448912EABC71F84BBCADFD3C67C4BE52A0B4B6@DBDE04.ent.ti.com>
+In-Reply-To: <448912EABC71F84BBCADFD3C67C4BE52A0B4B6@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014 00:32:32 -0500
-Dave Jones <davej@redhat.com> wrote:
+Ok. I will delete node for this clock from DT and send v1
 
-> On Wed, Jan 29, 2014 at 11:50:43PM -0500, Steven Rostedt wrote:
->  > Are you running as root?  If not, you found another way to get perf to start function tracing.
-> 
-> Good point. In this case, I was trying some new experimental trinity code
-> that starts as root, generates fd's, then drops privs before doing syscalls.
-> 
-> So the "generate fds" part did some perf_event_open's as root, yeah.
-> 
-> While that's less scary from a security pov than it was last time, it's still
-> something that aparently needs fixing.
-> 
+On 01/30/2014 03:25 PM, Shilimkar, Santosh wrote:
+> Disable is not good idea since it conveys wrong info....
+>
+> Hyperlink case was different.
+>
+> Sent from my Android phone using TouchDown (www.nitrodesk.com)
+>
+> -----Original Message-----
+> *From:* Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
+> *Received:* Thursday, 30 Jan 2014, 6:45am
+> *To:* robh+dt@kernel.org [robh+dt@kernel.org]; galak@codeaurora.org
+> [galak@codeaurora.org]
+> *CC:* pawel.moll@arm.com [pawel.moll@arm.com]; mark.rutland@arm.com
+> [mark.rutland@arm.com]; ijc+devicetree@hellion.org.uk
+> [ijc+devicetree@hellion.org.uk]; linux@arm.linux.org.uk
+> [linux@arm.linux.org.uk]; devicetree@vger.kernel.org
+> [devicetree@vger.kernel.org]; linux-arm-kernel@lists.infradead.org
+> [linux-arm-kernel@lists.infradead.org]; linux-kernel@vger.kernel.org
+> [linux-kernel@vger.kernel.org]; Shilimkar, Santosh [santosh.shilimkar@ti.com];
+> Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
+> *Subject:* [PATCH] ARM: keystone: dts: disable "msmcsram" clock
+>
+> At late init all unused clocks are disabled. So clocks that were not
+> get before will be gated. In Keysone 2 SoC we have at least one
+> necessary clock that is not used by any driver - "msmcsram". This
+> clock is necessary, because it supplies the Multicore Shared Memory
+> Controller (MSMC). The MSMC provides memory protection for accesses to
+> the MSMC SRAM and DDR3 memory from system masters. It also manages
+> traffic among mastering peripherals and the EMIF.
+>
+> This means that MSMC clock is always needed by SoC and cannot be gated.
+> It is only one from necessary clocks that was not used by any driver.
+> So to avoid its gating at late init we have to disable it in DT.
+>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>    arch/arm/boot/dts/keystone-clocks.dtsi | 1 +
+>    1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/boot/dts/keystone-clocks.dtsi
+> b/arch/arm/boot/dts/keystone-clocks.dtsi
+> index 2363593..e7aea2e 100644
+> --- a/arch/arm/boot/dts/keystone-clocks.dtsi
+> +++ b/arch/arm/boot/dts/keystone-clocks.dtsi
+> @@ -332,6 +332,7 @@ clocks {
+>                    compatible = "ti,keystone,psc-clock";
+>                    clocks = <&chipclk1>;
+>                    clock-output-names = "msmcsram";
+> +               status = "disabled";
+>                    reg = <0x02350038 0xb00>, <0x0235001c 0x400>;
+>                    reg-names = "control", "domain";
+>                    domain-id = <7>;
+> -- 
+> 1.8.3.2
+>
 
-OK, then I'm not as worried (phew!). But you are correct, this needs to
-be fixed. How do I run just perf commands from trinity? I do not think
-this occurs from any other systemcall needing to be run.
-
-Peter, Jiri,
-
-Although we fixed the bug that let a normal user enable function
-tracing from perf, we never figured out why perf screws up the function
-tracing filter accounting. That will happen if you either use a
-uninitialized ftrace hash, or modify the hash without using the ftrace
-API. If it is the latter, it is probably done by some kind of use after
-free.
-
--- Steve
