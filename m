@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576AbaA3Pp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:45:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58963 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752916AbaA3PpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:45:25 -0500
-Date: Thu, 30 Jan 2014 16:45:23 +0100
-From: Jan Kara <jack@suse.cz>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        pmladek@suse.cz, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] block: Stop abusing rq->csd.list in blk-softirq
-Message-ID: <20140130154523.GC12687@quack.suse.cz>
-References: <1387831171-5264-1-git-send-email-jack@suse.cz>
- <1387831171-5264-3-git-send-email-jack@suse.cz>
- <20140130123917.GA5339@localhost.localdomain>
+	id S1753383AbaA3PvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:51:16 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:17176 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152AbaA3PvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 10:51:06 -0500
+Message-ID: <52EA74D1.3040109@hp.com>
+Date: Thu, 30 Jan 2014 10:50:41 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140130123917.GA5339@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock implementation
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com> <20140130130453.GB2936@laptop.programming.kicks-ass.net> <20140130151715.GA5126@laptop.programming.kicks-ass.net> <52EA7309.7070605@hp.com>
+In-Reply-To: <52EA7309.7070605@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On 01/30/2014 10:43 AM, Waiman Long wrote:
+> On 01/30/2014 10:17 AM, Peter Zijlstra wrote:
+>> On Thu, Jan 30, 2014 at 02:04:53PM +0100, Peter Zijlstra wrote:
+>>> So I took out that ugly union and rewrote the code to be mostly
+>>> atomic_*(), gcc generates acceptable code and its smaller too.
+>>>
+>>>      824       0       0     824     338 
+>>> defconfig-build/kernel/locking/qrwlock.o
+>>>      776       0       0     776     308 
+>>> defconfig-build/kernel/locking/qrwlock.o
+>>>
+>>> I don't think I wrecked it, but I've not actually tried it yet.
+>> I did wreck it.. :-)
+>>
+>> The below is still small and actually works.
+>>
+>> ---
+>>   arch/x86/Kconfig                      |    1
+>>   arch/x86/include/asm/spinlock.h       |    2
+>>   arch/x86/include/asm/spinlock_types.h |    4
+>>   b/arch/x86/include/asm/qrwlock.h      |   18 +++
+>>   b/include/asm-generic/qrwlock.h       |  174 
+>> ++++++++++++++++++++++++++++++++++
+>>   b/include/asm-generic/qrwlock_types.h |   17 +++
+>>   b/kernel/locking/qrwlock.c            |  157 
+>> ++++++++++++++++++++++++++++++
+>>   kernel/Kconfig.locks                  |    7 +
+>>   kernel/locking/Makefile               |    1
+>>   9 files changed, 381 insertions(+)
+>>
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>>
+>
+> OK, I see what you are trying to do. I can apply the change to my 
+> patch & send out v12. So I presume that you are now OK with it. Can I 
+> add your sign-off line?
+>
+> -Longman
+>
+>
 
-On Thu 30-01-14 13:39:18, Frederic Weisbecker wrote:
-> I'm currently working on some cleanups on IPI code too and working on top
-> of these patches, just have a few comments:
-  Great, thanks!
+One more thing, I often see line like
 
-> On Mon, Dec 23, 2013 at 09:39:23PM +0100, Jan Kara wrote:
-> > Abusing rq->csd.list for a list of requests to complete is rather ugly.
-> > Especially since using queuelist should be safe and much cleaner.
-> 
-> It would be nice to have a few more details that explain why doing so is safe
-> wrt a block request lifecycle. At least something that tells why rq->queuelist
-> can't be ever used concurrently by the time we send the IPI and we trigger/raise
-> the softirq.
-  Sure. Should I send the patch to you with an updated changelog and added
-comment you requested?
+#define queue_write_unlock queue_write_unlock
 
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  block/blk-softirq.c | 12 ++++++------
-> >  1 file changed, 6 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-> > index 57790c1a97eb..7ea5534096d5 100644
-> > --- a/block/blk-softirq.c
-> > +++ b/block/blk-softirq.c
-> > @@ -30,8 +30,8 @@ static void blk_done_softirq(struct softirq_action *h)
-> >  	while (!list_empty(&local_list)) {
-> >  		struct request *rq;
-> >  
-> > -		rq = list_entry(local_list.next, struct request, csd.list);
-> > -		list_del_init(&rq->csd.list);
-> > +		rq = list_entry(local_list.next, struct request, queuelist);
-> > +		list_del_init(&rq->queuelist);
-> >  		rq->q->softirq_done_fn(rq);
-> >  	}
-> >  }
-> > @@ -45,9 +45,9 @@ static void trigger_softirq(void *data)
-> >  
-> >  	local_irq_save(flags);
-> >  	list = this_cpu_ptr(&blk_cpu_done);
-> > -	list_add_tail(&rq->csd.list, list);
-> > +	list_add_tail(&rq->queuelist, list);
-> 
-> And given that's an alternate use of rq->queuelist, perhaps add a comment
-> to unconfuse people.
-  Good idea, will do.
+So exactly what effect does this macro have?
 
-								Honza
+-Longman
 
-> >  
-> > -	if (list->next == &rq->csd.list)
-> > +	if (list->next == &rq->queuelist)
-> >  		raise_softirq_irqoff(BLOCK_SOFTIRQ);
-> >  
-> >  	local_irq_restore(flags);
-> > @@ -136,7 +136,7 @@ void __blk_complete_request(struct request *req)
-> >  		struct list_head *list;
-> >  do_local:
-> >  		list = this_cpu_ptr(&blk_cpu_done);
-> > -		list_add_tail(&req->csd.list, list);
-> > +		list_add_tail(&req->queuelist, list);
-> >  
-> >  		/*
-> >  		 * if the list only contains our just added request,
-> > @@ -144,7 +144,7 @@ do_local:
-> >  		 * entries there, someone already raised the irq but it
-> >  		 * hasn't run yet.
-> >  		 */
-> > -		if (list->next == &req->csd.list)
-> > +		if (list->next == &req->queuelist)
-> >  			raise_softirq_irqoff(BLOCK_SOFTIRQ);
-> >  	} else if (raise_blk_irq(ccpu, req))
-> >  		goto do_local;
-> > -- 
-> > 1.8.1.4
-> > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
