@@ -1,169 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaA3Tma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:42:30 -0500
-Received: from www84.your-server.de ([213.133.104.84]:33807 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991AbaA3Tm3 (ORCPT
+	id S1753907AbaA3TnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:43:01 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:55423 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584AbaA3TnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:42:29 -0500
-Message-ID: <1391110993.945.19.camel@wall-e.seibold.net>
-Subject: Re: [PATCH 4/4] Add 32 bit VDSO support for 64 kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Thu, 30 Jan 2014 20:43:13 +0100
-In-Reply-To: <CALCETrXMPkA3ZfwGo8iQQDL=7HXBE3Mo8j6Zi+bTu=eoL-b43w@mail.gmail.com>
-References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
-	 <1391078953-1575-5-git-send-email-stefani@seibold.net>
-	 <CALCETrXMPkA3ZfwGo8iQQDL=7HXBE3Mo8j6Zi+bTu=eoL-b43w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 30 Jan 2014 14:43:00 -0500
+Date: Thu, 30 Jan 2014 14:42:57 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: peterz@infradead.org, mingo@redhat.com, tglx@linutronix.de,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH 2/3] cpuidle: move the cpuidle_idle_call function to
+ idle.c
+In-Reply-To: <1391090962-15032-3-git-send-email-daniel.lezcano@linaro.org>
+Message-ID: <alpine.LFD.2.11.1401301442240.1652@knanqh.ubzr>
+References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-3-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 30.01.2014, 10:21 -0800 schrieb Andy Lutomirski:
-> On Thu, Jan 30, 2014 at 2:49 AM,  <stefani@seibold.net> wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> >
-> > This patch add the support for the IA32 Emulation Layer to run 32 bit
-> > applications on a 64 bit kernel.
-> >
-> > Due the nature of the kernel headers and the LP64 compiler where the
-> > size of a long and a pointer differs against a 32 bit compiler, there
-> > is a lot of type hacking necessary.
-> >
-> > This kind of type hacking could be prevent in the future by doing a call to the
-> > 64 bit code by the following sequence:
-> >
-> > - Compile the arch/x86/vdso/vclock_gettime.c as 64 bit, but only generate
-> >   the assemble output.
-> > - Next compile a 32 bit object by including the 64 bit vclock_gettime.s
-> >   prefixed with .code64
-> > - At least we need a trampolin code which invokes the 64 bit code and do
-> >   the API conversation (64 bit longs to 32 bit longs), like the
-> >   followig snipped:
-> >
-> > ENTRY(call64)
-> >         push %ebp
-> >         movl %esp, %ebp
-> >         ljmp $__USER_CS, $1f
-> > .code64
-> 
-> I bet that this trampoline takes at least as long as a syscall /
-> sysenter instruction.  I'd be surprised if designers of modern cpus
-> care at all about ljmp latency.
-> 
+On Thu, 30 Jan 2014, Daniel Lezcano wrote:
 
-I have no idea, this must be measured. The code is smaller and it would
-save a lot of compaility issues.
-
+> Now the cpuidle_idle_call does nothing more than calling the three individuals
+> function, we can move this function into the idle task code to ensure better
+> proximity to the scheduler code.
 > 
-> >
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > ---
-> >  arch/x86/vdso/vclock_gettime.c        | 112 ++++++++++++++++++++++++++--------
-> >  arch/x86/vdso/vdso32/vclock_gettime.c |   7 +++
-> >  2 files changed, 95 insertions(+), 24 deletions(-)
-> >
-> > diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-> > index 19b2a49..a2417e2 100644
-> > --- a/arch/x86/vdso/vclock_gettime.c
-> > +++ b/arch/x86/vdso/vclock_gettime.c
-> > @@ -31,12 +31,24 @@
-> >
-> >  #define gtod (&VVAR(vsyscall_gtod_data))
-> >
-> > +struct api_timeval {
-> > +       long    tv_sec;         /* seconds */
-> > +       long    tv_usec;        /* microseconds */
-> > +};
-> > +
-> > +struct api_timespec {
-> > +       long    tv_sec;         /* seconds */
-> > +       long    tv_nsec;        /* microseconds */
-> > +};
-> > +
-> > +typedef long api_time_t;
-> > +
-> >  static notrace cycle_t vread_hpet(void)
-> >  {
-> >         return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
-> >  }
-> >
-> > -notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-> > +notrace static long vdso_fallback_gettime(long clock, struct api_timespec *ts)
-> >  {
-> >         long ret;
-> >         asm("syscall" : "=a" (ret) :
-> > @@ -44,7 +56,8 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-> >         return ret;
-> >  }
-> >
-> > -notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
-> > +notrace static long vdso_fallback_gtod(struct api_timeval *tv,
-> > +               struct timezone *tz)
-> >  {
-> >         long ret;
-> >
-> > @@ -54,20 +67,68 @@ notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
-> >  }
-> >  #else
-> >
-> > +#ifdef CONFIG_IA32_EMULATION
-> > +typedef s64    arch_time_t;
-> > +
-> > +struct arch_timespec {
-> > +       s64     tv_sec;
-> > +       s64     tv_nsec;
-> > +};
-> > +
-> > +#define ALIGN8 __attribute__ ((aligned (8)))
-> > +
-> > +struct arch_vsyscall_gtod_data {
-> > +       seqcount_t      seq ALIGN8;
-> > +
-> > +       struct { /* extract of a clocksource struct */
-> > +               int vclock_mode ALIGN8;
-> > +               cycle_t cycle_last ALIGN8;
-> > +               cycle_t mask ALIGN8;
-> > +               u32     mult;
-> > +               u32     shift;
-> > +       } clock;
-> > +
-> > +       /* open coded 'struct timespec' */
-> > +       arch_time_t     wall_time_sec;
-> > +       u64             wall_time_snsec;
-> > +       u64             monotonic_time_snsec;
-> > +       arch_time_t     monotonic_time_sec;
-> > +
-> > +       struct timezone sys_tz;
-> > +       struct arch_timespec wall_time_coarse;
-> > +       struct arch_timespec monotonic_time_coarse;
-> > +};
-> 
-> Yuck!
-> 
-> Can you see how hard it would be to just make the real gtod data have
-> the same layout for 32-bit and 64-bit code?
-> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-It is not easy, because the there are a lot of data types which use
-longs (struct timespec, time_t) and seqcount has a variable size
-depending on the kernel configuration.
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
-
+> ---
+>  drivers/cpuidle/cpuidle.c |   37 -------------------------------------
+>  include/linux/cpuidle.h   |    2 --
+>  kernel/sched/idle.c       |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 44 insertions(+), 39 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index a8fbb28..a039344 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -176,43 +176,6 @@ void cpuidle_reflect(struct cpuidle_device *dev, int index)
+>  EXPORT_SYMBOL(cpuidle_reflect);
+>  
+>  /**
+> - * cpuidle_idle_call - the main idle loop
+> - *
+> - * NOTE: no locks or semaphores should be used here
+> - * return non-zero on failure
+> - */
+> -int cpuidle_idle_call(void)
+> -{
+> -	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+> -	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> -	int next_state, entered_state;
+> -
+> -	/* ask the governor for the next state */
+> -	next_state = cpuidle_select(drv, dev);
+> -	if (next_state < 0)
+> -		return next_state;
+> -
+> -	if (need_resched()) {
+> -		dev->last_residency = 0;
+> -		/* give the governor an opportunity to reflect on the outcome */
+> -		cpuidle_reflect(dev, next_state);
+> -		local_irq_enable();
+> -		return 0;
+> -	}
+> -
+> -	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> -
+> -	entered_state = cpuidle_enter(drv, dev, next_state);
+> -
+> -	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+> -
+> -	/* give the governor an opportunity to reflect on the outcome */
+> -	cpuidle_reflect(dev, entered_state);
+> -
+> -	return 0;
+> -}
+> -
+> -/**
+>   * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
+>   */
+>  void cpuidle_install_idle_handler(void)
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 1ebe9ff..74cdfc9 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -126,7 +126,6 @@ extern int cpuidle_enter(struct cpuidle_driver *drv,
+>  			 struct cpuidle_device *dev, int index);
+>  extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
+>  
+> -extern int cpuidle_idle_call(void);
+>  extern int cpuidle_register_driver(struct cpuidle_driver *drv);
+>  extern struct cpuidle_driver *cpuidle_get_driver(void);
+>  extern struct cpuidle_driver *cpuidle_driver_ref(void);
+> @@ -148,7 +147,6 @@ extern int cpuidle_play_dead(void);
+>  extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev);
+>  #else
+>  static inline void disable_cpuidle(void) { }
+> -static inline int cpuidle_idle_call(void) { return -ENODEV; }
+>  static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+>  {return -ENODEV; }
+>  static inline struct cpuidle_driver *cpuidle_get_driver(void) {return NULL; }
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index 65d0427..3e85d38 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -62,6 +62,50 @@ void __weak arch_cpu_idle(void)
+>  	local_irq_enable();
+>  }
+>  
+> +#ifdef CONFIG_CPU_IDLE
+> +/**
+> + * cpuidle_idle_call - the main idle function
+> + *
+> + * NOTE: no locks or semaphores should be used here
+> + * return non-zero on failure
+> + */
+> +static int cpuidle_idle_call(void)
+> +{
+> +	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+> +	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> +	int next_state, entered_state;
+> +
+> +	/* ask the governor for the next state */
+> +	next_state = cpuidle_select(drv, dev);
+> +	if (next_state < 0)
+> +		return next_state;
+> +
+> +	if (need_resched()) {
+> +		dev->last_residency = 0;
+> +		/* give the governor an opportunity to reflect on the outcome */
+> +		cpuidle_reflect(dev, next_state);
+> +		local_irq_enable();
+> +		return 0;
+> +	}
+> +
+> +	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> +
+> +	entered_state = cpuidle_enter(drv, dev, next_state);
+> +
+> +	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+> +
+> +	/* give the governor an opportunity to reflect on the outcome */
+> +	cpuidle_reflect(dev, entered_state);
+> +
+> +	return 0;
+> +}
+> +#else
+> +static inline int cpuidle_idle_call(void)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif
+> +
+>  /*
+>   * Generic idle loop implementation
+>   */
+> -- 
+> 1.7.9.5
+> 
