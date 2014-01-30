@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145AbaA3OYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:24:10 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:48912 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572AbaA3OYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:24:09 -0500
-From: "Steven J. Magnani" <steve.magnani@digidescorp.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH] qla2xxx: eliminate dead code in qla24xx_process_bidir_cmd
-Date: Thu, 30 Jan 2014 08:17:55 -0600
-Message-Id: <1391091475-15629-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S1753339AbaA3OYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:24:32 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:46055 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753234AbaA3OYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 09:24:31 -0500
+Date: Thu, 30 Jan 2014 08:24:30 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch 2/2] gru: cleanup gru_dump_context() a little
+Message-ID: <20140130142430.GA16259@sgi.com>
+References: <20140130121048.GA17321@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140130121048.GA17321@elgon.mountain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Coverity reports that the test of req_data_len vs. rsp_data_len is dead code.
-This appears to be because the test occurs before any real assignment to
-either variable.
+Acked-by: Dimitri Sivanich <sivanich@sgi.com>
 
-Assuming that the sole in-tree execution path (QL_VND_DIAG_IO_CMD submitted
-via FC pass-through on a host /dev/bsg/X) does not require the response to
-have the same length as the request, all code related to the faulty test
-can be removed. If this is not the case, the test should be moved much earlier
-in the function since it does not depend on any resource acquitision.
-
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
---- linux-3.13/drivers/scsi/qla2xxx/qla_bsg.c	2014-01-29 13:50:02.050802907 -0600
-+++ b/drivers/scsi/qla2xxx/qla_bsg.c	2014-01-29 13:53:15.856549874 -0600
-@@ -1732,8 +1732,6 @@ qla24xx_process_bidir_cmd(struct fc_bsg_
- 	uint16_t nextlid = 0;
- 	uint32_t tot_dsds;
- 	srb_t *sp = NULL;
--	uint32_t req_data_len = 0;
--	uint32_t rsp_data_len = 0;
- 
- 	/* Check the type of the adapter */
- 	if (!IS_BIDI_CAPABLE(ha)) {
-@@ -1840,17 +1838,6 @@ qla24xx_process_bidir_cmd(struct fc_bsg_
- 		goto done_unmap_sg;
- 	}
- 
--	if (req_data_len != rsp_data_len) {
--		rval = EXT_STATUS_BUSY;
--		ql_log(ql_log_warn, vha, 0x70aa,
--		    "req_data_len != rsp_data_len\n");
--		goto done_unmap_sg;
--	}
--
--	req_data_len = bsg_job->request_payload.payload_len;
--	rsp_data_len = bsg_job->reply_payload.payload_len;
--
--
- 	/* Alloc SRB structure */
- 	sp = qla2x00_get_sp(vha, &(vha->bidir_fcport), GFP_KERNEL);
- 	if (!sp) {
---- linux-3.13/drivers/scsi/qla2xxx/qla_dbg.c	2014-01-29 13:50:49.435230824 -0600
-+++ b/drivers/scsi/qla2xxx/qla_dbg.c	2014-01-29 13:53:43.960820829 -0600
-@@ -38,7 +38,8 @@
-  * |                              |                    | 0x7073-0x7075, |
-  * |                              |                    | 0x707b,0x708c, |
-  * |                              |                    | 0x70a5,0x70a6, |
-- * |                              |                    | 0x70a8,0x70ab, |
-+ * |                              |                    | 0x70a8,        |
-+ * |                              |                    | 0x70aa-0x70ab, |
-  * |                              |                    | 0x70ad-0x70ae, |
-  * |                              |                    | 0x70d1-0x70db, |
-  * |                              |                    | 0x7047,0x703b	|
+On Thu, Jan 30, 2014 at 03:10:48PM +0300, Dan Carpenter wrote:
+> "ret" is zero here so we can remove the "!ret" part of the condition.
+> "uhdr" is alread a __user pointer so we can remove the cast.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> Btw, speaking of __user pointers there are some places where we
+> dereference them in this file.  It's not a security problem because we
+> have already used copy_to_user() to successfully write to the pointer at
+> point.  But if you have something like PAX which puts user pointers and
+> kernel pointers in a separate address space then this will cause
+> problems.
+> 
+> Run sparse to see the issue.
+> 
+> diff --git a/drivers/misc/sgi-gru/grukdump.c b/drivers/misc/sgi-gru/grukdump.c
+> index 2bef3f76032a..a3700a56b8ff 100644
+> --- a/drivers/misc/sgi-gru/grukdump.c
+> +++ b/drivers/misc/sgi-gru/grukdump.c
+> @@ -178,10 +178,10 @@ static int gru_dump_context(struct gru_state *gru, int ctxnum,
+>  	hdr.cbrcnt = cbrcnt;
+>  	hdr.dsrcnt = dsrcnt;
+>  	hdr.cch_locked = cch_locked;
+> -	if (!ret && copy_to_user((void __user *)uhdr, &hdr, sizeof(hdr)))
+> -		ret = -EFAULT;
+> +	if (copy_to_user(uhdr, &hdr, sizeof(hdr)))
+> +		return -EFAULT;
+>  
+> -	return ret ? ret : bytes;
+> +	return bytes;
+>  }
+>  
+>  int gru_dump_chiplet_request(unsigned long arg)
