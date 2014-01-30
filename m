@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaA3Lql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 06:46:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51729 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646AbaA3Lqj (ORCPT
+	id S1753011AbaA3LuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 06:50:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34902 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657AbaA3LuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 06:46:39 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <robh+dt@kernel.org>, <galak@codeaurora.org>
-CC: <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <santosh.shilimkar@ti.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH] ARM: keystone: dts: disable "msmcsram" clock
-Date: Thu, 30 Jan 2014 13:45:43 +0200
-Message-ID: <1391082343-13371-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 30 Jan 2014 06:50:05 -0500
+Date: Thu, 30 Jan 2014 14:49:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] hw_random: cleanup in hwrng_register()
+Message-ID: <20140130114943.GB12734@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At late init all unused clocks are disabled. So clocks that were not
-get before will be gated. In Keysone 2 SoC we have at least one
-necessary clock that is not used by any driver - "msmcsram". This
-clock is necessary, because it supplies the Multicore Shared Memory
-Controller (MSMC). The MSMC provides memory protection for accesses to
-the MSMC SRAM and DDR3 memory from system masters. It also manages
-traffic among mastering peripherals and the EMIF.
+My static checker complains that:
 
-This means that MSMC clock is always needed by SoC and cannot be gated.
-It is only one from necessary clocks that was not used by any driver.
-So to avoid its gating at late init we have to disable it in DT.
+	drivers/char/hw_random/core.c:341 hwrng_register()
+	warn: we tested 'old_rng' before and it was 'false'
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- arch/arm/boot/dts/keystone-clocks.dtsi | 1 +
- 1 file changed, 1 insertion(+)
+The problem is that sometimes we test "if (!old_rng)" and sometimes we
+test "if (must_register_misc)".  The static checker knows they are
+equivalent but a human being reading the code could easily be confused.
 
-diff --git a/arch/arm/boot/dts/keystone-clocks.dtsi b/arch/arm/boot/dts/keystone-clocks.dtsi
-index 2363593..e7aea2e 100644
---- a/arch/arm/boot/dts/keystone-clocks.dtsi
-+++ b/arch/arm/boot/dts/keystone-clocks.dtsi
-@@ -332,6 +332,7 @@ clocks {
- 		compatible = "ti,keystone,psc-clock";
- 		clocks = <&chipclk1>;
- 		clock-output-names = "msmcsram";
-+		status = "disabled";
- 		reg = <0x02350038 0xb00>, <0x0235001c 0x400>;
- 		reg-names = "control", "domain";
- 		domain-id = <7>;
--- 
-1.8.3.2
+I have simplified the code by removing the "must_register_misc" variable
+and I have removed the redundant check on "if (!old_rng)".
 
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index b9495a8c05c6..463382036a01 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -301,7 +301,6 @@ err_misc_dereg:
+ 
+ int hwrng_register(struct hwrng *rng)
+ {
+-	int must_register_misc;
+ 	int err = -EINVAL;
+ 	struct hwrng *old_rng, *tmp;
+ 
+@@ -326,7 +325,6 @@ int hwrng_register(struct hwrng *rng)
+ 			goto out_unlock;
+ 	}
+ 
+-	must_register_misc = (current_rng == NULL);
+ 	old_rng = current_rng;
+ 	if (!old_rng) {
+ 		err = hwrng_init(rng);
+@@ -335,13 +333,11 @@ int hwrng_register(struct hwrng *rng)
+ 		current_rng = rng;
+ 	}
+ 	err = 0;
+-	if (must_register_misc) {
++	if (!old_rng) {
+ 		err = register_miscdev();
+ 		if (err) {
+-			if (!old_rng) {
+-				hwrng_cleanup(rng);
+-				current_rng = NULL;
+-			}
++			hwrng_cleanup(rng);
++			current_rng = NULL;
+ 			goto out_unlock;
+ 		}
+ 	}
