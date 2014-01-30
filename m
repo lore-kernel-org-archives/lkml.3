@@ -1,139 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbaA3RYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:24:41 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47488 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753097AbaA3RYi (ORCPT
+	id S1753602AbaA3RZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:25:28 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:46465 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423AbaA3RZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:24:38 -0500
-Message-ID: <52EA8AD3.8080904@arm.com>
-Date: Thu, 30 Jan 2014 17:24:35 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 30 Jan 2014 12:25:27 -0500
+Message-ID: <52EA8B07.6020206@linaro.org>
+Date: Thu, 30 Jan 2014 18:25:27 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: document "mach-virt" platform.
-References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>  <52EA8853.8080709@arm.com> <1391102475.9495.44.camel@kazak.uk.xensource.com>
-In-Reply-To: <1391102475.9495.44.camel@kazak.uk.xensource.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: nicolas.pitre@linaro.org, mingo@redhat.com, tglx@linutronix.de,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
+ rq
+References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140130163501.GG5002@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/01/14 17:21, Ian Campbell wrote:
-> On Thu, 2014-01-30 at 17:13 +0000, Marc Zyngier wrote:
->> Hi Ian,
+On 01/30/2014 05:35 PM, Peter Zijlstra wrote:
+> On Thu, Jan 30, 2014 at 05:27:54PM +0100, Daniel Lezcano wrote:
+>> struct cpuidle_state *state = &drv->states[rq->index];
 >>
->> On 30/01/14 16:11, Ian Campbell wrote:
->>> mach-virt has existed for a while but it is not written down what it actually
->>> consists of. Although it seems a bit unusual to document a binding for an
->>> entire platform since mach-virt is entirely virtual it is helpful to have
->>> something to refer to in the absence of a single concrete implementation.
->>>
->>> I've done my best to capture the requirements based on the git log and my
->>> memory/understanding.
->>>
->>> While here remove the xenvm dts example, the Xen tools will now build a
->>> suitable mach-virt compatible dts when launching the guest.
->>>
->>> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
->>> Cc: Rob Herring <robh+dt@kernel.org>
->>> Cc: Pawel Moll <pawel.moll@arm.com>
->>> Cc: Mark Rutland <mark.rutland@arm.com>
->>> Cc: Kumar Gala <galak@codeaurora.org>
->>> Cc: Olof Johansson <olof@lixom.net>
->>> Cc: Arnd Bergmann <arnd@arndb.de>
->>> Cc: Marc Zyngier <marc.zyngier@arm.com>
->>> Cc: Will Deacon <will.deacon@arm.com>
->>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->>> Cc: devicetree@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Cc: linux-arm-kernel@lists.infradead.org
->>> ---
->>> I'm not sure which tree this sort of thing should go though, sorry for the
->>> huge Cc.
->>> ---
->>>  .../devicetree/bindings/arm/mach-virt.txt          |   32 ++++++++
->>>  arch/arm/boot/dts/xenvm-4.2.dts                    |   81 --------------------
->>>  2 files changed, 32 insertions(+), 81 deletions(-)
->>>  create mode 100644 Documentation/devicetree/bindings/arm/mach-virt.txt
->>>  delete mode 100644 arch/arm/boot/dts/xenvm-4.2.dts
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/mach-virt.txt b/Documentation/devicetree/bindings/arm/mach-virt.txt
->>> new file mode 100644
->>> index 0000000..562bcda
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
->>> @@ -0,0 +1,32 @@
->>> +* Mach-virt "Dummy Virtual Machine" platform
->>> +
->>> +"mach-virt" is the smallest, dumbest platform possible, to be used as
->>> +a guest for Xen, KVM and other hypervisors. It has no
->>> +properties/functionality of its own and is driven entirely by device
->>> +tree.
->>> +
->>> +This document defines the requirements for such a platform.
->>> +
->>> +* Required properties:
->>> +
->>> +- compatible: should be one of:
->>> +	"linux,dummy-virt"
->>> +	"xen,xenvm"
->>> +
->>> +In addition to the standard nodes (chosen, cpus, memory etc) the
->>> +platform is required to provide certain other basic functionality
->>> +which must be described in the device tree:
->>> +
->>> +    The platform must provide an ARM Generic Interrupt Controller
->>> +    (GIC), defined in Documentation/devicetree/bindings/arm/gic.txt.
->>> +
->>> +    The platform must provide ARM architected timer, defined in
->>> +    Documentation/devicetree/bindings/arm/arch_timer.txt.
->>> +
->>> +    If the platform is SMP then it must provide the Power State
->>> +    Coordination Interface (PSCI) described in
->>> +    Documentation/devicetree/bindings/arm/psci.txt.
+>> And from the state, we have the following informations:
 >>
->> I'm afraid I disagree with most of the above. The whole point of
->> mach-virt is to provide a shell for DT platforms. None of this hardware
->> is mandated. Instead, all the necessary information should be described
->> in DT.
-> 
-> "Add support for the smallest, dumbest possible platform, to be
->  used as a guest for KVM or other hypervisors.
-> 
->  It only mandates a GIC and architected timers"
-> 
-> (your original commit message :-P)
+>> struct cpuidle_state {
+>>
+>> 	[ ... ]
+>>
+>>          unsigned int    exit_latency; /* in US */
+>>          int             power_usage; /* in mW */
+>>          unsigned int    target_residency; /* in US */
+>>          bool            disabled; /* disabled on all CPUs */
+>>
+>> 	[ ... ]
+>> };
+>
+> Right, but can we say that a higher index will save more power and have
+> a higher exit latency? Or is a driver free to have a random mapping from
+> idle_index to state?
 
-Right. 1984, here we come. I'll disappear for a while, rewriting the
-history. More seriously, that was just me scheming to get it merged,
-hiding my cunning plan for mach-virt world domination!
+If the driver does its own random mapping that will break the governor 
+logic. So yes, the states are ordered, the higher the index is, the more 
+you save power and the higher the exit latency is.
 
->> Actually, mach-virt doesn't really stand for Virtual Machine. It stands
->> for virtual mach-* directory! Eventually, mach-virt should become the
->> default platform, the one we use when we don't match anything else in
->> the kernel
-> 
-> I can word it more like that for sure, along with the alternative
-> wording suggested by Christopher/Stefano to clarify the intent that
-> everything comes from DTB and removal of the specific requirements for
-> GIC/timer/PSCI I think that suit the (new) intention better?
+> Also, we should probably create a pretty function to get that state,
+> just like you did in patch 1.
 
-Yes, please! :-)
+Yes, right.
 
-	M.
+>> IIRC, Alex Shi sent a patchset to improve the choosing of the idlest cpu and
+>> the exit_latency was needed.
+>
+> Right. However if we have a 'natural' order in the state array the index
+> itself might often be sufficient to find the least idle state, in this
+> specific case the absolute exit latency doesn't matter, all we want is
+> the lowest one.
+
+Indeed. It could be simple as that. I feel we may need more informations 
+in the future but comparing the indexes could be a nice simple and 
+efficient solution.
+
+> Not dereferencing the state array saves hitting cold cachelines.
+
+Yeah, always good to remind that. Should keep in mind for later.
+
+Thanks for your comments.
+
+   -- Daniel
+
+
+
 -- 
-Jazz is not dead. It just smells funny...
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
