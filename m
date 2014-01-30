@@ -1,151 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaA3NL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:11:56 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:35932 "EHLO
+	id S1753195AbaA3NTw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 08:19:52 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:65043 "EHLO
 	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728AbaA3NLy (ORCPT
+	with ESMTP id S1752398AbaA3NTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:11:54 -0500
-Date: Thu, 30 Jan 2014 13:12:47 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 2/5] arm: add new asm macro update_sctlr
-Message-ID: <20140130131247.GG11329@bivouac.eciton.net>
-References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
- <1389445524-30623-3-git-send-email-leif.lindholm@linaro.org>
- <20140122112055.GF1621@mudshark.cambridge.arm.com>
- <20140129182805.GF11329@bivouac.eciton.net>
- <1391029124.2488.50.camel@deneb.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391029124.2488.50.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 Jan 2014 08:19:51 -0500
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Avinash Kumar <avi.kp.137@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Simon Horman <horms@verge.net.au>, Tom Gundersen <teg@jklm.no>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>
+Subject: [PATCH] net: set default DEVTYPE for all ethernet based devices
+Date: Thu, 30 Jan 2014 14:20:02 +0100
+Message-Id: <1391088002-15650-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 03:58:44PM -0500, Mark Salter wrote:
-> > (i.e. conditionalise on whether an optional parameter was provided),
-> > so my attempt of refactoring actually ends up using an additional
-> > register:
-> > 
-> 
-> Register parameters are just strings, so how about this:
-> 
-> 	.macro foo bar=, baz=
-> 	.ifnc \bar,
-> 	mov \bar,#0
-> 	.endif
-> 	.ifnc \baz,
-> 	mov \baz,#1
-> 	.endif
-> 	.endm
-> 
-> 	foo x0
-> 	foo
-> 	foo x1, x2
-> 	foo ,x3
-> 
-> Results in:
-> 
-> 0000000000000000 <.text>:
->    0:	d2800000 	mov	x0, #0x0                   	// #0
->    4:	d2800001 	mov	x1, #0x0                   	// #0
->    8:	d2800022 	mov	x2, #0x1                   	// #1
->    c:	d2800023 	mov	x3, #0x1                   	// #1
+In systemd's networkd and udevd, we would like to give the administrator a
+simple way to filter net devices by their DEVTYPE [0][1]. Other software
+such as ConnMan and NetworkManager uses a similar filtering already.
 
-Oh, that's neat - thanks!
+Currently, plain ethernet devices have DEVTYPE=(null). This patch sets the
+devtype to "ethernet" instead. This avoids the need for special-casing the
+DEVTYPE=(null) case in userspace, and also avoids false positives, as there
+are several other types of netdevs that also have DEVTYPE=(null).
 
-Well, given that, I can think of two less horrible options:
-1)
-	.macro  update_sctlr, tmp:req, set=, clear=
-        mrc	p15, 0, \tmp, c1, c0, 0
-	.ifnc	\set,
-        orr	\tmp, \set
-	.endif
-	.ifnc	\clear,
-	mvn	\clear, \clear
-	and	\tmp, \tmp, \clear
-	.endif
-        mcr	p15, 0, \tmp, c1, c0, 0
-	.endm
+Notice that this is done, as suggested by Marcel, in alloc_etherdev_mqs(),
+and as best I can tell it will not give any false positives. I considered
+doing it in ether_setup() instead as that seemed more intuitive, but that
+would give a lot of false positives indeed.
 
-With the two call sites in uefi_phys.S as:
+[0]: <http://www.freedesktop.org/software/systemd/man/systemd-networkd.service.html#Type>
+[1]: <http://www.freedesktop.org/software/systemd/man/udev.html#Type>
 
-	ldr	r5, =(CR_M)
-	update_sctlr	r12, , r5
-and
-	ldr	r4, =(CR_I | CR_C | CR_M)
-	update_sctlr	r12, r4
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kay Sievers <kay@vrfy.org>
+---
+ net/ethernet/eth.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-Which disassembles as:
+diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+index 8f032ba..b76dc17 100644
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -369,6 +369,10 @@ void ether_setup(struct net_device *dev)
+ }
+ EXPORT_SYMBOL(ether_setup);
+ 
++static const struct device_type eth_type = {
++	.name = "ethernet",
++};
++
+ /**
+  * alloc_etherdev_mqs - Allocates and sets up an Ethernet device
+  * @sizeof_priv: Size of additional driver-private structure to be allocated
+@@ -387,7 +391,13 @@ EXPORT_SYMBOL(ether_setup);
+ struct net_device *alloc_etherdev_mqs(int sizeof_priv, unsigned int txqs,
+ 				      unsigned int rxqs)
+ {
+-	return alloc_netdev_mqs(sizeof_priv, "eth%d", ether_setup, txqs, rxqs);
++	struct net_device* dev;
++
++	dev = alloc_netdev_mqs(sizeof_priv, "eth%d", ether_setup, txqs, rxqs);
++	if (dev)
++		dev->dev.type = &eth_type;
++
++	return dev;
+ }
+ EXPORT_SYMBOL(alloc_etherdev_mqs);
+ 
+-- 
+1.8.5.3
 
-  2c:   e3a05001        mov     r5, #1
-  30:   ee11cf10        mrc     15, 0, ip, cr1, cr0, {0}
-  34:   e1e05005        mvn     r5, r5
-  38:   e00cc005        and     ip, ip, r5
-  3c:   ee01cf10        mcr     15, 0, ip, cr1, cr0, {0}
-and
-  48:   e59f4034        ldr     r4, [pc, #52]   ; 84 <tmpstack+0x4>
-  4c:   ee11cf10        mrc     15, 0, ip, cr1, cr0, {0}
-  50:   e18cc004        orr     ip, ip, r4
-  54:   ee01cf10        mcr     15, 0, ip, cr1, cr0, {0}
-
-
-2)
-	.macro update_sctlr, tmp:req, tmp2:req, set=, clear=
-	mrc	p15, 0, \tmp, c1, c0, 0
-	.ifnc	\set,
-	ldr	\tmp2, =\set
-	orr	\tmp, \tmp, \tmp2
-	.endif
-	.ifnc	\clear,
-	ldr	\tmp2, =\clear
-	mvn	\tmp2, \tmp2
-	and	\tmp, \tmp, \tmp2
-	.endif
-	mcr	p15, 0, \tmp, c1, c0, 0
-	.endm
-
-With the two call sites in uefi_phys.S as: 
-
-	update_sctlr	r4, r5, , (CR_M)
-and
-	update_sctlr	r4, r5, (CR_I | CR_C | CR_M)
-
-Which disassembles as:
-
-  2c:   ee114f10        mrc     15, 0, r4, cr1, cr0, {0}
-  30:   e3a05001        mov     r5, #1
-  34:   e1e05005        mvn     r5, r5
-  38:   e0044005        and     r4, r4, r5
-  3c:   ee014f10        mcr     15, 0, r4, cr1, cr0, {0}
-and
-  48:   ee114f10        mrc     15, 0, r4, cr1, cr0, {0}
-  4c:   e59f5030        ldr     r5, [pc, #48]   ; 84 <tmpstack+0x4>
-  50:   e1844005        orr     r4, r4, r5
-  54:   ee014f10        mcr     15, 0, r4, cr1, cr0, {0}
-
-
-The benefit of 2) is a cleaner call site, and one fewer register
-used if setting and clearing simultaneously.
-
-The benefit of 1) is that the macro could then easily be used with
-the crval mask in mm/proc*.S
-
-So, Will, which one do you want?
-
-/
-    Leif
