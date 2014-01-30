@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaA3TUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:20:08 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:54155 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaA3TUE (ORCPT
+	id S1753537AbaA3TUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:20:38 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:49222 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400AbaA3TUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:20:04 -0500
+	Thu, 30 Jan 2014 14:20:33 -0500
+Subject: [PATCH 0/2] Remove dead code
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: e1000-devel@lists.sourceforge.net,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
+Date: Thu, 30 Jan 2014 12:20:31 -0700
+Message-ID: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <20140130190513.GB16260@htj.dyndns.org>
-References: <CA+5PVA4Oj7XOZSEYqXGE7ZPVVK1oEHEc-w_DniCediWGVhrmhQ@mail.gmail.com>
-	<20140130190513.GB16260@htj.dyndns.org>
-Date: Thu, 30 Jan 2014 14:20:04 -0500
-X-Google-Sender-Auth: DfOwNOT0UAi6v-rmnKz9J8u8630
-Message-ID: <CA+5PVA6jobif4fNJdFKtWvSdPbnhioKPOj4kD=V8-_m0C4AFmw@mail.gmail.com>
-Subject: Re: kernfs oops with i915+i2c_core in 3.14 merge window
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, Wolfram Sang <wsa@the-dreams.de>,
-        intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 2:05 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Jan 30, 2014 at 02:03:18PM -0500, Josh Boyer wrote:
->> Hi All,
->>
->> I'm seeing the oops below on my MacBookPro 10,2 machine using i915
->> graphics.  It's after the DRM merge for 3.14 ( v3.13-10094-g9b0cd30) ,
->> but we seem to have one report[1] of this happening well before that,
->> in v3.13-3260-g03d11a0 as well.  Does anyone have a clue what is going
->> on here?
->>
->> https://bugzilla.redhat.com/show_bug.cgi?id=1055105
->
-> Should be fixed by the following patch which is already queued.
->
->  http://lkml.kernel.org/g/20140129170403.GJ30842@htj.dyndns.org
+This is a rework of part of Stephen's patch [1].
 
-Oh, excellent!  I'll throw that into a build and test it here.  Thanks
-for the quick reply, Tejun.
+This removes the MMIO exclusivity support that was added as part of an
+e1000e bug hunt.
 
-josh
+The e1000e driver still uses pci_request_selected_regions_exclusive(), but
+there are no callers of pci_request_region_exclusive() and
+pci_request_regions_exclusive().  I thought it was cleaner to remove the
+whole thing than to leave parts of it in place.  But I could easily be
+convinced to leave part or all of this in place if people think it's still
+useful.
+
+It also removes SR-IOV migration support, which is completely unused, as
+far as I can tell.
+
+[1] http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.net
+
+---
+
+Bjorn Helgaas (2):
+      PCI: Remove unused MMIO exclusivity support
+      PCI: Remove unused SR-IOV VF Migration support
+
+
+ Documentation/PCI/pci-iov-howto.txt        |    4 -
+ Documentation/kernel-parameters.txt        |    4 -
+ arch/x86/mm/init.c                         |    2 
+ drivers/net/ethernet/intel/e1000e/netdev.c |    3 -
+ drivers/pci/iov.c                          |  119 ----------------------------
+ drivers/pci/pci-sysfs.c                    |    3 -
+ drivers/pci/pci.c                          |  112 +++-----------------------
+ drivers/pci/pci.h                          |    4 -
+ include/linux/ioport.h                     |    5 -
+ include/linux/pci.h                        |    7 --
+ kernel/resource.c                          |   54 -------------
+ 11 files changed, 14 insertions(+), 303 deletions(-)
