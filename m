@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707AbaA3WBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:01:42 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:36100 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbaA3WBj (ORCPT
+	id S1753826AbaA3WCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:02:06 -0500
+Received: from aurora.thatsmathematics.com ([162.209.10.89]:49889 "EHLO
+	aurora.thatsmathematics.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753767AbaA3WCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:01:39 -0500
+	Thu, 30 Jan 2014 17:02:04 -0500
+Date: Thu, 30 Jan 2014 15:01:56 -0700 (MST)
+From: Nate Eldredge <nate@thatsmathematics.com>
+X-X-Sender: nate@minerva.lan
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maarten Baert <maarten-baert@hotmail.com>, jack@suse.cz,
+        linux@horizon.com, Nate Eldredge <nate@thatsmathematics.com>,
+        torvalds@linux-foundation.org, sbsiddha@gmail.com
+Subject: [PATCH] Make math_state_restore() save and restore the interrupt
+ flag
+Message-ID: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140130075421.GA10050@infradead.org>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
-	<1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
-	<CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
-	<20140130075421.GA10050@infradead.org>
-Date: Thu, 30 Jan 2014 14:01:38 -0800
-X-Google-Sender-Auth: _DIEWyFus7OQvVzPyVbsjtw6GVw
-Message-ID: <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 11:54 PM, Christoph Hellwig <hch@infradead.org> wrote:
->
-> For ->set_acl that's fairly easily doable and I actually had a version
-> doing that to be able to convert 9p.  But for ->get_acl the path walking
-> caller didn't seem easily feasible.  ->get_acl actually is an invention
-> of yours, so if you got a good idea to get the dentry to it I'd love
-> to be able to pass it.
+From: Nate Eldredge <nate@thatsmathematics.com>
 
-Yeah, that's pretty annoying, largely because that path is also
-RCU-walk aware, which does *not* need this all (because it will never
-call down into the filesystem - if the acl isn't found in the cached
-acl's, we just abort).
+Make math_state_restore() save and restore the interrupt flag, rather
+than always disabling interrupts.
 
-And we're going through that very common "generic_permission()" thing
-that in turn is also often called from the low-level filesystens, and
-it's all fairly tightly integrated with __inode_permission() etc.
+If math_state_restore() is called in a task that has not used math, it
+needs to allocate some memory (via init_fpu()).  Since this can sleep,
+it enables interrupts first.  Currently, it always disables them
+afterwards, regardless of whether or not they were enabled on entry.
+(See commit aa283f4927 where this was introduced.)  This doesn't make
+sense, so instead have it put interrupts back the way they were.
 
-In the end, all the original call-sites should have a dentry, and none
-of this is "fundamental". But you're right, it looks like an absolute
-nightmare to add the dentry pointer through the whole chain. Damn.
+This is the cause of Ubuntu bug #1265841
+(https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1265841): if a
+user process dumps core on an ecrypt fs while aesni-intel is loaded,
+we get a BUG() in __find_get_block() complaining that it was called
+with interrupts disabled; then all further accesses to our ecrypt fs
+hang and we have to reboot.  The aesni-intel code (encrypting the core
+file that we are writing) needs the FPU and quite properly wraps its
+code in kernel_fpu_{begin,end}(), the latter of which calls
+math_state_restore().  So after kernel_fpu_end(), interrupts may be
+disabled, which nobody seems to expect, and they stay that way until
+we eventually get to __find_get_block() which barfs.  With this patch,
+the testcase works fine and no BUG() is triggered.
 
-So I'm not thrilled about it, but maybe that "d_find_alias(inode)" to
-find the dentry is good enough in practice. It feels very much
-incorrect (it could find a dentry with a path that you cannot actually
-access on the server, and result in user-visible errors), but I
-definitely see your argument. It may just not be worth the pain for
-this odd ceph case.
+math_state_restore() may need further review, as it still seems
+suspicious that it can unilaterally enable interupts for itself.  It's
+not clear to me what are the intended semantics of
+math_state_restore() and kernel_fpu_{begin,end}() with respect to
+interrupts.  Nevertheless, this patch should be appropriate for now.
 
-That said, if the ceph people decide to try to bite the bullet and do
-the required conversions to pass the dentry to the permissions
-functions, I think I'd take it unless it ends up being *too* horribly
-messy.
+Signed-off-by: Nate Eldredge <nate@thatsmathematics.com>
+Tested-by: George Spelvin <linux@horizon.com>
+Cc: <stable@vger.kernel.org>
+Fixes: aa283f4927
 
-               Linus
+---
+
+Applies to linux-3.13.  Previous discussion in linux-kernel thread
+"math_state_restore and kernel_fpu_end disable interrupts?"
+
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b857ed8..09df67d 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -628,6 +628,9 @@ void math_state_restore(void)
+  	struct task_struct *tsk = current;
+
+  	if (!tsk_used_math(tsk)) {
++		unsigned long flags;
++
++		local_save_flags(flags);
+  		local_irq_enable();
+  		/*
+  		 * does a slab alloc which can sleep
+@@ -639,7 +642,7 @@ void math_state_restore(void)
+  			do_group_exit(SIGKILL);
+  			return;
+  		}
+-		local_irq_disable();
++		local_irq_restore(flags);
+  	}
+
+  	__thread_fpu_begin(tsk);
+
+
+-- 
+Nate Eldredge
+nate@thatsmathematics.com
+
