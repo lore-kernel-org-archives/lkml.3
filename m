@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaA3Qim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:38:42 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47569 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbaA3Qil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:38:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,750,1384329600"; 
-   d="scan'208";a="475237824"
-Message-ID: <52EA7F35.8020500@intel.com>
-Date: Thu, 30 Jan 2014 18:35:01 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 9/9] perf buildid-cache: Check relocation when checking
- for existing kcore
-References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com> <1391004884-10334-10-git-send-email-adrian.hunter@intel.com> <20140129191454.GG3998@ghostprotocols.net> <52EA1CAE.7060801@intel.com> <20140130141821.GA30054@ghostprotocols.net>
-In-Reply-To: <20140130141821.GA30054@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753278AbaA3QlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:41:25 -0500
+Received: from smtprelay0197.hostedemail.com ([216.40.44.197]:33315 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751057AbaA3QlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 11:41:23 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2553:
+X-HE-Tag: alarm22_b660f72bc322
+X-Filterd-Recvd-Size: 2454
+Message-ID: <1391100076.2422.56.camel@joe-AO722>
+Subject: Re: [PATCH v2 6/6] cpu/idle.c: move to sched/idle.c
+From: Joe Perches <joe@perches.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Date: Thu, 30 Jan 2014 08:41:16 -0800
+In-Reply-To: <20140130162753.GF5002@laptop.programming.kicks-ass.net>
+References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
+	 <1391017513-12995-7-git-send-email-nicolas.pitre@linaro.org>
+	 <20140130152500.GB5002@laptop.programming.kicks-ass.net>
+	 <alpine.LFD.2.11.1401301102210.1652@knanqh.ubzr>
+	 <20140130162753.GF5002@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/01/2014 4:18 p.m., Arnaldo Carvalho de Melo wrote:
-> Em Thu, Jan 30, 2014 at 11:34:38AM +0200, Adrian Hunter escreveu:
->> On 29/01/14 21:14, Arnaldo Carvalho de Melo wrote:
->>> Em Wed, Jan 29, 2014 at 04:14:44PM +0200, Adrian Hunter escreveu:
->>>> perf buildid-cache does not make another
->>>> copy of kcore if the buildid and modules
->>>> match an existing copy.  That does not
->
->>> Humm, what is the problem? Having the ref reloc symbol we can fix things
->>> up, no? I.e. just using map->reloc the old kcore copy should be ok to
->>> use, no need to replace the kcore copy in the cache. Or am I missing
->>> something?
->
->> The current implementation works on the basis that kcore matches the
->> perf data recorded.  This is just a fix for that.
->
->> I am afraid it is that way because it meets my needs.
->
->> I did not think of allowing for relocation because I need to be able
->> to walk the code.  Relocation was one of the things I was trying to
->> avoid.
->
->> For me making a copy of kcore is far superior because it can be made
->> to have the jump labels mostly the right way around too. e.g. run a
->> dummy perf record while making the copy.
->
-> Yes, it is superior, no question about it, I'm just trying to figure out
-> how this fits into the build-id cache thing, i.e. it should have files
-> keyed by its build-id, that are inserted, but not replaced, since it
-> expects its contents to be constant.
->
-> So you have a need to get the matching kcore at the time you did the
-> record, because we're dealing with self modifying code, the kernel (soon
-> if not already, userspace as well)...
->
-> So at least we need to make this abundantly clear to users, that what is
-> in the build-id cache may be the latest snapshot of some DSO that had a
-> build-id at, well, build time.
->
-> We need to add support for looking up in the binary where are places
-> that are modifiable and then mark those in the UI using some visual cue.
->
-> Till then, at least a paragraph in the documentation stating what
-> happens is needed, I'll look into it.
->
-> And then right now this is just for kcore, that is clearly marked as
-> such in the build-id cache, IIRC it is in a separate directory, etc,
-> right?
+On Thu, 2014-01-30 at 17:27 +0100, Peter Zijlstra wrote:
+> On Thu, Jan 30, 2014 at 11:03:31AM -0500, Nicolas Pitre wrote:
+> > > This is not a valid patch for PATCH(1). Please try again.
+> > 
+> > Don't you use git?  ;-)
+> 
+> Nah, git and me don't get along well.
 
-Yes, perf buidid-cache creates a directory in the cache of the form:
+Perhaps you could use a newer version of patch
 
-	[kernel.kcore]/<build-id>/<YYYYmmddHHMMSShh>
+http://savannah.gnu.org/forum/forum.php?forum_id=7361
 
-which contains 3 files: kcore, kallsyms and modules.
+GNU patch version 2.7 released
+
+Item posted by Andreas Gruenbacher <agruen> on Wed 12 Sep 2012 02:18:14
+PM UTC.
+
+I am pleased to announce that version 2.7 of GNU patch has been
+released. The following significant changes have happened since the last
+stable release in December 2009: 
+
+      * Support for most features of the "diff --git" format, including
+        renames and copies, permission changes, and symlink diffs.
+        Binary diffs are not supported yet; patch will complain and skip
+        them.
+
+
