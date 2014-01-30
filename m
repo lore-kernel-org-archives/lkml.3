@@ -1,213 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaA3RSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:18:47 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:54936 "EHLO zene.cmpxchg.org"
+	id S1753541AbaA3RT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:19:27 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:52802 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148AbaA3RSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:18:46 -0500
-Date: Thu, 30 Jan 2014 12:18:37 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC 1/5] memcg: cleanup charge routines
-Message-ID: <20140130171837.GD6963@cmpxchg.org>
-References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
- <1387295130-19771-2-git-send-email-mhocko@suse.cz>
+	id S1751433AbaA3RTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 12:19:25 -0500
+Message-ID: <52EA8A07.6080008@mm-sol.com>
+Date: Thu, 30 Jan 2014 19:21:11 +0200
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387295130-19771-2-git-send-email-mhocko@suse.cz>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "subhashj@codeaurora.org" <subhashj@codeaurora.org>
+Subject: Re: [PATCH v7 2/2] mmc: sdhci-msm: Initial support for MSM chipsets
+References: <1383753405-23631-1-git-send-email-gdjakov@mm-sol.com> <1383753405-23631-3-git-send-email-gdjakov@mm-sol.com> <20131209170002.GA15223@sonymobile.com>
+In-Reply-To: <20131209170002.GA15223@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 04:45:26PM +0100, Michal Hocko wrote:
-> The current core of memcg charging is wild to say the least.
-> __mem_cgroup_try_charge which is in the center tries to be too clever
-> and it handles two independent cases
-> 	* when the memcg to be charged is known in advance
-> 	* when the given mm_struct is charged
-> The resulting callchains are quite complex:
-> 
-> memcg_charge_kmem(mm=NULL, memcg)  mem_cgroup_newpage_charge(mm)
->  |                                | _________________________________________ mem_cgroup_cache_charge(current->mm)
->  |                                |/                                            |
->  | ______________________________ mem_cgroup_charge_common(mm, memcg=NULL)      |
->  |/                                                                             /
->  |                                                                             /
->  | ____________________________ mem_cgroup_try_charge_swapin(mm, memcg=NULL)  /
->  |/                               | _________________________________________/
->  |                                |/
->  |                                |                         /* swap accounting */   /* no swap accounting */
->  | _____________________________  __mem_cgroup_try_charge_swapin(mm=NULL, memcg) || (mm, memcg=NULL)
->  |/
->  | ____________________________ mem_cgroup_do_precharge(mm=NULL, memcg)
->  |/
-> __mem_cgroup_try_charge
->   mem_cgroup_do_charge
->     res_counter_charge
->     mem_cgroup_reclaim
->     mem_cgroup_wait_acct_move
->     mem_cgroup_oom
-> 
-> This patch splits __mem_cgroup_try_charge into two logical parts.
-> mem_cgroup_try_charge_mm which is responsible for charges for the given
-> mm_struct and it returns the charged memcg or NULL under OOM while
-> mem_cgroup_try_charge_memcg charges a known memcg and returns an error
-> code.
-> 
-> The only tricky part which remains is __mem_cgroup_try_charge_swapin
-> because it can return 0 if PageCgroupUsed is already set and then we do
-> not want to commit the charge. This is done with a magic combination of
-> memcg = NULL and ret = 0. So the function preserves its memcgp parameter
-> and sets the given memcg to NULL when it sees PageCgroupUsed
-> (__mem_cgroup_commit_charge_swapin then ignores such a commit).
-> 
-> Not only the code is easier to follow the change reduces the code size
-> too:
-> $ size mm/built-in.o.before
->    text	   data	    bss	    dec	    hex	filename
->  457463	  83162	  49824	 590449	  90271	mm/built-in.o.before
-> 
-> $ size mm/built-in.o.after
->    text	   data	    bss	    dec	    hex	filename
->  456794	  83162	  49824	 589780	  8ffd4	mm/built-in.o.after
+Hi,
 
-Nice!
+Apologies for the delayed reply.
 
-> @@ -2655,37 +2655,68 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  }
->  
->  /*
-> - * __mem_cgroup_try_charge() does
-> - * 1. detect memcg to be charged against from passed *mm and *ptr,
-> - * 2. update res_counter
-> - * 3. call memory reclaim if necessary.
-> + * __mem_cgroup_try_charge_memcg - core of the memcg charging code. The caller
-> + * keeps a css reference to the given memcg. We do not charge root_mem_cgroup.
-> + * OOM is triggered only if allowed by the given oom parameter (except for
-> + * __GFP_NOFAIL when it is ignored).
->   *
-> - * In some special case, if the task is fatal, fatal_signal_pending() or
-> - * has TIF_MEMDIE, this function returns -EINTR while writing root_mem_cgroup
-> - * to *ptr. There are two reasons for this. 1: fatal threads should quit as soon
-> - * as possible without any hazards. 2: all pages should have a valid
-> - * pc->mem_cgroup. If mm is NULL and the caller doesn't pass a valid memcg
-> - * pointer, that is treated as a charge to root_mem_cgroup.
-> - *
-> - * So __mem_cgroup_try_charge() will return
-> - *  0       ...  on success, filling *ptr with a valid memcg pointer.
-> - *  -ENOMEM ...  charge failure because of resource limits.
-> - *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
-> - *
-> - * Unlike the exported interface, an "oom" parameter is added. if oom==true,
-> - * the oom-killer can be invoked.
-> + * Returns 0 on success, -ENOMEM when the given memcg is under OOM and -EINTR
-> + * when the charge is bypassed (either when fatal signals are pending or
-> + * __GFP_NOFAIL allocation cannot be charged).
->   */
-> -static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> -				   gfp_t gfp_mask,
-> +static int __mem_cgroup_try_charge_memcg(gfp_t gfp_mask,
->  				   unsigned int nr_pages,
-> -				   struct mem_cgroup **ptr,
-> +				   struct mem_cgroup *memcg,
->  				   bool oom)
+On 12/09/2013 07:00 PM, Courtney Cavin wrote:
+> On Wed, Nov 06, 2013 at 04:56:45PM +0100, Georgi Djakov wrote:
+>> This platform driver adds the initial support of Secure
+>> Digital Host Controller Interface compliant controller
+>> found in Qualcomm MSM chipsets.
+>>
+>> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> [...]
+>> +static int sdhci_msm_probe(struct platform_device *pdev)
+>> +{
+>> +       struct sdhci_host *host;
+>> +       struct sdhci_pltfm_host *pltfm_host;
+>> +       struct sdhci_msm_host *msm_host;
+>> +       struct resource *core_memres = NULL;
+>> +       int ret, dead;
+>> +       u16 host_version;
+>> +       u32 irq_status, irq_ctl;
+>> +
+>> +       if (!pdev->dev.of_node) {
+>> +               dev_err(&pdev->dev, "No device tree data\n");
+>> +               return -ENOENT;
+>> +       }
+>> +
+>> +       msm_host = devm_kzalloc(&pdev->dev, sizeof(*msm_host), GFP_KERNEL);
+>> +       if (!msm_host)
+>> +               return -ENOMEM;
+>> +
+>> +       msm_host->sdhci_msm_pdata.ops = &sdhci_msm_ops;
+>> +       host = sdhci_pltfm_init(pdev, &msm_host->sdhci_msm_pdata, 0);
+>> +       if (IS_ERR(host)) {
+>> +               dev_err(mmc_dev(host->mmc), "sdhci_pltfm_init error\n");
+>> +               return PTR_ERR(host);
+>> +       }
+>> +
+>> +       pltfm_host = sdhci_priv(host);
+>> +       pltfm_host->priv = msm_host;
+>> +       msm_host->mmc = host->mmc;
+>> +       msm_host->pdev = pdev;
+>> +
+>> +       ret = mmc_of_parse(host->mmc);
+>
+> Can we please add a call to sdhci_get_of_property(pdev) somewhere around
+> here too?
+>
 
-Why not keep the __mem_cgroup_try_charge() name?  It's shorter and
-just as descriptive.
+Thanks, I have added it to v8.
 
->  {
->  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
->  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> -	struct mem_cgroup *memcg = NULL;
->  	int ret;
->  
-> +	VM_BUG_ON(!memcg || memcg == root_mem_cgroup);
-> +
-> +	if (unlikely(task_in_memcg_oom(current)))
-> +		goto nomem;
-> +
-> +	if (gfp_mask & __GFP_NOFAIL)
-> +		oom = false;
-> +
-> +	do {
-> +		bool invoke_oom = oom && !nr_oom_retries;
-> +
-> +		/* If killed, bypass charge */
-> +		if (fatal_signal_pending(current))
-> +			goto bypass;
-> +
-> +		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch,
-> +					   nr_pages, invoke_oom);
-> +		switch (ret) {
-> +		case CHARGE_RETRY: /* not in OOM situation but retry */
-> +			batch = nr_pages;
-> +			break;
-> +		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
-> +			goto nomem;
-> +		case CHARGE_NOMEM: /* OOM routine works */
-> +			if (!oom || invoke_oom)
-> +				goto nomem;
-> +			nr_oom_retries--;
-> +			break;
-> +		}
-> +	} while (ret != CHARGE_OK);
-> +
-> +	if (batch > nr_pages)
-> +		refill_stock(memcg, batch - nr_pages);
-> +
-> +	return 0;
-> +nomem:
-> +	if (!(gfp_mask & __GFP_NOFAIL))
-> +		return -ENOMEM;
-> +bypass:
-> +	return -EINTR;
-> +}
-> +
-> +static bool mem_cgroup_bypass_charge(void)
+>> +       if (ret) {
+>> +               dev_err(&pdev->dev, "failed parsing mmc device tree\n");
+>> +               goto pltfm_free;
+>> +       }
+>> +
+>> +       ret = sdhci_msm_populate_pdata(&pdev->dev, &msm_host->pdata);
+>> +       if (ret) {
+>> +               dev_err(&pdev->dev, "DT parsing error\n");
+>> +               goto pltfm_free;
+>> +       }
+>> +
+>> +       /* Setup SDCC bus voter clock. */
+>> +       msm_host->bus_clk = devm_clk_get(&pdev->dev, "bus");
+>> +       if (!IS_ERR(msm_host->bus_clk)) {
+>> +               /* Vote for max. clk rate for max. performance */
+>> +               ret = clk_set_rate(msm_host->bus_clk, INT_MAX);
+>> +               if (ret)
+>> +                       goto pltfm_free;
+>> +               ret = clk_prepare_enable(msm_host->bus_clk);
+>> +               if (ret)
+>> +                       goto pltfm_free;
+>> +       }
+>> +
+>> +       /* Setup main peripheral bus clock */
+>> +       msm_host->pclk = devm_clk_get(&pdev->dev, "iface");
+>> +       if (!IS_ERR(msm_host->pclk)) {
+>> +               ret = clk_prepare_enable(msm_host->pclk);
+>> +               if (ret) {
+>> +                       dev_err(&pdev->dev,
+>> +                               "Main peripheral clock setup fail (%d)\n",
+>> +                               ret);
+>> +                       goto bus_clk_disable;
+>> +               }
+>> +       }
+>> +
+>> +       /* Setup SDC MMC clock */
+>> +       msm_host->clk = devm_clk_get(&pdev->dev, "core");
+>> +       if (IS_ERR(msm_host->clk)) {
+>> +               ret = PTR_ERR(msm_host->clk);
+>> +               dev_err(&pdev->dev, "SDC MMC clock setup fail (%d)\n", ret);
+>> +               goto pclk_disable;
+>> +       }
+>> +
+>> +       ret = clk_prepare_enable(msm_host->clk);
+>> +       if (ret)
+>> +               goto pclk_disable;
+>> +
+>> +       /* Setup regulators */
+>> +       ret = sdhci_msm_vreg_init(&pdev->dev, &msm_host->pdata);
+>> +       if (ret) {
+>> +               if (ret != -EPROBE_DEFER)
+>> +                       dev_err(&pdev->dev, "Regulator setup fail (%d)\n", ret);
+>> +               goto clk_disable;
+>> +       }
+>> +
+>> +       core_memres = platform_get_resource_byname(pdev,
+>> +                                                  IORESOURCE_MEM, "core_mem");
+>> +       msm_host->core_mem = devm_ioremap_resource(&pdev->dev, core_memres);
+>> +
+>> +       if (IS_ERR(msm_host->core_mem)) {
+>> +               dev_err(&pdev->dev, "Failed to remap registers\n");
+>> +               ret = PTR_ERR(msm_host->core_mem);
+>> +               goto vreg_disable;
+>> +       }
+>> +
+>> +       /* Reset the core and Enable SDHC mode */
+>> +       writel_relaxed(readl_relaxed(msm_host->core_mem + CORE_POWER) |
+>> +                       CORE_SW_RST, msm_host->core_mem + CORE_POWER);
+>> +
+>> +       /* SW reset can take upto 10HCLK + 15MCLK cycles. (min 40us) */
+>> +       usleep_range(1000, 5000);
+>> +       if (readl(msm_host->core_mem + CORE_POWER) & CORE_SW_RST) {
+>> +               dev_err(&pdev->dev, "Stuck in reset\n");
+>> +               ret = -ETIMEDOUT;
+>> +               goto vreg_disable;
+>> +       }
+>> +
+>> +       /* Set HC_MODE_EN bit in HC_MODE register */
+>> +       writel_relaxed(HC_MODE_EN, (msm_host->core_mem + CORE_HC_MODE));
+>> +
+>> +       /*
+>> +        * CORE_SW_RST above may trigger power irq if previous status of PWRCTL
+>> +        * was either BUS_ON or IO_HIGH_V. So before we enable the power irq
+>> +        * interrupt in GIC (by registering the interrupt handler), we need to
+>> +        * ensure that any pending power irq interrupt status is acknowledged
+>> +        * otherwise power irq interrupt handler would be fired prematurely.
+>> +        */
+>> +       irq_status = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_STATUS);
+>> +       writel_relaxed(irq_status, (msm_host->core_mem + CORE_PWRCTL_CLEAR));
+>> +       irq_ctl = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_CTL);
+>> +       if (irq_status & (CORE_PWRCTL_BUS_ON | CORE_PWRCTL_BUS_OFF))
+>> +               irq_ctl |= CORE_PWRCTL_BUS_SUCCESS;
+>> +       if (irq_status & (CORE_PWRCTL_IO_HIGH | CORE_PWRCTL_IO_LOW))
+>> +               irq_ctl |= CORE_PWRCTL_IO_SUCCESS;
+>> +       writel_relaxed(irq_ctl, (msm_host->core_mem + CORE_PWRCTL_CTL));
+>> +       /*
+>> +        * Ensure that above writes are propogated before interrupt enablement
+>> +        * in GIC.
+>> +        */
+>> +       mb();
+>> +
+>> +       /*
+>> +        * Following are the deviations from SDHC spec v3.0 -
+>> +        * 1. Card detection is handled using separate GPIO.
+>> +        * 2. Bus power control is handled by interacting with PMIC.
+>> +        */
+>> +       host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+>> +       host->quirks |= SDHCI_QUIRK_SINGLE_POWER_WRITE;
+>
+> I couldn't get v6 running without the 5 quirks you submitted in [1].
+> Aren't these also attributes of the controller itself? If so, shouldn't they
+> be part of this patch series, and included here?
+>
 
-The name and parameter list suggests this consults some global memory
-cgroup state.  current_bypass_charge()?  I think ultimately we want to
-move away from all these mem_cgroup prefixes of static functions in
-there, they add nothing of value.
+Most of the quirks are for older hardware revisions. On what board/chip 
+are you trying to run it? I will post v8 shortly. Could you try with it 
+please?
 
-> +{
->  	/*
->  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
->  	 * in system level. So, allow to go ahead dying process in addition to
-> @@ -2693,13 +2724,23 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->  	 */
->  	if (unlikely(test_thread_flag(TIF_MEMDIE)
->  		     || fatal_signal_pending(current)))
-> -		goto bypass;
-> +		return true;
->  
-> -	if (unlikely(task_in_memcg_oom(current)))
-> -		goto nomem;
-> +	return false;
-> +}
->  
-> -	if (gfp_mask & __GFP_NOFAIL)
-> -		oom = false;
-> +/*
-> + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
-> + * if mm is NULL). Returns NULL if memcg is under OOM.
-> + */
-> +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
-> +				   gfp_t gfp_mask,
-> +				   unsigned int nr_pages,
-> +				   bool oom)
-
-We already have a try_get_mem_cgroup_from_mm().  After this series,
-this function basically duplicates that and it would be much cleaner
-if we only had one try_charge() function and let all the callers use
-the appropriate try_get_mem_cgroup_from_wherever() themselves.
-
-If you pull the patch that moves consume_stock() back into
-try_charge() up front, I think this cleanup would be more obvious and
-the result even better.
+Thanks,
+Georgi
