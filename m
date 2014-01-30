@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaA3OVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:21:43 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62611 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983AbaA3OVk (ORCPT
+	id S1753145AbaA3OYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:24:10 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:48912 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaA3OYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:21:40 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Subject: Re: [RFC PATCH V3 0/4] APM X-Gene PCIe controller
-Date: Thu, 30 Jan 2014 15:21:11 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dann Frazier <dann.frazier@canonical.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
-References: <1390599168-13150-1-git-send-email-tinamdar@apm.com> <CAErSpo7Dfd4NJBEDuVe1VCvZObFq1YvV2x77S60Z4-CZq89QJw@mail.gmail.com> <CACoXjc=LSrLK=kd9GJoHWJovVDC+TfH2bZO-2Ht9jMoBrL9eag@mail.gmail.com>
-In-Reply-To: <CACoXjc=LSrLK=kd9GJoHWJovVDC+TfH2bZO-2Ht9jMoBrL9eag@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401301521.11665.arnd@arndb.de>
-X-Provags-ID: V02:K0:t/Re1M/tM0Pf4nfz94RPZx4JqU4YfKI0OcbvvbVZeTh
- oLCFb+lVEgzz3fGt8hepx8ywsB4Oakt8yh645dfX/Tot7DeI6P
- DR1ZWTq4dVSN//k6yMS85DpEuIgbV+mgv94r5aVJPBXdzrfQzr
- pTF9kGlKLvOx/K1/R0+Ua5RGFvIiL1BaxaKTsQUW/fyFo3VmLz
- gOOwDI2dPUlYEQc7v6UfJgHLMKpkLxr/Bf8CXut0RjgmnPxfRT
- zozUgP5AGCSI+OSbXf4Zt4sZlGsiuQuzxwxjSg85E2ez0zU5If
- aDmtYlaeQbzpsFvySexn9tfUpywIQoMlAlzx4/+fyEouEEF3qz
- 76JHtsuBQiH6J0iOLCsChPFdLyoQv8l9gRlS7F3/X
+	Thu, 30 Jan 2014 09:24:09 -0500
+From: "Steven J. Magnani" <steve.magnani@digidescorp.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH] qla2xxx: eliminate dead code in qla24xx_process_bidir_cmd
+Date: Thu, 30 Jan 2014 08:17:55 -0600
+Message-Id: <1391091475-15629-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 January 2014, Tanmay Inamdar wrote:
-> >
-> > When you repost, please make sure you fix whatever problem is
-> > preventing your email from appearing on the vger mailing lists.  I
-> > won't apply things that haven't appeared on the linux-pci list,
-> > because that list is the opportunity for other people to review them.
-> >
-> You are absolutely right. If the patches are not reaching mailing
-> list, they should not appear on archive list as well. However I am
-> seeing my patches recorded on archives. So I am not sure if they are
-> actually getting dropped on linux-pci or any other mailing list.
-> 
-> http://www.spinics.net/lists/linux-pci/msg28198.html
-> http://article.gmane.org/gmane.linux.kernel.pci/28442/match=tanmay+inamdar
+Coverity reports that the test of req_data_len vs. rsp_data_len is dead code.
+This appears to be because the test occurs before any real assignment to
+either variable.
 
-Very strange. I can also confirm that I received the patches through
-the linux-arm-kernel and devicetree mailing lists without problems.
+Assuming that the sole in-tree execution path (QL_VND_DIAG_IO_CMD submitted
+via FC pass-through on a host /dev/bsg/X) does not require the response to
+have the same length as the request, all code related to the faulty test
+can be removed. If this is not the case, the test should be moved much earlier
+in the function since it does not depend on any resource acquitision.
 
-	Arnd
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+--- linux-3.13/drivers/scsi/qla2xxx/qla_bsg.c	2014-01-29 13:50:02.050802907 -0600
++++ b/drivers/scsi/qla2xxx/qla_bsg.c	2014-01-29 13:53:15.856549874 -0600
+@@ -1732,8 +1732,6 @@ qla24xx_process_bidir_cmd(struct fc_bsg_
+ 	uint16_t nextlid = 0;
+ 	uint32_t tot_dsds;
+ 	srb_t *sp = NULL;
+-	uint32_t req_data_len = 0;
+-	uint32_t rsp_data_len = 0;
+ 
+ 	/* Check the type of the adapter */
+ 	if (!IS_BIDI_CAPABLE(ha)) {
+@@ -1840,17 +1838,6 @@ qla24xx_process_bidir_cmd(struct fc_bsg_
+ 		goto done_unmap_sg;
+ 	}
+ 
+-	if (req_data_len != rsp_data_len) {
+-		rval = EXT_STATUS_BUSY;
+-		ql_log(ql_log_warn, vha, 0x70aa,
+-		    "req_data_len != rsp_data_len\n");
+-		goto done_unmap_sg;
+-	}
+-
+-	req_data_len = bsg_job->request_payload.payload_len;
+-	rsp_data_len = bsg_job->reply_payload.payload_len;
+-
+-
+ 	/* Alloc SRB structure */
+ 	sp = qla2x00_get_sp(vha, &(vha->bidir_fcport), GFP_KERNEL);
+ 	if (!sp) {
+--- linux-3.13/drivers/scsi/qla2xxx/qla_dbg.c	2014-01-29 13:50:49.435230824 -0600
++++ b/drivers/scsi/qla2xxx/qla_dbg.c	2014-01-29 13:53:43.960820829 -0600
+@@ -38,7 +38,8 @@
+  * |                              |                    | 0x7073-0x7075, |
+  * |                              |                    | 0x707b,0x708c, |
+  * |                              |                    | 0x70a5,0x70a6, |
+- * |                              |                    | 0x70a8,0x70ab, |
++ * |                              |                    | 0x70a8,        |
++ * |                              |                    | 0x70aa-0x70ab, |
+  * |                              |                    | 0x70ad-0x70ae, |
+  * |                              |                    | 0x70d1-0x70db, |
+  * |                              |                    | 0x7047,0x703b	|
