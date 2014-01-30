@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaA3T0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:26:07 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:43816 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaA3T0F (ORCPT
+	id S1753788AbaA3T0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:26:47 -0500
+Received: from www84.your-server.de ([213.133.104.84]:33132 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaA3T0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:26:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1390956313.25542.64.camel@kjgkr>
-References: <20140128224336.GF25989@kernel.dk>
-	<20140128225229.GH25989@kernel.dk>
-	<20140129110536.00ce3c9e580f747fd0f1d0e6@canb.auug.org.au>
-	<1390956313.25542.64.camel@kjgkr>
-Date: Thu, 30 Jan 2014 11:26:04 -0800
-X-Google-Sender-Auth: J0MSbUznEJ3hxgDMkUYf9Df9SsY
-Message-ID: <CA+55aFwYxdqf3EZNr_Z1EUADi4ExL8aZc_HCR-X6XRv1r223yQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Core block IO changes for 3.14
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: jaegeuk.kim@samsung.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 30 Jan 2014 14:26:46 -0500
+Message-ID: <1391110034.945.5.camel@wall-e.seibold.net>
+Subject: Re: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Thu, 30 Jan 2014 20:27:14 +0100
+In-Reply-To: <CALCETrXqnrDu=rceAm++bGLicj44FfYsxm9-KvqU=B1zkei9TA@mail.gmail.com>
+References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+	 <1391078953-1575-2-git-send-email-stefani@seibold.net>
+	 <CALCETrXqnrDu=rceAm++bGLicj44FfYsxm9-KvqU=B1zkei9TA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 4:45 PM, Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
->
-> In the case of f2fs, could you please check the following code changes?
+Am Donnerstag, den 30.01.2014, 10:05 -0800 schrieb Andy Lutomirski:
+> On Thu, Jan 30, 2014 at 2:49 AM,  <stefani@seibold.net> wrote:
+> > diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+> > index 59c6c40..45ba688 100644
+> > --- a/arch/x86/include/asm/compat.h
+> > +++ b/arch/x86/include/asm/compat.h
+> > @@ -295,6 +295,10 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+> >
+> >  static inline void __user *arch_compat_alloc_user_space(long len)
+> >  {
+> > +#ifdef CONFIG_X86_32
+> > +       struct pt_regs *regs = task_pt_regs(current);
+> > +       return (void __user *)regs->sp - len;
+> 
+> Is there some reason this doesn't need to be aligned?
+> 
 
-So I ended up doing the merge differently wrt the f2fs_write_end_io() function.
+The reason is that this function will not used for 32 bit kernels, but
+will the header will be included... This prevents an error!
 
-As far as I can tell, we can just initialize the f2fs_sb_info directly
-and unconditionally using the first bio_vec entry, giving us the
-simpler
+> > +#else
+> >         compat_uptr_t sp;
+> >
+> >         if (test_thread_flag(TIF_IA32)) {
+> > @@ -305,6 +309,7 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+> >         }
+> >
+> >         return (void __user *)round_down(sp - len, 16);
+> > +#endif
+> >  }
+> >
+> > +#define CREATE_TRACE_POINTS
+> > +#include "vsyscall_trace.h"
+> > +
+> > +void __init map_vsyscall(void)
+> > +{
+> > +       extern char __vvar_page;
+> > +       unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
+> > +
+> > +       __set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
+> 
+> Given that the compat version of this can't (I assume) use a fixmap,
+> is there any good reason to not just use the same vma-based code for
+> compat and real 32-bit kernels?
+> 
 
-    struct f2fs_sb_info *sbi =
-F2FS_SB(bio->bi_io_vec->bv_page->mapping->host->i_sb);
+The reason is compability! And it saves two Pages of logical address
+space wenn using not the VMA compat mode.
 
-which is still ugly, but whatever. I'm not quite seeing why f2fs
-doesn't just set bio->private to the superblock pointer and avoid this
-whole complex and long pointer chasing, but there's probably some
-reason.
+BTW: It would be a great thing if you would not send back the hole
+patch. If is very hard to find your replies in tons of line!
 
-Anyway, it compiles for me, and looks simpler than the alternate
-resolutions, but maybe there is some reason I miss why you guys did it
-the way you did. And while I could test that it compiles and looks
-sane, I don't have a f2fs to actually *test* it on, and maybe I
-screwed up royally.
 
-I'll push it out once I've done the rest of the allmodconfig build-test.
-
-                 Linus
