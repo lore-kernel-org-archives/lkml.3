@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaA3I1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 03:27:15 -0500
-Received: from mail-ve0-f196.google.com ([209.85.128.196]:61643 "EHLO
-	mail-ve0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaA3I1O (ORCPT
+	id S1751799AbaA3IiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 03:38:21 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:43030 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaA3IiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 03:27:14 -0500
+	Thu, 30 Jan 2014 03:38:19 -0500
+Message-ID: <52EA0F76.6000300@gmail.com>
+Date: Thu, 30 Jan 2014 09:38:14 +0100
+From: boris brezillon dev <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Reply-To: mrsemma899@yahoo.com
-Date: Thu, 30 Jan 2014 00:27:13 -0800
-X-Google-Sender-Auth: BjXUs-poMBUPCS7Fj08I-RmOLrs
-Message-ID: <CAKaDLP_cQo1GmAOdHj4SM8tXF7SZLSEDkFhcqqWzjUxd=4FS8g@mail.gmail.com>
-Subject: 
-From: infoo moore <infoomoore@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?SGVucmlrIE5vcmRzdHLDtm0=?= <henrik@henriknordstrom.net>,
+        linux-sunxi@googlegroups.com
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-mtd@lists.infradead.org, dev@linux-sunxi.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [linux-sunxi] Re: [RFC PATCH v2 09/14] mtd: nand: add sunxi NFC
+ dt bindings doc
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com>	 <1391006064-28890-10-git-send-email-b.brezillon.dev@gmail.com>	 <CAL_JsqLVr1gSLArqtfOiHce+u6ZK8FiKMX0o9bvMrMoGGhATvg@mail.gmail.com> <1391035079.14902.3.camel@localhost>
+In-Reply-To: <1391035079.14902.3.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Good Day Friend,
+Hello Henrik,
 
-My name is Mrs  Emma dongo douglas have been suffering from Brest cancer
-am based in burkina faso in west africa ,formerly dealing in cotton
-and gold exportation ,am fron tunisia but spent all my life in burkina
-faso ,the doctor said i have few days to live ,so i decided to do this
-for old people and less privilage around the world so that i can have
-eternal rest
+On 29/01/2014 23:37, Henrik Nordström wrote:
+> ons 2014-01-29 klockan 11:11 -0600 skrev Rob Herring:
+>
+>> Isn't allwinner,rb implied by a lack of rb-gpios property. Or no R/B
+>> pin is an option? If so, don't you need some fixed time delay
+>> properties like max erase time?
+>>
+>> rb-gpios could be added to the generic nand binding as well.
+> The Allwinner NAND controller have dedicated RB pins when NAND is
+> enabled, only MUXed with other functions when NAND is not enabled.
+>
+> Leaving RB unconnected is not a valid hardware configuration. The
+> controller internal timing engine depends on being able to sense RB to
+> sequence NAND commands properly.
 
-I have ($4.8 Million US Dollars) in the bank here Burkina Faso
-which i want you to claim from the bank and use help less privilege
-people in your country, but you must assure me that you will take only
-30% of the total money and give the rest 70% to the Charity
-organization and orphanage home in your country for my heart to rest.
-Upon the receipt of your email that you are willing and capable to
-execute my plan, i will instruct the bank management to make the
-immediate transfer into your account.
-Thanks and best regard
-Yours Faithfully,
-Mrs  Emma   dongo Douglas
-Reply to this e-mail(mrsemma899@yahoo.com)
+This is not true (at least in this driver). It was in yuq's driver because
+he was using the NFC_WAIT_FLAG ,and in this case the controller wait
+for the native R/B pin to be high before considering the CMD is complete.
+
+This driver choose the appropriate way to test the R/B state of the
+NAND chip according to what was specified in the DT:
+- allwinner,rb: native R/B id. These pins will be used by the NAND
+   controller to test the R/B state. Only 0 and 1 are valid because the
+   NAND controller only support 2 R/B pins.
+- rb-gpios: gpio used for R/B tests. This is a simple GPIO and will
+   use the GPIO subsystem to test the R/B pin state.
+- none: the NAND base code will wait some time before and send
+   STATUS cmd to the NAND to check its status.
+
+BTW, the controller supports 8 CS (8 NAND chips), but only have 2 native
+R/B pins, this means you'll have to use the GPIO or standard GET_STATUS
+method if you connect 3 or more NAND chips.
+
+And for the record, I still think the rb-gpios property (or whatever
+common name you choose: nand-rb-gpios ?) should be part of
+the generic NAND binding, because other controllers (at least the
+atmel one :)) use GPIOs to test R/B state.
+
+Best Regards,
+
+Boris
+
+>
+> Regards
+> Henrik
+>
+
