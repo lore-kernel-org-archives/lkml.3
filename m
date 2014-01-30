@@ -1,134 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaA3Jcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 04:32:53 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33980 "EHLO mga01.intel.com"
+	id S1752687AbaA3Jih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 04:38:37 -0500
+Received: from mga14.intel.com ([143.182.124.37]:47717 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107AbaA3Jcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 04:32:50 -0500
+	id S1751097AbaA3Jie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 04:38:34 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,748,1384329600"; 
-   d="scan'208";a="473142312"
-Message-ID: <52EA1CAE.7060801@intel.com>
-Date: Thu, 30 Jan 2014 11:34:38 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 9/9] perf buildid-cache: Check relocation when checking
- for existing kcore
-References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com> <1391004884-10334-10-git-send-email-adrian.hunter@intel.com> <20140129191454.GG3998@ghostprotocols.net>
-In-Reply-To: <20140129191454.GG3998@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="337665147"
+From: Jenny TC <jenny.tc@intel.com>
+To: linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jenny TC <jenny.tc@intel.com>, Kim Milo <Milo.Kim@ti.com>,
+        Lee Jones <lee.jones@linaro.org>, Jingoo Han <jg1.han@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Rhyland Klein <rklein@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
+        freemangordon@abv.bg, linux-omap@vger.kernel.org
+Subject: [PATCH v4 0/4] power_supply: Introduce power supply charging driver
+Date: Thu, 30 Jan 2014 23:00:48 +0530
+Message-Id: <1391103052-10954-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/01/14 21:14, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Jan 29, 2014 at 04:14:44PM +0200, Adrian Hunter escreveu:
->> perf buildid-cache does not make another
->> copy of kcore if the buildid and modules
->> match an existing copy.  That does not
-> 
-> Humm, what is the problem? Having the ref reloc symbol we can fix things
-> up, no? I.e. just using map->reloc the old kcore copy should be ok to
-> use, no need to replace the kcore copy in the cache. Or am I missing
-> something?
+v1: introduced feature as a framework within power supply class driver with
+	separate files for battid framework and charging framework
+v2: fixed review comments, moved macros and inline functions to power_supply.h
+v3: moved the feature as a separate driver, combined battid framework and
+	charging framework inside the power supply charging driver. Moved
+	charger specific properties to power_supply_charger.h and plugged the
+	driver with power supply subsystem using power_supply_notifier
+	introduced in my previous patch. Also a sample charger chip driver
+	(bq24261) patch added to give more idea on the psy charging driver
+	usage
+v4: Fixed review comments, no major design changes.
 
-The current implementation works on the basis that kcore
-matches the perf data recorded.  This is just a fix for that.
+The Power Supply charging driver connects multiple subsystems
+to do charging in a generic way. The subsystems involves power_supply,
+thermal and battery communication subsystems (1wire).With this the charging is
+handled in a generic way.
 
-I am afraid it is that way because it meets my needs.
-I did not think of allowing for relocation because I
-need to be able to walk the code.  Relocation was one
-of the things I was trying to avoid.
+The driver makes use of different new features - Battery Identification
+interfaces, pluggable charging algorithms, charger cable arbitrations etc.
+The patch also introduces generic interface for charger cable notifications.
+Charger cable events and capabilities can be notified using the generic
+power_supply_notifier chain.
 
-For me making a copy of kcore is far superior because
-it can be made to have the jump labels mostly the
-right way around too. e.g. run a dummy perf record
-while making the copy.
+Overall this driver removes the charging logic out of the charger chip driver
+and the charger chip driver can just listen to the request from the power
+supply charging driver to set the charger properties. This can be implemented
+by exposing get_property and set property callbacks.
 
-> 
-> - Arnaldo
-> 
->> take into account the possibility that
->> the kernel has been relocated.  Extend
->> the check to check if the reference
->> relocation symbol matches too, otherwise
->> do make a copy.
->>
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>  tools/perf/builtin-buildid-cache.c | 33 +++++++++++++++++++++++++++++----
->>  1 file changed, 29 insertions(+), 4 deletions(-)
->>
->> diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
->> index cfede86..b22dbb1 100644
->> --- a/tools/perf/builtin-buildid-cache.c
->> +++ b/tools/perf/builtin-buildid-cache.c
->> @@ -63,11 +63,35 @@ static int build_id_cache__kcore_dir(char *dir, size_t sz)
->>  	return 0;
->>  }
->>  
->> +static bool same_kallsyms_reloc(const char *from_dir, char *to_dir)
->> +{
->> +	char from[PATH_MAX];
->> +	char to[PATH_MAX];
->> +	const char *name;
->> +	u64 addr1 = 0, addr2 = 0;
->> +	int i;
->> +
->> +	scnprintf(from, sizeof(from), "%s/kallsyms", from_dir);
->> +	scnprintf(to, sizeof(to), "%s/kallsyms", to_dir);
->> +
->> +	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
->> +		addr1 = kallsyms__get_function_start(from, name);
->> +		if (addr1)
->> +			break;
->> +	}
->> +
->> +	if (name)
->> +		addr2 = kallsyms__get_function_start(to, name);
->> +
->> +	return addr1 == addr2;
->> +}
->> +
->>  static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
->>  					  size_t to_dir_sz)
->>  {
->>  	char from[PATH_MAX];
->>  	char to[PATH_MAX];
->> +	char to_subdir[PATH_MAX];
->>  	struct dirent *dent;
->>  	int ret = -1;
->>  	DIR *d;
->> @@ -86,10 +110,11 @@ static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
->>  			continue;
->>  		scnprintf(to, sizeof(to), "%s/%s/modules", to_dir,
->>  			  dent->d_name);
->> -		if (!compare_proc_modules(from, to)) {
->> -			scnprintf(to, sizeof(to), "%s/%s", to_dir,
->> -				  dent->d_name);
->> -			strlcpy(to_dir, to, to_dir_sz);
->> +		scnprintf(to_subdir, sizeof(to_subdir), "%s/%s",
->> +			  to_dir, dent->d_name);
->> +		if (!compare_proc_modules(from, to) &&
->> +		    same_kallsyms_reloc(from_dir, to_subdir)) {
->> +			strlcpy(to_dir, to_subdir, to_dir_sz);
->>  			ret = 0;
->>  			break;
->>  		}
->> -- 
->> 1.7.11.7
-> 
-> 
+
+Jenny TC (4):
+  power_supply: Add inlmt,iterm, min/max temp props
+  power_supply: Introduce generic psy charging driver
+  power_supply: Introduce PSE compliant algorithm
+  power_supply: bq24261 charger driver
+
+ Documentation/power/power_supply_charger.txt |  339 +++++++
+ Documentation/power/power_supply_class.txt   |    6 +
+ drivers/power/Kconfig                        |   31 +
+ drivers/power/Makefile                       |    3 +
+ drivers/power/bq24261_charger.c              | 1364 ++++++++++++++++++++++++++
+ drivers/power/charging_algo_pse.c            |  198 ++++
+ drivers/power/power_supply_charger.c         | 1196 ++++++++++++++++++++++
+ drivers/power/power_supply_charger.h         |  218 ++++
+ drivers/power/power_supply_core.c            |    3 +
+ drivers/power/power_supply_sysfs.c           |    4 +
+ include/linux/power/bq24261_charger.h        |   32 +
+ include/linux/power/power_supply_charger.h   |  237 +++++
+ include/linux/power_supply.h                 |  164 ++++
+ 13 files changed, 3795 insertions(+)
+ create mode 100644 Documentation/power/power_supply_charger.txt
+ create mode 100644 drivers/power/bq24261_charger.c
+ create mode 100644 drivers/power/charging_algo_pse.c
+ create mode 100644 drivers/power/power_supply_charger.c
+ create mode 100644 drivers/power/power_supply_charger.h
+ create mode 100644 include/linux/power/bq24261_charger.h
+ create mode 100644 include/linux/power/power_supply_charger.h
+
+-- 
+1.7.9.5
 
