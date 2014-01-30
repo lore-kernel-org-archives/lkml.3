@@ -1,107 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321AbaA3BCP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 20:02:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879AbaA3BCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 20:02:13 -0500
-Date: Wed, 29 Jan 2014 20:02:03 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Sebastian Capella <sebastian.capella@linaro.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Shaohua Li <shli@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v4 1/2] mm: add kstrimdup function
-In-Reply-To: <alpine.LRH.2.02.1401291956510.8304@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1401292001320.9013@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1391039304-3172-1-git-send-email-sebastian.capella@linaro.org> <1391039304-3172-2-git-send-email-sebastian.capella@linaro.org> <alpine.LRH.2.02.1401291956510.8304@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752312AbaA3BVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 20:21:39 -0500
+Received: from yotta.elopez.com.ar ([31.220.24.173]:59807 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724AbaA3BVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jan 2014 20:21:38 -0500
+Message-ID: <52E9A8F0.8030901@elopez.com.ar>
+Date: Wed, 29 Jan 2014 22:20:48 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: linux-sunxi@googlegroups.com, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com
+Subject: Re: [linux-sunxi] [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI
+ controller driver
+References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com> <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Maxime,
 
+El 29/01/14 08:10, Maxime Ripard escribió:
+> The Allwinner A31 has a new SPI controller IP compared to the older Allwinner
+> SoCs.
+>
+> It supports DMA, but the driver only does PIO for now, and DMA will be
+> supported eventually.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+(snip)
+> +	struct sun6i_spi *sspi = spi_master_get_devdata(master);
+> +	int ret;
+> +
+> +	ret = clk_prepare_enable(sspi->hclk);
+> +	if (ret) {
+> +		dev_err(dev, "Couldn't enable clock 'ahb spi'\n");
+> +		goto out;
+> +	}
+> +
+> +	ret = clk_prepare_enable(sspi->mclk);
+> +	if (ret) {
+> +		dev_err(dev, "Couldn't enable clock 'ahb spi'\n");
 
-On Wed, 29 Jan 2014, Mikulas Patocka wrote:
+A different message would be nice :)
 
-> 
-> 
-> On Wed, 29 Jan 2014, Sebastian Capella wrote:
-> 
-> > kstrimdup will duplicate and trim spaces from the passed in
-> > null terminated string.  This is useful for strings coming from
-> > sysfs that often include trailing whitespace due to user input.
-> > 
-> > Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Rik van Riel <riel@redhat.com> (commit_signer:5/10=50%)
-> > Cc: Michel Lespinasse <walken@google.com>
-> > Cc: Shaohua Li <shli@kernel.org>
-> > Cc: Jerome Marchand <jmarchan@redhat.com>
-> > Cc: Mikulas Patocka <mpatocka@redhat.com>
-> > Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > ---
-> >  include/linux/string.h |    1 +
-> >  mm/util.c              |   19 +++++++++++++++++++
-> >  2 files changed, 20 insertions(+)
-> > 
-> > diff --git a/include/linux/string.h b/include/linux/string.h
-> > index ac889c5..f29f9a0 100644
-> > --- a/include/linux/string.h
-> > +++ b/include/linux/string.h
-> > @@ -114,6 +114,7 @@ void *memchr_inv(const void *s, int c, size_t n);
-> >  
-> >  extern char *kstrdup(const char *s, gfp_t gfp);
-> >  extern char *kstrndup(const char *s, size_t len, gfp_t gfp);
-> > +extern char *kstrimdup(const char *s, gfp_t gfp);
-> >  extern void *kmemdup(const void *src, size_t len, gfp_t gfp);
-> >  
-> >  extern char **argv_split(gfp_t gfp, const char *str, int *argcp);
-> > diff --git a/mm/util.c b/mm/util.c
-> > index a24aa22..da17de5 100644
-> > --- a/mm/util.c
-> > +++ b/mm/util.c
-> > @@ -63,6 +63,25 @@ char *kstrndup(const char *s, size_t max, gfp_t gfp)
-> >  EXPORT_SYMBOL(kstrndup);
-> >  
-> >  /**
-> > + * kstrimdup - Trim and copy a %NUL terminated string.
-> > + * @s: the string to trim and duplicate
-> > + * @gfp: the GFP mask used in the kmalloc() call when allocating memory
-> > + *
-> > + * Returns an address, which the caller must kfree, containing
-> > + * a duplicate of the passed string with leading and/or trailing
-> > + * whitespace (as defined by isspace) removed.
-> 
-> It doesn't remove leading whitespace. To remove them, you need to do
+Cheers,
 
-I was wrong - I forgot about that skip_spaces in kstrdup.
-
-Mikulas
-
-> > + */
-> > +char *kstrimdup(const char *s, gfp_t gfp)
-> > +{
-> > +	char *ret = kstrdup(skip_spaces(s), gfp);
-> > +
-> > +	if (ret)
-> > +		strim(ret);
-> > +	return ret;
-> > +}
-> > +EXPORT_SYMBOL(kstrimdup);
-> > +
-> > +/**
-> >   * kmemdup - duplicate region of memory
-> >   *
-> >   * @src: memory region to duplicate
-> > -- 
-> > 1.7.9.5
-> > 
-> 
+Emilio
