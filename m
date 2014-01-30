@@ -1,110 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaA3VMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 16:12:23 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:43212 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537AbaA3VMS (ORCPT
+	id S1753829AbaA3VOu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 16:14:50 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54936 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaA3VOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 16:12:18 -0500
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Shaohua Li <shli@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v5 1/2] mm: add kstrimdup function
-Date: Thu, 30 Jan 2014 13:11:57 -0800
-Message-Id: <1391116318-17253-2-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391116318-17253-1-git-send-email-sebastian.capella@linaro.org>
-References: <1391116318-17253-1-git-send-email-sebastian.capella@linaro.org>
+	Thu, 30 Jan 2014 16:14:48 -0500
+Date: Thu, 30 Jan 2014 13:14:46 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Vladimir Davydov <vdavydov@parallels.com>, mhocko@suse.cz,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix mutex not unlocked on memcg_create_kmem_cache
+ fail path
+In-Reply-To: <20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com>
+References: <1391097693-31401-1-git-send-email-vdavydov@parallels.com> <20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kstrimdup will duplicate and trim spaces from the passed in
-null terminated string.  This is useful for strings coming from
-sysfs that often include trailing whitespace due to user input.
+On Thu, 30 Jan 2014, Andrew Morton wrote:
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Rik van Riel <riel@redhat.com> (commit_signer:5/10=50%)
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Shaohua Li <shli@kernel.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- include/linux/string.h |    1 +
- mm/util.c              |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+)
+> Well gee, how did that one get through?
+> 
+> What was the point in permanently allocating tmp_name, btw?  "This
+> static temporary buffer is used to prevent from pointless shortliving
+> allocation"?  That's daft - memcg_create_kmem_cache() is not a fastpath
+> and there are a million places in the kernel where we could permanently
+> leak memory because it is "pointless" to allocate on demand.
+> 
+> The allocation of PATH_MAX bytes is unfortunate - kasprintf() wouild
+> work well here, but cgroup_name()'s need for rcu_read_lock() screws us
+> up.
+> 
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index ac889c5..f29f9a0 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -114,6 +114,7 @@ void *memchr_inv(const void *s, int c, size_t n);
- 
- extern char *kstrdup(const char *s, gfp_t gfp);
- extern char *kstrndup(const char *s, size_t len, gfp_t gfp);
-+extern char *kstrimdup(const char *s, gfp_t gfp);
- extern void *kmemdup(const void *src, size_t len, gfp_t gfp);
- 
- extern char **argv_split(gfp_t gfp, const char *str, int *argcp);
-diff --git a/mm/util.c b/mm/util.c
-index 808f375..2066b33 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -1,6 +1,7 @@
- #include <linux/mm.h>
- #include <linux/slab.h>
- #include <linux/string.h>
-+#include <linux/ctype.h>
- #include <linux/export.h>
- #include <linux/err.h>
- #include <linux/sched.h>
-@@ -63,6 +64,35 @@ char *kstrndup(const char *s, size_t max, gfp_t gfp)
- EXPORT_SYMBOL(kstrndup);
- 
- /**
-+ * kstrimdup - Trim and copy a %NUL terminated string.
-+ * @s: the string to trim and duplicate
-+ * @gfp: the GFP mask used in the kmalloc() call when allocating memory
-+ *
-+ * Returns an address, which the caller must kfree, containing
-+ * a duplicate of the passed string with leading and/or trailing
-+ * whitespace (as defined by isspace) removed.
-+ */
-+char *kstrimdup(const char *s, gfp_t gfp)
-+{
-+	char *buf;
-+	char *begin = skip_spaces(s);
-+	size_t len = strlen(begin);
-+
-+	while (len > 1 && isspace(begin[len - 1]))
-+		len--;
-+
-+	buf = kmalloc_track_caller(len + 1, gfp);
-+	if (!buf)
-+		return NULL;
-+
-+	memcpy(buf, begin, len);
-+	buf[len] = '\0';
-+
-+	return buf;
-+}
-+EXPORT_SYMBOL(kstrimdup);
-+
-+/**
-  * kmemdup - duplicate region of memory
-  *
-  * @src: memory region to duplicate
--- 
-1.7.9.5
+What's funnier is that tmp_name isn't required at all since 
+kmem_cache_create_memcg() is just going to do a kstrdup() on it anyway, so 
+you could easily just pass in the pointer to memory that has been 
+allocated for s->name rather than allocating memory twice.
 
+> So how about doing this?
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm/memcontrol.c: memcg_create_kmem_cache() tweaks
+> 
+> Allocate tmp_name on demand rather than permanently consuming PATH_MAX
+> bytes of memory.  This permits a small reduction in the mutex hold time as
+> well.
+> 
+> Cc: Glauber Costa <glommer@parallels.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Vladimir Davydov <vdavydov@parallels.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/memcontrol.c |   11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff -puN mm/memcontrol.c~mm-memcontrolc-memcg_create_kmem_cache-tweaks mm/memcontrol.c
+> --- a/mm/memcontrol.c~mm-memcontrolc-memcg_create_kmem_cache-tweaks
+> +++ a/mm/memcontrol.c
+> @@ -3401,17 +3401,14 @@ static struct kmem_cache *memcg_create_k
+>  						  struct kmem_cache *s)
+>  {
+>  	struct kmem_cache *new = NULL;
+> -	static char *tmp_name = NULL;
+> +	static char *tmp_name;
+
+You're keeping it static and the mutex so you're still keeping it global, 
+ok...
+
+>  	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
+>  
+>  	BUG_ON(!memcg_can_account_kmem(memcg));
+>  
+> -	mutex_lock(&mutex);
+>  	/*
+> -	 * kmem_cache_create_memcg duplicates the given name and
+> -	 * cgroup_name for this name requires RCU context.
+> -	 * This static temporary buffer is used to prevent from
+> -	 * pointless shortliving allocation.
+> +	 * kmem_cache_create_memcg duplicates the given name and cgroup_name()
+> +	 * for this name requires rcu_read_lock().
+>  	 */
+>  	if (!tmp_name) {
+>  		tmp_name = kmalloc(PATH_MAX, GFP_KERNEL);
+
+Eek, memory leak.  Two concurrent calls to memcg_create_kmem_cache() find 
+!tmp_name and do the kmalloc() concurrently.
+
+> @@ -3419,6 +3416,7 @@ static struct kmem_cache *memcg_create_k
+>  			goto out;
+>  	}
+>  
+> +	mutex_lock(&mutex);
+>  	rcu_read_lock();
+>  	snprintf(tmp_name, PATH_MAX, "%s(%d:%s)", s->name,
+>  			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
+> @@ -3432,6 +3430,7 @@ static struct kmem_cache *memcg_create_k
+>  		new = s;
+>  out:
+>  	mutex_unlock(&mutex);
+> +	kfree(tmp_name);
+
+Why would we free the global buffer?
+
+>  	return new;
+>  }
+>  
