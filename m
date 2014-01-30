@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaA3Qxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:53:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55123 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342AbaA3Qxb (ORCPT
+	id S1753359AbaA3Qyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:54:51 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58535 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaA3Qyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:53:31 -0500
-Date: Thu, 30 Jan 2014 17:52:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joe Perches <joe@perches.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 6/6] cpu/idle.c: move to sched/idle.c
-Message-ID: <20140130165258.GC2936@laptop.programming.kicks-ass.net>
-References: <1391017513-12995-1-git-send-email-nicolas.pitre@linaro.org>
- <1391017513-12995-7-git-send-email-nicolas.pitre@linaro.org>
- <20140130152500.GB5002@laptop.programming.kicks-ass.net>
- <alpine.LFD.2.11.1401301102210.1652@knanqh.ubzr>
- <20140130162753.GF5002@laptop.programming.kicks-ass.net>
- <1391100076.2422.56.camel@joe-AO722>
+	Thu, 30 Jan 2014 11:54:49 -0500
+Message-ID: <52EA83D6.9050506@codeaurora.org>
+Date: Thu, 30 Jan 2014 11:54:46 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391100076.2422.56.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Ian Campbell <ian.campbell@citrix.com>
+CC: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: document "mach-virt" platform.
+References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
+In-Reply-To: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 08:41:16AM -0800, Joe Perches wrote:
-> Perhaps you could use a newer version of patch
-> 
-> GNU patch version 2.7 released
+Hi Ian,
 
-Yeah, I know about that, I'll wait until its common in all distros,
-updating all machines I use by hand is just painful.
+On 01/30/2014 11:11 AM, Ian Campbell wrote:
+> mach-virt has existed for a while but it is not written down what it actually
+> consists of. Although it seems a bit unusual to document a binding for an
+> entire platform since mach-virt is entirely virtual it is helpful to have
+> something to refer to in the absence of a single concrete implementation.
+> 
+> I've done my best to capture the requirements based on the git log and my
+> memory/understanding.
+> 
+> While here remove the xenvm dts example, the Xen tools will now build a
+> suitable mach-virt compatible dts when launching the guest.
+
+[...]
+
+> +++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
+> @@ -0,0 +1,32 @@
+> +* Mach-virt "Dummy Virtual Machine" platform
+> +
+> +"mach-virt" is the smallest, dumbest platform possible, to be used as
+> +a guest for Xen, KVM and other hypervisors.
+
+The platform is also useful to, and used by, simulators like QEMU in TCG mode.
+
+>                                              It has no
+> +properties/functionality of its own and is driven entirely by device
+> +tree.
+
+I find this wording confusing. I read it as saying the platform has no
+properties or functionality. Perhaps you could phrase it slightly differently,
+such as having no properties or functionality beyond what's described in the
+device tree.
+
+> +This document defines the requirements for such a platform.
+> +
+> +* Required properties:
+> +
+> +- compatible: should be one of:
+> +	"linux,dummy-virt"
+> +	"xen,xenvm"
+> +
+> +In addition to the standard nodes (chosen, cpus, memory etc) the
+> +platform is required to provide certain other basic functionality
+> +which must be described in the device tree:
+> +
+> +    The platform must provide an ARM Generic Interrupt Controller
+> +    (GIC), defined in Documentation/devicetree/bindings/arm/gic.txt.
+> +
+> +    The platform must provide ARM architected timer, defined in
+> +    Documentation/devicetree/bindings/arm/arch_timer.txt.
+> +
+> +    If the platform is SMP then it must provide the Power State
+> +    Coordination Interface (PSCI) described in
+> +    Documentation/devicetree/bindings/arm/psci.txt.
+> +
+> +The platform may also provide hypervisor specific functionality
+> +(e.g. PV I/O), if it does so then this functionality must be
+> +discoverable (directly or indirectly) via device tree.
+
+I think it would be informative to provide pointers here to commonly used
+paravirtualized devices, especially VirtIO PCI/MMIO.
+
+Thanks,
+Christopher
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
