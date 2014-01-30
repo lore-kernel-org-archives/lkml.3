@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaA3OcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:32:11 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:52093 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991AbaA3OcK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:32:10 -0500
-Date: Thu, 30 Jan 2014 06:32:08 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
-Subject: Re: NFS client broken in Linus' tip
-Message-ID: <20140130143208.GB9573@infradead.org>
-References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
- <20140130141405.GA23985@infradead.org>
- <20140130142752.GX15937@n2100.arm.linux.org.uk>
+	id S1753528AbaA3Oc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:32:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33198 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636AbaA3Ocz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 09:32:55 -0500
+Message-ID: <52EA627E.8060801@ti.com>
+Date: Thu, 30 Jan 2014 09:32:30 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140130142752.GX15937@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: keystone: gate: fix clk_init_data initialization
+References: <1391081821-13306-1-git-send-email-ivan.khoronzhuk@ti.com> <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com> <52EA5866.3090706@ti.com>
+In-Reply-To: <52EA5866.3090706@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 02:27:52PM +0000, Russell King - ARM Linux wrote:
-> Yes and no.  I still end up with an empty /etc/mtab, but the file now
-> exists.  However, I can create and echo data into /etc/mtab, but it seems
-> that can't happen at boot time.
+On Thursday 30 January 2014 08:49 AM, Ivan Khoronzhuk wrote:
+> Yes. As result the clk->flag field contains garbage. In my case it leads
+> that flag CLK_IGNORE_UNUSED is set for most of clocks.  As result a bunch
+> of unused clocks cannot be disabled.
+> 
+Can you please update the change log with above information.
 
-Odd.  Can you disable CONFIG_NFSD_V3_ACL for now to isolate the issue?
-
-I'll be out for a long weekend soon, so I have very limited time to
-debug things until Monday.
+> On 01/30/2014 03:26 PM, Shilimkar, Santosh wrote:
+>> Can u capture the issue withiout this fix?
+>>
+>> Sent from my Android phone using TouchDown (www.nitrodesk.com)
+>>
+>> -----Original Message-----
+>> *From:* Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
+>> *Received:* Thursday, 30 Jan 2014, 6:37am
+>> *To:* Shilimkar, Santosh [santosh.shilimkar@ti.com]
+>> *CC:* mturquette@linaro.org [mturquette@linaro.org];
+>> linux-arm-kernel@lists.infradead.org [linux-arm-kernel@lists.infradead.org];
+>> linux-kernel@vger.kernel.org [linux-kernel@vger.kernel.org]; Khoronzhuk, Ivan
+>> [ivan.khoronzhuk@ti.com]
+>> *Subject:* [PATCH] clk: keystone: gate: fix clk_init_data initialization
+>>
+>> In clk_register_psc() function clk_init_data struct is allocated
+>> in the stack. All members of this struct should be initialized
+>> before using otherwise it will contain garbage. So initialize flags
+>> in this structure too.
+>>
+>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>> ---
+>>    drivers/clk/keystone/gate.c | 1 +
+>>    1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
+>> index 17a5983..86f1e36 100644
+>> --- a/drivers/clk/keystone/gate.c
+>> +++ b/drivers/clk/keystone/gate.c
+>> @@ -179,6 +179,7 @@ static struct clk *clk_register_psc(struct device *dev,
+>>
+>>            init.name = name;
+>>            init.ops = &clk_psc_ops;
+>> +       init.flags = 0;
+>>            init.parent_names = (parent_name ? &parent_name : NULL);
+>>            init.num_parents = (parent_name ? 1 : 0);
+>>
+>> -- 
+>> 1.8.3.2
+>>
+> 
 
