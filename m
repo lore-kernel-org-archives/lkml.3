@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaA3Wt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:49:29 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38630 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752968AbaA3Wt1 (ORCPT
+	id S1753716AbaA3WyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:54:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35204 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275AbaA3WyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:49:27 -0500
-Message-ID: <1391122163.2181.103.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] block devices: validate block device capacity
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
-        Nick Piggin <npiggin@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
-Date: Thu, 30 Jan 2014 14:49:23 -0800
-In-Reply-To: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
+	Thu, 30 Jan 2014 17:54:12 -0500
+Message-ID: <52EAD810.40204@infradead.org>
+Date: Thu, 30 Jan 2014 14:54:08 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Andiry Xu <andiry@gmail.com>, linux-kernel@vger.kernel.org,
+        Andiry Xu <andiry.xu@gmail.com>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
+References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com> <52EAA714.3080809@infradead.org> <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com> <52EAB56E.2030102@infradead.org> <alpine.DEB.2.02.1401301416030.15271@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401301416030.15271@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-30 at 15:40 -0500, Mikulas Patocka wrote:
-> When running the LVM2 testsuite on 32-bit kernel, there are unkillable
-> processes stuck in the kernel consuming 100% CPU:
-> blkid           R running      0  2005   1409 0x00000004
-> ce009d00 00000082 ffffffcf c11280ba 00000060 560b5dfd 00003111 00fe41cb
-> 00000000 ce009d00 00000000 d51cfeb0 00000000 0000001e 00000002 ffffffff
-> 00000002 c10748c1 00000002 c106cca4 00000000 00000000 ffffffff 00000000
-> Call Trace:
-> [<c11280ba>] ? radix_tree_next_chunk+0xda/0x2c0
-> [<c10748c1>] ? release_pages+0x61/0x160
-> [<c106cca4>] ? find_get_pages+0x84/0x100
-> [<c1251fbe>] ? _cond_resched+0x1e/0x40
-> [<c10758cb>] ? truncate_inode_pages_range+0x12b/0x440
-> [<c1075cb7>] ? truncate_inode_pages+0x17/0x20
-> [<c10cf2ba>] ? __blkdev_put+0x3a/0x140
-> [<c10d02db>] ? blkdev_close+0x1b/0x40
-> [<c10a60b2>] ? __fput+0x72/0x1c0
-> [<c1039461>] ? task_work_run+0x61/0xa0
-> [<c1253b6f>] ? work_notifysig+0x24/0x35
+On 01/30/2014 02:17 PM, David Rientjes wrote:
+> On Thu, 30 Jan 2014, Randy Dunlap wrote:
 > 
-> This is caused by the fact that the LVM2 testsuite creates 64TB device.
-> The kernel uses "unsigned long" to index pages in files and block devices,
-> on 64TB device "unsigned long" overflows (it can address up to 16TB with
-> 4k pages), causing the infinite loop.
+>>>>> Hi,
+>>>>>
+>>>>> In kernel-parameters.txt, there is following description:
+>>>>>
+>>>>> memmap=nn[KMG]$ss[KMG]
+>>>>>                         [KNL,ACPI] Mark specific memory as reserved.
+>>>>>                         Region of memory to be used, from ss to ss+nn.
+>>>>
+>>>> Should be:
+>>>>                           Region of memory to be reserved, from ss to ss+nn.
+>>>>
+>>>> but that doesn't help with the problem that you describe, does it?
+>>>>
+>>>
+>>> Actually it should be:
+>>>                              Region of memory to be reserved, from nn to nn+ss.
+>>>
+>>> That is, exchange nn and ss.
+>>
+>> Yes, I understand that that's what you are reporting.  I just haven't yet
+>> worked out how the code manages to exchange those 2 values.
+>>
+> 
+> It doesn't, the documentation is correct as written and could be improved 
+> by your suggestion of "Region of memory to be reserved, from ss to ss+nn."  
+> I think Andiry probably is having a problem with his bootloader 
+> interpreting the '$' incorrectly (or variable expansion if coming from the 
+> shell) or interpreting the resulting user-defined e820 map incorrectly.
+> --
 
-Why is this?  the whole reason for CONFIG_LBDAF is supposed to be to
-allow 64 bit offsets for block devices on 32 bit.  It sounds like
-there's somewhere not using sector_t ... or using it wrongly which needs
-fixing.
+Yeah, I certainly don't see a problem with the code and I would want to
+see/understand that before I exchanged the 2 values in the documentation.
 
-> On 32-bit architectures, we must limit block device size to
-> PAGE_SIZE*(2^32-1).
+I'll submit a patch to make the wording a bit better.
 
-So you're saying CONFIG_LBDAF can never work, why?
+Thanks.
 
-James
-
-
-
+-- 
+~Randy
