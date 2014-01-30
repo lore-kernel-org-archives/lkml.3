@@ -1,195 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaA3M0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:26:47 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:55831 "EHLO gloria.sntech.de"
+	id S1752945AbaA3Mat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:30:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42059 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbaA3M0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:26:45 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [RFC] dtc: add ability to make nodes conditional on them being referenced
-Date: Thu, 30 Jan 2014 13:25:56 +0100
-Message-ID: <1578575.rVWgTPdq1W@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+	id S1751180AbaA3Mar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 07:30:47 -0500
+Date: Thu, 30 Jan 2014 13:30:44 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+Message-ID: <20140130123044.GB13509@dhcp22.suse.cz>
+References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+ <xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stuebner <heiko.stuebner@bqreaders.com>
+On Wed 29-01-14 11:08:46, Greg Thelen wrote:
+[...]
+> The series looks useful.  We (Google) have been using something similar.
+> In practice such a low_limit (or memory guarantee), doesn't nest very
+> well.
+> 
+> Example:
+>   - parent_memcg: limit 500, low_limit 500, usage 500
+>     1 privately charged non-reclaimable page (e.g. mlock, slab)
+>   - child_memcg: limit 500, low_limit 500, usage 499
 
-On i.MX, which carries a lot of pin-groups of which most are unused on
-individual boards, they noticed that this plehora of nodes also results
-in the runtime-lookup-performance also degrading [0].
-
-A i.MX-specific solution defining the pingroups in the board files but
-using macros to reference the pingroup-data was not well received
-
-This patch is trying to solve this issue in a more general way, by
-adding the ability to mark nodes as needing to be referenced somewhere
-in the tree.
-
-To mark a node a needing to be referenced it must be prefixed with
-/delete-unreferenced/. This makes dtc check the nodes reference-status
-when creating the flattened tree, dropping it if unreferenced.
-
-For example, the i.MX6SL pingroup
-
-	/delete-uneferenced/ pinctrl_ecspi1_1: ecspi1grp-1 {
-		fsl,pins = <
-			MX6SL_PAD_ECSPI1_MISO__ECSPI1_MISO 0x100b1
-			MX6SL_PAD_ECSPI1_MOSI__ECSPI1_MOSI 0x100b1
-			MX6SL_PAD_ECSPI1_SCLK__ECSPI1_SCLK 0x100b1
-		>;
-	};
-
-would only be included in the dtb if it got referenced somewhere
-as pingroup via
-
-	node {
-		pinctrl-0 <&pinctrl_ecscpi1_1>;
-	};
-
-[0] http://thread.gmane.org/gmane.linux.ports.arm.kernel/275912/
-
-Signed-off-by: Heiko Stuebner <heiko.stuebner@bqreaders.com>
----
-This is just the idea I had in [1] explored a bit more. I'm definitely
-not sure if this is a valid approach to the problem.
-Also this is my first venture into dtc as well as flex and bison :-) .
-
-[1] http://www.spinics.net/lists/arm-kernel/msg303731.html
-
- scripts/dtc/checks.c     |    2 ++
- scripts/dtc/dtc-lexer.l  |    7 +++++++
- scripts/dtc/dtc-parser.y |    5 +++++
- scripts/dtc/dtc.h        |    4 ++++
- scripts/dtc/flattree.c   |    3 +++
- scripts/dtc/livetree.c   |   14 ++++++++++++++
- 6 files changed, 35 insertions(+)
-
-diff --git a/scripts/dtc/checks.c b/scripts/dtc/checks.c
-index ee96a25..747ada8 100644
---- a/scripts/dtc/checks.c
-+++ b/scripts/dtc/checks.c
-@@ -472,6 +472,8 @@ static void fixup_phandle_references(struct check *c, struct node *dt,
+I am not sure this is a good example. Your setup basically say that no
+single page should be reclaimed. I can imagine this might be useful in
+some cases and I would like to allow it but it sounds too extreme (e.g.
+a load which would start trashing heavily once the reclaim starts and it
+makes more sense to start it again rather than crowl - think about some
+mathematical simulation which might diverge).
  
- 		phandle = get_node_phandle(dt, refnode);
- 		*((cell_t *)(prop->val.val + m->offset)) = cpu_to_fdt32(phandle);
-+
-+		reference_node(refnode);
- 	}
- }
- ERROR(phandle_references, NULL, NULL, fixup_phandle_references, NULL,
-diff --git a/scripts/dtc/dtc-lexer.l b/scripts/dtc/dtc-lexer.l
-index 3b41bfc..3b18e97 100644
---- a/scripts/dtc/dtc-lexer.l
-+++ b/scripts/dtc/dtc-lexer.l
-@@ -138,6 +138,13 @@ static int pop_input_file(void);
- 			return DT_DEL_NODE;
- 		}
- 
-+<*>"/delete-unreferenced/"	{
-+			DPRINT("Keyword: /delete-unreferenced/\n");
-+			DPRINT("<PROPNODENAME>\n");
-+			BEGIN(PROPNODENAME);
-+			return DT_DEL_UNREFERENCED;
-+		}
-+
- <*>{LABEL}:	{
- 			DPRINT("Label: %s\n", yytext);
- 			yylval.labelref = xstrdup(yytext);
-diff --git a/scripts/dtc/dtc-parser.y b/scripts/dtc/dtc-parser.y
-index f412460..ae9108b 100644
---- a/scripts/dtc/dtc-parser.y
-+++ b/scripts/dtc/dtc-parser.y
-@@ -64,6 +64,7 @@ static unsigned char eval_char_literal(const char *s);
- %token DT_BITS
- %token DT_DEL_PROP
- %token DT_DEL_NODE
-+%token DT_DEL_UNREFERENCED
- %token <propnodename> DT_PROPNODENAME
- %token <literal> DT_LITERAL
- %token <literal> DT_CHAR_LITERAL
-@@ -461,6 +462,10 @@ subnode:
- 		{
- 			$$ = name_node(build_node_delete(), $2);
- 		}
-+	| DT_DEL_UNREFERENCED subnode
-+		{
-+			$$ = check_node_referenced($2);
-+		}
- 	| DT_LABEL subnode
- 		{
- 			add_label(&$2->labels, $1);
-diff --git a/scripts/dtc/dtc.h b/scripts/dtc/dtc.h
-index 3e42a07..c10c440 100644
---- a/scripts/dtc/dtc.h
-+++ b/scripts/dtc/dtc.h
-@@ -159,6 +159,8 @@ struct node {
- 	int addr_cells, size_cells;
- 
- 	struct label *labels;
-+
-+	int needs_reference, is_referenced;
- };
- 
- #define for_each_label_withdel(l0, l) \
-@@ -193,6 +195,8 @@ struct property *reverse_properties(struct property *first);
- struct node *build_node(struct property *proplist, struct node *children);
- struct node *build_node_delete(void);
- struct node *name_node(struct node *node, char *name);
-+struct node *check_node_referenced(struct node *node);
-+struct node *reference_node(struct node *node);
- struct node *chain_node(struct node *first, struct node *list);
- struct node *merge_nodes(struct node *old_node, struct node *new_node);
- 
-diff --git a/scripts/dtc/flattree.c b/scripts/dtc/flattree.c
-index 665dad7..a327592 100644
---- a/scripts/dtc/flattree.c
-+++ b/scripts/dtc/flattree.c
-@@ -266,6 +266,9 @@ static void flatten_tree(struct node *tree, struct emitter *emit,
- 	if (tree->deleted)
- 		return;
- 
-+	if (tree->needs_reference && !tree->is_referenced)
-+		return;
-+
- 	emit->beginnode(etarget, tree->labels);
- 
- 	if (vi->flags & FTF_FULLPATH)
-diff --git a/scripts/dtc/livetree.c b/scripts/dtc/livetree.c
-index b61465f..98bb33d 100644
---- a/scripts/dtc/livetree.c
-+++ b/scripts/dtc/livetree.c
-@@ -134,6 +134,20 @@ struct node *name_node(struct node *node, char *name)
- 	return node;
- }
- 
-+struct node *check_node_referenced(struct node *node)
-+{
-+	node->needs_reference = 1;
-+
-+	return node;
-+}
-+
-+struct node *reference_node(struct node *node)
-+{
-+	node->is_referenced = 1;
-+
-+	return node;
-+}
-+
- struct node *merge_nodes(struct node *old_node, struct node *new_node)
- {
- 	struct property *new_prop, *old_prop;
+> If a streaming file cache workload (e.g. sha1sum) starts gobbling up
+> page cache it will lead to an oom kill instead of reclaiming. 
+
+Does it make any sense to protect all of such memory although it is
+easily reclaimable?
+
+> One could
+> argue that this is working as intended because child_memcg was promised
+> 500 but can only get 499.  So child_memcg is oom killed rather than
+> being forced to operate below its promised low limit.
+> 
+> This has led to various internal workarounds like:
+> - don't charge any memory to interior tree nodes (e.g. parent_memcg);
+>   only charge memory to cgroup leafs.  This gets tricky when dealing
+>   with reparented memory inherited to parent from child during cgroup
+>   deletion.
+
+Do those need any protection at all?
+
+> - don't set low_limit on non leafs (e.g. do not set low limit on
+>   parent_memcg).  This constrains the cgroup layout a bit.  Some
+>   customers want to purchase $MEM and setup their workload with a few
+>   child cgroups.  A system daemon hands out $MEM by setting low_limit
+>   for top-level containers (e.g. parent_memcg).  Thereafter such
+>   customers are able to partition their workload with sub memcg below
+>   child_memcg.  Example:
+>      parent_memcg
+>          \
+>           child_memcg
+>             /     \
+>         server   backup
+
+I think that the low_limit makes sense where you actually want to
+protect something from reclaim. And backup sounds like a bad fit for
+that.
+
+>   Thereafter customers often want some weak isolation between server and
+>   backup.  To avoid undesired oom kills the server/backup isolation is
+>   provided with a softer memory guarantee (e.g. soft_limit).  The soft
+>   limit acts like the low_limit until priority becomes desperate.
+
+Johannes was already suggesting that the low_limit should allow for a
+weaker semantic as well. I am not very much inclined to that but I can
+leave with a knob which would say oom_on_lowlimit (on by default but
+allowed to be set to 0). We would fallback to the full reclaim if
+no groups turn out to be reclaimable.
 -- 
-1.7.10.4
-
-
+Michal Hocko
+SUSE Labs
