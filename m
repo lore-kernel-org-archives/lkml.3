@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaA3WrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:47:09 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:63976 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522AbaA3WrH (ORCPT
+	id S1753940AbaA3Wt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:49:29 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38630 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752968AbaA3Wt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:47:07 -0500
-Date: Thu, 30 Jan 2014 14:47:05 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <edumazet@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Jan Kara <jack@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] kthread: ensure locality of task_struct allocations
-In-Reply-To: <1391062491.28432.68.camel@edumazet-glaptop2.roam.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1401301446320.12223@chino.kir.corp.google.com>
-References: <20140128183808.GB9315@linux.vnet.ibm.com> <alpine.DEB.2.02.1401290012460.10268@chino.kir.corp.google.com> <alpine.DEB.2.10.1401290957350.23856@nuc> <alpine.DEB.2.02.1401291622550.22974@chino.kir.corp.google.com>
- <1391062491.28432.68.camel@edumazet-glaptop2.roam.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 30 Jan 2014 17:49:27 -0500
+Message-ID: <1391122163.2181.103.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] block devices: validate block device capacity
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
+        Nick Piggin <npiggin@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
+Date: Thu, 30 Jan 2014 14:49:23 -0800
+In-Reply-To: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jan 2014, Eric Dumazet wrote:
-
-> > Eric, did you try this when writing 207205a2ba26 ("kthread: NUMA aware 
-> > kthread_create_on_node()") or was it always numa_node_id() from the 
-> > beginning?
+On Thu, 2014-01-30 at 15:40 -0500, Mikulas Patocka wrote:
+> When running the LVM2 testsuite on 32-bit kernel, there are unkillable
+> processes stuck in the kernel consuming 100% CPU:
+> blkid           R running      0  2005   1409 0x00000004
+> ce009d00 00000082 ffffffcf c11280ba 00000060 560b5dfd 00003111 00fe41cb
+> 00000000 ce009d00 00000000 d51cfeb0 00000000 0000001e 00000002 ffffffff
+> 00000002 c10748c1 00000002 c106cca4 00000000 00000000 ffffffff 00000000
+> Call Trace:
+> [<c11280ba>] ? radix_tree_next_chunk+0xda/0x2c0
+> [<c10748c1>] ? release_pages+0x61/0x160
+> [<c106cca4>] ? find_get_pages+0x84/0x100
+> [<c1251fbe>] ? _cond_resched+0x1e/0x40
+> [<c10758cb>] ? truncate_inode_pages_range+0x12b/0x440
+> [<c1075cb7>] ? truncate_inode_pages+0x17/0x20
+> [<c10cf2ba>] ? __blkdev_put+0x3a/0x140
+> [<c10d02db>] ? blkdev_close+0x1b/0x40
+> [<c10a60b2>] ? __fput+0x72/0x1c0
+> [<c1039461>] ? task_work_run+0x61/0xa0
+> [<c1253b6f>] ? work_notifysig+0x24/0x35
 > 
-> Hmm, I think I did not try this, its absolutely possible NUMA_NO_NODE
-> was better here.
-> 
+> This is caused by the fact that the LVM2 testsuite creates 64TB device.
+> The kernel uses "unsigned long" to index pages in files and block devices,
+> on 64TB device "unsigned long" overflows (it can address up to 16TB with
+> 4k pages), causing the infinite loop.
 
-Nishanth, could you change your patch to just return NUMA_NO_NODE for the 
-non-kthreadd case?
+Why is this?  the whole reason for CONFIG_LBDAF is supposed to be to
+allow 64 bit offsets for block devices on 32 bit.  It sounds like
+there's somewhere not using sector_t ... or using it wrongly which needs
+fixing.
+
+> On 32-bit architectures, we must limit block device size to
+> PAGE_SIZE*(2^32-1).
+
+So you're saying CONFIG_LBDAF can never work, why?
+
+James
+
+
+
