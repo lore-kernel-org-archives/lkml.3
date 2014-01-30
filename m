@@ -1,411 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbaA3TUp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:20:45 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61656 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400AbaA3TUk (ORCPT
+	id S1753087AbaA3TXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:23:25 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40950 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaA3TXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:20:40 -0500
-Subject: [PATCH 1/2] PCI: Remove unused MMIO exclusivity support
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: e1000-devel@lists.sourceforge.net,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
-Date: Thu, 30 Jan 2014 12:20:38 -0700
-Message-ID: <20140130192038.25426.8346.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 30 Jan 2014 14:23:22 -0500
+Message-ID: <1391109948.2599.27.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target updates for v3.14-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 30 Jan 2014 11:25:48 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit e8de1481fd71 ("resource: allow MMIO exclusivity for
-device drivers"), removing these exported interfaces:
+Hi Linus!
 
-  pci_request_region_exclusive()
-  pci_request_regions_exclusive()
-  pci_request_selected_regions_exclusive()
+Here are the target-pending updates for the v3.14-rc1 merge window.
 
-There's nothing wrong with the MMIO exclusivity code, but it is used only
-by the e1000e driver, and the only reason it's there is because it was
-added during a bug hunt.  The bug has been fixed, and apparently no other
-drivers have found it useful in the five years since then.
+Please pull from:
 
-This is based on Stephen Hemminger's patch (see link below), but goes a bit
-further by removing the use in e1000e.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-Link: http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.net
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Stephen Hemminger <stephen@networkplumber.org>
----
- Documentation/kernel-parameters.txt        |    4 -
- arch/x86/mm/init.c                         |    2 -
- drivers/net/ethernet/intel/e1000e/netdev.c |    3 -
- drivers/pci/pci-sysfs.c                    |    3 -
- drivers/pci/pci.c                          |  112 +++-------------------------
- include/linux/ioport.h                     |    5 -
- include/linux/pci.h                        |    3 -
- kernel/resource.c                          |   54 --------------
- 8 files changed, 14 insertions(+), 172 deletions(-)
+The highlights this round include:
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8f441dab0396..4943bddeacc1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1323,10 +1323,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			no_x2apic_optout
- 				BIOS x2APIC opt-out request will be ignored
- 
--	iomem=		Disable strict checking of access to MMIO memory
--		strict	regions from userspace.
--		relaxed
--
- 	iommu=		[x86]
- 		off
- 		force
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index f97130618113..575cbfd89238 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -583,8 +583,6 @@ int devmem_is_allowed(unsigned long pagenr)
- {
- 	if (pagenr < 256)
- 		return 1;
--	if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
--		return 0;
- 	if (!page_is_ram(pagenr))
- 		return 1;
- 	return 0;
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 6d91933c4cdd..97a11b19e46f 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -6574,8 +6574,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	}
- 
- 	bars = pci_select_bars(pdev, IORESOURCE_MEM);
--	err = pci_request_selected_regions_exclusive(pdev, bars,
--						     e1000e_driver_name);
-+	err = pci_request_selected_regions(pdev, bars, e1000e_driver_name);
- 	if (err)
- 		goto err_pci_reg;
- 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 276ef9c18802..4580fa859f38 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -993,9 +993,6 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
- 	vma->vm_pgoff += start >> PAGE_SHIFT;
- 	mmap_type = res->flags & IORESOURCE_MEM ? pci_mmap_mem : pci_mmap_io;
- 
--	if (res->flags & IORESOURCE_MEM && iomem_is_exclusive(start))
--		return -EINVAL;
--
- 	return pci_mmap_page_range(pdev, vma, mmap_type, write_combine);
- }
- 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 1febe90831b4..1011c0b281ca 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2432,26 +2432,20 @@ void pci_release_region(struct pci_dev *pdev, int bar)
- }
- 
- /**
-- *	__pci_request_region - Reserved PCI I/O and memory resource
-+ *	pci_request_region - Reserved PCI I/O and memory resource
-  *	@pdev: PCI device whose resources are to be reserved
-  *	@bar: BAR to be reserved
-  *	@res_name: Name to be associated with resource.
-- *	@exclusive: whether the region access is exclusive or not
-  *
-  *	Mark the PCI region associated with PCI device @pdev BR @bar as
-  *	being reserved by owner @res_name.  Do not access any
-  *	address inside the PCI regions unless this call returns
-  *	successfully.
-  *
-- *	If @exclusive is set, then the region is marked so that userspace
-- *	is explicitly not allowed to map the resource via /dev/mem or
-- *	sysfs MMIO access.
-- *
-  *	Returns 0 on success, or %EBUSY on error.  A warning
-  *	message is also printed on failure.
-  */
--static int __pci_request_region(struct pci_dev *pdev, int bar, const char *res_name,
--									int exclusive)
-+int pci_request_region(struct pci_dev *pdev, int bar, const char *res_name)
- {
- 	struct pci_devres *dr;
- 
-@@ -2464,9 +2458,8 @@ static int __pci_request_region(struct pci_dev *pdev, int bar, const char *res_n
- 			goto err_out;
- 	}
- 	else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
--		if (!__request_mem_region(pci_resource_start(pdev, bar),
--					pci_resource_len(pdev, bar), res_name,
--					exclusive))
-+		if (!request_mem_region(pci_resource_start(pdev, bar),
-+					pci_resource_len(pdev, bar), res_name))
- 			goto err_out;
- 	}
- 
-@@ -2483,47 +2476,6 @@ err_out:
- }
- 
- /**
-- *	pci_request_region - Reserve PCI I/O and memory resource
-- *	@pdev: PCI device whose resources are to be reserved
-- *	@bar: BAR to be reserved
-- *	@res_name: Name to be associated with resource
-- *
-- *	Mark the PCI region associated with PCI device @pdev BAR @bar as
-- *	being reserved by owner @res_name.  Do not access any
-- *	address inside the PCI regions unless this call returns
-- *	successfully.
-- *
-- *	Returns 0 on success, or %EBUSY on error.  A warning
-- *	message is also printed on failure.
-- */
--int pci_request_region(struct pci_dev *pdev, int bar, const char *res_name)
--{
--	return __pci_request_region(pdev, bar, res_name, 0);
--}
--
--/**
-- *	pci_request_region_exclusive - Reserved PCI I/O and memory resource
-- *	@pdev: PCI device whose resources are to be reserved
-- *	@bar: BAR to be reserved
-- *	@res_name: Name to be associated with resource.
-- *
-- *	Mark the PCI region associated with PCI device @pdev BR @bar as
-- *	being reserved by owner @res_name.  Do not access any
-- *	address inside the PCI regions unless this call returns
-- *	successfully.
-- *
-- *	Returns 0 on success, or %EBUSY on error.  A warning
-- *	message is also printed on failure.
-- *
-- *	The key difference that _exclusive makes it that userspace is
-- *	explicitly not allowed to map the resource via /dev/mem or
-- *	sysfs.
-- */
--int pci_request_region_exclusive(struct pci_dev *pdev, int bar, const char *res_name)
--{
--	return __pci_request_region(pdev, bar, res_name, IORESOURCE_EXCLUSIVE);
--}
--/**
-  * pci_release_selected_regions - Release selected PCI I/O and memory resources
-  * @pdev: PCI device whose resources were previously reserved
-  * @bars: Bitmask of BARs to be released
-@@ -2540,14 +2492,20 @@ void pci_release_selected_regions(struct pci_dev *pdev, int bars)
- 			pci_release_region(pdev, i);
- }
- 
--static int __pci_request_selected_regions(struct pci_dev *pdev, int bars,
--				 const char *res_name, int excl)
-+/**
-+ * pci_request_selected_regions - Reserve selected PCI I/O and memory resources
-+ * @pdev: PCI device whose resources are to be reserved
-+ * @bars: Bitmask of BARs to be requested
-+ * @res_name: Name to be associated with resource
-+ */
-+int pci_request_selected_regions(struct pci_dev *pdev, int bars,
-+				 const char *res_name)
- {
- 	int i;
- 
- 	for (i = 0; i < 6; i++)
- 		if (bars & (1 << i))
--			if (__pci_request_region(pdev, i, res_name, excl))
-+			if (pci_request_region(pdev, i, res_name))
- 				goto err_out;
- 	return 0;
- 
-@@ -2561,25 +2519,6 @@ err_out:
- 
- 
- /**
-- * pci_request_selected_regions - Reserve selected PCI I/O and memory resources
-- * @pdev: PCI device whose resources are to be reserved
-- * @bars: Bitmask of BARs to be requested
-- * @res_name: Name to be associated with resource
-- */
--int pci_request_selected_regions(struct pci_dev *pdev, int bars,
--				 const char *res_name)
--{
--	return __pci_request_selected_regions(pdev, bars, res_name, 0);
--}
--
--int pci_request_selected_regions_exclusive(struct pci_dev *pdev,
--				 int bars, const char *res_name)
--{
--	return __pci_request_selected_regions(pdev, bars, res_name,
--			IORESOURCE_EXCLUSIVE);
--}
--
--/**
-  *	pci_release_regions - Release reserved PCI I/O and memory resources
-  *	@pdev: PCI device whose resources were previously reserved by pci_request_regions
-  *
-@@ -2611,28 +2550,6 @@ int pci_request_regions(struct pci_dev *pdev, const char *res_name)
- 	return pci_request_selected_regions(pdev, ((1 << 6) - 1), res_name);
- }
- 
--/**
-- *	pci_request_regions_exclusive - Reserved PCI I/O and memory resources
-- *	@pdev: PCI device whose resources are to be reserved
-- *	@res_name: Name to be associated with resource.
-- *
-- *	Mark all PCI regions associated with PCI device @pdev as
-- *	being reserved by owner @res_name.  Do not access any
-- *	address inside the PCI regions unless this call returns
-- *	successfully.
-- *
-- *	pci_request_regions_exclusive() will mark the region so that
-- *	/dev/mem and the sysfs MMIO access will not be allowed.
-- *
-- *	Returns 0 on success, or %EBUSY on error.  A warning
-- *	message is also printed on failure.
-- */
--int pci_request_regions_exclusive(struct pci_dev *pdev, const char *res_name)
--{
--	return pci_request_selected_regions_exclusive(pdev,
--					((1 << 6) - 1), res_name);
--}
--
- static void __pci_set_master(struct pci_dev *dev, bool enable)
- {
- 	u16 old_cmd, cmd;
-@@ -4387,13 +4304,10 @@ EXPORT_SYMBOL(pci_find_capability);
- EXPORT_SYMBOL(pci_bus_find_capability);
- EXPORT_SYMBOL(pci_release_regions);
- EXPORT_SYMBOL(pci_request_regions);
--EXPORT_SYMBOL(pci_request_regions_exclusive);
- EXPORT_SYMBOL(pci_release_region);
- EXPORT_SYMBOL(pci_request_region);
--EXPORT_SYMBOL(pci_request_region_exclusive);
- EXPORT_SYMBOL(pci_release_selected_regions);
- EXPORT_SYMBOL(pci_request_selected_regions);
--EXPORT_SYMBOL(pci_request_selected_regions_exclusive);
- EXPORT_SYMBOL(pci_set_master);
- EXPORT_SYMBOL(pci_clear_master);
- EXPORT_SYMBOL(pci_set_mwi);
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 89b7c24a36e9..f2d45ea3ee53 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -49,7 +49,6 @@ struct resource {
- #define IORESOURCE_WINDOW	0x00200000	/* forwarded by bridge */
- #define IORESOURCE_MUXED	0x00400000	/* Resource is software muxed */
- 
--#define IORESOURCE_EXCLUSIVE	0x08000000	/* Userland may not map this resource */
- #define IORESOURCE_DISABLED	0x10000000
- #define IORESOURCE_UNSET	0x20000000
- #define IORESOURCE_AUTO		0x40000000
-@@ -173,10 +172,7 @@ static inline unsigned long resource_type(const struct resource *res)
- /* Convenience shorthand with allocation */
- #define request_region(start,n,name)		__request_region(&ioport_resource, (start), (n), (name), 0)
- #define request_muxed_region(start,n,name)	__request_region(&ioport_resource, (start), (n), (name), IORESOURCE_MUXED)
--#define __request_mem_region(start,n,name, excl) __request_region(&iomem_resource, (start), (n), (name), excl)
- #define request_mem_region(start,n,name) __request_region(&iomem_resource, (start), (n), (name), 0)
--#define request_mem_region_exclusive(start,n,name) \
--	__request_region(&iomem_resource, (start), (n), (name), IORESOURCE_EXCLUSIVE)
- #define rename_region(region, newname) do { (region)->name = (newname); } while (0)
- 
- extern struct resource * __request_region(struct resource *,
-@@ -222,7 +218,6 @@ extern struct resource * __devm_request_region(struct device *dev,
- extern void __devm_release_region(struct device *dev, struct resource *parent,
- 				  resource_size_t start, resource_size_t n);
- extern int iomem_map_sanity_check(resource_size_t addr, unsigned long size);
--extern int iomem_is_exclusive(u64 addr);
- 
- extern int
- walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index fb57c892b214..b3cd9d58f5a9 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1038,13 +1038,10 @@ void pci_fixup_irqs(u8 (*)(struct pci_dev *, u8 *),
- 		    int (*)(const struct pci_dev *, u8, u8));
- #define HAVE_PCI_REQ_REGIONS	2
- int __must_check pci_request_regions(struct pci_dev *, const char *);
--int __must_check pci_request_regions_exclusive(struct pci_dev *, const char *);
- void pci_release_regions(struct pci_dev *);
- int __must_check pci_request_region(struct pci_dev *, int, const char *);
--int __must_check pci_request_region_exclusive(struct pci_dev *, int, const char *);
- void pci_release_region(struct pci_dev *, int);
- int pci_request_selected_regions(struct pci_dev *, int, const char *);
--int pci_request_selected_regions_exclusive(struct pci_dev *, int, const char *);
- void pci_release_selected_regions(struct pci_dev *, int);
- 
- /* drivers/pci/bus.c */
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 3f285dce9347..9a29d989aa5e 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -1306,57 +1306,3 @@ int iomem_map_sanity_check(resource_size_t addr, unsigned long size)
- 
- 	return err;
- }
--
--#ifdef CONFIG_STRICT_DEVMEM
--static int strict_iomem_checks = 1;
--#else
--static int strict_iomem_checks;
--#endif
--
--/*
-- * check if an address is reserved in the iomem resource tree
-- * returns 1 if reserved, 0 if not reserved.
-- */
--int iomem_is_exclusive(u64 addr)
--{
--	struct resource *p = &iomem_resource;
--	int err = 0;
--	loff_t l;
--	int size = PAGE_SIZE;
--
--	if (!strict_iomem_checks)
--		return 0;
--
--	addr = addr & PAGE_MASK;
--
--	read_lock(&resource_lock);
--	for (p = p->child; p ; p = r_next(NULL, p, &l)) {
--		/*
--		 * We can probably skip the resources without
--		 * IORESOURCE_IO attribute?
--		 */
--		if (p->start >= addr + size)
--			break;
--		if (p->end < addr)
--			continue;
--		if (p->flags & IORESOURCE_BUSY &&
--		     p->flags & IORESOURCE_EXCLUSIVE) {
--			err = 1;
--			break;
--		}
--	}
--	read_unlock(&resource_lock);
--
--	return err;
--}
--
--static int __init strict_iomem(char *str)
--{
--	if (strstr(str, "relaxed"))
--		strict_iomem_checks = 0;
--	if (strstr(str, "strict"))
--		strict_iomem_checks = 1;
--	return 1;
--}
--
--__setup("iomem=", strict_iomem);
+  - Add support for SCSI Referrals (Hannes)
+  - Add support for T10 DIF into target core (nab + mkp)
+  - Add support for T10 DIF emulation in FILEIO + RAMDISK backends (Sagi + nab)
+  - Add support for T10 DIF -> bio_integrity passthrough in IBLOCK backend (nab)
+  - Prep changes to iser-target for >= v3.15 T10 DIF support (Sagi)
+  - Add support for qla2xxx N_Port ID Virtualization - NPIV (Saurav + Quinn)
+  - Allow percpu_ida_alloc() to receive task state bitmask (Kent)
+  - Fix >= v3.12 iscsi-target session reset hung task regression (nab)
+  - Fix >= v3.13 percpu_ref se_lun->lun_ref_active race (nab)
+  - Fix a long-standing network portal creation race (Andy)
+
+Just a heads up that you'll encounter two merge conflicts in
+target_core_tpg.c + qla_target.c due to upstream v3.13 bugfixes.  The
+resolutions are straightforward enough, but please yell if something
+doesn't look right.
+
+Also, Stephen is carrying one extra target_core_iblock.c patch to
+address the immutable bio_vec changes that are currently outstanding in
+Jens block PULL request.  That patch is here:
+
+linux-next: build failure after merge of the target-updates tree
+http://marc.info/?l=linux-next&m=139019553616605&w=2
+
+Thank you,
+
+--nab
+
+Andy Grover (7):
+  target: Remove unused ua_dev_list member in struct se_ua
+  target: Allocate more room for port default groups
+  target: Fix sizeof in kmalloc for some default_groups arrays
+  target: Refer to u32 luns as unpacked_lun
+  target: Rename core_tpg_{pre,post}_addlun for clarity
+  target: Don't use void* when passing dev in core_tpg_add_lun
+  target/iscsi: Fix network portal creation race
+
+Hannes Reinecke (9):
+  target_core_alua: validate ALUA state transition
+  target_core_alua: Allocate ALUA metadata on demand
+  target_core_alua: store old and pending ALUA state
+  target_core_alua: Use workqueue for ALUA transitioning
+  target_core: simplify scsi_name_len calculation
+  target_core_spc: Include target device descriptor in VPD page 83
+  target_core_alua: Referrals infrastructure
+  target_core_alua: Referrals configfs integration
+  target_core_alua: check for buffer overflow
+
+Kent Overstreet (1):
+  percpu_ida: Make percpu_ida_alloc + callers accept task state bitmask
+
+Nicholas Bellinger (24):
+  target: Convert inquiry temporary buffer to heap memory
+  target: Add DIF related base definitions
+  target: Add DIF CHECK_CONDITION ASC/ASCQ exception cases
+  target/sbc: Add DIF setup in sbc_check_prot + sbc_parse_cdb
+  target/sbc: Add DIF TYPE1+TYPE3 read/write verify emulation
+  target/spc: Add protection bit to standard INQUIRY output
+  target/spc: Add protection related bits to INQUIRY EVPD=0x86
+  target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+  target/spc: Expose ATO bit in control mode page
+  target/configfs: Expose protection device attributes
+  target: Add protection SGLs to target_submit_cmd_map_sgls
+  target/iblock: Add blk_integrity + BIP passthrough support
+  target/file: Add DIF protection init/format support
+  target/file: Add DIF protection support to fd_execute_rw
+  target/rd: Refactor rd_build_device_space + rd_release_device_space
+  target/rd: Add support for protection SGL setup + release
+  target/rd: Add DIF protection into rd_execute_rw
+  tcm_loop: Enable DIF/DIX modes in SCSI host LLD
+  qla2xxx: Fix scsi_host leak on qlt_lport_register callback failure
+  qla2xxx: Configure NPIV fc_vport via tcm_qla2xxx_npiv_make_lport
+  iscsi-target: Pre-allocate more tags to avoid ack starvation
+  iscsi-target: Fix connection reset hang with percpu_ida_alloc
+  iscsi-target: Convert gfp_t parameter to task state bitmask
+  target: Fix percpu_ref_put race in transport_lun_remove_cmd
+
+Rashika Kheria (4):
+  drivers: target: Move prototype declaration of function to header
+    file target_core_pr.h
+  drivers: target: Mark function as static in target_core_iblock.c
+  drivers: target: Mark functions as static in tcm_loop.c
+  drivers: target: Mark functions and structures as static in
+    tfc_conf.c
+
+Sagi Grimberg (5):
+  IB/isert: seperate connection protection domains and dma MRs
+  IB/isert: Avoid frwr notation, user fastreg
+  IB/isert: Move fastreg descriptor creation to a function
+  IB/isert: pass scatterlist instead of cmd to fast_reg_mr routine
+  target: Report bad sector in sense data for DIF errors
+
+Saurav Kashyap (1):
+  qla2xxx: Enhancements to enable NPIV support for QLOGIC ISPs with
+    TCM/LIO.
+
+ block/blk-mq-tag.c                           |    6 +-
+ drivers/infiniband/ulp/isert/ib_isert.c      |  222 +++++-----
+ drivers/infiniband/ulp/isert/ib_isert.h      |   10 +-
+ drivers/scsi/qla2xxx/qla_attr.c              |    2 +
+ drivers/scsi/qla2xxx/qla_def.h               |   12 +-
+ drivers/scsi/qla2xxx/qla_target.c            |  170 ++++----
+ drivers/scsi/qla2xxx/qla_target.h            |    4 +-
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c           |  180 ++++++---
+ drivers/scsi/qla2xxx/tcm_qla2xxx.h           |    4 -
+ drivers/target/Kconfig                       |    2 +
+ drivers/target/iscsi/iscsi_target.c          |   48 ++-
+ drivers/target/iscsi/iscsi_target_nego.c     |    2 +-
+ drivers/target/iscsi/iscsi_target_util.c     |    9 +-
+ drivers/target/iscsi/iscsi_target_util.h     |    2 +-
+ drivers/target/loopback/tcm_loop.c           |   20 +-
+ drivers/target/target_core_alua.c            |  558 +++++++++++++++++++++-----
+ drivers/target/target_core_alua.h            |   15 +-
+ drivers/target/target_core_configfs.c        |  194 ++++++++-
+ drivers/target/target_core_device.c          |  108 ++++-
+ drivers/target/target_core_fabric_configfs.c |    2 +-
+ drivers/target/target_core_file.c            |  256 +++++++++++-
+ drivers/target/target_core_file.h            |    9 +
+ drivers/target/target_core_iblock.c          |   93 ++++-
+ drivers/target/target_core_internal.h        |    8 +-
+ drivers/target/target_core_pr.h              |    5 +
+ drivers/target/target_core_rd.c              |  252 +++++++++---
+ drivers/target/target_core_rd.h              |    4 +
+ drivers/target/target_core_sbc.c             |  252 +++++++++++-
+ drivers/target/target_core_spc.c             |  114 +++++-
+ drivers/target/target_core_tpg.c             |   10 +-
+ drivers/target/target_core_transport.c       |   95 ++++-
+ drivers/target/target_core_ua.c              |    1 -
+ drivers/target/target_core_xcopy.c           |    4 -
+ drivers/target/tcm_fc/tfc_cmd.c              |    2 +-
+ drivers/target/tcm_fc/tfc_conf.c             |    6 +-
+ drivers/vhost/scsi.c                         |    4 +-
+ include/linux/percpu_ida.h                   |    3 +-
+ include/scsi/scsi.h                          |    1 +
+ include/target/iscsi/iscsi_transport.h       |    2 +-
+ include/target/target_core_backend.h         |    7 +
+ include/target/target_core_base.h            |   82 +++-
+ include/target/target_core_fabric.h          |    3 +-
+ lib/percpu_ida.c                             |   21 +-
+ 43 files changed, 2300 insertions(+), 504 deletions(-)
 
