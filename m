@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbaA3UKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 15:10:42 -0500
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:52264 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118AbaA3UKk (ORCPT
+	id S1753294AbaA3USa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 15:18:30 -0500
+Received: from www84.your-server.de ([213.133.104.84]:35451 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732AbaA3US3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 15:10:40 -0500
-Date: Thu, 30 Jan 2014 17:10:18 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 1/9] perf tools: Fix symbol annotation for relocated
- kernel
-Message-ID: <20140130201018.GD8098@ghostprotocols.net>
-References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
- <1391004884-10334-2-git-send-email-adrian.hunter@intel.com>
- <20140129185747.GE3998@ghostprotocols.net>
- <52E9FD31.108@intel.com>
- <20140130085940.GA2643@gmail.com>
- <52EA1988.9050100@intel.com>
- <20140130092036.GA2862@gmail.com>
- <20140130180823.GA8098@ghostprotocols.net>
- <20140130181232.GB8098@ghostprotocols.net>
- <20140130181530.GC8098@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140130181530.GC8098@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 Jan 2014 15:18:29 -0500
+Message-ID: <1391113152.1405.1.camel@wall-e.seibold.net>
+Subject: Re: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Thu, 30 Jan 2014 21:19:12 +0100
+In-Reply-To: <CALCETrUvKLwPccVVNpmLwxemAuE4DrmOB0C-jGTBTqcH5zPdCA@mail.gmail.com>
+References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+	 <1391078953-1575-2-git-send-email-stefani@seibold.net>
+	 <CALCETrXqnrDu=rceAm++bGLicj44FfYsxm9-KvqU=B1zkei9TA@mail.gmail.com>
+	 <1391110034.945.5.camel@wall-e.seibold.net>
+	 <CALCETrUvKLwPccVVNpmLwxemAuE4DrmOB0C-jGTBTqcH5zPdCA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 30, 2014 at 03:15:30PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Jan 30, 2014 at 03:12:32PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Thu, Jan 30, 2014 at 03:08:23PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Getting segfaults with:
-> >  
-> > > [acme@ssdandy linux]$ git log --oneline | head -10
-> > > c059c953531f perf tests: vmlinux-kallsyms test does not need to set up ref_reloc_sym
-> > > be2530836ebe perf symbols: Prevent the use of kcore if the kernel has moved
-> > > 9b2fd7840cb0 perf record: Get ref_reloc_sym from kernel map
-
-bummer, I got the message with 4/9 delayed and didn't notice it was
-missing, after applying it in the intended order, the segfault was
-cured.
-
-thanks to Adrian for bringing this to my attention.
-
-- Arnaldo
-
-> > > bcf5e06a0c75 perf symbols: Add kallsyms__get_function_start()
-> > > 94591ed0963e perf machine: Add machine__get_kallsyms_filename()
-> > > 18923cddb839 perf symbols: Fix symbol annotation for relocated kernel
-> > 
-> > Program received signal SIGSEGV, Segmentation fault.
-> > perf_event__synthesize_kernel_mmap (tool=0x81fd20 <record>, process=0x42ad51 <process_synthesized_event>, machine=0x916380) at util/event.c:520
-> > 520		size = snprintf(event->mmap.filename, sizeof(event->mmap.filename),
-> > 521				"%s%s", mmap_name, kmap->ref_reloc_sym->name) + 1;
-> > (gdb) p mmap_name
-> > $4 = 0x7fffffffabd0 "[kernel.kallsyms]"
-> > (gdb) p kmap->ref_reloc_sym
-> > $5 = (struct ref_reloc_sym *) 0x0
-> > (gdb)
+Am Donnerstag, den 30.01.2014, 11:51 -0800 schrieb Andy Lutomirski:
+> On Thu, Jan 30, 2014 at 11:27 AM, Stefani Seibold <stefani@seibold.net> wrote:
+> > Am Donnerstag, den 30.01.2014, 10:05 -0800 schrieb Andy Lutomirski:
+> >> On Thu, Jan 30, 2014 at 2:49 AM,  <stefani@seibold.net> wrote:
+> >> > diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+> >> > index 59c6c40..45ba688 100644
+> >> > --- a/arch/x86/include/asm/compat.h
+> >> > +++ b/arch/x86/include/asm/compat.h
+> >> > @@ -295,6 +295,10 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+> >> >
+> >> >  static inline void __user *arch_compat_alloc_user_space(long len)
+> >> >  {
+> >> > +#ifdef CONFIG_X86_32
+> >> > +       struct pt_regs *regs = task_pt_regs(current);
+> >> > +       return (void __user *)regs->sp - len;
+> >>
+> >> Is there some reason this doesn't need to be aligned?
+> >>
+> >
+> > The reason is that this function will not used for 32 bit kernels, but
+> > will the header will be included... This prevents an error!
 > 
-> This is the buggy one:
+> Then why not just guard the whole function with an ifdef?  Having a
+> piece of actual code that's not intended to be used (and might not
+> work) seems like a bad idea.
 > 
-> [acme@ssdandy linux]$ perf record usleep 1
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.018 MB perf.data (~770 samples) ]
-> [acme@ssdandy linux]$ git show 9b2fd7840cb0d23068bc97e08db46f57f41021fe
-> commit 9b2fd7840cb0d23068bc97e08db46f57f41021fe
-> Author: Adrian Hunter <adrian.hunter@intel.com>
-> Date:   Wed Jan 29 16:14:40 2014 +0200
-> 
->     perf record: Get ref_reloc_sym from kernel map
->     
->     Now that ref_reloc_sym is set up when the kernel map is created, 'perf
->     record' does not need to pass the symbol names to
->     perf_event__synthesize_kernel_mmap() which can read the values needed
->     from ref_reloc_sym directly.
+
+Good point. I will do this in the next version.
+
+
