@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaA3Oc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:32:56 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33198 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636AbaA3Ocz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:32:55 -0500
-Message-ID: <52EA627E.8060801@ti.com>
-Date: Thu, 30 Jan 2014 09:32:30 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: keystone: gate: fix clk_init_data initialization
-References: <1391081821-13306-1-git-send-email-ivan.khoronzhuk@ti.com> <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com> <52EA5866.3090706@ti.com>
-In-Reply-To: <52EA5866.3090706@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753187AbaA3OfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:35:17 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:54014 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaA3OfQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 09:35:16 -0500
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH 1/2] get_maintainer: Fix detection of git repository
+Date: Thu, 30 Jan 2014 15:34:56 +0100
+Message-Id: <1391092497-6567-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 January 2014 08:49 AM, Ivan Khoronzhuk wrote:
-> Yes. As result the clk->flag field contains garbage. In my case it leads
-> that flag CLK_IGNORE_UNUSED is set for most of clocks.  As result a bunch
-> of unused clocks cannot be disabled.
-> 
-Can you please update the change log with above information.
+Since git v1.7.7, the .git directory can be a file when, for example,
+the kernel is a submodule of another git super project.
+So, the check "-d .git" is not working anymore in this case.
+Using a more generic check like "-e .git" corrects this behaviour.
 
-> On 01/30/2014 03:26 PM, Shilimkar, Santosh wrote:
->> Can u capture the issue withiout this fix?
->>
->> Sent from my Android phone using TouchDown (www.nitrodesk.com)
->>
->> -----Original Message-----
->> *From:* Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
->> *Received:* Thursday, 30 Jan 2014, 6:37am
->> *To:* Shilimkar, Santosh [santosh.shilimkar@ti.com]
->> *CC:* mturquette@linaro.org [mturquette@linaro.org];
->> linux-arm-kernel@lists.infradead.org [linux-arm-kernel@lists.infradead.org];
->> linux-kernel@vger.kernel.org [linux-kernel@vger.kernel.org]; Khoronzhuk, Ivan
->> [ivan.khoronzhuk@ti.com]
->> *Subject:* [PATCH] clk: keystone: gate: fix clk_init_data initialization
->>
->> In clk_register_psc() function clk_init_data struct is allocated
->> in the stack. All members of this struct should be initialized
->> before using otherwise it will contain garbage. So initialize flags
->> in this structure too.
->>
->> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> ---
->>    drivers/clk/keystone/gate.c | 1 +
->>    1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
->> index 17a5983..86f1e36 100644
->> --- a/drivers/clk/keystone/gate.c
->> +++ b/drivers/clk/keystone/gate.c
->> @@ -179,6 +179,7 @@ static struct clk *clk_register_psc(struct device *dev,
->>
->>            init.name = name;
->>            init.ops = &clk_psc_ops;
->> +       init.flags = 0;
->>            init.parent_names = (parent_name ? &parent_name : NULL);
->>            init.num_parents = (parent_name ? 1 : 0);
->>
->> -- 
->> 1.8.3.2
->>
-> 
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ scripts/get_maintainer.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 9c3986f4140c..41987885bd31 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -95,7 +95,7 @@ my %VCS_cmds;
+ 
+ my %VCS_cmds_git = (
+     "execute_cmd" => \&git_execute_cmd,
+-    "available" => '(which("git") ne "") && (-d ".git")',
++    "available" => '(which("git") ne "") && (-e ".git")',
+     "find_signers_cmd" =>
+ 	"git log --no-color --follow --since=\$email_git_since " .
+ 	    '--numstat --no-merges ' .
+-- 
+1.8.5
 
