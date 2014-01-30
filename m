@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaA3Nty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:49:54 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58455 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752873AbaA3Ntw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:49:52 -0500
-Message-ID: <52EA5866.3090706@ti.com>
-Date: Thu, 30 Jan 2014 15:49:26 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: keystone: gate: fix clk_init_data initialization
-References: <1391081821-13306-1-git-send-email-ivan.khoronzhuk@ti.com> <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com>
-In-Reply-To: <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753273AbaA3Nvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 08:51:35 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:58796 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844AbaA3Nve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 08:51:34 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-4d-52ea58e3848b
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] regulator: s2mps11: Fix NULL pointer of_node value when using
+ platform data
+Date: Thu, 30 Jan 2014 14:51:19 +0100
+Message-id: <1391089879-7342-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDJMWRmVeSWpSXmKPExsVy+t/xy7qPI14FGVzqULCY+vAJm8XrF4YW
+	3650MFlc3jWHzeLiii9MDqweO2fdZffYtKqTzaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	Xk95y1pwgaPi448X7A2MM9m7GDk4JARMJGZf4+li5AQyxSQu3FvP1sXIxSEksJRR4t26eWwg
+	CSGBPiaJdf8cQGw2AWOJzcuXgBWJCPQwSrzc+pkZJMEsYCjx890fdhBbWCBO4vPZ5WA2i4Cq
+	xLVTX8EG8Qq4Sfw+f5QVYrGCxJxJNhMYuRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93E
+	CAmBLzsYFx+zOsQowMGoxMO7YvLLICHWxLLiytxDjBIczEoivBqar4KEeFMSK6tSi/Lji0pz
+	UosPMTJxcEo1MDLY/forONWK99rEeSk2mlxe99VrmmYV16+KWrL1y53CLd4r4o/IHYtjX/PW
+	7F/svTcXHnJ/3NDzV3+Jwdkpt0pya4/4+/C6Wmsa7GKcsXkJ/wv7801zq/QNQrIOd545dC9h
+	bgbbk4QTQZULpQrYPZ8V/rCV+3ExneFgzu/kBT+W8Vjfmc8ryaXEUpyRaKjFXFScCAAFsMP4
+	3wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes. As result the clk->flag field contains garbage. In my case it leads
-that flag CLK_IGNORE_UNUSED is set for most of clocks.  As result a bunch
-of unused clocks cannot be disabled.
+When platform_data is used for regulator (of_node of sec-core MFD device
+is NULL) the config.of_node for regulator is not initialized. This NULL
+value of config.of_node is later stored during regulator_register().
+Thus any call by regulator consumers to of_get_regulator() will fail on
+of_parse_phandle() returning NULL.
 
-On 01/30/2014 03:26 PM, Shilimkar, Santosh wrote:
-> Can u capture the issue withiout this fix?
->
-> Sent from my Android phone using TouchDown (www.nitrodesk.com)
->
-> -----Original Message-----
-> *From:* Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
-> *Received:* Thursday, 30 Jan 2014, 6:37am
-> *To:* Shilimkar, Santosh [santosh.shilimkar@ti.com]
-> *CC:* mturquette@linaro.org [mturquette@linaro.org];
-> linux-arm-kernel@lists.infradead.org [linux-arm-kernel@lists.infradead.org];
-> linux-kernel@vger.kernel.org [linux-kernel@vger.kernel.org]; Khoronzhuk, Ivan
-> [ivan.khoronzhuk@ti.com]
-> *Subject:* [PATCH] clk: keystone: gate: fix clk_init_data initialization
->
-> In clk_register_psc() function clk_init_data struct is allocated
-> in the stack. All members of this struct should be initialized
-> before using otherwise it will contain garbage. So initialize flags
-> in this structure too.
->
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
->    drivers/clk/keystone/gate.c | 1 +
->    1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
-> index 17a5983..86f1e36 100644
-> --- a/drivers/clk/keystone/gate.c
-> +++ b/drivers/clk/keystone/gate.c
-> @@ -179,6 +179,7 @@ static struct clk *clk_register_psc(struct device *dev,
->
->            init.name = name;
->            init.ops = &clk_psc_ops;
-> +       init.flags = 0;
->            init.parent_names = (parent_name ? &parent_name : NULL);
->            init.num_parents = (parent_name ? 1 : 0);
->
-> -- 
-> 1.8.3.2
->
+In this case (using platform_data and parent's driver of_node is NULL)
+set the config.of_node to reg_node from platform_data.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/s2mps11.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index d9e557990577..cd0b9e35a56d 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -441,6 +441,7 @@ common_reg:
+ 	for (i = 0; i < S2MPS11_REGULATOR_MAX; i++) {
+ 		if (!reg_np) {
+ 			config.init_data = pdata->regulators[i].initdata;
++			config.of_node = pdata->regulators[i].reg_node;
+ 		} else {
+ 			config.init_data = rdata[i].init_data;
+ 			config.of_node = rdata[i].of_node;
+-- 
+1.7.9.5
 
