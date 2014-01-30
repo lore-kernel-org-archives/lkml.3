@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaA3WYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:24:15 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:36570 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945AbaA3WYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:24:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
-References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
-Date: Thu, 30 Jan 2014 14:24:12 -0800
-X-Google-Sender-Auth: NEUNdzDX6jm6mE4K-pdYhS3a7B4
-Message-ID: <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
-Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt flag
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nate Eldredge <nate@thatsmathematics.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
-        George Spelvin <linux@horizon.com>, sbsiddha@gmail.com,
-        Pekka Riikonen <priikone@iki.fi>
-Content-Type: text/plain; charset=UTF-8
+	id S1754003AbaA3W1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:27:09 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18399 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753674AbaA3W1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 17:27:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,752,1384329600"; 
+   d="scan'208";a="447340472"
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+In-Reply-To: <20140130192835.GK5002@laptop.programming.kicks-ass.net>
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+	 <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
+	 <1391108430.3138.86.camel@schen9-DESK>
+	 <20140130192835.GK5002@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Jan 2014 14:27:03 -0800
+Message-ID: <1391120823.3138.92.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 2:01 PM, Nate Eldredge
-<nate@thatsmathematics.com> wrote:
->
-> If math_state_restore() is called in a task that has not used math, it
-> needs to allocate some memory (via init_fpu()).  Since this can sleep,
-> it enables interrupts first.  Currently, it always disables them
-> afterwards, regardless of whether or not they were enabled on entry.
-> (See commit aa283f4927 where this was introduced.)  This doesn't make
-> sense, so instead have it put interrupts back the way they were.
 
-Hmm. What doesn't make sense is to have interrupts disabled in the
-caller - since clearly math_state_restore() may actually let
-interrupts in.
+> > > +	/*
+> > > +	 * Set up the new cpu code to be exchanged
+> > > +	 */
+> > > +	my_qcode = SET_QCODE(cpu_nr, qn_idx);
+> > > +
+> > 
+> > If we get interrupted here before we have a chance to set the used flag,
+> > the interrupt handler could pick up the same qnode if it tries to
+> > acquire queued spin lock.  Then we could overwrite the qcode we have set
+> > here.
+> > 
+> > Perhaps an exchange operation for the used flag to prevent this race
+> > condition?
+> 
+> I don't get why we need the used thing at all; something like:
+> 
+> struct qna {
+> 	int cnt;
+> 	struct qnode nodes[4];
+> };
+> 
+> DEFINE_PER_CPU(struct qna, qna);
+> 
+> struct qnode *get_qnode(void)
+> {
+> 	struct qna *qna = this_cpu_ptr(&qna);
+> 
+> 	return qna->nodes[qna->cnt++]; /* RMW */
+> }
+> 
+> void put_qnode(struct qnode *qnode)
+> {
+> 	struct qna *qna = this_cpu_ptr(&qna);
+> 	qna->cnt--;
+> }
+> 
+> Should do fine, right?
+> 
+> If we interrupt the RMW above the interrupted context hasn't yet used
+> the queue and once we return its free again, so all should be well even
+> on load-store archs.
 
-So while I definitely think your patch fixes a bug, I'm wondering if
-we shouldn't look deeper at this issue. The comment above says
+Agreed. This approach is more efficient and avoid the overhead 
+searching for unused node and setting used flag.
 
- * Must be called with kernel preemption disabled (eg with local
- * local interrupts as in the case of do_device_not_available).
+Tim
 
-which *kind* of makes sense, but at the same time only reinforces that
-whole "if there are reasons why the irq has to be disabled, we can't
-just randomly enable it for allocations".
+> 
+> The nodes array might as well be 3, because NMIs should never contend on
+> a spinlock, so all we're left with is task, softirq and hardirq context.
 
-So I really get the feeling that there are more bugs than just the "it
-exits with irqs disabled" issue.
 
->                 The aesni-intel code (encrypting the core
-> file that we are writing) needs the FPU and quite properly wraps its
-> code in kernel_fpu_{begin,end}(), the latter of which calls
-> math_state_restore().
-
-Ok, and this is interesting too.
-
-kernel_fpu_{begin|end}() shouldn't mess around with tsk_used_math(), I
-feel. If the task hasn't used math, no reason to allocate any
-save-space, because kernel_fpu_end() will just throw it all away
-anyway.
-
-Plus we want to be able to do those things from interrupts, and:
- - we can't have blocking allocations
- - we should try to not mess with these kinds of process states from
-interrupts anyway
-
-So I think that math_state_restore() and the use_eager_fpu() changes
-were actually seriously buggy here wrt that whole !tsk_used_math()
-case.
-
-I'm adding in some people here, because I think in the end this bug
-was introduced by commit 304bceda6a18 ("x86, fpu: use non-lazy fpu
-restore for processors supporting xsave") that introduced that
-math_state_restore() in kernel_fpu_end(), but we have other commits
-(like 5187b28ff08: "x86: Allow FPU to be used at interrupt time even
-with eagerfpu") that seem tangential too and might be part of why it
-actually *triggers* now.
-
-Comments?
-
-               Linus
