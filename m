@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaA3AIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jan 2014 19:08:38 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:57841 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaA3AIe (ORCPT
+	id S1752728AbaA3AIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jan 2014 19:08:48 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:57509 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752540AbaA3AIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jan 2014 19:08:34 -0500
-Date: Wed, 29 Jan 2014 17:08:31 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: eiichiro.oiwa.nm@hitachi.com, Dave Airlie <airlied@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: In "pci_fixup_video" check if this is or should be the primary
- video devi
-Message-ID: <20140130000831.GJ16825@google.com>
-References: <1389499841-6097-1-git-send-email-linux@eikelenboom.it>
- <XNM1$9$0$4$$3$3$7$A$9006858U52d4d109@hitachi.com>
- <6310129377.20140114162641@eikelenboom.it>
- <XNM1$9$0$4$$3$3$7$A$9006860U52d614ca@hitachi.com>
- <126550032.20140115203605@eikelenboom.it>
- <CAErSpo7Bjo3rVCnuf9fkKc=T33Z5ZBzS+nHOBqDDKt1j4u0yWg@mail.gmail.com>
- <1524137311.20140115232528@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1524137311.20140115232528@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Jan 2014 19:08:46 -0500
+From: Feng Kan <fkan@apm.com>
+To: patches@apm.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V5 5/5] Documentation: power: reset: Add documentation for generic SYSCON reboot driver
+Date: Wed, 29 Jan 2014 16:03:18 -0800
+Message-Id: <1391040198-14185-6-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1391040198-14185-1-git-send-email-fkan@apm.com>
+References: <1391040198-14185-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 11:25:28PM +0100, Sander Eikelenboom wrote:
-> Date: Sun, 12 Jan 2014 04:49:44 +0100
-> Subject: [PATCH] In "pci_fixup_video" check if this is or should be the
->  primary video device to prevent setting the
->  IORESOURCE_ROM_SHADOW flag on a secondary VGA card
-> To: Dave Airlie <airlied@redhat.com>,
->     Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
->     Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
->     linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
-> 
-> Setting the IORESOURCE_ROM_SHADOW flag on a secondary VGA card prevents if from
-> reading it's own rom. It will get the content of the shadowrom at C000 instead,
-> which is of the primary VGA card and the driver of the secondary card will bail
-> out.
-> 
-> Fix this by checking if this is or should be the primary video device before
-> applying the fix and let the comment reflect this.
-> 
-> Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
-> ---
->  arch/x86/pci/fixup.c |   17 +++++++++--------
->  1 file changed, 9 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-> index b046e07..525e49a 100644
-> --- a/arch/x86/pci/fixup.c
-> +++ b/arch/x86/pci/fixup.c
-> @@ -314,9 +314,9 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,        PCI_DEVICE_ID_INTEL_MCH_PC1,    pcie_r
->   * IORESOURCE_ROM_SHADOW is used to associate the boot video
->   * card with this copy. On laptops this copy has to be used since
->   * the main ROM may be compressed or combined with another image.
-> - * See pci_map_rom() for use of this flag. IORESOURCE_ROM_SHADOW
-> - * is marked here since the boot video device will be the only enabled
-> - * video device at this point.
-> + * See pci_map_rom() for use of this flag. Before we mark the device
-> + * with IORESOURCE_ROM_SHADOW we have to check if this is or should become
-> + * the primary video card, since this quirk is ran for all video devices.
->   */
->  
->  static void pci_fixup_video(struct pci_dev *pdev)
-> @@ -347,12 +347,13 @@ static void pci_fixup_video(struct pci_dev *pdev)
->                 }
->                 bus = bus->parent;
->         }
-> -       pci_read_config_word(pdev, PCI_COMMAND, &config);
-> -       if (config & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY)) {
-> -               pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_SHADOW;
-> -               dev_printk(KERN_DEBUG, &pdev->dev, "Boot video device\n");
-> -               if (!vga_default_device())
-> +       if (!vga_default_device() || pdev == vga_default_device()) {
-> +               pci_read_config_word(pdev, PCI_COMMAND, &config);
-> +               if (config & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY)) {
-> +                       pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_SHADOW;
-> +                       dev_printk(KERN_DEBUG, &pdev->dev, "Boot video device\n");
->                         vga_set_default_device(pdev);
-> +               }
+Add documentation for generic SYSCON reboot driver.
 
-ia64 also has a pci_fixup_video() that is essentially the same.  Can you
-fix that one as well, unless there is a reason why the fix applies only to
-x86 and not to ia64?
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ .../bindings/power/reset/syscon-reboot.txt         |   23 ++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
 
->         }
->  }
->  DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_ANY_ID, PCI_ANY_ID,
-> -- 
-> 1.7.10.4
-
+diff --git a/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+new file mode 100644
+index 0000000..963f3c3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/reset/syscon-reboot.txt
+@@ -0,0 +1,23 @@
++Generic SYSCON mapped register reset driver
++
++This is a generic reset driver using syscon to map the reset register.
++The reset is generally performed with a write to the reset register
++defined by the register map pointed by syscon reference plus the offset
++with the mask defined in the reboot node.
++
++Required properties:
++- compatible: should contain "syscon-reboot"
++- regmap: this is phandle to the register map node 
++- offset: offset in the register map for the reboot register (in bytes)
++- mask: the reset value written to the reboot register (32 bit access)
++
++Default will be little endian mode, 32 bit access only.
++
++Examples:
++
++	reboot {
++	   compatible = "syscon-reboot";
++	   regmap = <&regmapnode>;
++	   offset = <0x0>;
++	   mask = <0x1>;
++	};
+-- 
+1.7.6.1
 
