@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaA3Wjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:39:54 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41370 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaA3Wjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:39:53 -0500
-Date: Thu, 30 Jan 2014 14:39:51 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Vladimir Davydov <vdavydov@parallels.com>, mhocko@suse.cz,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix mutex not unlocked on memcg_create_kmem_cache
- fail path
-In-Reply-To: <20140130141538.a9e3977b5e7b76bdcf59a15f@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1401301438500.12223@chino.kir.corp.google.com>
-References: <1391097693-31401-1-git-send-email-vdavydov@parallels.com> <20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org> <alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com> <20140130132939.96a25a37016a12f9a0093a90@linux-foundation.org>
- <alpine.DEB.2.02.1401301336530.15271@chino.kir.corp.google.com> <20140130135002.22ce1c12b7136f75e5985df6@linux-foundation.org> <alpine.DEB.2.02.1401301403090.15271@chino.kir.corp.google.com> <20140130140902.93d35d866f9ea1c697811f6e@linux-foundation.org>
- <alpine.DEB.2.02.1401301411590.15271@chino.kir.corp.google.com> <20140130141538.a9e3977b5e7b76bdcf59a15f@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753852AbaA3WkC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:40:02 -0500
+Received: from mga02.intel.com ([134.134.136.20]:38098 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753788AbaA3Wj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 17:39:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,752,1384329600"; 
+   d="scan'208";a="475465157"
+Date: Thu, 30 Jan 2014 14:39:47 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Mathias Nyman'" <mathias.nyman@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFCv2 00/10] xhci: re-work command queue management
+Message-ID: <20140130223947.GE14228@xanatos>
+References: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6B532A@AcuExch.aculab.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B532A@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014, Andrew Morton wrote:
-
-> > It always was.
+On Thu, Jan 30, 2014 at 02:25:48PM +0000, David Laight wrote:
+> I think it would be much simpler to allocate a parallel array to the actual
+> hardware command ring that contains the additional information for the request
+> (instead of allocating it pre-request).
+> This would immediately solve any problems allocating the memory from interrupt
+> context and failing to free in correctly in all the code paths.
 > 
-> eh?  kmem_cache_create_memcg()'s kstrdup() will allocate the minimum
-> needed amount of memory.
+> A similar solution could be used for the transfer rings thus removing the
+> need to the 'td' list - which there are reports of it failing to find transfers
+> and the code paths for aborting isoch transfers are badly broken.
 > 
+> Adding another list that will have its own set of bugs seems retrograde top me.
 
-Ah, good point.  We could this incrementally on my patch:
+I do not have a problem with it.  The shadow ring is an optimization we
+can look at later.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -637,6 +637,9 @@ int memcg_limited_groups_array_size;
-  * better kept as an internal representation in cgroup.c. In any case, the
-  * cgrp_id space is not getting any smaller, and we don't have to necessarily
-  * increase ours as well if it increases.
-+ *
-+ * Updates to MAX_SIZE should update the space for the memcg name in
-+ * memcg_create_kmem_cache().
-  */
- #define MEMCG_CACHES_MIN_SIZE 4
- #define MEMCG_CACHES_MAX_SIZE MEM_CGROUP_ID_MAX
-@@ -3400,8 +3403,10 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
- static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 						  struct kmem_cache *s)
- {
--	char *name = NULL;
- 	struct kmem_cache *new;
-+	const char *cgrp_name;
-+	char *name = NULL;
-+	size_t len;
- 
- 	BUG_ON(!memcg_can_account_kmem(memcg));
- 
-@@ -3409,9 +3414,22 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 	if (unlikely(!name))
- 		return NULL;
- 
-+	/*
-+	 * Format of a memcg's kmem cache name:
-+	 * <cache-name>(<memcg-id>:<cgroup-name>)
-+	 */
-+	len = strlen(s->name);
-+	/* Space for parentheses, colon, terminator */
-+	len += 4;
-+	/* MEMCG_CACHES_MAX_SIZE is USHRT_MAX */
-+	len += 5;
-+	BUILD_BUG_ON(MEMCG_CACHES_MAX_SIZE > USHRT_MAX);
-+
- 	rcu_read_lock();
--	snprintf(name, PATH_MAX, "%s(%d:%s)", s->name, memcg_cache_id(memcg),
--		 cgroup_name(memcg->css.cgroup));
-+	cgrp_name = cgroup_name(memcg->css.cgroup);
-+	len += strlen(cgrp_name);
-+	snprintf(name, len, "%s(%d:%s)", s->name, memcg_cache_id(memcg),
-+		 cgrp_name);
- 	rcu_read_unlock();
- 
- 	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
+Sarah Sharp
