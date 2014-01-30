@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383AbaA3RPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:15:35 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:20249 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaA3RPe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:15:34 -0500
-Message-ID: <1391102130.2931.14.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] mm, hugetlb: gimme back my page
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Jonathan Gonzalez <jgonzalez@linets.cl>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 30 Jan 2014 09:15:30 -0800
-In-Reply-To: <20140130095907.GA13574@dhcp22.suse.cz>
-References: <1391063823.2931.3.camel@buesod1.americas.hpqcorp.net>
-	 <20140130095907.GA13574@dhcp22.suse.cz>
+	id S1753609AbaA3RPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:15:55 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:33155 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752261AbaA3RPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 12:15:53 -0500
+X-IronPort-AV: E=Sophos;i="4.95,751,1384300800"; 
+   d="scan'208";a="98186355"
+Message-ID: <1391102149.9495.39.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH] arm: document "mach-virt" platform.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Christopher Covington <cov@codeaurora.org>
+CC: <linux-kernel@vger.kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Thu, 30 Jan 2014 17:15:49 +0000
+In-Reply-To: <52EA83D6.9050506@codeaurora.org>
+References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
+	 <52EA83D6.9050506@codeaurora.org>
+Organization: Citrix Systems, Inc.
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-3 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-30 at 10:59 +0100, Michal Hocko wrote:
-> On Wed 29-01-14 22:37:03, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <davidlohr@hp.com>
-> > 
-> > While testing some changes, I noticed an issue triggered by the libhugetlbfs
-> > test-suite. This is caused by commit 309381fe (mm: dump page when hitting a
-> > VM_BUG_ON using VM_BUG_ON_PAGE), where an application can unexpectedly OOM due
-> > to another program that using, or reserving, pool_size-1 pages later triggers
-> > a VM_BUG_ON_PAGE and thus greedly leaves no memory to the rest of the hugetlb
-> > aware tasks. For example, in libhugetlbfs 2.14:
-> > 
-> > mmap-gettest 10 32783 (2M: 64): <---- hit VM_BUG_ON_PAGE
-> > mmap-cow 32782 32783 (2M: 32):  FAIL    Failed to create shared mapping: Cannot allocate memory
-> > mmap-cow 32782 32783 (2M: 64):  FAIL    Failed to create shared mapping: Cannot allocate memory
-> > 
-> > While I have not looked into why 'mmap-gettest' keeps failing, it is of no
-> > importance to this particular issue. This problem is similar to why we have
-> > the hugetlb_instantiation_mutex, hugepages are quite finite.
-> > 
-> > Revert the use of VM_BUG_ON_PAGE back to just VM_BUG_ON.
+On Thu, 2014-01-30 at 11:54 -0500, Christopher Covington wrote:
+> > +++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
+> > @@ -0,0 +1,32 @@
+> > +* Mach-virt "Dummy Virtual Machine" platform
+> > +
+> > +"mach-virt" is the smallest, dumbest platform possible, to be used as
+> > +a guest for Xen, KVM and other hypervisors.
 > 
-> I do not understand what VM_BUG_ON_PAGE has to do with the above
-> failure. Could you be more specific.
-> 
-> Hmm, now that I am looking into dump_page_badflags it shouldn't call
-> mem_cgroup_print_bad_page for hugetlb pages because it doesn't make any
-> sense. I will post a patch for that but that still doesn't explain the
-> above changelog.
+> The platform is also useful to, and used by, simulators like QEMU in TCG mode.
 
-Yeah, I then looked closer at it and realized it doesn't make much
-sense. I don't know why I thought a new page was being used. In any
-case, bisection still shows the commit in question as the cause of the
-regression. I will continue looking into it.
+I can mention this, although I don't think the list needs to be
+exhaustive.
+                                      It has no
+> > +properties/functionality of its own and is driven entirely by device
+> > +tree.
+> 
+> I find this wording confusing. I read it as saying the platform has no
+> properties or functionality. Perhaps you could phrase it slightly differently,
+> such as having no properties or functionality beyond what's described in the
+> device tree.
+
+Yes, this is what I was trying to say, I'll update with something along
+those lines.
+
+> > +The platform may also provide hypervisor specific functionality
+> > +(e.g. PV I/O), if it does so then this functionality must be
+> > +discoverable (directly or indirectly) via device tree.
+> 
+> I think it would be informative to provide pointers here to commonly used
+> paravirtualized devices, especially VirtIO PCI/MMIO.
+
+Under what criteria would something be eligible/appropriate to be
+listed? I was trying to avoid "advocating" any particular type of PV
+devices. We already have something of a problem with people incorrectly
+assuming that mach-virt == virtio, which is not the case.
+
+If we did want to include an explicit list here at a minimum I would
+also want to include the Xen PV devices as well and surely there would
+be others which ought to be included too.
+
+Ian.
 
