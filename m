@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751221AbaA3Gmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 01:42:39 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63660 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750849AbaA3Gmg (ORCPT
+	id S1751122AbaA3Gx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 01:53:28 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:52862 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876AbaA3Gx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 01:42:36 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AogIANHz6VJ5LGaB/2dsb2JhbABZgwyDPrUdhVCBARd0giUBAQEEOhwjEAgDGAklDwUlAyETiATLURcWjmkHhDgEmCeSIINBKA
-Date: Thu, 30 Jan 2014 17:42:30 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v5 00/22] Rewrite XIP code and add XIP support to ext4
-Message-ID: <20140130064230.GG13997@dastard>
-References: <cover.1389779961.git.matthew.r.wilcox@intel.com>
+	Thu, 30 Jan 2014 01:53:27 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52E9E943.2040009@roeck-us.net>
+Date: Wed, 29 Jan 2014 21:55:15 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1389779961.git.matthew.r.wilcox@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org
+CC: Samuel Ortiz <sameo@linux.intel.com>, x86@kernel.org,
+        James Ralston <james.d.ralston@intel.com>
+Subject: Re: Kernel freeze with v3.13 on Avoton CPUs
+References: <20140123065051.GA1402@roeck-us.net> <52E18D25.6070403@xes-inc.com>
+In-Reply-To: <52E18D25.6070403@xes-inc.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 08:24:18PM -0500, Matthew Wilcox wrote:
-> This series of patches add support for XIP to ext4.  Unfortunately,
-> it turns out to be necessary to rewrite the existing XIP support code
-> first due to races that are unfixable in the current design.
-> 
-> Since v4 of this patchset, I've improved the documentation, fixed a
-> couple of warnings that a newer version of gcc emitted, and fixed a
-> bug where we would read/write the wrong address for I/Os that were not
-> aligned to PAGE_SIZE.
+On 01/23/2014 01:44 PM, Peter Tyser wrote:
+> On 01/23/2014 12:50 AM, Guenter Roeck wrote:
+>> Hi folks,
+>>
+>> we are seeing an odd problem with kernel version 3.13 running on Mohan Peak
+>> with an Avoton 8-core CPU. The kernel boots to the login prompt and then
+>> freezes silently within a few seconds.
+>>
+>> The problem disappears if we revert patch 8477128fe0 (mfd: lpc_ich: Add support
+>> for Intel Avoton SoC).
+>>
+>> v3.10.27 runs fine. If we cherry-pick 8477128fe0 on top of 3.10.27 we see
+>> exactly the same problem.
+>>
+>> Any idea what might be causing this, and/or what we could do to track this down
+>> further ?
+>
+> I took a look at the Avoton datasheet, and it looks like its register
+> layout is close, but not identical to the other ICH chipsets supported
+> by the lpc_ich driver which could be part of the issue.
+>
+> Eg the "enable ACPI BAR" bit is in register offset 0x44 of PCI device
+> 31, function 0 on most ICH chipsets, while it's in 0x40 on the Avoton.
+> So on the Avoton the "enable ACPI BAR" bit isn't being set by the
+> lpc_ich driver.  If your BIOS didn't set this bit, it could cause
+> erratic behavior since Linux assumes the ACPI region has been enabled.
+> The driver is also writing to offset 0x44 which is RO/reserved on the
+> Avoton.  In theory this should be OK, but clearly isn't "correct".
+>
+> The same comment applies to the GPIO register in PCI device 31, function
+> 0.  The current lpc_ich driver enables the GPIO region in offset 0x4C
+> while the Avoton does in 0x48.
+>
+> I'm not sure if the above explains the specific behavior you saw, but
+> does indicate that the driver shouldn't be used for the Avoton as-is.
+>
+> I don't have an Avoton to try and reproduce, but do have access to a Bay
+> Trail platform which appears to have the same register layout as the
+> Avoton.  I can give adding it to the lpc_ich driver a shot in the next
+> week and see if I run into the same issues as you did.
+>
+> In the short term we could either revert 8477128fe0 or wait a bit until
+> more investigation is done in hopes that we can fix it.
+>
 
-Looks like there's something fundamentally broken with the patch set
-as it stands. I get this same data corruption on both ext4 and XFS
-with XIP using fsx. It's as basic as it gets - the first read after
-a mmapped write fails to see the data written by mmap:
+As a follow up on this problem, it appears that the culprit may be the iTCO
+watchdog timer, which is enabled in our system. Looks like the iTCO registers
+are sufficiently similar to enable the watchdog, but different enough
+to cause the heartbeat ping to fail. If so, that would explain why the
+system freezes only after reaching the login prompt.
 
-$ sudo mkfs.xfs -f /dev/ram0
-meta-data=/dev/ram0              isize=256    agcount=4, agsize=256000 blks
-         =                       sectsz=512   attr=2, projid32bit=1
-         =                       crc=0
-data     =                       bsize=4096   blocks=1024000, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
-log      =internal log           bsize=4096   blocks=12800, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-$ sudo mount -o xip /dev/ram0 /mnt/scr
-$ sudo chmod 777 /mnt/scr
-$ ltp/fsx -d -N 1000 -S 0 /mnt/scr/fsx
-Seed set to 3774
-1 mapwrite      0x3db39 thru    0x3ffff (0x24c7 bytes)
-2 mapread       0x2e947 thru    0x33163 (0x481d bytes)
-3 read  0x2e836 thru    0x3cba1 (0xe36c bytes)
-4 punch from 0x2e7 to 0x5c43, (0x595c bytes)
-5 mapwrite      0xcaea thru     0x13ba9 (0x70c0 bytes)
-6 punch from 0x31645 to 0x38d1d, (0x76d8 bytes)
-7 falloc        from 0x24f92 to 0x2f2b7 (0xa325 bytes)
-fallocating to largest ever: 0x171ac
-8 falloc        from 0xbcf1 to 0x171ac (0xb4bb bytes)
-9 read  0x126f thru     0x11136 (0xfec8 bytes)
-READ BAD DATA: offset = 0x126f, size = 0xfec8, fname = /mnt/scr/fsx
-OFFSET  GOOD    BAD     RANGE
-0x caea 0x05f9  0x0000  0x    0
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caeb 0xf905  0x0000  0x    1
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caec 0x0599  0x0000  0x    2
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caed 0x9905  0x0000  0x    3
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caee 0x05e8  0x0000  0x    4
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caef 0xe805  0x0000  0x    5
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf0 0x0580  0x0000  0x    6
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf1 0x8005  0x0000  0x    7
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf2 0x056c  0x0000  0x    8
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf3 0x6c05  0x0000  0x    9
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf4 0x05ad  0x0000  0x    a
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf5 0xad05  0x0000  0x    b
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf6 0x0539  0x0000  0x    c
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf7 0x3905  0x0000  0x    d
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf8 0x05db  0x0000  0x    e
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-0x caf9 0xdb05  0x0000  0x    f
-operation# (mod 256) for the bad data unknown, check HOLE and EXTEND ops
-LOG DUMP (9 total operations):
-1(  1 mod 256): MAPWRITE 0x3db39 thru 0x3ffff   (0x24c7 bytes)
-2(  2 mod 256): MAPREAD  0x2e947 thru 0x33163   (0x481d bytes)
-3(  3 mod 256): READ     0x2e836 thru 0x3cba1   (0xe36c bytes)
-4(  4 mod 256): PUNCH    0x2e7 thru 0x5c42      (0x595c bytes)
-5(  5 mod 256): MAPWRITE 0xcaea thru 0x13ba9    (0x70c0 bytes)  ******WWWW
-6(  6 mod 256): PUNCH    0x31645 thru 0x38d1c   (0x76d8 bytes)
-7(  7 mod 256): FALLOC   0x24f92 thru 0x2f2b7   (0xa325 bytes) INTERIOR
-8(  8 mod 256): FALLOC   0xbcf1 thru 0x171ac    (0xb4bb bytes) INTERIOR ******FFFF
-9(  9 mod 256): READ     0x126f thru 0x11136    (0xfec8 bytes)  ***RRRR***
-Correct content saved for comparison
-(maybe hexdump "/mnt/scr/fsx" vs "/mnt/scr/fsx.fsxgood")
+So far this is only a theory since I don't have a Rangeley/Avoton datasheet
+and can not really compare registers. I'll try to dig one up and find out more.
 
-XFS gives a good indication that we aren't doing something correctly
-w.r.t. mapped XIP writes, as trying to fiemap the file ASSERT fails
-with a delayed allocation extent somewhere inside the file after a
-sync. I shall keep digging.
+Thanks,
+Guenter
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
