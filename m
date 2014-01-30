@@ -1,578 +1,991 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaA3HdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 02:33:16 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:59268 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019AbaA3HdN (ORCPT
+	id S1752683AbaA3Hf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 02:35:59 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:65032 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaA3Hf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 02:33:13 -0500
+	Thu, 30 Jan 2014 02:35:56 -0500
+Date: Thu, 30 Jan 2014 08:33:52 +0100
+From: Henrik Austad <henrik@austad.us>
+To: Rob Landley <rob@landley.net>
+Cc: LKML doc <linux-doc@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Brown <broonie@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Gleb Natapov <gleb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <JBottomley@parallels.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH] Documentation cleanup, update 00-INDEX files in
+ Documentation/
+Message-ID: <20140130073352.GA32242@austad.us>
+References: <1391041675-31683-1-git-send-email-henrik@austad.us>
+ <52E9D3EB.1060209@landley.net>
 MIME-Version: 1.0
-In-Reply-To: <52E9EEBC.8040000@ti.com>
-References: <1386151747-3209-2-git-send-email-gautam.vivek@samsung.com>
-	<1390225363-24210-1-git-send-email-gautam.vivek@samsung.com>
-	<52E61F63.1090200@ti.com>
-	<CAFp+6iHGchyZFRGyT1D3O3mv6TFOMGUdYvc4qmLEanCKwMrDkw@mail.gmail.com>
-	<52E9EEBC.8040000@ti.com>
-Date: Thu, 30 Jan 2014 13:03:11 +0530
-Message-ID: <CAFp+6iHXnzNVMzMYPCkGc4BVNyN-gg3YLdNj7-BP697kZXpBcw@mail.gmail.com>
-Subject: Re: [PATCH v3] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Julius Werner <jwerner@chromium.org>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52E9D3EB.1060209@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 29, 2014 at 10:24:11PM -0600, Rob Landley wrote:
+> [...]
+> However, I'm curious about this bit:
+> 
+> >--- a/Documentation/00-INDEX
+> >+++ b/Documentation/00-INDEX
+> >@@ -1,11 +1,11 @@
+> >
+> >-This is a brief list of all the files in ./linux/Documentation and what
+> >-they contain. If you add a documentation file, please list it here in
+> >-alphabetical order as well, or risk being hunted down like a rabid dog.
+> >-Please keep the descriptions small enough to fit on one line.
+> >-							 Thanks -- Paul G.
+> >+# This is a brief list of all the files in ./linux/Documentation and what
+> >+# they contain. If you add a documentation file, please list it here in
+> >+# alphabetical order as well, or risk being hunted down like a rabid dog.
+> >+# Please keep the descriptions small enough to fit on one line.
+> >+# 							 Thanks -- Paul G.
+> >
+> >-Following translations are available on the WWW:
+> >+# Following translations are available on the WWW:
+> 
+> Is there a reason for that?
+
+Ahem, yes, but not anymore. Leftovers from my initial index-traverse.py 
+hack. Updated patch below.
+
+  henrik
 
 
-On Thu, Jan 30, 2014 at 11:48 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
->
-> On Thursday 30 January 2014 09:49 AM, Vivek Gautam wrote:
->> Hi Kishon,
->>
->>
->> On Mon, Jan 27, 2014 at 2:27 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>> Hi,
->>
->> Thanks for review. Please find my answers inline below.
->>
->>>
->>> On Monday 20 January 2014 07:12 PM, Vivek Gautam wrote:
->>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
->>>> The new driver uses the generic PHY framework and will interact
->>>> with DWC3 controller present on Exynos5 series of SoCs.
->>>> Thereby, removing old phy-samsung-usb3 driver and related code
->>>> used untill now which was based on usb/phy framework.
->>>>
->>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>>> ---
->>>>
->>>> Changes from v2:
->>>> 1) Added support for multiple PHYs (UTMI+ and PIPE3) and
->>>>    related changes in the driver structuring.
->>>> 2) Added a xlate function to get the required phy out of
->>>>    number of PHYs in mutiple PHY scenerio.
->>>> 3) Changed the names of few structures and variables to
->>>>    have a clearer meaning.
->>>> 4) Added 'usb3phy_config' structure to take care of mutiple
->>>>    phys for a SoC having 'exynos5_usb3phy_drv_data' driver data.
->>>> 5) Not deleting support for old driver 'phy-samsung-usb3' until
->>>>    required support for generic phy is added to DWC3.
->>>>
->>>>  .../devicetree/bindings/phy/samsung-phy.txt        |   49 ++
->>>>  drivers/phy/Kconfig                                |    8 +
->>>>  drivers/phy/Makefile                               |    1 +
->>>>  drivers/phy/phy-exynos5-usb3.c                     |  621 ++++++++++++++++++++
->>>>  4 files changed, 679 insertions(+)
->>>>  create mode 100644 drivers/phy/phy-exynos5-usb3.c
->> [snip]
->>
->>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->>>> index 330ef2d..32f9f38 100644
->>>> --- a/drivers/phy/Kconfig
->>>> +++ b/drivers/phy/Kconfig
->>>> @@ -51,4 +51,12 @@ config PHY_EXYNOS_DP_VIDEO
->>>>       help
->>>>         Support for Display Port PHY found on Samsung EXYNOS SoCs.
->>>>
->>>> +config PHY_EXYNOS5_USB3
->
-> This shouldn't be USB3 since this driver has support for both USB2 and USB3.
-> maybe just PHY_EXYNOS5_USB?
+>From 78882b49b0910079aa574781accc9426e215ac78 Mon Sep 17 00:00:00 2001
+From: Henrik Austad <henrik@austad.us>
+Date: Thu, 31 Oct 2013 14:19:10 +0100
+Subject: [PATCH] Documentation cleanup, update 00-INDEX files in
+ Documentation/
 
-Ok, will change this.
+Some of the 00-INDEX files are somewhat outdated and some folders does not
+contain 00-INDEX at all. Only outdated (with the notably exception of
+spi) indexes are touched here, the 169 folders without 00-INDEX has not
+been touched.
 
->>>> +     tristate "Exynos5 SoC series USB 3.0 PHY driver"
->>>> +     depends on ARCH_EXYNOS5
->>>> +     select GENERIC_PHY
->>>> +     select MFD_SYSCON
->>>
->>> add depends on 'HAS_IOMEM'. Someone reported getting
->>> undefined reference to `devm_ioremap_resource' with it.
->>
->> Ok will add it.
->>
->>>> +     help
->>>> +       Enable USB 3.0 PHY support for Exynos 5 SoC series
->>>> +
->>>>  endmenu
->> [snip]
->>
->>>> diff --git a/drivers/phy/phy-exynos5-usb3.c b/drivers/phy/phy-exynos5-usb3.c
->>>> new file mode 100644
->>>> index 0000000..24efed0
->>>> --- /dev/null
->>>> +++ b/drivers/phy/phy-exynos5-usb3.c
->>>> @@ -0,0 +1,621 @@
->>>> +/*
->>>> + * Samsung EXYNOS5 SoC series USB 3.0 PHY driver
->>>> + *
->>>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->>>> + * Author: Vivek Gautam <gautam.vivek@samsung.com>
->>>> + *
->>>> + * This program is free software; you can redistribute it and/or modify
->>>> + * it under the terms of the GNU General Public License version 2 as
->>>> + * published by the Free Software Foundation.
->>>> + */
->>>> +
->>>> +#include <linux/clk.h>
->>>> +#include <linux/delay.h>
->>>> +#include <linux/io.h>
->>>> +#include <linux/kernel.h>
->>>> +#include <linux/module.h>
->>>> +#include <linux/of.h>
->>>> +#include <linux/of_address.h>
->>>> +#include <linux/phy/phy.h>
->>>> +#include <linux/platform_device.h>
->>>> +#include <linux/mutex.h>
->>>> +#include <linux/mfd/syscon.h>
->>>> +#include <linux/regmap.h>
->>>> +
->>>> +/* Exynos USB PHY registers */
->>>> +#define EXYNOS5_FSEL_9MHZ6           0x0
->>>> +#define EXYNOS5_FSEL_10MHZ           0x1
->>>> +#define EXYNOS5_FSEL_12MHZ           0x2
->>>> +#define EXYNOS5_FSEL_19MHZ2          0x3
->>>> +#define EXYNOS5_FSEL_20MHZ           0x4
->>>> +#define EXYNOS5_FSEL_24MHZ           0x5
->>>> +#define EXYNOS5_FSEL_50MHZ           0x7
->>>> +
->>>> +/* EXYNOS5: USB 3.0 DRD PHY registers */
->>>> +#define EXYNOS5_DRD_LINKSYSTEM                       (0x04)
->>>> +
->>>> +#define LINKSYSTEM_FLADJ_MASK                        (0x3f << 1)
->>>> +#define LINKSYSTEM_FLADJ(_x)                 ((_x) << 1)
->>>> +#define LINKSYSTEM_XHCI_VERSION_CONTROL              (0x1 << 27)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYUTMI                  (0x08)
->>>> +
->>>> +#define PHYUTMI_OTGDISABLE                   (0x1 << 6)
->>>> +#define PHYUTMI_FORCESUSPEND                 (0x1 << 1)
->>>> +#define PHYUTMI_FORCESLEEP                   (0x1 << 0)
->>>
->>> use BIT macro here and below?
->>
->> Ok.
->>
->>>> +
->>>> +#define EXYNOS5_DRD_PHYPIPE                  (0x0c)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYCLKRST                        (0x10)
->>>> +
->>>> +#define PHYCLKRST_EN_UTMISUSPEND             (0x1 << 31)
->>>> +
->>>> +#define PHYCLKRST_SSC_REFCLKSEL_MASK         (0xff << 23)
->>>> +#define PHYCLKRST_SSC_REFCLKSEL(_x)          ((_x) << 23)
->>>> +
->>>> +#define PHYCLKRST_SSC_RANGE_MASK             (0x03 << 21)
->>>> +#define PHYCLKRST_SSC_RANGE(_x)                      ((_x) << 21)
->>>> +
->>>> +#define PHYCLKRST_SSC_EN                     (0x1 << 20)
->>>> +#define PHYCLKRST_REF_SSP_EN                 (0x1 << 19)
->>>> +#define PHYCLKRST_REF_CLKDIV2                        (0x1 << 18)
->>>> +
->>>> +#define PHYCLKRST_MPLL_MULTIPLIER_MASK               (0x7f << 11)
->>>> +#define PHYCLKRST_MPLL_MULTIPLIER_100MHZ_REF (0x19 << 11)
->>>> +#define PHYCLKRST_MPLL_MULTIPLIER_50M_REF    (0x32 << 11)
->>>> +#define PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF  (0x68 << 11)
->>>> +#define PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF  (0x7d << 11)
->>>> +#define PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF       (0x02 << 11)
->>>> +
->>>> +#define PHYCLKRST_FSEL_MASK                  (0x3f << 5)
->>>> +#define PHYCLKRST_FSEL(_x)                   ((_x) << 5)
->>>> +#define PHYCLKRST_FSEL_PAD_100MHZ            (0x27 << 5)
->>>> +#define PHYCLKRST_FSEL_PAD_24MHZ             (0x2a << 5)
->>>> +#define PHYCLKRST_FSEL_PAD_20MHZ             (0x31 << 5)
->>>> +#define PHYCLKRST_FSEL_PAD_19_2MHZ           (0x38 << 5)
->>>> +
->>>> +#define PHYCLKRST_RETENABLEN                 (0x1 << 4)
->>>> +
->>>> +#define PHYCLKRST_REFCLKSEL_MASK             (0x03 << 2)
->>>> +#define PHYCLKRST_REFCLKSEL_PAD_REFCLK               (0x2 << 2)
->>>> +#define PHYCLKRST_REFCLKSEL_EXT_REFCLK               (0x3 << 2)
->>>> +
->>>> +#define PHYCLKRST_PORTRESET                  (0x1 << 1)
->>>> +#define PHYCLKRST_COMMONONN                  (0x1 << 0)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYREG0                  (0x14)
->>>> +#define EXYNOS5_DRD_PHYREG1                  (0x18)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYPARAM0                        (0x1c)
->>>> +
->>>> +#define PHYPARAM0_REF_USE_PAD                        (0x1 << 31)
->>>> +#define PHYPARAM0_REF_LOSLEVEL_MASK          (0x1f << 26)
->>>> +#define PHYPARAM0_REF_LOSLEVEL                       (0x9 << 26)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYPARAM1                        (0x20)
->>>> +
->>>> +#define PHYPARAM1_PCS_TXDEEMPH_MASK          (0x1f << 0)
->>>> +#define PHYPARAM1_PCS_TXDEEMPH                       (0x1c)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYTERM                  (0x24)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYTEST                  (0x28)
->>>> +
->>>> +#define PHYTEST_POWERDOWN_SSP                        (0x1 << 3)
->>>> +#define PHYTEST_POWERDOWN_HSP                        (0x1 << 2)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYADP                   (0x2c)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYBATCHG                        (0x30)
->>>> +
->>>> +#define PHYBATCHG_UTMI_CLKSEL                        (0x1 << 2)
->>>> +
->>>> +#define EXYNOS5_DRD_PHYRESUME                        (0x34)
->>>> +#define EXYNOS5_DRD_LINKPORT                 (0x44)
->>>> +
->>>> +/* Power isolation defined in power management unit */
->>>> +#define EXYNOS5_USB3DRD_PHY_PMU_REG_OFFSET   (0x704)
->>>> +#define EXYNOS5_USB3DRD_PMU_ISOL             (1 << 0)
->>>> +
->>>> +#define KHZ  1000
->>>> +#define MHZ  (KHZ * KHZ)
->>>> +
->>>> +enum exynos5_usb3phy_id {
->>>> +     EXYNOS5_USB3PHY_UTMI,
->>>> +     EXYNOS5_USB3PHY_PIPE3,
->>>> +     EXYNOS5_USB3PHYS_NUM,
->>>> +};
->
-> here and all the structure names below shouldn't have usb3 in their names since
-> this is not just a 'usb3' phy driver..
+This applies to Linus' tip (0e47c969).
 
-right, will change the nomenclature driver-wide (including function names too).
+New 00-INDEX
+- spi/* was added in a series of commits dating back to 2006
 
->>>> +
->>>> +struct usb3phy_config {
->>>> +     u32 id;
->>>> +     u32 reg_pmu_offset;
->>>> +     void (*phy_isol)(struct phy *phy, u32 on);
->>>> +};
->>>> +
->>>> +struct exynos5_usb3phy_drv_data {
->>>> +     bool has_usb30_sclk;
->>>> +     bool has_multi_controller;
->>>> +     const struct usb3phy_config *phy_cfg;
->>>> +};
->>>> +
->>>> +/**
->>>> + * struct exynos5_usb3phy_driver - driver data for USB 3.0 PHY
->>>
->>> Is this really a driver data? I think it should be just exynos5_usb3phy.
->> Yes, not a driver data, rather just 'exynos_usb3phy' structure. will
->> modify the name
->>
->>>> + * @dev: pointer to device instance of this platform device
->>>> + * @reg_phy: usb phy controller register memory base
->>>> + * @clk: phy clock for register access
->>>> + * @usb30_sclk: additional special clock for phy operations
->>>> + * @drv_data: pointer to SoC level driver data structure
->>>> + * @phys[]: array for 'EXYNOS5_USB3PHYS_NUM' number of PHY
->>>> + *       instances each with its 'phy' and 'phy_cfg'.
->>>> + * @extrefclk: frequency select settings when using 'separate
->>>> + *          reference clocks' for SS and HS operations
->>>> + * @rate: rate of reference clock to PHY block
->>>> + * @channel: number of PHY channels present in SoC
->>>> + */
->>>> +struct exynos5_usb3phy_driver {
->>>> +     struct device *dev;
->>>> +     void __iomem *reg_phy;
->>>> +     struct clk *clk;
->>>> +     struct clk *usb30_sclk;
->>>> +     const struct exynos5_usb3phy_drv_data *drv_data;
->>>> +     struct phy_usb_instance {
->>>> +             struct phy *phy;
->>>> +             u32 index;
->>>> +             struct regmap *reg_isol;
->>>> +             const struct usb3phy_config *phy_cfg;
->>>> +     } phys[EXYNOS5_USB3PHYS_NUM];
->>>> +     u32 extrefclk;
->>>> +     unsigned long rate;
->>>> +     u32 channel;
->>>> +};
->>>> +
->>>> +#define to_usb3phy_driver(inst) \
->>>> +     container_of((inst), struct exynos5_usb3phy_driver, \
->>>> +                  phys[(inst)->index]);
->>>> +
->>>> +/*
->>>> + * exynos5_rate_to_clk() converts the supplied clock rate to the value that
->>>> + * can be written to the phy register.
->>>> + */
->>>> +static u32 exynos5_rate_to_clk(unsigned long rate)
->>>> +{
->>>> +     unsigned int clksel;
->>>> +
->>>> +     /* EXYNOS5_FSEL_MASK */
->>>> +
->>>> +     switch (rate) {
->>>> +     case 9600 * KHZ:
->>>> +             clksel = EXYNOS5_FSEL_9MHZ6;
->>>> +             break;
->>>> +     case 10 * MHZ:
->>>> +             clksel = EXYNOS5_FSEL_10MHZ;
->>>> +             break;
->>>> +     case 12 * MHZ:
->>>> +             clksel = EXYNOS5_FSEL_12MHZ;
->>>> +             break;
->>>> +     case 19200 * KHZ:
->>>> +             clksel = EXYNOS5_FSEL_19MHZ2;
->>>> +             break;
->>>> +     case 20 * MHZ:
->>>> +             clksel = EXYNOS5_FSEL_20MHZ;
->>>> +             break;
->>>> +     case 24 * MHZ:
->>>> +             clksel = EXYNOS5_FSEL_24MHZ;
->>>> +             break;
->>>> +     case 50 * MHZ:
->>>> +             clksel = EXYNOS5_FSEL_50MHZ;
->>>> +             break;
->>>> +     default:
->>>> +             clksel = -EINVAL;
->>>> +     }
->>>> +
->>>> +     return clksel;
->>>> +}
->>>> +
->>>> +static void exynos5_usb3phy_isol(struct phy *phy, unsigned int on)
->>>> +{
->>>> +     u32 pmu_offset;
->>>> +     struct phy_usb_instance *inst = phy_get_drvdata(phy);
->>>> +     struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
->>>> +
->>>> +     pmu_offset = inst->phy_cfg->reg_pmu_offset;
->>>> +     if (!inst->reg_isol)
->>>> +             return;
->>>> +
->>>> +     switch (drv->channel) {
->>>> +     case 1:
->>>> +             /* Channel 1 is at 0x708 offset */
->>>> +             pmu_offset += sizeof(&pmu_offset);
->>>> +             break;
->>>> +     case 0:
->>>> +     default:
->>>> +             /* Channel 0 is at 0x704 offset */
->>>> +             break;
->>>> +     }
->>>
->>> This can be in a simple 'if' stmt no?
->> What if there are systems with more channels? In that case also we
->> will have to fall back to a switch-case statement ?
->
-> right.
->>
->>>> +
->>>> +     regmap_update_bits(inst->reg_isol, pmu_offset,
->>>> +                        EXYNOS5_USB3DRD_PMU_ISOL, ~on);
->>>> +}
->>>> +
->>>> +/*
->>>> + * Sets the phy clk as EXTREFCLK (XXTI) which is internal clock from clock core.
->>>> + */
->>>> +static u32 exynos5_usb3phy_set_refclk(struct exynos5_usb3phy_driver *drv)
->>>> +{
->>>> +     u32 reg;
->>>> +
->>>> +     reg = PHYCLKRST_REFCLKSEL_EXT_REFCLK |
->>>> +           PHYCLKRST_FSEL(drv->extrefclk);
->>>> +
->>>> +     switch (drv->extrefclk) {
->>>> +     case EXYNOS5_FSEL_50MHZ:
->>>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_50M_REF |
->>>> +                     PHYCLKRST_SSC_REFCLKSEL(0x00));
->>>> +             break;
->>>> +     case EXYNOS5_FSEL_24MHZ:
->>>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF |
->>>> +                     PHYCLKRST_SSC_REFCLKSEL(0x88));
->>>> +             break;
->>>> +     case EXYNOS5_FSEL_20MHZ:
->>>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF |
->>>> +                     PHYCLKRST_SSC_REFCLKSEL(0x00));
->>>> +             break;
->>>> +     case EXYNOS5_FSEL_19MHZ2:
->>>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF |
->>>> +                     PHYCLKRST_SSC_REFCLKSEL(0x88));
->>>> +             break;
->>>> +     default:
->>>> +             dev_dbg(drv->dev, "unsupported ref clk\n");
->>>> +             break;
->>>> +     }
->>>> +
->>>> +     return reg;
->>>> +}
->>>> +
->>>> +static int exynos5_usb3phy_init(struct phy *phy)
->>>> +{
->>>> +     int ret;
->>>> +     u32 phyparam0;
->>>> +     u32 phyparam1;
->>>> +     u32 linksystem;
->>>> +     u32 phybatchg;
->>>> +     u32 phytest;
->>>> +     u32 phyclkrst;
->>>
->>> instead you can define a single variable 'u32 reg' for register read and writes.
->>
->> Right.
->>
->>>> +     struct phy_usb_instance *inst = phy_get_drvdata(phy);
->>>> +     struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
->>>> +
->>>> +     ret = clk_prepare_enable(drv->clk);
->>>> +     if (ret)
->>>> +             return ret;
->>>> +
->>>> +     drv->extrefclk = exynos5_rate_to_clk(drv->rate);
->>>> +     if (drv->extrefclk == -EINVAL) {
->>>> +             dev_err(drv->dev, "Clock rate (%ld) not supported\n",
->>>> +                                             drv->rate);
->>>> +             return -EINVAL;
->>>> +     }
->>>> +
->>>> +     /* Reset USB 3.0 PHY */
->>>> +     writel(0x0, drv->reg_phy + EXYNOS5_DRD_PHYREG0);
->>>> +
->>>> +     phyparam0 = readl(drv->reg_phy + EXYNOS5_DRD_PHYPARAM0);
->>>> +     /* Select PHY CLK source */
->>>> +     phyparam0 &= ~PHYPARAM0_REF_USE_PAD;
->>>> +     /* Set Loss-of-Signal Detector sensitivity */
->>>> +     phyparam0 &= ~PHYPARAM0_REF_LOSLEVEL_MASK;
->>>> +     phyparam0 |= PHYPARAM0_REF_LOSLEVEL;
->>>> +     writel(phyparam0, drv->reg_phy + EXYNOS5_DRD_PHYPARAM0);
->>>> +
->>>> +     writel(0x0, drv->reg_phy + EXYNOS5_DRD_PHYRESUME);
->>>> +
->>>> +     /*
->>>> +      * Setting the Frame length Adj value[6:1] to default 0x20
->>>> +      * See xHCI 1.0 spec, 5.2.4
->>>> +      */
->>>> +     linksystem = LINKSYSTEM_XHCI_VERSION_CONTROL |
->>>> +                  LINKSYSTEM_FLADJ(0x20);
->>>> +     writel(linksystem, drv->reg_phy + EXYNOS5_DRD_LINKSYSTEM);
->>>> +
->>>> +     phyparam1 = readl(drv->reg_phy + EXYNOS5_DRD_PHYPARAM1);
->>>> +     /* Set Tx De-Emphasis level */
->>>> +     phyparam1 &= ~PHYPARAM1_PCS_TXDEEMPH_MASK;
->>>> +     phyparam1 |= PHYPARAM1_PCS_TXDEEMPH;
->>>> +     writel(phyparam1, drv->reg_phy + EXYNOS5_DRD_PHYPARAM1);
->>>> +
->>>> +     phybatchg = readl(drv->reg_phy + EXYNOS5_DRD_PHYBATCHG);
->>>> +     phybatchg |= PHYBATCHG_UTMI_CLKSEL;
->>>> +     writel(phybatchg, drv->reg_phy + EXYNOS5_DRD_PHYBATCHG);
->>>> +
->>>> +     /* PHYTEST POWERDOWN Control */
->>>> +     phytest = readl(drv->reg_phy + EXYNOS5_DRD_PHYTEST);
->>>> +     phytest &= ~(PHYTEST_POWERDOWN_SSP |
->>>> +                  PHYTEST_POWERDOWN_HSP);
->>>> +     writel(phytest, drv->reg_phy + EXYNOS5_DRD_PHYTEST);
->>>> +
->>>> +     /* UTMI Power Control */
->>>> +     writel(PHYUTMI_OTGDISABLE, drv->reg_phy + EXYNOS5_DRD_PHYUTMI);
->>>
->>> All these UTMI configuration should be done in usb2 init.
->> Ok, will move this to separate function.
->>
->>>> +
->>>> +     phyclkrst = exynos5_usb3phy_set_refclk(drv);
->>>> +
->>>> +     phyclkrst |= PHYCLKRST_PORTRESET |
->>>> +                  /* Digital power supply in normal operating mode */
->>>> +                  PHYCLKRST_RETENABLEN |
->>>> +                  /* Enable ref clock for SS function */
->>>> +                  PHYCLKRST_REF_SSP_EN |
->>>> +                  /* Enable spread spectrum */
->>>> +                  PHYCLKRST_SSC_EN |
->>>> +                  /* Power down HS Bias and PLL blocks in suspend mode */
->>>> +                  PHYCLKRST_COMMONONN;
->>>> +
->>>> +     writel(phyclkrst, drv->reg_phy + EXYNOS5_DRD_PHYCLKRST);
->>>> +
->>>> +     udelay(10);
->>>> +
->>>> +     phyclkrst &= ~PHYCLKRST_PORTRESET;
->>>> +     writel(phyclkrst, drv->reg_phy + EXYNOS5_DRD_PHYCLKRST);
->>>> +
->>>> +     clk_disable_unprepare(drv->clk);
->>>> +
->>>> +     return 0;
->>>> +}
->>>> +
->>>> +static int exynos5_usb3phy_exit(struct phy *phy)
->>>> +{
->>>> +     int ret;
->>>> +     u32 phyutmi;
->>>> +     u32 phyclkrst;
->>>> +     u32 phytest;
->>>
->>> same here..
->> right, will do it.
->>
->>>> +     struct phy_usb_instance *inst = phy_get_drvdata(phy);
->>>> +     struct exynos5_usb3phy_driver *drv = to_usb3phy_driver(inst);
->>>> +
->>>> +     ret = clk_prepare_enable(drv->clk);
->>>> +     if (ret)
->>>> +             return ret;
->>>> +
->>>> +     phyutmi = PHYUTMI_OTGDISABLE |
->>>> +               PHYUTMI_FORCESUSPEND |
->>>> +               PHYUTMI_FORCESLEEP;
->>>> +     writel(phyutmi, drv->reg_phy + EXYNOS5_DRD_PHYUTMI);
->>>
->>> here too.. UTMI configuration should be part of USB2.
->> ok.
->>
->>>> +
->> [snip]
->>
->>>> +
->>>> +static struct phy_ops exynos5_usb3phy_ops = {
->>>> +     .init           = exynos5_usb3phy_init,
->>>> +     .exit           = exynos5_usb3phy_exit,
->>>> +     .power_on       = exynos5_usb3phy_power_on,
->>>> +     .power_off      = exynos5_usb3phy_power_off,
->>>> +     .owner          = THIS_MODULE,
->>>> +};
->>>> +
->>>> +const struct usb3phy_config exynos5_usb3phy_cfg[] = {
->>>> +     {
->>>> +             .id             = EXYNOS5_USB3PHY_UTMI,
->>>
->>> This should be USB2 no?
->> Actually the thought was to have similar naming for enums.
->> EXYNOS5_USB3PHY_UTMI
->> EXYNOS5_USB3PHY_PIPE3
->>
->> Since the entire driver was going that way.
->> But will change these to a more common name
->> EXYNOS5_DRDPHY_UTMI
->> EXYNOS5_DRDPHY_PIPE3,
->> in the same fashion the register names are defined.
->> Will that be fine ?
->
-> Yeah.
->
-> Thanks
-> Kishon
+Added files (missing in (*/)00-INDEX)
+- dmatest.txt was added by 851b7e16 (dmatest: run test via
+  debugfs).
+- this_cpu_ops.txt was added by a1b2a555 (percpu: add documentation on
+  this_cpu operations)
+- ww-mutex-design.txt was added by 040a0a37 (mutex: Add support for
+  wound/wait style locks)
+- bcache.txt was added by cafe5635 (bcache: A block layer cache)
+- kernel-per-CPU-kthreads.txt was added by 49717cb40 (kthread: Document
+  ways of reducing OS jitter due to per-CPU kthreads).
+- phy.txt was added by ff764963 (phy: add generic PHY framework)
+- block/null_blk was added by 12f8f4fc (null_blk: documentation)
+- module-signing.txt was added by 3cafea30 (Add
+  Documentation/module-signing.txt file)
+- assoc_array.txt was added by 3cb98950 (Add a generic associative array
+  implementation.)
+- arm/IXP4xx was part of the initial repo (1da177e4).
+- arm/cluster-pm-race-avoidance.txt was added by 7fe31d28 (ARM: mcpm:
+  introduce helpers for platform coherency exit/setup).
+- arm/firmware.txt was added by 7366b92a (ARM: Add interface for
+  registering and calling firmware-specific operations).
+- arm/kernel_mode_neon.txt was added by 2afd0a05 (ARM: 7825/1: document
+  the use of NEON in kernel mode)
+- arm/tcm.txt was added by bc581770 (ARM: 5580/2: ARM TCM
+  (Tightly-Coupled Memory) support v3)
+- arm/vlocks.txt was added by 9762f12d (ARM: mcpm: Add baremetal voting mutexes)
+- blackfin/gptimers-example.c, Makefile was added by 4b60779d (Blackfin:
+  add an example showing how to use the gptimers API)
+- devicetree/usage-model.txt was added by 31134efc (dt: Linux DT usage
+  model documentation)
+- fb/api.txt was added by fb21c2f4 (fbdev: Add FOURCC-based format
+  configuration API)
+- fb/sm501.txt was added by e6a04980 (video, sm501: add edid and
+  commandline support)
+- fb/udlfb.txt was added by 96f8d864 (fbdev: move udlfb out of staging.)
+- filesystems/Makefile was added by 1e0051ae (Documentation/fs/: split
+  txt and source files)
+- filesystems/nfs/nfsd-admin-interfaces.txt was added by 8a4c6e19 (nfsd:
+  document kernel interfaces for nfsd configuration)
+- ide/warm-plug-howto.txt was added by f74c9141 (ide: add warm-plug
+  support for IDE devices (take 2))
+- laptops/Makefile was added by d49129ac (Documentation/laptop/: split
+  txt and source files).
+- leds/leds-blinkm.txt was added by b54cf35a (LEDS: add BlinkM RGB LED
+  driver, documentation and update MAINTAINERS)
+- leds/ledtrig-oneshot.txt was added by 5e417281c (leds: add oneshot
+  trigger)
+- leds/ledtrig-transient.txt was added by 44e1e9f8 (leds: add new
+  transient trigger for one shot timer activation)
+- m68k/README.buddha was part of the initial repo (1da177e4).
+- networking/LICENSE.(qla3xxx|qlcnic|qlge) was added by 5a4faa87,
+  40839129, c4e84bde.
+- networking/Makefile was added by 3794f3e8 (docsrc: build
+  Documentation/ sources)
+- networking/i40evf.txt was added by 105bf2fe (i40evf: add driver to
+  kernel build system)
+- networking/ipsec.txt was added by b3c6efbc (xfrm: Add file to document
+  IPsec corner case)
+- networking/mac80211-auth-assoc-deauth.txt was added by 3cd7920a
+  (mac80211: add auth/assoc/deauth flow diagram)
+- networking/netlink_mmap.txt was added by 5683264c (netlink: add
+  documentation for memory mapped I/O)
+- networking/nf_conntrack-sysctl.txt was added by c9f9e0e1 (netfilter:
+  doc: add nf_conntrack sysctl api documentation)
+  lan)
+- networking/team.txt was added by 3d249d4c (net: introduce ethernet
+  teaming device)
+- networking/vxlan.txt was added by d342894c (vxlan: virtual extensible
+- power/runtime_pm.txt was added by 5e928f77 (PM: Introduce core
+  framework for run-time PM of I/O devices (rev. 17))
+- power/charger-manager.txt was added by 3bb3dbbd (power_supply: Add
+  initial Charger-Manager driver)
+- RCU/lockdep-splat.txt was added by d7bd2d68 (rcu: Document
+  terpretation of RCU-lockdep splats)
+- s390/kvm.txt was added by 5ecee4b (KVM: s390: API documentation)
+- s390/qeth.txt was added by b4d72c08 (qeth: bridgeport support - basic
+  control)
+- scheduler/sched-bwc.txt was added by 88ebc08e (sched: Add
+  documentation for bandwidth control)
+- scsi/advansys.txt was added by 4bd6d7f3 ([SCSI] advansys: Move
+  documentation to Documentation/scsi)
+- scsi/bfa.txt was added by 1ec90174 ([SCSI] bfa: add readme file)
+- scsi/bnx2fc.txt was added by 12b8fc10 ([SCSI] bnx2fc: Add driver
+  documentation)
+- scsi/cxgb3i.txt was added by c3673464 ([SCSI] cxgb3i: Add cxgb3i iSCSI
+  driver.)
+- scsi/hpsa.txt was added by 992ebcf1 ([SCSI] hpsa: Add hpsa.txt to
+  Documentation/scsi)
+- scsi/link_power_management_policy.txt was added by ca77329f ([libata]
+  Link power management infrastructure)
+- scsi/osd.txt was added by 78e0c621 ([SCSI] osd: Documentation for OSD
+  library)
+- scsi/scsi-parameter.txt was created/moved by 163475fb (Documentation:
+  move SCSI parameters to their own text file)
+- serial/driver was part of the initial repo (1da177e4).
+- serial/n_gsm.txt was added by 323e8412 (n_gsm: add a documentation)
+- timers/Makefile was added by 3794f3e (docsrc: build Documentation/
+  sources)
+- virt/kvm/s390.txt was added by d9101fca (KVM: s390: diagnose call
+  documentation)
+- vm/split_page_table_lock was added by 49076ec2 (mm: dynamically
+  allocate page->ptl if it cannot be embedded to struct page)
+- w1/slaves/w1_ds28e04 was added by fbf7f7b4 (w1: Add 1-wire slave
+  device driver for DS28E04-100)
+- w1/masters/omap-hdq was added by e0a29382 (hdq: documentation for OMAP
+  HDQ)
+- x86/early-microcode.txt was added by 0d91ea86 (x86, doc: Documentation
+  for early microcode loading)
+- x86/earlyprintk.txt was added by a1aade47 (x86/doc: mini-howto for
+  using earlyprintk=dbgp)
+- x86/entry_64.txt was added by 8b4777a4 (x86-64: Document some of
+  entry_64.S)
+- x86/pat.txt was added by d27554d8 (x86: PAT documentation)
 
+Moved files
+- arm/kernel_user_helpers.txt was moved out of arch/arm/kernel by
+  37b83046 (ARM: kuser: move interface documentation out of the source
+  code)
+- efi-stub.txt was moved out of x86/ and down into Documentation/ in
+  4172fe2f (EFI stub documentation updates)
+- laptops/hpfall.c was moved out of hwmon/ and into laptops/ in efcfed9b
+  (Move hp_accel to drivers/platform/x86)
+- 5616c23a: 'x86: doc: move x86-generic documentation from Doc/x86/i386'
+  * x86/usb-legacy-support.txt
+  * x86/boot.txt
+  * x86/zero_page.txt
+- power/video_extension.txt was moved to acpi in 70e66e4df (ACPI /
+  video: move video_extension.txt to Documentation/acpi)
 
+Removed files (left in 00-INDEX)
+- memory.txt was removed by 00ea8990 (memory.txt: remove stray
+  information), but file was still listed in 00-INDEX.
+- gpio.txt was moved to gpio/ in fd8e198c (gpiolib: document new
+  interface)
+- networking/DLINK.txt was removed by 168e06ae (drivers/net: delete old
+  parallel port de600/de620 drivers)
+- serial/hayes-esp.txt was removed by f53a2ade (tty: esp: remove broken
+  driver)
+- s390/TAPE was removed by 9e280f66 ([S390] remove tape block docu)
+- vm/locking was removed by 57ea8171 (mm: documentation: remove
+  hopelessly out-of-date locking doc)
+- laptops/acer-wmi.txt was remvoed by 02003667 (acer-wmi: Delete
+  out-of-date documentation)
 
+Typos/misc issues
+- rpc-server-gss.txt was added as knfsd-rpcgss.txt in 030d794b (SUNRPC:
+  Use gssproxy upcall for server RPCGSS authentication)
+- b88cf73d (net: add missing entries to Documentation/networking/00-INDEX):
+  * generic-hdlc.txt was added as generic_hdlc.txt
+  * spider_net.txt was added as spider-net.txt
+- w1/master/mxc-w1 was added as mxc_w1 by a5fd9139 (w1: add 1-wire
+  master driver for i.MX27 / i.MX31)
+- s390/zfcpdump.txt was added as zfcpdump by 6920c12 ([S390] Add
+  Documentation/s390/00-INDEX).
+
+CC: Rob Landley <rob@landley.net>
+CC: Jiri Kosina <jkosina@suse.cz>
+CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Rob Herring <robh+dt@kernel.org>
+CC: David S. Miller <davem@davemloft.net>
+CC: Mark Brown <broonie@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Gleb Natapov <gleb@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Len Brown <len.brown@intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: James Bottomley <JBottomley@parallels.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+
+Signed-off-by: Henrik Austad <henrik@austad.us>
+---
+ Documentation/00-INDEX                 |   24 ++++++++++++++++++++----
+ Documentation/RCU/00-INDEX             |    2 ++
+ Documentation/arm/00-INDEX             |   14 ++++++++++++++
+ Documentation/blackfin/00-INDEX        |    6 ++++--
+ Documentation/block/00-INDEX           |    2 ++
+ Documentation/devicetree/00-INDEX      |    2 ++
+ Documentation/fb/00-INDEX              |    6 ++++++
+ Documentation/filesystems/00-INDEX     |    2 ++
+ Documentation/filesystems/nfs/00-INDEX |    4 +++-
+ Documentation/ide/00-INDEX             |    2 ++
+ Documentation/laptops/00-INDEX         |    6 ++++--
+ Documentation/leds/00-INDEX            |    8 ++++++++
+ Documentation/m68k/00-INDEX            |    2 ++
+ Documentation/networking/00-INDEX      |   30 +++++++++++++++++++++++++-----
+ Documentation/power/00-INDEX           |    6 ++++--
+ Documentation/s390/00-INDEX            |    8 +++++---
+ Documentation/scheduler/00-INDEX       |    2 ++
+ Documentation/scsi/00-INDEX            |   16 ++++++++++++++++
+ Documentation/serial/00-INDEX          |    6 ++++--
+ Documentation/spi/00-INDEX             |   22 ++++++++++++++++++++++
+ Documentation/timers/00-INDEX          |    2 ++
+ Documentation/virtual/kvm/00-INDEX     |    2 ++
+ Documentation/vm/00-INDEX              |    4 ++--
+ Documentation/w1/masters/00-INDEX      |    4 +++-
+ Documentation/w1/slaves/00-INDEX       |    2 ++
+ Documentation/x86/00-INDEX             |   18 ++++++++++++++++--
+ 26 files changed, 176 insertions(+), 26 deletions(-)
+ create mode 100644 Documentation/spi/00-INDEX
+
+diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+index 38f8444..07de7e1 100644
+--- a/Documentation/00-INDEX
++++ b/Documentation/00-INDEX
+@@ -29,6 +29,8 @@ DMA-ISA-LPC.txt
+ 	- How to do DMA with ISA (and LPC) devices.
+ DMA-attributes.txt
+ 	- listing of the various possible attributes a DMA region can have
++dmatest.txt
++	- how to compile, configure and use the dmatest system.
+ DocBook/
+ 	- directory with DocBook templates etc. for kernel documentation.
+ EDID/
+@@ -77,6 +79,8 @@ arm/
+ 	- directory with info about Linux on the ARM architecture.
+ arm64/
+ 	- directory with info about Linux on the 64 bit ARM architecture.
++assoc_array.txt
++	- generic associative array intro.
+ atomic_ops.txt
+ 	- semantics and behavior of atomic and bitmask operations.
+ auxdisplay/
+@@ -87,6 +91,8 @@ bad_memory.txt
+ 	- how to use kernel parameters to exclude bad RAM regions.
+ basic_profiling.txt
+ 	- basic instructions for those who wants to profile Linux kernel.
++bcache.txt
++	- Block-layer cache on fast SSDs to improve slow (raid) I/O performance.
+ binfmt_misc.txt
+ 	- info on the kernel support for extra binary formats.
+ blackfin/
+@@ -171,6 +177,8 @@ early-userspace/
+ 	- info about initramfs, klibc, and userspace early during boot.
+ edac.txt
+ 	- information on EDAC - Error Detection And Correction
++efi-stub.txt
++	- How to use the EFI boot stub to bypass GRUB or elilo on EFI systems.
+ eisa.txt
+ 	- info on EISA bus support.
+ email-clients.txt
+@@ -195,8 +203,8 @@ futex-requeue-pi.txt
+ 	- info on requeueing of tasks from a non-PI futex to a PI futex
+ gcov.txt
+ 	- use of GCC's coverage testing tool "gcov" with the Linux kernel
+-gpio.txt
+-	- overview of GPIO (General Purpose Input/Output) access conventions.
++gpio/
++	- gpio related documentation
+ hid/
+ 	- directory with information on human interface devices
+ highuid.txt
+@@ -255,6 +263,8 @@ kernel-docs.txt
+ 	- listing of various WWW + books that document kernel internals.
+ kernel-parameters.txt
+ 	- summary listing of command line / boot prompt args for the kernel.
++kernel-per-CPU-kthreads.txt
++	- List of all per-CPU kthreads and how they introduce jitter.
+ kmemcheck.txt
+ 	- info on dynamic checker that detects uses of uninitialized memory.
+ kmemleak.txt
+@@ -299,8 +309,6 @@ memory-devices/
+ 	- directory with info on parts like the Texas Instruments EMIF driver
+ memory-hotplug.txt
+ 	- Hotpluggable memory support, how to use and current status.
+-memory.txt
+-	- info on typical Linux memory problems.
+ metag/
+ 	- directory with info about Linux on Meta architecture.
+ mips/
+@@ -311,6 +319,8 @@ mmc/
+ 	- directory with info about the MMC subsystem
+ mn10300/
+ 	- directory with info about the mn10300 architecture port
++module-signing.txt
++	- Kernel module signing for increased security when loading modules.
+ mtd/
+ 	- directory with info about memory technology devices (flash)
+ mono.txt
+@@ -343,6 +353,8 @@ pcmcia/
+ 	- info on the Linux PCMCIA driver.
+ percpu-rw-semaphore.txt
+ 	- RCU based read-write semaphore optimized for locking for reading
++phy.txt
++	- Description of the generic PHY framework.
+ pi-futex.txt
+ 	- documentation on lightweight priority inheritance futexes.
+ pinctrl.txt
+@@ -431,6 +443,8 @@ sysrq.txt
+ 	- info on the magic SysRq key.
+ target/
+ 	- directory with info on generating TCM v4 fabric .ko modules
++this_cpu_ops.txt
++	- List rationale behind and the way to use this_cpu operations.
+ thermal/
+ 	- directory with information on managing thermal issues (CPU/temp)
+ trace/
+@@ -469,6 +483,8 @@ wimax/
+ 	- directory with info about Intel Wireless Wimax Connections
+ workqueue.txt
+ 	- information on the Concurrency Managed Workqueue implementation
++ww-mutex-design.txt
++	- Intro to Mutex wait/would deadlock handling.s
+ x86/x86_64/
+ 	- directory with info on Linux support for AMD x86-64 (Hammer) machines.
+ xtensa/
+diff --git a/Documentation/RCU/00-INDEX b/Documentation/RCU/00-INDEX
+index 1d7a885..fa57139 100644
+--- a/Documentation/RCU/00-INDEX
++++ b/Documentation/RCU/00-INDEX
+@@ -8,6 +8,8 @@ listRCU.txt
+ 	- Using RCU to Protect Read-Mostly Linked Lists
+ lockdep.txt
+ 	- RCU and lockdep checking
++lockdep-splat.txt
++	- RCU Lockdep splats explained.
+ NMI-RCU.txt
+ 	- Using RCU to Protect Dynamic NMI Handlers
+ rcubarrier.txt
+diff --git a/Documentation/arm/00-INDEX b/Documentation/arm/00-INDEX
+index 36420e1..a94090c 100644
+--- a/Documentation/arm/00-INDEX
++++ b/Documentation/arm/00-INDEX
+@@ -4,6 +4,8 @@ Booting
+ 	- requirements for booting
+ Interrupts
+ 	- ARM Interrupt subsystem documentation
++IXP4xx
++	- Intel IXP4xx Network processor.
+ msm
+ 	- MSM specific documentation
+ Netwinder
+@@ -24,8 +26,16 @@ SPEAr
+ 	- ST SPEAr platform Linux Overview
+ VFP/
+ 	- Release notes for Linux Kernel Vector Floating Point support code
++cluster-pm-race-avoidance.txt
++	- Algorithm for CPU and Cluster setup/teardown
+ empeg/
+ 	- Ltd's Empeg MP3 Car Audio Player
++firmware.txt
++	- Secure firmware registration and calling.
++kernel_mode_neon.txt
++	- How to use NEON instructions in kernel mode
++kernel_user_helpers.txt
++	- Helper functions in kernel space made available for userspace.
+ mem_alignment
+ 	- alignment abort handler documentation
+ memory.txt
+@@ -34,3 +44,7 @@ nwfpe/
+ 	- NWFPE floating point emulator documentation
+ swp_emulation
+ 	- SWP/SWPB emulation handler/logging description
++tcm.txt
++	- ARM Tightly Coupled Memory
++vlocks.txt
++	- Voting locks, low-level mechanism relying on memory system atomic writes.
+diff --git a/Documentation/blackfin/00-INDEX b/Documentation/blackfin/00-INDEX
+index 2df0365..c54fcdd 100644
+--- a/Documentation/blackfin/00-INDEX
++++ b/Documentation/blackfin/00-INDEX
+@@ -1,8 +1,10 @@
+ 00-INDEX
+ 	- This file
+-
++Makefile
++	- Makefile for gptimers example file.
+ bfin-gpio-notes.txt
+ 	- Notes in developing/using bfin-gpio driver.
+-
+ bfin-spi-notes.txt
+ 	- Notes for using bfin spi bus driver.
++gptimers-example.c
++	- gptimers example
+diff --git a/Documentation/block/00-INDEX b/Documentation/block/00-INDEX
+index 929d990..e840b47 100644
+--- a/Documentation/block/00-INDEX
++++ b/Documentation/block/00-INDEX
+@@ -14,6 +14,8 @@ deadline-iosched.txt
+ 	- Deadline IO scheduler tunables
+ ioprio.txt
+ 	- Block io priorities (in CFQ scheduler)
++null_blk.txt
++	- Null block for block-layer benchmarking.
+ queue-sysfs.txt
+ 	- Queue's sysfs entries
+ request.txt
+diff --git a/Documentation/devicetree/00-INDEX b/Documentation/devicetree/00-INDEX
+index b78f691..8c4102c 100644
+--- a/Documentation/devicetree/00-INDEX
++++ b/Documentation/devicetree/00-INDEX
+@@ -8,3 +8,5 @@ https://lists.ozlabs.org/listinfo/devicetree-discuss
+ 	- this file
+ booting-without-of.txt
+ 	- Booting Linux without Open Firmware, describes history and format of device trees.
++usage-model.txt
++	- How Linux uses DT and what DT aims to solve.
+\ No newline at end of file
+diff --git a/Documentation/fb/00-INDEX b/Documentation/fb/00-INDEX
+index 30a7054..fe85e7c 100644
+--- a/Documentation/fb/00-INDEX
++++ b/Documentation/fb/00-INDEX
+@@ -5,6 +5,8 @@ please mail me.
+ 
+ 00-INDEX
+ 	- this file.
++api.txt
++	- The frame buffer API between applications and buffer devices.
+ arkfb.txt
+ 	- info on the fbdev driver for ARK Logic chips.
+ aty128fb.txt
+@@ -51,12 +53,16 @@ sh7760fb.txt
+ 	- info on the SH7760/SH7763 integrated LCDC Framebuffer driver.
+ sisfb.txt
+ 	- info on the framebuffer device driver for various SiS chips.
++sm501.txt
++	- info on the framebuffer device driver for sm501 videoframebuffer.
+ sstfb.txt
+ 	- info on the frame buffer driver for 3dfx' Voodoo Graphics boards.
+ tgafb.txt
+ 	- info on the TGA (DECChip 21030) frame buffer driver.
+ tridentfb.txt
+ 	info on the framebuffer driver for some Trident chip based cards.
++udlfb.txt
++	- Driver for DisplayLink USB 2.0 chips.
+ uvesafb.txt
+ 	- info on the userspace VESA (VBE2+ compliant) frame buffer device.
+ vesafb.txt
+diff --git a/Documentation/filesystems/00-INDEX b/Documentation/filesystems/00-INDEX
+index 632211c..ac28149 100644
+--- a/Documentation/filesystems/00-INDEX
++++ b/Documentation/filesystems/00-INDEX
+@@ -2,6 +2,8 @@
+ 	- this file (info on some of the filesystems supported by linux).
+ Locking
+ 	- info on locking rules as they pertain to Linux VFS.
++Makefile
++	- Makefile for building the filsystems-part of DocBook.
+ 9p.txt
+ 	- 9p (v9fs) is an implementation of the Plan 9 remote fs protocol.
+ adfs.txt
+diff --git a/Documentation/filesystems/nfs/00-INDEX b/Documentation/filesystems/nfs/00-INDEX
+index 66eb6c8..53f3b59 100644
+--- a/Documentation/filesystems/nfs/00-INDEX
++++ b/Documentation/filesystems/nfs/00-INDEX
+@@ -12,6 +12,8 @@ nfs41-server.txt
+ 	- info on the Linux server implementation of NFSv4 minor version 1.
+ nfs-rdma.txt
+ 	- how to install and setup the Linux NFS/RDMA client and server software
++nfsd-admin-interfaces.txt
++	- Administrative interfaces for nfsd.
+ nfsroot.txt
+ 	- short guide on setting up a diskless box with NFS root filesystem.
+ pnfs.txt
+@@ -20,5 +22,5 @@ rpc-cache.txt
+ 	- introduction to the caching mechanisms in the sunrpc layer.
+ idmapper.txt
+ 	- information for configuring request-keys to be used by idmapper
+-knfsd-rpcgss.txt
++rpc-server-gss.txt
+ 	- Information on GSS authentication support in the NFS Server
+diff --git a/Documentation/ide/00-INDEX b/Documentation/ide/00-INDEX
+index d6b7788..22f98ca 100644
+--- a/Documentation/ide/00-INDEX
++++ b/Documentation/ide/00-INDEX
+@@ -10,3 +10,5 @@ ide-tape.txt
+ 	- info on the IDE ATAPI streaming tape driver
+ ide.txt
+ 	- important info for users of ATA devices (IDE/EIDE disks and CD-ROMS).
++warm-plug-howto.txt
++	- using sysfs to remove and add IDE devices.
+\ No newline at end of file
+diff --git a/Documentation/laptops/00-INDEX b/Documentation/laptops/00-INDEX
+index fa68853..d13b9a9 100644
+--- a/Documentation/laptops/00-INDEX
++++ b/Documentation/laptops/00-INDEX
+@@ -1,13 +1,15 @@
+ 00-INDEX
+ 	- This file
+-acer-wmi.txt
+-	- information on the Acer Laptop WMI Extras driver.
++Makefile
++	- Makefile for building dslm example program.
+ asus-laptop.txt
+ 	- information on the Asus Laptop Extras driver.
+ disk-shock-protection.txt
+ 	- information on hard disk shock protection.
+ dslm.c
+ 	- Simple Disk Sleep Monitor program
++hpfall.c
++	- (HP) laptop accelerometer program for disk protection.
+ laptop-mode.txt
+ 	- how to conserve battery power using laptop-mode.
+ sony-laptop.txt
+diff --git a/Documentation/leds/00-INDEX b/Documentation/leds/00-INDEX
+index 1ecd159..b4ef1f3 100644
+--- a/Documentation/leds/00-INDEX
++++ b/Documentation/leds/00-INDEX
+@@ -1,3 +1,7 @@
++00-INDEX
++	- This file
++leds-blinkm.txt
++	- Driver for BlinkM LED-devices.
+ leds-class.txt
+ 	- documents LED handling under Linux.
+ leds-lp3944.txt
+@@ -12,3 +16,7 @@ leds-lp55xx.txt
+ 	- description about lp55xx common driver.
+ leds-lm3556.txt
+ 	- notes on how to use the leds-lm3556 driver.
++ledtrig-oneshot.txt
++	- One-shot LED trigger for both sporadic and dense events.
++ledtrig-transient.txt
++	- LED Transient Trigger, one shot timer activation.
+diff --git a/Documentation/m68k/00-INDEX b/Documentation/m68k/00-INDEX
+index a014e9f..2be8c6b 100644
+--- a/Documentation/m68k/00-INDEX
++++ b/Documentation/m68k/00-INDEX
+@@ -1,5 +1,7 @@
+ 00-INDEX
+ 	- this file
++README.buddha
++	- Amiga Buddha and Catweasel IDE Driver
+ kernel-options.txt
+ 	- command line options for Linux/m68k
+ 
+diff --git a/Documentation/networking/00-INDEX b/Documentation/networking/00-INDEX
+index f11580f..557b6ef 100644
+--- a/Documentation/networking/00-INDEX
++++ b/Documentation/networking/00-INDEX
+@@ -6,8 +6,14 @@
+ 	- information on the 3Com Etherlink III Series Ethernet cards.
+ 6pack.txt
+ 	- info on the 6pack protocol, an alternative to KISS for AX.25
+-DLINK.txt
+-	- info on the D-Link DE-600/DE-620 parallel port pocket adapters
++LICENSE.qla3xxx
++	- GPLv2 for QLogic Linux Networking HBA Driver
++LICENSE.qlge
++	- GPLv2 for QLogic Linux qlge NIC Driver
++LICENSE.qlcnic
++	- GPLv2 for QLogic Linux qlcnic NIC Driver
++Makefile
++	- Makefile for docsrc.
+ PLIP.txt
+ 	- PLIP: The Parallel Line Internet Protocol device driver
+ README.ipw2100
+@@ -17,7 +23,7 @@ README.ipw2200
+ README.sb1000
+ 	- info on General Instrument/NextLevel SURFboard1000 cable modem.
+ alias.txt
+-	- info on using alias network devices 
++	- info on using alias network devices.
+ arcnet-hardware.txt
+ 	- tons of info on ARCnet, hubs, jumper settings for ARCnet cards, etc.
+ arcnet.txt
+@@ -80,7 +86,7 @@ framerelay.txt
+ 	- info on using Frame Relay/Data Link Connection Identifier (DLCI).
+ gen_stats.txt
+ 	- Generic networking statistics for netlink users.
+-generic_hdlc.txt
++generic-hdlc.txt
+ 	- The generic High Level Data Link Control (HDLC) layer.
+ generic_netlink.txt
+ 	- info on Generic Netlink
+@@ -88,6 +94,8 @@ gianfar.txt
+ 	- Gianfar Ethernet Driver.
+ i40e.txt
+ 	- README for the Intel Ethernet Controller XL710 Driver (i40e).
++i40evf.txt
++	- Short note on the Driver for the Intel(R) XL710 X710 Virtual Function
+ ieee802154.txt
+ 	- Linux IEEE 802.15.4 implementation, API and drivers
+ igb.txt
+@@ -102,6 +110,8 @@ ipddp.txt
+ 	- AppleTalk-IP Decapsulation and AppleTalk-IP Encapsulation
+ iphase.txt
+ 	- Interphase PCI ATM (i)Chip IA Linux driver info.
++ipsec.txt
++	- Note on not compressing IPSec payload and resulting failed policy check.
+ ipv6.txt
+ 	- Options to the ipv6 kernel module.
+ ipvs-sysctl.txt
+@@ -120,6 +130,8 @@ lapb-module.txt
+ 	- programming information of the LAPB module.
+ ltpc.txt
+ 	- the Apple or Farallon LocalTalk PC card driver
++mac80211-auth-assoc-deauth.txt
++	- authentication and association / deauth-disassoc with max80211
+ mac80211-injection.txt
+ 	- HOWTO use packet injection with mac80211
+ multiqueue.txt
+@@ -134,6 +146,10 @@ netdevices.txt
+ 	- info on network device driver functions exported to the kernel.
+ netif-msg.txt
+ 	- Design of the network interface message level setting (NETIF_MSG_*).
++netlink_mmap.txt
++	- memory mapped I/O with netlink
++nf_conntrack-sysctl.txt
++	- list of netfilter-sysctl knobs.
+ nfc.txt
+ 	- The Linux Near Field Communication (NFS) subsystem.
+ openvswitch.txt
+@@ -176,7 +192,7 @@ skfp.txt
+ 	- SysKonnect FDDI (SK-5xxx, Compaq Netelligent) driver info.
+ smc9.txt
+ 	- the driver for SMC's 9000 series of Ethernet cards
+-spider-net.txt
++spider_net.txt
+ 	- README for the Spidernet Driver (as found in PS3 / Cell BE).
+ stmmac.txt
+ 	- README for the STMicro Synopsys Ethernet driver.
+@@ -188,6 +204,8 @@ tcp.txt
+ 	- short blurb on how TCP output takes place.
+ tcp-thin.txt
+ 	- kernel tuning options for low rate 'thin' TCP streams.
++team.txt
++	- pointer to information for ethernet teaming devices.
+ tlan.txt
+ 	- ThunderLAN (Compaq Netelligent 10/100, Olicom OC-2xxx) driver info.
+ tproxy.txt
+@@ -200,6 +218,8 @@ vortex.txt
+ 	- info on using 3Com Vortex (3c590, 3c592, 3c595, 3c597) Ethernet cards.
+ vxge.txt
+ 	- README for the Neterion X3100 PCIe Server Adapter.
++vxlan.txt
++	- Virtual extensible LAN overview
+ x25.txt
+ 	- general info on X.25 development.
+ x25-iface.txt
+diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+index a4d682f..ad04cc8 100644
+--- a/Documentation/power/00-INDEX
++++ b/Documentation/power/00-INDEX
+@@ -4,6 +4,8 @@ apm-acpi.txt
+ 	- basic info about the APM and ACPI support.
+ basic-pm-debugging.txt
+ 	- Debugging suspend and resume
++charger-manager.txt
++	- Battery charger management.
+ devices.txt
+ 	- How drivers interact with system-wide power management
+ drivers-testing.txt
+@@ -22,6 +24,8 @@ pm_qos_interface.txt
+ 	- info on Linux PM Quality of Service interface
+ power_supply_class.txt
+ 	- Tells userspace about battery, UPS, AC or DC power supply properties
++runtime_pm.txt
++	- Power management framework for I/O devices.
+ s2ram.txt
+ 	- How to get suspend to ram working (and debug it when it isn't)
+ states.txt
+@@ -38,7 +42,5 @@ tricks.txt
+ 	- How to trick software suspend (to disk) into working when it isn't
+ userland-swsusp.txt
+ 	- Experimental implementation of software suspend in userspace
+-video_extension.txt
+-	- ACPI video extensions
+ video.txt
+ 	- Video issues during resume from suspend
+diff --git a/Documentation/s390/00-INDEX b/Documentation/s390/00-INDEX
+index 3a2b963..10c874e 100644
+--- a/Documentation/s390/00-INDEX
++++ b/Documentation/s390/00-INDEX
+@@ -16,11 +16,13 @@ Debugging390.txt
+ 	- hints for debugging on s390 systems.
+ driver-model.txt
+ 	- information on s390 devices and the driver model.
++kvm.txt
++	- ioctl calls to /dev/kvm on s390.
+ monreader.txt
+ 	- information on accessing the z/VM monitor stream from Linux.
++qeth.txt
++	- HiperSockets Bridge Port Support.
+ s390dbf.txt
+ 	- information on using the s390 debug feature.
+-TAPE
+-	- information on the driver for channel-attached tapes.
+-zfcpdump
++zfcpdump.txt
+ 	- information on the s390 SCSI dump tool.
+diff --git a/Documentation/scheduler/00-INDEX b/Documentation/scheduler/00-INDEX
+index d2651c4..cb1b9a9 100644
+--- a/Documentation/scheduler/00-INDEX
++++ b/Documentation/scheduler/00-INDEX
+@@ -2,6 +2,8 @@
+ 	- this file.
+ sched-arch.txt
+ 	- CPU Scheduler implementation hints for architecture specific code.
++sched-bwc.txt
++	- CFS bandwidth control overview.
+ sched-design-CFS.txt
+ 	- goals, design and implementation of the Completely Fair Scheduler.
+ sched-domains.txt
+diff --git a/Documentation/scsi/00-INDEX b/Documentation/scsi/00-INDEX
+index 2044be5..c4b978a 100644
+--- a/Documentation/scsi/00-INDEX
++++ b/Documentation/scsi/00-INDEX
+@@ -36,6 +36,8 @@ NinjaSCSI.txt
+ 	- info on WorkBiT NinjaSCSI-32/32Bi driver
+ aacraid.txt
+ 	- Driver supporting Adaptec RAID controllers
++advansys.txt
++	- List of Advansys Host Adapters
+ aha152x.txt
+ 	- info on driver for Adaptec AHA152x based adapters
+ aic79xx.txt
+@@ -44,6 +46,12 @@ aic7xxx.txt
+ 	- info on driver for Adaptec controllers
+ arcmsr_spec.txt
+ 	- ARECA FIRMWARE SPEC (for IOP331 adapter)
++bfa.txt
++	- Brocade FC/FCOE adapter driver.
++bnx2fc.txt
++	- FCoE hardware offload for Broadcom network interfaces.
++cxgb3i.txt
++	- Chelsio iSCSI Linux Driver
+ dc395x.txt
+ 	- README file for the dc395x SCSI driver
+ dpti.txt
+@@ -52,18 +60,24 @@ dtc3x80.txt
+ 	- info on driver for DTC 2x80 based adapters
+ g_NCR5380.txt
+ 	- info on driver for NCR5380 and NCR53c400 based adapters
++hpsa.txt
++	- HP Smart Array Controller SCSI driver.
+ hptiop.txt
+ 	- HIGHPOINT ROCKETRAID 3xxx RAID DRIVER
+ in2000.txt
+ 	- info on in2000 driver
+ libsas.txt
+ 	- Serial Attached SCSI management layer.
++link_power_management_policy.txt
++	- Link power management options.
+ lpfc.txt
+ 	- LPFC driver release notes
+ megaraid.txt
+ 	- Common Management Module, shared code handling ioctls for LSI drivers
+ ncr53c8xx.txt
+ 	- info on driver for NCR53c8xx based adapters
++osd.txt
++	Object-Based Storage Device, command set introduction.
+ osst.txt
+ 	- info on driver for OnStream SC-x0 SCSI tape
+ ppa.txt
+@@ -74,6 +88,8 @@ scsi-changer.txt
+ 	- README for the SCSI media changer driver
+ scsi-generic.txt
+ 	- info on the sg driver for generic (non-disk/CD/tape) SCSI devices.
++scsi-parameters.txt
++	- List of SCSI-parameters to pass to the kernel at module load-time.
+ scsi.txt
+ 	- short blurb on using SCSI support as a module.
+ scsi_mid_low_api.txt
+diff --git a/Documentation/serial/00-INDEX b/Documentation/serial/00-INDEX
+index 1f1b22f..f9c6b5e 100644
+--- a/Documentation/serial/00-INDEX
++++ b/Documentation/serial/00-INDEX
+@@ -4,10 +4,12 @@ README.cycladesZ
+ 	- info on Cyclades-Z firmware loading.
+ digiepca.txt
+ 	- info on Digi Intl. {PC,PCI,EISA}Xx and Xem series cards.
+-hayes-esp.txt
+-	- info on using the Hayes ESP serial driver.
++driver
++	- intro to the low level serial driver.
+ moxa-smartio
+ 	- file with info on installing/using Moxa multiport serial driver.
++n_gsm.txt
++	- GSM 0710 tty multiplexer howto.
+ riscom8.txt
+ 	- notes on using the RISCom/8 multi-port serial driver.
+ rocket.txt
+diff --git a/Documentation/spi/00-INDEX b/Documentation/spi/00-INDEX
+new file mode 100644
+index 0000000..a128fa8
+--- /dev/null
++++ b/Documentation/spi/00-INDEX
+@@ -0,0 +1,22 @@
++00-INDEX
++	- this file.
++Makefile
++	- Makefile for the example sourcefiles.
++butterfly
++	- AVR Butterfly SPI driver overview and pin configuration.
++ep93xx_spi
++	- Basic EP93xx SPI driver configuration.
++pxa2xx
++	- PXA2xx SPI master controller build by spi_message fifo wq
++spidev
++	- Intro to the userspace API for spi devices
++spidev_fdx.c
++	- spidev example file
++spi-lm70llp
++	- Connecting an LM70-LLP sensor to the kernel via the SPI subsys.
++spi-sc18is602
++	- NXP SC18IS602/603 I2C-bus to SPI bridge
++spi-summary
++	- (Linux) SPI overview. If unsure about SPI or SPI in Linux, start here.
++spidev_test.c
++	- SPI testing utility.
+diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
+index ef2ccbf..6d042dc 100644
+--- a/Documentation/timers/00-INDEX
++++ b/Documentation/timers/00-INDEX
+@@ -8,6 +8,8 @@ hpet_example.c
+ 	- sample hpet timer test program
+ hrtimers.txt
+ 	- subsystem for high-resolution kernel timers
++Makefile
++	- Build and link hpet_example
+ NO_HZ.txt
+ 	- Summary of the different methods for the scheduler clock-interrupts management.
+ timers-howto.txt
+diff --git a/Documentation/virtual/kvm/00-INDEX b/Documentation/virtual/kvm/00-INDEX
+index 641ec92..fee9f2b 100644
+--- a/Documentation/virtual/kvm/00-INDEX
++++ b/Documentation/virtual/kvm/00-INDEX
+@@ -20,5 +20,7 @@ ppc-pv.txt
+ 	- the paravirtualization interface on PowerPC.
+ review-checklist.txt
+ 	- review checklist for KVM patches.
++s390-diag.txt
++	- Diagnose hypercall description (for IBM S/390)
+ timekeeping.txt
+ 	- timekeeping virtualization for x86-based architectures.
+diff --git a/Documentation/vm/00-INDEX b/Documentation/vm/00-INDEX
+index a39d066..081c497 100644
+--- a/Documentation/vm/00-INDEX
++++ b/Documentation/vm/00-INDEX
+@@ -16,8 +16,6 @@ hwpoison.txt
+ 	- explains what hwpoison is
+ ksm.txt
+ 	- how to use the Kernel Samepage Merging feature.
+-locking
+-	- info on how locking and synchronization is done in the Linux vm code.
+ numa
+ 	- information about NUMA specific code in the Linux vm.
+ numa_memory_policy.txt
+@@ -32,6 +30,8 @@ slub.txt
+ 	- a short users guide for SLUB.
+ soft-dirty.txt
+ 	- short explanation for soft-dirty PTEs
++split_page_table_lock
++	- Separate per-table lock to improve scalability of the old page_table_lock.
+ transhuge.txt
+ 	- Transparent Hugepage Support, alternative way of using hugepages.
+ unevictable-lru.txt
+diff --git a/Documentation/w1/masters/00-INDEX b/Documentation/w1/masters/00-INDEX
+index d63fa02..8330cf9 100644
+--- a/Documentation/w1/masters/00-INDEX
++++ b/Documentation/w1/masters/00-INDEX
+@@ -4,7 +4,9 @@ ds2482
+ 	- The Maxim/Dallas Semiconductor DS2482 provides 1-wire busses.
+ ds2490
+ 	- The Maxim/Dallas Semiconductor DS2490 builds USB <-> W1 bridges.
+-mxc_w1
++mxc-w1
+ 	- W1 master controller driver found on Freescale MX2/MX3 SoCs
++omap-hdq
++	- HDQ/1-wire module of TI OMAP 2430/3430.
+ w1-gpio
+ 	- GPIO 1-wire bus master driver.
+diff --git a/Documentation/w1/slaves/00-INDEX b/Documentation/w1/slaves/00-INDEX
+index 75613c9..6e18c70 100644
+--- a/Documentation/w1/slaves/00-INDEX
++++ b/Documentation/w1/slaves/00-INDEX
+@@ -4,3 +4,5 @@ w1_therm
+ 	- The Maxim/Dallas Semiconductor ds18*20 temperature sensor.
+ w1_ds2423
+ 	- The Maxim/Dallas Semiconductor ds2423 counter device.
++w1_ds28e04
++	- The Maxim/Dallas Semiconductor ds28e04 eeprom.
+diff --git a/Documentation/x86/00-INDEX b/Documentation/x86/00-INDEX
+index f37b46d..6922644 100644
+--- a/Documentation/x86/00-INDEX
++++ b/Documentation/x86/00-INDEX
+@@ -1,6 +1,20 @@
+ 00-INDEX
+ 	- this file
+-mtrr.txt
+-	- how to use x86 Memory Type Range Registers to increase performance
++boot.txt
++	- List of boot protocol versions
++early-microcode.txt
++	- How to load microcode from an initrd-CPIO archive early to fix CPU issues.
++earlyprintk.txt
++	- Using earlyprintk with a USB2 debug port key.
++entry_64.txt
++	- Describe (some of the) kernel entry points for x86.
+ exception-tables.txt
+ 	- why and how Linux kernel uses exception tables on x86
++mtrr.txt
++	- how to use x86 Memory Type Range Registers to increase performance
++pat.txt
++	- Page Attribute Table intro and API
++usb-legacy-support.txt
++	- how to fix/avoid quirks when using emulated PS/2 mouse/keyboard.
++zero-page.txt
++	- layout of the first page of memory.
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.7.10.4
+
+
+
+
