@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaA3Q5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:57:14 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:39580 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025AbaA3Q5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:57:13 -0500
-Message-ID: <52EA844D.2090403@ti.com>
-Date: Thu, 30 Jan 2014 18:56:45 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753358AbaA3Q6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:58:48 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:44635 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaA3Q6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 11:58:47 -0500
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: keystone: gate: fix clk_init_data initialization
-References: <1391081821-13306-1-git-send-email-ivan.khoronzhuk@ti.com> <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com> <52EA5866.3090706@ti.com> <52EA627E.8060801@ti.com>
-In-Reply-To: <52EA627E.8060801@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: for.poige+linux@gmail.com
+From: Igor Podlesny <for.poige+linux@gmail.com>
+Date: Fri, 31 Jan 2014 00:58:16 +0800
+X-Google-Sender-Auth: oOJ_x9ZYPF_AZ4lxLwwVAQuQXQQ
+Message-ID: <CA+sTkh4fYZr-8vBuhA0c1BRt5D7oNiK=KrSF+kJ2KRW7e_LFaA@mail.gmail.com>
+Subject: That greedy Linux VM cache
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok
+   Hello!
 
-On 01/30/2014 04:32 PM, Santosh Shilimkar wrote:
-> On Thursday 30 January 2014 08:49 AM, Ivan Khoronzhuk wrote:
->> Yes. As result the clk->flag field contains garbage. In my case it leads
->> that flag CLK_IGNORE_UNUSED is set for most of clocks.  As result a bunch
->> of unused clocks cannot be disabled.
->>
-> Can you please update the change log with above information.
->
->> On 01/30/2014 03:26 PM, Shilimkar, Santosh wrote:
->>> Can u capture the issue withiout this fix?
->>>
->>> Sent from my Android phone using TouchDown (www.nitrodesk.com)
->>>
->>> -----Original Message-----
->>> *From:* Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
->>> *Received:* Thursday, 30 Jan 2014, 6:37am
->>> *To:* Shilimkar, Santosh [santosh.shilimkar@ti.com]
->>> *CC:* mturquette@linaro.org [mturquette@linaro.org];
->>> linux-arm-kernel@lists.infradead.org [linux-arm-kernel@lists.infradead.org];
->>> linux-kernel@vger.kernel.org [linux-kernel@vger.kernel.org]; Khoronzhuk, Ivan
->>> [ivan.khoronzhuk@ti.com]
->>> *Subject:* [PATCH] clk: keystone: gate: fix clk_init_data initialization
->>>
->>> In clk_register_psc() function clk_init_data struct is allocated
->>> in the stack. All members of this struct should be initialized
->>> before using otherwise it will contain garbage. So initialize flags
->>> in this structure too.
->>>
->>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> ---
->>>     drivers/clk/keystone/gate.c | 1 +
->>>     1 file changed, 1 insertion(+)
->>>
->>> diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
->>> index 17a5983..86f1e36 100644
->>> --- a/drivers/clk/keystone/gate.c
->>> +++ b/drivers/clk/keystone/gate.c
->>> @@ -179,6 +179,7 @@ static struct clk *clk_register_psc(struct device *dev,
->>>
->>>             init.name = name;
->>>             init.ops = &clk_psc_ops;
->>> +       init.flags = 0;
->>>             init.parent_names = (parent_name ? &parent_name : NULL);
->>>             init.num_parents = (parent_name ? 1 : 0);
->>>
->>> -- 
->>> 1.8.3.2
->>>
+   Probably every Linux newcomer's going to have concerns regarding
+low free memory and hear an explanation from Linux old fellows that's
+actually there's plenty of -- it's just cached, but when it's needed
+for applications it's gonna be used -- on demand. I also thought so
+until recently I noticed that even when free memory's is almost
+exhausted (~ 75 Mib), and processes are in sleep_on_page_killable, the
+cache is somewhat like ~ 500 MiB and it's not going to return back
+what it's gained. Naturally, vm.drop_caches 3 doesn't squeeze it as
+well. That drama has been happening on rather
+outdated-but-yet-still-has-2GiB-of-RAM notebook with kernel from 3.10
+till 3.12.9 (3.13 is the first release for a long time which simply
+freezes the notebook so cold, that SysRq_B's not working, but that's
+another story). Everything RAM demanding just yet crawls, load average
+is getting higher and there's no paging out, but on going disk mostly
+_read_ and a bit write activity. If vm.swaPPineSS not 0, it's swapping
+out, but not much, right now I ran Chromium (in addition to long-run
+Firefox) and only 32 MiB went to swap, load avg. ~ 7
 
+   Again: 25 % is told (by top, free and finally /proc/meminfo) to be
+cached, but kinda greedy.
+
+   I came across similar issue report:
+http://www.spinics.net/lists/linux-btrfs/msg11723.html but still
+questions remain:
+
+   * How to analyze it? slabtop doesn't mention even 100 MiB of slab
+   * Why that's possible?
+   * The system is on Btrfs but /home is on XFS, so disk I/O might be
+related to text segment paging? But anyway this leads us to question,
+hey, there's 500 MiB free^Wcached.
+
+   While I'm thinking about moving system back to XFS...
+
+   P. S. While writing these, swapped ~ 100 MiB, and cache reduced(!)
+to 377 MiB, Firefox is mostly in "D" -- sleep_on_page_killable, so is
+Chrome, load avg. ~ 7. I had to close Skype to be able to finish that
+letter, and cached mem. now is 439 MiB. :) I know it's time to
+upgrade, but hey, cached memory is free memory, right?
+
+-- 
+End of message. Next message?
