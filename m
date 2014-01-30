@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaA3Nrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:47:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33975 "EHLO mx1.redhat.com"
+	id S1753218AbaA3Nty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 08:49:54 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58455 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917AbaA3Nrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:47:35 -0500
-Date: Thu, 30 Jan 2014 14:49:09 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>, linux-wireless@vger.kernel.org,
-        ath10k@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: [PATCH v3 3/3] ath10k: Use pci_enable_msi_range()
-Message-ID: <20140130134908.GC31909@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
+	id S1752873AbaA3Ntw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 08:49:52 -0500
+Message-ID: <52EA5866.3090706@ti.com>
+Date: Thu, 30 Jan 2014 15:49:26 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: keystone: gate: fix clk_init_data initialization
+References: <1391081821-13306-1-git-send-email-ivan.khoronzhuk@ti.com> <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com>
+In-Reply-To: <448912EABC71F84BBCADFD3C67C4BE52A0B4EB@DBDE04.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+Yes. As result the clk->flag field contains garbage. In my case it leads
+that flag CLK_IGNORE_UNUSED is set for most of clocks.  As result a bunch
+of unused clocks cannot be disabled.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/wireless/ath/ath10k/pci.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+On 01/30/2014 03:26 PM, Shilimkar, Santosh wrote:
+> Can u capture the issue withiout this fix?
+>
+> Sent from my Android phone using TouchDown (www.nitrodesk.com)
+>
+> -----Original Message-----
+> *From:* Khoronzhuk, Ivan [ivan.khoronzhuk@ti.com]
+> *Received:* Thursday, 30 Jan 2014, 6:37am
+> *To:* Shilimkar, Santosh [santosh.shilimkar@ti.com]
+> *CC:* mturquette@linaro.org [mturquette@linaro.org];
+> linux-arm-kernel@lists.infradead.org [linux-arm-kernel@lists.infradead.org];
+> linux-kernel@vger.kernel.org [linux-kernel@vger.kernel.org]; Khoronzhuk, Ivan
+> [ivan.khoronzhuk@ti.com]
+> *Subject:* [PATCH] clk: keystone: gate: fix clk_init_data initialization
+>
+> In clk_register_psc() function clk_init_data struct is allocated
+> in the stack. All members of this struct should be initialized
+> before using otherwise it will contain garbage. So initialize flags
+> in this structure too.
+>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+>    drivers/clk/keystone/gate.c | 1 +
+>    1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
+> index 17a5983..86f1e36 100644
+> --- a/drivers/clk/keystone/gate.c
+> +++ b/drivers/clk/keystone/gate.c
+> @@ -179,6 +179,7 @@ static struct clk *clk_register_psc(struct device *dev,
+>
+>            init.name = name;
+>            init.ops = &clk_psc_ops;
+> +       init.flags = 0;
+>            init.parent_names = (parent_name ? &parent_name : NULL);
+>            init.num_parents = (parent_name ? 1 : 0);
+>
+> -- 
+> 1.8.3.2
+>
 
-diff --git a/drivers/net/wireless/ath/ath10k/pci.c b/drivers/net/wireless/ath/ath10k/pci.c
-index 563ce77..ad2a6cf 100644
---- a/drivers/net/wireless/ath/ath10k/pci.c
-+++ b/drivers/net/wireless/ath/ath10k/pci.c
-@@ -2411,8 +2411,9 @@ static int ath10k_pci_init_irq(struct ath10k *ar)
- 	/* Try MSI-X */
- 	if (ath10k_pci_irq_mode == ATH10K_PCI_IRQ_AUTO && msix_supported) {
- 		ar_pci->num_msi_intrs = MSI_NUM_REQUEST;
--		ret = pci_enable_msi_block(ar_pci->pdev, ar_pci->num_msi_intrs);
--		if (ret == 0)
-+		ret = pci_enable_msi_range(ar_pci->pdev, ar_pci->num_msi_intrs,
-+							 ar_pci->num_msi_intrs);
-+		if (ret > 0)
- 			return 0;
- 
- 		/* fall-through */
--- 
-1.7.7.6
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
