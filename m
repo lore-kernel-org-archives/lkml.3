@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaA3U5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 15:57:11 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:42696 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaA3U5K (ORCPT
+	id S1753543AbaA3U6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 15:58:05 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:34307 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916AbaA3U6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 15:57:10 -0500
+	Thu, 30 Jan 2014 15:58:03 -0500
+Date: Thu, 30 Jan 2014 12:58:00 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jonathan Gonzalez <jgonzalez@linets.cl>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm, hugetlb: gimme back my page
+In-Reply-To: <52EA57AC.3090700@oracle.com>
+Message-ID: <alpine.DEB.2.02.1401301256540.15271@chino.kir.corp.google.com>
+References: <1391063823.2931.3.camel@buesod1.americas.hpqcorp.net> <52EA57AC.3090700@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6jobif4fNJdFKtWvSdPbnhioKPOj4kD=V8-_m0C4AFmw@mail.gmail.com>
-References: <CA+5PVA4Oj7XOZSEYqXGE7ZPVVK1oEHEc-w_DniCediWGVhrmhQ@mail.gmail.com>
-	<20140130190513.GB16260@htj.dyndns.org>
-	<CA+5PVA6jobif4fNJdFKtWvSdPbnhioKPOj4kD=V8-_m0C4AFmw@mail.gmail.com>
-Date: Thu, 30 Jan 2014 15:57:09 -0500
-X-Google-Sender-Auth: 7gedCVSjamx7Wf21J3mOVGKh8nM
-Message-ID: <CA+5PVA6RXSwaSYnc7fdL84DbzXyXqwt=fgD6SMMec0X20n-Atw@mail.gmail.com>
-Subject: Re: kernfs oops with i915+i2c_core in 3.14 merge window
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, Wolfram Sang <wsa@the-dreams.de>,
-        intel-gfx@lists.freedesktop.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 2:20 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> On Thu, Jan 30, 2014 at 2:05 PM, Tejun Heo <tj@kernel.org> wrote:
->> On Thu, Jan 30, 2014 at 02:03:18PM -0500, Josh Boyer wrote:
->>> Hi All,
->>>
->>> I'm seeing the oops below on my MacBookPro 10,2 machine using i915
->>> graphics.  It's after the DRM merge for 3.14 ( v3.13-10094-g9b0cd30) ,
->>> but we seem to have one report[1] of this happening well before that,
->>> in v3.13-3260-g03d11a0 as well.  Does anyone have a clue what is going
->>> on here?
->>>
->>> https://bugzilla.redhat.com/show_bug.cgi?id=1055105
->>
->> Should be fixed by the following patch which is already queued.
->>
->>  http://lkml.kernel.org/g/20140129170403.GJ30842@htj.dyndns.org
->
-> Oh, excellent!  I'll throw that into a build and test it here.  Thanks
-> for the quick reply, Tejun.
+On Thu, 30 Jan 2014, Sasha Levin wrote:
 
-FWIW, my test build with that patch does seem to solve the problem.
-Thanks again.
+> VM_BUG_ON_PAGE is just a VM_BUG_ON that does dump_page before the BUG().
+> 
+> The only reason to use VM_BUG_ON instead of VM_BUG_ON_PAGE is if the page
+> you're working
+> with doesn't make sense/isn't useful as debug output.
+> 
+> If doing a dump_page is causing issues somewhere then dump_pages should be
+> fixed - instead
+> of hiding the problem under the rug by not using it.
+> 
 
-josh
+It sounds like dump_page() isn't necessarily at fault itself but rather 
+that using it is opening a race even wider that causes this failure to 
+occur more often than it normally would.
