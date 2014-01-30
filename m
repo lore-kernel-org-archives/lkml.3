@@ -1,130 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbaA3Kq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 05:46:27 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:51217 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaA3KqY (ORCPT
+	id S1752950AbaA3KtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 05:49:25 -0500
+Received: from www84.your-server.de ([213.133.104.84]:58836 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696AbaA3KtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 05:46:24 -0500
-Date: Thu, 30 Jan 2014 02:46:19 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Sage Weil <sage@inktank.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [GIT PULL] Ceph updates for -rc1
-Message-ID: <20140130104619.GA13139@infradead.org>
-References: <alpine.DEB.2.00.1401281032560.16427@cobra.newdream.net>
- <20140128211021.GB1377@redhat.com>
- <CA+55aFxmQZ+sAC+_a=QXUSVQ1e=cSVkeZVL4d8kawFp9N5eS-w@mail.gmail.com>
- <alpine.DEB.2.00.1401282145410.17720@cobra.newdream.net>
- <alpine.DEB.2.00.1401290623040.27886@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1401290623040.27886@cobra.newdream.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 30 Jan 2014 05:49:24 -0500
+From: stefani@seibold.net
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH 2/4] Add new func _install_special_mapping() to mmap.c
+Date: Thu, 30 Jan 2014 11:49:11 +0100
+Message-Id: <1391078953-1575-3-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 06:30:00AM -0800, Sage Weil wrote:
-> The set_acl inode_operation wasn't getting set, and the prototype needed 
-> to be adjusted a bit (it doesn't take a dentry anymore).  All seems to be 
-> well with the below patch.
+From: Stefani Seibold <stefani@seibold.net>
 
-Btw, there's a few minor bits that should go on top of yours:
+The _install_special_mapping() is the new base function for
+install_special_mapping(). This function will return a pointer of the
+created VMA or a error code in an ERR_PTR()
 
- - ->get_acl only gets called after we checked for a cached ACL, so no
-   need to call get_cached_acl again.
- - no need to check IS_POSIXACL in ->get_acl, without that it should
-   never get set as all the callers that set it already have the check.
- - you should be able to use the full posix_acl_create in CEPH
+This new function will be needed by the for the vdso 32 bit support to map the
+additonal vvar and hpet pages into the 32 bit address space. This will be done
+with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
 
-Untested patch below:
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ include/linux/mm.h |  3 +++
+ mm/mmap.c          | 20 ++++++++++++++++----
+ 2 files changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ceph/acl.c b/fs/ceph/acl.c
-index 66d377a..9ab312e 100644
---- a/fs/ceph/acl.c
-+++ b/fs/ceph/acl.c
-@@ -66,13 +66,6 @@ struct posix_acl *ceph_get_acl(struct inode *inode, int type)
- 	char *value = NULL;
- 	struct posix_acl *acl;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d9992fc..dcb3e4b 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1740,6 +1740,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
+ extern struct file *get_mm_exe_file(struct mm_struct *mm);
  
--	if (!IS_POSIXACL(inode))
--		return NULL;
--
--	acl = ceph_get_cached_acl(inode, type);
--	if (acl != ACL_NOT_CACHED)
--		return acl;
--
- 	switch (type) {
- 	case ACL_TYPE_ACCESS:
- 		name = POSIX_ACL_XATTR_ACCESS;
-@@ -190,41 +183,24 @@ out:
- 
- int ceph_init_acl(struct dentry *dentry, struct inode *inode, struct inode *dir)
+ extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
++extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
++				   unsigned long addr, unsigned long len,
++				   unsigned long flags, struct page **pages);
+ extern int install_special_mapping(struct mm_struct *mm,
+ 				   unsigned long addr, unsigned long len,
+ 				   unsigned long flags, struct page **pages);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 20ff0c3..81ba54f 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
+  * The array pointer and the pages it points to are assumed to stay alive
+  * for as long as this mapping might exist.
+  */
+-int install_special_mapping(struct mm_struct *mm,
++struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
+ 			    unsigned long addr, unsigned long len,
+ 			    unsigned long vm_flags, struct page **pages)
  {
--	struct posix_acl *acl = NULL;
--	int ret = 0;
--
--	if (!S_ISLNK(inode->i_mode)) {
--		if (IS_POSIXACL(dir)) {
--			acl = ceph_get_acl(dir, ACL_TYPE_DEFAULT);
--			if (IS_ERR(acl)) {
--				ret = PTR_ERR(acl);
--				goto out;
--			}
--		}
-+	struct posix_acl *default_acl, *acl;
-+	int error;
+@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
  
--		if (!acl)
--			inode->i_mode &= ~current_umask();
--	}
-+	error = posix_acl_create(dir, &inode->i_mode, &default_acl, &acl);
-+	if (error)
-+		return error;
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+ 	if (unlikely(vma == NULL))
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
  
--	if (IS_POSIXACL(dir) && acl) {
--		if (S_ISDIR(inode->i_mode)) {
--			ret = ceph_set_acl(inode, acl, ACL_TYPE_DEFAULT);
--			if (ret)
--				goto out_release;
--		}
--		ret = __posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
--		if (ret < 0)
--			goto out;
--		else if (ret > 0)
--			ret = ceph_set_acl(inode, acl, ACL_TYPE_ACCESS);
--		else
--			cache_no_acl(inode);
--	} else {
-+	if (!default_acl && !acl)
- 		cache_no_acl(inode);
--	}
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 	vma->vm_mm = mm;
+@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
  
--out_release:
--	posix_acl_release(acl);
--out:
+ 	perf_event_mmap(vma);
+ 
+-	return 0;
++	return vma;
+ 
+ out:
+ 	kmem_cache_free(vm_area_cachep, vma);
 -	return ret;
-+	if (default_acl) {
-+		error = ceph_set_acl(inode, default_acl, ACL_TYPE_DEFAULT);
-+		posix_acl_release(default_acl);
-+	}
-+	if (acl) {
-+		if (!error)
-+			error = ceph_set_acl(inode, acl, ACL_TYPE_ACCESS);
-+		posix_acl_release(acl);
-+	}
-+	return error;
++	return ERR_PTR(ret);
++}
++
++int install_special_mapping(struct mm_struct *mm,
++			    unsigned long addr, unsigned long len,
++			    unsigned long vm_flags, struct page **pages)
++{
++	struct vm_area_struct *vma = _install_special_mapping(mm,
++			    addr, len, vm_flags, pages);
++
++	if (IS_ERR(vma))
++		return PTR_ERR(vma);
++	return 0;
  }
+ 
+ static DEFINE_MUTEX(mm_all_locks_mutex);
+-- 
+1.8.5.3
+
