@@ -1,88 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaA3NEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 08:04:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39482 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaA3NEI (ORCPT
+	id S1753253AbaA3NFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 08:05:14 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:38211 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195AbaA3NFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 08:04:08 -0500
-Date: Thu, 30 Jan 2014 05:05:15 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Satish Patel <satish.patel@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        rob@landley.net, tony@atomide.com, grant.likely@linaro.org,
-        robh+dt@kernel.org
-Subject: Re: [PATCH v2 0/5] Smart Card(SC) interface, TI USIM & NxP SC phy
- driver
-Message-ID: <20140130130515.GC23970@kroah.com>
-References: <1390192434-19386-1-git-send-email-satish.patel@ti.com>
- <52E9E8B0.2020000@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52E9E8B0.2020000@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 30 Jan 2014 08:05:12 -0500
+From: Tom Gundersen <teg@jklm.no>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, John Fastabend <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Vlad Yasevich <vyasevich@gmail.com>, Tom Gundersen <teg@jklm.no>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] rtnetlink: return the newly created link in response to newlink
+Date: Thu, 30 Jan 2014 14:05:44 +0100
+Message-Id: <1391087144-24490-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 11:22:48AM +0530, Satish Patel wrote:
-> 
-> On 1/20/2014 10:03 AM, Satish Patel wrote:
-> > Changes from v1:
-> > * RFC(v1) comments are fixed
-> >
-> > ** removed "gpio_to_irq" as GPIO controller process  cell from DT and
-> > give it to DT node
-> > ** comments on documentation
-> > ** few other comments on null checks are resolved
-> >
-> > * BWT timing configuration is added to ti-usim driver
-> >
-> > v1 cover letter link#
-> > https://lkml.org/lkml/2014/1/6/250
-> >
-> > Satish Patel (5):
-> >   sc_phy:SmartCard(SC) PHY interface to SC controller
-> >   misc: tda8026: Add NXP TDA8026 PHY driver
-> >   char: ti-usim: Add driver for USIM module on AM43xx
-> >   ARM: dts: AM43xx: DT entries added for ti-usim
-> >   ARM: dts: AM43xx-epos-evm: DT entries  for ti-usim and phy
-> >
-> >  Documentation/devicetree/bindings/misc/tda8026.txt |   19 +
-> >  .../devicetree/bindings/ti-usim/ti-usim.txt        |   31 +
-> >  Documentation/sc_phy.txt                           |  171 ++
-> >  arch/arm/boot/dts/am4372.dtsi                      |   10 +
-> >  arch/arm/boot/dts/am43x-epos-evm.dts               |   43 +
-> >  drivers/char/Kconfig                               |    7 +
-> >  drivers/char/Makefile                              |    1 +
-> >  drivers/char/ti-usim-hw.h                          |  863 +++++++++
-> >  drivers/char/ti-usim.c                             | 1859 ++++++++++++++++++++
-> >  drivers/misc/Kconfig                               |    7 +
-> >  drivers/misc/Makefile                              |    1 +
-> >  drivers/misc/tda8026.c                             | 1255 +++++++++++++
-> >  include/linux/sc_phy.h                             |  132 ++
-> >  include/linux/ti-usim.h                            |   98 +
-> >  14 files changed, 4497 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/misc/tda8026.txt
-> >  create mode 100644 Documentation/devicetree/bindings/ti-usim/ti-usim.txt
-> >  create mode 100644 Documentation/sc_phy.txt
-> >  create mode 100644 drivers/char/ti-usim-hw.h
-> >  create mode 100644 drivers/char/ti-usim.c
-> >  create mode 100644 drivers/misc/tda8026.c
-> >  create mode 100644 include/linux/sc_phy.h
-> >  create mode 100644 include/linux/ti-usim.h
-> Any comments on this patch series ?
-> 
-> If not,
-> Can you accept these patches for next merge window
+Userspace needs to reliably know the ifindex of the netdevs it creates,
+as we cannot rely on the ifname staying unchanged.
 
-It's the middle of this merge window, and I can't accept any patches
-until after 3.14-rc1 is out, at which point I'll start to work on my
-patch backlog.
+Earlier, a simlpe NLMSG_ERROR would be returned, but this returns the
+corresponding RTM_NEWLINK on success instead.
 
-thanks,
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: David S. Miller <davem@davemloft.net>
+---
+ net/core/rtnetlink.c | 100 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 52 insertions(+), 48 deletions(-)
 
-greg k-h
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index cf67144..31c1322 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1725,6 +1725,54 @@ static int rtnl_group_changelink(struct net *net, int group,
+ 	return 0;
+ }
+ 
++static int rtnl_getlink(struct sk_buff *skb, struct nlmsghdr* nlh)
++{
++	struct net *net = sock_net(skb->sk);
++	struct ifinfomsg *ifm;
++	char ifname[IFNAMSIZ];
++	struct nlattr *tb[IFLA_MAX+1];
++	struct net_device *dev = NULL;
++	struct sk_buff *nskb;
++	int err;
++	u32 ext_filter_mask = 0;
++
++	err = nlmsg_parse(nlh, sizeof(*ifm), tb, IFLA_MAX, ifla_policy);
++	if (err < 0)
++		return err;
++
++	if (tb[IFLA_IFNAME])
++		nla_strlcpy(ifname, tb[IFLA_IFNAME], IFNAMSIZ);
++
++	if (tb[IFLA_EXT_MASK])
++		ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
++
++	ifm = nlmsg_data(nlh);
++	if (ifm->ifi_index > 0)
++		dev = __dev_get_by_index(net, ifm->ifi_index);
++	else if (tb[IFLA_IFNAME])
++		dev = __dev_get_by_name(net, ifname);
++	else
++		return -EINVAL;
++
++	if (dev == NULL)
++		return -ENODEV;
++
++	nskb = nlmsg_new(if_nlmsg_size(dev, ext_filter_mask), GFP_KERNEL);
++	if (nskb == NULL)
++		return -ENOBUFS;
++
++	err = rtnl_fill_ifinfo(nskb, dev, RTM_NEWLINK, NETLINK_CB(skb).portid,
++			       nlh->nlmsg_seq, 0, 0, ext_filter_mask);
++	if (err < 0) {
++		/* -EMSGSIZE implies BUG in if_nlmsg_size */
++		WARN_ON(err == -EMSGSIZE);
++		kfree_skb(nskb);
++	} else
++		err = rtnl_unicast(nskb, net, NETLINK_CB(skb).portid);
++
++	return err;
++}
++
+ static int rtnl_newlink(struct sk_buff *skb, struct nlmsghdr *nlh)
+ {
+ 	struct net *net = sock_net(skb->sk);
+@@ -1871,63 +1919,19 @@ replay:
+ 			goto out;
+ 		}
+ 
++		ifm->ifi_index = dev->ifindex;
++
+ 		err = rtnl_configure_link(dev, ifm);
+ 		if (err < 0)
+ 			unregister_netdevice(dev);
++		else
++			rtnl_getlink(skb, nlh);
+ out:
+ 		put_net(dest_net);
+ 		return err;
+ 	}
+ }
+ 
+-static int rtnl_getlink(struct sk_buff *skb, struct nlmsghdr* nlh)
+-{
+-	struct net *net = sock_net(skb->sk);
+-	struct ifinfomsg *ifm;
+-	char ifname[IFNAMSIZ];
+-	struct nlattr *tb[IFLA_MAX+1];
+-	struct net_device *dev = NULL;
+-	struct sk_buff *nskb;
+-	int err;
+-	u32 ext_filter_mask = 0;
+-
+-	err = nlmsg_parse(nlh, sizeof(*ifm), tb, IFLA_MAX, ifla_policy);
+-	if (err < 0)
+-		return err;
+-
+-	if (tb[IFLA_IFNAME])
+-		nla_strlcpy(ifname, tb[IFLA_IFNAME], IFNAMSIZ);
+-
+-	if (tb[IFLA_EXT_MASK])
+-		ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+-
+-	ifm = nlmsg_data(nlh);
+-	if (ifm->ifi_index > 0)
+-		dev = __dev_get_by_index(net, ifm->ifi_index);
+-	else if (tb[IFLA_IFNAME])
+-		dev = __dev_get_by_name(net, ifname);
+-	else
+-		return -EINVAL;
+-
+-	if (dev == NULL)
+-		return -ENODEV;
+-
+-	nskb = nlmsg_new(if_nlmsg_size(dev, ext_filter_mask), GFP_KERNEL);
+-	if (nskb == NULL)
+-		return -ENOBUFS;
+-
+-	err = rtnl_fill_ifinfo(nskb, dev, RTM_NEWLINK, NETLINK_CB(skb).portid,
+-			       nlh->nlmsg_seq, 0, 0, ext_filter_mask);
+-	if (err < 0) {
+-		/* -EMSGSIZE implies BUG in if_nlmsg_size */
+-		WARN_ON(err == -EMSGSIZE);
+-		kfree_skb(nskb);
+-	} else
+-		err = rtnl_unicast(nskb, net, NETLINK_CB(skb).portid);
+-
+-	return err;
+-}
+-
+ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
+ {
+ 	struct net *net = sock_net(skb->sk);
+-- 
+1.8.5.3
+
