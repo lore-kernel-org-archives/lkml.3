@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaA3MjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:39:22 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47495 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaA3MjV (ORCPT
+	id S1752840AbaA3MpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:45:10 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:59820 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaA3MpJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:39:21 -0500
-Date: Thu, 30 Jan 2014 13:39:18 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, pmladek@suse.cz,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] block: Stop abusing rq->csd.list in blk-softirq
-Message-ID: <20140130123917.GA5339@localhost.localdomain>
-References: <1387831171-5264-1-git-send-email-jack@suse.cz>
- <1387831171-5264-3-git-send-email-jack@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387831171-5264-3-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 Jan 2014 07:45:09 -0500
+Date: Thu, 30 Jan 2014 13:44:48 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>
+Cc: Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RFC] dtc: add ability to make nodes conditional on them being
+ referenced
+Message-ID: <20140130134448.682ab850@ipc1.ka-ro>
+In-Reply-To: <1578575.rVWgTPdq1W@phil>
+References: <1578575.rVWgTPdq1W@phil>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+Hi,
 
-I'm currently working on some cleanups on IPI code too and working on top
-of these patches, just have a few comments:
-
-On Mon, Dec 23, 2013 at 09:39:23PM +0100, Jan Kara wrote:
-> Abusing rq->csd.list for a list of requests to complete is rather ugly.
-> Especially since using queuelist should be safe and much cleaner.
-
-It would be nice to have a few more details that explain why doing so is safe
-wrt a block request lifecycle. At least something that tells why rq->queuelist
-can't be ever used concurrently by the time we send the IPI and we trigger/raise
-the softirq.
-
+Heiko Stübner wrote:
+> From: Heiko Stuebner <heiko.stuebner@bqreaders.com>
 > 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  block/blk-softirq.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> On i.MX, which carries a lot of pin-groups of which most are unused on
+> individual boards, they noticed that this plehora of nodes also results
+> in the runtime-lookup-performance also degrading [0].
 > 
-> diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-> index 57790c1a97eb..7ea5534096d5 100644
-> --- a/block/blk-softirq.c
-> +++ b/block/blk-softirq.c
-> @@ -30,8 +30,8 @@ static void blk_done_softirq(struct softirq_action *h)
->  	while (!list_empty(&local_list)) {
->  		struct request *rq;
->  
-> -		rq = list_entry(local_list.next, struct request, csd.list);
-> -		list_del_init(&rq->csd.list);
-> +		rq = list_entry(local_list.next, struct request, queuelist);
-> +		list_del_init(&rq->queuelist);
->  		rq->q->softirq_done_fn(rq);
->  	}
->  }
-> @@ -45,9 +45,9 @@ static void trigger_softirq(void *data)
->  
->  	local_irq_save(flags);
->  	list = this_cpu_ptr(&blk_cpu_done);
-> -	list_add_tail(&rq->csd.list, list);
-> +	list_add_tail(&rq->queuelist, list);
-
-And given that's an alternate use of rq->queuelist, perhaps add a comment
-to unconfuse people.
-
-Thanks.
-
->  
-> -	if (list->next == &rq->csd.list)
-> +	if (list->next == &rq->queuelist)
->  		raise_softirq_irqoff(BLOCK_SOFTIRQ);
->  
->  	local_irq_restore(flags);
-> @@ -136,7 +136,7 @@ void __blk_complete_request(struct request *req)
->  		struct list_head *list;
->  do_local:
->  		list = this_cpu_ptr(&blk_cpu_done);
-> -		list_add_tail(&req->csd.list, list);
-> +		list_add_tail(&req->queuelist, list);
->  
->  		/*
->  		 * if the list only contains our just added request,
-> @@ -144,7 +144,7 @@ do_local:
->  		 * entries there, someone already raised the irq but it
->  		 * hasn't run yet.
->  		 */
-> -		if (list->next == &req->csd.list)
-> +		if (list->next == &req->queuelist)
->  			raise_softirq_irqoff(BLOCK_SOFTIRQ);
->  	} else if (raise_blk_irq(ccpu, req))
->  		goto do_local;
-> -- 
-> 1.8.1.4
+> A i.MX-specific solution defining the pingroups in the board files but
+> using macros to reference the pingroup-data was not well received
 > 
+> This patch is trying to solve this issue in a more general way, by
+> adding the ability to mark nodes as needing to be referenced somewhere
+> in the tree.
+> 
+> To mark a node a needing to be referenced it must be prefixed with
+> /delete-unreferenced/. This makes dtc check the nodes reference-status
+> when creating the flattened tree, dropping it if unreferenced.
+> 
+> For example, the i.MX6SL pingroup
+> 
+> 	/delete-uneferenced/ pinctrl_ecspi1_1: ecspi1grp-1 {
+                 ^^
+s/unef/unref/
+not really important here, but bad for copy/pasters
+
+
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
