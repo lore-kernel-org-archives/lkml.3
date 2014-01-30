@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaA3WQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 17:16:13 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:38951 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983AbaA3WQM convert rfc822-to-8bit (ORCPT
+	id S1753992AbaA3WRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 17:17:32 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:63331 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348AbaA3WRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 17:16:12 -0500
+	Thu, 30 Jan 2014 17:17:30 -0500
+Date: Thu, 30 Jan 2014 14:17:28 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Randy Dunlap <rdunlap@infradead.org>
+cc: Andiry Xu <andiry@gmail.com>, linux-kernel@vger.kernel.org,
+        Andiry Xu <andiry.xu@gmail.com>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
+In-Reply-To: <52EAB56E.2030102@infradead.org>
+Message-ID: <alpine.DEB.2.02.1401301416030.15271@chino.kir.corp.google.com>
+References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com> <52EAA714.3080809@infradead.org> <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com> <52EAB56E.2030102@infradead.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com>
-References: <20140126122729.32113.19659.stgit@warthog.procyon.org.uk>
- <8761p1m98f.fsf@xmission.com> <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com>
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Thu, 30 Jan 2014 23:15:31 +0100
-Message-ID: <CAHYPw2GborA=wnnVyifmK-Mew0yvdhrk0W69DcWK65XE4jfF8Q@mail.gmail.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-afs@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-30 Linus Torvalds <torvalds@linux-foundation.org>:
-> On Thu, Jan 30, 2014 at 1:48 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>
->> These files have been read-only since this code was merged in 2002.
->> Over a decade of not being used seems like a strong indication that no
->> one cares about the write path.
->
-> I think this is a pretty strong argument. Counter-arguments, anybody?
->
->                      Linus
+On Thu, 30 Jan 2014, Randy Dunlap wrote:
 
-Hi!
+> >>> Hi,
+> >>>
+> >>> In kernel-parameters.txt, there is following description:
+> >>>
+> >>> memmap=nn[KMG]$ss[KMG]
+> >>>                         [KNL,ACPI] Mark specific memory as reserved.
+> >>>                         Region of memory to be used, from ss to ss+nn.
+> >>
+> >> Should be:
+> >>                           Region of memory to be reserved, from ss to ss+nn.
+> >>
+> >> but that doesn't help with the problem that you describe, does it?
+> >>
+> > 
+> > Actually it should be:
+> >                              Region of memory to be reserved, from nn to nn+ss.
+> > 
+> > That is, exchange nn and ss.
+> 
+> Yes, I understand that that's what you are reporting.  I just haven't yet
+> worked out how the code manages to exchange those 2 values.
+> 
 
-In afs documentation is written that you need to write to these files. See:
-
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/filesystems/afs.txt#n82
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/filesystems/afs.txt#n159
-
-Without cells file, you cannot specify other cell servers and you can
-use only one rootcell which was specified in kernel cmdline. So for
-mounting other server, you need to reboot kernel (if you compiled afs
-driver statically) and without cells file there is no other option to
-mount more afs servers... (or at least it is not written in that
-documentation). So I think without write access it is hard or maybe
-impossible to use afs driver.
-
-But maybe, afs maintainers or other afs developers should write more
-info about it (or update documentation if is old).
-
--- 
-Pali Rohár
-pali.rohar@gmail.com
+It doesn't, the documentation is correct as written and could be improved 
+by your suggestion of "Region of memory to be reserved, from ss to ss+nn."  
+I think Andiry probably is having a problem with his bootloader 
+interpreting the '$' incorrectly (or variable expansion if coming from the 
+shell) or interpreting the resulting user-defined e820 map incorrectly.
