@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626AbaA3P1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:27:53 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:35487 "EHLO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406AbaA3P1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:27:52 -0500
-Message-ID: <52EA6F6E.1010405@epfl.ch>
-Date: Thu, 30 Jan 2014 16:27:42 +0100
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753436AbaA3Pb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:31:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53091 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950AbaA3Pb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 10:31:56 -0500
+Date: Thu, 30 Jan 2014 16:31:50 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: nicolas.pitre@linaro.org, mingo@redhat.com, tglx@linutronix.de,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
+Message-ID: <20140130153150.GD5002@laptop.programming.kicks-ass.net>
+References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
+ <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] can: sja1000: cleanups and new OF property
-References: <1391092168-21246-1-git-send-email-florian.vaussard@epfl.ch> <52EA6E31.2030604@pengutronix.de>
-In-Reply-To: <52EA6E31.2030604@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jan 30, 2014 at 03:09:22PM +0100, Daniel Lezcano wrote:
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 90aef084..130debf 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -654,6 +654,9 @@ struct rq {
+>  #endif
+>  
+>  	struct sched_avg avg;
+> +#ifdef CONFIG_CPU_IDLE
+> +	int idle_index;
+> +#endif
+>  };
 
-On 01/30/2014 04:22 PM, Marc Kleine-Budde wrote:
-> Hello Florian,
-> 
-> On 01/30/2014 03:29 PM, Florian Vaussard wrote:
->> The first part of this series performs serveral small cleanups
->> (patches 1 to 3).
-> 
-> Thanks for your contribution. I like patches 1 and 2.
-> 
->> The second part introduces the 'reg-io-width' binding (already used
->> by some other drivers) to perform a similar job as what was done
->> with IORESOURCE_MEM_XXBIT on the sja1000_platform. This is needed
->> on my system to correctly take into account the aliasing of the
->> address bus.
-> 
-> And I appreciate the improvements for the of_platform driver. However
-> that driver was written back when it was not possible to have platform
-> and of bindings in the same driver. So I'd like to see that the
-> of_platform driver gets merged into the platform driver.
-> 
-
-Fine. Is an incremental patch on top of this series ok for you ?
-
-Regards,
-
-Florian
+So my 'problem' with this is that I've no ff'ing clue what the
+idle_index is and what I can do with it.
