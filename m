@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaA3XuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:50:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35844 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaA3Xtz (ORCPT
+	id S1753955AbaA3XwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 18:52:19 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:63901 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795AbaA3XwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:49:55 -0500
-Message-ID: <52EAE51D.4030709@infradead.org>
-Date: Thu, 30 Jan 2014 15:49:49 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 30 Jan 2014 18:52:17 -0500
 MIME-Version: 1.0
-To: Andiry Xu <andiry.xu@gmail.com>
-CC: David Rientjes <rientjes@google.com>, Andiry Xu <andiry@gmail.com>,
-        linux-kernel@vger.kernel.org, Linux MM <linux-mm@kvack.org>
-Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
-References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>	<52EAA714.3080809@infradead.org>	<CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>	<52EAB56E.2030102@infradead.org>	<alpine.DEB.2.02.1401301416030.15271@chino.kir.corp.google.com>	<52EAD810.40204@infradead.org> <CAOmQrk1aghJrFb6RNO1yTwN51Brk_88O9k8OuCm_QshP3zag-Q@mail.gmail.com>
-In-Reply-To: <CAOmQrk1aghJrFb6RNO1yTwN51Brk_88O9k8OuCm_QshP3zag-Q@mail.gmail.com>
+In-Reply-To: <20140129133227.GQ3867@lukather>
+References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
+	<20140129122520.GY11841@sirena.org.uk>
+	<20140129133227.GQ3867@lukather>
+Date: Thu, 30 Jan 2014 15:52:16 -0800
+Message-ID: <CAGa+x854huSmiWmEv2EgOPUgZKcp3iitNaBvKXt8DiEj8msSVg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI controller driver
+From: Kevin Hilman <khilman@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
+        linux-spi@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2014 03:43 PM, Andiry Xu wrote:
-> On Thu, Jan 30, 2014 at 2:54 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->> On 01/30/2014 02:17 PM, David Rientjes wrote:
->>> On Thu, 30 Jan 2014, Randy Dunlap wrote:
->>>
->>>>>>> Hi,
->>>>>>>
->>>>>>> In kernel-parameters.txt, there is following description:
->>>>>>>
->>>>>>> memmap=nn[KMG]$ss[KMG]
->>>>>>>                         [KNL,ACPI] Mark specific memory as reserved.
->>>>>>>                         Region of memory to be used, from ss to ss+nn.
->>>>>>
->>>>>> Should be:
->>>>>>                           Region of memory to be reserved, from ss to ss+nn.
->>>>>>
->>>>>> but that doesn't help with the problem that you describe, does it?
->>>>>>
->>>>>
->>>>> Actually it should be:
->>>>>                              Region of memory to be reserved, from nn to nn+ss.
->>>>>
->>>>> That is, exchange nn and ss.
->>>>
->>>> Yes, I understand that that's what you are reporting.  I just haven't yet
->>>> worked out how the code manages to exchange those 2 values.
->>>>
->>>
->>> It doesn't, the documentation is correct as written and could be improved
->>> by your suggestion of "Region of memory to be reserved, from ss to ss+nn."
->>> I think Andiry probably is having a problem with his bootloader
->>> interpreting the '$' incorrectly (or variable expansion if coming from the
->>> shell) or interpreting the resulting user-defined e820 map incorrectly.
->>> --
+On Wed, Jan 29, 2014 at 5:32 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Wed, Jan 29, 2014 at 12:25:20PM +0000, Mark Brown wrote:
+>> On Wed, Jan 29, 2014 at 12:10:48PM +0100, Maxime Ripard wrote:
 >>
->> Yeah, I certainly don't see a problem with the code and I would want to
->> see/understand that before I exchanged the 2 values in the documentation.
+>> > +config SPI_SUN6I
+>> > +   tristate "Allwinner A31 SPI controller"
+>> > +   depends on ARCH_SUNXI || COMPILE_TEST
+>> > +   select PM_RUNTIME
+>> > +   help
+>> > +     This enables using the SPI controller on the Allwinner A31 SoCs.
+>> > +
 >>
->> I'll submit a patch to make the wording a bit better.
->>
-> 
-> I'm using Ubuntu 13.04 with GRUB2. If it's a bootloader issue, what should I do?
+>> A select of PM_RUNTIME is both surprising and odd - why is that there?
+>> The usual idiom is that the device starts out powered up (flagged using
+>> pm_runtime_set_active()) and then runtime PM then suspends it when it's
+>> compiled in.  That way if for some reason people want to avoid runtime
+>> PM they can still use the device.
+>
+> Since pm_runtime_set_active and all the pm_runtime* callbacks in
+> general are defined to pretty much empty functions, how the
+> suspend/resume callbacks are called then? Obviously, we need them to
+> be run, hence why I added the select here, but now I'm seeing a
+> construct like what's following acceptable then?
 
-See https://bugs.launchpad.net/ubuntu/+source/grub2/+bug/448413
+Even with your 'select', The runtime PM callbacks will never be called
+in the current driver.  pm_runtime_enable() doesn't do any runtime PM
+transitions.  It just allows transitions to happen when they're
+triggered by _get()/_put()/etc.
 
-i.e., use shell escape '\' character.
+> pm_runtime_enable(&pdev->dev);
+> if (!pm_runtime_enabled(&pdev->dev))
+>    sun6i_spi_runtime_resume(&pdev->dev);
 
--- 
-~Randy
+Similarily here, it's not the pm_runtime_enable that will fail when
+runtime PM is disabled (or not built-in), it's a pm_runtime_get_sync()
+that will fail.
+
+What you want is something like this in ->probe()
+
+   sun6i_spi_runtime_resume();
+   /* now, device is always activated whether or not runtime PM is enabled */
+   pm_runtime_enable();
+   pm_runtime_set_active();  /* tells runtime PM core device is
+already active */
+   pm_runtime_get_sync();
+
+This 'get' will increase the usecount, but not actually call the
+callbacks because we told the RPM core that the device was already
+activated with _set_active().
+
+And then, in ->remove(), you'll want
+
+   pm_runtime_put();
+   pm_runtime_disable();
+
+And if runtime PM is not enabled in the kernel, then the device will
+be left on (which is kinda what you want if you didn't build runtime
+PM into the kernel.)
+
+Kevin
