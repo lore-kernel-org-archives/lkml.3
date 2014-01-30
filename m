@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaA3UZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 15:25:15 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:49448 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997AbaA3UZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 15:25:12 -0500
-Date: Thu, 30 Jan 2014 21:25:00 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/21] pinctrl: mvebu: restructure and remove
- hardcoded addresses from Dove pinctrl
-Message-ID: <20140130202500.GN10864@lunn.ch>
-References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140130182925.GM10864@lunn.ch>
- <52EA9EFA.1030609@gmail.com>
+	id S1753621AbaA3U0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 15:26:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60782 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaA3U0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 15:26:24 -0500
+Message-ID: <52EAB56E.2030102@infradead.org>
+Date: Thu, 30 Jan 2014 12:26:22 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EA9EFA.1030609@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andiry Xu <andiry@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andiry Xu <andiry.xu@gmail.com>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [BUG] Description for memmap in kernel-parameters.txt is wrong
+References: <CAOvWMLa334E8CYJLrHy6-0ZXBRneoMf-05v422SQw+dbGRubow@mail.gmail.com>	<52EAA714.3080809@infradead.org> <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>
+In-Reply-To: <CAOvWMLbs-sP+gJHV_5O6ZbV8eTpEKPVRVR238gFcPQeqhCjT3A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 07:50:34PM +0100, Sebastian Hesselbarth wrote:
-> On 01/30/2014 07:29 PM, Andrew Lunn wrote:
-> >On Tue, Jan 28, 2014 at 01:39:12AM +0100, Sebastian Hesselbarth wrote:
-> >>This patch set is one required step for Dove to hop into mach-mvebu.
-> >>Until now, pinctrl-dove was hardcoding some registers that do not
-> >>directly belong to MPP core registers. This is not compatible with
-> >>what we want for mach-mvebu.
-> >
-> >I think there might be something wrong here....
+On 01/30/2014 11:33 AM, Andiry Xu wrote:
+> On Thu, Jan 30, 2014 at 11:25 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> [adding linux-mm mailing list]
+>>
+>> On 01/30/2014 08:52 AM, Andiry Xu wrote:
+>>> Hi,
+>>>
+>>> In kernel-parameters.txt, there is following description:
+>>>
+>>> memmap=nn[KMG]$ss[KMG]
+>>>                         [KNL,ACPI] Mark specific memory as reserved.
+>>>                         Region of memory to be used, from ss to ss+nn.
+>>
+>> Should be:
+>>                           Region of memory to be reserved, from ss to ss+nn.
+>>
+>> but that doesn't help with the problem that you describe, does it?
+>>
 > 
-> There _is_ something wrong. I'll have a look at it. For the record,
-> what SoC are you testing with? From the base address, I guess it is
-> Kirkwood?
+> Actually it should be:
+>                              Region of memory to be reserved, from nn to nn+ss.
+> 
+> That is, exchange nn and ss.
 
-Yes, Kirkwood. Sorry for not saying.
+Yes, I understand that that's what you are reporting.  I just haven't yet
+worked out how the code manages to exchange those 2 values.
 
-     Andrew
+>>
+>>> Unfortunately this is incorrect. The meaning of nn and ss is reversed.
+>>> For example:
+>>>
+>>> Command                  Expected                 Result
+>>> memmap 2G$6G        6G - 8G reserved      2G - 8G reserved
+>>> memmap 6G$2G        2G - 8G reserved      6G - 8G reserved
+>>
+>> Are you testing on x86?
+>> The code in arch/x86/kernel/e820.c always parses mem_size followed by start address.
+>> I don't (yet) see where it goes wrong...
+>>
+> 
+> Yes, it's a x86 machine.
+> 
+>>
+>>> Test kernel version 3.13, but I believe the issue has been there long ago.
+>>>
+>>> I'm not sure whether the description or implementation should be
+>>> fixed, but apparently they do not match.
+>>
+>> I prefer to change the documentation and leave the implementation as is.
+>>
+> 
+> That's fine. memmap itself works OK, it's just the description is
+> wrong and people like me get confused.
+> 
+> Thanks,
+> Andiry
+
+
+-- 
+~Randy
