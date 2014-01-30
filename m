@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbaA3XhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 18:37:12 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38785 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752275AbaA3XhJ (ORCPT
+	id S932068AbaA3Xkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 18:40:39 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:60493 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097AbaA3Xkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 18:37:09 -0500
-Message-ID: <1391125027.2181.114.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] block devices: validate block device capacity
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
-        Nick Piggin <npiggin@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
-Date: Thu, 30 Jan 2014 15:37:07 -0800
-In-Reply-To: <alpine.LRH.2.02.1401301805590.19506@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com>
-	 <1391122163.2181.103.camel@dabdike.int.hansenpartnership.com>
-	 <alpine.LRH.2.02.1401301805590.19506@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Jan 2014 18:40:37 -0500
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCH] net: ipv4: move inetpeer garbage collector work to power efficient workqueue
+Date: Thu, 30 Jan 2014 15:40:13 -0800
+Message-Id: <1391125213-8119-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-30 at 18:10 -0500, Mikulas Patocka wrote:
-> 
-> On Thu, 30 Jan 2014, James Bottomley wrote:
-> 
-> > Why is this?  the whole reason for CONFIG_LBDAF is supposed to be to
-> > allow 64 bit offsets for block devices on 32 bit.  It sounds like
-> > there's somewhere not using sector_t ... or using it wrongly which needs
-> > fixing.
-> 
-> The page cache uses unsigned long as a page index. Therefore, if unsigned 
-> long is 32-bit, the block device may have at most 2^32-1 pages.
+From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-Um, that's the index into the mapping, not the device; a device can have
-multiple mappings and each mapping has a radix tree of pages.  For most
-filesystems a mapping is equivalent to a file, so we can have large
-filesystems, but they can't have files over actually 4GB on 32 bits
-otherwise mmap fails.
+Garbage collector work does not have to be bound to the CPU that scheduled
+it. By moving work to the power-efficient workqueue, the selection of
+CPU executing the work is left to the scheduler. This extends idle
+residency times and conserves power.
 
-Are we running into a problems with struct address_space where we've
-assumed the inode belongs to the file and lvm is doing something where
-it's the whole device?
+This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
 
-> > > On 32-bit architectures, we must limit block device size to
-> > > PAGE_SIZE*(2^32-1).
-> > 
-> > So you're saying CONFIG_LBDAF can never work, why?
-> > 
-> > James
-> 
-> CONFIG_LBDAF works, but it doesn't allow unlimited capacity: on x86, 
-> without CONFIG_LBDAF, the limit is 2TiB. With CONFIG_LBDAF, the limit is 
-> 16TiB (4096*2^32).
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+[zoran.markovic@linaro.org: Rebased to latest kernel version. Added
+commit message.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ net/ipv4/inetpeer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-I don't think the people who did the large block device work expected to
-gain only 3 bits for all their pain.
-
-James
-
-
+diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
+index 48f4244..87155aa 100644
+--- a/net/ipv4/inetpeer.c
++++ b/net/ipv4/inetpeer.c
+@@ -161,7 +161,8 @@ static void inetpeer_gc_worker(struct work_struct *work)
+ 	list_splice(&list, &gc_list);
+ 	spin_unlock_bh(&gc_lock);
+ 
+-	schedule_delayed_work(&gc_work, gc_delay);
++	queue_delayed_work(system_power_efficient_wq,
++		&gc_work, gc_delay);
+ }
+ 
+ /* Called from ip_output.c:ip_init  */
+@@ -576,7 +577,8 @@ static void inetpeer_inval_rcu(struct rcu_head *head)
+ 	list_add_tail(&p->gc_list, &gc_list);
+ 	spin_unlock_bh(&gc_lock);
+ 
+-	schedule_delayed_work(&gc_work, gc_delay);
++	queue_delayed_work(system_power_efficient_wq,
++		&gc_work, gc_delay);
+ }
+ 
+ void inetpeer_invalidate_tree(struct inet_peer_base *base)
+-- 
+1.7.9.5
 
