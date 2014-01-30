@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaA3TUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 14:20:51 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38912 "EHLO
+	id S1753704AbaA3TUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 14:20:45 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61656 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724AbaA3TUr (ORCPT
+	with ESMTP id S1753400AbaA3TUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 14:20:47 -0500
-Subject: [PATCH 2/2] PCI: Remove unused SR-IOV VF Migration support
+	Thu, 30 Jan 2014 14:20:40 -0500
+Subject: [PATCH 1/2] PCI: Remove unused MMIO exclusivity support
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: e1000-devel@lists.sourceforge.net,
         Stephen Hemminger <stephen@networkplumber.org>,
         Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
-Date: Thu, 30 Jan 2014 12:20:45 -0700
-Message-ID: <20140130192044.25426.56360.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Thu, 30 Jan 2014 12:20:38 -0700
+Message-ID: <20140130192038.25426.8346.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -25,242 +25,387 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 74bb1bcc7dbb ("PCI: handle SR-IOV Virtual Function
-Migration"), removing this exported interface:
+This reverts commit e8de1481fd71 ("resource: allow MMIO exclusivity for
+device drivers"), removing these exported interfaces:
 
-  pci_sriov_migration()
+  pci_request_region_exclusive()
+  pci_request_regions_exclusive()
+  pci_request_selected_regions_exclusive()
 
-Since pci_sriov_migration() is unused, it is impossible to schedule
-sriov_migration_task() or use any of the other migration infrastructure.
+There's nothing wrong with the MMIO exclusivity code, but it is used only
+by the e1000e driver, and the only reason it's there is because it was
+added during a bug hunt.  The bug has been fixed, and apparently no other
+drivers have found it useful in the five years since then.
 
 This is based on Stephen Hemminger's patch (see link below), but goes a bit
-further.
+further by removing the use in e1000e.
 
 Link: http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.net
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>
 CC: Stephen Hemminger <stephen@networkplumber.org>
 ---
- Documentation/PCI/pci-iov-howto.txt |    4 -
- drivers/pci/iov.c                   |  119 -----------------------------------
- drivers/pci/pci.h                   |    4 -
- include/linux/pci.h                 |    4 -
- 4 files changed, 131 deletions(-)
+ Documentation/kernel-parameters.txt        |    4 -
+ arch/x86/mm/init.c                         |    2 -
+ drivers/net/ethernet/intel/e1000e/netdev.c |    3 -
+ drivers/pci/pci-sysfs.c                    |    3 -
+ drivers/pci/pci.c                          |  112 +++-------------------------
+ include/linux/ioport.h                     |    5 -
+ include/linux/pci.h                        |    3 -
+ kernel/resource.c                          |   54 --------------
+ 8 files changed, 14 insertions(+), 172 deletions(-)
 
-diff --git a/Documentation/PCI/pci-iov-howto.txt b/Documentation/PCI/pci-iov-howto.txt
-index 86551cc72e03..2d91ae251982 100644
---- a/Documentation/PCI/pci-iov-howto.txt
-+++ b/Documentation/PCI/pci-iov-howto.txt
-@@ -68,10 +68,6 @@ To disable SR-IOV capability:
- 	echo  0 > \
-         /sys/bus/pci/devices/<DOMAIN:BUS:DEVICE.FUNCTION>/sriov_numvfs
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 8f441dab0396..4943bddeacc1 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1323,10 +1323,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			no_x2apic_optout
+ 				BIOS x2APIC opt-out request will be ignored
  
--To notify SR-IOV core of Virtual Function Migration:
--(a) In the driver:
--	irqreturn_t pci_sriov_migration(struct pci_dev *dev);
+-	iomem=		Disable strict checking of access to MMIO memory
+-		strict	regions from userspace.
+-		relaxed
 -
- 3.2 Usage example
+ 	iommu=		[x86]
+ 		off
+ 		force
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index f97130618113..575cbfd89238 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -583,8 +583,6 @@ int devmem_is_allowed(unsigned long pagenr)
+ {
+ 	if (pagenr < 256)
+ 		return 1;
+-	if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
+-		return 0;
+ 	if (!page_is_ram(pagenr))
+ 		return 1;
+ 	return 0;
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index 6d91933c4cdd..97a11b19e46f 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -6574,8 +6574,7 @@ static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	}
  
- Following piece of code illustrates the usage of the SR-IOV API.
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 9dce7c5e2a77..de7a74782f92 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -170,97 +170,6 @@ static void virtfn_remove(struct pci_dev *dev, int id, int reset)
- 	pci_dev_put(dev);
+ 	bars = pci_select_bars(pdev, IORESOURCE_MEM);
+-	err = pci_request_selected_regions_exclusive(pdev, bars,
+-						     e1000e_driver_name);
++	err = pci_request_selected_regions(pdev, bars, e1000e_driver_name);
+ 	if (err)
+ 		goto err_pci_reg;
+ 
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 276ef9c18802..4580fa859f38 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -993,9 +993,6 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
+ 	vma->vm_pgoff += start >> PAGE_SHIFT;
+ 	mmap_type = res->flags & IORESOURCE_MEM ? pci_mmap_mem : pci_mmap_io;
+ 
+-	if (res->flags & IORESOURCE_MEM && iomem_is_exclusive(start))
+-		return -EINVAL;
+-
+ 	return pci_mmap_page_range(pdev, vma, mmap_type, write_combine);
  }
  
--static int sriov_migration(struct pci_dev *dev)
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 1febe90831b4..1011c0b281ca 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2432,26 +2432,20 @@ void pci_release_region(struct pci_dev *pdev, int bar)
+ }
+ 
+ /**
+- *	__pci_request_region - Reserved PCI I/O and memory resource
++ *	pci_request_region - Reserved PCI I/O and memory resource
+  *	@pdev: PCI device whose resources are to be reserved
+  *	@bar: BAR to be reserved
+  *	@res_name: Name to be associated with resource.
+- *	@exclusive: whether the region access is exclusive or not
+  *
+  *	Mark the PCI region associated with PCI device @pdev BR @bar as
+  *	being reserved by owner @res_name.  Do not access any
+  *	address inside the PCI regions unless this call returns
+  *	successfully.
+  *
+- *	If @exclusive is set, then the region is marked so that userspace
+- *	is explicitly not allowed to map the resource via /dev/mem or
+- *	sysfs MMIO access.
+- *
+  *	Returns 0 on success, or %EBUSY on error.  A warning
+  *	message is also printed on failure.
+  */
+-static int __pci_request_region(struct pci_dev *pdev, int bar, const char *res_name,
+-									int exclusive)
++int pci_request_region(struct pci_dev *pdev, int bar, const char *res_name)
+ {
+ 	struct pci_devres *dr;
+ 
+@@ -2464,9 +2458,8 @@ static int __pci_request_region(struct pci_dev *pdev, int bar, const char *res_n
+ 			goto err_out;
+ 	}
+ 	else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
+-		if (!__request_mem_region(pci_resource_start(pdev, bar),
+-					pci_resource_len(pdev, bar), res_name,
+-					exclusive))
++		if (!request_mem_region(pci_resource_start(pdev, bar),
++					pci_resource_len(pdev, bar), res_name))
+ 			goto err_out;
+ 	}
+ 
+@@ -2483,47 +2476,6 @@ err_out:
+ }
+ 
+ /**
+- *	pci_request_region - Reserve PCI I/O and memory resource
+- *	@pdev: PCI device whose resources are to be reserved
+- *	@bar: BAR to be reserved
+- *	@res_name: Name to be associated with resource
+- *
+- *	Mark the PCI region associated with PCI device @pdev BAR @bar as
+- *	being reserved by owner @res_name.  Do not access any
+- *	address inside the PCI regions unless this call returns
+- *	successfully.
+- *
+- *	Returns 0 on success, or %EBUSY on error.  A warning
+- *	message is also printed on failure.
+- */
+-int pci_request_region(struct pci_dev *pdev, int bar, const char *res_name)
 -{
--	u16 status;
--	struct pci_sriov *iov = dev->sriov;
+-	return __pci_request_region(pdev, bar, res_name, 0);
+-}
 -
--	if (!iov->num_VFs)
+-/**
+- *	pci_request_region_exclusive - Reserved PCI I/O and memory resource
+- *	@pdev: PCI device whose resources are to be reserved
+- *	@bar: BAR to be reserved
+- *	@res_name: Name to be associated with resource.
+- *
+- *	Mark the PCI region associated with PCI device @pdev BR @bar as
+- *	being reserved by owner @res_name.  Do not access any
+- *	address inside the PCI regions unless this call returns
+- *	successfully.
+- *
+- *	Returns 0 on success, or %EBUSY on error.  A warning
+- *	message is also printed on failure.
+- *
+- *	The key difference that _exclusive makes it that userspace is
+- *	explicitly not allowed to map the resource via /dev/mem or
+- *	sysfs.
+- */
+-int pci_request_region_exclusive(struct pci_dev *pdev, int bar, const char *res_name)
+-{
+-	return __pci_request_region(pdev, bar, res_name, IORESOURCE_EXCLUSIVE);
+-}
+-/**
+  * pci_release_selected_regions - Release selected PCI I/O and memory resources
+  * @pdev: PCI device whose resources were previously reserved
+  * @bars: Bitmask of BARs to be released
+@@ -2540,14 +2492,20 @@ void pci_release_selected_regions(struct pci_dev *pdev, int bars)
+ 			pci_release_region(pdev, i);
+ }
+ 
+-static int __pci_request_selected_regions(struct pci_dev *pdev, int bars,
+-				 const char *res_name, int excl)
++/**
++ * pci_request_selected_regions - Reserve selected PCI I/O and memory resources
++ * @pdev: PCI device whose resources are to be reserved
++ * @bars: Bitmask of BARs to be requested
++ * @res_name: Name to be associated with resource
++ */
++int pci_request_selected_regions(struct pci_dev *pdev, int bars,
++				 const char *res_name)
+ {
+ 	int i;
+ 
+ 	for (i = 0; i < 6; i++)
+ 		if (bars & (1 << i))
+-			if (__pci_request_region(pdev, i, res_name, excl))
++			if (pci_request_region(pdev, i, res_name))
+ 				goto err_out;
+ 	return 0;
+ 
+@@ -2561,25 +2519,6 @@ err_out:
+ 
+ 
+ /**
+- * pci_request_selected_regions - Reserve selected PCI I/O and memory resources
+- * @pdev: PCI device whose resources are to be reserved
+- * @bars: Bitmask of BARs to be requested
+- * @res_name: Name to be associated with resource
+- */
+-int pci_request_selected_regions(struct pci_dev *pdev, int bars,
+-				 const char *res_name)
+-{
+-	return __pci_request_selected_regions(pdev, bars, res_name, 0);
+-}
+-
+-int pci_request_selected_regions_exclusive(struct pci_dev *pdev,
+-				 int bars, const char *res_name)
+-{
+-	return __pci_request_selected_regions(pdev, bars, res_name,
+-			IORESOURCE_EXCLUSIVE);
+-}
+-
+-/**
+  *	pci_release_regions - Release reserved PCI I/O and memory resources
+  *	@pdev: PCI device whose resources were previously reserved by pci_request_regions
+  *
+@@ -2611,28 +2550,6 @@ int pci_request_regions(struct pci_dev *pdev, const char *res_name)
+ 	return pci_request_selected_regions(pdev, ((1 << 6) - 1), res_name);
+ }
+ 
+-/**
+- *	pci_request_regions_exclusive - Reserved PCI I/O and memory resources
+- *	@pdev: PCI device whose resources are to be reserved
+- *	@res_name: Name to be associated with resource.
+- *
+- *	Mark all PCI regions associated with PCI device @pdev as
+- *	being reserved by owner @res_name.  Do not access any
+- *	address inside the PCI regions unless this call returns
+- *	successfully.
+- *
+- *	pci_request_regions_exclusive() will mark the region so that
+- *	/dev/mem and the sysfs MMIO access will not be allowed.
+- *
+- *	Returns 0 on success, or %EBUSY on error.  A warning
+- *	message is also printed on failure.
+- */
+-int pci_request_regions_exclusive(struct pci_dev *pdev, const char *res_name)
+-{
+-	return pci_request_selected_regions_exclusive(pdev,
+-					((1 << 6) - 1), res_name);
+-}
+-
+ static void __pci_set_master(struct pci_dev *dev, bool enable)
+ {
+ 	u16 old_cmd, cmd;
+@@ -4387,13 +4304,10 @@ EXPORT_SYMBOL(pci_find_capability);
+ EXPORT_SYMBOL(pci_bus_find_capability);
+ EXPORT_SYMBOL(pci_release_regions);
+ EXPORT_SYMBOL(pci_request_regions);
+-EXPORT_SYMBOL(pci_request_regions_exclusive);
+ EXPORT_SYMBOL(pci_release_region);
+ EXPORT_SYMBOL(pci_request_region);
+-EXPORT_SYMBOL(pci_request_region_exclusive);
+ EXPORT_SYMBOL(pci_release_selected_regions);
+ EXPORT_SYMBOL(pci_request_selected_regions);
+-EXPORT_SYMBOL(pci_request_selected_regions_exclusive);
+ EXPORT_SYMBOL(pci_set_master);
+ EXPORT_SYMBOL(pci_clear_master);
+ EXPORT_SYMBOL(pci_set_mwi);
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 89b7c24a36e9..f2d45ea3ee53 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -49,7 +49,6 @@ struct resource {
+ #define IORESOURCE_WINDOW	0x00200000	/* forwarded by bridge */
+ #define IORESOURCE_MUXED	0x00400000	/* Resource is software muxed */
+ 
+-#define IORESOURCE_EXCLUSIVE	0x08000000	/* Userland may not map this resource */
+ #define IORESOURCE_DISABLED	0x10000000
+ #define IORESOURCE_UNSET	0x20000000
+ #define IORESOURCE_AUTO		0x40000000
+@@ -173,10 +172,7 @@ static inline unsigned long resource_type(const struct resource *res)
+ /* Convenience shorthand with allocation */
+ #define request_region(start,n,name)		__request_region(&ioport_resource, (start), (n), (name), 0)
+ #define request_muxed_region(start,n,name)	__request_region(&ioport_resource, (start), (n), (name), IORESOURCE_MUXED)
+-#define __request_mem_region(start,n,name, excl) __request_region(&iomem_resource, (start), (n), (name), excl)
+ #define request_mem_region(start,n,name) __request_region(&iomem_resource, (start), (n), (name), 0)
+-#define request_mem_region_exclusive(start,n,name) \
+-	__request_region(&iomem_resource, (start), (n), (name), IORESOURCE_EXCLUSIVE)
+ #define rename_region(region, newname) do { (region)->name = (newname); } while (0)
+ 
+ extern struct resource * __request_region(struct resource *,
+@@ -222,7 +218,6 @@ extern struct resource * __devm_request_region(struct device *dev,
+ extern void __devm_release_region(struct device *dev, struct resource *parent,
+ 				  resource_size_t start, resource_size_t n);
+ extern int iomem_map_sanity_check(resource_size_t addr, unsigned long size);
+-extern int iomem_is_exclusive(u64 addr);
+ 
+ extern int
+ walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index fb57c892b214..b3cd9d58f5a9 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1038,13 +1038,10 @@ void pci_fixup_irqs(u8 (*)(struct pci_dev *, u8 *),
+ 		    int (*)(const struct pci_dev *, u8, u8));
+ #define HAVE_PCI_REQ_REGIONS	2
+ int __must_check pci_request_regions(struct pci_dev *, const char *);
+-int __must_check pci_request_regions_exclusive(struct pci_dev *, const char *);
+ void pci_release_regions(struct pci_dev *);
+ int __must_check pci_request_region(struct pci_dev *, int, const char *);
+-int __must_check pci_request_region_exclusive(struct pci_dev *, int, const char *);
+ void pci_release_region(struct pci_dev *, int);
+ int pci_request_selected_regions(struct pci_dev *, int, const char *);
+-int pci_request_selected_regions_exclusive(struct pci_dev *, int, const char *);
+ void pci_release_selected_regions(struct pci_dev *, int);
+ 
+ /* drivers/pci/bus.c */
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 3f285dce9347..9a29d989aa5e 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -1306,57 +1306,3 @@ int iomem_map_sanity_check(resource_size_t addr, unsigned long size)
+ 
+ 	return err;
+ }
+-
+-#ifdef CONFIG_STRICT_DEVMEM
+-static int strict_iomem_checks = 1;
+-#else
+-static int strict_iomem_checks;
+-#endif
+-
+-/*
+- * check if an address is reserved in the iomem resource tree
+- * returns 1 if reserved, 0 if not reserved.
+- */
+-int iomem_is_exclusive(u64 addr)
+-{
+-	struct resource *p = &iomem_resource;
+-	int err = 0;
+-	loff_t l;
+-	int size = PAGE_SIZE;
+-
+-	if (!strict_iomem_checks)
 -		return 0;
 -
--	if (!(iov->cap & PCI_SRIOV_CAP_VFM))
--		return 0;
+-	addr = addr & PAGE_MASK;
 -
--	pci_read_config_word(dev, iov->pos + PCI_SRIOV_STATUS, &status);
--	if (!(status & PCI_SRIOV_STATUS_VFM))
--		return 0;
+-	read_lock(&resource_lock);
+-	for (p = p->child; p ; p = r_next(NULL, p, &l)) {
+-		/*
+-		 * We can probably skip the resources without
+-		 * IORESOURCE_IO attribute?
+-		 */
+-		if (p->start >= addr + size)
+-			break;
+-		if (p->end < addr)
+-			continue;
+-		if (p->flags & IORESOURCE_BUSY &&
+-		     p->flags & IORESOURCE_EXCLUSIVE) {
+-			err = 1;
+-			break;
+-		}
+-	}
+-	read_unlock(&resource_lock);
 -
--	schedule_work(&iov->mtask);
+-	return err;
+-}
 -
+-static int __init strict_iomem(char *str)
+-{
+-	if (strstr(str, "relaxed"))
+-		strict_iomem_checks = 0;
+-	if (strstr(str, "strict"))
+-		strict_iomem_checks = 1;
 -	return 1;
 -}
 -
--static void sriov_migration_task(struct work_struct *work)
--{
--	int i;
--	u8 state;
--	u16 status;
--	struct pci_sriov *iov = container_of(work, struct pci_sriov, mtask);
--
--	for (i = iov->initial_VFs; i < iov->num_VFs; i++) {
--		state = readb(iov->mstate + i);
--		if (state == PCI_SRIOV_VFM_MI) {
--			writeb(PCI_SRIOV_VFM_AV, iov->mstate + i);
--			state = readb(iov->mstate + i);
--			if (state == PCI_SRIOV_VFM_AV)
--				virtfn_add(iov->self, i, 1);
--		} else if (state == PCI_SRIOV_VFM_MO) {
--			virtfn_remove(iov->self, i, 1);
--			writeb(PCI_SRIOV_VFM_UA, iov->mstate + i);
--			state = readb(iov->mstate + i);
--			if (state == PCI_SRIOV_VFM_AV)
--				virtfn_add(iov->self, i, 0);
--		}
--	}
--
--	pci_read_config_word(iov->self, iov->pos + PCI_SRIOV_STATUS, &status);
--	status &= ~PCI_SRIOV_STATUS_VFM;
--	pci_write_config_word(iov->self, iov->pos + PCI_SRIOV_STATUS, status);
--}
--
--static int sriov_enable_migration(struct pci_dev *dev, int nr_virtfn)
--{
--	int bir;
--	u32 table;
--	resource_size_t pa;
--	struct pci_sriov *iov = dev->sriov;
--
--	if (nr_virtfn <= iov->initial_VFs)
--		return 0;
--
--	pci_read_config_dword(dev, iov->pos + PCI_SRIOV_VFM, &table);
--	bir = PCI_SRIOV_VFM_BIR(table);
--	if (bir > PCI_STD_RESOURCE_END)
--		return -EIO;
--
--	table = PCI_SRIOV_VFM_OFFSET(table);
--	if (table + nr_virtfn > pci_resource_len(dev, bir))
--		return -EIO;
--
--	pa = pci_resource_start(dev, bir) + table;
--	iov->mstate = ioremap(pa, nr_virtfn);
--	if (!iov->mstate)
--		return -ENOMEM;
--
--	INIT_WORK(&iov->mtask, sriov_migration_task);
--
--	iov->ctrl |= PCI_SRIOV_CTRL_VFM | PCI_SRIOV_CTRL_INTR;
--	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
--
--	return 0;
--}
--
--static void sriov_disable_migration(struct pci_dev *dev)
--{
--	struct pci_sriov *iov = dev->sriov;
--
--	iov->ctrl &= ~(PCI_SRIOV_CTRL_VFM | PCI_SRIOV_CTRL_INTR);
--	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
--
--	cancel_work_sync(&iov->mtask);
--	iounmap(iov->mstate);
--}
--
- static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
- {
- 	int rc;
-@@ -351,12 +260,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
- 			goto failed;
- 	}
- 
--	if (iov->cap & PCI_SRIOV_CAP_VFM) {
--		rc = sriov_enable_migration(dev, nr_virtfn);
--		if (rc)
--			goto failed;
--	}
--
- 	kobject_uevent(&dev->dev.kobj, KOBJ_CHANGE);
- 	iov->num_VFs = nr_virtfn;
- 
-@@ -387,9 +290,6 @@ static void sriov_disable(struct pci_dev *dev)
- 	if (!iov->num_VFs)
- 		return;
- 
--	if (iov->cap & PCI_SRIOV_CAP_VFM)
--		sriov_disable_migration(dev);
--
- 	for (i = 0; i < iov->num_VFs; i++)
- 		virtfn_remove(dev, i, 0);
- 
-@@ -688,25 +588,6 @@ void pci_disable_sriov(struct pci_dev *dev)
- EXPORT_SYMBOL_GPL(pci_disable_sriov);
- 
- /**
-- * pci_sriov_migration - notify SR-IOV core of Virtual Function Migration
-- * @dev: the PCI device
-- *
-- * Returns IRQ_HANDLED if the IRQ is handled, or IRQ_NONE if not.
-- *
-- * Physical Function driver is responsible to register IRQ handler using
-- * VF Migration Interrupt Message Number, and call this function when the
-- * interrupt is generated by the hardware.
-- */
--irqreturn_t pci_sriov_migration(struct pci_dev *dev)
--{
--	if (!dev->is_physfn)
--		return IRQ_NONE;
--
--	return sriov_migration(dev) ? IRQ_HANDLED : IRQ_NONE;
--}
--EXPORT_SYMBOL_GPL(pci_sriov_migration);
--
--/**
-  * pci_num_vf - return number of VFs associated with a PF device_release_driver
-  * @dev: the PCI device
-  *
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 4df38df224f4..6bd082299e31 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -1,8 +1,6 @@
- #ifndef DRIVERS_PCI_H
- #define DRIVERS_PCI_H
- 
--#include <linux/workqueue.h>
--
- #define PCI_CFG_SPACE_SIZE	256
- #define PCI_CFG_SPACE_EXP_SIZE	4096
- 
-@@ -240,8 +238,6 @@ struct pci_sriov {
- 	struct pci_dev *dev;	/* lowest numbered PF */
- 	struct pci_dev *self;	/* this PF */
- 	struct mutex lock;	/* lock for VF bus */
--	struct work_struct mtask; /* VF Migration task */
--	u8 __iomem *mstate;	/* VF Migration State Array */
- };
- 
- #ifdef CONFIG_PCI_ATS
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index b3cd9d58f5a9..bd0e268c80b5 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -29,7 +29,6 @@
- #include <linux/atomic.h>
- #include <linux/device.h>
- #include <linux/io.h>
--#include <linux/irqreturn.h>
- #include <uapi/linux/pci.h>
- 
- #include <linux/pci_ids.h>
-@@ -1574,7 +1573,6 @@ void __iomem *pci_ioremap_bar(struct pci_dev *pdev, int bar);
- #ifdef CONFIG_PCI_IOV
- int pci_enable_sriov(struct pci_dev *dev, int nr_virtfn);
- void pci_disable_sriov(struct pci_dev *dev);
--irqreturn_t pci_sriov_migration(struct pci_dev *dev);
- int pci_num_vf(struct pci_dev *dev);
- int pci_vfs_assigned(struct pci_dev *dev);
- int pci_sriov_set_totalvfs(struct pci_dev *dev, u16 numvfs);
-@@ -1583,8 +1581,6 @@ int pci_sriov_get_totalvfs(struct pci_dev *dev);
- static inline int pci_enable_sriov(struct pci_dev *dev, int nr_virtfn)
- { return -ENODEV; }
- static inline void pci_disable_sriov(struct pci_dev *dev) { }
--static inline irqreturn_t pci_sriov_migration(struct pci_dev *dev)
--{ return IRQ_NONE; }
- static inline int pci_num_vf(struct pci_dev *dev) { return 0; }
- static inline int pci_vfs_assigned(struct pci_dev *dev)
- { return 0; }
+-__setup("iomem=", strict_iomem);
 
