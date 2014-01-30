@@ -1,75 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaA3Suo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 13:50:44 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:34516 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145AbaA3Sum (ORCPT
+	id S1753338AbaA3S5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 13:57:30 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38670 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751204AbaA3S53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 13:50:42 -0500
-Message-ID: <52EA9EFA.1030609@gmail.com>
-Date: Thu, 30 Jan 2014 19:50:34 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/21] pinctrl: mvebu: restructure and remove hardcoded
- addresses from Dove pinctrl
-References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140130182925.GM10864@lunn.ch>
-In-Reply-To: <20140130182925.GM10864@lunn.ch>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Jan 2014 13:57:29 -0500
+Date: Thu, 30 Jan 2014 18:56:45 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 5/5] arm64: add Crypto Extensions based synchronous core
+ AES cipher
+Message-ID: <20140130185645.GC4437@mudshark.cambridge.arm.com>
+References: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
+ <1391014246-9715-6-git-send-email-ard.biesheuvel@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391014246-9715-6-git-send-email-ard.biesheuvel@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2014 07:29 PM, Andrew Lunn wrote:
-> On Tue, Jan 28, 2014 at 01:39:12AM +0100, Sebastian Hesselbarth wrote:
->> This patch set is one required step for Dove to hop into mach-mvebu.
->> Until now, pinctrl-dove was hardcoding some registers that do not
->> directly belong to MPP core registers. This is not compatible with
->> what we want for mach-mvebu.
->
-> I think there might be something wrong here....
+Hi Ard,
 
-There _is_ something wrong. I'll have a look at it. For the record,
-what SoC are you testing with? From the base address, I guess it is
-Kirkwood?
+On Wed, Jan 29, 2014 at 04:50:46PM +0000, Ard Biesheuvel wrote:
+> diff --git a/arch/arm64/crypto/aes-ce-cipher.c b/arch/arm64/crypto/aes-ce-cipher.c
+> new file mode 100644
+> index 000000000000..b5a5d5d6e4b8
+> --- /dev/null
+> +++ b/arch/arm64/crypto/aes-ce-cipher.c
+> @@ -0,0 +1,103 @@
+> +/*
+> + * linux/arch/arm64/crypto/aes-ce-cipher.c
+> + *
+> + * Copyright (C) 2013 Linaro Ltd <ard.biesheuvel@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <asm/neon.h>
+> +#include <crypto/aes.h>
+> +#include <linux/crypto.h>
+> +#include <linux/module.h>
+> +#include <linux/cpufeature.h>
+> +
+> +MODULE_DESCRIPTION("Synchronous AES cipher using ARMv8 Crypto Extensions");
+> +MODULE_AUTHOR("Ard Biesheuvel <ard.biesheuvel@linaro.org>");
+> +MODULE_LICENSE("GPL");
+> +
+> +static void aes_cipher_encrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
+> +{
+> +	struct crypto_aes_ctx *ctx = crypto_tfm_ctx(tfm);
+> +	u32 rounds = 6 + ctx->key_length / 4;
 
-Sebastian
+Can you document these constants please?
 
-> /debug/pinctrl/f1010000.pinctrl/pinconf-groups used to contain:
->
-> Pin config settings per pin group
-> Format: group (name): configs
-> 0 (mpp0):current: spi(cs), available = [ gpio(io) nand(io2) ]
-> 1 (mpp1):current: spi(mosi), available = [ gpo(o) nand(io3) ]
-> 2 (mpp2):current: spi(sck), available = [ gpo(o) nand(io4) ]
-> 3 (mpp3):current: spi(miso), available = [ gpo(o) nand(io5) ]
-> 4 (mpp4):current: sata1(act), available = [ gpio(io) nand(io6) uart0(rxd) lcd(hsync) ]
-> 5 (mpp5):current: sata0(act), available = [ gpo(o) nand(io7) uart0(txd) lcd(vsync) ]
-> 6 (mpp6):current: sysrst(out), available = [ spi(mosi) ]
-> ...
->
-> It now has:
->
-> Pin config settings per pin group
-> Format: group (name): configs
-> 0 (mpp0):current: gpio(io), available = [ nand(io2) spi(cs) ]
-> 1 (mpp1):current: gpo(o), available = [ nand(io3) spi(mosi) ]
-> 2 (mpp2):current: gpo(o), available = [ nand(io4) spi(sck) ]
-> 3 (mpp3):current: gpo(o), available = [ nand(io5) spi(miso) ]
-> 4 (mpp4):current: gpio(io), available = [ nand(io6) uart0(rxd) sata1(act) lcd(hsync) ]
-> 5 (mpp5):current: gpo(o), available = [ nand(io7) uart0(txd) sata0(act) lcd(vsync) ]
-> 6 (mpp6):current: UNKNOWN, available = [ sysrst(out) spi(mosi) ]
->
-> The device i'm testing on does use spi and sata, so i would say the
-> old contents was correct and the new is wrong.
+> +
+> +	kernel_neon_begin();
+> +
+> +	__asm__("	ld1		{v0.16b}, [%[in]]		;"
+> +		"	ld1		{v1.16b}, [%[key]], #16		;"
+> +		"0:	aese		v0.16b, v1.16b			;"
+> +		"	subs		%[rounds], %[rounds], #1	;"
+> +		"	ld1		{v1.16b}, [%[key]], #16		;"
+> +		"	beq		1f				;"
+> +		"	aesmc		v0.16b, v0.16b			;"
+> +		"	b		0b				;"
+> +		"1:	eor		v0.16b, v0.16b, v1.16b		;"
+> +		"	st1		{v0.16b}, [%[out]]		;"
+> +	: :
+> +		[out]		"r"(dst),
+> +		[in]		"r"(src),
+> +		[rounds]	"r"(rounds),
+> +		[key]		"r"(ctx->key_enc)
+> +	:			"cc");
+
+You probably need a memory output to stop this being re-ordered by the
+compiler. Can GCC not generate the addressing modes you need directly,
+allowing you to avoid moving everything into registers?
 
 
+> +	kernel_neon_end();
+> +}
+> +
+> +static void aes_cipher_decrypt(struct crypto_tfm *tfm, u8 dst[], u8 const src[])
+> +{
+> +	struct crypto_aes_ctx *ctx = crypto_tfm_ctx(tfm);
+> +	u32 rounds = 6 + ctx->key_length / 4;
+> +
+> +	kernel_neon_begin();
+> +
+> +	__asm__("	ld1		{v0.16b}, [%[in]]		;"
+> +		"	ld1		{v1.16b}, [%[key]], #16		;"
+> +		"0:	aesd		v0.16b, v1.16b			;"
+> +		"	ld1		{v1.16b}, [%[key]], #16		;"
+> +		"	subs		%[rounds], %[rounds], #1	;"
+> +		"	beq		1f				;"
+> +		"	aesimc		v0.16b, v0.16b			;"
+> +		"	b		0b				;"
+> +		"1:	eor		v0.16b, v0.16b, v1.16b		;"
+> +		"	st1		{v0.16b}, [%[out]]		;"
+> +	: :
+> +		[out]		"r"(dst),
+> +		[in]		"r"(src),
+> +		[rounds]	"r"(rounds),
+> +		[key]		"r"(ctx->key_dec)
+> +	:			"cc");
+
+Same comments here.
+
+FWIW: I spoke to the guy at ARM who designed the crypto instructions and he
+reckons your code works :)
+
+Cheers,
+
+Will "got a B in maths" Deacon
