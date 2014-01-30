@@ -1,307 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbaA3PNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 10:13:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58955 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753309AbaA3PNt (ORCPT
+	id S1753357AbaA3PQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 10:16:58 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:37208 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751165AbaA3PQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 10:13:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [Update 2x][PATCH 5/5][RFT] ACPI / hotplug / PCI: Hotplug notifications from acpi_bus_notify()
-Date: Thu, 30 Jan 2014 16:28:10 +0100
-Message-ID: <1426407.tsZ13Id60i@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1826755.RG5jxVHPBj@vostro.rjw.lan>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <1693151.2qrLZHyp0o@vostro.rjw.lan> <1826755.RG5jxVHPBj@vostro.rjw.lan>
+	Thu, 30 Jan 2014 10:16:56 -0500
+Date: Thu, 30 Jan 2014 12:17:04 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Root NFS panicing on Linus' tip (Re: NFS client broken in Linus' tip)
+Message-ID: <20140130151703.GA20594@localhost>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140130140834.GW15937@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Russell, Trond:
 
-Since acpi_bus_notify() is executed on all notifications for all
-devices anyway, rename acpi_hotplug_notify_cb() to acpi_system_notify()
-and call it directly from acpi_bus_notify() instead of installing
-notify handlers pointing to it for all hotplug devices.
+On Thu, Jan 30, 2014 at 02:08:34PM +0000, Russell King - ARM Linux wrote:
+> I just booted Linus' tip (plus a few other patches to imx-drm and imx
+> code), and stumbled into this interesting scenario:
+> 
+[..]
 
-This change reduces both the size and complexity of ACPI-base device
-hotplug code.  Moreover, since acpi_system_notify() only does
-significant things for devices that either have an ACPI scan handler,
-or have a hotplug context with .eject() defined, and those devices
-had notify handlers pointing to acpi_hotplug_notify_cb() installed
-before anyway, this change shouldn't modify functionality.
+> CONFIG_NFS_FS=y
+> CONFIG_NFS_V2=y
+> CONFIG_NFS_V3=y
+> CONFIG_NFS_V3_ACL=y
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+Just came across another issue, but a bit more problematic, as my
+kernel (Linus' tip as well) panics, after mounting the rootfs:
 
-Well, I'm not sure why exactly I left the execute_ost variable in
-acpi_system_notify() in the previous version.
+IP-Config: Complete:
+     device=eth0, hwaddr=00:50:43:50:1c:15, ipaddr=192.168.0.159, mask=255.255.255.0, gw=192.168.0.1
+     host=develboard, domain=, nis-domain=(none)
+     bootserver=192.168.0.45, rootserver=192.168.0.45, rootpath=
+VFS: Mounted root (nfs filesystem) on device 0:11.
+devtmpfs: mounted
+Freeing unused kernel memory: 136K (c0465000 - c0487000)
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = c0004000
+[00000000] *pgd=00000000
+Internal error: Oops: 5 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.13.0-10094-g9b0cd30 #276
+task: ed839a40 ti: ed83a000 task.ti: ed83a000
+PC is at xattr_resolve_name+0x14/0x94
+LR is at generic_getxattr+0x2c/0x64
+pc : [<c00a7ab0>]    lr : [<c00a7b5c>]    psr: a0000113
+sp : ed83be5c  ip : ed83be74  fp : ed10ebc0
+r10: ed83a000  r9 : ed43d980  r8 : ed81b800
+r7 : c034dad8  r6 : 00000000  r5 : c03f3dcc  r4 : ed43d980
+r3 : 00000014  r2 : ed83be8c  r1 : ed83be74  r0 : 00000000
+Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c53c7d  Table: 00004059  DAC: 00000015
+Process swapper (pid: 1, stack limit = 0xed83a238)
+Stack: (0xed83be5c to 0xed83c000)
+be40:                                                                ed43d980
+be60: 00000014 ed83be8c 00000000 00000000 c04bc22c c03f3dcc ed83bf14 ed43f340
+be80: ed43d980 c01115cc 00000000 00000041 c04bba6c 00000000 00000000 002040d0
+bea0: ed81bc00 ed10ebc0 ed81bc30 c01116f8 00000000 000004d0 ed8172d0 ed43d980
+bec0: 45878fd4 00000007 bfe01007 ef7f8fc0 c04bba6c ed43d6d8 c04bba6c 00000101
+bee0: 00000000 ed809fd0 ed809fc0 ed809f50 ed809f40 00000000 edb045d8 c0078bcc
+bf00: ed0e5dc0 edb045d8 00000000 bf000000 ed0e5dc0 00000000 00000000 00000000
+bf20: 00000000 00000000 bf000000 ed10ebc0 ed0e5dc0 00000001 edb045d8 c04926d0
+bf40: ed83a000 c0492758 ed10ebc0 c008fc54 00000001 ed0e5dc0 00000002 c0090cec
+bf60: c03ec85c ed0e5df4 00000000 ed839c00 c0487000 c04bcec0 c03e4f08 00000000
+bf80: 00000000 00000000 00000000 00000000 00000000 c00086a8 00000000 c04bcec0
+bfa0: c0344f5c c0345004 00000000 c000e398 00000000 00000000 00000000 00000000
+bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
+[<c00a7ab0>] (xattr_resolve_name) from [<00000000>] (  (null))
+Code: e1a06000 e5915000 e3550000 0a00001d (e5900000) 
+---[ end trace 15c15b4afa9eff90 ]---
+swapper (1) used greatest stack depth: 5104 bytes left
+Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
 
-Guess what, it's a good idea to review your own patches a couple of days
-after sending them out. :-)
+Adding a little hack, and could produce a better strack trace.
+See the diff and the stack trace below:
 
-Rafael
-
----
- drivers/acpi/bus.c                 |   42 ------------------------
- drivers/acpi/internal.h            |    1 
- drivers/acpi/scan.c                |   64 ++++++++-----------------------------
- drivers/pci/hotplug/acpiphp.h      |    1 
- drivers/pci/hotplug/acpiphp_glue.c |   16 ++++-----
- include/acpi/acpi_bus.h            |    2 -
- 6 files changed, 23 insertions(+), 103 deletions(-)
-
-Index: linux-pm/drivers/acpi/bus.c
-===================================================================
---- linux-pm.orig/drivers/acpi/bus.c
-+++ linux-pm/drivers/acpi/bus.c
-@@ -345,47 +345,7 @@ static void acpi_bus_notify(acpi_handle
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Notification %#02x to handle %p\n",
- 			  type, handle));
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 3377dff..bd2b173 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -740,6 +740,10 @@ xattr_resolve_name(const struct xattr_handler **handlers, const char **name)
  
--	switch (type) {
--
--	case ACPI_NOTIFY_BUS_CHECK:
--		/* TBD */
--		break;
--
--	case ACPI_NOTIFY_DEVICE_CHECK:
--		/* TBD */
--		break;
--
--	case ACPI_NOTIFY_DEVICE_WAKE:
--		/* TBD */
--		break;
--
--	case ACPI_NOTIFY_EJECT_REQUEST:
--		/* TBD */
--		break;
--
--	case ACPI_NOTIFY_DEVICE_CHECK_LIGHT:
--		/* TBD: Exactly what does 'light' mean? */
--		break;
--
--	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
--		/* TBD */
--		break;
--
--	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
--		/* TBD */
--		break;
--
--	case ACPI_NOTIFY_POWER_FAULT:
--		/* TBD */
--		break;
--
--	default:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Received unknown/unsupported notification [%08x]\n",
--				  type));
--		break;
--	}
--
-+	acpi_system_notify(handle, type);
- 	acpi_bus_get_device(handle, &device);
- 	if (device) {
- 		driver = device->driver;
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -74,6 +74,7 @@ static inline void acpi_lpss_init(void)
- 
- bool acpi_queue_hotplug_work(struct work_struct *work);
- bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
-+void acpi_system_notify(acpi_handle handle, u32 type);
- 
- /* --------------------------------------------------------------------------
-                      Device Node Initialization / Removal
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -485,11 +485,10 @@ static void acpi_device_hotplug(void *da
- 	unlock_device_hotplug();
- }
- 
--static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
-+void acpi_system_notify(acpi_handle handle, u32 type)
- {
- 	u32 ost_code = ACPI_OST_SC_SUCCESS;
- 	struct acpi_device *adev;
--	acpi_status status;
- 
- 	switch (type) {
- 	case ACPI_NOTIFY_BUS_CHECK:
-@@ -543,30 +542,25 @@ static void acpi_hotplug_notify_cb(acpi_
- 		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
- 					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
- 	}
--	get_device(&adev->dev);
--	mutex_unlock(&acpi_scan_lock);
--	status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
--	if (ACPI_SUCCESS(status))
--		return;
-+	if (adev->handler || (adev->hp && adev->hp->event)) {
-+		acpi_status status;
- 
--	put_device(&adev->dev);
-+		get_device(&adev->dev);
-+		mutex_unlock(&acpi_scan_lock);
-+		status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
-+		if (ACPI_SUCCESS(status))
-+			return;
-+
-+		put_device(&adev->dev);
-+	} else {
-+		mutex_unlock(&acpi_scan_lock);
-+		return;
+ 	if (!*name)
+ 		return NULL;
++	if(!handlers) {
++		dump_stack();
++		panic("ouch");
 +	}
  
-  out:
- 	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
- }
- 
--void acpi_install_hotplug_notify_handler(acpi_handle handle)
--{
--	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				    acpi_hotplug_notify_cb, NULL);
--}
--
--void acpi_remove_hotplug_notify_handler(acpi_handle handle)
--{
--	acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				   acpi_hotplug_notify_cb);
--}
--
- static ssize_t real_power_state_show(struct device *dev,
- 				     struct device_attribute *attr, char *buf)
- {
-@@ -1986,34 +1980,6 @@ void acpi_scan_hotplug_enabled(struct ac
- 	mutex_unlock(&acpi_scan_lock);
- }
- 
--static void acpi_scan_init_hotplug(acpi_handle handle, int type)
--{
--	struct acpi_device_pnp pnp = {};
--	struct acpi_hardware_id *hwid;
--	struct acpi_scan_handler *handler;
--
--	INIT_LIST_HEAD(&pnp.ids);
--	acpi_set_pnp_ids(handle, &pnp, type);
--
--	if (!pnp.type.hardware_id)
--		goto out;
--
--	/*
--	 * This relies on the fact that acpi_install_notify_handler() will not
--	 * install the same notify handler routine twice for the same handle.
--	 */
--	list_for_each_entry(hwid, &pnp.ids, list) {
--		handler = acpi_scan_match_handler(hwid->id, NULL);
--		if (handler) {
--			acpi_install_hotplug_notify_handler(handle);
--			break;
--		}
--	}
--
--out:
--	acpi_free_pnp_ids(&pnp);
--}
--
- static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 				      void *not_used, void **return_value)
- {
-@@ -2035,8 +2001,6 @@ static acpi_status acpi_bus_check_add(ac
- 		return AE_OK;
- 	}
- 
--	acpi_scan_init_hotplug(handle, type);
--
- 	acpi_add_single_object(&device, handle, type, sta);
- 	if (!device)
- 		return AE_CTRL_DEPTH;
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -292,7 +292,6 @@ static acpi_status register_slot(acpi_ha
- 	newfunc = &context->func;
- 	newfunc->function = function;
- 	newfunc->parent = bridge;
--	mutex_unlock(&acpiphp_context_lock);
- 
- 	if (acpi_has_method(handle, "_EJ0"))
- 		newfunc->flags = FUNC_HAS_EJ0;
-@@ -300,8 +299,14 @@ static acpi_status register_slot(acpi_ha
- 	if (acpi_has_method(handle, "_STA"))
- 		newfunc->flags |= FUNC_HAS_STA;
- 
-+	/*
-+	 * Dock stations' notify handler should be used for dock devices instead
-+	 * of the common one, so clear hp.event in their contexts.
-+	 */
- 	if (acpi_has_method(handle, "_DCK"))
--		newfunc->flags |= FUNC_HAS_DCK;
-+		context->hp.event = NULL;
-+
-+	mutex_unlock(&acpiphp_context_lock);
- 
- 	/* search for objects that share the same slot */
- 	list_for_each_entry(slot, &bridge->slots, node)
-@@ -369,10 +374,6 @@ static acpi_status register_slot(acpi_ha
- 			pr_debug("failed to register dock device\n");
- 	}
- 
--	/* install notify handler */
--	if (!(newfunc->flags & FUNC_HAS_DCK))
--		acpi_install_hotplug_notify_handler(handle);
--
- 	return AE_OK;
- }
- 
-@@ -409,9 +410,6 @@ static void cleanup_bridge(struct acpiph
- 
- 			if (is_dock_device(handle))
- 				unregister_hotplug_dock_device(handle);
--
--			if (!(func->flags & FUNC_HAS_DCK))
--				acpi_remove_hotplug_notify_handler(handle);
- 		}
- 		slot->flags |= SLOT_IS_GOING_AWAY;
- 		if (slot->slot)
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -435,8 +435,6 @@ static inline bool acpi_device_enumerate
- typedef void (*acpi_hp_callback)(void *data, u32 src);
- 
- acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
--void acpi_install_hotplug_notify_handler(acpi_handle handle);
--void acpi_remove_hotplug_notify_handler(acpi_handle handle);
- 
- /**
-  * module_acpi_driver(acpi_driver) - Helper macro for registering an ACPI driver
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -167,7 +167,6 @@ struct acpiphp_attention_info
- 
- #define FUNC_HAS_STA		(0x00000001)
- #define FUNC_HAS_EJ0		(0x00000002)
--#define FUNC_HAS_DCK            (0x00000004)
- 
- /* function prototypes */
- 
+ 	for_each_xattr_handler(handlers, handler) {
+ 		const char *n = strcmp_prefix(*name, handler->prefix);
 
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.13.0-10094-g9b0cd30-dirty #279
+[<c0012f40>] (unwind_backtrace) from [<c00107b8>] (show_stack+0x10/0x14)
+[<c00107b8>] (show_stack) from [<c00a8160>] (xattr_resolve_name+0x9c/0xa8)
+[<c00a8160>] (xattr_resolve_name) from [<c00a8274>] (generic_getxattr+0x2c/0x64)
+[<c00a8274>] (generic_getxattr) from [<c01115e0>] (get_vfs_caps_from_disk+0x4c/0xf4)
+[<c01115e0>] (get_vfs_caps_from_disk) from [<c011170c>] (cap_bprm_set_creds+0x84/0x408)
+[<c011170c>] (cap_bprm_set_creds) from [<c008fc54>] (prepare_binprm+0x80/0x11c)
+[<c008fc54>] (prepare_binprm) from [<c0090cec>] (do_execve+0x33c/0x46c)
+[<c0090cec>] (do_execve) from [<c00086a8>] (try_to_run_init_process+0x1c/0x50)
+[<c00086a8>] (try_to_run_init_process) from [<c0345024>] (kernel_init+0xa8/0x110)
+[<c0345024>] (kernel_init) from [<c000e398>] (ret_from_fork+0x14/0x3c)
+Kernel panic - not syncing: ouch
+
+FWIW, here's my piece of NFS config:
+
+CONFIG_NFS_FS=y
+CONFIG_NFS_V2=y
+CONFIG_NFS_V3=y
+# CONFIG_NFS_V3_ACL is not set
+# CONFIG_NFS_V4 is not set
+# CONFIG_NFS_SWAP is not set
+CONFIG_ROOT_NFS=y
+# CONFIG_NFSD is not set
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+
+> I think it's down to this:
+> 
+> commit 013cdf1088d7235da9477a2375654921d9b9ba9f
+> Author: Christoph Hellwig <hch@infradead.org>
+> Date:   Fri Dec 20 05:16:53 2013 -0800
+> 
+>     nfs: use generic posix ACL infrastructure for v3 Posix ACLs
+> 
+>     This causes a small behaviour change in that we don't bother to set
+>     ACLs on file creation if the mode bit can express the access permissions
+>     fully, and thus behaving identical to local filesystems.
+> 
+>     Signed-off-by: Christoph Hellwig <hch@lst.de>
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+And also here, reverting the above seem to fix the panic.
+
+Ideas?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
