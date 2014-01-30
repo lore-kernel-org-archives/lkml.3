@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaA3OfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 09:35:17 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:54014 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaA3OfQ (ORCPT
+	id S1753313AbaA3OfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 09:35:25 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:56142 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224AbaA3OfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 09:35:16 -0500
+	Thu, 30 Jan 2014 09:35:20 -0500
 From: Richard Genoud <richard.genoud@gmail.com>
 To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
 Cc: linux-kernel@vger.kernel.org, Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH 1/2] get_maintainer: Fix detection of git repository
-Date: Thu, 30 Jan 2014 15:34:56 +0100
-Message-Id: <1391092497-6567-1-git-send-email-richard.genoud@gmail.com>
+Subject: [PATCH 2/2] checkpatch: Fix detection of git repository
+Date: Thu, 30 Jan 2014 15:34:57 +0100
+Message-Id: <1391092497-6567-2-git-send-email-richard.genoud@gmail.com>
 X-Mailer: git-send-email 1.8.5
+In-Reply-To: <1391092497-6567-1-git-send-email-richard.genoud@gmail.com>
+References: <1391092497-6567-1-git-send-email-richard.genoud@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,22 +27,31 @@ Using a more generic check like "-e .git" corrects this behaviour.
 
 Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 ---
- scripts/get_maintainer.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 9c3986f4140c..41987885bd31 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -95,7 +95,7 @@ my %VCS_cmds;
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 0ea2a1e24ade..464dcef79b35 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -471,7 +471,7 @@ sub seed_camelcase_includes {
  
- my %VCS_cmds_git = (
-     "execute_cmd" => \&git_execute_cmd,
--    "available" => '(which("git") ne "") && (-d ".git")',
-+    "available" => '(which("git") ne "") && (-e ".git")',
-     "find_signers_cmd" =>
- 	"git log --no-color --follow --since=\$email_git_since " .
- 	    '--numstat --no-merges ' .
+ 	$camelcase_seeded = 1;
+ 
+-	if (-d ".git") {
++	if (-e ".git") {
+ 		my $git_last_include_commit = `git log --no-merges --pretty=format:"%h%n" -1 -- include`;
+ 		chomp $git_last_include_commit;
+ 		$camelcase_cache = ".checkpatch-camelcase.git.$git_last_include_commit";
+@@ -499,7 +499,7 @@ sub seed_camelcase_includes {
+ 		return;
+ 	}
+ 
+-	if (-d ".git") {
++	if (-e ".git") {
+ 		$files = `git ls-files "include/*.h"`;
+ 		@include_files = split('\n', $files);
+ 	}
 -- 
 1.8.5
 
