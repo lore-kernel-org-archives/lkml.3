@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaA3QLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 11:11:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56689 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaA3QLI (ORCPT
+	id S1753786AbaA3QLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 11:11:51 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:54597 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761AbaA3QLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 11:11:08 -0500
-Date: Thu, 30 Jan 2014 08:10:17 -0800
-From: tip-bot for David Woodhouse <tipbot@zytor.com>
-Message-ID: <tip-5fbbc25a99d680feca99a3095f0440f65d4307cc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
-        David.Woodhouse@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, tglx@linutronix.de, hpa@linux.intel.com,
-        David.Woodhouse@intel.com
-In-Reply-To: <1391079628.26079.82.camel@shinybook.infradead.org>
-References: <1391079628.26079.82.camel@shinybook.infradead.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86, boot: Fix word-size assumptions in has_eflag
- () inline asm
-Git-Commit-ID: 5fbbc25a99d680feca99a3095f0440f65d4307cc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 30 Jan 2014 11:11:48 -0500
+From: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: =?UTF-8?q?Adrien=20Verg=C3=A9?= <adrienverge@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Michel Dagenais <michel.dagenais@polymtl.ca>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V3 1/5] ARM CoreSight: ETM: Fix a memory allocation failure
+Date: Thu, 30 Jan 2014 11:11:06 -0500
+Message-Id: <1391098270-8867-2-git-send-email-adrienverge@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391098270-8867-1-git-send-email-adrienverge@gmail.com>
+References: <1391098270-8867-1-git-send-email-adrienverge@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 30 Jan 2014 08:10:24 -0800 (PST)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5fbbc25a99d680feca99a3095f0440f65d4307cc
-Gitweb:     http://git.kernel.org/tip/5fbbc25a99d680feca99a3095f0440f65d4307cc
-Author:     David Woodhouse <dwmw2@infradead.org>
-AuthorDate: Thu, 30 Jan 2014 11:00:28 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 30 Jan 2014 08:04:32 -0800
+When an application reads the ETB buffer too often, it can be empty.
+In this case, it results in a "vmalloc: allocation failure: 0 bytes",
+a backtrace in dmesg and a vfree on an incorrect address.
 
-x86, boot: Fix word-size assumptions in has_eflag() inline asm
+This patch allocates and frees the trace buffer only when necessary.
 
-Commit dd78b97367bd575918204cc89107c1479d3fc1a7 ("x86, boot: Move CPU
-flags out of cpucheck") introduced ambiguous inline asm in the
-has_eflag() function. In 16-bit mode want the instruction to be
-'pushfl', but we just say 'pushf' and hope the compiler does what we
-wanted.
-
-When building with 'clang -m16', it won't, because clang doesn't use
-the horrid '.code16gcc' hack that even 'gcc -m16' uses internally.
-
-Say what we mean and don't make the compiler make assumptions.
-
-[ hpa: ideally we would be able to use the gcc %zN construct here, but
-  that is broken for 64-bit integers in gcc < 4.5.
-
-  The code with plain "pushf/popf" is fine for 32- or 64-bit mode, but
-  not for 16-bit mode; in 16-bit mode those are 16-bit instructions in
-  .code16 mode, and 32-bit instructions in .code16gcc mode. ]
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Link: http://lkml.kernel.org/r/1391079628.26079.82.camel@shinybook.infradead.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Adrien Vergé <adrienverge@gmail.com>
 ---
- arch/x86/boot/cpuflags.c | 25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ arch/arm/kernel/etm.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/boot/cpuflags.c b/arch/x86/boot/cpuflags.c
-index a9fcb7c..431fa5f 100644
---- a/arch/x86/boot/cpuflags.c
-+++ b/arch/x86/boot/cpuflags.c
-@@ -28,20 +28,35 @@ static int has_fpu(void)
- 	return fsw == 0 && (fcw & 0x103f) == 0x003f;
- }
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+index 8ff0ecd..5192693 100644
+--- a/arch/arm/kernel/etm.c
++++ b/arch/arm/kernel/etm.c
+@@ -275,7 +275,7 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	long length;
+ 	struct tracectx *t = file->private_data;
+ 	u32 first = 0;
+-	u32 *buf;
++	u32 *buf = NULL;
  
-+/*
-+ * For building the 16-bit code we want to explicitly specify 32-bit
-+ * push/pop operations, rather than just saying 'pushf' or 'popf' and
-+ * letting the compiler choose. But this is also included from the
-+ * compressed/ directory where it may be 64-bit code, and thus needs
-+ * to be 'pushfq' or 'popfq' in that case.
-+ */
-+#ifdef __x86_64__
-+#define PUSHF "pushfq"
-+#define POPF "popfq"
-+#else
-+#define PUSHF "pushfl"
-+#define POPF "popfl"
-+#endif
-+
- int has_eflag(unsigned long mask)
- {
- 	unsigned long f0, f1;
+ 	mutex_lock(&t->mutex);
  
--	asm volatile("pushf	\n\t"
--		     "pushf	\n\t"
-+	asm volatile(PUSHF "	\n\t"
-+		     PUSHF "	\n\t"
- 		     "pop %0	\n\t"
- 		     "mov %0,%1	\n\t"
- 		     "xor %2,%1	\n\t"
- 		     "push %1	\n\t"
--		     "popf	\n\t"
--		     "pushf	\n\t"
-+		     POPF "	\n\t"
-+		     PUSHF "	\n\t"
- 		     "pop %1	\n\t"
--		     "popf"
-+		     POPF
- 		     : "=&r" (f0), "=&r" (f1)
- 		     : "ri" (mask));
+@@ -293,12 +293,14 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	etb_writel(t, first, ETBR_READADDR);
  
+ 	length = min(total * 4, (int)len);
+-	buf = vmalloc(length);
++	if (length != 0)
++		buf = vmalloc(length);
+ 
+ 	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
+ 	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
+-	for (i = 0; i < length / 4; i++)
+-		buf[i] = etb_readl(t, ETBR_READMEM);
++	if (buf)
++		for (i = 0; i < length / 4; i++)
++			buf[i] = etb_readl(t, ETBR_READMEM);
+ 
+ 	/* the only way to deassert overflow bit in ETB status is this */
+ 	etb_writel(t, 1, ETBR_CTRL);
+@@ -311,7 +313,8 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	etb_lock(t);
+ 
+ 	length -= copy_to_user(data, buf, length);
+-	vfree(buf);
++	if (buf)
++		vfree(buf);
+ 
+ out:
+ 	mutex_unlock(&t->mutex);
+-- 
+1.8.5.3
+
