@@ -1,78 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbaA3RPz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 12:15:55 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:33155 "EHLO SMTP.CITRIX.COM"
+	id S1753376AbaA3RSr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 12:18:47 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:54936 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752261AbaA3RPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 12:15:53 -0500
-X-IronPort-AV: E=Sophos;i="4.95,751,1384300800"; 
-   d="scan'208";a="98186355"
-Message-ID: <1391102149.9495.39.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH] arm: document "mach-virt" platform.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Christopher Covington <cov@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Thu, 30 Jan 2014 17:15:49 +0000
-In-Reply-To: <52EA83D6.9050506@codeaurora.org>
-References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
-	 <52EA83D6.9050506@codeaurora.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1751148AbaA3RSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 12:18:46 -0500
+Date: Thu, 30 Jan 2014 12:18:37 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC 1/5] memcg: cleanup charge routines
+Message-ID: <20140130171837.GD6963@cmpxchg.org>
+References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
+ <1387295130-19771-2-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387295130-19771-2-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-30 at 11:54 -0500, Christopher Covington wrote:
-> > +++ b/Documentation/devicetree/bindings/arm/mach-virt.txt
-> > @@ -0,0 +1,32 @@
-> > +* Mach-virt "Dummy Virtual Machine" platform
-> > +
-> > +"mach-virt" is the smallest, dumbest platform possible, to be used as
-> > +a guest for Xen, KVM and other hypervisors.
+On Tue, Dec 17, 2013 at 04:45:26PM +0100, Michal Hocko wrote:
+> The current core of memcg charging is wild to say the least.
+> __mem_cgroup_try_charge which is in the center tries to be too clever
+> and it handles two independent cases
+> 	* when the memcg to be charged is known in advance
+> 	* when the given mm_struct is charged
+> The resulting callchains are quite complex:
 > 
-> The platform is also useful to, and used by, simulators like QEMU in TCG mode.
-
-I can mention this, although I don't think the list needs to be
-exhaustive.
-                                      It has no
-> > +properties/functionality of its own and is driven entirely by device
-> > +tree.
+> memcg_charge_kmem(mm=NULL, memcg)  mem_cgroup_newpage_charge(mm)
+>  |                                | _________________________________________ mem_cgroup_cache_charge(current->mm)
+>  |                                |/                                            |
+>  | ______________________________ mem_cgroup_charge_common(mm, memcg=NULL)      |
+>  |/                                                                             /
+>  |                                                                             /
+>  | ____________________________ mem_cgroup_try_charge_swapin(mm, memcg=NULL)  /
+>  |/                               | _________________________________________/
+>  |                                |/
+>  |                                |                         /* swap accounting */   /* no swap accounting */
+>  | _____________________________  __mem_cgroup_try_charge_swapin(mm=NULL, memcg) || (mm, memcg=NULL)
+>  |/
+>  | ____________________________ mem_cgroup_do_precharge(mm=NULL, memcg)
+>  |/
+> __mem_cgroup_try_charge
+>   mem_cgroup_do_charge
+>     res_counter_charge
+>     mem_cgroup_reclaim
+>     mem_cgroup_wait_acct_move
+>     mem_cgroup_oom
 > 
-> I find this wording confusing. I read it as saying the platform has no
-> properties or functionality. Perhaps you could phrase it slightly differently,
-> such as having no properties or functionality beyond what's described in the
-> device tree.
-
-Yes, this is what I was trying to say, I'll update with something along
-those lines.
-
-> > +The platform may also provide hypervisor specific functionality
-> > +(e.g. PV I/O), if it does so then this functionality must be
-> > +discoverable (directly or indirectly) via device tree.
+> This patch splits __mem_cgroup_try_charge into two logical parts.
+> mem_cgroup_try_charge_mm which is responsible for charges for the given
+> mm_struct and it returns the charged memcg or NULL under OOM while
+> mem_cgroup_try_charge_memcg charges a known memcg and returns an error
+> code.
 > 
-> I think it would be informative to provide pointers here to commonly used
-> paravirtualized devices, especially VirtIO PCI/MMIO.
+> The only tricky part which remains is __mem_cgroup_try_charge_swapin
+> because it can return 0 if PageCgroupUsed is already set and then we do
+> not want to commit the charge. This is done with a magic combination of
+> memcg = NULL and ret = 0. So the function preserves its memcgp parameter
+> and sets the given memcg to NULL when it sees PageCgroupUsed
+> (__mem_cgroup_commit_charge_swapin then ignores such a commit).
+> 
+> Not only the code is easier to follow the change reduces the code size
+> too:
+> $ size mm/built-in.o.before
+>    text	   data	    bss	    dec	    hex	filename
+>  457463	  83162	  49824	 590449	  90271	mm/built-in.o.before
+> 
+> $ size mm/built-in.o.after
+>    text	   data	    bss	    dec	    hex	filename
+>  456794	  83162	  49824	 589780	  8ffd4	mm/built-in.o.after
 
-Under what criteria would something be eligible/appropriate to be
-listed? I was trying to avoid "advocating" any particular type of PV
-devices. We already have something of a problem with people incorrectly
-assuming that mach-virt == virtio, which is not the case.
+Nice!
 
-If we did want to include an explicit list here at a minimum I would
-also want to include the Xen PV devices as well and surely there would
-be others which ought to be included too.
+> @@ -2655,37 +2655,68 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  }
+>  
+>  /*
+> - * __mem_cgroup_try_charge() does
+> - * 1. detect memcg to be charged against from passed *mm and *ptr,
+> - * 2. update res_counter
+> - * 3. call memory reclaim if necessary.
+> + * __mem_cgroup_try_charge_memcg - core of the memcg charging code. The caller
+> + * keeps a css reference to the given memcg. We do not charge root_mem_cgroup.
+> + * OOM is triggered only if allowed by the given oom parameter (except for
+> + * __GFP_NOFAIL when it is ignored).
+>   *
+> - * In some special case, if the task is fatal, fatal_signal_pending() or
+> - * has TIF_MEMDIE, this function returns -EINTR while writing root_mem_cgroup
+> - * to *ptr. There are two reasons for this. 1: fatal threads should quit as soon
+> - * as possible without any hazards. 2: all pages should have a valid
+> - * pc->mem_cgroup. If mm is NULL and the caller doesn't pass a valid memcg
+> - * pointer, that is treated as a charge to root_mem_cgroup.
+> - *
+> - * So __mem_cgroup_try_charge() will return
+> - *  0       ...  on success, filling *ptr with a valid memcg pointer.
+> - *  -ENOMEM ...  charge failure because of resource limits.
+> - *  -EINTR  ...  if thread is fatal. *ptr is filled with root_mem_cgroup.
+> - *
+> - * Unlike the exported interface, an "oom" parameter is added. if oom==true,
+> - * the oom-killer can be invoked.
+> + * Returns 0 on success, -ENOMEM when the given memcg is under OOM and -EINTR
+> + * when the charge is bypassed (either when fatal signals are pending or
+> + * __GFP_NOFAIL allocation cannot be charged).
+>   */
+> -static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> -				   gfp_t gfp_mask,
+> +static int __mem_cgroup_try_charge_memcg(gfp_t gfp_mask,
+>  				   unsigned int nr_pages,
+> -				   struct mem_cgroup **ptr,
+> +				   struct mem_cgroup *memcg,
+>  				   bool oom)
 
-Ian.
+Why not keep the __mem_cgroup_try_charge() name?  It's shorter and
+just as descriptive.
 
+>  {
+>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+>  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> -	struct mem_cgroup *memcg = NULL;
+>  	int ret;
+>  
+> +	VM_BUG_ON(!memcg || memcg == root_mem_cgroup);
+> +
+> +	if (unlikely(task_in_memcg_oom(current)))
+> +		goto nomem;
+> +
+> +	if (gfp_mask & __GFP_NOFAIL)
+> +		oom = false;
+> +
+> +	do {
+> +		bool invoke_oom = oom && !nr_oom_retries;
+> +
+> +		/* If killed, bypass charge */
+> +		if (fatal_signal_pending(current))
+> +			goto bypass;
+> +
+> +		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch,
+> +					   nr_pages, invoke_oom);
+> +		switch (ret) {
+> +		case CHARGE_RETRY: /* not in OOM situation but retry */
+> +			batch = nr_pages;
+> +			break;
+> +		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
+> +			goto nomem;
+> +		case CHARGE_NOMEM: /* OOM routine works */
+> +			if (!oom || invoke_oom)
+> +				goto nomem;
+> +			nr_oom_retries--;
+> +			break;
+> +		}
+> +	} while (ret != CHARGE_OK);
+> +
+> +	if (batch > nr_pages)
+> +		refill_stock(memcg, batch - nr_pages);
+> +
+> +	return 0;
+> +nomem:
+> +	if (!(gfp_mask & __GFP_NOFAIL))
+> +		return -ENOMEM;
+> +bypass:
+> +	return -EINTR;
+> +}
+> +
+> +static bool mem_cgroup_bypass_charge(void)
+
+The name and parameter list suggests this consults some global memory
+cgroup state.  current_bypass_charge()?  I think ultimately we want to
+move away from all these mem_cgroup prefixes of static functions in
+there, they add nothing of value.
+
+> +{
+>  	/*
+>  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
+>  	 * in system level. So, allow to go ahead dying process in addition to
+> @@ -2693,13 +2724,23 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+>  	 */
+>  	if (unlikely(test_thread_flag(TIF_MEMDIE)
+>  		     || fatal_signal_pending(current)))
+> -		goto bypass;
+> +		return true;
+>  
+> -	if (unlikely(task_in_memcg_oom(current)))
+> -		goto nomem;
+> +	return false;
+> +}
+>  
+> -	if (gfp_mask & __GFP_NOFAIL)
+> -		oom = false;
+> +/*
+> + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
+> + * if mm is NULL). Returns NULL if memcg is under OOM.
+> + */
+> +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
+> +				   gfp_t gfp_mask,
+> +				   unsigned int nr_pages,
+> +				   bool oom)
+
+We already have a try_get_mem_cgroup_from_mm().  After this series,
+this function basically duplicates that and it would be much cleaner
+if we only had one try_charge() function and let all the callers use
+the appropriate try_get_mem_cgroup_from_wherever() themselves.
+
+If you pull the patch that moves consume_stock() back into
+try_charge() up front, I think this cleanup would be more obvious and
+the result even better.
