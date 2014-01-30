@@ -1,79 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaA3MNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:13:00 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32920 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaA3MM6 (ORCPT
+	id S1753019AbaA3MPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:15:21 -0500
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:48092 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750AbaA3MPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:12:58 -0500
-Date: Thu, 30 Jan 2014 12:12:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Simon <horms@verge.net.au>, Magnus <magnus.damm@gmail.com>,
-        Linux-SH <linux-sh@vger.kernel.org>, linux-kernel@vger.kernel.org
-Message-ID: <20140130121251.GO22609@sirena.org.uk>
-References: <87r47r6v48.wl%kuninori.morimoto.gx@gmail.com>
- <20140129124516.GZ11841@sirena.org.uk>
- <87mwieib5x.wl%kuninori.morimoto.gx@gmail.com>
+	Thu, 30 Jan 2014 07:15:19 -0500
+Message-ID: <52EA4244.5000509@gmail.com>
+Date: Thu, 30 Jan 2014 20:15:00 +0800
+From: "xinhui.pan" <mnipxh@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GTGEtWEe6jD60dxL"
-Content-Disposition: inline
-In-Reply-To: <87mwieib5x.wl%kuninori.morimoto.gx@gmail.com>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: About gpio-regulator setting on DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: balbi@ti.com, david.a.cohen@linux.intel.com
+CC: yanmin_zhang@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        xinhuix.pan@intel.com
+Subject: Re: [PATCH] gpio-intel-mid: fix the incorrect return of idle callback
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 29 Jan 2014 13:06, David Cohen wrote:
+> On Wed, Jan 29, 2014 at 01:52:30PM -0600, Felipe Balbi wrote:
+>> On Wed, Jan 29, 2014 at 11:12:32AM -0800, David Cohen wrote:
+>>> On Wed, Jan 29, 2014 at 03:23:40PM +0800, xinhui.pan wrote:
+>>>>
+>>>> 于 2014年01月29日 08:13, David Cohen 写道:
+>>>>> On Tue, Jan 28, 2014 at 12:12:06PM -0600, Felipe Balbi wrote:
+>>>>>> On Tue, Jan 28, 2014 at 09:24:13AM -0800, David Cohen wrote:
+>>>>>>> On Tue, Jan 28, 2014 at 10:49:37AM -0600, Felipe Balbi wrote:
+>>>>>>>> On Tue, Jan 28, 2014 at 04:50:57PM +0800, xinhui.pan wrote:
+>>>>>>>>> From: "xinhui.pan" <xinhuiX.pan@intel.com>
+>>>>>>>>>
+>>>>>>>>> intel_gpio_runtime_idle should return correct error code if it do fail.
+>>>>>>>>> make it more correct even though -EBUSY is the most possible return value.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: bo.he <bo.he@intel.com>
+>>>>>>>>> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+>>>>>>>>> ---
+>>>>>>>>>  drivers/gpio/gpio-intel-mid.c |    4 +++-
+>>>>>>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>>>>>>>
+>>>>>>>>> diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
+>>>>>>>>> index d1b50ef..05749a3 100644
+>>>>>>>>> --- a/drivers/gpio/gpio-intel-mid.c
+>>>>>>>>> +++ b/drivers/gpio/gpio-intel-mid.c
+>>>>>>>>> @@ -394,7 +394,9 @@ static const struct irq_domain_ops intel_gpio_irq_ops = {
+>>>>>>>>>
+>>>>>>>>>  static int intel_gpio_runtime_idle(struct device *dev)
+>>>>>>>>>  {
+>>>>>>>>> -	pm_schedule_suspend(dev, 500);
+>>>>>>>>> +	int err = pm_schedule_suspend(dev, 500);
+>>>>>>>>> +	if (err)
+>>>>>>>>> +		return err;
+>>>>>>>>>  	return -EBUSY;
+>>>>>>>>
+>>>>>>>> wait, is it only me or this would look a lot better as:
+>>>>>>>>
+>>>>>>>> static int intel_gpio_runtime_idle(struct device *dev)
+>>>>>>>> {
+>>>>>>>> 	return pm_schedule_suspend(dev, 500);
+>>>>>>>> }
+>>>>>>>
+>>>>>>> The reply to your suggestion is probably in this commit :)
+>>>>>>>
+>>>>>>> ---
+>>>>>>> commit 45f0a85c8258741d11bda25c0a5669c06267204a
+>>>>>>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>>>>> Date:   Mon Jun 3 21:49:52 2013 +0200
+>>>>>>>
+>>>>>>>     PM / Runtime: Rework the "runtime idle" helper routine
+>>>>>>> ---
+>>>>>>>
+>>>>>>> We won't return 0 from here.
+>>>>>>
+>>>>>> so you never want to return 0, why don't you, then:
+>>>>>>
+>>>>>> static int intel_gpio_runtime_idle(struct device *dev)
+>>>>>> {
+>>>>>> 	pm_schedule_suspend(dev, 500);
+>>>>>> 	return -EBUSY;
+>>>>>> }
+>>>>>
+>>>>> That's how it is currently :)
+>>>>>
+>>>>> But this patch is making the function to return a different code in case
+>>>>> of error. IMHO there is not much fuctional gain with it, but I see
+>>>>> perhaps one extra info for tracing during development.
+>>>>>
+>>>>> Anyway, I'll let Xinhui to do further comment since he's the author.
+>>>>>
+>>>>> Br, David
+>>>>>
+>>>> hi ,David & Balbi
+>>>>   I checked several drivers yesterday to see how they use pm_schedule_suspend 
+>>>> then found one bug in i2c. Also I noticed  gpio. 
+>>>> I think returning a correct error code is important.So I change -EBUSY 
+>>>> to *err*. To be honest,current code works well.
+>>>
+>>> In my experience, when I'm using fancy things like lauterbach a proper
+>>> error code may save couple of minutes in my life :)
+>>>
+>>> I keep my ack here.
+>>
+>> fair enough, sorry for the noise ;-) It could still be simplified a bit:
+>>
+>> 	return err ?: -EBUSY;
+> 
+> Agreed :)
+> Xinhui, could we have this suggestion in your patch?
+> 
+> Br, David
+> 
 
---GTGEtWEe6jD60dxL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi all,
+  I am xinhui pan. Thanks to the VPN problem, I can't access Intel's network. So I have to send you this email by personal email address.
+I am on Spring Festival vacation until Feb 9th. Sorry for that.
+  Your suggestion is very nice,thanks :) 
+  I will  generate V2 patch ASAP when my vocation is over. Thanks for all your help.
 
-On Wed, Jan 29, 2014 at 04:08:30PM -0800, Kuninori Morimoto wrote:
+>>
+>> -- 
+>> balbi
+> 
 
->     /* build initial state from gpio init data. */
->     state = 0;
->     for (ptr = 0; ptr < drvdata->nr_gpios; ptr++) {
->         if (config->gpios[ptr].flags & GPIOF_OUT_INIT_HIGH)     <== we need this
->                state |= (1 << ptr);
->     }
->     drvdata->state = state;
-
-So this just looks like a bug in the code - the DT has all the data
-needed but the parsing code isn't setting everything up that the rest of
-the code needs and/or we should drop one of the ways of configuring
-things in the main probe function.  Avoiding having two ways of doing
-the same thing in the main probe would definitely be good.
-
---GTGEtWEe6jD60dxL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS6kG/AAoJELSic+t+oim9s0cP/16C9I4fzfxkSMAmMu56Qlww
-TMWA/wKctewkQm/Wa53Ij2+ttrlak0GolARyxUfbUCMhWVb35q1cWVwmNEy4pbAI
-rfWzjl55pCYYo0r42Ag704vcM4evnNPaVXW0QYuJjqwsO+8sY6XONti3+JeBh9a/
-oJr5tr8hwxnk5n9p44Q1kdaPHaWHUlwpD9nN3QkwXJMsndDb2M05U1DcM9u6eMSs
-dvyR9jMVOGLBE3kYkGr2KrrbkL5ztDNY6sLJGatJGJWDMwG6zaTxck1RnE8PzgWL
-1wC0MFX4rs0V1y4jbpeKs6ynexhvmkehHMD7UTkIUIHJMKYixTLaYbWdq76sBvdG
-Cio2zkOystmDCLtwkwPx4Ryos2rHPTtbyepnsmzc3os7hNNFMzxDxFtFKxtxFEY7
-q7SUrJ6CK8DCcxGpGrnBg65zFDMJWXcm9Ol/HvMLfOnkImqvENvVxkYP5w6K0G+L
-qKyUKSexSNmskNPx4d1JyWSZLCU0ghWEjhw/IS0uC/GTtefRskoFm37rcvmLsOAn
-UsEQDGtJ8qQpwWQDGDf5tqhBfP3nCyfhS8P1dJTBQwmbbUPVo+eqfhB/g3BV1oUH
-n9PPXTA3qt4wLKAMR+0lAu3ZgPQYKEIAnhDwJsDuMH9c2Fo7k8Tpib6FBGo3JDuR
-Ko1m09anoEO3llBbc6Cu
-=nakD
------END PGP SIGNATURE-----
-
---GTGEtWEe6jD60dxL--
