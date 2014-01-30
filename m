@@ -1,77 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284AbaA3MFO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 07:05:14 -0500
-Received: from relaygw3-5.mclink.it ([213.21.178.156]:53855 "EHLO
-	relaygw3-5.mclink.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226AbaA3MFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 07:05:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArgGAG0/6lJNK3Ai/2dsb2JhbABZgwyrGwGUGhZ0glMTLRIRgUCICQHLfI8fhCIEmCiSH4MuOw
-Date: Thu, 30 Jan 2014 13:05:09 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: Juan David Gonzalez Cobas <juan.david.gonzalez.cobas@cern.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/2] FMC: support carriers with no mezzanine
-Message-ID: <697e73820414734bd7f3a8023391652b9bd930a3.1391083417.git.rubini@gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+	id S1753302AbaA3MFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 07:05:19 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:54884 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753266AbaA3MFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 07:05:16 -0500
+X-Mailbox-Line: From abcb2381bac2d7b300ab26a16a2ca81c551757da Mon Sep 17 00:00:00 2001
+Message-Id: <abcb2381bac2d7b300ab26a16a2ca81c551757da.1391081934.git.moinejf@free.fr>
+In-Reply-To: <cover.1391081933.git.moinejf@free.fr>
+References: <cover.1391081933.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Thu, 30 Jan 2014 12:08:06 +0100
+Subject: [PATCH v2 5/5] ASoC: tda998x: adjust the audio CTS_N pre-divider from
+ audio format
+To: alsa-devel@alsa-project.org
+Cc: broonie@kernel.org, Dave Airlie <airlied@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At registration and unregistration time, I was checking fmc->flags
-for FMC_DEVICE_NO_MEZZANINE, to skip initialization and cleanup for
-empty slots.  The check was wrong ("==" instead of "&") but
-registration failed anyways (as expected) because we had no EEPROM.
+In some boards, with I2S input, the NXP TDA998x HDMI transmitter did
+not play audio streams with a sample width lower than S16_32.
 
-This commit fixes one such checks and removes the other, so to
-actually accept slots with no mezzanines. That's because the carrier
-may offer some support anyways (the SPEC does), and working on the
-carrier with no mezzanine-specific driver is common during
-development.
+This patch adjusts the CTS_N predivider according to the used sample
+width.
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Juan David Gonzalez Cobas <dcobas@cern.ch>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/fmc/fmc-core.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c | 25 +++++++++++++++++++++----
+ include/drm/i2c/tda998x.h         |  5 ++++-
+ sound/soc/codecs/tda998x.c        | 19 +++++++++++++++----
+ 3 files changed, 40 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/fmc/fmc-core.c b/drivers/fmc/fmc-core.c
-index 5f0a15c..b8a594c 100644
---- a/drivers/fmc/fmc-core.c
-+++ b/drivers/fmc/fmc-core.c
-@@ -153,7 +153,7 @@ int fmc_device_register_n(struct fmc_device **devs, int n)
- 			ret = -EINVAL;
- 			break;
- 		}
--		if (fmc->flags == FMC_DEVICE_NO_MEZZANINE) {
-+		if (fmc->flags & FMC_DEVICE_NO_MEZZANINE) {
- 			dev_info(fmc->hwdev, "absent mezzanine in slot %d\n",
- 				 fmc->slot_id);
- 			continue;
-@@ -188,9 +188,6 @@ int fmc_device_register_n(struct fmc_device **devs, int n)
- 	for (i = 0; i < n; i++) {
- 		fmc = devarray[i];
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index 92cbc40..ee17d42 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/irq.h>
+ #include <sound/asoundef.h>
++#include <sound/pcm_params.h>
  
--		if (fmc->flags == FMC_DEVICE_NO_MEZZANINE)
--			continue; /* dev_info already done above */
--
- 		fmc->nr_slots = n; /* each slot must know how many are there */
- 		fmc->devarray = devarray;
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+@@ -47,6 +48,8 @@ struct tda998x_priv {
+ 	volatile int wq_edid_wait;
+ 	struct drm_encoder *encoder;
  
-@@ -262,8 +259,6 @@ void fmc_device_unregister_n(struct fmc_device **devs, int n)
- 	kfree(devs[0]->devarray);
++	int audio_sample_format;
++
+ 	u8 *eld;
+ };
  
- 	for (i = 0; i < n; i++) {
--		if (devs[i]->flags == FMC_DEVICE_NO_MEZZANINE)
--			continue;
- 		sysfs_remove_bin_file(&devs[i]->dev.kobj, &fmc_eeprom_attr);
- 		device_del(&devs[i]->dev);
- 		fmc_free_id_info(devs[i]);
+@@ -663,7 +666,18 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ 		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
+ 		clksel_aip = AIP_CLKSEL_AIP_I2S;
+ 		clksel_fs = AIP_CLKSEL_FS_ACLK;
+-		cts_n = CTS_N_M(3) | CTS_N_K(3);
++		switch (priv->audio_sample_format) {
++		case SNDRV_PCM_FORMAT_S16_LE:
++			cts_n = CTS_N_M(3) | CTS_N_K(1);
++			break;
++		case SNDRV_PCM_FORMAT_S24_LE:
++			cts_n = CTS_N_M(3) | CTS_N_K(2);
++			break;
++		default:
++		case SNDRV_PCM_FORMAT_S32_LE:
++			cts_n = CTS_N_M(3) | CTS_N_K(3);
++			break;
++		}
+ 		aclk = 1;				/* clock enable */
+ 		break;
+ 
+@@ -744,13 +758,14 @@ EXPORT_SYMBOL_GPL(tda998x_audio_get_eld);
+ 
+ void tda998x_audio_update(struct i2c_client *client,
+ 			int format,
+-			int port)
++			int port,
++			struct snd_pcm_hw_params *params)
+ {
+ 	struct tda998x_priv *priv = i2c_get_clientdata(client);
+ 	struct tda998x_encoder_params *p = &priv->params;
+ 
+ 	/* if the audio output is active, it may be a second start or a stop */
+-	if (format == 0 || priv->audio_active) {
++	if (format == 0 || !params || priv->audio_active) {
+ 		if (format == 0) {
+ 			priv->audio_active = 0;
+ 			reg_write(priv, REG_ENA_AP, 0);
+@@ -762,11 +777,13 @@ void tda998x_audio_update(struct i2c_client *client,
+ 	p->audio_cfg = port;
+ 
+ 	/* don't restart audio if same input format */
+-	if (format == p->audio_format) {
++	if (format == p->audio_format &&
++	    params_format(params) == priv->audio_sample_format) {
+ 		reg_write(priv, REG_ENA_AP, p->audio_cfg);
+ 		return;
+ 	}
+ 	p->audio_format = format;
++	priv->audio_sample_format = params_format(params);
+ 
+ 	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
+ }
+diff --git a/include/drm/i2c/tda998x.h b/include/drm/i2c/tda998x.h
+index 99387ae..62b838f 100644
+--- a/include/drm/i2c/tda998x.h
++++ b/include/drm/i2c/tda998x.h
+@@ -27,8 +27,11 @@ struct tda998x_encoder_params {
+ 	unsigned audio_sample_rate;
+ };
+ 
++struct snd_pcm_hw_params;
++
+ u8 *tda998x_audio_get_eld(struct i2c_client *client);
+ void tda998x_audio_update(struct i2c_client *client,
+ 			int format,
+-			int port);
++			int port,
++			struct snd_pcm_hw_params *params);
+ #endif
+diff --git a/sound/soc/codecs/tda998x.c b/sound/soc/codecs/tda998x.c
+index 7f21749..181388d 100644
+--- a/sound/soc/codecs/tda998x.c
++++ b/sound/soc/codecs/tda998x.c
+@@ -13,6 +13,7 @@
+ #include <linux/module.h>
+ #include <sound/soc.h>
+ #include <sound/pcm.h>
++#include <sound/pcm_params.h>
+ #include <linux/of.h>
+ #include <linux/i2c.h>
+ #include <drm/drm_encoder_slave.h>
+@@ -61,7 +62,8 @@ static void tda_get_encoder(struct tda_priv *priv)
+ 	priv->i2c_client = i2c_client;
+ }
+ 
+-static int tda_start_stop(struct tda_priv *priv)
++static int tda_start_stop(struct tda_priv *priv,
++			struct snd_pcm_hw_params *params)
+ {
+ 	int port;
+ 
+@@ -76,7 +78,7 @@ static int tda_start_stop(struct tda_priv *priv)
+ 		port = priv->ports[0];
+ 	else
+ 		port = priv->ports[1];
+-	tda998x_audio_update(priv->i2c_client, priv->dai_id, port);
++	tda998x_audio_update(priv->i2c_client, priv->dai_id, port, params);
+ 	return 0;
+ }
+ 
+@@ -156,9 +158,17 @@ static int tda_startup(struct snd_pcm_substream *substream,
+ 		stream->channels_max = max_channels;
+ 		stream->formats = formats;
+ 	}
++	return 0;
++}
++
++static int tda_hw_params(struct snd_pcm_substream *substream,
++			struct snd_pcm_hw_params *params,
++			struct snd_soc_dai *dai)
++{
++	struct tda_priv *priv = snd_soc_codec_get_drvdata(dai->codec);
+ 
+ 	/* start the TDA998x audio */
+-	return tda_start_stop(priv);
++	return tda_start_stop(priv, params);
+ }
+ 
+ static void tda_shutdown(struct snd_pcm_substream *substream,
+@@ -167,11 +177,12 @@ static void tda_shutdown(struct snd_pcm_substream *substream,
+ 	struct tda_priv *priv = snd_soc_codec_get_drvdata(dai->codec);
+ 
+ 	priv->dai_id = 0;		/* streaming stop */
+-	tda_start_stop(priv);
++	tda_start_stop(priv, NULL);
+ }
+ 
+ static const struct snd_soc_dai_ops tda_ops = {
+ 	.startup = tda_startup,
++	.hw_params = tda_hw_params,
+ 	.shutdown = tda_shutdown,
+ };
+ 
 -- 
-1.7.7.2
+1.9.rc1
+
