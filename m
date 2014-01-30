@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaA3KP6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 05:15:58 -0500
-Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:40297 "EHLO
-	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaA3KP4 (ORCPT
+	id S1752630AbaA3KZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 05:25:06 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:35954 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751027AbaA3KZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 05:15:56 -0500
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jan 2014 05:15:56 EST
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        stable@vger.kernel.org, williams@redhat.com, lclaudio@uudg.org,
-        jkacur@redhat.com, willemb@google.com,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Subject: [PATCH linux-3.10.y 3/3] ip6tnl: fix double free of fb_tnl_dev on exit
-Date: Thu, 30 Jan 2014 11:09:23 +0100
-Message-Id: <1391076563-10798-3-git-send-email-nicolas.dichtel@6wind.com>
-X-Mailer: git-send-email 1.8.4.1
-In-Reply-To: <1391076563-10798-1-git-send-email-nicolas.dichtel@6wind.com>
-References: <52EA1B4B.5080403@6wind.com>
- <1391076563-10798-1-git-send-email-nicolas.dichtel@6wind.com>
+	Thu, 30 Jan 2014 05:25:04 -0500
+Message-ID: <52EA2875.5020807@free-electrons.com>
+Date: Thu, 30 Jan 2014 11:24:53 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This problem was fixed upstream by commit 1e9f3d6f1c40 ("ip6tnl: fix use after
-free of fb_tnl_dev").
-The upstream patch depends on upstream commit 0bd8762824e7 ("ip6tnl: add x-netns
-support"), which was not backported into 3.10 branch.
+Hi Sebastian,
 
-First, explain the problem: when the ip6_tunnel module is unloaded,
-ip6_tunnel_cleanup() is called.
-rmmod ip6_tunnel
-=> ip6_tunnel_cleanup()
-  => rtnl_link_unregister()
-    => __rtnl_kill_links()
-      => for_each_netdev(net, dev) {
-        if (dev->rtnl_link_ops == ops)
-        	ops->dellink(dev, &list_kill);
-        }
-At this point, the FB device is deleted (and all ip6tnl tunnels).
-  => unregister_pernet_device()
-    => unregister_pernet_operations()
-      => ops_exit_list()
-        => ip6_tnl_exit_net()
-          => ip6_tnl_destroy_tunnels()
-            => t = rtnl_dereference(ip6n->tnls_wc[0]);
-               unregister_netdevice_queue(t->dev, &list);
-We delete the FB device a second time here!
+On 25/01/2014 19:19, Sebastian Hesselbarth wrote:
+> This patch set fixes clk init order that went upside-down with
+> v3.14. I haven't really investigated what caused this, but I assume
+> it is related with DT node reordering by addresses.
 
-The previous fix removes these lines, which fix this double free. But the patch
-introduces a memory leak when a netns is destroyed, because the FB device is
-never deleted. By adding an rtnl ops which delete all ip6tnl device excepting
-the FB device, we can keep this exlicit removal in ip6_tnl_destroy_tunnels().
+Can you explain what kind of issue do you observe?
 
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
----
- net/ipv6/ip6_tunnel.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+I have just tested the master branch of Linus and (excepted for SATA
+but Andrew will send a patch set soon), I didn't experiment any
+issues on Armada 370 and Armada XP based boards.
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 0516ebbea80b..f21cf476b00c 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1617,6 +1617,15 @@ static int ip6_tnl_changelink(struct net_device *dev, struct nlattr *tb[],
- 	return ip6_tnl_update(t, &p);
- }
- 
-+static void ip6_tnl_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
-+
-+	if (dev != ip6n->fb_tnl_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static size_t ip6_tnl_get_size(const struct net_device *dev)
- {
- 	return
-@@ -1681,6 +1690,7 @@ static struct rtnl_link_ops ip6_link_ops __read_mostly = {
- 	.validate	= ip6_tnl_validate,
- 	.newlink	= ip6_tnl_newlink,
- 	.changelink	= ip6_tnl_changelink,
-+	.dellink	= ip6_tnl_dellink,
- 	.get_size	= ip6_tnl_get_size,
- 	.fill_info	= ip6_tnl_fill_info,
- };
+Thanks,
+
+Gregory
+
+
+> 
+> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+> registered before core clocks driver. Unfortunately, we cannot
+> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+> init order for our drivers is always core clocks before clock gating,
+> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+> init function that will register core clocks before clock gating
+> driver.
+> 
+> This patch is based on pre-v3.14-rc1 mainline and should go in as
+> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+> I suggest Jason picks it up as a topic branch.
+> 
+> The patches have been boot tested on Dove and compile-tested only
+> for Kirkwood, Armada 370 and XP.
+> 
+> Sebastian Hesselbarth (4):
+>   clk: mvebu: armada-370: maintain clock init order
+>   clk: mvebu: armada-xp: maintain clock init order
+>   clk: mvebu: dove: maintain clock init order
+>   clk: mvebu: kirkwood: maintain clock init order
+> 
+>  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+>  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+>  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+>  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+>  4 files changed, 44 insertions(+), 50 deletions(-)
+> 
+> ---
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> 
+
+
 -- 
-1.8.4.1
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
