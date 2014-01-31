@@ -1,145 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251AbaAaS0h (ORCPT <rfc822;w@1wt.eu>);
+	id S933282AbaAaS0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:26:40 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:21172 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933255AbaAaS0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 13:26:37 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:46954 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933002AbaAaSYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:24:00 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alex Thorlton <athorlton@sgi.com>,
+Message-ID: <52EBEAD5.3000502@hp.com>
+Date: Fri, 31 Jan 2014 13:26:29 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Tim Chen <tim.c.chen@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Jiang Liu <liuj97@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Robin Holt <holt@sgi.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        liguang <lig.fnst@cn.fujitsu.com>, linux-mm@kvack.org
-Subject: [PATCH 2/3] Add VM_INIT_DEF_MASK and PRCTL_THP_DISABLE
-Date: Fri, 31 Jan 2014 12:23:46 -0600
-Message-Id: <1391192628-113858-6-git-send-email-athorlton@sgi.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
-References: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <1390933151-1797-2-git-send-email-Waiman.Long@hp.com> <1391108430.3138.86.camel@schen9-DESK> <20140130192835.GK5002@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140130192835.GK5002@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a VM_INIT_DEF_MASK, to allow us to set the default flags
-for VMs.  It also adds a prctl control which alllows us to set the THP
-disable bit in mm->def_flags so that VMs will pick up the setting as
-they are created.
+On 01/30/2014 02:28 PM, Peter Zijlstra wrote:
+> On Thu, Jan 30, 2014 at 11:00:30AM -0800, Tim Chen wrote:
+>> On Tue, 2014-01-28 at 13:19 -0500, Waiman Long wrote:
+>>
+>>> +/**
+>>> + * queue_spin_lock_slowpath - acquire the queue spinlock
+>>> + * @lock: Pointer to queue spinlock structure
+>>> + */
+>>> +void queue_spin_lock_slowpath(struct qspinlock *lock)
+>>> +{
+>>> +	unsigned int cpu_nr, qn_idx;
+>>> +	struct qnode *node, *next = NULL;
+>>> +	u32 prev_qcode, my_qcode;
+>>> +
+>>> +	/*
+>>> +	 * Get the queue node
+>>> +	 */
+>>> +	cpu_nr = smp_processor_id();
+>>> +	node   = this_cpu_ptr(&qnodes[0]);
+>>> +	qn_idx = 0;
+>>> +
+>>> +	if (unlikely(node->used)) {
+>>> +		/*
+>>> +		 * This node has been used, try to find an empty queue
+>>> +		 * node entry.
+>>> +		 */
+>>> +		for (qn_idx = 1; qn_idx<  MAX_QNODES; qn_idx++)
+>>> +			if (!node[qn_idx].used)
+>>> +				break;
+>>> +		if (unlikely(qn_idx == MAX_QNODES)) {
+>>> +			/*
+>>> +			 * This shouldn't happen, print a warning message
+>>> +			 *&  busy spinning on the lock.
+>>> +			 */
+>>> +			printk_sched(
+>>> +			  "qspinlock: queue node table exhausted at cpu %d!\n",
+>>> +			  cpu_nr);
+>>> +			while (!unfair_trylock(lock))
+>>> +				arch_mutex_cpu_relax();
+>>> +			return;
+>>> +		}
+>>> +		/* Adjust node pointer */
+>>> +		node += qn_idx;
+>>> +	}
+>>> +
+>>> +	/*
+>>> +	 * Set up the new cpu code to be exchanged
+>>> +	 */
+>>> +	my_qcode = SET_QCODE(cpu_nr, qn_idx);
+>>> +
+>> If we get interrupted here before we have a chance to set the used flag,
+>> the interrupt handler could pick up the same qnode if it tries to
+>> acquire queued spin lock.  Then we could overwrite the qcode we have set
+>> here.
+>>
+>> Perhaps an exchange operation for the used flag to prevent this race
+>> condition?
+> I don't get why we need the used thing at all; something like:
+>
+> struct qna {
+> 	int cnt;
+> 	struct qnode nodes[4];
+> };
+>
+> DEFINE_PER_CPU(struct qna, qna);
+>
+> struct qnode *get_qnode(void)
+> {
+> 	struct qna *qna = this_cpu_ptr(&qna);
+>
+> 	return qna->nodes[qna->cnt++]; /* RMW */
+> }
+>
+> void put_qnode(struct qnode *qnode)
+> {
+> 	struct qna *qna = this_cpu_ptr(&qna);
+> 	qna->cnt--;
+> }
+>
+> Should do fine, right?
 
-Signed-off-by: Alex Thorlton <athorlton@sgi.com>
-Suggested-by:  Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
+Yes, we can do something like that. However I think put_qnode() needs to 
+use atomic dec as well. As a result, we will need 2 additional atomic 
+operations per slowpath invocation. The code may look simpler, but I 
+don't think it will be faster than what I am currently doing as the 
+cases where the used flag is set will be relatively rare.
 
----
- include/linux/mm.h         |  2 ++
- include/uapi/linux/prctl.h |  3 +++
- kernel/fork.c              | 11 ++++++++---
- kernel/sys.c               | 17 +++++++++++++++++
- 4 files changed, 30 insertions(+), 3 deletions(-)
+>
+> If we interrupt the RMW above the interrupted context hasn't yet used
+> the queue and once we return its free again, so all should be well even
+> on load-store archs.
+>
+> The nodes array might as well be 3, because NMIs should never contend on
+> a spinlock, so all we're left with is task, softirq and hardirq context.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f28f46e..c0a94ad 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -177,6 +177,8 @@ extern unsigned int kobjsize(const void *objp);
-  */
- #define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_PFNMAP)
- 
-+#define VM_INIT_DEF_MASK	VM_NOHUGEPAGE
-+
- /*
-  * mapping from the currently active vm_flags protection bits (the
-  * low four bits) to a page protection mask..
-diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
-index 289760f..58afc04 100644
---- a/include/uapi/linux/prctl.h
-+++ b/include/uapi/linux/prctl.h
-@@ -149,4 +149,7 @@
- 
- #define PR_GET_TID_ADDRESS	40
- 
-+#define PR_SET_THP_DISABLE	41
-+#define PR_GET_THP_DISABLE	42
-+
- #endif /* _LINUX_PRCTL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index a17621c..9fc0a30 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -529,8 +529,6 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 	atomic_set(&mm->mm_count, 1);
- 	init_rwsem(&mm->mmap_sem);
- 	INIT_LIST_HEAD(&mm->mmlist);
--	mm->flags = (current->mm) ?
--		(current->mm->flags & MMF_INIT_MASK) : default_dump_filter;
- 	mm->core_state = NULL;
- 	atomic_long_set(&mm->nr_ptes, 0);
- 	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
-@@ -539,8 +537,15 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 	mm_init_owner(mm, p);
- 	clear_tlb_flush_pending(mm);
- 
--	if (likely(!mm_alloc_pgd(mm))) {
-+	if (current->mm) {
-+		mm->flags = current->mm->flags & MMF_INIT_MASK;
-+		mm->def_flags = current->mm->def_flags & VM_INIT_DEF_MASK;
-+	} else {
-+		mm->flags = default_dump_filter;
- 		mm->def_flags = 0;
-+	}
-+
-+	if (likely(!mm_alloc_pgd(mm))) {
- 		mmu_notifier_mm_init(mm);
- 		return mm;
- 	}
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c0a58be..d59524a 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1996,6 +1996,23 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 		if (arg2 || arg3 || arg4 || arg5)
- 			return -EINVAL;
- 		return current->no_new_privs ? 1 : 0;
-+	case PR_GET_THP_DISABLE:
-+		if (arg2 || arg3 || arg4 || arg5)
-+			return -EINVAL;
-+	case PR_SET_THP_DISABLE:
-+		if (arg3 || arg4 || arg5)
-+			return -EINVAL;
-+		down_write(&me->mm->mmap_sem);
-+		if (option == PR_SET_THP_DISABLE) {
-+			if (arg2)
-+				me->mm->def_flags |= VM_NOHUGEPAGE;
-+			else
-+				me->mm->def_flags &= ~VM_NOHUGEPAGE;
-+		} else {
-+			error = !!(me->mm->def_flags & VM_NOHUGEPAGE);
-+		}
-+		up_write(&me->mm->mmap_sem);
-+		break;
- 	default:
- 		error = -EINVAL;
- 		break;
--- 
-1.7.12.4
+I am not so sure about NMI not taking a spinlock. I seem to remember 
+seeing code that did that. Actually, I think the NMI code is trying to 
+printk something which, in turn, need to acquire a spinlock.
 
+-Longman
