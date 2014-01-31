@@ -1,108 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494AbaAaU55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:57:57 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:34133 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411AbaAaU5z (ORCPT
+	id S1754343AbaAaU7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:59:18 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:35969 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411AbaAaU7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:57:55 -0500
-Message-ID: <1391201873.28432.86.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: BUG ip_dst_cache (Not tainted): Poison overwritten
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: netdev@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        trinity@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 31 Jan 2014 12:57:53 -0800
-In-Reply-To: <CA+ydwtrWCgi=v7v=8yjNMV37Aa4ua9zbqYM5_uUdQrLSQt+VEw@mail.gmail.com>
-References: <CA+ydwtrWCgi=v7v=8yjNMV37Aa4ua9zbqYM5_uUdQrLSQt+VEw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 31 Jan 2014 15:59:17 -0500
+Message-ID: <52EC0E9B.8020406@linux.vnet.ibm.com>
+Date: Fri, 31 Jan 2014 12:59:07 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 0/8] Add support for PowerPC Hypervisor supplied performance
+ counters
+References: <1389916434-2288-1-git-send-email-cody@linux.vnet.ibm.com> <1390354379.11104.3.camel@concordia> <52E05E49.3010903@linux.vnet.ibm.com>
+In-Reply-To: <52E05E49.3010903@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14013120-1542-0000-0000-000005AEED25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-31 at 22:11 +0200, Tommi Rantala wrote:
-> Hello,
-> 
-> Hit this while fuzzing v3.13-9218-g0e47c96 with trinity in a qemu
-> virtual machine.
-> 
-> Tommi
+On 01/22/2014 04:11 PM, Cody P Schafer wrote:
+> On 01/21/2014 05:32 PM, Michael Ellerman wrote:
+>> On Thu, 2014-01-16 at 15:53 -0800, Cody P Schafer wrote:
+>>> These patches add basic pmus for 2 powerpc hypervisor interfaces to obtain
+>>> performance counters: gpci ("get performance counter info") and 24x7.
 
-Hi Tommi
-
-Could you please try the following fix ?
-
-I'll send an official patch in a couple of hours
-
-There are two bugs : 
-One dst leak, and one plain bug, as rt initial NULL
-value might be scratched.
-
- net/ipv4/ip_tunnel.c |   27 ++++++++++-----------------
- 1 file changed, 10 insertions(+), 17 deletions(-)
-
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index bd28f386bd02..bc6acdcb7625 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -101,27 +101,21 @@ static void tunnel_dst_reset_all(struct ip_tunnel *t)
- 		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
- }
- 
--static struct dst_entry *tunnel_dst_get(struct ip_tunnel *t)
-+static struct dst_entry *tunnel_dst_check(struct ip_tunnel *t, u32 cookie)
- {
- 	struct dst_entry *dst;
- 
- 	rcu_read_lock();
- 	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
--	if (dst)
-+	if (dst) {
-+		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
-+			rcu_read_unlock();
-+			tunnel_dst_reset(t);
-+			return NULL;
-+		}
- 		dst_hold(dst);
--	rcu_read_unlock();
--	return dst;
--}
--
--static struct dst_entry *tunnel_dst_check(struct ip_tunnel *t, u32 cookie)
--{
--	struct dst_entry *dst = tunnel_dst_get(t);
--
--	if (dst && dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
--		tunnel_dst_reset(t);
--		return NULL;
- 	}
--
-+	rcu_read_unlock();
- 	return dst;
- }
- 
-@@ -584,7 +578,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
- 	struct flowi4 fl4;
- 	u8     tos, ttl;
- 	__be16 df;
--	struct rtable *rt = NULL;	/* Route to the other host */
-+	struct rtable *rt;		/* Route to the other host */
- 	unsigned int max_headroom;	/* The extra header space needed */
- 	__be32 dst;
- 	int err;
-@@ -657,8 +651,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
- 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
- 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
- 
--	if (connected)
--		rt = (struct rtable *)tunnel_dst_check(tunnel, 0);
-+	rt = (connected) ? (struct rtable *)tunnel_dst_check(tunnel, 0) : NULL;
- 
- 	if (!rt) {
- 		rt = ip_route_output_key(tunnel->net, &fl4);
-
+Any comments on/things that need fixing for this patch set to be merged?
 
