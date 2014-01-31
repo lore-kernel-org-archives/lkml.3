@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092AbaAaWyK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 17:54:10 -0500
-Received: from dehamd003.servertools24.de ([31.47.254.18]:53948 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932313AbaAaWyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 17:54:08 -0500
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <52EC297B.7080909@ladisch.de>
-Date: Fri, 31 Jan 2014 23:53:47 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S933106AbaAaWzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 17:55:19 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:45861 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754120AbaAaWzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 17:55:17 -0500
+Date: Fri, 31 Jan 2014 15:55:13 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] of_mdio: Allow the DT to specify the phy ID and
+ avoid autoprobing
+Message-ID: <20140131225513.GA2519@obsidianresearch.com>
+References: <1391205045-1751-1-git-send-email-jgunthorpe@obsidianresearch.com>
+ <1391205045-1751-2-git-send-email-jgunthorpe@obsidianresearch.com>
+ <CAGVrzcbVo-Zzm9kLhiptf-qWgPH9XSs29mW8g2=g=Bq=PCb0_w@mail.gmail.com>
 MIME-Version: 1.0
-To: Network Nut <sillystack@gmail.com>
-CC: "'Austin S. Hemmelgarn'" <ahferroin7@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WaitForMultipleObjects/etc. In Kernel
-References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com> <52E77282.4030303@ladisch.de> <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com> <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com> <00f201cf1e15$f134ce70$d39e6b50$@gmail.com> <52EBD7BC.5020704@gmail.com> <007d01cf1ed4$b0e659a0$12b30ce0$@gmail.com>
-In-Reply-To: <007d01cf1ed4$b0e659a0$12b30ce0$@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGVrzcbVo-Zzm9kLhiptf-qWgPH9XSs29mW8g2=g=Bq=PCb0_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Network Nut wrote:
->> Assuming that you're porting to mainline distributions (and not embedded
->> devices), named SHM segments are accessible (providing the accessing
->> process has correct permissions) under /dev/shm.  You just need to make
->> sure that you create the segment with the right permissions for the
->> other processes to access it.
->
-> I already know how to do named shared memory between two processes. I only included that to describe my overall problem.
->
-> The problem that I am having is how I can make three totally-independent processes interact:
->
-> 1. M is a master process that creates a semaphore.
-> 2. P1 is a process that operates against the semaphore.
-> 3. P2 is a process that operates against the semaphore.
-> 4. It is not permissible that M be responsible for launching P1 or P2.
-> 5.  The semaphore, one way or another, must allow itself to be specified as one of the synchronization primitives in epoll_wait()
+On Fri, Jan 31, 2014 at 02:24:52PM -0800, Florian Fainelli wrote:
 
-This general problem descripton does not say anything more than your first
-mail.
+> > This is necessary to support phy's that cannot be autoprobed when
+> > of_mdiobus_register is called. Specifically, my case has the phy in reset at
+> > of_mdiobus_register, the reset is only released once the ethernet driver
+> > starts, before it attaches to the phy.
+> 
+> Who is responsible for bringing the PHY out of reset, is it the
+> Ethernet/MDIO bus driver? Is the PHY put into reset using, e.g a GPIO
+> line or any sort of reset controller, if so, should not we have some
+> sort of reset handle node and handle that in a generic manner?
 
-Use eventfd.  To share it, use a Unix domain socket created by M.  (This
-socket must be created at a well-known path.  shm_open() works similarly,
-but that it creates a file in a RAM disk and mmap()s it is just an
-implementation detail.)
+The Phy Reset is connected to a GPIO, and the ethernet driver has code
+to switch the GPIO out of reset. The phy is kept in reset until the
+ethernet device is opened, and Linux is booted with the phy reset
+asserted.
 
+> Is your DTS or DTB hardcoding the PHY id, or are you having your
+> bootloader detect the exact PHY for you, then putting back the PHY
+> into reset to save power, until someone uses that PHY again?
 
-Regards,
-Clemens
+For our uses the Phy ID is hardcoded. There is only a single part that
+will fit on the board. So the bootloader doesn't touch the phy. If
+there were alternate parts we'd get the part kind from the EEPROM that
+stores the MAC address/etc.
+
+> > +       while (cplen > 0) {
+> > +               if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
+> 
+> You might want to guard against 0x0 and 0xffff just in case whoever
+> fills this information in the Device Tree was reading bogus data out
+> of the MDIO bus, otherwise, chances are that the "Generic PHY" driver
+> will be picked up, and it might still not be appropriate for driving
+> your PHY chip.
+
+Having the bootloader read the phy ID just to fill in this compatible
+string isn't really the point. In every normal case I think it makes
+sense to let Linux autoprobe the phy id. The use for this compatible
+string is to defeat the autoprobe for situations where it is not
+appropriate.
+
+Thanks,
+Jason
