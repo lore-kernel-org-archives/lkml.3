@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110AbaAaBC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 20:02:27 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:39145 "EHLO smtp.gentoo.org"
+	id S932145AbaAaBDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 20:03:22 -0500
+Received: from tundra.namei.org ([65.99.196.166]:35118 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803AbaAaBCZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 20:02:25 -0500
-References: <1391104968-10258-1-git-send-email-ryao@gentoo.org> <1391104968-10258-2-git-send-email-ryao@gentoo.org> <20140130.162926.561686911250624301.davem@davemloft.net> <20140130.164451.873520736572570393.davem@davemloft.net>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20140130.164451.873520736572570393.davem@davemloft.net>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1EB31694-2C49-415B-8394-A91724665D71@gentoo.org>
-Cc: "ericvh@gmail.com" <ericvh@gmail.com>,
-        "rminnich@sandia.gov" <rminnich@sandia.gov>,
-        "lucho@ionkov.net" <lucho@ionkov.net>,
-        "v9fs-developer@lists.sourceforge.net" 
-	<v9fs-developer@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@gentoo.org" <kernel@gentoo.org>,
-        "aneesh.kumar@linux.vnet.ibm.com" <aneesh.kumar@linux.vnet.ibm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "behlendorf1@llnl.gov" <behlendorf1@llnl.gov>,
-        "mthode@mthode.org" <mthode@mthode.org>
-X-Mailer: iPad Mail (10B146)
-From: Richard Yao <ryao@gentoo.org>
-Subject: Re: [PATCH] 9p/trans_virtio.c: Fix broken zero-copy on vmalloc() buffers
-Date: Thu, 30 Jan 2014 20:02:23 -0500
-To: David Miller <davem@davemloft.net>
+	id S1753278AbaAaBDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 20:03:21 -0500
+Date: Fri, 31 Jan 2014 12:07:09 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: torvalds@linux-foundation.org, ghudson@mit.edu, simo@redhat.com,
+        sgallagh@redhat.com, keys@linux-nfs.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: RFC: KEYS: Is this too-big a behavioural change for a system
+ call?
+In-Reply-To: <4268.1391102040@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.02.1401311200310.11589@tundra.namei.org>
+References: <4268.1391102040@warthog.procyon.org.uk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jan 30, 2014, at 7:44 PM, David Miller <davem@davemloft.net> wrote:
+On Thu, 30 Jan 2014, David Howells wrote:
 
-> From: David Miller <davem@davemloft.net>
-> Date: Thu, 30 Jan 2014 16:29:26 -0800 (PST)
+>  (5) Don't implicitly create a new anonymous keyring and don't implicitly set
+>      the session keyring to the user-session keyring, but rather just fall back
+>      to using the user-session keyring if there isn't a session keyring.
 > 
->> From: Richard Yao <ryao@gentoo.org>
->> Date: Thu, 30 Jan 2014 13:02:48 -0500
->> 
->>> The 9p-virtio transport does zero copy on things larger than 1024 bytes
->>> in size. It accomplishes this by returning the physical addresses of
->>> pages to the virtio-pci device. At present, the translation is usually a
->>> bit shift.
->>> 
->>> However, that approach produces an invalid page address when we
->>> read/write to vmalloc buffers, such as those used for Linux kernle
->>> modules. This causes QEMU to die printing:
->>> 
->>> qemu-system-x86_64: virtio: trying to map MMIO memory
->>> 
->>> This patch enables 9p-virtio to correctly handle this case. This not
->>> only enables us to load Linux kernel modules off virtfs, but also
->>> enables ZFS file-based vdevs on virtfs to be used without killing QEMU.
->>> 
->>> Also, special thanks to both Avi Kivity and Alexander Graf for their
->>> interpretation of QEMU backtraces. Without their guidence, tracking down
->>> this bug would have taken much longer.
->>> 
->>> Signed-off-by: Richard Yao <ryao@gentoo.org>
->>> Acked-by: Alexander Graf <agraf@suse.de>
->>> Reviewed-by: Will Deacon <will.deacon@arm.com>
->> 
->> Applied, thanks.
-> 
-> Actually I had to revert, is_vmalloc_or_malloc_addr() is not exported to
-> modules, so this change breaks the build.
 
-Thanks for catching that. I had originally used is_vmalloc_addr() instead of is_vmalloc_or_malloc_addr(), but changed it after realizing this did not correct the problem on all architectures. The is_vmalloc_addr() lives in headers. I will send out a patch to get that symbol exported and resubmit this after it is merged.
+> 
+> That said, I do think that the Kerberos people have a valid point.  The current
+> behaviour is poor.  I'm inclined to implement (5) or (6), probably (5).
+> 
+> This won't make any difference to most processes, ie.:
+> 
+>  (*) Those run from pam_keyinit-managed login shells.
+> 
+>  (*) Those that don't make use of libkrb5 or keyrings.
+> 
+
+So there are existing apps which will see semantic changes?
+
+If so, we can't accept this change.
+
+> In many ways, I'd like to just get rid of the user and user-session keyrings
+> from the kernel entirely and have them created and maintained by pam_keyinit.
+> The special keyring IDs:
+> 
+> 	KEY_SPEC_USER_KEYRING
+> 	KEY_SPEC_USER_SESSION_KEYRING
+> 
+> and:
+> 
+> 	KEY_REQKEY_DEFL_USER_KEYRING
+> 	KEY_REQKEY_DEFL_USER_SESSION_KEYRING
+> 
+> would then search your session keyring for keyrings called "_uid" and
+> "_uid_ses" and return those.  Unfortunately, I think this is probably a
+> much-too-big change at this point.
+> 
+> Any thoughts?
+
+Getting it right is more important than the size of the change.
+
+What about creating a new system call with the desired behavior, and 
+deprecating the current one (or at least, making it a wrapper for the new 
+call).
+
+-- 
+James Morris
+<jmorris@namei.org>
