@@ -1,369 +1,440 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591AbaAaBIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 20:08:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38155 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaAaBI2 (ORCPT
+	id S1754041AbaAaB1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 20:27:34 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:39348 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970AbaAaB1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 20:08:28 -0500
-Date: Thu, 30 Jan 2014 17:07:55 -0800
-Message-Id: <201401310107.s0V17t5l007583@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/asmlinkage (LTO) for v3.14
-Cc: Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ido Yariv <ido@wizery.com>,
-        Ingo Molnar <mingo@elte.hu>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 30 Jan 2014 17:08:01 -0800 (PST)
+	Thu, 30 Jan 2014 20:27:24 -0500
+Message-ID: <52EAFBF6.7020603@linaro.org>
+Date: Thu, 30 Jan 2014 17:27:18 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
+        pliard@google.com
+Subject: Re: [PATCH v10 00/16] Volatile Ranges v10
+References: <1388646744-15608-1-git-send-email-minchan@kernel.org> <20140129000359.GZ6963@cmpxchg.org> <52E85CDA.5090102@linaro.org> <20140129183032.GA6963@cmpxchg.org>
+In-Reply-To: <20140129183032.GA6963@cmpxchg.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 01/29/2014 10:30 AM, Johannes Weiner wrote:
+> On Tue, Jan 28, 2014 at 05:43:54PM -0800, John Stultz wrote:
+>> On 01/28/2014 04:03 PM, Johannes Weiner wrote:
+>>> On Thu, Jan 02, 2014 at 04:12:08PM +0900, Minchan Kim wrote:
+>>>> o Syscall interface
+>>> Why do we need another syscall for this?  Can't we extend madvise to
+>>> take MADV_VOLATILE, MADV_NONVOLATILE, and return -ENOMEM if something
+>>> in the range was purged?
+>> So the madvise interface is insufficient to provide the semantics
+>> needed. Not so much for MADV_VOLATILE, but MADV_NONVOLATILE. For the
+>> NONVOLATILE call, we have to atomically unmark the volatility status of
+>> the byte range and provide the purge status, which informs the caller if
+>> any of the data in the specified range was discarded (and thus needs to
+>> be regenerated).
+>>
+>> The problem is that by clearing the range, we may need to allocate
+>> memory (possibly by splitting in an existing range segment into two),
+>> which possibly could fail. Unfortunately this could happen after we've
+>> modified the volatile state of part of that range.  At this point we
+>> can't just fail, because we've modified state and we also need to return
+>> the purge status of the modified state.
+> munmap() can theoretically fail for the same reason (splitting has to
+> allocate a new vma) but it's not even documented.  The allocator does
+> not fail allocations of that order.
+>
+> I'm not sure this is good enough, but to me it sounds a bit overkill
+> to design a new system call around a non-existent problem.
 
-This patchset adds more infrastructure for link time optimization
-(LTO).
+I still think its problematic design issue. With munmap, I think
+re-calling on failure should be fine. But with _NONVOLATILE we could
+possibly lose the purge status on a second call (for instance if only
+the first page of memory was purged, but we errored out mid-call w/
+ENOMEM, on the second call it will seem like the range was successfully
+set non-volatile with no memory purged).
 
-This patchset was pulled into my tree late because of a
-miscommunication (part of the patchset was picked up by other
-maintainers.)  However, the patchset is strictly build-related and
-seems to be okay in testing.
+And even if the current allocator never ever fails, I worry at some
+point in the future that rule might change and then we'd have a broken
+interface.
 
-The following changes since commit d8ec26d7f8287f5788a494f56e8814210f0e64be:
 
-  Linux 3.13 (2014-01-19 18:40:07 -0800)
 
-are available in the git repository at:
+>>>> o Not bind with vma split/merge logic to prevent mmap_sem cost and
+>>>> o Not bind with vma split/merge logic to avoid vm_area_struct memory
+>>>>   footprint.
+>>> VMAs are there to track attributes of memory ranges.  Duplicating
+>>> large parts of their functionality and co-maintaining both structures
+>>> on create, destroy, split, and merge means duplicate code and complex
+>>> interactions.
+>>>
+>>> 1. You need to define semantics and coordinate what happens when the
+>>>    vma underlying a volatile range changes.
+>>>
+>>>    Either you have to strictly co-maintain both range objects, or you
+>>>    have weird behavior like volatily outliving a vma and then applying
+>>>    to a separate vma created in its place.
+>> So indeed this is a difficult problem!  My initial approach is simply
+>> when any new mapping is made, we clear the volatility of the affected
+>> process memory. Admittedly this has extra overhead and Minchan has an
+>> alternative here (which I'm not totally sold on yet, but may be ok). 
+>> I'm almost convinced that for anonymous volatility, storing the
+>> volatility in the vma would be ok, but Minchan is worried about the
+>> performance overhead of the required locking for manipulating the vmas.
+>>
+>> For file volatility, this is more complicated, because since the
+>> volatility is shared, the ranges have to be tracked against the
+>> address_space structure, and can't be stored in per-process vmas. So
+>> this is partially why we've kept range trees hanging off of the mm and
+>> address_spaces structures, since it allows the range manipulation logic
+>> to be shared in both cases.
+> The fs people probably have not noticed yet what you've done to struct
+> address_space / struct inode ;-) I doubt that this is mergeable in its
+> current form, so we have to think about a separate mechanism for shmem
+> page ranges either way.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-asmlinkage-for-linus
+Yea. But given the semantics will likely be *very* similar, it seems
+strange to try to force separate mechanisms.
 
-for you to fetch changes up to 07ba06d9d293d3c0a512f1cb9189645c6e0424e2:
+That said, in an earlier implementation I stored the range tree in a
+hash so we wouldn't have to add anything to the address_space structure.
+But for now I want to make it clear that the ranges are tied to the
+address space (and it gives the fs folks something to notice ;).
 
-  x86, asmlinkage, xen: Fix type of NMI (2014-01-29 22:17:18 -0800)
 
-----------------------------------------------------------------
-Andi Kleen (6):
-      x86, asmlinkage, lguest: Fix C functions used by inline assembler
-      x86, asmlinkage, paravirt: Don't rely on local assembler labels
-      x86, asmlinkage, paravirt: Make paravirt thunks global
-      x86: Use inline assembler instead of global register variable to get sp
-      x86, asmlinkage, xen, kvm: Make {xen,kvm}_lock_spinning global and visible
-      x86, asmlinkage, xen: Fix type of NMI
+>>>    Userspace won't get this right, and even in the kernel this is
+>>>    error prone and adds a lot to the complexity of vma management.
+>> Not sure exactly I understand what you mean by "userspace won't get this
+>> right" ?
+> I meant, userspace being responsible for keeping vranges coherent with
+> its mmap and munmap operations, instead of the kernel doing it.
+>
+>>> 2. If page reclaim discards a page from the upper end of a a range,
+>>>    you mark the whole range as purged.  If the user later marks the
+>>>    lower half of the range as non-volatile, the syscall will report
+>>>    purged=1 even though all requested pages are still there.
+>> To me this aspect is a non-ideal but acceptable result of the usage pattern.
+>>
+>> Semantically, the hard rule would be we never report non-purged if pages
+>> in a range were purged.  Reporting purged when pages technically weren't
+>> is not optimal but acceptable side effect of unmarking a sub-range. And
+>> could be avoided by applications marking and unmarking objects consistently.
+>>
+>>
+>>>    The only way to make these semantics clean is either
+>>>
+>>>      a) have vrange() return a range ID so that only full ranges can
+>>>      later be marked non-volatile, or
+>>>
+>>>      b) remember individual page purges so that sub-range changes can
+>>>      properly report them
+>>>
+>>>    I don't like a) much because it's somewhat arbitrarily more
+>>>    restrictive than madvise, mprotect, mmap/munmap etc.  
+>> Agreed on A.
+>>
+>>> And for b),
+>>>    the straight-forward solution would be to put purge-cookies into
+>>>    the page tables to properly report purges in subrange changes, but
+>>>    that would be even more coordination between vmas, page tables, and
+>>>    the ad-hoc vranges.
+>> And for B this would cause way too much overhead for the mark/unmark
+>> operations, which have to be lightweight.
+> Yes, and allocators/message passers truly don't need this because at
+> the time they set a region to volatile the contents are invalidated
+> and the non-volatile declaration doesn't give a hoot if content has
+> been destroyed.
+>
+> But caches certainly would have to know if they should regenerate the
+> contents.  And bigger areas should be using huge pages, so we'd check
+> in 2MB steps.  Is this really more expensive than regenerating the
+> contents on a false positive?
 
- arch/x86/include/asm/paravirt.h       |  2 +-
- arch/x86/include/asm/paravirt_types.h |  9 +++++----
- arch/x86/include/asm/thread_info.h    |  8 +++++---
- arch/x86/kernel/kvm.c                 |  2 +-
- arch/x86/kernel/vsmp_64.c             |  8 ++++----
- arch/x86/lguest/boot.c                | 12 ++++++------
- arch/x86/xen/irq.c                    |  8 ++++----
- arch/x86/xen/mmu.c                    | 16 ++++++++--------
- arch/x86/xen/setup.c                  |  4 ++--
- arch/x86/xen/spinlock.c               |  2 +-
- 10 files changed, 37 insertions(+), 34 deletions(-)
+So you make a good argument. I'd counter that the false-positives are
+only caused when unmarking subranges of larger marked volatile range,
+and for use cases that would care about regenerating the contents,
+that's not a likely useage model (as they're probably going to be
+marking objects in memory volatile/nonvolatile, not just arbitrary
+ranges of pages).
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index 401f350ef71b..cd6e1610e29e 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -781,9 +781,9 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
-  */
- #define PV_CALLEE_SAVE_REGS_THUNK(func)					\
- 	extern typeof(func) __raw_callee_save_##func;			\
--	static void *__##func##__ __used = func;			\
- 									\
- 	asm(".pushsection .text;"					\
-+	    ".globl __raw_callee_save_" #func " ; "			\
- 	    "__raw_callee_save_" #func ": "				\
- 	    PV_SAVE_ALL_CALLER_REGS					\
- 	    "call " #func ";"						\
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index aab8f671b523..7549b8b369e4 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -388,10 +388,11 @@ extern struct pv_lock_ops pv_lock_ops;
- 	_paravirt_alt(insn_string, "%c[paravirt_typenum]", "%c[paravirt_clobber]")
- 
- /* Simple instruction patching code. */
--#define DEF_NATIVE(ops, name, code) 					\
--	extern const char start_##ops##_##name[] __visible,		\
--			  end_##ops##_##name[] __visible;		\
--	asm("start_" #ops "_" #name ": " code "; end_" #ops "_" #name ":")
-+#define NATIVE_LABEL(a,x,b) "\n\t.globl " a #x "_" #b "\n" a #x "_" #b ":\n\t"
-+
-+#define DEF_NATIVE(ops, name, code)					\
-+	__visible extern const char start_##ops##_##name[], end_##ops##_##name[];	\
-+	asm(NATIVE_LABEL("start_", ops, name) code NATIVE_LABEL("end_", ops, name))
- 
- unsigned paravirt_patch_nop(void);
- unsigned paravirt_patch_ident_32(void *insnbuf, unsigned len);
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 3ba3de457d05..e1940c06ed02 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -163,9 +163,11 @@ struct thread_info {
-  */
- #ifndef __ASSEMBLY__
- 
--
--/* how to get the current stack pointer from C */
--register unsigned long current_stack_pointer asm("esp") __used;
-+#define current_stack_pointer ({		\
-+	unsigned long sp;			\
-+	asm("mov %%esp,%0" : "=g" (sp));	\
-+	sp;					\
-+})
- 
- /* how to get the thread information struct from C */
- static inline struct thread_info *current_thread_info(void)
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 6dd802c6d780..cd1b362e4a23 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -673,7 +673,7 @@ static cpumask_t waiting_cpus;
- /* Track spinlock on which a cpu is waiting */
- static DEFINE_PER_CPU(struct kvm_lock_waiting, klock_waiting);
- 
--static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+__visible void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	struct kvm_lock_waiting *w;
- 	int cpu;
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index 992f890283e9..f6584a90aba3 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -33,7 +33,7 @@
-  * and vice versa.
-  */
- 
--static unsigned long vsmp_save_fl(void)
-+asmlinkage unsigned long vsmp_save_fl(void)
- {
- 	unsigned long flags = native_save_fl();
- 
-@@ -43,7 +43,7 @@ static unsigned long vsmp_save_fl(void)
- }
- PV_CALLEE_SAVE_REGS_THUNK(vsmp_save_fl);
- 
--static void vsmp_restore_fl(unsigned long flags)
-+__visible void vsmp_restore_fl(unsigned long flags)
- {
- 	if (flags & X86_EFLAGS_IF)
- 		flags &= ~X86_EFLAGS_AC;
-@@ -53,7 +53,7 @@ static void vsmp_restore_fl(unsigned long flags)
- }
- PV_CALLEE_SAVE_REGS_THUNK(vsmp_restore_fl);
- 
--static void vsmp_irq_disable(void)
-+asmlinkage void vsmp_irq_disable(void)
- {
- 	unsigned long flags = native_save_fl();
- 
-@@ -61,7 +61,7 @@ static void vsmp_irq_disable(void)
- }
- PV_CALLEE_SAVE_REGS_THUNK(vsmp_irq_disable);
- 
--static void vsmp_irq_enable(void)
-+asmlinkage void vsmp_irq_enable(void)
- {
- 	unsigned long flags = native_save_fl();
- 
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index bdf8532494fe..ad1fb5f53925 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -233,13 +233,13 @@ static void lguest_end_context_switch(struct task_struct *next)
-  * flags word contains all kind of stuff, but in practice Linux only cares
-  * about the interrupt flag.  Our "save_flags()" just returns that.
-  */
--static unsigned long save_fl(void)
-+asmlinkage unsigned long lguest_save_fl(void)
- {
- 	return lguest_data.irq_enabled;
- }
- 
- /* Interrupts go off... */
--static void irq_disable(void)
-+asmlinkage void lguest_irq_disable(void)
- {
- 	lguest_data.irq_enabled = 0;
- }
-@@ -253,8 +253,8 @@ static void irq_disable(void)
-  * PV_CALLEE_SAVE_REGS_THUNK(), which pushes %eax onto the stack, calls the
-  * C function, then restores it.
-  */
--PV_CALLEE_SAVE_REGS_THUNK(save_fl);
--PV_CALLEE_SAVE_REGS_THUNK(irq_disable);
-+PV_CALLEE_SAVE_REGS_THUNK(lguest_save_fl);
-+PV_CALLEE_SAVE_REGS_THUNK(lguest_irq_disable);
- /*:*/
- 
- /* These are in i386_head.S */
-@@ -1291,9 +1291,9 @@ __init void lguest_init(void)
- 	 */
- 
- 	/* Interrupt-related operations */
--	pv_irq_ops.save_fl = PV_CALLEE_SAVE(save_fl);
-+	pv_irq_ops.save_fl = PV_CALLEE_SAVE(lguest_save_fl);
- 	pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(lg_restore_fl);
--	pv_irq_ops.irq_disable = PV_CALLEE_SAVE(irq_disable);
-+	pv_irq_ops.irq_disable = PV_CALLEE_SAVE(lguest_irq_disable);
- 	pv_irq_ops.irq_enable = __PV_IS_CALLEE_SAVE(lg_irq_enable);
- 	pv_irq_ops.safe_halt = lguest_safe_halt;
- 
-diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-index 0da7f863056f..f56c23b60a6c 100644
---- a/arch/x86/xen/irq.c
-+++ b/arch/x86/xen/irq.c
-@@ -22,7 +22,7 @@ void xen_force_evtchn_callback(void)
- 	(void)HYPERVISOR_xen_version(0, NULL);
- }
- 
--static unsigned long xen_save_fl(void)
-+asmlinkage unsigned long xen_save_fl(void)
- {
- 	struct vcpu_info *vcpu;
- 	unsigned long flags;
-@@ -40,7 +40,7 @@ static unsigned long xen_save_fl(void)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_save_fl);
- 
--static void xen_restore_fl(unsigned long flags)
-+__visible void xen_restore_fl(unsigned long flags)
- {
- 	struct vcpu_info *vcpu;
- 
-@@ -62,7 +62,7 @@ static void xen_restore_fl(unsigned long flags)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_restore_fl);
- 
--static void xen_irq_disable(void)
-+asmlinkage void xen_irq_disable(void)
- {
- 	/* There's a one instruction preempt window here.  We need to
- 	   make sure we're don't switch CPUs between getting the vcpu
-@@ -73,7 +73,7 @@ static void xen_irq_disable(void)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_irq_disable);
- 
--static void xen_irq_enable(void)
-+asmlinkage void xen_irq_enable(void)
- {
- 	struct vcpu_info *vcpu;
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index ce563be09cc1..648512c50cc7 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -431,7 +431,7 @@ static pteval_t iomap_pte(pteval_t val)
- 	return val;
- }
- 
--static pteval_t xen_pte_val(pte_t pte)
-+__visible pteval_t xen_pte_val(pte_t pte)
- {
- 	pteval_t pteval = pte.pte;
- #if 0
-@@ -448,7 +448,7 @@ static pteval_t xen_pte_val(pte_t pte)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_pte_val);
- 
--static pgdval_t xen_pgd_val(pgd_t pgd)
-+__visible pgdval_t xen_pgd_val(pgd_t pgd)
- {
- 	return pte_mfn_to_pfn(pgd.pgd);
- }
-@@ -479,7 +479,7 @@ void xen_set_pat(u64 pat)
- 	WARN_ON(pat != 0x0007010600070106ull);
- }
- 
--static pte_t xen_make_pte(pteval_t pte)
-+__visible pte_t xen_make_pte(pteval_t pte)
- {
- 	phys_addr_t addr = (pte & PTE_PFN_MASK);
- #if 0
-@@ -514,14 +514,14 @@ static pte_t xen_make_pte(pteval_t pte)
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte);
- 
--static pgd_t xen_make_pgd(pgdval_t pgd)
-+__visible pgd_t xen_make_pgd(pgdval_t pgd)
- {
- 	pgd = pte_pfn_to_mfn(pgd);
- 	return native_make_pgd(pgd);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_make_pgd);
- 
--static pmdval_t xen_pmd_val(pmd_t pmd)
-+__visible pmdval_t xen_pmd_val(pmd_t pmd)
- {
- 	return pte_mfn_to_pfn(pmd.pmd);
- }
-@@ -580,7 +580,7 @@ static void xen_pmd_clear(pmd_t *pmdp)
- }
- #endif	/* CONFIG_X86_PAE */
- 
--static pmd_t xen_make_pmd(pmdval_t pmd)
-+__visible pmd_t xen_make_pmd(pmdval_t pmd)
- {
- 	pmd = pte_pfn_to_mfn(pmd);
- 	return native_make_pmd(pmd);
-@@ -588,13 +588,13 @@ static pmd_t xen_make_pmd(pmdval_t pmd)
- PV_CALLEE_SAVE_REGS_THUNK(xen_make_pmd);
- 
- #if PAGETABLE_LEVELS == 4
--static pudval_t xen_pud_val(pud_t pud)
-+__visible pudval_t xen_pud_val(pud_t pud)
- {
- 	return pte_mfn_to_pfn(pud.pud);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_pud_val);
- 
--static pud_t xen_make_pud(pudval_t pud)
-+__visible pud_t xen_make_pud(pudval_t pud)
- {
- 	pud = pte_pfn_to_mfn(pud);
- 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 68c054f59de6..518ab4a17b8a 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -34,7 +34,7 @@
- extern const char xen_hypervisor_callback[];
- extern const char xen_failsafe_callback[];
- #ifdef CONFIG_X86_64
--extern const char nmi[];
-+extern asmlinkage void nmi(void);
- #endif
- extern void xen_sysenter_target(void);
- extern void xen_syscall_target(void);
-@@ -559,7 +559,7 @@ void xen_enable_syscall(void)
- void xen_enable_nmi(void)
- {
- #ifdef CONFIG_X86_64
--	if (register_callback(CALLBACKTYPE_nmi, nmi))
-+	if (register_callback(CALLBACKTYPE_nmi, (char *)nmi))
- 		BUG();
- #endif
- }
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 0e36cde12f7e..581521c843a5 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -106,7 +106,7 @@ static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
- static cpumask_t waiting_cpus;
- 
- static bool xen_pvspin = true;
--static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+__visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	int irq = __this_cpu_read(lock_kicker_irq);
- 	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
+
+> MADV_NONVOLATILE and MADV_NONVOLATILE_REPORT? (catchy, I know...)
+
+Something like this might be doable. I suspect the non-reporting
+non-volatile is more of a special case (reporting should probably be the
+default - as its safer), so it should probably have the longer name. 
+But that's a minor issue.
+
+
+> What worries me a bit is that we have started from the baseline that
+> anything that scales with range size is way too much overhead,
+> regardless of how awkward and alien the alternatives are to implement.
+> But even in its most direct implementation, marking discardable pages
+> one by one is still a massive improvement over thrashing cache or
+> swapping, so why do we have to start from such an extreme?
+>
+> Applications won't use this interface because it's O(1), but because
+> they don't want to be #1 in memory consumption when the system hangs
+> and thrashes and swaps.
+>
+> Obviously, the lighter the better, but this code just doesn't seem to
+> integrate at all into the VM and I don't think it's justified.
+
+You're point about the implementation being somewhat alien is understood
+(though again, there's not really a VMA like structure for files, so
+tmpfs volatility I think will need something like this anyway) and at
+this point I'm willing to give this a try. A fast design that gets
+ignored is of less use then a slower one that gets reviewed and can be
+merged. :)
+
+That said, the whole premise here isn't in any single applications best
+interest. We're basically asking applications to pledge donations of
+memory, which will can only hurt their performance if the kernel take
+it. This allows the entire system to run better, as more applications
+can stay in memory, but if an application can get a 15% performance bump
+by not donating memory and hoping the OOM killer will get some
+other-app, that probably is hard to argue against. So I think lowering
+the bar as much as possible so the "donations" minimally affect
+performance is important for adoption (for example, think of the issue
+w/ fsync on ext3).
+
+But again, maybe that performance issue is something folks would be
+willing to look into at a later point once the functionality is merged
+and well understood?
+
+>> However there are more then just philosophical issues that complicate
+>> things. On swapless systems, we don't age anonymous pages, so we don't
+>> have a hook to purge volatile pages. So in that case we currently have
+>> to use the shrinker and use the full-range purging behavior.
+>>
+>> Adding anonymous aging for swapless systems might be able to help here,
+>> but thats likely to be complicated as well. For now the dual approach
+>> Minchan implemented (where the LRU can evict single pages, and the
+>> shrinker can evict total ranges) seems like a reasonable compromise
+>> while the functionality is reviewed.
+> We should at least *try* to go back to aging anon and run some tests
+> to quantify the costs, before creating a new VM object with its own
+> separate ad-hoc aging on speculation!  We've been there and it wasn't
+> that bad...
+
+Fair enough!
+
+
+>>>   clear VM_VOLATILE
+>>>   merge vma if possible
+>>>   pte walk to check for pmd_purged()/pte_purged()
+>> So I think the pte walk would be way too costly. Its probably easier to
+>> have a VM_PURGED or something on the vma that we set when we purge a
+>> page, which would simplify the purge state handling.
+> I added it because, right now, userspace only knows about pages.  It
+> does not know that when you mmap/madvise/mprotect that the kernel
+> creates range objects - that's an implementation detail - it only
+> knows that you are changing the attributes of a bunch of pages.
+>
+> Reporting a result for a super-range of what you actually speficied in
+> the syscall would implicitely turn ranges into first class
+> user-visible VM objects.
+>
+> This is a huge precedent.  "The traditional Unix memory objects of
+> file mappings, shared memory segments, anon mappings, pages, bytes,
+> and vranges!"  Is it really that strong of an object type?  Does a
+> performance optimization of a single use case justify it?
+>
+> I'd rather we make the reporting optional and report nothing in cases
+> where it's not needed, if that's all it takes.
+>
+> And try very hard to stick with pages as the primary unit of paging.
+
+I'd still think that ranges are still bunches of pages. But that by
+allowing for the reporting of false positives (which applications have
+to be able to handle anyway) in the unlikely case of unmarking a
+sub-range of pages that were marked, we are able to make the
+marking/unmarking operation much faster. Yes, behaviorally one can
+intuit from this that there are these page-range objects managed by the
+kernel, but I'd think its not really a first-order object.
+
+But you have a strong argument, and I'm willing to concede the point
+(this is your space, afterall :).  However I do worry that by limiting
+the flexibility of the semantics, we'll lock out some potential
+performance optimizations later.
+
+
+>>> Support for file pages are a very big deal and they seem to have had
+>>> an impact on many design decisions, but they are only mentioned on a
+>>> side note in this email.
+>>>
+>>> The rationale behind volatile anon pages was that they are often used
+>>> as caches and that dropping them under pressure and regenerating the
+>>> cache contents later on was much faster than swapping.
+>>>
+>>> But pages that are backed by an actual filesystem are "regenerated" by
+>>> reading the contents back from disk!  What's the point of declaring
+>>> them volatile?
+>>>
+>>> Shmem pages are a different story.  They might be implemented by a
+>>> virtual filesystem, but they behave like anon pages when it comes to
+>>> reclaim and repopulation so the same rationale for volatility appies.
+>> Right. So file volatility is mostly interesting to me on tmpfs/shmem,
+>> and your point about them being only sort of technically file pages is
+>> true, it sort of depends on where you stand in the kernel as to if its
+>> considered file or anonymous memory.
+> Yeah, there are many angles to look at it, but it's important that the
+> behavior is sane and consistent across all of them.
+
+Agreed.
+
+
+>> As for real-disk-backed file volatility, I'm not particularly interested
+>> in that, and fine with losing it. However, some have expressed
+>> theoretical interest that there may be cases where throwing the memory
+>> away is faster then writing it back to disk, so it might have some value
+>> there. But I don't have any concrete use cases that need it.
+> That could also be covered with an interface that clears dirty bits in
+> a range of pages.
+
+Well.. possibly. The issues with real files are ugly, since you don't
+want have stale data show up after the purge. In the past I proposed the
+hole punching for this, but that could be just as costly then writing
+the data back.
+
+Practically, I really don't see how true-file volatility makes any sense.
+
+The only rational interest was made by Dave Chinner, but what he really
+wanted was totally different. Something like a file-system persistent
+(instead of in-memory) volatility, so that filesystems could pick chunks
+of files to purge when disk space got tight.
+
+
+>> Really the *key* need for tmpfs/shmem file volatility is in order to
+>> have volatility on shared memory.
+>>
+>>> But a big aspect of anon volatility is communicating to userspace
+>>> whether *content* has been destroyed while in volatile state.  Shmem
+>>> pages might not necessarily need this.  The oft-cited example is the
+>>> message passing in a large circular buffer that is unused most of the
+>>> time.  The sender would mark it non-volatile before writing, and the
+>>> receiver would mark it volatile again after reading.  The writer can
+>>> later reuse any unreclaimed *memory*, but nobody is coming back for
+>>> the actual *contents* stored in there.  This usecase would be
+>>> perfectly fine with an interface that simply clears the dirty bits of
+>>> a range of shmem pages (through mmap or fd).  The writer would set the
+>>> pages non-volatile by dirtying them, whereas the reader would mark
+>>> them volatile again by clearing the dirty bits.  Reclaim would simply
+>>> discard clean pages.
+>> So while in that case, its unlikely anyone is going to be trying to
+>> reuse contents of the volatile data. However, there may be other cases
+>> where for example, a image cache is managed in a shared tmpfs segment
+>> between a jpeg renderer and a web-browser, so there can be improved
+>> isolation/sandboxing between the functionality. In that case, the
+>> management of the volatility would be handled completely by the
+>> web-browser process, but we'd want memory to be shared so we've have
+>> zero-copy from the render.
+>>
+>> In that case, the browser would want to be able mark chunks of shared
+>> buffer volatile when it wasn't in use, and to unmark the range and
+>> re-use it if it wasn't purged.
+> You are right, we probably can not ignore such cases.
+>
+> The way I see it, the simplest design, the common denominator for
+> private anon, true file, shmem, tmpfs, would be for MADV/FADV_VOLATILE
+> to clear dirty bits off shared pages, or ptes/pmds in the private
+> mapped case to keep the COW charade intact.  And for the NONVOLATILE
+> side to set dirty on what's still present and report if something is
+> missing.
+
+Hrmmm. This sounds reasonable, but I'm not sure its right.  It seems the
+missing part here is (with anonymous scanning on swapless systems), we
+still have to set the volatility of the page somewhere so the LRU
+scanner will actually purge those made-clean pages, no? Otherwise won't
+anon and tmpfs files either just be swapped or passed over and left in
+memory? And again, for true-files, we don't want stale data.
+
+
+> Allocators and message passers don't care about content once volatile,
+> only about the memory.  They wouldn't even have to go through the
+> non-volatile step anymore, they could just write to memory again and
+> it'll set the dirty bits and refault what's missing.
+
+So this would implicitly make any write effectively clear the volatility
+of a page? That probably would be an ok semantic with the use cases I'm
+aware of, but its new.
+
+
+> Caches in anon memory would have to mark the pages volatile and then
+> later non-volatile to see if the contents have been preserved.
+>
+> In the standard configuration, this would exclude the optimistic
+> usecase, but it's conceivable to have a settable per-VMA flag that
+> prevents purged pages from refaulting silently and make them trip a
+> SIGBUS instead.  But I'm still a little dubious whether this usecase
+> is workable in general...
+
+So the SIGBUS bit is of particular interest to the Mozilla folks. My
+understanding of the usage case they want to have is expanding
+compressed library files into memory, but allowing the cold library
+pages to be purged. Then on access, any purged pages triggers the
+SIGBUS, which allows them to "fault" back in that page from the
+compressed file.
+
+Similarly I can see folks wanting to use the optimistic model for other
+use cases in general, especially if we go with a O(#pages) algorithm, as
+it allows even less overhead by avoiding umarking and remarking pages on
+access.
+
+That said, the SIGBUS model is a bit painful as properly handling
+signals in a large application is treacherous. So alternative solutions
+for what is bascially userland page-faulting would be of interest.
+
+
+
+> Such an interface would be dead simple to use and consistent across
+> all types.  The basic implementation would require only a couple of
+> lines of code, and while O(pages), it would still be much cheaper than
+> thrashing and swapping, and still cheaper than actively giving ranges
+> back to the kernel and reallocating and repopulating them later on.
+>
+> Compare this to the diffstat of the current vrange implementation and
+> the complexity and inconsistencies it introduces into the VM.  I'm not
+> sure an O(pages) interface would be unattractive enough to justify it.
+
+Ok. So I think we're in agreement with:
+* Moving the volatility state for anonymous volatility into the VMA
+* Getting anonymous scanning going again on swapless systems
+
+I'm still not totally sure about, but willing to try
+* Page granular volatile tracking
+
+I'm still not convinced on:
+* madvise as a sufficient interface
+
+
+I'll try to work out a draft of what your proposing (probably just for
+anonymous memory for now) and we can iterate from there?
+
+thanks
+-john
+
