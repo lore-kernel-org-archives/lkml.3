@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbaAaNfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 08:35:07 -0500
-Received: from smtp4.epfl.ch ([128.178.224.219]:59011 "EHLO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932331AbaAaNez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 08:34:55 -0500
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Andreas Larsson <andreas@gaisler.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, florian.vaussard@epfl.ch
-Subject: [PATCH v3 1/5] can: sja1000: convert printk to use netdev API
-Date: Fri, 31 Jan 2014 14:34:33 +0100
-Message-Id: <1391175277-19833-2-git-send-email-florian.vaussard@epfl.ch>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1391175277-19833-1-git-send-email-florian.vaussard@epfl.ch>
-References: <1391175277-19833-1-git-send-email-florian.vaussard@epfl.ch>
+	id S1754225AbaAaNjM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 08:39:12 -0500
+Received: from s3.sipsolutions.net ([144.76.43.152]:52120 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaAaNjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 08:39:10 -0500
+Message-ID: <1391175537.4141.9.camel@jlt4.sipsolutions.net>
+Subject: Re: [RFC PATCH] net: wireless: move regulatory timeout work to
+ power efficient workqueue
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Zoran Markovic <zoran.markovic@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 31 Jan 2014 14:38:57 +0100
+In-Reply-To: <1391123310-6425-1-git-send-email-zoran.markovic@linaro.org> (sfid-20140131_000951_185024_42790CBB)
+References: <1391123310-6425-1-git-send-email-zoran.markovic@linaro.org>
+	 (sfid-20140131_000951_185024_42790CBB)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use netdev_* where applicable.
+On Thu, 2014-01-30 at 15:08 -0800, Zoran Markovic wrote:
+> From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+> 
+> For better use of CPU idle time, allow the scheduler to select the CPU
+> on which the timeout work of regulatory settings would be executed.
+> This extends CPU idle residency time and saves power.
+> 
+> This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
----
- drivers/net/can/sja1000/sja1000.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Applied.
 
-diff --git a/drivers/net/can/sja1000/sja1000.c b/drivers/net/can/sja1000/sja1000.c
-index f17c301..55cce47 100644
---- a/drivers/net/can/sja1000/sja1000.c
-+++ b/drivers/net/can/sja1000/sja1000.c
-@@ -106,8 +106,7 @@ static int sja1000_probe_chip(struct net_device *dev)
- 	struct sja1000_priv *priv = netdev_priv(dev);
- 
- 	if (priv->reg_base && sja1000_is_absent(priv)) {
--		printk(KERN_INFO "%s: probing @0x%lX failed\n",
--		       DRV_NAME, dev->base_addr);
-+		netdev_err(dev, "probing failed\n");
- 		return 0;
- 	}
- 	return -1;
--- 
-1.8.1.2
+johannes
 
