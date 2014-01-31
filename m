@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914AbaAaUEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:04:44 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54259 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932238AbaAaUEm (ORCPT
+	id S932976AbaAaUFm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:05:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54806 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932460AbaAaUFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:04:42 -0500
-Date: Fri, 31 Jan 2014 20:04:35 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-pm@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        Tero Kristo <t-kristo@ti.com>
-Subject: Re: [RFC/PATCH] base: platform: add generic clock handling for
-	platform-bus
-Message-ID: <20140131200434.GR27282@n2100.arm.linux.org.uk>
-References: <1391191965-31102-1-git-send-email-balbi@ti.com>
+	Fri, 31 Jan 2014 15:05:40 -0500
+Date: Fri, 31 Jan 2014 21:05:35 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
+ do
+Message-ID: <20140131200535.GR5002@laptop.programming.kicks-ass.net>
+References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
+ <1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
+ <20140131120757.594e24d6@gandalf.local.home>
+ <20140131174227.GN9012@linux.vnet.ibm.com>
+ <20140131125719.73340f6e@gandalf.local.home>
+ <52EBF8FE.3080608@linutronix.de>
+ <20140131143441.478f79ee@gandalf.local.home>
+ <52EBFE1D.4020201@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391191965-31102-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <52EBFE1D.4020201@linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 12:12:45PM -0600, Felipe Balbi wrote:
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 3a94b79..86aeb5b 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -484,6 +484,21 @@ static int platform_drv_probe(struct device *_dev)
->  	if (ACPI_HANDLE(_dev))
->  		acpi_dev_pm_attach(_dev, true);
->  
-> +	dev->fck = devm_clk_get(_dev, "fck");
-> +	dev->ick = devm_clk_get(_dev, "ick");
-> +
-> +	if (!IS_ERR(dev->fck))
-> +		clk_prepare_enable(dev->fck);
-> +	else
-> +		dev->fck = NULL;
-> +
-> +	if (!IS_ERR(dev->ick))
-> +		clk_prepare_enable(dev->ick);
-> +	else
-> +		dev->ick = NULL;
+On Fri, Jan 31, 2014 at 08:48:45PM +0100, Sebastian Andrzej Siewior wrote:
+> 
+> How "bad" is it? Is this something generic or just not getting
+> perf events fast enough out? Most users don't seem to require small
+> latencies.
 
-If people are going to continue doing this (converting error values to
-NULL) can we please have a check in devm_clk_get() which prevents it
-returning NULL if the implementation happens to do so?
+I have vague memories of there being an actual perf problem if there's a
+hole between the NMI/IRQ triggering the irq_work and the interrupt
+running the work.
 
-It's either that or we force all users to conform to the API which
-specifies that the error values are defined by IS_ERR() returning
-true and everything else must be considered as a potential valid return.
+I should have some notes on it somewhere and an todo entry to plug the
+hole.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+But note that the MCE code also uses irq_work, they really _need_ to be
+fast because the system might be crumbling under their feet.
