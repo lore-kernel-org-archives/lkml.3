@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924AbaAaVFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:05:14 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:45268 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754142AbaAaVFM (ORCPT
+	id S932769AbaAaVJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:09:42 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:33160 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320AbaAaVJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:05:12 -0500
-Date: Fri, 31 Jan 2014 22:05:07 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Matt Ranostay <mranostay@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        matt.porter@linaro.org, koen@dominion.thruhere.net,
-        pantelis.antoniou@gmail.com
-Subject: Re: [PATCH 2/2] iio: Add AS3935 lightning sensor support
-Message-ID: <20140131210507.GC3036@piout.net>
-References: <1391076673-5623-1-git-send-email-mranostay@gmail.com>
- <1391076673-5623-2-git-send-email-mranostay@gmail.com>
+	Fri, 31 Jan 2014 16:09:41 -0500
+Message-ID: <52EC110D.4030509@hp.com>
+Date: Fri, 31 Jan 2014 16:09:33 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391076673-5623-2-git-send-email-mranostay@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock implementation
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com> <20140130130453.GB2936@laptop.programming.kicks-ass.net> <20140130151715.GA5126@laptop.programming.kicks-ass.net> <20140131092616.GC5126@laptop.programming.kicks-ass.net> <52EBF276.1020505@hp.com> <20140131201401.GD2936@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140131201401.GD2936@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+On 01/31/2014 03:14 PM, Peter Zijlstra wrote:
+> On Fri, Jan 31, 2014 at 01:59:02PM -0500, Waiman Long wrote:
+>> On 01/31/2014 04:26 AM, Peter Zijlstra wrote:
+>>> On Thu, Jan 30, 2014 at 04:17:15PM +0100, Peter Zijlstra wrote:
+>>>> The below is still small and actually works.
+>>> OK, so having actually worked through the thing; I realized we can
+>>> actually do a version without MCS lock and instead use a ticket lock for
+>>> the waitqueue.
+>>>
+>>> This is both smaller (back to 8 bytes for the rwlock_t), and should be
+>>> faster under moderate contention for not having to touch extra
+>>> cachelines.
+>>>
+>>> Completely untested and with a rather crude generic ticket lock
+>>> implementation to illustrate the concept:
+>>>
+>> Using a ticket lock instead will have the same scalability problem as the
+>> ticket spinlock as all the waiting threads will spin on the lock cacheline
+>> causing a lot of cache bouncing traffic.
+> A much more important point for me is that a fair rwlock has a _much_
+> better worst case behaviour than the current mess. That's the reason I
+> was interested in the qrwlock thing. Not because it can run contended on
+> a 128 CPU system and be faster at being contended.
+>
+> If you contend a lock with 128 CPUs you need to go fix that code that
+> causes this abysmal behaviour in the first place.
+>
+>
 
-On 30/01/2014 at 02:11:13 -0800, Matt Ranostay wrote :
-> AS3935 chipset can detect lightning strikes and reports those
-> back as events and the esimated distance to the storm.
-> 
-> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
-> ---
->  .../devicetree/bindings/iio/distance/as3935.txt    |  25 ++
+I am not against the use of ticket spinlock as the queuing mechanism on 
+small systems. I do have  concern about the contended performance on 
+large NUMA systems which is my primary job responsibility. Depending on 
+the workload, contention can happens anywhere. So it is easier said than 
+done to fix whatever lock contention that may happen.
 
-Maybe I'm wrong but wasn't the agreement that the bindings documentation
-has to be sent separately to the devicetree mailing list ?
+How about making the selection of MCS or ticket queuing either user 
+configurable or depending on the setting of NR_CPUS, NUMA, etc?
 
->  drivers/iio/Kconfig                                |   1 +
->  drivers/iio/Makefile                               |   1 +
->  drivers/iio/distance/Kconfig                       |  19 +
->  drivers/iio/distance/Makefile                      |   6 +
->  drivers/iio/distance/as3935.c                      | 459 +++++++++++++++++++++
->  6 files changed, 511 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/distance/as3935.txt
->  create mode 100644 drivers/iio/distance/Kconfig
->  create mode 100644 drivers/iio/distance/Makefile
->  create mode 100644 drivers/iio/distance/as3935.c
+-Longman
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+-Longman
