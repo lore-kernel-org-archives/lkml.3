@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636AbaAaPHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:07:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16768 "EHLO mx1.redhat.com"
+	id S932614AbaAaPHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:07:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9717 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932436AbaAaPH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:28 -0500
+	id S932583AbaAaPHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:30 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -13,9 +13,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Jesse Brandeburg <jesse.brandeburg@intel.com>,
         e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH 13/34] i40e: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:32 +0100
-Message-Id: <e372ccd454aaa80f494851943d2d58646556bcee.1391172839.git.agordeev@redhat.com>
+Subject: [PATCH 14/34] igb: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:33 +0100
+Message-Id: <af7e2d8611ac6590fad19ea6c0061017558bff2e.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,57 +30,29 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/intel/i40e/i40e_main.c |   33 +++++----------------------
- 1 files changed, 6 insertions(+), 27 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
-index a4b9408..89d7fce 100644
---- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-+++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-@@ -5849,37 +5849,16 @@ err_out:
-  **/
- static int i40e_reserve_msix_vectors(struct i40e_pf *pf, int vectors)
- {
--	int err = 0;
--
--	pf->num_msix_entries = 0;
--	while (vectors >= I40E_MIN_MSIX) {
--		err = pci_enable_msix(pf->pdev, pf->msix_entries, vectors);
--		if (err == 0) {
--			/* good to go */
--			pf->num_msix_entries = vectors;
--			break;
--		} else if (err < 0) {
--			/* total failure */
--			dev_info(&pf->pdev->dev,
--				 "MSI-X vector reservation failed: %d\n", err);
--			vectors = 0;
--			break;
--		} else {
--			/* err > 0 is the hint for retry */
--			dev_info(&pf->pdev->dev,
--				 "MSI-X vectors wanted %d, retrying with %d\n",
--				 vectors, err);
--			vectors = err;
--		}
--	}
--
--	if (vectors > 0 && vectors < I40E_MIN_MSIX) {
-+	vectors = pci_enable_msix_range(pf->pdev, pf->msix_entries,
-+					I40E_MIN_MSIX, vectors);
-+	if (vectors < 0) {
- 		dev_info(&pf->pdev->dev,
--			 "Couldn't get enough vectors, only %d available\n",
--			 vectors);
-+			 "MSI-X vector reservation failed: %d\n", vectors);
- 		vectors = 0;
- 	}
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 46d31a4..84dfa3f 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -1111,10 +1111,11 @@ static void igb_set_interrupt_capability(struct igb_adapter *adapter, bool msix)
+ 	for (i = 0; i < numvecs; i++)
+ 		adapter->msix_entries[i].entry = i;
  
-+	pf->num_msix_entries = vectors;
-+
- 	return vectors;
- }
+-	err = pci_enable_msix(adapter->pdev,
+-			      adapter->msix_entries,
+-			      numvecs);
+-	if (err == 0)
++	err = pci_enable_msix_range(adapter->pdev,
++				    adapter->msix_entries,
++				    numvecs,
++				    numvecs);
++	if (err > 0)
+ 		return;
  
+ 	igb_reset_interrupt_capability(adapter);
 -- 
 1.7.7.6
 
