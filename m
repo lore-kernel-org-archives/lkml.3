@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219AbaAaU3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:29:21 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:60579 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932460AbaAaU3R (ORCPT
+	id S933237AbaAaU3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:29:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55492 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932460AbaAaU3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:29:17 -0500
-X-Sasl-enc: 5SS8IKC0WacZzZikIc53RP+tp2LjZnpYqtiNBr5S6FFz 1391200155
-Message-ID: <52EC0795.1040506@iki.fi>
-Date: Fri, 31 Jan 2014 22:29:09 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 31 Jan 2014 15:29:40 -0500
+Date: Fri, 31 Jan 2014 21:29:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
+ do
+Message-ID: <20140131202933.GE2936@laptop.programming.kicks-ass.net>
+References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
+ <1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
+ <20140131120757.594e24d6@gandalf.local.home>
+ <20140131174227.GN9012@linux.vnet.ibm.com>
+ <20140131125719.73340f6e@gandalf.local.home>
+ <52EBF8FE.3080608@linutronix.de>
+ <20140131143441.478f79ee@gandalf.local.home>
+ <52EBFE1D.4020201@linutronix.de>
+ <20140131200535.GR5002@laptop.programming.kicks-ass.net>
+ <52EC0658.3010205@linutronix.de>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Gaurav Jain <gjain@fb.com>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
-References: <1389836971-3549-1-git-send-email-namhyung@kernel.org> <52EB8E03.1030505@iki.fi> <20140131150415.GA26494@ghostprotocols.net>
-In-Reply-To: <20140131150415.GA26494@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EC0658.3010205@linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 05:04 PM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jan 31, 2014 at 01:50:27PM +0200, Pekka Enberg escreveu:
->> On 01/16/2014 03:49 AM, Namhyung Kim wrote:
->>> Gaurav reported that perf cannot profile JIT program if it executes
->>> the code on heap.  This was because current map__new() only handle JIT
->>> on anon mappings - extends it to handle no_dso (heap, stack) case too.
->>>
->>> This patch assumes JIT profiling only provides dynamic function
->>> symbols so check the mapping type to distinguish the case.  It'd
->>> provide no symbols for data mapping - if we need to support symbols on
->>> data mappings later it should be changed.
->>>
->>> Reported-by: Gaurav Jain <gjain@fb.com>
->>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> Looks OK to me.  Gaurav, does this fix your problem?
-> Yes, he tested it, etc, its already in Linus' tree:
->
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/tools/perf/util/map.c?id=578c03c86fadcc6fd7319ddf41dd4d1d88aab77a
+On Fri, Jan 31, 2014 at 09:23:52PM +0100, Sebastian Andrzej Siewior wrote:
+> Okay, this makes sense. What looked odd was the powerpc implementation
+> where they let the timer interrupt expire and call the irq_work from
+> the timer interrupt just before the clockevents callback is executed
+> (which would invoke the irq_work callback as well).
 
-Oh, great! I was going through my inbox and didn't notice it because I 
-got dropped from the CC list. :-)
+Ah, so what I remember Paul Mackerras saying was that that was the
+easiest way to trigger an interrupt on the local CPU.
 
-Thanks Arnaldo!
+ARM runs the things from every IRQ tail IIRC (or maybe only the PMI, I
+forget).
 
-                             Pekka
+> Would it be a win if we would remove the arch specific code and instead
+> raise the timer interrupt asap? It sure won't be a win or change for
+> -RT but it would allow all architectures to get irq_work done as soon
+> as possible in IRQ context (and out of NMI context if I understand
+> correct) without an arch specific implementation.
+
+No, because poking at timer hardware on x86 is stupid expensive, whereas
+sending a self-IPI through the APIC is tons cheaper.
+
+Also, I don't really want to poke at the fragile x86 timer hardware from
+NMI context while we might already be poking at it from another context.
+
+
