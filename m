@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaAaKZS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 05:25:18 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:42877 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754133AbaAaKZP (ORCPT
+	id S1754201AbaAaK1I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 05:27:08 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:52997 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410AbaAaK1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 05:25:15 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 2/3] spi: core: Update the devm_spi_register_master documentation
-Date: Fri, 31 Jan 2014 11:23:11 +0100
-Message-Id: <1391163792-21819-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com>
+	Fri, 31 Jan 2014 05:27:06 -0500
+Date: Fri, 31 Jan 2014 02:27:04 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: nitin.a.kamble@intel.com
+cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irq: fix a Kconfig dependency
+In-Reply-To: <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com>
+Message-ID: <alpine.DEB.2.02.1401310223460.7183@chino.kir.corp.google.com>
+References: <1391129410-54548-1-git-send-email-nitin.a.kamble@intel.com> <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the devm_spi_register_master function is used together with the
-spi_alloc_master as advertised in the documentation, it will either lead to a
-memory leak if spi_put_master is removed, or we will try to access an already
-freed memory area during the unregistration function.
+On Thu, 30 Jan 2014, nitin.a.kamble@intel.com wrote:
 
-Advertise that you want to use the devm_spi_alloc_master function in such case.
+> From: Nitin A Kamble <nitin.a.kamble@intel.com>
+> 
+> The generic_chip.c uses interfaces from irq_domain.c which is controlled by
+> the IRQ_DOMAIN config option.
+> 
+> Add a select statement in the Kconfig to reflect this requirement.
+> 
+> Without this fix, the generic_chip.c compilation fails like this:
+> 
+> linux/kernel/irq/generic-chip.c:400:11:
+>   error: 'irq_domain_xlate_onetwocell' undeclared here (not in a function)
+> 
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/spi/spi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+You're not specifying which config option you have enabled that selects 
+CONFIG_GENERIC_IRQ_CHIP and does not select CONFIG_IRQ_DOMAIN, but it does 
+look like there is a dependency here.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index eb728ec..dc577b7 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1444,7 +1444,7 @@ static void devm_spi_unregister(struct device *dev, void *res)
- /**
-  * dev_spi_register_master - register managed SPI master controller
-  * @dev:    device managing SPI master
-- * @master: initialized master, originally from spi_alloc_master()
-+ * @master: initialized master, originally from devm_spi_alloc_master()
-  * Context: can sleep
-  *
-  * Register a SPI device as with spi_register_master() which will
--- 
-1.8.4.2
-
+So, if this dependency is reasonable, it begs the question of why we have 
+CONFIG_GENERIC_IRQ_CHIP at all and shouldn't just make generic-chip.c 
+depend on CONFIG_IRQ_DOMAIN.
