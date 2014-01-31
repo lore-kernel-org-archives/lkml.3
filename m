@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaAaGvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 01:51:13 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:43541 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaAaGvL (ORCPT
+	id S1753969AbaAaGw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 01:52:56 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:56913 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaAaGwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 01:51:11 -0500
+	Fri, 31 Jan 2014 01:52:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140128031324.GH10628@intel.com>
+In-Reply-To: <CA+mB=1Jwjn+KSO9yFr=LNVjk3khf0b-LLQamYf+nnSF4bODGPA@mail.gmail.com>
 References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
 	<1390409565-4200-2-git-send-email-sthokal@xilinx.com>
 	<52E0FC22.8060903@metafoo.de>
 	<CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
 	<52E2698B.6070001@metafoo.de>
 	<20140126135933.GD10628@intel.com>
-	<52E54849.2000208@metafoo.de>
-	<CA+mB=1JvnTcyRnuvdnW1BCeiMLSTMrrAbKwVKgwFUmWrVuXzSw@mail.gmail.com>
-	<20140128031324.GH10628@intel.com>
-Date: Fri, 31 Jan 2014 12:21:09 +0530
-X-Google-Sender-Auth: D7Ep_hvXDTzX-T1zF01PD6f0O9A
-Message-ID: <CA+mB=1K8Cqe_c6_ce-fLyphvqcr90mhCjFdZ_d4BV-VkUk-gXw@mail.gmail.com>
+	<CA+mB=1Jwjn+KSO9yFr=LNVjk3khf0b-LLQamYf+nnSF4bODGPA@mail.gmail.com>
+Date: Fri, 31 Jan 2014 12:22:52 +0530
+X-Google-Sender-Auth: HP8op_3u4YzJ0D1_a1BSIcMBRLk
+Message-ID: <CA+mB=1LyX0_VVXZQ-=m3gR2RBeumLrnPTUW3j+Zm1nj7a4exHg@mail.gmail.com>
 Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
  driver support
 From: Srikanth Thokala <sthokal@xilinx.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, dan.j.williams@intel.com,
-        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
-        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        dan.j.williams@intel.com, michal.simek@xilinx.com,
+        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         devicetree@vger.kernel.org, dmaengine@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -38,74 +36,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Vinod,
 
-On Tue, Jan 28, 2014 at 8:43 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Mon, Jan 27, 2014 at 06:42:36PM +0530, Srikanth Thokala wrote:
->> Hi Lars/Vinod,
->> >> The question here i think would be waht this device supports? Is the hardware
->> >> capable of doing interleaved transfers, then would make sense.
->> >
->> > The hardware does 2D transfers. The parameters for a transfer are height,
->> > width and stride. That's only a subset of what interleaved transfers can be
->> > (xt->num_frames must be one for 2d transfers). But if I remember correctly
->> > there has been some discussion on this in the past and the result of that
->> > discussion was that using interleaved transfers for 2D transfers is
->> > preferred over adding a custom API for 2D transfers.
+On Mon, Jan 27, 2014 at 4:36 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+> Hi Vinod,
+>
+> On Sun, Jan 26, 2014 at 7:29 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+>> On Fri, Jan 24, 2014 at 02:24:27PM +0100, Lars-Peter Clausen wrote:
+>>> On 01/24/2014 12:16 PM, Srikanth Thokala wrote:
+>>> > Hi Lars,
+>>> >
+>>> > On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>>> >> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
+>>> >> [...]
+>>> >>> +/**
+>>> >>> + * xilinx_vdma_device_control - Configure DMA channel of the device
+>>> >>> + * @dchan: DMA Channel pointer
+>>> >>> + * @cmd: DMA control command
+>>> >>> + * @arg: Channel configuration
+>>> >>> + *
+>>> >>> + * Return: '0' on success and failure value on error
+>>> >>> + */
+>>> >>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
+>>> >>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
+>>> >>> +{
+>>> >>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+>>> >>> +
+>>> >>> +     switch (cmd) {
+>>> >>> +     case DMA_TERMINATE_ALL:
+>>> >>> +             xilinx_vdma_terminate_all(chan);
+>>> >>> +             return 0;
+>>> >>> +     case DMA_SLAVE_CONFIG:
+>>> >>> +             return xilinx_vdma_slave_config(chan,
+>>> >>> +                                     (struct xilinx_vdma_config *)arg);
+>>> >>
+>>> >> You really shouldn't be overloading the generic API with your own semantics.
+>>> >> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
+>>> >
+>>> > Ok.  The driver needs few additional configuration from the slave
+>>> > device like Vertical
+>>> > Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
+>>> > suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
+>>> > defined for Freescale drivers?
+>>>
+>>> In my opinion it is not a good idea to have driver implement a generic API,
+>>> but at the same time let the driver have custom semantics for those API
+>>> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
+>>> values passed to gpio_set_value instead of 0 and 1. It completely defeats
+>>> the purpose of a generic API, namely that you are able to write generic code
+>>> that makes use of the API without having to know about which implementation
+>>> API it is talking to. The dmaengine framework provides the
+>>> dmaengine_prep_interleaved_dma() function to setup two dimensional
+>>> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
 >>
->> I went through the prep_interleaved_dma API and I see only one descriptor
->> is prepared per API call (i.e. per frame).  As our IP supports upto 16 frame
->> buffers (can be more in future), isn't it less efficient compared to the
->> prep_slave_sg where we get a single sg list and can prepare all the descriptors
->> (of non-contiguous buffers) in one go?  Correct me, if am wrong and let me
->> know your opinions.
-> Well the descriptor maybe one, but that can represent multiple frames, for
-> example 16 as in your case. Can you read up the documentation of how multiple
-> frames are passed. Pls see include/linux/dmaengine.h
+>> The question here i think would be waht this device supports? Is the hardware
+>> capable of doing interleaved transfers, then would make sense.
+>>
+>> While we do try to get users use dma_slave_config, but there will always be
+>> someone who have specfic params. If we can generalize then we might want to add
+>> to the dma_slave_config as well
 >
-> /**
->  * Interleaved Transfer Request
->  * ----------------------------
->  * A chunk is collection of contiguous bytes to be transfered.
->  * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
->  * ICGs may or maynot change between chunks.
->  * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
->  *  that when repeated an integral number of times, specifies the transfer.
->  * A transfer template is specification of a Frame, the number of times
->  *  it is to be repeated and other per-transfer attributes.
->  *
->  * Practically, a client driver would have ready a template for each
->  *  type of transfer it is going to need during its lifetime and
->  *  set only 'src_start' and 'dst_start' before submitting the requests.
->  *
->  *
->  *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
->  *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
->  *
->  *    ==  Chunk size
->  *    ... ICG
->  */
+> There are many configuration parameters which are specific to IP and I
+> would like to
+> give an overview of some of parameteres here:
+>
+> 1) Park Mode ('cfg->park'): In Park mode, engine will park on frame
+> referenced by
+>     'cfg->park_frm', so user will have control on each frame in this mode.
+>
+> 2) Interrupt Coalesce ('cfg->coalesce'):  Used for setting interrupt
+> threshold. This value
+>    determines the number of frame buffers to process. To use this feature,
+>    'cfg->frm_cnt_en' should be set.
+>
+> 3) Frame Synchronization Source ('cfg->ext_fsync'):  Can be an
+> external/internal frame
+>     synchronization source. Used to synchronize one channel (MM2S/S2MM) with
+>     another (S2MM/MM2S) channel.
+>
+> 4) Genlock Synchronization ('cfg->genlock'): Used to avoid mismatch rate between
+>     master and slave.  In master mode (cfg->master), frames are not dropped and
+>     slave can drop frames to adjust to master frame rate.
+>
+> And in future, this Engine being a soft IP, we could expect some more additional
+> parameters.  Isn't a good idea to have a private member in dma_slave_config for
+> sharing additional configuration between slave device and dma engine? Or a new
+> dma_ctrl_cmd like FSLDMA_EXTERNAL_START?
 
-Yes, it can handle multiple frames specified by 'numf' each of size
-'frame_size * sgl[0].size'.
-But, I see it only works if all the frames' memory is contiguous and
-in this case we
-can just increment 'src_start' by the total frame size 'numf' number
-of times to fill in
-for each HW descriptor (each frame is one HW descriptor).  So, there
-is no issue when the
-memory is contiguous.  If the frames are non contiguous, we have to
-call this API for each
-frame (hence for each descriptor), as the src_start for each frame is
-different.  Is it correct?
 
-FYI: This hardware has an inbuilt Scatter-Gather engine.
-
-Srikanth
+Ping?
 
 >
-> --
-> ~Vinod
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Srikanth
+>
+>>
+>> --
+>> ~Vinod
+>> --/EX
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
