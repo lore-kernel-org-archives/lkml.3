@@ -1,109 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013AbaAaVd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:33:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57897 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754343AbaAaVdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:33:55 -0500
-Date: Fri, 31 Jan 2014 15:32:05 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+	id S933024AbaAaVea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:34:30 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:47111 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932629AbaAaVe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 16:34:28 -0500
+Date: Fri, 31 Jan 2014 16:34:27 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Greg KH <gregkh@linuxfoundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>,
         <linux-pm@vger.kernel.org>,
         Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
         Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
         Tero Kristo <t-kristo@ti.com>
 Subject: Re: [RFC/PATCH] base: platform: add generic clock handling for
  platform-bus
-Message-ID: <20140131213205.GB2502@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1391191965-31102-1-git-send-email-balbi@ti.com>
- <20140131200434.GR27282@n2100.arm.linux.org.uk>
+In-Reply-To: <1391191965-31102-1-git-send-email-balbi@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1401311614100.12368-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f2QGlHpHGjS2mn6Y"
-Content-Disposition: inline
-In-Reply-To: <20140131200434.GR27282@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f2QGlHpHGjS2mn6Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 31 Jan 2014, Felipe Balbi wrote:
 
-Hi,
+> Still TODO a commit log. Not for merging!!!!!
+> 
+> NYET-Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+> 
+> This patch is an idea I've had recently in order to combine several different
+> PM implementations into the platform-bus.
+> 
+> This patch is bare minimum for platforms which need to handle functional and
+> interface clocks but the whole thing is made optional.
+> 
+> Note that this patch makes sure that by the time a platform_driver's probe is
+> called, we already have clocks enabled and pm_runtime_set_active() has been
+> called, thus making sure that a device driver's pm_runtime_get_sync() will
+> solely increase the pm usage counter.
+> 
+> I have *NOT* tested this anywhere *YET*, but I suppose it shouldn't cause any
+> issues since the clock API has ref counting too.
+> 
+> Would really like to get some review from several folks involved with ARM SoC
+> PM so that's the reason for the wide audience. If I have missed anybody, please
+> add them to Cc.
+> 
+> As mentioned above, this is *NOT* meant for merging, but serves as a starting
+> point for discussing some convergence of several PM domain implementations on
+> different arch/arm/mach-* directories.
 
-On Fri, Jan 31, 2014 at 08:04:35PM +0000, Russell King - ARM Linux wrote:
-> On Fri, Jan 31, 2014 at 12:12:45PM -0600, Felipe Balbi wrote:
-> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> > index 3a94b79..86aeb5b 100644
-> > --- a/drivers/base/platform.c
-> > +++ b/drivers/base/platform.c
-> > @@ -484,6 +484,21 @@ static int platform_drv_probe(struct device *_dev)
-> >  	if (ACPI_HANDLE(_dev))
-> >  		acpi_dev_pm_attach(_dev, true);
-> > =20
-> > +	dev->fck =3D devm_clk_get(_dev, "fck");
-> > +	dev->ick =3D devm_clk_get(_dev, "ick");
-> > +
-> > +	if (!IS_ERR(dev->fck))
-> > +		clk_prepare_enable(dev->fck);
-> > +	else
-> > +		dev->fck =3D NULL;
-> > +
-> > +	if (!IS_ERR(dev->ick))
-> > +		clk_prepare_enable(dev->ick);
-> > +	else
-> > +		dev->ick =3D NULL;
->=20
-> If people are going to continue doing this (converting error values to
-> NULL) can we please have a check in devm_clk_get() which prevents it
-> returning NULL if the implementation happens to do so?
->=20
-> It's either that or we force all users to conform to the API which
-> specifies that the error values are defined by IS_ERR() returning
-> true and everything else must be considered as a potential valid return.
+You might want to copy the runtime-PM approach used by the PCI 
+subsystem.  It works like this:
 
-The idea here was just to avoid IS_ERR() checks every time we want to
-enable/disable a clock since clk API already copes with NULL pointers.
+	The core invokes a driver's probe routine with runtime PM 
+	enabled, the device in the ACTIVE state, and the usage counter 
+	incremented by 1.
 
-This also helps with the fact that platform_bus is also used with
-platforms which don't have (or otherwise don't need) any clock control
-whatsoever, thus made it optional.
+	If the driver wants to support runtime PM, the probe routine
+	can call pm_runtime_put_noidle.
 
-If everybody prefers duplication of IS_ERR() all over the place, that's
-fine too.
+	The core does pm_runtime_get_sync before invoking the driver's
+	remove routine.  At this point a runtime-PM-aware driver whould 
+	call pm_runtime_get_noresume, to balance the _put during probe.
 
---=20
-balbi
+	After invoking the remove routine, the core does a put_noidle
+	(to balance the get_sync) and a final put_sync (to balance the
+	increment before probe and to leave the device at low power.)
 
---f2QGlHpHGjS2mn6Y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+A nice consequence is that everything is transparent for drivers that 
+don't support runtime PM.  The usage counter remains > 0 the entire 
+time the driver is bound.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Conversely, drivers that do support runtime PM merely have to add one 
+call during probe and one during remove.
 
-iQIcBAEBAgAGBQJS7BZVAAoJEIaOsuA1yqREhGQP/1BOlpNC2Er9AYOagHeDSKws
-zr35jW4HUj3Vjzu9ivrqnRZt08pVF0Li/q4xsmG2rQdSsEnqcw50Li8fIvAFa2mQ
-2e2ZizpEyac9eVvbXzuBPaWfpVF8OFmLhPVePo/cVATVCW1/jQl5gzz11tmc6LGj
-0wN48n03U2zmvmt/eF9T8dUqWmGuv6mbP5yunqw3mwGijDve6i6mRVj+gscfmn8D
-jCRJumn9TkZH+7TcVJH4zHtb9jbej5PEIF5uArWeSnF2yC9vlcI+ulGSmU/KNEs9
-2ABCkcZh+anG5S41pk2t786dU8ML2pMuKtfb+JIarWPRSs54/uVvLl/qbw9vHvaL
-/yEziYt2AOx/6T+VQ9CF1+9oXQ9Nd92/1G/qjsyGJ3Gjt/YRtK+ncIHFoltHVSGa
-0WlUzwZ2awfnAHROHLgcPLqB65BnSTFX6N+yEkfqWI7bPYYCvWyfNhNN3VXS/4m7
-Tni8zEHFQOJxMpgei1ug3pJZzIM0xkED5UXWbGja/Kn+AiNML8PSW+s4IQps5zPn
-q9Baf1zBSQ603AwAeF4hOn0+UcP6zRy9kGMVlO+MsQJb1QvZS+Q7zto0BrFJzSrW
-VNoVmrui0Pcol25z00qNjLWousNt4/+A73DF01zuDhoYgL/ZDwyeF+yMV5hMOlVJ
-f2ZTNgmsOImwBQnzFHWl
-=Whb0
------END PGP SIGNATURE-----
+There is one tricky aspect to all this.  The driver core sets the
+dev->driver field before calling the subsystem core's probe routine.  
+As a result, the subsystem has to be very careful about performing
+runtime PM before invoking the driver's probe routine.  Otherwise you
+will end up calling the driver's runtime_resume callback before the
+driver's probe!  (And of course, the same problem exists in reverse
+during remove.)
 
---f2QGlHpHGjS2mn6Y--
+Alan Stern
+
