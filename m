@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaAaTSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:18:38 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:46604 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbaAaTSh (ORCPT
+	id S932704AbaAaTUY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:20:24 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60104 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236AbaAaTUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:18:37 -0500
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Shaibal Dutta <shaibal.dutta@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Subject: [RFC PATCH] timekeeping: move clock sync work to power efficient workqueue
-Date: Fri, 31 Jan 2014 11:18:24 -0800
-Message-Id: <1391195904-12497-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 31 Jan 2014 14:20:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/4] arm: qcom: Split Qualcomm support into legacy and multiplatform
+Date: Fri, 31 Jan 2014 20:20:16 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1391107002-21470-1-git-send-email-galak@codeaurora.org> <1391107002-21470-3-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1391107002-21470-3-git-send-email-galak@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401312020.16984.arnd@arndb.de>
+X-Provags-ID: V02:K0:weQI7YvNCwmeQT+vSgN5NiZe9fVAIxrru5Dqb4JuGXw
+ EY2DhwFCG5WPAGk5NtZI7S7MP6VYiN3iNtE0fbkMwXAigZEAU+
+ TBTxfIodii7DbexfYWKNzScSx0zVWSCdSDh8kkZ/auUuMe1O5C
+ /3VAlZgaHQpXnS1xeub3dFM2rpNpq0QxUioRIVBKHR/kQBBcaq
+ Fh86ieCRzYPsoEXRoUbCeIRdUs/e2flfBB8iY/UNRMrBYRlLEm
+ hQ31vjU6pADCLSfrKs4yn+RDI8fb2bsS2mRE7URIRwkMp4V2Zx
+ zFPYoPOs40FheEJ59f1O6CVOVPbVJLcLayYcx0Tjl3ZDjG1Kzu
+ PCbCiGgy4H70iqY8Z+m7+2Oks/1rghCv26ijqNopF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaibal Dutta <shaibal.dutta@linaro.org>
+On Thursday 30 January 2014, Kumar Gala wrote:
+> Introduce a new mach-qcom that will support SoCs that intend to be
+> multiplatform compatiable while keeping mach-msm to legacy SoC/board
+> support that will not transition over to multiplatform.
+> 
+> As part of this, we move support for MSM8X60, MSM8960 and MSM8974 over
+> to mach-qcom.
+> 
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+>  MAINTAINERS                                        |  7 +++
+>  arch/arm/Kconfig                                   |  7 +--
+>  arch/arm/Makefile                                  |  1 +
+>  arch/arm/boot/dts/Makefile                         |  6 +--
+>  arch/arm/mach-msm/Kconfig                          | 45 +------------------
+>  arch/arm/mach-msm/Makefile                         |  7 ---
+>  arch/arm/mach-msm/hotplug.c                        | 51 ----------------------
+>  arch/arm/mach-qcom/Kconfig                         | 34 +++++++++++++++
+>  arch/arm/mach-qcom/Makefile                        |  5 +++
+>  .../arm/{mach-msm/board-dt.c => mach-qcom/board.c} |  9 ++--
+>  arch/arm/{mach-msm => mach-qcom}/scm-boot.c        |  0
+>  arch/arm/{mach-msm => mach-qcom}/scm-boot.h        |  0
+>  arch/arm/{mach-msm => mach-qcom}/scm.c             |  0
+>  arch/arm/{mach-msm => mach-qcom}/scm.h             |  0
+>  arch/arm/{mach-msm/platsmp.c => mach-qcom/smp.c}   | 11 ++++-
 
-For better use of CPU idle time, allow the scheduler to select the CPU
-on which the CMOS clock sync work would be scheduled. This improves
-idle residency time and conserver power.
+The hotplug.c change sticks out as something that isn't just a move
+of code to another place, but deletion of unused code. It would
+be nice to split that out into a separate change, possibly together
+with the trivial board.c and smp.c changes.
 
-This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
-
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
-[zoran.markovic@linaro.org: Added commit message. Aligned code.]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- kernel/time/ntp.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index af8d1d4..419a52c 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -514,12 +514,13 @@ static void sync_cmos_clock(struct work_struct *work)
- 		next.tv_sec++;
- 		next.tv_nsec -= NSEC_PER_SEC;
- 	}
--	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
-+	queue_delayed_work(system_power_efficient_wq,
-+			   &sync_cmos_work, timespec_to_jiffies(&next));
- }
- 
- void ntp_notify_cmos_timer(void)
- {
--	schedule_delayed_work(&sync_cmos_work, 0);
-+	queue_delayed_work(system_power_efficient_wq, &sync_cmos_work, 0);
- }
- 
- #else
--- 
-1.7.9.5
-
+	Arnd
