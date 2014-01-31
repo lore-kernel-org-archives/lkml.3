@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaAaVpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:45:07 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:48292 "EHLO
+	id S932524AbaAaVpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:45:06 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:48290 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145AbaAaVpD (ORCPT
+	with ESMTP id S1752785AbaAaVpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 16:45:03 -0500
+X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Jan 2014 16:45:03 EST
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@redhat.com, peterz@infradead.org, sasha.levin@oracle.com,
         "Ira W. Snyder" <iws@ovro.caltech.edu>
-Subject: [PATCH 1/2] tools: lockdep: fix include of asm/hash.h
-Date: Fri, 31 Jan 2014 13:35:31 -0800
-Message-Id: <1391204132-14071-2-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH 2/2] tools: lockdep: add include directory to allow tests to compile
+Date: Fri, 31 Jan 2014 13:35:32 -0800
+Message-Id: <1391204132-14071-3-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391204132-14071-1-git-send-email-iws@ovro.caltech.edu>
 References: <1391204132-14071-1-git-send-email-iws@ovro.caltech.edu>
@@ -24,31 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 
-Commit 71ae8aac ("lib: introduce arch optimized hash library")
-added an include to <linux/hash.h> for setting up an architecture
-specific fast hash.
-
-This patch mirrors the fix used for perf, titled "tools: perf: util: fix
-include for non x86 architectures".
+All of the programs in the tests directory require the
+liblockdep/mutex.h header in order to compile. Add the include directory
+to the compiler options so that the tests can be built with the provided
+Makefile.
 
 Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- tools/lib/lockdep/uinclude/asm/hash.h | 6 ++++++
- 1 file changed, 6 insertions(+)
- create mode 100644 tools/lib/lockdep/uinclude/asm/hash.h
+ tools/lib/lockdep/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/lockdep/uinclude/asm/hash.h b/tools/lib/lockdep/uinclude/asm/hash.h
-new file mode 100644
-index 000000000000..d82b170bb216
---- /dev/null
-+++ b/tools/lib/lockdep/uinclude/asm/hash.h
-@@ -0,0 +1,6 @@
-+#ifndef __ASM_GENERIC_HASH_H
-+#define __ASM_GENERIC_HASH_H
-+
-+/* Stub */
-+
-+#endif /* __ASM_GENERIC_HASH_H */
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+index da8b7aa3d351..e8dd7497f57a 100644
+--- a/tools/lib/lockdep/Makefile
++++ b/tools/lib/lockdep/Makefile
+@@ -112,7 +112,7 @@ export Q VERBOSE
+ 
+ LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
+ 
+-INCLUDES = -I. -I/usr/local/include -I./uinclude $(CONFIG_INCLUDES)
++INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include $(CONFIG_INCLUDES)
+ 
+ # Set compile option CFLAGS if not set elsewhere
+ CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
 -- 
 1.8.3.2
 
