@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811AbaAaPRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:17:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4523 "EHLO mx1.redhat.com"
+	id S932727AbaAaPSs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:18:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:29421 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932552AbaAaPHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:18 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 11/34] benet: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:30 +0100
-Message-Id: <0ab74b1142006d2e7a8065ec8a2d3ba48fc3ec0c.1391172839.git.agordeev@redhat.com>
-In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
-References: <cover.1391172839.git.agordeev@redhat.com>
+	id S932575AbaAaPSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:18:46 -0500
+X-IronPort-AV: E=Sophos;i="4.95,758,1384300800"; 
+   d="scan'208";a="98518137"
+Date: Fri, 31 Jan 2014 15:18:10 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Will Deacon <will.deacon@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH v4] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
+ dependencies for XEN
+In-Reply-To: <20140121180750.GO30706@mudshark.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1401311517260.4373@kaball.uk.xensource.com>
+References: <1390311864-19119-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140121180750.GO30706@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+On Tue, 21 Jan 2014, Will Deacon wrote:
+> On Tue, Jan 21, 2014 at 01:44:24PM +0000, Stefano Stabellini wrote:
+> > Remove !GENERIC_ATOMIC64 build dependency:
+> > - introduce xen_atomic64_xchg
+> > - use it to implement xchg_xen_ulong
+> > 
+> > Remove !CPU_V6 build dependency:
+> > - introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
+> >   CONFIG_CPU_V6
+> > - implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > CC: arnd@arndb.de
+> > CC: linux@arm.linux.org.uk
+> > CC: will.deacon@arm.com
+> > CC: catalin.marinas@arm.com
+> > CC: linux-arm-kernel@lists.infradead.org
+> > CC: linux-kernel@vger.kernel.org
+> > CC: xen-devel@lists.xenproject.org
+> 
+>   Reviewed-by: Will Deacon <will.deacon@arm.com>
+> 
+> Cheers Stefano,
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/emulex/benet/be_main.c |   31 +++++++++++---------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index 04ac9c6..f55c09b 100644
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -2505,7 +2505,7 @@ static void be_msix_disable(struct be_adapter *adapter)
- 
- static int be_msix_enable(struct be_adapter *adapter)
- {
--	int i, status, num_vec;
-+	int i, num_vec;
- 	struct device *dev = &adapter->pdev->dev;
- 
- 	/* If RoCE is supported, program the max number of NIC vectors that
-@@ -2521,24 +2521,11 @@ static int be_msix_enable(struct be_adapter *adapter)
- 	for (i = 0; i < num_vec; i++)
- 		adapter->msix_entries[i].entry = i;
- 
--	status = pci_enable_msix(adapter->pdev, adapter->msix_entries, num_vec);
--	if (status == 0) {
--		goto done;
--	} else if (status >= MIN_MSIX_VECTORS) {
--		num_vec = status;
--		status = pci_enable_msix(adapter->pdev, adapter->msix_entries,
--					 num_vec);
--		if (!status)
--			goto done;
--	}
-+	num_vec = pci_enable_msix_range(adapter->pdev, adapter->msix_entries,
-+					MIN_MSIX_VECTORS, num_vec);
-+	if (num_vec < 0)
-+		goto fail;
- 
--	dev_warn(dev, "MSIx enable failed\n");
--
--	/* INTx is not supported in VFs, so fail probe if enable_msix fails */
--	if (!be_physfn(adapter))
--		return status;
--	return 0;
--done:
- 	if (be_roce_supported(adapter) && num_vec > MIN_MSIX_VECTORS) {
- 		adapter->num_msix_roce_vec = num_vec / 2;
- 		dev_info(dev, "enabled %d MSI-x vector(s) for RoCE\n",
-@@ -2550,6 +2537,14 @@ done:
- 	dev_info(dev, "enabled %d MSI-x vector(s) for NIC\n",
- 		 adapter->num_msix_vec);
- 	return 0;
-+
-+fail:
-+	dev_warn(dev, "MSIx enable failed\n");
-+
-+	/* INTx is not supported in VFs, so fail probe if enable_msix fails */
-+	if (!be_physfn(adapter))
-+		return num_vec;
-+	return 0;
- }
- 
- static inline int be_msix_vec_get(struct be_adapter *adapter,
--- 
-1.7.7.6
-
+Do you think it is acceptable to have this in 3.14?
+Maybe we should aim at 3.15?
