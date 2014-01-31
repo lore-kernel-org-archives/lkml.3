@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbaAaXnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 18:43:45 -0500
-Received: from rydia.net ([69.46.88.68]:50120 "EHLO mail.rydia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753235AbaAaXno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 18:43:44 -0500
-Date: Fri, 31 Jan 2014 15:43:43 -0800 (PST)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dtop
-To: David Rientjes <rientjes@google.com>
-cc: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Subject: Re: kmem_cache_alloc panic in 3.10+
-In-Reply-To: <alpine.DEB.2.02.1401311521170.18890@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1401311537290.17834@dtop>
-References: <alpine.DEB.2.10.1401180036020.18419@dinf> <1390062576.31367.519.camel@edumazet-glaptop2.roam.corp.google.com> <alpine.DEB.2.02.1401181101220.579@dtop> <alpine.DEB.2.02.1401292301070.5905@dtop> <1391134615.28432.83.camel@edumazet-glaptop2.roam.corp.google.com>
- <CAADnVQ+vCikFY-te2U8wD+ustNW-o6Cqs8ye5ZfyNcU6vPQzNA@mail.gmail.com> <alpine.DEB.2.10.1401301951060.5516@dinf> <alpine.DEB.2.02.1401311315110.27318@chino.kir.corp.google.com> <alpine.DEB.2.02.1401311407190.17834@dtop>
- <alpine.DEB.2.02.1401311521170.18890@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754407AbaAaXwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 18:52:46 -0500
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:58586 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713AbaAaXwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 18:52:45 -0500
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Jan 2014 18:52:45 EST
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCH] firmware: use power efficient workqueue for unloading and aborting fw load
+Date: Fri, 31 Jan 2014 15:44:58 -0800
+Message-Id: <1391211898-18776-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Jan 2014, David Rientjes wrote:
+From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-> On Fri, 31 Jan 2014, dormando wrote:
->
-> > > CONFIG_SLUB_DEBUG_ON will definitely be slower but can help to identify
-> > > any possible corruption issues.
-> > >
-> > > I'm wondering if you have CONFIG_MEMCG enabled and are actually allocating
-> > > slab in a non-root memcg?  What does /proc/self/cgroup say?
-> > >
-> >
-> > /proc/self/cgroup is empty on these hosts. CONFIG_MEMCG is enabled though.
-> >
->
-> It _looks_ like the cmpxchg_double() so seeing if there is anything else
-> funny going on with CONFIG_SLUB_DEBUG_ON would definitely be helpful;
-> otherwise, try using CONFIG_SLAB is Eric suggested and seeing if the
-> problem goes away.
->
+Allow the scheduler to select the most appropriate CPU for running the
+firmware load timeout routine and delayed routine for firmware unload.
+This extends idle residency times and conserves power.
 
-chpxchg_double()? that's not related to the 62713c4b fix right?
+This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
 
-I'll see what I can do.. it's going to take a long time to iterate on this
-though.
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+[zoran.markovic@linaro.org: Rebased to latest kernel, added commit message.
+Fixed code alignment.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ drivers/base/firmware_class.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Thanks for the suggestions!
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8a97ddf..ae34219 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -900,7 +900,8 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
+ 		dev_set_uevent_suppress(f_dev, false);
+ 		dev_dbg(f_dev, "firmware: requesting %s\n", buf->fw_id);
+ 		if (timeout != MAX_SCHEDULE_TIMEOUT)
+-			schedule_delayed_work(&fw_priv->timeout_work, timeout);
++			queue_delayed_work(system_power_efficient_wq,
++					   &fw_priv->timeout_work, timeout);
+ 
+ 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+ 	}
+@@ -1570,8 +1571,8 @@ static void device_uncache_fw_images_work(struct work_struct *work)
+  */
+ static void device_uncache_fw_images_delay(unsigned long delay)
+ {
+-	schedule_delayed_work(&fw_cache.work,
+-			msecs_to_jiffies(delay));
++	queue_delayed_work(system_power_efficient_wq, &fw_cache.work,
++			   msecs_to_jiffies(delay));
+ }
+ 
+ static int fw_pm_notify(struct notifier_block *notify_block,
+-- 
+1.7.9.5
+
