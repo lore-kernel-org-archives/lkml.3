@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625AbaAaQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 11:53:56 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33438 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932457AbaAaQxz (ORCPT
+	id S932630AbaAaQ5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 11:57:07 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:35156 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932255AbaAaQ5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 11:53:55 -0500
-Date: Fri, 31 Jan 2014 16:53:50 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140131165350.GR22609@sirena.org.uk>
-References: <1391089879-7342-1-git-send-email-k.kozlowski@samsung.com>
+	Fri, 31 Jan 2014 11:57:05 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uWKIjLx9zRJNHvcs"
-Content-Disposition: inline
-In-Reply-To: <1391089879-7342-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: s2mps11: Fix NULL pointer of_node value when
- using platform data
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140130220708.GP9951@redhat.com>
+References: <201401201647.s0KGlZdh004167@tazenda.hos.anvin.org>
+	<CAFLxGvxO1MPDDjEh3FU5Gv2-eb6zBJxYtTnKdABDTTpbMxxYAw@mail.gmail.com>
+	<52E5EFAF.3060609@linux.intel.com>
+	<CAFLxGvxJ0A6hZ52RWffkg_zXXScyPn10P4HcKvdAXfE43h32Eg@mail.gmail.com>
+	<52E601DA.7010605@zytor.com>
+	<20140130220708.GP9951@redhat.com>
+Date: Fri, 31 Jan 2014 08:57:03 -0800
+X-Google-Sender-Auth: ivGUHs3M2RgTmWfjwfqgXLqMqtU
+Message-ID: <CAGXu5jKp0j71ucE7uOWRa+gQM1Wzp=_KdByJK4XnACTwiCW4ow@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/kaslr for v3.14
+From: Kees Cook <keescook@chromium.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Ding <dinggnu@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Michael Davidson <md@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 30, 2014 at 2:07 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Sun, Jan 26, 2014 at 10:51:06PM -0800, H. Peter Anvin wrote:
+>> On 01/26/2014 10:49 PM, Richard Weinberger wrote:
+>> >>
+>> >> No, because that information is available to user space unless we panic.
+>> >
+>> > Didn't you mean non-root?
+>> > I thought one has to set dmesg_restrict anyways if kASLR is used.
+>> >
+>> > And isn't the offset available to perf too?
+>> > Of course only for root, but still user space.
+>> >
+>>
+>> For certain system security levels one want to protect even from a rogue
+>> root.  In those cases, leaking that information via dmesg and perf isn't
+>> going to work, either.
+>>
+>> With lower security settings, by all means...
+>
+> I am wondering if kdump functionality is impacted with this change.
+>
+> Kexec tools prepares ELF headers for kernel memory ranges and for the
+> range where kernel text is mapped. So it needs to know virtual address
+> of the region where kernel is mapped (obtained by /proc/kcore) and
+> it gets the physical address where kernel is loaded from /proc/iomem.
+>
+> So with this change are we planning to hide kernel text virtual address and
+> physical address information information from root in /proc/kcore and
+> /proc/iomem in anyway?
 
---uWKIjLx9zRJNHvcs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I have no intention of that. Mentioned earlier in the thread, hiding
+it from root will be pretty ugly/hard/pointless:
+https://lkml.org/lkml/2014/1/27/287
+I would like to just keep the offset out of dmesg.
 
-On Thu, Jan 30, 2014 at 02:51:19PM +0100, Krzysztof Kozlowski wrote:
-> When platform_data is used for regulator (of_node of sec-core MFD device
-> is NULL) the config.of_node for regulator is not initialized. This NULL
-> value of config.of_node is later stored during regulator_register().
-> Thus any call by regulator consumers to of_get_regulator() will fail on
-> of_parse_phandle() returning NULL.
+-Kees
 
-Applied, thanks.
-
---uWKIjLx9zRJNHvcs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS69UbAAoJELSic+t+oim9cXsP/3tKWcHDPpOqWzB4+y6QatBR
-sklwK6llmuvz5bTgFgmp8eGxsBAbvimSO7MX61WFT/A9kr6Y4plTEYC1m92O2uAL
-cXktOZm508QU9tY3v6ST6Va8DoFebuFPyZTXKz/swpDeHQbej+PHWwiUpYXUTNrU
-izBQdrNxh0OKsuSecfxsi7WLKqp4KFHOv9ZP6RZcar3I6LZKRU/I7wMfRBnmzdLm
-WLXXlHIxgZOahKzkgeP9q8xOdHCQXb1PUtshB4aYtEQH3QzvkskV8UnvVSCMPvLN
-NBm3VpanNHofSuwA+LOFdDqbMaQo0NcBFPYnpbVzUiqKWYmdHcUVFXRs72Xe/eR7
-O0WaLWXqRpAdNwAVm9DbMOw3V6OozuHVasAzWj6OJAJVS3fjhZcbQozx55gw5Zot
-enVWcBqoVkJhthT8BN+c7fUMDnb1j5RB87MwWL8MdQpO5GaQM9LjdwxI6eBNP71y
-0i9CUK1CpMP9y5wj88lmbs926zxRHjwUFIns4pRN6BZlHEI32CenU/mwzC7hvemz
-uKetwy9ZngqeMwTVaZ3AJDPwhXoXKB3+Y+kYgW3UVei8IOeGAi+6GDbqnkJ4Wj1w
-FY21851JVaMtpHO4SX3lzV3ynd1vmjAPyPC2wbWENqxJB+lC952nEuWfyEwGppk2
-yZWYsLXG/gAKpYK4lgLW
-=YH+n
------END PGP SIGNATURE-----
-
---uWKIjLx9zRJNHvcs--
+-- 
+Kees Cook
+Chrome OS Security
