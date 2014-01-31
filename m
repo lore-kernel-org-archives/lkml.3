@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237AbaAaU3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:29:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55492 "EHLO
+	id S933116AbaAaU2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:28:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55429 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932460AbaAaU3k (ORCPT
+	with ESMTP id S933072AbaAaU17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:29:40 -0500
-Date: Fri, 31 Jan 2014 21:29:33 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
- do
-Message-ID: <20140131202933.GE2936@laptop.programming.kicks-ass.net>
-References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
- <1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
- <20140131120757.594e24d6@gandalf.local.home>
- <20140131174227.GN9012@linux.vnet.ibm.com>
- <20140131125719.73340f6e@gandalf.local.home>
- <52EBF8FE.3080608@linutronix.de>
- <20140131143441.478f79ee@gandalf.local.home>
- <52EBFE1D.4020201@linutronix.de>
- <20140131200535.GR5002@laptop.programming.kicks-ass.net>
- <52EC0658.3010205@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EC0658.3010205@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 31 Jan 2014 15:27:59 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Avi Kivity <avi@cloudius-systems.com>, David Ahern <dsahern@gmail.com>,
+        Francesco Fusco <ffusco@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/12] perf/urgent fixes
+Date: Fri, 31 Jan 2014 17:27:23 -0300
+Message-Id: <1391200055-18250-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 09:23:52PM +0100, Sebastian Andrzej Siewior wrote:
-> Okay, this makes sense. What looked odd was the powerpc implementation
-> where they let the timer interrupt expire and call the irq_work from
-> the timer interrupt just before the clockevents callback is executed
-> (which would invoke the irq_work callback as well).
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 
-Ah, so what I remember Paul Mackerras saying was that that was the
-easiest way to trigger an interrupt on the local CPU.
+Hi Ingo,
 
-ARM runs the things from every IRQ tail IIRC (or maybe only the PMI, I
-forget).
+	Please consider pulling,
 
-> Would it be a win if we would remove the arch specific code and instead
-> raise the timer interrupt asap? It sure won't be a win or change for
-> -RT but it would allow all architectures to get irq_work done as soon
-> as possible in IRQ context (and out of NMI context if I understand
-> correct) without an arch specific implementation.
+- Arnaldo
 
-No, because poking at timer hardware on x86 is stupid expensive, whereas
-sending a self-IPI through the APIC is tons cheaper.
+The following changes since commit 0d4dd797564cddc1f71ab0b239e9ea50ddd40b2a:
 
-Also, I don't really want to poke at the fragile x86 timer hardware from
-NMI context while we might already be poking at it from another context.
+  perf/doc: Remove mention of non-existent set_perf_event_pending() from design.txt (2014-01-26 09:37:48 +0100)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+
+for you to fetch changes up to d3b70220292c40d3b499797fd2f33f608fc35edb:
+
+  perf buildid-cache: Check relocation when checking for existing kcore (2014-01-31 17:21:54 -0300)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+. Fix annotation for relocated kernel (Adrian Hunter)
+
+. Fix demangling of symbols in kernel and kernel modules (Avi Kivity)
+
+. Fix include for non x86 architectures (Francesco Fusco)
+
+. Fix ARM64 memory barriers (Peter Zijlstra)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Adrian Hunter (9):
+      perf symbols: Fix symbol annotation for relocated kernel
+      perf tools: Add kallsyms__get_function_start()
+      perf machine: Add machine__get_kallsyms_filename()
+      perf machine: Set up ref_reloc_sym in machine__create_kernel_maps()
+      perf record: Get ref_reloc_sym from kernel map
+      perf symbols: Prevent the use of kcore if the kernel has moved
+      perf tests: No need to set up ref_reloc_sym
+      perf tools: Adjust kallsyms for relocated kernel
+      perf buildid-cache: Check relocation when checking for existing kcore
+
+Avi Kivity (1):
+      perf tools: Demangle kernel and kernel module symbols too
+
+Francesco Fusco (1):
+      perf tools: Fix include for non x86 architectures
+
+Peter Zijlstra (1):
+      perf tools: Fix AAAAARGH64 memory barriers
+
+ tools/perf/builtin-buildid-cache.c  | 33 ++++++++++++++++---
+ tools/perf/builtin-record.c         | 10 ++----
+ tools/perf/perf.h                   |  4 +--
+ tools/perf/tests/vmlinux-kallsyms.c | 10 ------
+ tools/perf/util/event.c             | 36 ++++++++++----------
+ tools/perf/util/event.h             |  6 ++--
+ tools/perf/util/include/asm/hash.h  |  6 ++++
+ tools/perf/util/machine.c           | 42 +++++++++++++++++++-----
+ tools/perf/util/machine.h           |  2 ++
+ tools/perf/util/map.c               |  5 +--
+ tools/perf/util/map.h               |  1 +
+ tools/perf/util/symbol-elf.c        |  4 ++-
+ tools/perf/util/symbol.c            | 65 +++++++++++++++++++++++++++++++++----
+ 13 files changed, 162 insertions(+), 62 deletions(-)
+ create mode 100644 tools/perf/util/include/asm/hash.h
