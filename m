@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114AbaAaXG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 18:06:29 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:33366 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932866AbaAaXGZ (ORCPT
+	id S933142AbaAaXIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 18:08:30 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41455 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932488AbaAaXI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 18:06:25 -0500
-From: Greg Pearson <greg.pearson@hp.com>
-To: akpm@linux-foundation.org, vgoyal@redhat.com, d.hatayama@jp.fujitsu.com,
-        holzheu@linux.vnet.ibm.com, dhowells@redhat.com,
-        paul.gortmaker@windriver.com
-Cc: linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH] vmcore: prevent PT_NOTE p_memsz overflow during header update
-Date: Fri, 31 Jan 2014 16:06:06 -0700
-Message-Id: <1391209566-4734-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 31 Jan 2014 18:08:29 -0500
+From: "Network Nut" <sillystack@gmail.com>
+To: "'Clemens Ladisch'" <clemens@ladisch.de>
+Cc: "'Austin S. Hemmelgarn'" <ahferroin7@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com> <52E77282.4030303@ladisch.de> <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com> <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com> <00f201cf1e15$f134ce70$d39e6b50$@gmail.com> <52EBD7BC.5020704@gmail.com> <007d01cf1ed4$b0e659a0$12b30ce0$@gmail.com> <52EC297B.7080909@ladisch.de> <007f01cf1ed8$3b8e1450$b2aa3cf0$@gmail.com>
+In-Reply-To: <007f01cf1ed8$3b8e1450$b2aa3cf0$@gmail.com>
+Subject: RE: WaitForMultipleObjects/etc. In Kernel
+Date: Fri, 31 Jan 2014 17:08:25 -0600
+Message-ID: <008101cf1ed9$588966d0$099c3470$@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQNT3acP/4y+UoGLob+8VizidhBl0AFz54/xAX6FO6UBfOQBmQGmz+ZcAX4/+oICHvy7eQGGlUFQAlIvzyACA4NB4wIIYUjqAlBcClgBKyzVFJbtWk9A
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, update_note_header_size_elf64() and
-update_note_header_size_elf32() will add the size
-of a PT_NOTE entry to real_sz even if that causes real_sz
-to exceeds max_sz. This patch corrects the while loop logic
-in those routines to ensure that does not happen.
 
-One possible negative side effect of exceeding the max_sz
-limit is an allocation failure in merge_note_headers_elf64()
-or merge_note_headers_elf32() which would produce console
-output such as the following while booting the crash
-kernel.
+> -----Original Message-----
+> From: Network Nut [mailto:sillystack@gmail.com]
+> Sent: Friday, January 31, 2014 5:00 PM
+> To: 'Clemens Ladisch'
+> Cc: 'Austin S. Hemmelgarn'; linux-kernel@vger.kernel.org
+> Subject: RE: WaitForMultipleObjects/etc. In Kernel
+> > -----Original Message-----
+> > From: Clemens Ladisch [mailto:clemens@ladisch.de]
+> > Sent: Friday, January 31, 2014 4:54 PM
+> > To: Network Nut
+> > Cc: 'Austin S. Hemmelgarn'; linux-kernel@vger.kernel.org
+> > Subject: Re: WaitForMultipleObjects/etc. In Kernel
+> >
+> > Network Nut wrote:
+> > >> Assuming that you're porting to mainline distributions (and not
+> > >> embedded devices), named SHM segments are accessible (providing
+> the
+> > >> accessing process has correct permissions) under /dev/shm.  You
+> > >> just need to make sure that you create the segment with the right
+> > >> permissions for the other processes to access it.
+> > >
+> > > I already know how to do named shared memory between two
+> processes.
+> > I only included that to describe my overall problem.
+> > >
+> > > The problem that I am having is how I can make three
+> > > totally-independent
+> > processes interact:
+> > >
+> > > 1. M is a master process that creates a semaphore.
+> > > 2. P1 is a process that operates against the semaphore.
+> > > 3. P2 is a process that operates against the semaphore.
+> > > 4. It is not permissible that M be responsible for launching P1 or P2.
+> > > 5.  The semaphore, one way or another, must allow itself to be
+> > > specified as one of the synchronization primitives in epoll_wait()
+> >
+> > This general problem descripton does not say anything more than your
+> > first mail.
+> >
+> > Use eventfd.  To share it, use a Unix domain socket created by M.
+> > (This socket must be created at a well-known path.  shm_open() works
+> > similarly, but that it creates a file in a RAM disk and mmap()s it is
+> > just an implementation detail.)
+> 
+> How do I create the socket at "well-known path"?
 
-vmalloc: allocation failure: 14076997632 bytes
-swapper/0: page allocation failure: order:0, mode:0x80d2
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-gbp1 #7
-ffffffff817dcc30 ffff88003025fc28 ffffffff815bdb0b ffff88003025fcb0
-ffffffff8113b3d0 ffffffff817dcc30 ffff88003025fc48 ffffc90000000018
-ffff88003025fcc0 ffff88003025fc60 ffff88003025fc80 ffff88002b5df980
-Call Trace:
-[<ffffffff815bdb0b>] dump_stack+0x19/0x1b
-[<ffffffff8113b3d0>] warn_alloc_failed+0xf0/0x160
-[<ffffffff81a1267d>] ? merge_note_headers_elf64.constprop.9+0x116/0x24a
-[<ffffffff8116d34e>] __vmalloc_node_range+0x19e/0x250
-[<ffffffff81210454>] ? read_from_oldmem.part.0+0xa4/0xe0
-[<ffffffff8116d4ec>] vmalloc_user+0x4c/0x70
-[<ffffffff81a1267d>] ? merge_note_headers_elf64.constprop.9+0x116/0x24a
-[<ffffffff81a1267d>] merge_note_headers_elf64.constprop.9+0x116/0x24a
-[<ffffffff81a12cce>] vmcore_init+0x2d4/0x76c
-[<ffffffff8120f9f0>] ? kcore_update_ram+0x1f0/0x1f0
-[<ffffffff81063b92>] ? walk_system_raange+0x112/0x130
-[<ffffffff81a129fa>] ? merge_note_headers_elf32.constprop.8+0x249/0x249
-[<ffffffff810020e2>] do_one_initcall+0xe2/0x190
-[<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
-[<ffffffff819e18d0>] ? do_early_param+0x88/0x88
-[<ffffffff815a0d20>] ? rest_init+0x80/0x80
-[<ffffffff815a0d2e>] kernel_init+0xe/0x180
-[<ffffffff815cd8ac>] ret_from_fork+0x7c/0xb0
-[<ffffffff815a0d20>] ? rest_init+0x80/0x80
+Nevermind. I see it. 
 
-Kdump: vmcore not initialized
+It is the sockaddr_un.sun_path.
 
-kdump: dump target is /dev/sda4
-kdump: saving to /sysroot//var/crash/127.0.0.1-2014.01.28-13:58:52/
-kdump: saving vmcore-dmesg.txt
-Cannot open /proc/vmcore: No such file or directory
-kdump: saving vmcore-dmesg.txt failed
-kdump: saving vmcore
-kdump: saving vmcore failed
+Thanks!
 
-This type of failure has been seen on a four socket prototype
-system with certain memory configurations. Most PT_NOTE sections
-have a single entry similar to:
+-Nut
 
-  n_namesz = 0x5
-  n_descsz = 0x150
-  n_type   = 0x1
 
-Occasionally, a second entry is encountered with very
-large n_namesz and n_descsz sizes:
 
-  n_namesz = 0x80000008
-  n_descsz = 0x510ae163
-  n_type   = 0x80000008
-
-Not yet sure of the source of these extra entries, they
-seem bogus, but they shouldn't cause crash dump to fail.
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
----
- fs/proc/vmcore.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 2ca7ba0..90a4469 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -468,12 +468,13 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
- 			return rc;
- 		}
- 		nhdr_ptr = notes_section;
--		while (real_sz < max_sz) {
--			if (nhdr_ptr->n_namesz == 0)
--				break;
-+		while (nhdr_ptr->n_namesz != 0) {
- 			sz = sizeof(Elf64_Nhdr) +
- 				((nhdr_ptr->n_namesz + 3) & ~3) +
- 				((nhdr_ptr->n_descsz + 3) & ~3);
-+			/* Silently drop further PT_NOTE entries */
-+			if ((real_sz + sz) > max_sz)
-+				break;
- 			real_sz += sz;
- 			nhdr_ptr = (Elf64_Nhdr*)((char*)nhdr_ptr + sz);
- 		}
-@@ -648,12 +649,13 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
- 			return rc;
- 		}
- 		nhdr_ptr = notes_section;
--		while (real_sz < max_sz) {
--			if (nhdr_ptr->n_namesz == 0)
--				break;
-+		while (nhdr_ptr->n_namesz != 0) {
- 			sz = sizeof(Elf32_Nhdr) +
- 				((nhdr_ptr->n_namesz + 3) & ~3) +
- 				((nhdr_ptr->n_descsz + 3) & ~3);
-+			/* Silently drop further PT_NOTE entries */
-+			if ((real_sz + sz) > max_sz)
-+				break;
- 			real_sz += sz;
- 			nhdr_ptr = (Elf32_Nhdr*)((char*)nhdr_ptr + sz);
- 		}
--- 
-1.8.3.2
 
