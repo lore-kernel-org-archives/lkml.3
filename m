@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaAaA4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:56:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36988 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaAaA4g (ORCPT
+	id S932258AbaAaA5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:57:46 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:57813 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137AbaAaA5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:56:36 -0500
-Message-ID: <52EAF4C3.1040009@infradead.org>
-Date: Thu, 30 Jan 2014 16:56:35 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 30 Jan 2014 19:57:44 -0500
 MIME-Version: 1.0
-To: Long Wind <longwind2009@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: how to use memmap= option
-References: <CAB-gxZAkGJpZjQMbhAm=Wip1wpm=oUvw_rUQpTkGb+n+qsgL0w@mail.gmail.com> <CAB-gxZAGL8TqvN+Jmc1vwEU+Vcos=FTWJ5No0tp-cDiJ4YPt3w@mail.gmail.com>
-In-Reply-To: <CAB-gxZAGL8TqvN+Jmc1vwEU+Vcos=FTWJ5No0tp-cDiJ4YPt3w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.128.142.46]
+In-Reply-To: <20140130142740.GC2185@casper.infradead.org>
+References: <1391087144-24490-1-git-send-email-teg@jklm.no> <20140130142740.GC2185@casper.infradead.org>
+From: Tom Gundersen <teg@jklm.no>
+Date: Fri, 31 Jan 2014 01:57:23 +0100
+Message-ID: <CAG-2HqUdAZO0X7+D=4fQmjnb7eZUigS5OnABT2fXL=gKL6jRzg@mail.gmail.com>
+Subject: Re: [PATCH] rtnetlink: return the newly created link in response to newlink
+To: Thomas Graf <tgraf@suug.ch>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 06:06 AM, Long Wind wrote:
-> On 1/8/14, Long Wind <longwind2009@gmail.com> wrote:
->> I have asked Debian users, they don't seem to know
->> kernel 2.4/2.6 fail to boot on my PC
->> probably because it can't detect my memory
->> so I have to tell kernel memory map
->>
->> the following is copied from kernel-parameters.txt:
->>
->> memmap=exactmap	[KNL,X86] Enable setting of an exact
->> 			E820 memory map, as specified by the user.
->> 			Such memmap=exactmap lines can be constructed based on
->> 			BIOS output or other requirements. See the memmap=nn@ss
->> 			option description.
->>
->>
->>
->> Could you tell me how to construct memmap= lines?
->>
-> 
-> Sorry, it seems that I have posted wrong list
-> If you could tell me which list I should join, I will very appreciate
-> I'm leaving the list
+Hi Thomas,
 
+Thanks for your reply.
 
-No, this is the correct mailing list for your question (or use
-linux-mm@kvack.org).
+On Thu, Jan 30, 2014 at 3:27 PM, Thomas Graf <tgraf@suug.ch> wrote:
+> On 01/30/14 at 02:05pm, Tom Gundersen wrote:
+>> Userspace needs to reliably know the ifindex of the netdevs it creates,
+>> as we cannot rely on the ifname staying unchanged.
+>>
+>> Earlier, a simlpe NLMSG_ERROR would be returned, but this returns the
+>> corresponding RTM_NEWLINK on success instead.
+>
+> This breaks existing Netlink applications in user space. User space
+> apps are not prepared to receive both a RTM_NEWLINK reply _and_
+> the ACK unless they have set NLM_F_ECHO in the original request.
+>
+> You can already reliably retrieve the ifindex by listening to
+> RTNLGRP_LINK messages and be notified about the link created
+> including all follow-up renames.
 
-First you obtain a listing of your computer's valid memory map,
-either from Linux booting on it (maybe not so likely on your computer)
-or maybe from BIOS SETUP.
+Ok, we'll keep doing this instead.
 
-With that information, you construct a kernel command line with multiple
-memmap= options.
-You can see an example of this here:
-http://lkml.indiana.edu/hypermail/linux/kernel/0809.1/0664.html
+Cheers,
 
-
-Hope that helps you.
--- 
-~Randy
+Tom
