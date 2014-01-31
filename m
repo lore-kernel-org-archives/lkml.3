@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaAaCnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 21:43:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38558 "EHLO mx1.redhat.com"
+	id S1753767AbaAaDAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 22:00:33 -0500
+Received: from imap.thunk.org ([74.207.234.97]:52921 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511AbaAaCnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 21:43:22 -0500
-Date: Thu, 30 Jan 2014 21:43:07 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>, dm-devel@redhat.com,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] block devices: validate block device capacity
-In-Reply-To: <1391132609.2181.131.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <alpine.LRH.2.02.1401302116180.9767@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1401301531040.29912@file01.intranet.prod.int.rdu2.redhat.com>   <1391122163.2181.103.camel@dabdike.int.hansenpartnership.com>   <alpine.LRH.2.02.1401301805590.19506@file01.intranet.prod.int.rdu2.redhat.com> 
- <1391125027.2181.114.camel@dabdike.int.hansenpartnership.com>  <alpine.LRH.2.02.1401301905520.25766@file01.intranet.prod.int.rdu2.redhat.com> <1391132609.2181.131.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751623AbaAaDAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 22:00:31 -0500
+Date: Thu, 30 Jan 2014 22:00:28 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Luca Ognibene <luca.ognibene@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: same ext4 file system corruption on different machines
+Message-ID: <20140131030028.GB7118@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Luca Ognibene <luca.ognibene@gmail.com>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+References: <1390999955.2601.22.camel@snow.station>
+ <1391000743.2601.26.camel@snow.station>
+ <20140129173826.GA30419@thunk.org>
+ <1391068749.2680.6.camel@snow.station>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391068749.2680.6.camel@snow.station>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 30, 2014 at 08:59:09AM +0100, Luca Ognibene wrote:
+> Yes it's indeed very strange.. i tend to rule out application errors
+> because i don't write directly to the device so i don't think i can
+> break a filesystem from userspace. I've checked previous and next blocks
+> and they seem ok, only the block 524320 is getting corrupted. Any idea
+> on what should i look for now?
 
+Are you willing to try 3.12.9 or 3.13.1 upstream kernel?  Let's see if
+changing the kernel makes any difference.  I don't recall any ext4
+problems like this, but maybe it's device driver problem.
 
-On Thu, 30 Jan 2014, James Bottomley wrote:
+The other thing I'd ask is whether you can swap out the hard drive
+interface --- can you use a USB 3.0 attached drive, or something like
+that?
 
-> > A device may be accessed direcly (by opening /dev/sdX) and it creates a 
-> > mapping too - thus, the size of a mapping limits the size of a block 
-> > device.
-> 
-> Right, that's what I suspected below.  We can't damage large block
-> support on filesystems just because of this corner case.
+One final thing that you could try doing, depending on how
+easily/quickly you can reproduce the problem, is to use blktrace and
+see if you can catch who or what is writing to that specific block
+which is getting corrupted.
 
-Devices larger than 16TiB never worked on 32-bit kernel, so this patch 
-isn't damaging anything.
-
-Note that if you attach a 16TiB block device, don't open it and mount it, 
-it still won't work, because the buffer cache uses the page cache (see the 
-function __find_get_block_slow and the variable "pgoff_t index" - that 
-variable would overflow if the filesystem accessed a buffer beyond 16TiB).
-
-> > The main problem is that pgoff_t has 4 bytes - chaning it to 8 bytes may 
-> > fix it - but there may be some hidden places where pgoff is converted to 
-> > unsigned long - who knows, if they exist or not?
-> 
-> I don't think we want to do that ... it will make struct page fatter and
-> have knock on impacts in the radix tree code.  To fix this, we need to
-> make the corner case (i.e. opening large block devices without a
-> filesystem) bear the pain.  It sort of looks like we want to do a linear
-> array of mappings of 64TB for the device so the page cache calculations
-> don't overflow.
-
-The code that reads and writes data to block devices and files is shared - 
-the functions in mm/filemap.c work for both files and block devices.
-
-So, if you want 64-bit page offsets, you need to increase pgoff_t size, 
-and that will increase the limit for both files and block devices.
-
-You shouldn't have separate functions for managing pages on files and 
-separate functions for managing pages on block devices - that would 
-increase code size and cause maintenance problems.
-
-> > Though, we need to know if the people who designed memory management agree 
-> > with changing pgoff_t to 64 bits.
-> 
-> I don't think we can change the size of pgoff_t ... because it won't
-> just be that, it will be other problems like the radix tree.
-
-If we can't change it, then we must stay with the current 16TiB limit. 
-There's no other way.
-
-> However, you also have to bear in mind that truncating large block
-> device support to 64TB on 32 bits is a technical ABI break.  Hopefully
-> it is only technical because I don't know of any current consumer block
-> device that is 64TB yet, but anyone who'd created a filesystem >64TB
-> would find it no-longer mounted on 32 bits.
-> James
-
-It is not ABI break, because block devices larger than 16TiB never worked 
-on 32-bit architectures. So it's better to refuse them outright, than to 
-cause subtle lockups or data corruption.
-
-Mikulas
+						- Ted
