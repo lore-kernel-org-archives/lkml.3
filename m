@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933274AbaAaUak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:30:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55431 "EHLO
+	id S933259AbaAaUaj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:30:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55434 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077AbaAaU17 (ORCPT
+	with ESMTP id S933079AbaAaU17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 15:27:59 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/12] perf buildid-cache: Check relocation when checking for existing kcore
-Date: Fri, 31 Jan 2014 17:27:35 -0300
-Message-Id: <1391200055-18250-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/12] perf symbols: Prevent the use of kcore if the kernel has moved
+Date: Fri, 31 Jan 2014 17:27:32 -0300
+Message-Id: <1391200055-18250-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1391200055-18250-1-git-send-email-acme@infradead.org>
 References: <1391200055-18250-1-git-send-email-acme@infradead.org>
@@ -32,14 +32,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-perf buildid-cache does not make another copy of kcore if the buildid
-and modules match an existing copy.
+Use of kcore is predicated upon it matching the recorded data.  If the
+kernel has been relocated at boot time (i.e. since the data was
+recorded) then do not use kcore.
 
-That does not take into account the possibility that the kernel has been
-relocated.
-
-Extend the check to check if the reference relocation symbol matches
-too, otherwise do make a copy.
+Note that it is possible to make a copy of kcore at the time the data is
+recorded using 'perf buildid-cache'.  Then the perf tools will use the
+copy because it does match the data.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Tested-by: Jiri Olsa <jolsa@redhat.com>
@@ -52,68 +51,69 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-10-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1391004884-10334-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-buildid-cache.c | 33 +++++++++++++++++++++++++++++----
- 1 file changed, 29 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
-index cfede86161d8..b22dbb16f877 100644
---- a/tools/perf/builtin-buildid-cache.c
-+++ b/tools/perf/builtin-buildid-cache.c
-@@ -63,11 +63,35 @@ static int build_id_cache__kcore_dir(char *dir, size_t sz)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 39ce9adbaaf0..4ac1f871ec27 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -976,6 +976,23 @@ static int validate_kcore_modules(const char *kallsyms_filename,
  	return 0;
  }
  
-+static bool same_kallsyms_reloc(const char *from_dir, char *to_dir)
++static int validate_kcore_addresses(const char *kallsyms_filename,
++				    struct map *map)
 +{
-+	char from[PATH_MAX];
-+	char to[PATH_MAX];
-+	const char *name;
-+	u64 addr1 = 0, addr2 = 0;
-+	int i;
++	struct kmap *kmap = map__kmap(map);
 +
-+	scnprintf(from, sizeof(from), "%s/kallsyms", from_dir);
-+	scnprintf(to, sizeof(to), "%s/kallsyms", to_dir);
++	if (kmap->ref_reloc_sym && kmap->ref_reloc_sym->name) {
++		u64 start;
 +
-+	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-+		addr1 = kallsyms__get_function_start(from, name);
-+		if (addr1)
-+			break;
++		start = kallsyms__get_function_start(kallsyms_filename,
++						     kmap->ref_reloc_sym->name);
++		if (start != kmap->ref_reloc_sym->addr)
++			return -EINVAL;
 +	}
 +
-+	if (name)
-+		addr2 = kallsyms__get_function_start(to, name);
-+
-+	return addr1 == addr2;
++	return validate_kcore_modules(kallsyms_filename, map);
 +}
 +
- static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
- 					  size_t to_dir_sz)
- {
- 	char from[PATH_MAX];
- 	char to[PATH_MAX];
-+	char to_subdir[PATH_MAX];
- 	struct dirent *dent;
- 	int ret = -1;
- 	DIR *d;
-@@ -86,10 +110,11 @@ static int build_id_cache__kcore_existing(const char *from_dir, char *to_dir,
+ struct kcore_mapfn_data {
+ 	struct dso *dso;
+ 	enum map_type type;
+@@ -1019,8 +1036,8 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
+ 					     kallsyms_filename))
+ 		return -EINVAL;
+ 
+-	/* All modules must be present at their original addresses */
+-	if (validate_kcore_modules(kallsyms_filename, map))
++	/* Modules and kernel must be present at their original addresses */
++	if (validate_kcore_addresses(kallsyms_filename, map))
+ 		return -EINVAL;
+ 
+ 	md.dso = dso;
+@@ -1424,7 +1441,7 @@ static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
  			continue;
- 		scnprintf(to, sizeof(to), "%s/%s/modules", to_dir,
- 			  dent->d_name);
--		if (!compare_proc_modules(from, to)) {
--			scnprintf(to, sizeof(to), "%s/%s", to_dir,
--				  dent->d_name);
--			strlcpy(to_dir, to, to_dir_sz);
-+		scnprintf(to_subdir, sizeof(to_subdir), "%s/%s",
-+			  to_dir, dent->d_name);
-+		if (!compare_proc_modules(from, to) &&
-+		    same_kallsyms_reloc(from_dir, to_subdir)) {
-+			strlcpy(to_dir, to_subdir, to_dir_sz);
+ 		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
+ 			  "%s/%s/kallsyms", dir, dent->d_name);
+-		if (!validate_kcore_modules(kallsyms_filename, map)) {
++		if (!validate_kcore_addresses(kallsyms_filename, map)) {
+ 			strlcpy(dir, kallsyms_filename, dir_sz);
  			ret = 0;
  			break;
+@@ -1479,7 +1496,7 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
+ 		if (fd != -1) {
+ 			close(fd);
+ 			/* If module maps match go with /proc/kallsyms */
+-			if (!validate_kcore_modules("/proc/kallsyms", map))
++			if (!validate_kcore_addresses("/proc/kallsyms", map))
+ 				goto proc_kallsyms;
  		}
+ 
 -- 
 1.8.1.4
 
