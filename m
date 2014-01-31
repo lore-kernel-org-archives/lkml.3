@@ -1,73 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673AbaAaPkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:40:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41061 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221AbaAaPkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:40:08 -0500
-Date: Fri, 31 Jan 2014 10:38:57 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [GIT PULL] (xen) stable/for-linus-3.14-rc0-late-tag
-Message-ID: <20140131153857.GD22527@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S932694AbaAaPkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:40:31 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:46458
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225AbaAaPk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:40:29 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 2/2] Drivers: net: hyperv: Cleanup the receive path
+Date: Fri, 31 Jan 2014 08:25:17 -0800
+Message-Id: <1391185517-5698-2-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1391185517-5698-1-git-send-email-kys@microsoft.com>
+References: <1391185478-5655-1-git-send-email-kys@microsoft.com>
+ <1391185517-5698-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+Make the receive path a little more efficient by parameterizing the
+required state rather than re-establishing that state.
 
-Please git pull the following tag:
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/net/hyperv/netvsc.c |   29 +++++++++++++----------------
+ 1 files changed, 13 insertions(+), 16 deletions(-)
 
- git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.14-rc0-late-tag
-
-which has bug-fixes for the new features that were added during this
-cycle. There are also two fixes for long-standing issues for which we have
-a solution: grant-table operations extra work that was not needed causing
-performance issues and the self balloon code was too aggressive causing
-OOMs.
-
-The signed tag has a good description of what these fixes are.
-
-Please pull!
-
-
- arch/arm/Kconfig                    |  1 +
- arch/arm/xen/enlighten.c            | 77 ++++++++++++++++++------------
- arch/x86/include/asm/xen/page.h     |  5 +-
- arch/x86/xen/grant-table.c          |  3 +-
- arch/x86/xen/p2m.c                  | 17 +------
- drivers/block/xen-blkback/blkback.c | 15 +++---
- drivers/xen/gntdev.c                | 13 +++--
- drivers/xen/grant-table.c           | 95 ++++++++++++++++++++++++++++++-------
- drivers/xen/swiotlb-xen.c           | 22 ++++++++-
- drivers/xen/xen-selfballoon.c       | 22 +++++++++
- include/xen/grant_table.h           | 10 ++--
- 11 files changed, 197 insertions(+), 83 deletions(-)
-
-
-Bob Liu (1):
-      drivers: xen: deaggressive selfballoon driver
-
-Dave Jones (1):
-      xen/pvh: Fix misplaced kfree from xlated_setup_gnttab_pages
-
-Ian Campbell (1):
-      xen: swiotlb: handle sizeof(dma_addr_t) != sizeof(phys_addr_t)
-
-Julien Grall (2):
-      arm/xen: Initialize event channels earlier
-      xen/gnttab: Use phys_addr_t to describe the grant frame base address
-
-Zoltan Kiss (1):
-      xen/grant-table: Avoid m2p_override during mapping
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 03a2c6e..7fa2bba 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -432,17 +432,14 @@ static inline u32 hv_ringbuf_avail_percent(
+ 	return avail_write * 100 / ring_info->ring_datasize;
+ }
+ 
+-static void netvsc_send_completion(struct hv_device *device,
++static void netvsc_send_completion(struct netvsc_device *net_device,
++				   struct hv_device *device,
+ 				   struct vmpacket_descriptor *packet)
+ {
+-	struct netvsc_device *net_device;
+ 	struct nvsp_message *nvsp_packet;
+ 	struct hv_netvsc_packet *nvsc_packet;
+ 	struct net_device *ndev;
+ 
+-	net_device = get_inbound_net_device(device);
+-	if (!net_device)
+-		return;
+ 	ndev = net_device->ndev;
+ 
+ 	nvsp_packet = (struct nvsp_message *)((unsigned long)packet +
+@@ -561,13 +558,13 @@ int netvsc_send(struct hv_device *device,
+ }
+ 
+ static void netvsc_send_recv_completion(struct hv_device *device,
++					struct netvsc_device *net_device,
+ 					u64 transaction_id, u32 status)
+ {
+ 	struct nvsp_message recvcompMessage;
+ 	int retries = 0;
+ 	int ret;
+ 	struct net_device *ndev;
+-	struct netvsc_device *net_device = hv_get_drvdata(device);
+ 
+ 	ndev = net_device->ndev;
+ 
+@@ -653,14 +650,15 @@ static void netvsc_receive_completion(void *context)
+ 
+ 	/* Send a receive completion for the xfer page packet */
+ 	if (fsend_receive_comp)
+-		netvsc_send_recv_completion(device, transaction_id, status);
++		netvsc_send_recv_completion(device, net_device, transaction_id,
++					status);
+ 
+ }
+ 
+-static void netvsc_receive(struct hv_device *device,
+-			    struct vmpacket_descriptor *packet)
++static void netvsc_receive(struct netvsc_device *net_device,
++			struct hv_device *device,
++			struct vmpacket_descriptor *packet)
+ {
+-	struct netvsc_device *net_device;
+ 	struct vmtransfer_page_packet_header *vmxferpage_packet;
+ 	struct nvsp_message *nvsp_packet;
+ 	struct hv_netvsc_packet *netvsc_packet = NULL;
+@@ -673,9 +671,6 @@ static void netvsc_receive(struct hv_device *device,
+ 
+ 	LIST_HEAD(listHead);
+ 
+-	net_device = get_inbound_net_device(device);
+-	if (!net_device)
+-		return;
+ 	ndev = net_device->ndev;
+ 
+ 	/*
+@@ -741,7 +736,7 @@ static void netvsc_receive(struct hv_device *device,
+ 		spin_unlock_irqrestore(&net_device->recv_pkt_list_lock,
+ 				       flags);
+ 
+-		netvsc_send_recv_completion(device,
++		netvsc_send_recv_completion(device, net_device,
+ 					    vmxferpage_packet->d.trans_id,
+ 					    NVSP_STAT_FAIL);
+ 
+@@ -825,11 +820,13 @@ static void netvsc_channel_cb(void *context)
+ 				desc = (struct vmpacket_descriptor *)buffer;
+ 				switch (desc->type) {
+ 				case VM_PKT_COMP:
+-					netvsc_send_completion(device, desc);
++					netvsc_send_completion(net_device,
++								device, desc);
+ 					break;
+ 
+ 				case VM_PKT_DATA_USING_XFER_PAGES:
+-					netvsc_receive(device, desc);
++					netvsc_receive(net_device,
++							device, desc);
+ 					break;
+ 
+ 				default:
+-- 
+1.7.4.1
 
