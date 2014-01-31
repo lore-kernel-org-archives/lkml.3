@@ -1,104 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550AbaAaOLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:11:36 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45680 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238AbaAaOLe convert rfc822-to-8bit (ORCPT
+	id S1754120AbaAaOSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:18:39 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:37204 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745AbaAaOSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:11:34 -0500
-Message-ID: <52EBAF37.90900@arm.com>
-Date: Fri, 31 Jan 2014 14:12:07 +0000
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Len Brown <len.brown@intel.com>
-CC: Preeti Murthy <preeti.lkml@gmail.com>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net> <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBAD70.6040303@linaro.org>
-In-Reply-To: <52EBAD70.6040303@linaro.org>
-X-OriginalArrivalTime: 31 Jan 2014 14:11:31.0492 (UTC) FILETIME=[573E3E40:01CF1E8E]
-X-MC-Unique: 114013114113200201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 31 Jan 2014 09:18:37 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 01/10] watchdog: xilinx: Convert driver to the watchdog framework
+Date: Fri, 31 Jan 2014 15:18:10 +0100
+Message-Id: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-23066-1391177899-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/01/14 14:04, Daniel Lezcano wrote:
-> On 01/31/2014 10:39 AM, Preeti U Murthy wrote:
->> Hi Peter,
->>
->> On 01/31/2014 02:32 PM, Peter Zijlstra wrote:
->>> On Fri, Jan 31, 2014 at 02:15:47PM +0530, Preeti Murthy wrote:
->>>>>
->>>>> If the driver does its own random mapping that will break the governor
->>>>> logic. So yes, the states are ordered, the higher the index is, the more you
->>>>> save power and the higher the exit latency is.
->>>>
->>>> The above point holds true for only the ladder governor which sees the idle
->>>> states indexed in the increasing order of target_residency/exit_latency.
->>>>
->>>> However this is not true as far as I can see in the menu governor. It
->>>> acknowledges the dynamic ordering of idle states as can be seen in the
->>>> menu_select() function in the menu governor, where the idle state for the
->>>> CPU gets chosen.  You will notice that, even if it is found that the predicted
->>>> idle time of the CPU is smaller than the target residency of an idle state,
->>>> the governor continues to search for suitable idle states in the higher indexed
->>>> states although it should have halted if the idle states' were ordered according
->>>> to their target residency.. The same holds for exit_latency.
->>>>
->>>> Hence I think this patch would make sense only with additional information
->>>> like exit_latency or target_residency is present for the scheduler. The idle
->>>> state index alone will not be sufficient.
->>>
->>> Alternatively, can we enforce sanity on the cpuidle infrastructure to
->>> make the index naturally ordered? If not, please explain why :-)
->>
->> The commit id 71abbbf856a0e70 says that there are SOCs which could have
->> their target_residency and exit_latency values change at runtime. This
->> commit thus removed the ordering of the idle states according to their
->> target_residency/exit_latency. Adding Len and Arjan to the CC.
-> 
-> This commit is outdated, AFAICT.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Yes, this is also my impression. It's removed by
+--=_mimegpg-monstr-desktop-23066-1391177899-0001
 
-commit b25edc42bfb9602f0503474b2c94701d5536ce60
-Author: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Date:   Fri Oct 28 16:20:24 2011 +0530
+- Remove uneeded headers, fops functions
+- Use xilinx_wdt prefix in start/stop/keepalive functions
+  and in new structures
 
-    cpuidle: Remove CPUIDLE_FLAG_IGNORE and dev->prepare()
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
-So far, I'm under the impression that target_residency/exit_latency is
-static data and can be propagated towards the scheduler via topology
-information.
+ drivers/watchdog/Kconfig         |   1 +
+ drivers/watchdog/of_xilinx_wdt.c | 204 ++++++---------------------------------
+ 2 files changed, 33 insertions(+), 172 deletions(-)
 
--- Dietmar
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 4c4c566..9db5d3c 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1025,6 +1025,7 @@ config M54xx_WATCHDOG
+ config XILINX_WATCHDOG
+ 	tristate "Xilinx Watchdog timer"
+ 	depends on MICROBLAZE
++	select WATCHDOG_CORE
+ 	---help---
+ 	  Watchdog driver for the xps_timebase_wdt ip core.
 
-> 
-> Indeed, there are dynamic idle states. Some idle states are added or 
-> removed when a laptop is going to battery or plugged in.
-> 
-> In ACPI, the power event leads the acpi cpuidle driver to disable the 
-> cpuidle framework, get the idle states which are ordered, and re-enable 
-> the cpuidle framework which in turn kicks all the cpus. So the index in 
-> the struct rq should be always ok.
-> 
-> 
-> 
-> 
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index fb57103..8c2814e 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -1,6 +1,7 @@
+ /*
+  * Watchdog Device Driver for Xilinx axi/xps_timebase_wdt
+  *
++ * (C) Copyright 2013 - 2014 Xilinx, Inc.
+  * (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
+  *
+  * This program is free software; you can redistribute it and/or
+@@ -14,13 +15,10 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/fs.h>
+-#include <linux/miscdevice.h>
+ #include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/watchdog.h>
+ #include <linux/io.h>
+-#include <linux/uaccess.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_address.h>
+@@ -48,22 +46,18 @@
+ struct xwdt_device {
+ 	struct resource  res;
+ 	void __iomem *base;
+-	u32 nowayout;
+ 	u32 wdt_interval;
+-	u32 boot_status;
+ };
+
+ static struct xwdt_device xdev;
+
+ static  u32 timeout;
+ static  u32 control_status_reg;
+-static  u8  expect_close;
+ static  u8  no_timeout;
+-static unsigned long driver_open;
+
+ static  DEFINE_SPINLOCK(spinlock);
+
+-static void xwdt_start(void)
++static int xilinx_wdt_start(struct watchdog_device *wdd)
+ {
+ 	spin_lock(&spinlock);
+
+@@ -77,9 +71,11 @@ static void xwdt_start(void)
+ 	iowrite32(XWT_CSRX_EWDT2_MASK, xdev.base + XWT_TWCSR1_OFFSET);
+
+ 	spin_unlock(&spinlock);
++
++	return 0;
+ }
+
+-static void xwdt_stop(void)
++static int xilinx_wdt_stop(struct watchdog_device *wdd)
+ {
+ 	spin_lock(&spinlock);
+
+@@ -92,9 +88,11 @@ static void xwdt_stop(void)
+
+ 	spin_unlock(&spinlock);
+ 	pr_info("Stopped!\n");
++
++	return 0;
+ }
+
+-static void xwdt_keepalive(void)
++static int xilinx_wdt_keepalive(struct watchdog_device *wdd)
+ {
+ 	spin_lock(&spinlock);
+
+@@ -103,23 +101,28 @@ static void xwdt_keepalive(void)
+ 	iowrite32(control_status_reg, xdev.base + XWT_TWCSR0_OFFSET);
+
+ 	spin_unlock(&spinlock);
+-}
+
+-static void xwdt_get_status(int *status)
+-{
+-	int new_status;
++	return 0;
++}
+
+-	spin_lock(&spinlock);
++static const struct watchdog_info xilinx_wdt_ident = {
++	.options =  WDIOF_MAGICCLOSE |
++		    WDIOF_KEEPALIVEPING,
++	.firmware_version =	1,
++	.identity =	WATCHDOG_NAME,
++};
+
+-	control_status_reg = ioread32(xdev.base + XWT_TWCSR0_OFFSET);
+-	new_status = ((control_status_reg &
+-			(XWT_CSR0_WRS_MASK | XWT_CSR0_WDS_MASK)) != 0);
+-	spin_unlock(&spinlock);
++static const struct watchdog_ops xilinx_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = xilinx_wdt_start,
++	.stop = xilinx_wdt_stop,
++	.ping = xilinx_wdt_keepalive,
++};
+
+-	*status = 0;
+-	if (new_status & 1)
+-		*status |= WDIOF_CARDRESET;
+-}
++static struct watchdog_device xilinx_wdt_wdd = {
++	.info = &xilinx_wdt_ident,
++	.ops = &xilinx_wdt_ops,
++};
+
+ static u32 xwdt_selftest(void)
+ {
+@@ -146,139 +149,6 @@ static u32 xwdt_selftest(void)
+ 		return XWT_TIMER_FAILED;
+ }
+
+-static int xwdt_open(struct inode *inode, struct file *file)
+-{
+-	/* Only one process can handle the wdt at a time */
+-	if (test_and_set_bit(0, &driver_open))
+-		return -EBUSY;
+-
+-	/* Make sure that the module are always loaded...*/
+-	if (xdev.nowayout)
+-		__module_get(THIS_MODULE);
+-
+-	xwdt_start();
+-	pr_info("Started...\n");
+-
+-	return nonseekable_open(inode, file);
+-}
+-
+-static int xwdt_release(struct inode *inode, struct file *file)
+-{
+-	if (expect_close == 42) {
+-		xwdt_stop();
+-	} else {
+-		pr_crit("Unexpected close, not stopping watchdog!\n");
+-		xwdt_keepalive();
+-	}
+-
+-	clear_bit(0, &driver_open);
+-	expect_close = 0;
+-	return 0;
+-}
+-
+-/*
+- *      xwdt_write:
+- *      @file: file handle to the watchdog
+- *      @buf: buffer to write (unused as data does not matter here
+- *      @count: count of bytes
+- *      @ppos: pointer to the position to write. No seeks allowed
+- *
+- *      A write to a watchdog device is defined as a keepalive signal. Any
+- *      write of data will do, as we don't define content meaning.
+- */
+-static ssize_t xwdt_write(struct file *file, const char __user *buf,
+-						size_t len, loff_t *ppos)
+-{
+-	if (len) {
+-		if (!xdev.nowayout) {
+-			size_t i;
+-
+-			/* In case it was set long ago */
+-			expect_close = 0;
+-
+-			for (i = 0; i != len; i++) {
+-				char c;
+-
+-				if (get_user(c, buf + i))
+-					return -EFAULT;
+-				if (c == 'V')
+-					expect_close = 42;
+-			}
+-		}
+-		xwdt_keepalive();
+-	}
+-	return len;
+-}
+-
+-static const struct watchdog_info ident = {
+-	.options =  WDIOF_MAGICCLOSE |
+-		    WDIOF_KEEPALIVEPING,
+-	.firmware_version =	1,
+-	.identity =	WATCHDOG_NAME,
+-};
+-
+-/*
+- *      xwdt_ioctl:
+- *      @file: file handle to the device
+- *      @cmd: watchdog command
+- *      @arg: argument pointer
+- *
+- *      The watchdog API defines a common set of functions for all watchdogs
+- *      according to their available features.
+- */
+-static long xwdt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	int status;
+-
+-	union {
+-		struct watchdog_info __user *ident;
+-		int __user *i;
+-	} uarg;
+-
+-	uarg.i = (int __user *)arg;
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		return copy_to_user(uarg.ident, &ident,
+-					sizeof(ident)) ? -EFAULT : 0;
+-
+-	case WDIOC_GETBOOTSTATUS:
+-		return put_user(xdev.boot_status, uarg.i);
+-
+-	case WDIOC_GETSTATUS:
+-		xwdt_get_status(&status);
+-		return put_user(status, uarg.i);
+-
+-	case WDIOC_KEEPALIVE:
+-		xwdt_keepalive();
+-		return 0;
+-
+-	case WDIOC_GETTIMEOUT:
+-		if (no_timeout)
+-			return -ENOTTY;
+-		else
+-			return put_user(timeout, uarg.i);
+-
+-	default:
+-		return -ENOTTY;
+-	}
+-}
+-
+-static const struct file_operations xwdt_fops = {
+-	.owner      = THIS_MODULE,
+-	.llseek     = no_llseek,
+-	.write      = xwdt_write,
+-	.open       = xwdt_open,
+-	.release    = xwdt_release,
+-	.unlocked_ioctl = xwdt_ioctl,
+-};
+-
+-static struct miscdevice xwdt_miscdev = {
+-	.minor      = WATCHDOG_MINOR,
+-	.name       = "watchdog",
+-	.fops       = &xwdt_fops,
+-};
+-
+ static int xwdt_probe(struct platform_device *pdev)
+ {
+ 	int rc;
+@@ -314,7 +184,7 @@ static int xwdt_probe(struct platform_device *pdev)
+ 					"xlnx,wdt-enable-once", NULL);
+ 	if (tmptr == NULL) {
+ 		pr_warn("Parameter \"xlnx,wdt-enable-once\" not found in device tree!\n");
+-		xdev.nowayout = WATCHDOG_NOWAYOUT;
++		watchdog_set_nowayout(&xilinx_wdt_wdd, true);
+ 	}
+
+ /*
+@@ -344,24 +214,14 @@ static int xwdt_probe(struct platform_device *pdev)
+ 		goto unmap_io;
+ 	}
+
+-	xwdt_get_status(&xdev.boot_status);
+-
+-	rc = misc_register(&xwdt_miscdev);
++	rc = watchdog_register_device(&xilinx_wdt_wdd);
+ 	if (rc) {
+-		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
+-		       xwdt_miscdev.minor, rc);
++		pr_err("cannot register watchdog (err=%d)\n", rc);
+ 		goto unmap_io;
+ 	}
+
+-	if (no_timeout)
+-		pr_info("driver loaded (timeout=? sec, nowayout=%d)\n",
+-			xdev.nowayout);
+-	else
+-		pr_info("driver loaded (timeout=%d sec, nowayout=%d)\n",
+-			timeout, xdev.nowayout);
+-
+-	expect_close = 0;
+-	clear_bit(0, &driver_open);
++	dev_info(&pdev->dev, "Xilinx Watchdog Timer at %p with timeout %ds\n",
++		 xdev.base, timeout);
+
+ 	return 0;
+
+@@ -375,7 +235,7 @@ err_out:
+
+ static int xwdt_remove(struct platform_device *dev)
+ {
+-	misc_deregister(&xwdt_miscdev);
++	watchdog_unregister_device(&xilinx_wdt_wdd);
+ 	iounmap(xdev.base);
+ 	release_mem_region(xdev.res.start, resource_size(&xdev.res));
+
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-23066-1391177899-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlLrsKsACgkQykllyylKDCGQUwCgkxqOO2Amf158NBatv1z0WWOJ
+24kAnR3ysdCwEnYtLSaSqeFYFrI4wNVZ
+=Z3Iq
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-23066-1391177899-0001--
