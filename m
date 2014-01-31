@@ -1,87 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaAaMZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 07:25:19 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47915 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108AbaAaMZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 07:25:17 -0500
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: <santosh.shilimkar@ti.com>, Felipe Balbi <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <ivan.khoronzhuk@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH] usb: dwc3: keystone: switch to use runtime pm
-Date: Fri, 31 Jan 2014 15:20:26 +0200
-Message-ID: <1391174426-13773-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754149AbaAaM2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 07:28:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38376 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaAaM2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 07:28:49 -0500
+Message-ID: <52EB96FA.7090606@pengutronix.de>
+Date: Fri, 31 Jan 2014 13:28:42 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] can: sja1000: of: add reg-io-width property for
+ 8, 16 and 32-bit register access
+References: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch> <1391164513-11529-7-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1391164513-11529-7-git-send-email-florian.vaussard@epfl.ch>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="KSnc30Glsvc8sVonLaerTfiAV4j4AhI0V"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Keystone PM management layer has been implemented using PM bus for
-power management clocks. As result, most of Keystone drivers don't need
-to manage clocks directly. They just need to enable runtime PM and use it
-to handle their PM state and clocks.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--KSnc30Glsvc8sVonLaerTfiAV4j4AhI0V
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Hence, remove clock management code and switch to use runtime PM.
+On 01/31/2014 11:35 AM, Florian Vaussard wrote:
+> Add the 'reg-io-width' property for 8, 16 and 32-bit access, like
+> what is currently done with IORESOURCE_MEM_{8,16,32}BIT for non-OF
+> boot.
+>=20
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> ---
+>  drivers/net/can/sja1000/sja1000_platform.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/net/can/sja1000/sja1000_platform.c b/drivers/net/c=
+an/sja1000/sja1000_platform.c
+> index 96a92a1..62ebc3d 100644
+> --- a/drivers/net/can/sja1000/sja1000_platform.c
+> +++ b/drivers/net/can/sja1000/sja1000_platform.c
+> @@ -103,8 +103,17 @@ static void sp_populate_of(struct sja1000_priv *pr=
+iv, struct device_node *of)
+>  	int err;
+>  	u32 prop;
+> =20
+> -	priv->read_reg =3D sp_read_reg8;
+> -	priv->write_reg =3D sp_write_reg8;
+> +	of_property_read_u32(of, "reg-io-width", &prop);
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/usb/dwc3/dwc3-keystone.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+The new property might not be available in the DT, please check the
+return value of of_property_read_u32(). Use 8 bit wide as default.
 
-diff --git a/drivers/usb/dwc3/dwc3-keystone.c b/drivers/usb/dwc3/dwc3-keystone.c
-index 1fad161..a810b41 100644
---- a/drivers/usb/dwc3/dwc3-keystone.c
-+++ b/drivers/usb/dwc3/dwc3-keystone.c
-@@ -23,6 +23,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/io.h>
- #include <linux/of_platform.h>
-+#include <linux/pm_runtime.h>
- 
- /* USBSS register offsets */
- #define USBSS_REVISION		0x0000
-@@ -116,12 +117,10 @@ static int kdwc3_probe(struct platform_device *pdev)
- 	kdwc3_dma_mask = dma_get_mask(dev);
- 	dev->dma_mask = &kdwc3_dma_mask;
- 
--	kdwc->clk = devm_clk_get(kdwc->dev, "usb");
--
--	error = clk_prepare_enable(kdwc->clk);
-+	pm_runtime_enable(dev);
-+	error = pm_runtime_get_sync(dev);
- 	if (error < 0) {
--		dev_dbg(kdwc->dev, "unable to enable usb clock, err %d\n",
--			error);
-+		dev_dbg(dev, "unable to enable usb dev, err %d\n", error);
- 		return error;
- 	}
- 
-@@ -152,7 +151,8 @@ static int kdwc3_probe(struct platform_device *pdev)
- err_core:
- 	kdwc3_disable_irqs(kdwc);
- err_irq:
--	clk_disable_unprepare(kdwc->clk);
-+	pm_runtime_put_sync(dev);
-+	pm_runtime_disable(dev);
- 
- 	return error;
- }
-@@ -172,7 +172,8 @@ static int kdwc3_remove(struct platform_device *pdev)
- 
- 	kdwc3_disable_irqs(kdwc);
- 	device_for_each_child(&pdev->dev, NULL, kdwc3_remove_core);
--	clk_disable_unprepare(kdwc->clk);
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
- 	platform_set_drvdata(pdev, NULL);
- 
- 	return 0;
--- 
-1.7.9.5
+> +	if (prop =3D=3D 4) {
+> +		priv->read_reg =3D sp_read_reg32;
+> +		priv->write_reg =3D sp_write_reg32;
+> +	} else if (prop =3D=3D 2) {
+> +		priv->read_reg =3D sp_read_reg16;
+> +		priv->write_reg =3D sp_write_reg16;
+> +	} else {
+> +		priv->read_reg =3D sp_read_reg8;
+> +		priv->write_reg =3D sp_write_reg8;
+> +	}
+> =20
+>  	err =3D of_property_read_u32(of, "nxp,external-clock-frequency", &pro=
+p);
+>  	if (!err)
+>=20
 
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--KSnc30Glsvc8sVonLaerTfiAV4j4AhI0V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlLrlvoACgkQjTAFq1RaXHMZqQCghYLBRrpJsLfzPeLallNa1tSi
+OfYAn1psO5Sq+VEAUesIp0imEmagTV2y
+=pWW0
+-----END PGP SIGNATURE-----
+
+--KSnc30Glsvc8sVonLaerTfiAV4j4AhI0V--
