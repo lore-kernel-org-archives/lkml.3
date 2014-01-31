@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642AbaAaSpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:45:53 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:33103 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaAaSpw (ORCPT
+	id S932738AbaAaStJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:49:09 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:38485 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932481AbaAaStH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:45:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <52EBE62E.70102@linux.intel.com>
-References: <20140131025453.B594B660CA3@gitolite.kernel.org>
-	<20140131175009.GA27231@redhat.com>
-	<52EBE62E.70102@linux.intel.com>
-Date: Fri, 31 Jan 2014 10:45:51 -0800
-X-Google-Sender-Auth: qePET27NBqnfk2iW85UmEk425vM
-Message-ID: <CA+55aFwcgGPb=5cTnkKpP4vH2kqCCvxGteZT58efHhg3aJjcfQ@mail.gmail.com>
-Subject: Re: x86, x32: Correct invalid use of user timespec in the kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 Jan 2014 13:49:07 -0500
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCHv2] net: ipv4: move inetpeer garbage collector work to power efficient workqueue
+Date: Fri, 31 Jan 2014 10:48:07 -0800
+Message-Id: <1391194087-12195-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 10:06 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> My feeling is that {get,put}_compat_timespec() should at the very least
-> have leading underscores to flag it as a low-level function, but better
-> suggestions would be appreciated.
+From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-Why not just remove it entirely, and change all users to
-compat_[get|set]_timespec (same for timeval etc, of course).
+Garbage collector work does not have to be bound to the CPU that scheduled
+it. By moving work to the power-efficient workqueue, the selection of
+CPU executing the work is left to the scheduler. This extends idle
+residency times and conserves power.
 
-After all, compat_*_time*() does fall back cleanly for non-x32 cases.
-And sure, maybe that particular code is never *needed* for x32
-support, but the overhead is generally zero (since in most cases X32
-isn't even configured), or very low anyway. So the upside of having
-two subtly incompatible interfaces is very dubious, no?
+This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
 
-                Linus
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+[zoran.markovic@linaro.org: Rebased to latest kernel version. Added
+commit message. Fixed code alignment.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ net/ipv4/inetpeer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
+index 48f4244..7e3da6c6 100644
+--- a/net/ipv4/inetpeer.c
++++ b/net/ipv4/inetpeer.c
+@@ -161,7 +161,8 @@ static void inetpeer_gc_worker(struct work_struct *work)
+ 	list_splice(&list, &gc_list);
+ 	spin_unlock_bh(&gc_lock);
+ 
+-	schedule_delayed_work(&gc_work, gc_delay);
++	queue_delayed_work(system_power_efficient_wq,
++			   &gc_work, gc_delay);
+ }
+ 
+ /* Called from ip_output.c:ip_init  */
+@@ -576,7 +577,8 @@ static void inetpeer_inval_rcu(struct rcu_head *head)
+ 	list_add_tail(&p->gc_list, &gc_list);
+ 	spin_unlock_bh(&gc_lock);
+ 
+-	schedule_delayed_work(&gc_work, gc_delay);
++	queue_delayed_work(system_power_efficient_wq,
++			   &gc_work, gc_delay);
+ }
+ 
+ void inetpeer_invalidate_tree(struct inet_peer_base *base)
+-- 
+1.7.9.5
+
