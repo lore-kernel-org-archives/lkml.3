@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261AbaAaP2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:28:01 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55686 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754020AbaAaP17 (ORCPT
+	id S932455AbaAaPas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:30:48 -0500
+Received: from www.linutronix.de ([62.245.132.108]:55106 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082AbaAaPaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:27:59 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [Update][PATCH 4/5][RFT] ACPI / hotplug / PCI: Simplify acpi_install_hotplug_notify_handler()
-Date: Fri, 31 Jan 2014 16:42:21 +0100
-Message-ID: <4082824.GsiGP0lQhc@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20140131152836.GJ18029@intel.com>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <18315277.jcVt0SJ67s@vostro.rjw.lan> <20140131152836.GJ18029@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 31 Jan 2014 10:30:46 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-rt-users@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] leds: trigger: disable CPU trigger on -RT
+Date: Fri, 31 Jan 2014 16:30:42 +0100
+Message-Id: <1391182242-15970-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.8.5.3
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 31, 2014 05:28:36 PM Mika Westerberg wrote:
-> On Wed, Jan 29, 2014 at 01:00:57AM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Use the observation that the ACPI scan handler of the device object
-> > in acpi_hotplug_notify_cb() can be obtained from that device object's
-> > handler pointer and do not pass it as data to
-> > acpi_install_hotplug_notify_handler() in acpi_scan_init_hotplug().
-> > 
-> > That allows the second argument of acpi_install_hotplug_notify_handler()
-> > to be dropped, so do it and update its callers accordingly.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/scan.c                |   31 ++++++++++++++++++-------------
-> >  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
-> >  include/acpi/acpi_bus.h            |    2 +-
-> >  3 files changed, 20 insertions(+), 15 deletions(-)
-> > 
-> > Index: linux-pm/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/scan.c
-> > +++ linux-pm/drivers/acpi/scan.c
-> > @@ -487,7 +487,6 @@ static void acpi_device_hotplug(void *da
-> >  
-> >  static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
-> >  {
-> > -	struct acpi_scan_handler *handler = data;
-> >  	u32 ost_code = ACPI_OST_SC_SUCCESS;
-> >  	struct acpi_device *adev;
-> >  	acpi_status status;
-> > @@ -503,13 +502,6 @@ static void acpi_hotplug_notify_cb(acpi_
-> >  
-> >  	case ACPI_NOTIFY_EJECT_REQUEST:
-> >  		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
-> > -		if (handler && !handler->hotplug.enabled) {
-> > -			acpi_handle_err(handle, "Eject disabled\n");
-> > -			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> > -			goto out;
-> > -		}
-> > -		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-> > -					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> >  		break;
-> >  
-> >  	case ACPI_NOTIFY_DEVICE_WAKE:
-> > @@ -535,11 +527,24 @@ static void acpi_hotplug_notify_cb(acpi_
-> >  		goto out;
-> >  	}
-> >  
-> > +	mutex_lock(&acpi_scan_lock);
-> 
-> This is weird. I'm testing against your test-next branch which has this
-> patch included. If I remove locking here, TBT hotplug works fine. Otherwise
-> I can see the first hotplug/unplug works but after that I cannot get any
-> events anymore.
+as it triggers:
+|CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.8-rt10 #141
+|[<c0014aa4>] (unwind_backtrace+0x0/0xf8) from [<c0012788>] (show_stack+0x1c/0x20)
+|[<c0012788>] (show_stack+0x1c/0x20) from [<c043c8dc>] (dump_stack+0x20/0x2c)
+|[<c043c8dc>] (dump_stack+0x20/0x2c) from [<c004c5e8>] (__might_sleep+0x13c/0x170)
+|[<c004c5e8>] (__might_sleep+0x13c/0x170) from [<c043f270>] (__rt_spin_lock+0x28/0x38)
+|[<c043f270>] (__rt_spin_lock+0x28/0x38) from [<c043fa00>] (rt_read_lock+0x68/0x7c)
+|[<c043fa00>] (rt_read_lock+0x68/0x7c) from [<c036cf74>] (led_trigger_event+0x2c/0x5c)
+|[<c036cf74>] (led_trigger_event+0x2c/0x5c) from [<c036e0bc>] (ledtrig_cpu+0x54/0x5c)
+|[<c036e0bc>] (ledtrig_cpu+0x54/0x5c) from [<c000ffd8>] (arch_cpu_idle_exit+0x18/0x1c)
+|[<c000ffd8>] (arch_cpu_idle_exit+0x18/0x1c) from [<c00590b8>] (cpu_startup_entry+0xa8/0x234)
+|[<c00590b8>] (cpu_startup_entry+0xa8/0x234) from [<c043b2cc>] (rest_init+0xb8/0xe0)
+|[<c043b2cc>] (rest_init+0xb8/0xe0) from [<c061ebe0>] (start_kernel+0x2c4/0x380)
 
-Weird indeed.  I don't seem to be able to reproduce that on my Aspire S5.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/leds/trigger/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What system are you testing on?
-
+diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
+index 49794b4..3d7245d 100644
+--- a/drivers/leds/trigger/Kconfig
++++ b/drivers/leds/trigger/Kconfig
+@@ -61,7 +61,7 @@ config LEDS_TRIGGER_BACKLIGHT
+ 
+ config LEDS_TRIGGER_CPU
+ 	bool "LED CPU Trigger"
+-	depends on LEDS_TRIGGERS
++	depends on LEDS_TRIGGERS && !PREEMPT_RT_BASE
+ 	help
+ 	  This allows LEDs to be controlled by active CPUs. This shows
+ 	  the active CPUs across an array of LEDs so you can see which
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.5.3
+
