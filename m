@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaAaCdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 21:33:11 -0500
-Received: from infra.glanzmann.de ([88.198.249.254]:47715 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaAaCdJ (ORCPT
+	id S1753874AbaAaChL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 21:37:11 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:58705 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609AbaAaChI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 21:33:09 -0500
-Date: Fri, 31 Jan 2014 03:33:07 +0100
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Jesse Gross <jesse@nicira.com>
-Cc: "discuss@openvswitch.org" <discuss@openvswitch.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ovs-discuss] Linus GIT Head OOPs reproducable in open vswitch
- when running mininet topology
-Message-ID: <20140131023307.GD19871@glanzmann.de>
-Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
-	Jesse Gross <jesse@nicira.com>,
-	"discuss@openvswitch.org" <discuss@openvswitch.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20140130204424.GB19093@glanzmann.de>
- <CAEP_g=-rshMcq6spFZQJMMA77bgtsETO56CfH0uY26qgAm1fdw@mail.gmail.com>
+	Thu, 30 Jan 2014 21:37:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEP_g=-rshMcq6spFZQJMMA77bgtsETO56CfH0uY26qgAm1fdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4185.1391101387@warthog.procyon.org.uk>
+References: <4185.1391101387@warthog.procyon.org.uk>
+Date: Thu, 30 Jan 2014 18:37:07 -0800
+X-Google-Sender-Auth: YnPtD1YF3zKWP8cwavrGQKZYluk
+Message-ID: <CA+55aFxE+M54mSM7=nRP_frA7LDAQYyMW6UhcGq62hOP4bX5Kw@mail.gmail.com>
+Subject: Re: RFC: KEYS: Is this too-big a behavioural change for a system call?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: ghudson@mit.edu, simo@redhat.com, sgallagh@redhat.com, keys@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jesse,
+On Thu, Jan 30, 2014 at 9:03 AM, David Howells <dhowells@redhat.com> wrote:
+>
+> I've been asked by Kerberos developers to slightly change the behaviour of the
+> add_key() and request_key() system calls and a couple of the keyctl() functions
+> - and I'm wondering if you'd be okay with it.
 
-> This looks like the kernel module included with upstream Linux instead
-> of from OVS git, is that correct?
+So the rule about ABI changes has always been: "If somebody notices
+it, we revert it".
 
-coorect.
+IOW, it's not so much that you can't make changes, it's that you
+cannot make changes that break programs.
 
-> Can you please describe what you are doing instead of just giving your script?
+And quite frankly, I have no good way to judge. Your (5) _sounds_
+fair, but who knows what odd things some distributions do. We'd have
+to be very careful, in *particular* we'd need to make it very very
+clear to the krb people that if the change scews over any old users,
+it gets reverted with extreme prejudice. At that point, maybe they say
+"never mind, we might as well just always make sure we have a session
+keyring".
 
-I created 8 hosts. 2 hosts are connected two each switches. That gives
-me 4 switches which are connected using a ring topology. The reason for
-that is that I want to test the Layer2, Layer3 IPv4 and IPv6
-capabilities of OpenDayLight.
+And no, we are *not* going to say "we'll just stop doing this in the
+kernel and expect pam_keyinit to do it for us".
 
-Cheers,
-        Thomas
+But James' suggestion to perhaps have a new version of add_key() with
+new semantics could work - if it's worth the pain (because we *would*
+have to maintain the old interface basically forever, so it would be
+more of a "the new system call doesn't really deprecate the old one,
+it just has more convenient semantics").
+
+          Linus
