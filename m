@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629AbaAaPVe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:21:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46521 "EHLO mga02.intel.com"
+	id S932685AbaAaPVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:21:39 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53325 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932307AbaAaPVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:21:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,758,1384329600"; 
-   d="scan'208";a="447691710"
-Date: Fri, 31 Jan 2014 17:28:36 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [Update][PATCH 4/5][RFT] ACPI / hotplug / PCI: Simplify
- acpi_install_hotplug_notify_handler()
-Message-ID: <20140131152836.GJ18029@intel.com>
-References: <2217793.001RY6hKlo@vostro.rjw.lan>
- <1508034.JFmpIOzjVZ@vostro.rjw.lan>
- <1693151.2qrLZHyp0o@vostro.rjw.lan>
- <18315277.jcVt0SJ67s@vostro.rjw.lan>
+	id S932307AbaAaPVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:21:37 -0500
+Date: Fri, 31 Jan 2014 09:19:55 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: <santosh.shilimkar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <ivan.khoronzhuk@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: keystone: switch to use runtime pm
+Message-ID: <20140131151955.GB20736@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1391174426-13773-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cmJC7u66zC7hs+87"
 Content-Disposition: inline
-In-Reply-To: <18315277.jcVt0SJ67s@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <1391174426-13773-1-git-send-email-grygorii.strashko@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 01:00:57AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Use the observation that the ACPI scan handler of the device object
-> in acpi_hotplug_notify_cb() can be obtained from that device object's
-> handler pointer and do not pass it as data to
-> acpi_install_hotplug_notify_handler() in acpi_scan_init_hotplug().
-> 
-> That allows the second argument of acpi_install_hotplug_notify_handler()
-> to be dropped, so do it and update its callers accordingly.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/scan.c                |   31 ++++++++++++++++++-------------
->  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
->  include/acpi/acpi_bus.h            |    2 +-
->  3 files changed, 20 insertions(+), 15 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/scan.c
-> +++ linux-pm/drivers/acpi/scan.c
-> @@ -487,7 +487,6 @@ static void acpi_device_hotplug(void *da
->  
->  static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
->  {
-> -	struct acpi_scan_handler *handler = data;
->  	u32 ost_code = ACPI_OST_SC_SUCCESS;
->  	struct acpi_device *adev;
->  	acpi_status status;
-> @@ -503,13 +502,6 @@ static void acpi_hotplug_notify_cb(acpi_
->  
->  	case ACPI_NOTIFY_EJECT_REQUEST:
->  		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
-> -		if (handler && !handler->hotplug.enabled) {
-> -			acpi_handle_err(handle, "Eject disabled\n");
-> -			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> -			goto out;
-> -		}
-> -		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-> -					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
->  		break;
->  
->  	case ACPI_NOTIFY_DEVICE_WAKE:
-> @@ -535,11 +527,24 @@ static void acpi_hotplug_notify_cb(acpi_
->  		goto out;
->  	}
->  
-> +	mutex_lock(&acpi_scan_lock);
+--cmJC7u66zC7hs+87
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is weird. I'm testing against your test-next branch which has this
-patch included. If I remove locking here, TBT hotplug works fine. Otherwise
-I can see the first hotplug/unplug works but after that I cannot get any
-events anymore.
+Hi,
 
->  	ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> -	if (acpi_bus_get_device(handle, &adev))
-> +	if (acpi_bus_get_device(handle, &adev)) {
-> +		mutex_unlock(&acpi_scan_lock);
->  		goto out;
-> -
-> +	}
-> +	if (type == ACPI_NOTIFY_EJECT_REQUEST) {
-> +		if (adev->handler && !adev->handler->hotplug.enabled) {
-> +			acpi_handle_err(handle, "Eject disabled\n");
-> +			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> +			mutex_unlock(&acpi_scan_lock);
-> +			goto out;
-> +		}
-> +		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-> +					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> +	}
->  	get_device(&adev->dev);
-> +	mutex_unlock(&acpi_scan_lock);
->  	status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
->  	if (ACPI_SUCCESS(status))
->  		return;
+On Fri, Jan 31, 2014 at 03:20:26PM +0200, Grygorii Strashko wrote:
+> The Keystone PM management layer has been implemented using PM bus for
+> power management clocks. As result, most of Keystone drivers don't need
+> to manage clocks directly. They just need to enable runtime PM and use it
+> to handle their PM state and clocks.
+>=20
+> Hence, remove clock management code and switch to use runtime PM.
+>=20
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+
+quite a few weeks back I sent a series enabling runtime pm for all glue
+layers. I'll use that version instead, sorry.
+
+--=20
+balbi
+
+--cmJC7u66zC7hs+87
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJS678bAAoJEIaOsuA1yqRE89EP/j/qiApUuMpuepDhTfL+ZIBw
+2Agy7ujyy+CfkBIUqJ+tBKD657KqPxBkjmj4OCXoECmpXUVJEjy/krQCbKbcg0cI
+CHvi/El7Ye5ejRdVwgFRxV6s8xZG08pjgqO7zQTd5W7dh8TJPPkgu+jun+BodeG9
+DK3APuyGGVnC3I/iEMJ9BL+NQKg95l1nMz+zZ5CpWDgwpj8p07L9nXBYxKHz1msO
+tUHFL2vEH8uXJRyjr9dh3zes95thhQsDD6uQFcrywI3VgGZEQYySM7JaluBqsslt
+XV8xeW3PUY8AR6t/LKhu7qefJZ/6xumy2/WxN2Mq7K5zgzppHMcgU5h/Lah7tDYv
+Dore6lEdoyUbBEiawMMaj6XKFn3wfeS6TTQPiDQIqoaD9GnBs4rJ4YvKGx2RJw53
+zR0UpAZ9pzX1/v2C63WCJyLepZ2zdazR4V+qL528tTcIjJ5R324D0iT6LWO3JMHu
+Vie2liZUlmSS07J0uGChEdYNVrhdIQaipBH0ex/0o6LubGYfI5MWq9DfiGDbPxhF
+CC2jeOqyfiSGSLTnTch2kBNj2DkwsawIkTz9VhABn9Pzgb9JfX3u1omffthejllJ
+ZNdSoJrQLOQk2D5wKcc0uF8bikEWn0zV/M7Ms+qvq4TEEUpTEC86UVBL0E4K93vG
+maCaGVEMz/W9o0u13pqy
+=mqX4
+-----END PGP SIGNATURE-----
+
+--cmJC7u66zC7hs+87--
