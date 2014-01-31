@@ -1,58 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815AbaAaStY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:49:24 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:55275 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932680AbaAaStV (ORCPT
+	id S932830AbaAaSvt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:51:49 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53179 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491AbaAaSvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:49:21 -0500
-Date: Fri, 31 Jan 2014 11:49:18 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Quirk Intel PCH root ports for ACS-like features
-Message-ID: <20140131184918.GA8834@google.com>
-References: <20140120215502.29567.11291.stgit@bling.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120215502.29567.11291.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Jan 2014 13:51:47 -0500
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>, Julian Anastasov <ja@ssi.bg>,
+        Flavio Leitner <fbl@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Patrick McHardy <kaber@trash.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Amerigo Wang <amwang@redhat.com>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Simon Horman <horms@verge.net.au>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCHv2] net: core: move core networking work to power efficient workqueue
+Date: Fri, 31 Jan 2014 10:51:22 -0800
+Message-Id: <1391194282-12265-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 03:01:40PM -0700, Alex Williamson wrote:
-> As described in 2/2 many Intel root ports lack PCIe ACS capabilities
-> which results in excessively large IOMMU groups.  Many of these root
-> ports do provide isolation capabilities, we just need to use device
-> specific mechanisms to enable and verify.  Long term, I hope we can
-> round out this list (particularly to include X79 root ports) and
-> more importantly, encourage proper PCIe ACS support in future
-> products.  I'm really hoping we can get this in during the 3.14 cycle.
+From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-v3.13 was released Jan 19, so this came during the v3.14 merge window.  I
-like to have things in -next for a while before asking Linus to pull them,
-and I try to keep it to regression fixes after the merge window, i.e.,
-things that used to work, but don't work any more.  But that's all standard
-procedure that you already know, and maybe you can make a case for
-accelerating this.
+This patch moves the following work to the power efficient workqueue:
+  - Transmit work of netpoll
+  - Destination cache garbage collector work
+  - Link watch event handler work
 
-Bjorn
+In general, assignment of CPUs to pending work could be deferred to
+the scheduler in order to extend idle residency time and improve
+power efficiency. I would value community's opinion on the migration
+of this work to the power efficient workqueue, with an emphasis on
+migration of netpoll's transmit work.
 
-> Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (2):
->       pci: Add device specific PCI ACS enable
->       pci/quirks: Enable quirks for PCIe ACS on Intel PCH root ports
-> 
-> 
->  drivers/pci/pci.c    |   26 +++++-
->  drivers/pci/quirks.c |  201 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h  |    2 
->  3 files changed, 223 insertions(+), 6 deletions(-)
+This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
+
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Jiri Pirko <jiri@resnulli.us>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Flavio Leitner <fbl@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Cc: Amerigo Wang <amwang@redhat.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Antonio Quartulli <antonio@meshcoding.com>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+[zoran.markovic@linaro.org: Rebased to latest kernel version. Edited
+calls to mod_delayed_work to reference power efficient workqueue.
+Added commit message. Fixed code alignment.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ net/core/dst.c        |    5 +++--
+ net/core/link_watch.c |    5 +++--
+ net/core/netpoll.c    |    6 ++++--
+ 3 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/net/core/dst.c b/net/core/dst.c
+index ca4231e..57fba10 100644
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -135,7 +135,8 @@ loop:
+ 		 */
+ 		if (expires > 4*HZ)
+ 			expires = round_jiffies_relative(expires);
+-		schedule_delayed_work(&dst_gc_work, expires);
++		queue_delayed_work(system_power_efficient_wq,
++				   &dst_gc_work, expires);
+ 	}
+ 
+ 	spin_unlock_bh(&dst_garbage.lock);
+@@ -223,7 +224,7 @@ void __dst_free(struct dst_entry *dst)
+ 	if (dst_garbage.timer_inc > DST_GC_INC) {
+ 		dst_garbage.timer_inc = DST_GC_INC;
+ 		dst_garbage.timer_expires = DST_GC_MIN;
+-		mod_delayed_work(system_wq, &dst_gc_work,
++		mod_delayed_work(system_power_efficient_wq, &dst_gc_work,
+ 				 dst_garbage.timer_expires);
+ 	}
+ 	spin_unlock_bh(&dst_garbage.lock);
+diff --git a/net/core/link_watch.c b/net/core/link_watch.c
+index 9c3a839..6899935 100644
+--- a/net/core/link_watch.c
++++ b/net/core/link_watch.c
+@@ -135,9 +135,10 @@ static void linkwatch_schedule_work(int urgent)
+ 	 * override the existing timer.
+ 	 */
+ 	if (test_bit(LW_URGENT, &linkwatch_flags))
+-		mod_delayed_work(system_wq, &linkwatch_work, 0);
++		mod_delayed_work(system_power_efficient_wq, &linkwatch_work, 0);
+ 	else
+-		schedule_delayed_work(&linkwatch_work, delay);
++		queue_delayed_work(system_power_efficient_wq,
++				   &linkwatch_work, delay);
+ }
+ 
+ 
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index c03f3de..6685938 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -101,7 +101,8 @@ static void queue_process(struct work_struct *work)
+ 			__netif_tx_unlock(txq);
+ 			local_irq_restore(flags);
+ 
+-			schedule_delayed_work(&npinfo->tx_work, HZ/10);
++			queue_delayed_work(system_power_efficient_wq,
++					   &npinfo->tx_work, HZ/10);
+ 			return;
+ 		}
+ 		__netif_tx_unlock(txq);
+@@ -423,7 +424,8 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 
+ 	if (status != NETDEV_TX_OK) {
+ 		skb_queue_tail(&npinfo->txq, skb);
+-		schedule_delayed_work(&npinfo->tx_work,0);
++		queue_delayed_work(system_power_efficient_wq,
++				   &npinfo->tx_work, 0);
+ 	}
+ }
+ EXPORT_SYMBOL(netpoll_send_skb_on_dev);
+-- 
+1.7.9.5
+
