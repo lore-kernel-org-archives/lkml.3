@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128AbaAaKZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 05:25:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42694 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaAaKZE (ORCPT
+	id S1754177AbaAaKZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 05:25:21 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:42873 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751411AbaAaKZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 05:25:04 -0500
-Date: Fri, 31 Jan 2014 11:24:55 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Len Brown <len.brown@intel.com>,
-        Preeti Murthy <preeti.lkml@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, nicolas.pitre@linaro.org,
-        mingo@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140131102455.GB8874@twins.programming.kicks-ass.net>
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
- <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
- <20140130153150.GD5002@laptop.programming.kicks-ass.net>
- <52EA7D8A.6080604@linaro.org>
- <20140130163501.GG5002@laptop.programming.kicks-ass.net>
- <52EA8B07.6020206@linaro.org>
- <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
- <20140131090230.GM5002@laptop.programming.kicks-ass.net>
- <52EB6F65.8050008@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EB6F65.8050008@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 31 Jan 2014 05:25:15 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/3] spi: core: Add devm_spi_alloc_master
+Date: Fri, 31 Jan 2014 11:23:10 +0100
+Message-Id: <1391163792-21819-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 03:09:49PM +0530, Preeti U Murthy wrote:
-> > Alternatively, can we enforce sanity on the cpuidle infrastructure to
-> > make the index naturally ordered? If not, please explain why :-)
-> 
-> The commit id 71abbbf856a0e70 says that there are SOCs which could have
-> their target_residency and exit_latency values change at runtime. This
-> commit thus removed the ordering of the idle states according to their
-> target_residency/exit_latency. Adding Len and Arjan to the CC.
+Using devm_spi_register_master leads to a memory leak on the spi_master
+structure.
 
-OK that changelog pretty much destroys the ordered index. In which case
-we need pretty accessors for useable numbers.
+spi_alloc_master uses kzalloc to allocate the spi_master but the introduction
+of devm_spi_register_master removed all the matching calls to spi_master_put,
+leaking the spi_master structure.
 
-It would be good to reduce the number of cachelines those touch, but I'm
-not at all familiar with the cpuidle state...
+Add a devm_spi_alloc_master to provide the intended behaviour.
+
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/spi/spi.c       | 36 ++++++++++++++++++++++++++++++++++++
+ include/linux/spi/spi.h |  2 ++
+ 2 files changed, 38 insertions(+)
+
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 63613a9..eb728ec 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1266,6 +1266,42 @@ struct spi_master *spi_alloc_master(struct device *dev, unsigned size)
+ }
+ EXPORT_SYMBOL_GPL(spi_alloc_master);
+ 
++static void devm_spi_put(struct device *dev, void *res)
++{
++	spi_master_put(*(struct spi_master **)res);
++}
++
++/**
++ * devm_spi_alloc_master - allocate SPI master controller
++ * @dev: the controller, possibly using the platform_bus
++ * @size: how much zeroed driver-private data to allocate; the pointer to this
++ *	memory is in the driver_data field of the returned device,
++ *	accessible with spi_master_get_devdata().
++ * Context: can sleep
++ *
++ * Allocates a master controller as with spi_alloc_master() which will
++ * automatically be freed
++ */
++struct spi_master *devm_spi_alloc_master(struct device *dev, unsigned size)
++{
++	struct spi_master **ptr, *master;
++
++	ptr = devres_alloc(devm_spi_put, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return NULL;
++
++	master = spi_alloc_master(dev, size);
++	if (master) {
++		*ptr = master;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return master;
++}
++EXPORT_SYMBOL_GPL(devm_spi_alloc_master);
++
+ #ifdef CONFIG_OF
+ static int of_spi_register_master(struct spi_master *master)
+ {
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index a1d4ca2..6fbdb2b 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -462,6 +462,8 @@ extern void spi_finalize_current_transfer(struct spi_master *master);
+ /* the spi driver core manages memory for the spi_master classdev */
+ extern struct spi_master *
+ spi_alloc_master(struct device *host, unsigned size);
++extern struct spi_master *
++devm_spi_alloc_master(struct device *host, unsigned size);
+ 
+ extern int spi_register_master(struct spi_master *master);
+ extern int devm_spi_register_master(struct device *dev,
+-- 
+1.8.4.2
+
