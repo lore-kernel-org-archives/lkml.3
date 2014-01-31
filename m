@@ -1,140 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106AbaAaAdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:33:44 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:38011 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097AbaAaAdm (ORCPT
+	id S1753950AbaAaAfk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:35:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36559 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537AbaAaAfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:33:42 -0500
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>, Julian Anastasov <ja@ssi.bg>,
-        Flavio Leitner <fbl@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Patrick McHardy <kaber@trash.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Amerigo Wang <amwang@redhat.com>, Joe Perches <joe@perches.com>,
-        Jason Wang <jasowang@redhat.com>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        Simon Horman <horms@verge.net.au>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Subject: [RFC PATCH] net: core: move core networking work to power efficient workqueue
-Date: Thu, 30 Jan 2014 16:33:22 -0800
-Message-Id: <1391128402-10725-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 30 Jan 2014 19:35:39 -0500
+Message-ID: <52EAEFD8.6030003@infradead.org>
+Date: Thu, 30 Jan 2014 16:35:36 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andiry Xu <andiry.xu@gmail.com>,
+        Rob Landley <rob@landley.net>
+Subject: [PATCH] Documentation: fix memmap= language in kernel-parameters.txt
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+From: Randy Dunlap <rdunlap@infradead.org>
 
-This patch moves the following work to the power efficient workqueue:
-  - Transmit work of netpoll
-  - Destination cache garbage collector work
-  - Link watch event handler work
+Clean up descriptions of memmap= boot options.
 
-In general, assignment of CPUs to pending work could be deferred to
-the scheduler in order to extend idle residency time and improve
-power efficiency. I would value community's opinion on the migration
-of this work to the power efficient workqueue, with an emphasis on
-migration of netpoll's transmit work.
+Add periods (full stops), drop commas, change "used" to
+"reserved" or "marked".
 
-This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jiri Pirko <jiri@resnulli.us>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Flavio Leitner <fbl@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: John Fastabend <john.r.fastabend@intel.com>
-Cc: Amerigo Wang <amwang@redhat.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Antonio Quartulli <antonio@meshcoding.com>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Nikolay Aleksandrov <nikolay@redhat.com>
-Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
-[zoran.markovic@linaro.org: Rebased to latest kernel version. Edited
-calls to mod_delayed_work to reference power efficient workqueue.
-Added commit message.]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Andiry Xu <andiry.xu@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
 ---
- net/core/dst.c        |    5 +++--
- net/core/link_watch.c |    5 +++--
- net/core/netpoll.c    |    6 ++++--
- 3 files changed, 10 insertions(+), 6 deletions(-)
+ Documentation/kernel-parameters.txt |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/dst.c b/net/core/dst.c
-index ca4231e..cc28352 100644
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -135,7 +135,8 @@ loop:
- 		 */
- 		if (expires > 4*HZ)
- 			expires = round_jiffies_relative(expires);
--		schedule_delayed_work(&dst_gc_work, expires);
-+		queue_delayed_work(system_power_efficient_wq,
-+			&dst_gc_work, expires);
- 	}
+--- lnx-313.orig/Documentation/kernel-parameters.txt
++++ lnx-313/Documentation/kernel-parameters.txt
+@@ -1668,16 +1668,16 @@ bytes respectively. Such letter suffixes
+ 			option description.
  
- 	spin_unlock_bh(&dst_garbage.lock);
-@@ -223,7 +224,7 @@ void __dst_free(struct dst_entry *dst)
- 	if (dst_garbage.timer_inc > DST_GC_INC) {
- 		dst_garbage.timer_inc = DST_GC_INC;
- 		dst_garbage.timer_expires = DST_GC_MIN;
--		mod_delayed_work(system_wq, &dst_gc_work,
-+		mod_delayed_work(system_power_efficient_wq, &dst_gc_work,
- 				 dst_garbage.timer_expires);
- 	}
- 	spin_unlock_bh(&dst_garbage.lock);
-diff --git a/net/core/link_watch.c b/net/core/link_watch.c
-index 9c3a839..0ae3994 100644
---- a/net/core/link_watch.c
-+++ b/net/core/link_watch.c
-@@ -135,9 +135,10 @@ static void linkwatch_schedule_work(int urgent)
- 	 * override the existing timer.
- 	 */
- 	if (test_bit(LW_URGENT, &linkwatch_flags))
--		mod_delayed_work(system_wq, &linkwatch_work, 0);
-+		mod_delayed_work(system_power_efficient_wq, &linkwatch_work, 0);
- 	else
--		schedule_delayed_work(&linkwatch_work, delay);
-+		queue_delayed_work(system_power_efficient_wq,
-+			&linkwatch_work, delay);
- }
+ 	memmap=nn[KMG]@ss[KMG]
+-			[KNL] Force usage of a specific region of memory
+-			Region of memory to be used, from ss to ss+nn.
++			[KNL] Force usage of a specific region of memory.
++			Region of memory to be used is from ss to ss+nn.
  
+ 	memmap=nn[KMG]#ss[KMG]
+ 			[KNL,ACPI] Mark specific memory as ACPI data.
+-			Region of memory to be used, from ss to ss+nn.
++			Region of memory to be marked is from ss to ss+nn.
  
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index c03f3de..2c8f839 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -101,7 +101,8 @@ static void queue_process(struct work_struct *work)
- 			__netif_tx_unlock(txq);
- 			local_irq_restore(flags);
- 
--			schedule_delayed_work(&npinfo->tx_work, HZ/10);
-+			queue_delayed_work(system_power_efficient_wq,
-+				&npinfo->tx_work, HZ/10);
- 			return;
- 		}
- 		__netif_tx_unlock(txq);
-@@ -423,7 +424,8 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
- 
- 	if (status != NETDEV_TX_OK) {
- 		skb_queue_tail(&npinfo->txq, skb);
--		schedule_delayed_work(&npinfo->tx_work,0);
-+		queue_delayed_work(system_power_efficient_wq,
-+			&npinfo->tx_work, 0);
- 	}
- }
- EXPORT_SYMBOL(netpoll_send_skb_on_dev);
--- 
-1.7.9.5
-
+ 	memmap=nn[KMG]$ss[KMG]
+ 			[KNL,ACPI] Mark specific memory as reserved.
+-			Region of memory to be used, from ss to ss+nn.
++			Region of memory to be reserved is from ss to ss+nn.
+ 			Example: Exclude memory from 0x18690000-0x1869ffff
+ 			         memmap=64K$0x18690000
+ 			         or
