@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476AbaAaPKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:10:25 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24064 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbaAaPKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:10:22 -0500
-Message-ID: <52EBBCD1.7030703@oracle.com>
-Date: Fri, 31 Jan 2014 09:10:09 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        JFS Discussion <jfs-discussion@lists.sourceforge.net>
-Subject: [GIT PULL] jfs for 3.14
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S932898AbaAaPLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:11:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13241 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932744AbaAaPHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:50 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Himanshu Madhani <himanshu.madhani@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 28/34] qlcnic: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:47 +0100
+Message-Id: <7015fc7b0c4dda38cf2ecdc474d510984fcfbcab.1391172839.git.agordeev@redhat.com>
+In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
+References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 9a0bb2966efbf30a71c128c3af63307d8b5f5fc0:
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (2014-01-01 11:36:16 -0800)
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-are available in the git repository at:
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index 3d2eb14..ea7a17c 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -701,13 +701,17 @@ enable_msix:
+ 		for (vector = 0; vector < num_msix; vector++)
+ 			adapter->msix_entries[vector].entry = vector;
+ 
+-		err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
+-		if (err == 0) {
++		err = pci_enable_msix_range(pdev,
++					    adapter->msix_entries, 1, num_msix);
++
++		if (err == num_msix) {
+ 			adapter->flags |= QLCNIC_MSIX_ENABLED;
+ 			adapter->ahw->num_msix = num_msix;
+ 			dev_info(&pdev->dev, "using msi-x interrupts\n");
+ 			return 0;
+ 		} else if (err > 0) {
++			pci_disable_msix(pdev);
++
+ 			dev_info(&pdev->dev,
+ 				 "Unable to allocate %d MSI-X vectors, Available vectors %d\n",
+ 				 num_msix, err);
+-- 
+1.7.7.6
 
-
-  git://github.com/kleikamp/linux-shaggy.git tags/jfs-3.14
-
-for you to fetch changes up to 0439e091e3b1fe41a350540c84857a573fde3d72:
-
-  jfs: fix xattr value size overflow in __jfs_setxattr (2014-01-02 11:36:56 -0600)
-
-----------------------------------------------------------------
-Minor bug fix for linux-3.14
-
-----------------------------------------------------------------
-Jie Liu (1):
-      jfs: fix xattr value size overflow in __jfs_setxattr
-
- fs/jfs/xattr.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
