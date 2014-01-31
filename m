@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181AbaAaSYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:24:05 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:38893 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932748AbaAaSX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:23:56 -0500
+	id S933165AbaAaSYD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:24:03 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:48461 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932564AbaAaSXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 13:23:55 -0500
 From: Alex Thorlton <athorlton@sgi.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alex Thorlton <athorlton@sgi.com>, Oleg Nesterov <oleg@redhat.com>,
@@ -21,8 +21,8 @@ Cc: Alex Thorlton <athorlton@sgi.com>, Oleg Nesterov <oleg@redhat.com>,
         Sasha Levin <sasha.levin@oracle.com>, linux390@de.ibm.com,
         linux-s390@vger.kernel.org, linux-mm@kvack.org
 Subject: [PATCH 1/3] Revert "thp: make MADV_HUGEPAGE check for mm->def_flags"
-Date: Fri, 31 Jan 2014 12:23:44 -0600
-Message-Id: <1391192628-113858-4-git-send-email-athorlton@sgi.com>
+Date: Fri, 31 Jan 2014 12:23:43 -0600
+Message-Id: <1391192628-113858-3-git-send-email-athorlton@sgi.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
 References: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
@@ -38,6 +38,7 @@ when VM_NOHUGEPAGE is set, which will break subsequent chunks of this
 patch set.
 
 Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
