@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532AbaAaRSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:18:09 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:45930 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455AbaAaRSG (ORCPT
+	id S932593AbaAaRTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:19:32 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59159 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932409AbaAaRTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:18:06 -0500
-Date: Fri, 31 Jan 2014 09:17:25 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Kent Overstreet <kmo@daterainc.com>
-cc: Hugh Dickins <hughd@google.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next bio iters break discard?
-In-Reply-To: <20140117012105.GS9037@kmo>
-Message-ID: <alpine.LSU.2.11.1401310852000.987@eggly.anvils>
-References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils> <20140114023346.GN9037@kmo> <yq161pnmcl2.fsf@sermon.lab.mkp.net> <20140114044841.GO9037@kmo> <yq1ob3el3mr.fsf@sermon.lab.mkp.net> <20140114222424.GA7333@moria.home.lan> <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
- <20140117012105.GS9037@kmo>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Fri, 31 Jan 2014 12:19:31 -0500
+Date: Fri, 31 Jan 2014 12:19:29 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        stable@vger.kernel.org, williams@redhat.com, lclaudio@uudg.org,
+        jkacur@redhat.com, willemb@google.com
+Subject: Re: [PATCH linux-3.10.y v2 1/3] sit: fix double free of
+ fb_tunnel_dev on exit
+Message-ID: <20140131121929.51a58c72@gandalf.local.home>
+In-Reply-To: <1391156646-11981-1-git-send-email-nicolas.dichtel@6wind.com>
+References: <20140130171029.01cd80ca@gandalf.local.home>
+	<1391156646-11981-1-git-send-email-nicolas.dichtel@6wind.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Jan 2014, Kent Overstreet wrote:
+Just FYI.
+
+Our full tier tests have completed with no issues due to the sit or
+ip6_tunnel modules. These patches appear to have solved our problems.
+
+Nicolas, Thanks again for posting these!
+
+-- Steve
+
+
+On Fri, 31 Jan 2014 09:24:04 +0100
+Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+
+> This problem was fixed upstream by commit 9434266f2c64 ("sit: fix use after free
+> of fb_tunnel_dev").
+> The upstream patch depends on upstream commit 5e6700b3bf98 ("sit: add support of
+> x-netns"), which was not backported into 3.10 branch.
 > 
-> Ok, I reread the code and figured it out - the analagous change also has to be
-> made in __blk_segment_map_sg(). I'll mail out a patch for this tomorrow after
-> I've stared at the code more and had less beer.
-
-I'd been hoping for a patch to try, but now your changes have hit Linus's
-tree: so today we have discard broken there too, crashing as originally
-reported on the NULL struct page pointer in __blk_recalc_rq_segments()'s
-page_to_pfn(bv.bv_page).
-
-How to reproduce it?  I hope you'll find easier ways, but I get it with
-swapping to SSD (remember "swapon -d" to enable discard).  I'm just doing
-what I've done for years, running a pair of make -j20 kbuilds to tmpfs in
-limited RAM (I use mem=700M with 1.5G of swap: but that would be far too
-little RAM for a general config of current tree), to get plenty of fairly
-chaotic swapping but good forward progress nonetheless (if the sizes are
-too small, then it'll just thrash abysmally or be OOM-killed).
-
-But please do send me a patch and I'll give it a try - thanks.
-
-Hugh
+> First, explain the problem: when the sit module is unloaded, sit_cleanup() is
+> called.
+> rmmod sit
+> => sit_cleanup()
+>   => rtnl_link_unregister()
+>     => __rtnl_kill_links()
+>       => for_each_netdev(net, dev) {
+>         if (dev->rtnl_link_ops == ops)
+>         	ops->dellink(dev, &list_kill);
+>         }
+> At this point, the FB device is deleted (and all sit tunnels).
+>   => unregister_pernet_device()
+>     => unregister_pernet_operations()
+>       => ops_exit_list()
+>         => sit_exit_net()
+>           => sit_destroy_tunnels()
+>           In this function, no tunnel is found.
+>           => unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
+> We delete the FB device a second time here!
+> 
+> Because we cannot simply remove the second deletion (sit_exit_net() must remove
+> the FB device when a netns is deleted), we add an rtnl ops which delete all sit
+> device excepting the FB device and thus we can keep the explicit deletion in
+> sit_exit_net().
+> 
