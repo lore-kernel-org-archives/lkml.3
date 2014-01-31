@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651AbaAaWMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 17:12:13 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:48609 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542AbaAaWML convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 17:12:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <13010296.nzTT2PqdSR@phil>
-References: <4970034.fqvMoHdOyd@phil>
-	<13010296.nzTT2PqdSR@phil>
-Date: Fri, 31 Jan 2014 16:12:10 -0600
-Message-ID: <CAL_JsqKkBnj9w0pMtQOGYvNmAYpwKO4U3hjzoLBiiVab7vBmkw@mail.gmail.com>
-Subject: Re: [PATCH v7 0/7] ARM: rockchip: add smp functionality
-From: Rob Herring <robherring2@gmail.com>
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S932916AbaAaWNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 17:13:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39441 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754290AbaAaWNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 17:13:02 -0500
+Date: Fri, 31 Jan 2014 16:11:19 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Felipe Balbi <balbi@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        <ivan.khoronzhuk@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: keystone: switch to use runtime pm
+Message-ID: <20140131221118.GE2502@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140131164534.GL20736@saruman.home>
+ <Pine.LNX.4.44L0.1401311608590.12368-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="p8PhoBjPxaQXD0vg"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1401311608590.12368-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 4:03 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> On Monday, 20. January 2014 16:41:43 Heiko Stübner wrote:
->> This series enables the use of the additional cores on Rockchip
->> Cortex-A9 SoCs.
->
-> So, two weeks without any general complaints, but I guess part of the more
-> general patches could use an ack.
->
-> Going forward, what would be best way to merge them?
-> As one pull request to arm-soc, or for example splitting them into the first
-> three patches going through the misc tree and the rockchip specific stuff going
-> through arm-soc? Or something else altogether?
->
->
->> Heiko Stuebner (7):
->>   of: add functions to count number of elements in a property
->
-> One of the intermediate versions of this patch got a
->         Reviewed-by: Mark Rutland <mark.rutland@arm.com> .
-> Mark, is this still true for this variant addressing some additional wished
-> from Rob?
->
-> And this final version got a "Looks good" from Rob Herring in the original
-> thread, but a more formal "ack" might be nice :-) .
+--p8PhoBjPxaQXD0vg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rob Herring <robh@kernel.org>
+On Fri, Jan 31, 2014 at 04:13:19PM -0500, Alan Stern wrote:
+> On Fri, 31 Jan 2014, Felipe Balbi wrote:
+>=20
+> > probe()
+> > {
+> > 	...
+> >=20
+> > 	clk_get(dev, "fck");
+> > 	clk_prepare(clk);
+> > 	clk_enable(clk);
+> > 	pm_runtime_set_active(dev);
+> > 	pm_runtime_enable(dev);
+> > 	pm_runtime_get_sync(dev);
+> > 	...
+> > }
+>=20
+> > note that because of pm_runtime_set_active() that first
+> > pm_runtime_get_sync() in probe() will simply increase the reference
+> > counter without calling my ->runtime_resume() callback, which is exactly
+> > what we want, as that would completely avoid situations of bad context
+> > being restored because of that initial pm_runtime_get_sync().
+>=20
+> Very minor note...  A slightly better way to do the same thing is:
+>=20
+> 	pm_runtime_set_active(dev);
+> 	pm_runtime_get_noresume(dev);
+> 	pm_runtime_enable(dev);
+>=20
+> The get_noresume says that you want to increment the usage counter
+> without performing any callbacks, and doing it before the
+> pm_runtime_enable avoids any window during which a runtime suspend
+> might somehow occur.
 
-Rob
+aha, that's perfect :-) Thanks Alan.
 
->
->
->>   dt-bindings: sram: describe option to reserve parts of the memory
->>   misc: sram: implement mmio-sram-reserved option
->
-> Philipp, you acked an intermediate version, and this v7 now should also
-> contain the two separate loops (1st gathering data and 2nd creating the pool
-> parts) you asked for.
->
-> Could I persuade you to take a look again?
->
->
-> Thanks
-> Heiko
->
->
->>   ARM: rockchip: add snoop-control-unit
->>   ARM: rockchip: add sram dt nodes and documentation
->>   ARM: rockchip: add power-management-unit
->>   ARM: rockchip: add smp bringup code
->>
->>  .../devicetree/bindings/arm/rockchip/pmu.txt       |   16 ++
->>  .../devicetree/bindings/arm/rockchip/smp-sram.txt  |   23 +++
->>  Documentation/devicetree/bindings/misc/sram.txt    |    8 +
->>  arch/arm/boot/dts/rk3066a.dtsi                     |    6 +
->>  arch/arm/boot/dts/rk3188.dtsi                      |    6 +
->>  arch/arm/boot/dts/rk3xxx.dtsi                      |   10 +
->>  arch/arm/mach-rockchip/Kconfig                     |    1 +
->>  arch/arm/mach-rockchip/Makefile                    |    1 +
->>  arch/arm/mach-rockchip/core.h                      |   22 +++
->>  arch/arm/mach-rockchip/headsmp.S                   |   30 +++
->>  arch/arm/mach-rockchip/platsmp.c                   |  208
->> ++++++++++++++++++++ arch/arm/mach-rockchip/rockchip.c                  |
->>  2 +
->>  drivers/misc/sram.c                                |  121 +++++++++++-
->>  drivers/of/base.c                                  |   32 +++
->>  include/linux/of.h                                 |   76 +++++++
->>  15 files changed, 554 insertions(+), 8 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/arm/rockchip/pmu.txt
->>  create mode 100644
->> Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt create mode
->> 100644 arch/arm/mach-rockchip/core.h
->>  create mode 100644 arch/arm/mach-rockchip/headsmp.S
->>  create mode 100644 arch/arm/mach-rockchip/platsmp.c
->
+--=20
+balbi
+
+--p8PhoBjPxaQXD0vg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJS7B+GAAoJEIaOsuA1yqREP40P/1agEQcM6KWxst76rStk5YJ3
+bS9IVeT1xd1JN4BYW/8ICbfpBj2+upxtfRJgrrb2/kvViulOrh79gRb4w96dhhd1
+EZ3J1LDMHrBglH7xamjYEH7UWi2nxj0I1z6FKITZqN/0i9qPxeqKuh5yZjOZh/8u
+nWHzSeFOWiOdQ5E9f1w4k9BnwYYpiNdH8sGaeQvbxBesraJ24xTH04A6uFRno+KG
+TvPqVRKG4Koorwyb1cjeT/1nxsfbyzHzn8tX/wuecSs1uRwoT/GwIgbe+aRtzP+v
+bL5Adg3W783D75nIJV9/CwEgZW7EwApy4vTwbD5V5Et7bRuC9/JW/zTB6P+lZ69Z
+zqh2O7qxlrTYnf/e/MEESRes13WHNaqMk+zeQx71fF57ERrUmMcME7ugxQdy1ZmC
+KYpaAVZEUNAMUX9CFMSHUqTUEfpQIP8w3aC0401qxJ8WjTeQX4LrhRWMtdHZSE5o
+qzptYtmEAqaOBXbKXK1lF+WeDlG9j3lFziXoJIPiRSbfwxGi1Ngsg5mnsPvYz44n
+Egi8zZRADil9SAvxkn3DhyUfPq5QMTz9m2qWkusjspjHnRO87IHprJsceOK9AFxD
+oEMdBFNTZ5w7CkL1kdj8ssDAqesdG7y/lhUFuoQ32yfD4Q5K24nhgL3DNPD9/w2s
+hSr0RoW8tMPiVw9G95VQ
+=j6jY
+-----END PGP SIGNATURE-----
+
+--p8PhoBjPxaQXD0vg--
