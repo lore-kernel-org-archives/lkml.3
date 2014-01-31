@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaAaVWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:22:46 -0500
-Received: from ofcsgdbm.dwd.de ([141.38.3.245]:55128 "EHLO ofcsgdbm.dwd.de"
+	id S1754394AbaAaV1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:27:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38292 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108AbaAaVWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:22:44 -0500
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Jan 2014 16:22:44 EST
-Date: Fri, 31 Jan 2014 21:12:27 +0000 (GMT)
-From: Holger Kiehl <Holger.Kiehl@dwd.de>
-X-X-Sender: kiehl@diagnostix.dwd.de
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Need help in bug in isolate_migratepages_range
-Message-ID: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754151AbaAaV1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 16:27:49 -0500
+Date: Fri, 31 Jan 2014 15:26:23 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: <linus.walleij@linaro.org>, <gnurou@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "xinhui.pan" <xinhuiX.pan@intel.com>, "bo.he" <bo.he@intel.com>,
+        Felibe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v2] gpio-intel-mid: fix the incorrect return of idle
+ callback
+Message-ID: <20140131212623.GA2502@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140131205007.GB26770@psi-dev26.jf.intel.com>
+ <1391202481-19533-1-git-send-email-david.a.cohen@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
+Content-Disposition: inline
+In-Reply-To: <1391202481-19533-1-git-send-email-david.a.cohen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-today one of our system got a kernel bug message. It kept on running
-but more and more process begin to be stuck in D state (eg. a simple w
-command would never return) and I eventually had to reboot. Here the
-full message:
+On Fri, Jan 31, 2014 at 01:08:01PM -0800, David Cohen wrote:
+> From: "xinhui.pan" <xinhuiX.pan@intel.com>
+>=20
+> intel_gpio_runtime_idle should return correct error code if it do fail.
+> make it more correct even though -EBUSY is the most possible return value.
+>=20
+> Signed-off-by: bo.he <bo.he@intel.com>
+> Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> Cc: Felibe Balbi <balbi@ti.com>
 
-    Jan 31 13:07:43 asterix kernel: BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
-    Jan 31 13:07:43 asterix kernel: IP: [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
-    Jan 31 13:07:43 asterix kernel: PGD 7d3074067 PUD 7d3073067 PMD 0
-    Jan 31 13:07:43 asterix kernel: Oops: 0000 [#1] SMP
-    Jan 31 13:07:43 asterix kernel: Modules linked in: drbd lru_cache coretemp ipmi_devintf bonding nf_conntrack_ftp binfmt_misc usbhid i2c_i801 sg ehci_pci i2c_core ehci_hcd uhci_hcd i5000_edac i5k_amb ipmi_si ipmi_msghandler usbcore usb_common [last unloaded: microcode]
-    Jan 31 13:07:43 asterix kernel: CPU: 5 PID: 14164 Comm: java Not tainted 3.12.9 #1
-    Jan 31 13:07:43 asterix kernel: Hardware name: FUJITSU SIEMENS PRIMERGY RX300 S4             /D2519, BIOS 4.06  Rev. 1.04.2519             07/30/2008
-    Jan 31 13:07:43 asterix kernel: task: ffff8807d30b08c0 ti: ffff8807d30b2000 task.ti: ffff8807d30b2000
-    Jan 31 13:07:43 asterix kernel: RIP: 0010:[<ffffffff810af0ac>]  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
-    Jan 31 13:07:43 asterix kernel: RSP: 0000:ffff8807d30b3928  EFLAGS: 00010286
-    Jan 31 13:07:43 asterix kernel: RAX: 0000000000000000 RBX: 000000000020ec09 RCX: 0000000000000002
-    Jan 31 13:07:43 asterix kernel: RDX: 2c00000000008000 RSI: 0000000000000004 RDI: 000000000000006c
-    Jan 31 13:07:43 asterix kernel: RBP: ffff8807d30b39f8 R08: ffff88083fbde390 R09: 0000000000000001
-    Jan 31 13:07:43 asterix kernel: R10: 0000000000000000 R11: ffffea000733a000 R12: ffff8807d30b3a58
-    Jan 31 13:07:43 asterix kernel: R13: ffffea000733a1f8 R14: 0000000000000000 R15: ffff88083ffe1d80
-    Jan 31 13:07:43 asterix kernel: FS:  00007f9d9e72f910(0000) GS:ffff88083fd40000(0000) knlGS:0000000000000000
-    Jan 31 13:07:43 asterix kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c CR3: 00000007d3070000 CR4: 00000000000407e0
-    Jan 31 13:07:43 asterix kernel: Stack:
-    Jan 31 13:07:43 asterix kernel: 0000000000000009 ffff88083ffe16c0 ffffea00002e6af0 ffff8807d30b3998
-    Jan 31 13:07:43 asterix kernel: ffff8807d30b2010 00ff8807d30b08c0 ffff8807d30b08c0 000000000020f000
-    Jan 31 13:07:43 asterix kernel: 0000000000000000 000000000000083b 000000000000000a ffff8807d30b3a68
-    Jan 31 13:07:43 asterix kernel: Call Trace:
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810a161f>] ? lru_add_drain_cpu+0x25/0x97
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810af687>] compact_zone+0x2b5/0x319
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810da586>] ? put_super+0x20/0x2c
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810afa4d>] compact_zone_order+0xad/0xc4
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810afaf5>] try_to_compact_pages+0x91/0xe8
-    Jan 31 13:07:43 asterix kernel: [<ffffffff8109b92d>] ? page_alloc_cpu_notify+0x3e/0x3e
-    Jan 31 13:07:43 asterix kernel: [<ffffffff8109da34>] __alloc_pages_direct_compact+0xae/0x195
-    Jan 31 13:07:43 asterix kernel: [<ffffffff8109e45d>] __alloc_pages_nodemask+0x772/0x7b5
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810c85a3>] alloc_pages_vma+0xd6/0x101
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810d47e3>] do_huge_pmd_anonymous_page+0x199/0x2ee
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810b3884>] handle_mm_fault+0x1b7/0xceb
-    Jan 31 13:07:43 asterix kernel: [<ffffffff8105dedc>] ? __dequeue_entity+0x2e/0x33
-    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8c3>] __do_page_fault+0x3bd/0x3e4
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810bbe1a>] ? mprotect_fixup+0x1c9/0x1fb
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810aa0f0>] ? vm_mmap_pgoff+0x6d/0x8f
-    Jan 31 13:07:43 asterix kernel: [<ffffffff810795f5>] ? SyS_futex+0x103/0x13d
-    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8f3>] do_page_fault+0x9/0xb
-    Jan 31 13:07:43 asterix kernel: [<ffffffff813d3672>] page_fault+0x22/0x30
-    Jan 31 13:07:43 asterix kernel: Code: 00 41 f7 45 00 ff ff ff 01 0f 85 43 02 00 00 41 8b 45 18 85 c0 0f 89 37 02 00 00 49 8b 55 00 4c 89 e8 66 85 d2 79 04 49 8b 45 30 <8b> 40 1c 83 f8 01 0f 85 1b 02 00 00 49 8b 55 08 30 c0 48 85 d2
-    Jan 31 13:07:43 asterix kernel: RIP  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
-    Jan 31 13:07:43 asterix kernel: RSP <ffff8807d30b3928>
-    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c
-    Jan 31 13:07:43 asterix kernel: ---[ end trace fba75c5b0b9175ea ]---
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-Kernel is a plain kernel.org kernel 3.12.9 and it uses drbd to replicate
-data to another host. Any idea what the cause of this bug is? Could it be
-hardware? The system has been running now for five years without any problems.
+> ---
+>  drivers/gpio/gpio-intel-mid.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/gpio/gpio-intel-mid.c b/drivers/gpio/gpio-intel-mid.c
+> index 41218e93b9fe..55688d0548e9 100644
+> --- a/drivers/gpio/gpio-intel-mid.c
+> +++ b/drivers/gpio/gpio-intel-mid.c
+> @@ -369,8 +369,8 @@ static const struct irq_domain_ops intel_gpio_irq_ops=
+ =3D {
+> =20
+>  static int intel_gpio_runtime_idle(struct device *dev)
+>  {
+> -	pm_schedule_suspend(dev, 500);
+> -	return -EBUSY;
+> +	int err =3D pm_schedule_suspend(dev, 500);
+> +	return err ?: -EBUSY;
+>  }
+> =20
+>  static const struct dev_pm_ops intel_gpio_pm_ops =3D {
+> --=20
+> 1.8.4.2
+>=20
 
-Please CC me since I am not on the list.
+--=20
+balbi
 
-Many thanks in advance.
+--pWyiEgJYm5f9v55/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
-Holger
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJS7BT+AAoJEIaOsuA1yqREvwgP/j4N0kYDn8cbcPNewczgZ+/x
+P95VrwlKLUpHDed3W/bqt75nOeTa7wAfN+GfZe3N06WinNFCqFzm0FIO+LGqrsM8
+xpsajbFXD60bHb+2w5splsGepR1rxjZcGFhB6FXDHlUlveZcI3YM17QCqXv+aSCa
+xQKS8eECBLXoSr6iVSapyGdRMiGQoyRNWSJmoxLO8Yme7YX5apmaOFmeGm3p9N2j
+z6DjEXhNMimPXq7aK2OREBo24aZU4Mu0PrHSOKmkorDyR0BhUvdmheO2AX0SkHhi
+oJgcBy5bapWvsbg85HfWoVUXGiGkDw/3s7NM0r97BmyUgulTqnXGl+PpnRzP7Cym
+qCZO6JlHJtK6apXZVStapqa67HdRNu2/R+Wbd+zAMlrWoWZD+sCBSaKqL9pd83i4
+Umia2r84eFXmXyWcuelazv9XHXxiTgOGPF+4WclGRNzbMXlm9EU+Di0Vvt0kIAaU
+WsE4Kr9Dxv94S1dypKtNEXCtl7iOyQVma10wbB9tSaATSqbL3yWHLHmYiG9QJQey
+N4lH6of3JywVnNlTji4AM7V2Jc7M8UzB/SuNuU3O/uOq1saCVIytofwF+NHG3dXS
+5hr41SlLkAzxkS+uo2FKGAb5JnVWAS3RNbBlLaYbayPmJx6QjL1FBXNYjPXf7hEz
+v70QjzIT8hTngqnpyS2J
+=I6W4
+-----END PGP SIGNATURE-----
+
+--pWyiEgJYm5f9v55/--
