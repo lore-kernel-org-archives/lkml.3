@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586AbaAaOU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:20:56 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:38172 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290AbaAaOTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:19:01 -0500
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: [PATCH 10/10] watchdog: xilinx: Enable this driver for Zynq
-Date: Fri, 31 Jan 2014 15:18:19 +0100
-Message-Id: <f7bdfada576e93eaab8f6dc2ecd881da8f43911c.1391177880.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
-In-Reply-To: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-23183-1391177937-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1754316AbaAaOWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:22:07 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:51779
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753963AbaAaOWF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 09:22:05 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(z579ehz9371I103dK542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275dh1de097hz2dh109h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h1155h)
+X-WSS-ID: 0N09RWG-08-AZB-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: drm/radeon/dpm: fix uninitialized read from stack in
+ kv_dpm_late_enable
+Thread-Topic: drm/radeon/dpm: fix uninitialized read from stack in
+ kv_dpm_late_enable
+Thread-Index: AQHPHiqgl4bmHAqS5Uy0KM2EnAp1O5qe4ybw
+Date: Fri, 31 Jan 2014 14:21:56 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D03EC73132@satlexdag05.amd.com>
+References: <20140131021730.GA11601@redhat.com>
+In-Reply-To: <20140131021730.GA11601@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.180.168.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+> -----Original Message-----
+> From: Dave Jones [mailto:davej@redhat.com]
+> Sent: Thursday, January 30, 2014 9:18 PM
+> To: Linux Kernel Mailing List
+> Cc: Deucher, Alexander
+> Subject: drm/radeon/dpm: fix uninitialized read from stack in
+> kv_dpm_late_enable
+> 
+> If we take the false branch of the if quoted in the diff below, we
+> end up doing a return ret, without ever having initialized it.
+> 
+> Picked up by coverity.
+> 
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
---=_mimegpg-monstr-desktop-23183-1391177937-0001
+Applied.  Thanks!
 
-Enable this driver for Zynq.
-Move it to architecture independent Kconfig part.
+Alex
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-
-Build tested by zero day testing system.
----
- drivers/watchdog/Kconfig | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 9db5d3c..6120403 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -111,6 +111,15 @@ config WM8350_WATCHDOG
- 	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
- 	  the watchdog triggers the system will be reset.
-
-+config XILINX_WATCHDOG
-+	tristate "Xilinx Watchdog timer"
-+	select WATCHDOG_CORE
-+	help
-+	  Watchdog driver for the xps_timebase_wdt ip core.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called of_xilinx_wdt.
-+
- # ALPHA Architecture
-
- # ARM Architecture
-@@ -1022,19 +1031,6 @@ config M54xx_WATCHDOG
-
- # MicroBlaze Architecture
-
--config XILINX_WATCHDOG
--	tristate "Xilinx Watchdog timer"
--	depends on MICROBLAZE
--	select WATCHDOG_CORE
--	---help---
--	  Watchdog driver for the xps_timebase_wdt ip core.
--
--	  IMPORTANT: The xps_timebase_wdt parent must have the property
--	  "clock-frequency" at device tree.
--
--	  To compile this driver as a module, choose M here: the
--	  module will be called of_xilinx_wdt.
--
- # MIPS Architecture
-
- config ATH79_WDT
---
-1.8.2.3
+> 
+> diff --git a/drivers/gpu/drm/radeon/kv_dpm.c
+> b/drivers/gpu/drm/radeon/kv_dpm.c
+> index b6e01d5d2cce..351db361239d 100644
+> --- a/drivers/gpu/drm/radeon/kv_dpm.c
+> +++ b/drivers/gpu/drm/radeon/kv_dpm.c
+> @@ -1223,7 +1223,7 @@ int kv_dpm_enable(struct radeon_device *rdev)
+> 
+>  int kv_dpm_late_enable(struct radeon_device *rdev)
+>  {
+> -	int ret;
+> +	int ret = 0;
+> 
+>  	if (rdev->irq.installed &&
+>  	    r600_is_internal_thermal_sensor(rdev->pm.int_thermal_type)) {
 
 
---=_mimegpg-monstr-desktop-23183-1391177937-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlLrsNEACgkQykllyylKDCH+hQCeILk7DKNloZoP/+Hklo7AIFYw
-3z4An2o2lRg6HtbJ+ZyjRUFZ7X+/vabQ
-=w9To
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-23183-1391177937-0001--
