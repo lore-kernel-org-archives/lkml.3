@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609AbaAaSnF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:43:05 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54446 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaAaSnD (ORCPT
+	id S932642AbaAaSpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:45:53 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:33103 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236AbaAaSpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:43:03 -0500
-Date: Fri, 31 Jan 2014 18:42:58 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [PATCH] dcache: make d_splice_alias use d_materialise_unique
-Message-ID: <20140131184258.GN10323@ZenIV.linux.org.uk>
-References: <20140115151749.GF23999@fieldses.org>
- <20140117121723.GA18375@infradead.org>
- <20140117153917.GA26636@fieldses.org>
- <20140117210343.GD26636@fieldses.org>
- <20140117212655.GE26636@fieldses.org>
- <20140123212700.GA30466@fieldses.org>
+	Fri, 31 Jan 2014 13:45:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123212700.GA30466@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52EBE62E.70102@linux.intel.com>
+References: <20140131025453.B594B660CA3@gitolite.kernel.org>
+	<20140131175009.GA27231@redhat.com>
+	<52EBE62E.70102@linux.intel.com>
+Date: Fri, 31 Jan 2014 10:45:51 -0800
+X-Google-Sender-Auth: qePET27NBqnfk2iW85UmEk425vM
+Message-ID: <CA+55aFwcgGPb=5cTnkKpP4vH2kqCCvxGteZT58efHhg3aJjcfQ@mail.gmail.com>
+Subject: Re: x86, x32: Correct invalid use of user timespec in the kernel
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 23, 2014 at 04:27:00PM -0500, J. Bruce Fields wrote:
-> From: "J. Bruce Fields" <bfields@redhat.com>
-> 
-> d_splice_alias can create duplicate directory aliases (in the !new
-> case), or (in the new case) d_move directories without holding
-> appropriate locks.
+On Fri, Jan 31, 2014 at 10:06 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>
+> My feeling is that {get,put}_compat_timespec() should at the very least
+> have leading underscores to flag it as a low-level function, but better
+> suggestions would be appreciated.
 
-Details, please.  In the new case, we have IS_ROOT() alias found;
-what locks would that need?  Note that d_materialise_unique() won't
-bother with __d_unalias() in such case - it does what d_move() would've
-done, without taking any mutex.
+Why not just remove it entirely, and change all users to
+compat_[get|set]_timespec (same for timeval etc, of course).
 
-In the !new case, we'd need a preexisting dentry alias, complete with
-parent.  IOW, that's the case when directory already in the tree
-has been found during lookup from another parent.  In which case
-we shouldn't be using d_splice_alias() at all, as it is (and it
-certainly can't happen for any local fs).
+After all, compat_*_time*() does fall back cleanly for non-x32 cases.
+And sure, maybe that particular code is never *needed* for x32
+support, but the overhead is generally zero (since in most cases X32
+isn't even configured), or very low anyway. So the upside of having
+two subtly incompatible interfaces is very dubious, no?
 
-Now, I agree that merging that with d_materialise_unique() might be
-a good idea, but commit message is wrong as it, AFAICS.
+                Linus
