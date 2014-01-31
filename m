@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567AbaAaTpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:45:39 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:53964 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281AbaAaTph convert rfc822-to-8bit (ORCPT
+	id S932688AbaAaTqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:46:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54248 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033AbaAaTqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:45:37 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH 2/4] arm: qcom: Split Qualcomm support into legacy and multiplatform
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <3511712.H3ChLoqCm7@wuerfel>
-Date: Fri, 31 Jan 2014 13:45:34 -0600
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AED23932-2BC1-463C-BD1C-D86EBC174B8A@codeaurora.org>
-References: <1391107002-21470-1-git-send-email-galak@codeaurora.org> <201401312020.16984.arnd@arndb.de> <2B2190A4-6689-40D8-A3D7-BD2D882A2CF6@codeaurora.org> <3511712.H3ChLoqCm7@wuerfel>
-To: Arnd Bergmann <arnd@arndb.de>
-X-Mailer: Apple Mail (2.1827)
+	Fri, 31 Jan 2014 14:46:19 -0500
+Date: Fri, 31 Jan 2014 20:45:35 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20140131194535.GN5002@laptop.programming.kicks-ass.net>
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+ <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
+ <1391108430.3138.86.camel@schen9-DESK>
+ <20140130192835.GK5002@laptop.programming.kicks-ass.net>
+ <52EBEAD5.3000502@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EBEAD5.3000502@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jan 31, 2014, at 1:34 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-
-> On Friday 31 January 2014 13:25:25 Kumar Gala wrote:
->>> The hotplug.c change sticks out as something that isn't just a move
->>> of code to another place, but deletion of unused code. It would
->>> be nice to split that out into a separate change, possibly together
->>> with the trivial board.c and smp.c changes.
->> 
->> That’s not 100% true, the hotplug.c code implemented msm_cpu_die, which moved into smp.c
->> 
->> I can split out scm*/smp* into a patch to enable smp if that is really desired, but not exactly sure what it gets us.
->> 
+On Fri, Jan 31, 2014 at 01:26:29PM -0500, Waiman Long wrote:
+> >I don't get why we need the used thing at all; something like:
+> >
+> >struct qna {
+> >	int cnt;
+> >	struct qnode nodes[4];
+> >};
+> >
+> >DEFINE_PER_CPU(struct qna, qna);
+> >
+> >struct qnode *get_qnode(void)
+> >{
+> >	struct qna *qna = this_cpu_ptr(&qna);
+> >
+> >	return qna->nodes[qna->cnt++]; /* RMW */
+> >}
+> >
+> >void put_qnode(struct qnode *qnode)
+> >{
+> >	struct qna *qna = this_cpu_ptr(&qna);
+> >	qna->cnt--;
+> >}
+> >
+> >Should do fine, right?
 > 
-> It's not extremely important, I just prefer splitting patches
-> that have any kind of functional change from trivial moves.
+> Yes, we can do something like that. However I think put_qnode() needs to use
+> atomic dec as well. As a result, we will need 2 additional atomic operations
+> per slowpath invocation. The code may look simpler, but I don't think it
+> will be faster than what I am currently doing as the cases where the used
+> flag is set will be relatively rare.
+
+No, put doesn't need an atomic; nor is it as well; because the inc
+doesn't need an atomic either.
+
+> >If we interrupt the RMW above the interrupted context hasn't yet used
+> >the queue and once we return its free again, so all should be well even
+> >on load-store archs.
+> >
+> >The nodes array might as well be 3, because NMIs should never contend on
+> >a spinlock, so all we're left with is task, softirq and hardirq context.
 > 
-> If something happens to break for an unforseen reason, it's
-> easier to bisect to the patch that does the change.
-> 
-> 	Arnd
+> I am not so sure about NMI not taking a spinlock. I seem to remember seeing
+> code that did that. Actually, I think the NMI code is trying to printk
+> something which, in turn, need to acquire a spinlock.
 
-I’ll push my change to hotplug.c into the SMP patch set that Stephen started.
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Yeah I know, terribly broken that, I've been waiting for that to explode
+:-)
