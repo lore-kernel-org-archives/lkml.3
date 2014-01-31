@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaAaAK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:10:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:51725 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097AbaAaAKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:10:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,753,1384329600"; 
-   d="scan'208";a="447386687"
-Date: Thu, 30 Jan 2014 16:10:34 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: stefani@seibold.net
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
-        xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Subject: Re: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
-Message-ID: <20140131001034.GB2350@tassilo.jf.intel.com>
-References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
- <1391078953-1575-2-git-send-email-stefani@seibold.net>
+	id S1753525AbaAaAO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:14:28 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:48187 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaAaAO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 19:14:26 -0500
+Date: Thu, 30 Jan 2014 16:14:25 -0800 (PST)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+In-Reply-To: <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1401301434420.25181@cobra.newdream.net>
+References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com> <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com> <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com> <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391078953-1575-2-git-send-email-stefani@seibold.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -1335,7 +1335,6 @@ config ARCH_SPARSEMEM_ENABLE
->  
->  config ARCH_SPARSEMEM_DEFAULT
->  	def_bool y
-> -	depends on X86_64
+On Thu, 30 Jan 2014, Linus Torvalds wrote:
+> On Wed, Jan 29, 2014 at 11:54 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> >
+> > For ->set_acl that's fairly easily doable and I actually had a version
+> > doing that to be able to convert 9p.  But for ->get_acl the path walking
+> > caller didn't seem easily feasible.  ->get_acl actually is an invention
+> > of yours, so if you got a good idea to get the dentry to it I'd love
+> > to be able to pass it.
+> 
+> Yeah, that's pretty annoying, largely because that path is also
+> RCU-walk aware, which does *not* need this all (because it will never
+> call down into the filesystem - if the acl isn't found in the cached
+> acl's, we just abort).
+> 
+> And we're going through that very common "generic_permission()" thing
+> that in turn is also often called from the low-level filesystens, and
+> it's all fairly tightly integrated with __inode_permission() etc.
+> 
+> In the end, all the original call-sites should have a dentry, and none
+> of this is "fundamental". But you're right, it looks like an absolute
+> nightmare to add the dentry pointer through the whole chain. Damn.
+> 
+> So I'm not thrilled about it, but maybe that "d_find_alias(inode)" to
+> find the dentry is good enough in practice. It feels very much
+> incorrect (it could find a dentry with a path that you cannot actually
+> access on the server, and result in user-visible errors), but I
+> definitely see your argument. It may just not be worth the pain for
+> this odd ceph case.
+> 
+> That said, if the ceph people decide to try to bite the bullet and do
+> the required conversions to pass the dentry to the permissions
+> functions, I think I'd take it unless it ends up being *too* horribly
+> messy.
 
-Is that really needed? Why does the vdso need sparsemem?
+FWIW the dentry isn't useful in the get case; it's only on put that it is 
+currently used.  And now that I look closely, it is only being used by 
+ceph_setattr to associate the update with the parent directory for the 
+purposes of fsync(dirfd)... which is, I think, incorrect anyway (that 
+should only flush out/wait for namespace modifications, not inode attr 
+updates).
 
->  
->  static inline void __user *arch_compat_alloc_user_space(long len)
->  {
-> +#ifdef CONFIG_X86_32
-> +	struct pt_regs *regs = task_pt_regs(current);
-> +	return (void __user *)regs->sp - len;
-> +#else
->  	compat_uptr_t sp;
+So I think it's fine as is, and we'll clean this up later.
 
-and that? why does a vdso need to allocate things on the user page?
+I do have a couple patches on top of what's in your tree, though, that 
+clean up a couple duplicated lines in your fix and apply Christoph's 
+cleanup:
 
--Andi
+ git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+
+Thanks!
+sage
