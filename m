@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaAaJ3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 04:29:11 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:58546 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaAaJ3G (ORCPT
+	id S1753989AbaAaJfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 04:35:39 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:65057 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaAaJff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 04:29:06 -0500
-From: Sander Eikelenboom <linux@eikelenboom.it>
-To: Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
-        linux-ia64@vger.kernel.org
-Subject: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary prevents it from reading it's own rom. It will get the content of the shadowrom at C000 instead, which is of the primary VGA card and the driver of the secondary card will bail out.
-Date: Fri, 31 Jan 2014 10:28:22 +0100
-Message-Id: <1391160503-11122-1-git-send-email-linux@eikelenboom.it>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140130000831.GJ16825@google.com>
-References: <20140130000831.GJ16825@google.com>
+	Fri, 31 Jan 2014 04:35:35 -0500
+Date: Fri, 31 Jan 2014 04:35:31 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Zoran Markovic <zoran.markovic@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH] net: wireless: move regulatory timeout work to power
+ efficient workqueue
+Message-ID: <20140131093531.GA25559@mtj.dyndns.org>
+References: <1391123310-6425-1-git-send-email-zoran.markovic@linaro.org>
+ <1391160084.4141.1.camel@jlt4.sipsolutions.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391160084.4141.1.camel@jlt4.sipsolutions.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn / Tony,
+Hello,
 
-I fixed up ia64 as well and brought it inline again with the x86 code,
-but i don't have a ia64 machine, so that part is untested.
-Perhaps Tony is able to review/test it ?
+On Fri, Jan 31, 2014 at 10:21:24AM +0100, Johannes Berg wrote:
+> I'm not sure if this is part of a larger patchset actually adding that
+> "system_power_efficient_wq", but maybe it'd be better to expose a
+> function as an API rather than the wq struct?
+> 
+> Something like
+> 
+> scheduled_delayed_work_pwr_efficient(...)?
 
-Sander
+While there are some benefits to using dedicated functions for
+specific workqueues, I don't think it brings enough benefits to
+justify adding dedicated API and am unlikely to add new ones.
 
-
-
-Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
-prevents it from reading it's own rom. It will get the content of the shadowrom
-at C000 instead, which is of the primary VGA card and the driver of the
-secondary card will bail out.
-
-Fix this by checking if the arch code or vga-arbitration has already
-determined the vga_default_device, if so only apply the fix to this
-primary video device and let the comment reflect this.
-
-v2:
-    - Fix pci_fixup_video both in x86 and ia64
-
-
-Sander Eikelenboom (1):
-  Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
-    primary     prevents it from reading it's own rom. It will get the
-    content of the shadowrom     at C000 instead, which is of the
-    primary VGA card and the driver of the     secondary card will bail
-    out.
-
- arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
- arch/x86/pci/fixup.c  |   18 ++++++++++--------
- 2 files changed, 23 insertions(+), 19 deletions(-)
+Thanks.
 
 -- 
-1.7.10.4
-
+tejun
