@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307AbaAaLab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 06:30:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44014 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143AbaAaLa3 (ORCPT
+	id S932297AbaAaLf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 06:35:57 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:49712 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932186AbaAaLf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 06:30:29 -0500
-Date: Fri, 31 Jan 2014 12:30:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: George Spelvin <linux@horizon.com>
-Cc: Waiman.Long@hp.com, akpm@linux-foundation.org, andi@firstfloor.org,
-        arnd@arndb.de, aswin@hp.com, hpa@zytor.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        paulmck@linux.vnet.ibm.com, raghavendra.kt@linux.vnet.ibm.com,
-        riel@redhat.com, rostedt@goodmis.org, scott.norton@hp.com,
-        tglx@linutronix.de, tim.c.chen@linux.intel.com,
-        torvalds@linux-foundation.org, walken@google.com, x86@kernel.org
-Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
- implementation
-Message-ID: <20140131113003.GC3229@twins.programming.kicks-ass.net>
-References: <20140131092616.GC5126@laptop.programming.kicks-ass.net>
- <20140131100348.8867.qmail@science.horizon.com>
- <20140131101729.GA8874@twins.programming.kicks-ass.net>
+	Fri, 31 Jan 2014 06:35:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140131101729.GA8874@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1390818236-13531-1-git-send-email-sonic.adi@gmail.com>
+References: <1390818236-13531-1-git-send-email-sonic.adi@gmail.com>
+Date: Fri, 31 Jan 2014 12:35:55 +0100
+Message-ID: <CACRpkdbZuTuS-e4=Kx3ykVrBT=y8oTqxfHaG_pyU9ET0_=qT0A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: Move pint PM storage structure out of
+ blackfin architecture.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 11:17:29AM +0100, Peter Zijlstra wrote:
-> My main point was that we should seriously look at a ticket lock instead
-> of the MCS one, because while the MCS has better contention behaviour,
-> we shouldn't optimize locks for the worst contention.
+On Mon, Jan 27, 2014 at 11:23 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-In fact, I should have just used arch_spinlock_t and assumed it is a
-ticket lock.
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> It is better to keep this structure in the pinctrl-adi2 driver.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+
+Seems like a good idea, patch applied.
+(Steven, complain if any problem.)
+
+Yours,
+Linus Walleij
