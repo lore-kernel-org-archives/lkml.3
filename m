@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720AbaAaPHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:07:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42742 "EHLO mx1.redhat.com"
+	id S932903AbaAaPMY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:12:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49648 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932654AbaAaPHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:40 -0500
+	id S932707AbaAaPHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:46 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Eli Cohen <eli@mellanox.com>,
-        linux-rdma@vger.kernel.org, netdev@vger.kernel.org,
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH 19/34] mlx5: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:38 +0100
-Message-Id: <bf395f4c5a111f0f3766ce4be08e72177e227412.1391172839.git.agordeev@redhat.com>
+Subject: [PATCH 25/34] forcedeth: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:44 +0100
+Message-Id: <76d50819eba2af613e37b97abd328287c5ea346c.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,44 +29,27 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/mellanox/mlx5/core/main.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/nvidia/forcedeth.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx5/core/main.c b/drivers/net/ethernet/mellanox/mlx5/core/main.c
-index a064f06..81df046 100644
---- a/drivers/net/ethernet/mellanox/mlx5/core/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx5/core/main.c
-@@ -116,7 +116,6 @@ static int mlx5_enable_msix(struct mlx5_core_dev *dev)
- 	struct mlx5_eq_table *table = &dev->priv.eq_table;
- 	int num_eqs = 1 << dev->caps.log_max_eq;
- 	int nvec;
--	int err;
- 	int i;
- 
- 	nvec = dev->caps.num_ports * num_online_cpus() + MLX5_EQ_VEC_COMP_BASE;
-@@ -131,17 +130,12 @@ static int mlx5_enable_msix(struct mlx5_core_dev *dev)
- 	for (i = 0; i < nvec; i++)
- 		table->msix_arr[i].entry = i;
- 
--retry:
--	table->num_comp_vectors = nvec - MLX5_EQ_VEC_COMP_BASE;
--	err = pci_enable_msix(dev->pdev, table->msix_arr, nvec);
--	if (err <= 0) {
--		return err;
--	} else if (err > 2) {
--		nvec = err;
--		goto retry;
--	}
-+	nvec = pci_enable_msix_range(dev->pdev, table->msix_arr,
-+				     MLX5_EQ_VEC_COMP_BASE, nvec);
-+	if (nvec < 0)
-+		return nvec;
- 
--	mlx5_core_dbg(dev, "received %d MSI vectors out of %d requested\n", err, nvec);
-+	table->num_comp_vectors = nvec - MLX5_EQ_VEC_COMP_BASE;
- 
- 	return 0;
- }
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 74da489..bad3c05 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -3946,8 +3946,11 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
+ 	if (np->msi_flags & NV_MSI_X_CAPABLE) {
+ 		for (i = 0; i < (np->msi_flags & NV_MSI_X_VECTORS_MASK); i++)
+ 			np->msi_x_entry[i].entry = i;
+-		ret = pci_enable_msix(np->pci_dev, np->msi_x_entry, (np->msi_flags & NV_MSI_X_VECTORS_MASK));
+-		if (ret == 0) {
++		ret = pci_enable_msix_range(np->pci_dev,
++					    np->msi_x_entry,
++					    np->msi_flags & NV_MSI_X_VECTORS_MASK,
++					    np->msi_flags & NV_MSI_X_VECTORS_MASK);
++		if (ret > 0) {
+ 			np->msi_flags |= NV_MSI_X_ENABLED;
+ 			if (optimization_mode == NV_OPTIMIZATION_MODE_THROUGHPUT && !intr_test) {
+ 				/* Request irq for rx handling */
 -- 
 1.7.7.6
 
