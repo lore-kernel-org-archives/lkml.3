@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaAaGxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 01:53:54 -0500
-Received: from relay.parallels.com ([195.214.232.42]:59037 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaAaGxx (ORCPT
+	id S1751529AbaAaG6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 01:58:13 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:43788 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaAaG6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 01:53:53 -0500
-Message-ID: <52EB487B.6040701@parallels.com>
-Date: Fri, 31 Jan 2014 10:53:47 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Fri, 31 Jan 2014 01:58:10 -0500
+Date: Fri, 31 Jan 2014 07:58:04 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        sfr@canb.auug.org.au, zohar@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        monstr@monstr.eu, ralf@linux-mips.org, benh@kernel.crashing.org,
+        paulus@samba.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        lethal@linux-sh.org, x86@kernel.org, james.l.morris@oracle.com
+Subject: Re: [PATCH] kconfig: consolidate arch-specific seccomp options
+Message-ID: <20140131065804.GA14212@gmail.com>
+References: <20140129191011.8FB63DFA@viggo.jf.intel.com>
+ <20140130085551.GB2024@gmail.com>
+ <52EA8267.4020107@sr71.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: fix mutex not unlocked on memcg_create_kmem_cache
- fail path
-References: <1391097693-31401-1-git-send-email-vdavydov@parallels.com> <20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org> <alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com> <20140130132939.96a25a37016a12f9a0093a90@linux-foundation.org> <alpine.DEB.2.02.1401301336530.15271@chino.kir.corp.google.com> <20140130135002.22ce1c12b7136f75e5985df6@linux-foundation.org> <alpine.DEB.2.02.1401301403090.15271@chino.kir.corp.google.com> <20140130140902.93d35d866f9ea1c697811f6e@linux-foundation.org> <alpine.DEB.2.02.1401301411590.15271@chino.kir.corp.google.com> <20140130141538.a9e3977b5e7b76bdcf59a15f@linux-foundation.org> <alpine.DEB.2.02.1401301438500.12223@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401301438500.12223@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EA8267.4020107@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, David
 
-Thank you for taking look at this and adding the missing patch
-description. WRT your patch, please see the comment inline.
+* Dave Hansen <dave@sr71.net> wrote:
 
-On 01/31/2014 02:39 AM, David Rientjes wrote:
-> On Thu, 30 Jan 2014, Andrew Morton wrote:
->
->>> It always was.
->> eh?  kmem_cache_create_memcg()'s kstrdup() will allocate the minimum
->> needed amount of memory.
->>
-> Ah, good point.  We could this incrementally on my patch:
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -637,6 +637,9 @@ int memcg_limited_groups_array_size;
->   * better kept as an internal representation in cgroup.c. In any case, the
->   * cgrp_id space is not getting any smaller, and we don't have to necessarily
->   * increase ours as well if it increases.
-> + *
-> + * Updates to MAX_SIZE should update the space for the memcg name in
-> + * memcg_create_kmem_cache().
->   */
->  #define MEMCG_CACHES_MIN_SIZE 4
->  #define MEMCG_CACHES_MAX_SIZE MEM_CGROUP_ID_MAX
-> @@ -3400,8 +3403,10 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
->  static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->  						  struct kmem_cache *s)
->  {
-> -	char *name = NULL;
->  	struct kmem_cache *new;
-> +	const char *cgrp_name;
-> +	char *name = NULL;
-> +	size_t len;
->  
->  	BUG_ON(!memcg_can_account_kmem(memcg));
->  
-> @@ -3409,9 +3414,22 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->  	if (unlikely(!name))
->  		return NULL;
->  
-> +	/*
-> +	 * Format of a memcg's kmem cache name:
-> +	 * <cache-name>(<memcg-id>:<cgroup-name>)
-> +	 */
-> +	len = strlen(s->name);
-> +	/* Space for parentheses, colon, terminator */
-> +	len += 4;
-> +	/* MEMCG_CACHES_MAX_SIZE is USHRT_MAX */
-> +	len += 5;
-> +	BUILD_BUG_ON(MEMCG_CACHES_MAX_SIZE > USHRT_MAX);
-> +
+> On 01/30/2014 12:55 AM, Ingo Molnar wrote:
+> >> > +	  This kernel feature is useful for number crunching applications
+> >> > +	  that may need to compute untrusted bytecode during their
+> >> > +	  execution. By using pipes or other transports made available to
+> > I'd change and simplify the first sentence to:
+> > 
+> >> > +	  This kernel feature is useful to sandbox runtimes that need
+> >> > +	  to execute untrusted machine code.
+> > Seccomp isn't primarily about number crunching anymore, and it's 
+> > definitely not about 'bytecode' in the classical sense either.
+> 
+> I'll change that if I need to send it again.  Otherwise, I'll leave 
+> it to the folks who actually know something about the feature, which 
+> isn't me.
 
-This looks cumbersome, IMO. Let's leave it as is for now. AFAIK,
-cgroup_name() will be reworked soon so that it won't require RCU-context
-(https://lkml.org/lkml/2014/1/28/530). Therefore, it will be possible to
-get rid of this pointless tmp_name allocation by making
-kmem_cache_create_memcg() take not just name, but printf-like format +
-vargs.
+Ok, consider the x86 bits NAK-ed, which is lifted if the text is 
+updated as well.
 
-Thanks.
+Thanks,
+
+	Ingo
