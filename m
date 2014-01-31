@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142AbaAaXIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 18:08:30 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41455 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488AbaAaXI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 18:08:29 -0500
-From: "Network Nut" <sillystack@gmail.com>
-To: "'Clemens Ladisch'" <clemens@ladisch.de>
-Cc: "'Austin S. Hemmelgarn'" <ahferroin7@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com> <52E77282.4030303@ladisch.de> <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com> <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com> <00f201cf1e15$f134ce70$d39e6b50$@gmail.com> <52EBD7BC.5020704@gmail.com> <007d01cf1ed4$b0e659a0$12b30ce0$@gmail.com> <52EC297B.7080909@ladisch.de> <007f01cf1ed8$3b8e1450$b2aa3cf0$@gmail.com>
-In-Reply-To: <007f01cf1ed8$3b8e1450$b2aa3cf0$@gmail.com>
-Subject: RE: WaitForMultipleObjects/etc. In Kernel
-Date: Fri, 31 Jan 2014 17:08:25 -0600
-Message-ID: <008101cf1ed9$588966d0$099c3470$@gmail.com>
+	id S933153AbaAaXLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 18:11:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932320AbaAaXLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 18:11:37 -0500
+Date: Fri, 31 Jan 2014 18:11:29 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Oleg Drokin <green@linuxhacker.ru>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] Fix mountpoint reference leakage in linkat
+Message-ID: <20140131181129.2945f8aa@tlielax.poochiereds.net>
+In-Reply-To: <20140131223013.GP10323@ZenIV.linux.org.uk>
+References: <1391200918-29185-1-git-send-email-green@linuxhacker.ru>
+	<20140131210334.GO10323@ZenIV.linux.org.uk>
+	<A3886415-1FA1-4090-8F64-F5B4D4DDD786@linuxhacker.ru>
+	<20140131163231.2585a08d@tlielax.poochiereds.net>
+	<20140131223013.GP10323@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQNT3acP/4y+UoGLob+8VizidhBl0AFz54/xAX6FO6UBfOQBmQGmz+ZcAX4/+oICHvy7eQGGlUFQAlIvzyACA4NB4wIIYUjqAlBcClgBKyzVFJbtWk9A
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 31 Jan 2014 22:30:14 +0000
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-> -----Original Message-----
-> From: Network Nut [mailto:sillystack@gmail.com]
-> Sent: Friday, January 31, 2014 5:00 PM
-> To: 'Clemens Ladisch'
-> Cc: 'Austin S. Hemmelgarn'; linux-kernel@vger.kernel.org
-> Subject: RE: WaitForMultipleObjects/etc. In Kernel
-> > -----Original Message-----
-> > From: Clemens Ladisch [mailto:clemens@ladisch.de]
-> > Sent: Friday, January 31, 2014 4:54 PM
-> > To: Network Nut
-> > Cc: 'Austin S. Hemmelgarn'; linux-kernel@vger.kernel.org
-> > Subject: Re: WaitForMultipleObjects/etc. In Kernel
-> >
-> > Network Nut wrote:
-> > >> Assuming that you're porting to mainline distributions (and not
-> > >> embedded devices), named SHM segments are accessible (providing
-> the
-> > >> accessing process has correct permissions) under /dev/shm.  You
-> > >> just need to make sure that you create the segment with the right
-> > >> permissions for the other processes to access it.
-> > >
-> > > I already know how to do named shared memory between two
-> processes.
-> > I only included that to describe my overall problem.
-> > >
-> > > The problem that I am having is how I can make three
-> > > totally-independent
-> > processes interact:
-> > >
-> > > 1. M is a master process that creates a semaphore.
-> > > 2. P1 is a process that operates against the semaphore.
-> > > 3. P2 is a process that operates against the semaphore.
-> > > 4. It is not permissible that M be responsible for launching P1 or P2.
-> > > 5.  The semaphore, one way or another, must allow itself to be
-> > > specified as one of the synchronization primitives in epoll_wait()
-> >
-> > This general problem descripton does not say anything more than your
-> > first mail.
-> >
-> > Use eventfd.  To share it, use a Unix domain socket created by M.
-> > (This socket must be created at a well-known path.  shm_open() works
-> > similarly, but that it creates a file in a RAM disk and mmap()s it is
-> > just an implementation detail.)
+> On Fri, Jan 31, 2014 at 04:32:31PM -0500, Jeff Layton wrote:
 > 
-> How do I create the socket at "well-known path"?
+> >  	done_path_create(&new_path, new_dentry);
+> > +	path_put(&old_path);
+> 
+> ... and the filesystem in question isn't pinned anymore, so it can be
+> unmounted, except that
+> 
+> >  	if (delegated_inode) {
+> >  		error = break_deleg_wait(&delegated_inode);
+> 
+> this does an iput() on delegated_inode.  And umount really doesn't
+> like finding pinned inodes.  Sorry, no go.
+> 
+> I'm going with Oleg's patch with second path_put() added.
 
-Nevermind. I see it. 
+Good point. I hadn't considered that. Oleg's second patch looks good to
+me too.
 
-It is the sockaddr_un.sun_path.
-
-Thanks!
-
--Nut
-
-
-
-
+-- 
+Jeff Layton <jlayton@redhat.com>
