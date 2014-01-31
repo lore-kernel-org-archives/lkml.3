@@ -1,79 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741AbaAaRFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:05:06 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:58830 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453AbaAaRFE (ORCPT
+	id S932757AbaAaRGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:06:35 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:59682 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271AbaAaRGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:05:04 -0500
-Message-ID: <52EBD7BC.5020704@gmail.com>
-Date: Fri, 31 Jan 2014 12:05:00 -0500
-From: "Austin S. Hemmelgarn" <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 31 Jan 2014 12:06:31 -0500
+Date: Fri, 31 Jan 2014 18:07:30 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [GIT PULL] rename2 syscall
+Message-ID: <20140131170730.GM24171@tucsk.piliscsaba.szeredi.hu>
+References: <20140123085656.GK24171@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-To: Network Nut <sillystack@gmail.com>,
-        "'Clemens Ladisch'" <clemens@ladisch.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: WaitForMultipleObjects/etc. In Kernel
-References: <00d901cf1a19$0ea62db0$2bf28910$@gmail.com> <52E554EC.3090900@ladisch.de> <012d01cf1ae3$6543e340$2fcba9c0$@gmail.com> <52E6219A.3020405@ladisch.de> <00d001cf1b99$026407d0$072c1770$@gmail.com> <52E77282.4030303@ladisch.de> <009701cf1c6c$fbfaff50$f3f0fdf0$@gmail.com> <95b6e508-1358-4f01-9687-344e25bd4b2b@email.android.com> <00f201cf1e15$f134ce70$d39e6b50$@gmail.com>
-In-Reply-To: <00f201cf1e15$f134ce70$d39e6b50$@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140123085656.GK24171@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
+
+On Thu, Jan 23, 2014 at 09:56:56AM +0100, Miklos Szeredi wrote:
+
+> Could you please consider pulling the cross-rename patches.  The git tree has a
+> conflict in arch/x86/syscalls/syscall_64.tbl where the syscall number needs to
+> be fixed.  The patchset has been reviewed by Jan Kara and the man page and
+> usperpace API by Michael Kerrisk.
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
+
+I updated the cross-rename patches to apply cleanly against latest mainline
+(three trivial conflicts and fixup of up a warning in fs/kernfs/dir.c).  The
+updated tree is here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename.rebase
+
+Please pull.
+
+Thanks,
+Miklos
 
 
-On 01/30/2014 06:49 PM, Network Nut wrote:
->> -----Original Message-----
->> From: Clemens Ladisch [mailto:clemens@ladisch.de]
->> Sent: Wednesday, January 29, 2014 2:31 AM
->> To: Network Nut
->> Cc: linux-kernel@vger.kernel.org
->> Subject: RE: WaitForMultipleObjects/etc. In Kernel
->>
->> Network Nut wrote:
->>> I was looking at POSIX because it allows naming of the primitives.
->>
->> Linux uses two orthogonal mechanisms for synchronization primitives and for
->> naming/sharing.
->>
->>> I need to epoll_wait on inter-process {mutex, event, semaphore}.
->>
->> Use eventfd.
->>
->>> I need to reference inter-process {mutex, event, semaphore}, each
->>> identified by string, if feasible.
->>
->> Send the fd through a Unix domain socket.
 > 
-> Hi Again,
+> This series adds a new syscall, renameat2(), which is the same as renameat() but
+> with a flags argument.
 > 
-> I was thinking that, rather than as for specifics, I should present my general problem, and ask how long-time Linux experts would solve it.
+> The purpose of extending rename is to add cross-rename, a symmetric variant of
+> rename, which exchanges the two files.  This allows interesting things, which
+> were not possible before, for example atomically replacing a directory tree with
+> a symlink, etc...  This also allows overlayfs and friends to operate on
+> whiteouts atomically.
 > 
-> I have a master process M, that executes continually, from the birth to death of user-session.
+> Andy Lutomirski also suggested a "noreplace" flag, which disables the
+> overwriting behavior of rename.
 > 
-> I have many (distinct) processes that will be launched, and these processes, P1, P2, ...Pn, expect to see that M is executing. These processes:
+> These two flags, RENAME_EXCHANGE and RENAME_NOREPLACE are only implemented for
+> ext4 as an example and for testing.
 > 
-> 1. expect to have access to a shared-memory section that already exists because M created it
-> 2. expect to use a semaphore that already exists because M created it
-> 3. expect to use a mutex that exists because M created it
+> Thanks,
+> Miklos
+> ----
 > 
-> P1, P2, ...Pn all know the path of image on disk of M. They are also permitted to maintain a fixed string that can be used to "get at" the mutex and semaphore.
+> Miklos Szeredi (11):
+>       vfs: add d_is_dir()
+>       vfs: rename: move d_move() up
+>       vfs: rename: use common code for dir and non-dir
+>       vfs: add renameat2 syscall
+>       vfs: add RENAME_NOREPLACE flag
+>       security: add flags to rename hooks
+>       vfs: add cross-rename
+>       ext4: rename: create ext4_renament structure for local vars
+>       ext4: rename: move EMLINK check up
+>       ext4: rename: split out helper functions
+>       ext4: add cross rename support
 > 
-> How would P1, P2, ...Pn get at the semaphore that M created?
-> 
-> Please note that M cannot have any prior knowledge at all of P1, P2, ...Pn. P1...etc. must initiate  communication with M.
-> 
-> [I don't want to misuse/abuse linux-kernel with my personal questions, so if there is a more appropriate group, please let me know.]
-> 
-> Regards,
-> 
-> -Net
-Assuming that you're porting to mainline distributions (and not embedded
-devices), named SHM segments are accessible (providing the accessing
-process has correct permissions) under /dev/shm.  You just need to make
-sure that you create the segment with the right permissions for the
-other processes to access it.
+> ---
+>  Documentation/filesystems/Locking                  |   2 +-
+>  Documentation/filesystems/vfs.txt                  |   4 +-
+>  arch/x86/syscalls/syscall_64.tbl                   |   1 +
+>  .../lustre/lustre/include/linux/lustre_compat25.h  |   4 +-
+>  drivers/staging/lustre/lustre/llite/namei.c        |   3 +-
+>  drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |   2 +-
+>  fs/9p/v9fs.h                                       |   3 +-
+>  fs/9p/vfs_inode.c                                  |   4 +-
+>  fs/affs/affs.h                                     |   3 +-
+>  fs/affs/namei.c                                    |   3 +-
+>  fs/afs/dir.c                                       |   6 +-
+>  fs/bad_inode.c                                     |   3 +-
+>  fs/bfs/dir.c                                       |   3 +-
+>  fs/btrfs/inode.c                                   |   3 +-
+>  fs/cachefiles/namei.c                              |   4 +-
+>  fs/ceph/dir.c                                      |   3 +-
+>  fs/cifs/cifsfs.h                                   |   2 +-
+>  fs/cifs/inode.c                                    |   3 +-
+>  fs/coda/dir.c                                      |   8 +-
+>  fs/dcache.c                                        |  46 ++-
+>  fs/debugfs/inode.c                                 |   2 +-
+>  fs/ecryptfs/inode.c                                |   5 +-
+>  fs/exofs/namei.c                                   |   3 +-
+>  fs/ext2/namei.c                                    |   5 +-
+>  fs/ext3/namei.c                                    |   5 +-
+>  fs/ext4/namei.c                                    | 396 ++++++++++++++-------
+>  fs/ext4/super.c                                    |   6 +-
+>  fs/f2fs/namei.c                                    |   3 +-
+>  fs/fat/namei_msdos.c                               |   3 +-
+>  fs/fat/namei_vfat.c                                |   3 +-
+>  fs/fuse/dir.c                                      |   3 +-
+>  fs/gfs2/inode.c                                    |   3 +-
+>  fs/hfs/dir.c                                       |   3 +-
+>  fs/hfsplus/dir.c                                   |   3 +-
+>  fs/hostfs/hostfs_kern.c                            |   5 +-
+>  fs/hpfs/namei.c                                    |   3 +-
+>  fs/jffs2/dir.c                                     |   5 +-
+>  fs/jfs/namei.c                                     |   3 +-
+>  fs/libfs.c                                         |   3 +-
+>  fs/logfs/dir.c                                     |   3 +-
+>  fs/minix/namei.c                                   |   5 +-
+>  fs/namei.c                                         | 317 +++++++++--------
+>  fs/ncpfs/dir.c                                     |   5 +-
+>  fs/nfs/dir.c                                       |   3 +-
+>  fs/nfs/internal.h                                  |   3 +-
+>  fs/nfsd/vfs.c                                      |   2 +-
+>  fs/nilfs2/namei.c                                  |   3 +-
+>  fs/ocfs2/namei.c                                   |   3 +-
+>  fs/omfs/dir.c                                      |   3 +-
+>  fs/reiserfs/namei.c                                |   3 +-
+>  fs/sysv/namei.c                                    |   5 +-
+>  fs/ubifs/dir.c                                     |   3 +-
+>  fs/udf/namei.c                                     |   3 +-
+>  fs/ufs/namei.c                                     |   3 +-
+>  fs/xfs/xfs_iops.c                                  |   3 +-
+>  include/linux/dcache.h                             |   8 +-
+>  include/linux/fs.h                                 |   7 +-
+>  include/linux/security.h                           |  12 +-
+>  include/uapi/linux/fs.h                            |   3 +
+>  kernel/cgroup.c                                    |   5 +-
+>  mm/shmem.c                                         |   2 +-
+>  security/security.c                                |  22 +-
+>  62 files changed, 631 insertions(+), 367 deletions(-)
