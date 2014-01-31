@@ -1,147 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714AbaAaPkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:40:33 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:37817
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932691AbaAaPkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:40:31 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/2] Drivers: net: hyperv: Get rid of the rndis_filter_packet structure
-Date: Fri, 31 Jan 2014 08:25:16 -0800
-Message-Id: <1391185517-5698-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1391185478-5655-1-git-send-email-kys@microsoft.com>
-References: <1391185478-5655-1-git-send-email-kys@microsoft.com>
+	id S932722AbaAaPlb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:41:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27134 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932344AbaAaPla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:41:30 -0500
+Date: Fri, 31 Jan 2014 10:40:21 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [GIT PULL] (xen) stable/for-linus-3.14-rc0-late-tag
+Message-ID: <20140131154021.GE22527@phenom.dumpdata.com>
+References: <20140131153857.GD22527@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mxv5cy4qt+RJ9ypb"
+Content-Disposition: inline
+In-Reply-To: <20140131153857.GD22527@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This structure is redundant; get rid of it make the code little more efficient -
-get rid of the unnecessary indirection.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h   |    6 -----
- drivers/net/hyperv/netvsc_drv.c   |    2 +-
- drivers/net/hyperv/rndis_filter.c |   41 ++----------------------------------
- 3 files changed, 4 insertions(+), 45 deletions(-)
+--mxv5cy4qt+RJ9ypb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 7b594ce..7645ba3 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -846,12 +846,6 @@ struct rndis_message {
- };
- 
- 
--struct rndis_filter_packet {
--	void *completion_ctx;
--	void (*completion)(void *context);
--	struct rndis_message msg;
--};
--
- /* Handy macros */
- 
- /* get the size of an RNDIS message. Pass in the message type, */
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 7756118..1eadc13 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -146,7 +146,7 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	/* Allocate a netvsc packet based on # of frags. */
- 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
- 			 (num_pages * sizeof(struct hv_page_buffer)) +
--			 sizeof(struct rndis_filter_packet) +
-+			 sizeof(struct rndis_message) +
- 			 NDIS_VLAN_PPI_SIZE, GFP_ATOMIC);
- 	if (!packet) {
- 		/* out of memory, drop packet */
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 1084e5d..f0cc8ef 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -58,9 +58,6 @@ struct rndis_request {
- 	u8 request_ext[RNDIS_EXT_LEN];
- };
- 
--static void rndis_filter_send_completion(void *ctx);
--
--
- static struct rndis_device *get_rndis_device(void)
- {
- 	struct rndis_device *device;
-@@ -277,7 +274,7 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 				"rndis response buffer overflow "
- 				"detected (size %u max %zu)\n",
- 				resp->msg_len,
--				sizeof(struct rndis_filter_packet));
-+				sizeof(struct rndis_message));
- 
- 			if (resp->ndis_msg_type ==
- 			    RNDIS_MSG_RESET_C) {
-@@ -898,17 +895,14 @@ int rndis_filter_close(struct hv_device *dev)
- int rndis_filter_send(struct hv_device *dev,
- 			     struct hv_netvsc_packet *pkt)
- {
--	int ret;
--	struct rndis_filter_packet *filter_pkt;
- 	struct rndis_message *rndis_msg;
- 	struct rndis_packet *rndis_pkt;
- 	u32 rndis_msg_size;
- 	bool isvlan = pkt->vlan_tci & VLAN_TAG_PRESENT;
- 
- 	/* Add the rndis header */
--	filter_pkt = (struct rndis_filter_packet *)pkt->extension;
-+	rndis_msg = (struct rndis_message *)pkt->extension;
- 
--	rndis_msg = &filter_pkt->msg;
- 	rndis_msg_size = RNDIS_MESSAGE_SIZE(struct rndis_packet);
- 	if (isvlan)
- 		rndis_msg_size += NDIS_VLAN_PPI_SIZE;
-@@ -961,34 +955,5 @@ int rndis_filter_send(struct hv_device *dev,
- 		pkt->page_buf[1].len = rndis_msg_size - pkt->page_buf[0].len;
- 	}
- 
--	/* Save the packet send completion and context */
--	filter_pkt->completion = pkt->completion.send.send_completion;
--	filter_pkt->completion_ctx =
--				pkt->completion.send.send_completion_ctx;
--
--	/* Use ours */
--	pkt->completion.send.send_completion = rndis_filter_send_completion;
--	pkt->completion.send.send_completion_ctx = filter_pkt;
--
--	ret = netvsc_send(dev, pkt);
--	if (ret != 0) {
--		/*
--		 * Reset the completion to originals to allow retries from
--		 * above
--		 */
--		pkt->completion.send.send_completion =
--				filter_pkt->completion;
--		pkt->completion.send.send_completion_ctx =
--				filter_pkt->completion_ctx;
--	}
--
--	return ret;
--}
--
--static void rndis_filter_send_completion(void *ctx)
--{
--	struct rndis_filter_packet *filter_pkt = ctx;
--
--	/* Pass it back to the original handler */
--	filter_pkt->completion(filter_pkt->completion_ctx);
-+	return netvsc_send(dev, pkt);
- }
--- 
-1.7.4.1
+On Fri, Jan 31, 2014 at 10:38:57AM -0500, Konrad Rzeszutek Wilk wrote:
+> Hey Linus,
+>=20
+> Please git pull the following tag:
+>=20
+>  git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-lin=
+us-3.14-rc0-late-tag
+>=20
+> which has bug-fixes for the new features that were added during this
+> cycle. There are also two fixes for long-standing issues for which we have
+> a solution: grant-table operations extra work that was not needed causing
+> performance issues and the self balloon code was too aggressive causing
+> OOMs.
+>=20
+> The signed tag has a good description of what these fixes are.
 
+And I fat-fingered the GPG sign key - so here is my signed response to the
+original GIT PULL.
+
+>=20
+> Please pull!
+>=20
+>=20
+>  arch/arm/Kconfig                    |  1 +
+>  arch/arm/xen/enlighten.c            | 77 ++++++++++++++++++------------
+>  arch/x86/include/asm/xen/page.h     |  5 +-
+>  arch/x86/xen/grant-table.c          |  3 +-
+>  arch/x86/xen/p2m.c                  | 17 +------
+>  drivers/block/xen-blkback/blkback.c | 15 +++---
+>  drivers/xen/gntdev.c                | 13 +++--
+>  drivers/xen/grant-table.c           | 95 ++++++++++++++++++++++++++++++-=
+------
+>  drivers/xen/swiotlb-xen.c           | 22 ++++++++-
+>  drivers/xen/xen-selfballoon.c       | 22 +++++++++
+>  include/xen/grant_table.h           | 10 ++--
+>  11 files changed, 197 insertions(+), 83 deletions(-)
+>=20
+>=20
+> Bob Liu (1):
+>       drivers: xen: deaggressive selfballoon driver
+>=20
+> Dave Jones (1):
+>       xen/pvh: Fix misplaced kfree from xlated_setup_gnttab_pages
+>=20
+> Ian Campbell (1):
+>       xen: swiotlb: handle sizeof(dma_addr_t) !=3D sizeof(phys_addr_t)
+>=20
+> Julien Grall (2):
+>       arm/xen: Initialize event channels earlier
+>       xen/gnttab: Use phys_addr_t to describe the grant frame base address
+>=20
+> Zoltan Kiss (1):
+>       xen/grant-table: Avoid m2p_override during mapping
+>=20
+
+--mxv5cy4qt+RJ9ypb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJS68PhAAoJEFjIrFwIi8fJBhoIAMR2YtLNOVJ1uZYbiVy27lDe
+6+mxjO4rpHm9rT6qhSsUsdND76/TvWPV9TKIxfFWWKrgDbMNjjOUpkMrp0UR5lcF
+rKz+gfuxaX+ZZg887EnTpsnixAnV8UHT66wnKg7c1pXujiDtD+Nv68DIGbvyeKMj
+Ad5RgYRYqRBKUmauSNw5DtArl5mFVw0ShEc7uvvqACefD7nQ79lg7R0iL3Xr7AGX
+iGMrBlLiz3S+hLxwiGMCy+7pX/pJhfGTWMlyxrd19ZwRRrgYHFRDtRmwF5BhttVO
+IlfHWlHZPwOWRur6NN3Q8Riho3vTDZWfj78mMXU/MENL2sn7tzsZw4T0OAu4Pu0=
+=O4+L
+-----END PGP SIGNATURE-----
+
+--mxv5cy4qt+RJ9ypb--
