@@ -1,95 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263AbaAaL3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 06:29:42 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56378 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143AbaAaL3l (ORCPT
+	id S932307AbaAaLab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 06:30:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44014 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143AbaAaLa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 06:29:41 -0500
-Message-ID: <52EB8920.5040705@parallels.com>
-Date: Fri, 31 Jan 2014 15:29:36 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Fri, 31 Jan 2014 06:30:29 -0500
+Date: Fri, 31 Jan 2014 12:30:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: George Spelvin <linux@horizon.com>
+Cc: Waiman.Long@hp.com, akpm@linux-foundation.org, andi@firstfloor.org,
+        arnd@arndb.de, aswin@hp.com, hpa@zytor.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        paulmck@linux.vnet.ibm.com, raghavendra.kt@linux.vnet.ibm.com,
+        riel@redhat.com, rostedt@goodmis.org, scott.norton@hp.com,
+        tglx@linutronix.de, tim.c.chen@linux.intel.com,
+        torvalds@linux-foundation.org, walken@google.com, x86@kernel.org
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
+ implementation
+Message-ID: <20140131113003.GC3229@twins.programming.kicks-ass.net>
+References: <20140131092616.GC5126@laptop.programming.kicks-ass.net>
+ <20140131100348.8867.qmail@science.horizon.com>
+ <20140131101729.GA8874@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: fix mutex not unlocked on memcg_create_kmem_cache
- fail path
-References: <1391097693-31401-1-git-send-email-vdavydov@parallels.com> <20140130130129.6f8bd7fd9da55d17a9338443@linux-foundation.org> <alpine.DEB.2.02.1401301310270.15271@chino.kir.corp.google.com> <20140130132939.96a25a37016a12f9a0093a90@linux-foundation.org> <alpine.DEB.2.02.1401301336530.15271@chino.kir.corp.google.com> <20140130135002.22ce1c12b7136f75e5985df6@linux-foundation.org> <alpine.DEB.2.02.1401301403090.15271@chino.kir.corp.google.com> <20140130140902.93d35d866f9ea1c697811f6e@linux-foundation.org> <alpine.DEB.2.02.1401301411590.15271@chino.kir.corp.google.com> <20140130141538.a9e3977b5e7b76bdcf59a15f@linux-foundation.org> <alpine.DEB.2.02.1401301438500.12223@chino.kir.corp.google.com> <52EB487B.6040701@parallels.com> <alpine.DEB.2.02.1401310241080.7183@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1401310241080.7183@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140131101729.GA8874@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 02:42 PM, David Rientjes wrote:
-> On Fri, 31 Jan 2014, Vladimir Davydov wrote:
->
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -637,6 +637,9 @@ int memcg_limited_groups_array_size;
->>>   * better kept as an internal representation in cgroup.c. In any case, the
->>>   * cgrp_id space is not getting any smaller, and we don't have to necessarily
->>>   * increase ours as well if it increases.
->>> + *
->>> + * Updates to MAX_SIZE should update the space for the memcg name in
->>> + * memcg_create_kmem_cache().
->>>   */
->>>  #define MEMCG_CACHES_MIN_SIZE 4
->>>  #define MEMCG_CACHES_MAX_SIZE MEM_CGROUP_ID_MAX
->>> @@ -3400,8 +3403,10 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
->>>  static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->>>  						  struct kmem_cache *s)
->>>  {
->>> -	char *name = NULL;
->>>  	struct kmem_cache *new;
->>> +	const char *cgrp_name;
->>> +	char *name = NULL;
->>> +	size_t len;
->>>  
->>>  	BUG_ON(!memcg_can_account_kmem(memcg));
->>>  
->>> @@ -3409,9 +3414,22 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->>>  	if (unlikely(!name))
->>>  		return NULL;
->>>  
->>> +	/*
->>> +	 * Format of a memcg's kmem cache name:
->>> +	 * <cache-name>(<memcg-id>:<cgroup-name>)
->>> +	 */
->>> +	len = strlen(s->name);
->>> +	/* Space for parentheses, colon, terminator */
->>> +	len += 4;
->>> +	/* MEMCG_CACHES_MAX_SIZE is USHRT_MAX */
->>> +	len += 5;
->>> +	BUILD_BUG_ON(MEMCG_CACHES_MAX_SIZE > USHRT_MAX);
->>> +
->> This looks cumbersome, IMO. Let's leave it as is for now. AFAIK,
->> cgroup_name() will be reworked soon so that it won't require RCU-context
->> (https://lkml.org/lkml/2014/1/28/530). Therefore, it will be possible to
->> get rid of this pointless tmp_name allocation by making
->> kmem_cache_create_memcg() take not just name, but printf-like format +
->> vargs.
->>
-> You believe it's less cumbersome to do two memory allocations to figure 
-> out how much memory you really need to allocate rather than just 
-> calculating the necessary size?
+On Fri, Jan 31, 2014 at 11:17:29AM +0100, Peter Zijlstra wrote:
+> My main point was that we should seriously look at a ticket lock instead
+> of the MCS one, because while the MCS has better contention behaviour,
+> we shouldn't optimize locks for the worst contention.
 
-Well, I mean not the approach - here everything is right - but how it
-looks. This
-
-len += 4
-len += 5
-
-looks scary even with comments, IMHO. Note, I do not stand for this
-temporary buffer - it was introduced long before I started tweaking this
-code. I just want to say that substituting it now with something (OK,
-less, but IMHO still) cumbersome is not a good idea provided soon it
-will be possible to remove tmp_name while still having the code looking
-nice. If you insist, I don't mind, but... why?
-
-Thanks.
+In fact, I should have just used arch_spinlock_t and assumed it is a
+ticket lock.
