@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771AbaAaTYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:24:41 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:39811 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbaAaTYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:24:39 -0500
-Message-ID: <52EBF871.5020603@hp.com>
-Date: Fri, 31 Jan 2014 14:24:33 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <1390933151-1797-2-git-send-email-Waiman.Long@hp.com> <20140131150832.GG4941@twins.programming.kicks-ass.net>
-In-Reply-To: <20140131150832.GG4941@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932901AbaAaTZb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:25:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10119 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932532AbaAaTZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 14:25:29 -0500
+Message-ID: <1391196326.6959.111.camel@bling.home>
+Subject: Re: [PATCH 0/2] Quirk Intel PCH root ports for ACS-like features
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 31 Jan 2014 12:25:26 -0700
+In-Reply-To: <20140131184918.GA8834@google.com>
+References: <20140120215502.29567.11291.stgit@bling.home>
+	 <20140131184918.GA8834@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 10:08 AM, Peter Zijlstra wrote:
-> On Tue, Jan 28, 2014 at 01:19:10PM -0500, Waiman Long wrote:
->> For single-thread performance (no contention), a 256K lock/unlock
->> loop was run on a 2.4Ghz Westmere x86-64 CPU.  The following table
->> shows the average time (in ns) for a single lock/unlock sequence
->> (including the looping and timing overhead):
->>
->>    Lock Type			Time (ns)
->>    ---------			---------
->>    Ticket spinlock		  14.1
->>    Queue spinlock (Normal)	   8.8*
-> What CONFIG_NR_CPUS ?
+On Fri, 2014-01-31 at 11:49 -0700, Bjorn Helgaas wrote:
+> On Mon, Jan 20, 2014 at 03:01:40PM -0700, Alex Williamson wrote:
+> > As described in 2/2 many Intel root ports lack PCIe ACS capabilities
+> > which results in excessively large IOMMU groups.  Many of these root
+> > ports do provide isolation capabilities, we just need to use device
+> > specific mechanisms to enable and verify.  Long term, I hope we can
+> > round out this list (particularly to include X79 root ports) and
+> > more importantly, encourage proper PCIe ACS support in future
+> > products.  I'm really hoping we can get this in during the 3.14 cycle.
+> 
+> v3.13 was released Jan 19, so this came during the v3.14 merge window.  I
+> like to have things in -next for a while before asking Linus to pull them,
+> and I try to keep it to regression fixes after the merge window, i.e.,
+> things that used to work, but don't work any more.  But that's all standard
+> procedure that you already know, and maybe you can make a case for
+> accelerating this.
 
-I was testing on a RHEL6.4 system which has a CONFIG_NR_CPUS of 4096.
+Sorry, I sent it out as early as I was able to.  It's my understanding
+that fixes are always allowed after the merge window and we can
+generally assume that 3.14 won't be released for at least 6-8 weeks
+after rc1, which gives us plenty of time to let this cook in -next and
+still make 3.14.  Obviously it's your prerogative as maintainer where
+you feel comfortable.
 
->
-> Because for CONFIG_NR_CPUS<  128 (or 256 if you got !PARAVIRT), the fast
-> path code should be:
->
-> ticket:
->
->    mov $0x100,eax
->    lock xadd %ax,(%rbx)
->    cmp %al,%ah
->    jne ...
->
-> although my GCC is being silly and writes:
->
->    mov $0x100,eax
->    lock xadd %ax,(%rbx)
->    movzbl %ah,%edx
->    cmp %al,%dl
->    jne ...
->
-> Which seems rather like a waste of a perfectly good cycle.
->
-> With a bigger NR_CPUS you do indeed need more ops:
->
->    mov $0x10000,%edx
->    lock xadd %edx,(%rbx)
->    mov %edx,%ecx
->    shr $0x10,%ecx
->    cmp %dx,%cx
->    jne ...
->
->
-> Whereas for the straight cmpxchg() you'd get something relatively simple
-> like:
->
->    mov %edx,%eax
->    lock cmpxchg %ecx,(%rbx)
->    cmp %edx,%eax
->    jne ...
+So what does this fix and how close is it to a regression?  The fix is a
+quirk for hardware that lacks proper ACS support, but still provides
+device isolation when properly configured.  What that means to a user is
+that if they attempt to use vfio to expose a device to a userspace
+driver such as QEMU, the device may be artificially tied to other
+devices behind the root port and devices behind root ports that are part
+of the same multifunction PCH package.  In effect, there are devices
+that are isolated or isolate-able that users should be able to use
+independently of other devices, but they can't.  I fully acknowledge
+that this use case is a small, but important to me, subset of users.
 
-I believe the speeds of the lock functions are about the same. However, 
-qspinlock has a much simpler unlock function which probably account of 
-most of the speed gain.
+As to a regression, the only remote software regression is that legacy
+KVM device assignment takes a much more lax (non-existent) approach to
+kernel-base isolation and allows such assignments.  That's a weak
+regression, but if you're a downstream trying to switch users over to
+vfio-based device assignment, it's an important one.  In some respects
+there's also a hardware regression.  Intel root ports used to support
+ACS and for whatever reasons they forgot how critical ACS is in
+determining isolation sets for exposing devices to VMs.  We obviously
+can't go back and fix the existing hardware, but we can fix this
+regression for many of those chipsets in software (and beat Intel to
+include it in next generation hardware).
 
-> Anyway, as soon as you get some (light) contention you're going to tank
-> because you have to pull in extra cachelines, which is sad.
+I hope you'll consider it for 3.14, I know a number of users who
+continue to patch their kernel with the old ACS override patch who would
+appreciate it sooner than later, but I fully understand wanting some
+soak time in -next first.  Thanks,
 
-Light contention is the only case where the qspinlock may not perform as 
-good as the ticket spinlock. I know this is the most common case. 
-However, I would argue that the slowdown, if any, will not be really 
-noticeable. This is what I will try to find out.
+Alex
 
-
-> I suppose we could from the ticket code more and optimize the
-> uncontended path, but that'll make the contended path more expensive
-> again, although probably not as bad as hitting a new cacheline.
-
-I don't get what you are trying to say.
-
-Right now, I am using only bit 0 as a lock bit. I can use  bit 4, for 
-instance, as a pending locker bit and spin until bit 0 is clear. So if 
-there is only 1 other task spinning, it won't need to  fetch another 
-cacheline. However, it will slow down the uncontended path as I can't 
-assign a 0 byte to free the lock. I have to use an atomic subtraction or 
-clear bit instead.
-
--Longman
