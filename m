@@ -1,127 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171AbaAaXTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 18:19:54 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53393 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932552AbaAaXTx (ORCPT
+	id S933203AbaAaXUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 18:20:04 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:36591 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932552AbaAaXUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 18:19:53 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Revert "PCI: Remove from bus_list and release resources in pci_release_dev()"
-Date: Sat, 01 Feb 2014 00:34:15 +0100
-Message-ID: <1676758.QjUXk2223P@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20140130131236.GW18029@intel.com>
-References: <20140130131236.GW18029@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 31 Jan 2014 18:20:00 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86: Remove hpet vclock support
+Date: Fri, 31 Jan 2014 15:19:56 -0800
+Message-Id: <d348afdb2f6acc41dde0381396226b69a0358f8b.1391210357.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-    
-Revert commit ef83b0781a73 "PCI: Remove from bus_list and release
-resources in pci_release_dev()" that made some nasty race conditions
-become possible.  For example, if a Thunderbolt link is unplugged
-and then replugged immediately, the pci_release_dev() resulting from
-the hot-remove code path may be racing with the hot-add code path
-which after that commit causes various kinds of breakage to happen
-(up to and including a hard crash of the whole system).
+The HPET is so amazingly slow that this is barely a win.  It adds
+complexity, and it scares me a tiny bit to map a piece of crappy
+hardware where every userspace program can poke at it (even if said
+poking is read-only).  Let's just remove it.
 
-Moreover, the problem that commit ef83b0781a73 attempted to address
-cannot happen any more after commit 8a4c5c329de7 "PCI: Check parent
-kobject in pci_destroy_dev()", because pci_destroy_dev() will now
-return immediately if it has already been executed for the given
-device.
+This is probably a tiny speedup on kvmclock systems.
 
-Fixes: ef83b0781a73 (PCI: Remove from bus_list and release resources in pci_release_dev())
-Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/include/asm/clocksource.h | 3 +--
+ arch/x86/include/asm/fixmap.h      | 1 -
+ arch/x86/kernel/hpet.c             | 7 -------
+ arch/x86/kvm/trace.h               | 4 ++--
+ arch/x86/vdso/vclock_gettime.c     | 8 --------
+ 5 files changed, 3 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 04796c056d12..6e34498ec9f0 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1208,18 +1208,6 @@ static void pci_release_capabilities(struct pci_dev *dev)
- 	pci_free_cap_save_buffers(dev);
+diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
+index 16a57f4..00d2e6f 100644
+--- a/arch/x86/include/asm/clocksource.h
++++ b/arch/x86/include/asm/clocksource.h
+@@ -7,8 +7,7 @@
+ 
+ #define VCLOCK_NONE 0  /* No vDSO clock available.	*/
+ #define VCLOCK_TSC  1  /* vDSO should use vread_tsc.	*/
+-#define VCLOCK_HPET 2  /* vDSO should use vread_hpet.	*/
+-#define VCLOCK_PVCLOCK 3 /* vDSO should use vread_pvclock. */
++#define VCLOCK_PVCLOCK 2 /* vDSO should use vread_pvclock. */
+ 
+ struct arch_clocksource_data {
+ 	int vclock_mode;
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index 7252cd3..a1c741c 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -80,7 +80,6 @@ enum fixed_addresses {
+ 	VSYSCALL_FIRST_PAGE = VSYSCALL_LAST_PAGE
+ 			    + ((VSYSCALL_END-VSYSCALL_START) >> PAGE_SHIFT) - 1,
+ 	VVAR_PAGE,
+-	VSYSCALL_HPET,
+ #ifdef CONFIG_PARAVIRT_CLOCK
+ 	PVCLOCK_FIXMAP_BEGIN,
+ 	PVCLOCK_FIXMAP_END = PVCLOCK_FIXMAP_BEGIN+PVCLOCK_VSYSCALL_NR_PAGES-1,
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index da85a8e..b578e07 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -12,7 +12,6 @@
+ #include <linux/pm.h>
+ #include <linux/io.h>
+ 
+-#include <asm/fixmap.h>
+ #include <asm/hpet.h>
+ #include <asm/time.h>
+ 
+@@ -74,9 +73,6 @@ static inline void hpet_writel(unsigned int d, unsigned int a)
+ static inline void hpet_set_mapping(void)
+ {
+ 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
+-#ifdef CONFIG_X86_64
+-	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
+-#endif
  }
  
--static void pci_free_resources(struct pci_dev *dev)
+ static inline void hpet_clear_mapping(void)
+@@ -752,9 +748,6 @@ static struct clocksource clocksource_hpet = {
+ 	.mask		= HPET_MASK,
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+ 	.resume		= hpet_resume_counter,
+-#ifdef CONFIG_X86_64
+-	.archdata	= { .vclock_mode = VCLOCK_HPET },
+-#endif
+ };
+ 
+ static int hpet_clocksource_register(void)
+diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+index 545245d..02d1a84 100644
+--- a/arch/x86/kvm/trace.h
++++ b/arch/x86/kvm/trace.h
+@@ -781,8 +781,8 @@ TRACE_EVENT(kvm_write_tsc_offset,
+ 
+ #define host_clocks					\
+ 	{VCLOCK_NONE, "none"},				\
+-	{VCLOCK_TSC,  "tsc"},				\
+-	{VCLOCK_HPET, "hpet"}				\
++	{VCLOCK_TSC,  "tsc"}
++
+ 
+ TRACE_EVENT(kvm_update_master_clock,
+ 	TP_PROTO(bool use_master_clock, unsigned int host_clock, bool offset_matched),
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index eb5d7a5..3095446 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -19,7 +19,6 @@
+ #include <asm/fixmap.h>
+ #include <asm/vgtod.h>
+ #include <asm/timex.h>
+-#include <asm/hpet.h>
+ #include <asm/unistd.h>
+ #include <asm/io.h>
+ #include <asm/pvclock.h>
+@@ -58,11 +57,6 @@ notrace static cycle_t vread_tsc(void)
+ 	return last;
+ }
+ 
+-static notrace cycle_t vread_hpet(void)
 -{
--	int i;
--
--	pci_cleanup_rom(dev);
--	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
--		struct resource *res = dev->resource + i;
--		if (res->parent)
--			release_resource(res);
--	}
+-	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
 -}
 -
- /**
-  * pci_release_dev - free a pci device structure when all users of it are finished.
-  * @dev: device that's been disconnected
-@@ -1229,14 +1217,9 @@ static void pci_free_resources(struct pci_dev *dev)
-  */
- static void pci_release_dev(struct device *dev)
- {
--	struct pci_dev *pci_dev = to_pci_dev(dev);
--
--	down_write(&pci_bus_sem);
--	list_del(&pci_dev->bus_list);
--	up_write(&pci_bus_sem);
--
--	pci_free_resources(pci_dev);
-+	struct pci_dev *pci_dev;
+ #ifdef CONFIG_PARAVIRT_CLOCK
  
-+	pci_dev = to_pci_dev(dev);
- 	pci_release_capabilities(pci_dev);
- 	pci_release_of_node(pci_dev);
- 	pcibios_release_device(pci_dev);
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 4ff36bfa785e..b8c93c90daf5 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -3,6 +3,20 @@
- #include <linux/pci-aspm.h>
- #include "pci.h"
- 
-+static void pci_free_resources(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	msi_remove_pci_irq_vectors(dev);
-+
-+	pci_cleanup_rom(dev);
-+	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-+		struct resource *res = dev->resource + i;
-+		if (res->parent)
-+			release_resource(res);
-+	}
-+}
-+
- static void pci_stop_dev(struct pci_dev *dev)
- {
- 	pci_pme_active(dev, false);
-@@ -25,6 +39,11 @@ static void pci_destroy_dev(struct pci_dev *dev)
- 
- 	device_del(&dev->dev);
- 
-+	down_write(&pci_bus_sem);
-+	list_del(&dev->bus_list);
-+	up_write(&pci_bus_sem);
-+
-+	pci_free_resources(dev);
- 	put_device(&dev->dev);
- }
- 
+ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+@@ -157,8 +151,6 @@ notrace static inline u64 vgetsns(int *mode)
+ 	cycles_t cycles;
+ 	if (gtod->clock.vclock_mode == VCLOCK_TSC)
+ 		cycles = vread_tsc();
+-	else if (gtod->clock.vclock_mode == VCLOCK_HPET)
+-		cycles = vread_hpet();
+ #ifdef CONFIG_PARAVIRT_CLOCK
+ 	else if (gtod->clock.vclock_mode == VCLOCK_PVCLOCK)
+ 		cycles = vread_pvclock(mode);
+-- 
+1.8.5.3
 
