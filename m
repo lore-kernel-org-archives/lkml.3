@@ -1,89 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453AbaAaMvZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 07:51:25 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34138 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932255AbaAaMvY (ORCPT
+	id S932320AbaAaM5F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 07:57:05 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:55482 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932121AbaAaM5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 07:51:24 -0500
-Message-ID: <52EB9C48.3010205@pengutronix.de>
-Date: Fri, 31 Jan 2014 13:51:20 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
+	Fri, 31 Jan 2014 07:57:02 -0500
+Message-ID: <52EB9C03.70009@st.com>
+Date: Fri, 31 Jan 2014 12:50:11 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: florian.vaussard@epfl.ch, Wolfgang Grandegger <wg@grandegger.com>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Larsson <andreas@gaisler.com>
-Subject: Re: [PATCH v2 4/6] can: sja1000: fuse of_platform into platform
-References: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch> <1391164513-11529-5-git-send-email-florian.vaussard@epfl.ch> <52EB9824.2010703@pengutronix.de> <52EB9AEA.4010503@epfl.ch> <52EB9BE1.6060407@pengutronix.de>
-In-Reply-To: <52EB9BE1.6060407@pengutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="G3WbmE1tfU14Xlu8Q7VKGvILWfQnxEvT2"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Patrice CHOTARD <patrice.chotard@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
+Cc: <maxime.coquelin@st.com>, <alexandre.torgue@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 3/4] ARM: dts: Add support of STid127 Soc.
+References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <1391093744-19905-4-git-send-email-patrice.chotard@st.com>
+In-Reply-To: <1391093744-19905-4-git-send-email-patrice.chotard@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---G3WbmE1tfU14Xlu8Q7VKGvILWfQnxEvT2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Patrice,
 
-On 01/31/2014 01:49 PM, Marc Kleine-Budde wrote:
-> On 01/31/2014 01:45 PM, Florian Vaussard wrote:
->> Hello Marc,
->>
->> On 01/31/2014 01:33 PM, Marc Kleine-Budde wrote:
->>> On 01/31/2014 11:35 AM, Florian Vaussard wrote:
->>>> The OpenFirmware probe can be merged into the standard platform
->>>> probe to leverage common code.
->>>
->>> Good work, as we want to replace the existing driver, I'm quite picky=
- on
->>> this patch, see more comments inline.
->>>
->>> Please don't delete of of_platform driver, yet.
->>>
->>
->> Do you have any reason for not deleting of_platform? After this patch,=
+On 30/01/14 14:55, Patrice CHOTARD wrote:
+> From: Alexandre TORGUE <alexandre.torgue@st.com>
+> 
+> The STid127 integrates all harware components to function as a cable modem
+s/harware/hardware/
 
->> we will have duplicated functionalities, this may be misleading for
->> other people.
->=20
-> Okay.
-> IIRC there _was_ a problem on sparc, it _should_ be fixed now, better
-> get a Tested-by from Andreas (Cc'ed).
+s/STid127/STiD127
 
-You have to use irq_of_parse_and_map() on sparc, but your patches does th=
-is.
+Please fix other instances too.
 
-Marc
+> or, in combination with a back end device, as a Gateway set top boxe.
+s/boxe/box/
+> 
+> Supported devices:
+> 	-UART0
+> 	-UART2
+> 
+> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+> ---
+>  arch/arm/boot/dts/stid127-clock.dtsi   |   31 ++++
+>  arch/arm/boot/dts/stid127-pinctrl.dtsi |  245 ++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/stid127.dtsi         |  130 +++++++++++++++++
+>  3 files changed, 406 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/stid127-clock.dtsi
+>  create mode 100644 arch/arm/boot/dts/stid127-pinctrl.dtsi
+>  create mode 100644 arch/arm/boot/dts/stid127.dtsi
+> 
+> diff --git a/arch/arm/boot/dts/stid127-clock.dtsi b/arch/arm/boot/dts/stid127-clock.dtsi
+> new file mode 100644
+> index 0000000..c6cafa9
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/stid127-clock.dtsi
+> @@ -0,0 +1,31 @@
+> +/*
+> + * Copyright (C) 2013 STMicroelectronics (R&D) Limited
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+2014
 
+> + * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> + *	      Alexandre Torgue <alexandre.torgue@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/ {Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> +	clocks {
+> +		/*
+> +		 * ARM Peripheral clock for timers
+> +		 */
+> +		arm_periph_clk: arm_periph_clk {
+> +			#clock-cells = <0>;
+> +			compatible = "fixed-clock";
+> +			clock-frequency = <100000000>;
+> +		};
+> +		/*
+> +		 * Bootloader initialized system infrastructure clock for
+> +		 * serial devices.
+> +		 */
+> +		CLK_IC_LP_HD: clockgenA0@29 {
+> +			#clock-cells = <0>;
+> +			compatible = "fixed-clock";
+> +			clock-frequency = <100000000>;
+> +			clock-output-names = "CLK_IC_LP_HD";
+> +		};
+> +	};
+> +};
+> diff --git a/arch/arm/boot/dts/stid127-pinctrl.dtsi b/arch/arm/boot/dts/stid127-pinctrl.dtsi
+> new file mode 100644
+> index 0000000..3fa66f3
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/stid127-pinctrl.dtsi
+> @@ -0,0 +1,245 @@
+> +/*
+> + * Copyright (C) 2012 STMicroelectronics Limited.
 
---G3WbmE1tfU14Xlu8Q7VKGvILWfQnxEvT2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+2014
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+> + * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> + *	      Alexandre Torgue <alexandre.torgue@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * publishhed by the Free Software Foundation.
 
-iEYEARECAAYFAlLrnEgACgkQjTAFq1RaXHOoIwCeJK1N/EsJECovizbgHg9jpXW8
-1kcAnRIUkf8FLBMKtW8KCDCwazIXOLXf
-=IM8k
------END PGP SIGNATURE-----
+s/publishhed/published/
 
---G3WbmE1tfU14Xlu8Q7VKGvILWfQnxEvT2--
+> + */
+> +#include "st-pincfg.h"
+> +/ {
+> +	aliases {
+> +		gpio0	= &PIO0;
+> +		gpio1	= &PIO1;
+> +		gpio2	= &PIO2;
+> +		gpio3	= &PIO3;
+> +		gpio4	= &PIO4;
+> +		gpio5	= &PIO5;
+> +		gpio6	= &PIO6;
+> +		gpio7	= &PIO7;
+> +		gpio8	= &PIO8;
+> +		gpio9	= &PIO9;
+> +		gpio10	= &PIO10;
+> +		gpio11	= &PIO11;
+> +		gpio12	= &PIO12;
+> +		gpio13	= &PIO13;
+> +		gpio14	= &PIO14;
+> +		gpio15	= &PIO15;
+> +		gpio16	= &PIO16;
+> +		gpio17	= &PIO17;
+> +		gpio18	= &PIO18;
+> +		gpio19	= &PIO19;
+> +		gpio20	= &PIO20;
+> +		gpio21	= &PIO21;
+> +		gpio22	= &PIO22;
+> +
+> +	};
+> +
+> +	soc {
+> +		pin-controller-pwest {
+> +			#address-cells	= <1>;
+> +			#size-cells	= <1>;
+> +			compatible	= "st,stid127-pwest-pinctrl";
+> +			st,syscfg	= <&syscfg_pwest>;
+> +			ranges		= <0 0xfebe0000 0x8000>;
+
+Can you add interrupt controller support to the pin controller.
+
+Patches are in : https://lkml.org/lkml/2014/1/16/342
+All these patches are due to be in v3.15.
+
+> +
+> +			PIO0: gpio@febe0000 {
+> +				gpio-controller;
+> +				#gpio-cells = <1>;
+> +				reg = <0 0x100>;
+> +				interrupts =  <0 149 0>;
+> +				st,bank-name  = "PIO0";
+> +			};
+> +						rx	= <&PIO3 0 ALT2	IN>;
+> +					};
+> +				};
+> +			};
+> +
+> +		};
+unnecessary empty line  here.
+
+> diff --git a/arch/arm/boot/dts/stid127.dtsi b/arch/arm/boot/dts/stid127.dtsi
+> new file mode 100644
+> index 0000000..a6f0b8fe
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/stid127.dtsi
+> @@ -0,0 +1,130 @@
+> +/*
+> + * Copyright (C) 2013 STMicroelectronics Limited.
+2014
+> + * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> + *	      Alexandre Torgue <alexandre.torgue@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * publishhed by the Free Software Foundation.
+
+s/publishhed/published/
+
+> + */
+> +#include "stid127-pinctrl.dtsi"
+> +#include "stid127-clock.dtsi"
+> +/ {
+> +	#address-cells = <1>;
+> +	#size-cells = <1>;
+> +
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		cpu@0 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a9";
+> +			reg = <0>;
+> +		};
+> +		cpu@1 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a9";
+> +			reg = <1>;
+> +		};
+> +	};
+> +
+> +	intc: interrupt-controller@fffe1000 {
+> +		compatible = "arm,cortex-a9-gic";
+> +		#interrupt-cells = <3>;
+> +		interrupt-controller;
+> +		reg = <0xfffe1000 0x1000>,
+> +		      <0xfffe0100 0x100>;
+> +	};
+> +
+> +	scu@fffe0000 {
+> +		compatible = "arm,cortex-a9-scu";
+> +		reg = <0xfffe0000 0x1000>;
+> +	};
+> +
+> +	timer@fffe0200 {
+> +			interrupt-parent = <&intc>;
+> +			compatible = "arm,cortex-a9-global-timer";
+> +			reg = <0xfffe0200 0x100>;
+> +			interrupts = <1 11 0x04>;
+> +			clocks = <&arm_periph_clk>;
+
+Fix the tab spacing here.
+
+Thanks,
+srini
+> 
+
