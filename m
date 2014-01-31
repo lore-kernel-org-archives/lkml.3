@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381AbaAaLug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 06:50:36 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:44782 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932154AbaAaLua (ORCPT
+	id S1754047AbaAaMIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 07:08:18 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:56965 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623AbaAaMIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 06:50:30 -0500
-X-Sasl-enc: NlQLbQvKn6s2M//IrbWMT43bCIGYyKL85tkITo0GzLtE 1391169029
-Message-ID: <52EB8E03.1030505@iki.fi>
-Date: Fri, 31 Jan 2014 13:50:27 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Gaurav Jain <gjain@fb.com>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf tools: Fix JIT profiling on heap
-References: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1389836971-3549-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Jan 2014 07:08:17 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, monstr@monstr.eu,
+        Josh Cartwright <josh.cartwright@ni.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: zynq: Reserve not DMAable space in front of the kernel
+Date: Fri, 31 Jan 2014 13:08:05 +0100
+Message-Id: <780bb8c8fd752eeace2fd2fbe1d8ed8572dc0d76.1391170073.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-5350-1391170085-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2014 03:49 AM, Namhyung Kim wrote:
-> Gaurav reported that perf cannot profile JIT program if it executes
-> the code on heap.  This was because current map__new() only handle JIT
-> on anon mappings - extends it to handle no_dso (heap, stack) case too.
->
-> This patch assumes JIT profiling only provides dynamic function
-> symbols so check the mapping type to distinguish the case.  It'd
-> provide no symbols for data mapping - if we need to support symbols on
-> data mappings later it should be changed.
->
-> Reported-by: Gaurav Jain <gjain@fb.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Looks OK to me.  Gaurav, does this fix your problem?
+--=_mimegpg-monstr-desktop-5350-1391170085-0001
 
-> ---
->   tools/perf/util/map.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index 9b9bd719aa19..ee1dd687a262 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -69,7 +69,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
->   		map->ino = ino;
->   		map->ino_generation = ino_gen;
->   
-> -		if (anon) {
-> +		if ((anon || no_dso) && type == MAP__FUNCTION) {
->   			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
->   			filename = newfilename;
->   		}
-> @@ -93,7 +93,7 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
->   			 * functions still return NULL, and we avoid the
->   			 * unnecessary map__load warning.
->   			 */
-> -			if (no_dso)
-> +			if (type != MAP__FUNCTION)
->   				dso__set_loaded(dso, map->type);
->   		}
->   	}
+Reserve space from 0x0 - __pa(swapper_pg_dir),
+if kernel is loaded from 0, which is not DMAable.
+It is causing problem with MMC driver and others
+which want to add dma buffers to this space.
 
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+
+Jason: I don't think it is worth to bring 0x8000 magic
+value and count minimum from it and phys_addr of swapper_pg_dir.
+Full 512k of memory shouldn't be used by DMA.
+
+---
+ arch/arm/mach-zynq/common.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index 1db2a5ca..8c09a83 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -25,6 +25,7 @@
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ #include <linux/of.h>
++#include <linux/memblock.h>
+ #include <linux/irqchip.h>
+ #include <linux/irqchip/arm-gic.h>
+
+@@ -41,6 +42,18 @@
+
+ void __iomem *zynq_scu_base;
+
++/**
++ * zynq_memory_init - Initialize special memory
++ *
++ * We need to stop things allocating the low memory as DMA can't work in
++ * the 1st 512K of memory.
++ */
++static void __init zynq_memory_init(void)
++{
++	if (!__pa(PAGE_OFFSET))
++		memblock_reserve(__pa(PAGE_OFFSET), __pa(swapper_pg_dir));
++}
++
+ static struct platform_device zynq_cpuidle_device = {
+ 	.name = "cpuidle-zynq",
+ };
+@@ -117,5 +130,6 @@ DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
+ 	.init_machine	= zynq_init_machine,
+ 	.init_time	= zynq_timer_init,
+ 	.dt_compat	= zynq_dt_match,
++	.reserve	= zynq_memory_init,
+ 	.restart	= zynq_system_reset,
+ MACHINE_END
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-5350-1391170085-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlLrkiUACgkQykllyylKDCFmcACdFp/WhJW5ubtM5GdDSipvmifn
+AXAAn22tNAfRFJqYHvlxaf6FD/AE7Hi7
+=lkx/
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-5350-1391170085-0001--
