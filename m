@@ -1,103 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883AbaAaPJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:09:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48327 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811AbaAaPI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:08:58 -0500
-Date: Fri, 31 Jan 2014 16:08:32 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-Message-ID: <20140131150832.GG4941@twins.programming.kicks-ass.net>
-References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
- <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S932885AbaAaPJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:09:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23970 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932801AbaAaPIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:08:00 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 33/34] vmxnet3: Fix MSI-X/MSI enablement code
+Date: Fri, 31 Jan 2014 16:08:52 +0100
+Message-Id: <30f15232ede6abf6de8421554a17ca1a093ac951.1391172839.git.agordeev@redhat.com>
+In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
+References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 01:19:10PM -0500, Waiman Long wrote:
-> For single-thread performance (no contention), a 256K lock/unlock
-> loop was run on a 2.4Ghz Westmere x86-64 CPU.  The following table
-> shows the average time (in ns) for a single lock/unlock sequence
-> (including the looping and timing overhead):
-> 
->   Lock Type			Time (ns)
->   ---------			---------
->   Ticket spinlock		  14.1
->   Queue spinlock (Normal)	   8.8*
+This update cleans up the MSI-X/MSI enablement code, fixes
+vmxnet3_acquire_msix_vectors() invalid return values and
+enables a dead code in case VMXNET3_LINUX_MIN_MSIX_VECT
+MSI-X vectors were allocated.
 
-What CONFIG_NR_CPUS ?
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |  101 +++++++++++++++++--------------------
+ 1 files changed, 46 insertions(+), 55 deletions(-)
 
-Because for CONFIG_NR_CPUS < 128 (or 256 if you got !PARAVIRT), the fast
-path code should be:
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 3be786f..3a17797 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2729,47 +2729,44 @@ vmxnet3_read_mac_addr(struct vmxnet3_adapter *adapter, u8 *mac)
+ /*
+  * Enable MSIx vectors.
+  * Returns :
+- *	0 on successful enabling of required vectors,
+  *	VMXNET3_LINUX_MIN_MSIX_VECT when only minimum number of vectors required
+- *	 could be enabled.
+- *	number of vectors which can be enabled otherwise (this number is smaller
++ *	 were enabled.
++ *	number of vectors which were enabled otherwise (this number is greater
+  *	 than VMXNET3_LINUX_MIN_MSIX_VECT)
+  */
+ 
+ static int
+-vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter,
+-			     int vectors)
++vmxnet3_acquire_msix_vectors(struct vmxnet3_adapter *adapter, int nvec)
+ {
+-	int err = 0, vector_threshold;
+-	vector_threshold = VMXNET3_LINUX_MIN_MSIX_VECT;
+-
+-	while (vectors >= vector_threshold) {
+-		err = pci_enable_msix(adapter->pdev, adapter->intr.msix_entries,
+-				      vectors);
++	do {
++		int err = pci_enable_msix(adapter->pdev,
++					  adapter->intr.msix_entries, nvec);
+ 		if (!err) {
+-			adapter->intr.num_intrs = vectors;
+-			return 0;
++			return nvec;
+ 		} else if (err < 0) {
+ 			dev_err(&adapter->netdev->dev,
+-				   "Failed to enable MSI-X, error: %d\n", err);
+-			vectors = 0;
+-		} else if (err < vector_threshold) {
+-			break;
++				"Failed to enable MSI-X, error: %d\n", err);
++			return err;
++		} else if (err < VMXNET3_LINUX_MIN_MSIX_VECT) {
++			dev_info(&adapter->pdev->dev,
++				 "Number of MSI-X which can be allocated "
++				 "is lower than min threshold required.\n");
++			return -ENOSPC;
+ 		} else {
+ 			/* If fails to enable required number of MSI-x vectors
+ 			 * try enabling minimum number of vectors required.
+ 			 */
+ 			dev_err(&adapter->netdev->dev,
+-				"Failed to enable %d MSI-X, trying %d instead\n",
+-				    vectors, vector_threshold);
+-			vectors = vector_threshold;
++				"Failed to enable %d MSI-X, trying %d\n",
++				nvec, VMXNET3_LINUX_MIN_MSIX_VECT);
++			nvec = VMXNET3_LINUX_MIN_MSIX_VECT;
+ 		}
+-	}
++	} while (nvec >= VMXNET3_LINUX_MIN_MSIX_VECT);
+ 
+-	dev_info(&adapter->pdev->dev,
+-		 "Number of MSI-X interrupts which can be allocated "
+-		 "is lower than min threshold required.\n");
+-	return err;
++	/*
++	 * Should never get here
++	 */
++	return -ENOSPC;
+ }
+ 
+ 
+@@ -2796,56 +2793,50 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
+ 
+ #ifdef CONFIG_PCI_MSI
+ 	if (adapter->intr.type == VMXNET3_IT_MSIX) {
+-		int vector, err = 0;
+-
+-		adapter->intr.num_intrs = (adapter->share_intr ==
+-					   VMXNET3_INTR_TXSHARE) ? 1 :
+-					   adapter->num_tx_queues;
+-		adapter->intr.num_intrs += (adapter->share_intr ==
+-					   VMXNET3_INTR_BUDDYSHARE) ? 0 :
+-					   adapter->num_rx_queues;
+-		adapter->intr.num_intrs += 1;		/* for link event */
+-
+-		adapter->intr.num_intrs = (adapter->intr.num_intrs >
+-					   VMXNET3_LINUX_MIN_MSIX_VECT
+-					   ? adapter->intr.num_intrs :
+-					   VMXNET3_LINUX_MIN_MSIX_VECT);
+-
+-		for (vector = 0; vector < adapter->intr.num_intrs; vector++)
+-			adapter->intr.msix_entries[vector].entry = vector;
+-
+-		err = vmxnet3_acquire_msix_vectors(adapter,
+-						   adapter->intr.num_intrs);
++		int i, nvec;
++
++		nvec  = adapter->share_intr == VMXNET3_INTR_TXSHARE ?
++			1 : adapter->num_tx_queues;
++		nvec += adapter->share_intr == VMXNET3_INTR_BUDDYSHARE ?
++			0 : adapter->num_rx_queues;
++		nvec += 1;	/* for link event */
++		nvec = nvec > VMXNET3_LINUX_MIN_MSIX_VECT ?
++		       nvec : VMXNET3_LINUX_MIN_MSIX_VECT;
++
++		for (i = 0; i < nvec; i++)
++			adapter->intr.msix_entries[i].entry = i;
++
++		nvec = vmxnet3_acquire_msix_vectors(adapter, nvec);
++		if (nvec < 0)
++			goto msix_err;
++
+ 		/* If we cannot allocate one MSIx vector per queue
+ 		 * then limit the number of rx queues to 1
+ 		 */
+-		if (err == VMXNET3_LINUX_MIN_MSIX_VECT) {
++		if (nvec == VMXNET3_LINUX_MIN_MSIX_VECT) {
+ 			if (adapter->share_intr != VMXNET3_INTR_BUDDYSHARE
+ 			    || adapter->num_rx_queues != 1) {
+ 				adapter->share_intr = VMXNET3_INTR_TXSHARE;
+ 				netdev_err(adapter->netdev,
+ 					   "Number of rx queues : 1\n");
+ 				adapter->num_rx_queues = 1;
+-				adapter->intr.num_intrs =
+-						VMXNET3_LINUX_MIN_MSIX_VECT;
+ 			}
+-			return;
+ 		}
+-		if (!err)
+-			return;
+ 
++		adapter->intr.num_intrs = nvec;
++		return;
++
++msix_err:
+ 		/* If we cannot allocate MSIx vectors use only one rx queue */
+ 		dev_info(&adapter->pdev->dev,
+ 			 "Failed to enable MSI-X, error %d. "
+-			 "Limiting #rx queues to 1, try MSI.\n", err);
++			 "Limiting #rx queues to 1, try MSI.\n", nvec);
+ 
+ 		adapter->intr.type = VMXNET3_IT_MSI;
+ 	}
+ 
+ 	if (adapter->intr.type == VMXNET3_IT_MSI) {
+-		int err;
+-		err = pci_enable_msi(adapter->pdev);
+-		if (!err) {
++		if (!pci_enable_msi(adapter->pdev)) {
+ 			adapter->num_rx_queues = 1;
+ 			adapter->intr.num_intrs = 1;
+ 			return;
+-- 
+1.7.7.6
 
-ticket:
-
-  mov $0x100,eax
-  lock xadd %ax,(%rbx)
-  cmp %al,%ah
-  jne ...
-
-although my GCC is being silly and writes:
-
-  mov $0x100,eax
-  lock xadd %ax,(%rbx)
-  movzbl %ah,%edx
-  cmp %al,%dl
-  jne ...
-
-Which seems rather like a waste of a perfectly good cycle.
-
-With a bigger NR_CPUS you do indeed need more ops:
-
-  mov $0x10000,%edx
-  lock xadd %edx,(%rbx)
-  mov %edx,%ecx
-  shr $0x10,%ecx
-  cmp %dx,%cx
-  jne ...
-
-
-Whereas for the straight cmpxchg() you'd get something relatively simple
-like:
-
-  mov %edx,%eax
-  lock cmpxchg %ecx,(%rbx)
-  cmp %edx,%eax
-  jne ...
-
-
-
-Anyway, as soon as you get some (light) contention you're going to tank
-because you have to pull in extra cachelines, which is sad.
-
-
-I suppose we could from the ticket code more and optimize the
-uncontended path, but that'll make the contended path more expensive
-again, although probably not as bad as hitting a new cacheline.
