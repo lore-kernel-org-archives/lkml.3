@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782AbaAaTOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:14:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46876 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932236AbaAaTOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:14:15 -0500
-Message-ID: <52EBF5F5.1030508@zytor.com>
-Date: Fri, 31 Jan 2014 11:13:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: x86, x32: Correct invalid use of user timespec in the kernel
-References: <20140131025453.B594B660CA3@gitolite.kernel.org>	<20140131175009.GA27231@redhat.com>	<52EBE62E.70102@linux.intel.com> <CA+55aFwcgGPb=5cTnkKpP4vH2kqCCvxGteZT58efHhg3aJjcfQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwcgGPb=5cTnkKpP4vH2kqCCvxGteZT58efHhg3aJjcfQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932806AbaAaTOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:14:42 -0500
+Received: from science.horizon.com ([71.41.210.146]:30947 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932494AbaAaTOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 14:14:40 -0500
+Date: 31 Jan 2014 14:14:39 -0500
+Message-ID: <20140131191439.29560.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: peterz@infradead.org, waiman.long@hp.com
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock implementation
+Cc: akpm@linux-foundation.org, andi@firstfloor.org, arnd@arndb.de,
+        aswin@hp.com, daniel@numascale.com, halcy@yandex.ru, hpa@zytor.com,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux@horizon.com, mingo@redhat.com, paulmck@linux.vnet.ibm.com,
+        raghavendra.kt@linux.vnet.ibm.com, riel@redhat.com,
+        rostedt@goodmis.org, scott.norton@hp.com, tglx@linutronix.de,
+        thavatchai.makpahibulchoke@hp.com, tim.c.chen@linux.intel.com,
+        torvalds@linux-foundation.org, walken@google.com, x86@kernel.org
+In-Reply-To: <52EBEAD5.3000502@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 10:45 AM, Linus Torvalds wrote:
-> On Fri, Jan 31, 2014 at 10:06 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->>
->> My feeling is that {get,put}_compat_timespec() should at the very least
->> have leading underscores to flag it as a low-level function, but better
->> suggestions would be appreciated.
-> 
-> Why not just remove it entirely, and change all users to
-> compat_[get|set]_timespec (same for timeval etc, of course).
-> 
-> After all, compat_*_time*() does fall back cleanly for non-x32 cases.
-> And sure, maybe that particular code is never *needed* for x32
-> support, but the overhead is generally zero (since in most cases X32
-> isn't even configured), or very low anyway. So the upside of having
-> two subtly incompatible interfaces is very dubious, no?
-> 
+> Yes, we can do something like that. However I think put_qnode() needs to 
+> use atomic dec as well. As a result, we will need 2 additional atomic 
+> operations per slowpath invocation. The code may look simpler, but I 
+> don't think it will be faster than what I am currently doing as the 
+> cases where the used flag is set will be relatively rare.
 
-Hmmm... it ends up being a bit weird even so.  Some of the interfaces
-ought to be revamped at a higher level.
+The increment does *not* have to be atomic.
 
-Consider this bit in ipc/compat.c:
+First of all, note that the only reader that matters is a local interrupt;
+other processors never access the variable at all, so what they see
+is irrelevant.
 
-long compat_sys_semtimedop(int semid, struct sembuf __user *tsems,
-                unsigned nsops, const struct compat_timespec __user
-*timeout)
-{
-        struct timespec __user *ts64 = NULL;
-        if (timeout) {
-                struct timespec ts;
-                ts64 = compat_alloc_user_space(sizeof(*ts64));
-                if (get_compat_timespec(&ts, timeout))
-                        return -EFAULT;
-                if (copy_to_user(ts64, &ts, sizeof(ts)))
-                        return -EFAULT;
-        }
-        return sys_semtimedop(semid, tsems, nsops, ts64);
-}
+"Okay, so I use a non-atomic RMW instruction; what about non-x86
+processors without op-to-memory?"
 
-This is most definitely broken if COMPAT_USE_64BIT_TIME, even with
-get_compat_timespec() is replaced by compat_get_timespec().  However,
-what is *really* going on here is that we want to provide a user space
-pointer to a kernel-format timespec, so we could have an interface like
-this:
+Well, they're okay, too.  The only requriement is that the write to
+qna->cnt must be visible to the local processor (barrier()) before the
+qna->nodes[] slot is used.
 
-int compat_convert_timespec_user(struct compat_timespec **ts64p,
-const struct compat_timespec __user *ts)
-{
-        struct timespec __user *ts64;
-        struct timespec ts;
+Remember, a local interrupt may use a slot temporarily, but will always
+return qna->cnt to its original value before returning.  So there's
+nothing wrong with
 
-	/* If the compat timespec is 64 bits, no conversion is needed */
-	if (!ts || COMPAT_USE_64BIT_TIME) {
-		*ts64p = (struct timespec __user *)ts;
-		return 0;
-	}
+- Load qna->cnt to register
+- Increment register
+- Store register to qna->cnt
 
-	*ts64p = ts64 = compat_alloc_user_space(sizeof(*ts64));
-        if (__get_compat_timespec(&ts, timeout))
-		return -EFAULT;
-	if (copy_to_user(ts64, &ts, sizeof(ts)))
-        	return -EFAULT;
+Because an interrupt, although it may temporarily modify qna->cnt, will
+restore it before returning so this code will never see any modification.
 
-	return 0;
-}
+Just like using the stack below the %rsp, the only requirement is to
+ensure that the qna->cnt increment is visble *to the local processor's
+interrupt handler* before actually using the slot.
 
-Now one can argue we have a potential problem with type safety here, but
-I'm not sure there is any way to avoid that.
-
-	-hpa
-
+The effect of the interrupt handler is that it may corrupt, at any
+time and without warning, any slot not marked in use via qna->cnt.
+But that's not a difficult thing to deal with, and does *not* require
+atomic operations.
