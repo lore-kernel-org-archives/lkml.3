@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685AbaAaRmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:42:33 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:40388 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546AbaAaRmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:42:31 -0500
-Date: Fri, 31 Jan 2014 09:42:27 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
- do
-Message-ID: <20140131174227.GN9012@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
- <1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
- <20140131120757.594e24d6@gandalf.local.home>
+	id S932681AbaAaRow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:44:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37083 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932170AbaAaRov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 12:44:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,759,1384329600"; 
+   d="scan'208";a="447757750"
+Message-ID: <52EBE112.5010203@intel.com>
+Date: Fri, 31 Jan 2014 09:44:50 -0800
+From: "Kamble, Nitin A" <nitin.a.kamble@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140131120757.594e24d6@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14013117-1344-0000-0000-00000559BC98
+To: David Rientjes <rientjes@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irq: fix a Kconfig dependency
+References: <1391129410-54548-1-git-send-email-nitin.a.kamble@intel.com> <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com> <alpine.DEB.2.02.1401310223460.7183@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1401310223460.7183@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 12:07:57PM -0500, Steven Rostedt wrote:
-> On Fri, 31 Jan 2014 15:34:05 +0100
-> Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-> 
-> > from looking at the code, it seems that the softirq is only raised (in
-> > the !base->active_timers case) if we have also an expired timer
-> > (time_before_eq() is true). This patch ensures that the timer softirq is
-> > also raised in the !base->active_timers && no timer expired.
-> 
-> A couple of things. If there is no active timers, we do not need to
-> check the expired timers. That may contain a deferred timer that does
-> not need to be raised if the system is idle. This will just
-> re-introduce the problems that other people have been seeing.
-> 
-> The bug that I found is that if there *are* active timers, but they
-> have not expired yet. Why is this a problem? Because in that case we do
-> not check if there is irq_work to be done. That means the irq_work will
-> have to wait till the timer expires, and since RCU depends on this,
-> that can take a while. I've had a synchronize_sched() take up to 5
-> seconds to complete due to this!
-> 
-> 
-> The real fix is the following:
-> 
-> timer/rt: Always raise the softirq if there's irq_work to be done
-> 
-> It was previously discovered that some systems would hang on boot up
-> with a previous version of 3.12-rt. This was due to RCU using irq_work,
-> and RT defers the irq_work to a softirq. But if there's no active
-> timers, the softirq will not be raised, and RCU work will not get done,
-> causing the system to hang.  The fix was to check that if there was no
-> active timers but irq_work to be done, then we should raise the softirq.
-> 
-> But this fix was not 100% correct. It left out the case that there were
-> active timers that were not expired yet. This would have the softirq
-> not get raised even if there was irq work to be done.
-> 
-> If there is irq_work to be done, then we must raise the timer softirq
-> regardless of if there is active timers or whether they are expired or
-> not. The softirq can handle those cases. But we can never ignore
-> irq_work.
-> 
-> As it is only PREEMPT_RT_FULL that requires irq_work to be done in the
-> softirq, we can pull out the check in the active_timers condition, and
-> make the code a bit cleaner by having the irq_work check separate, and
-> put the code in with the other #ifdef PREEMPT_RT. If there is irq_work
-> to be done, there's no need to check the active timers or if they are
-> expired. Just raise the time softirq and be done with it. Otherwise, we
-> can do the timer checks just like we do with non -rt.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 106968f..426d114 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -1461,18 +1461,20 @@ void run_local_timers(void)
->  	 * the timer softirq.
->  	 */
->  #ifdef CONFIG_PREEMPT_RT_FULL
-> +	/* On RT, irq work runs from softirq */
-> +	if (irq_work_needs_cpu()) {
-> +		raise_softirq(TIMER_SOFTIRQ);
 
-OK, I'll bite...  What if the IRQ work that needs doing is something
-other than TIMER_SOFTIRQ?
+On 1/31/2014 2:27 AM, David Rientjes wrote:
+> On Thu, 30 Jan 2014, nitin.a.kamble@intel.com wrote:
+>
+>> From: Nitin A Kamble <nitin.a.kamble@intel.com>
+>>
+>> The generic_chip.c uses interfaces from irq_domain.c which is controlled by
+>> the IRQ_DOMAIN config option.
+>>
+>> Add a select statement in the Kconfig to reflect this requirement.
+>>
+>> Without this fix, the generic_chip.c compilation fails like this:
+>>
+>> linux/kernel/irq/generic-chip.c:400:11:
+>>    error: 'irq_domain_xlate_onetwocell' undeclared here (not in a function)
+>>
+> You're not specifying which config option you have enabled that selects
+> CONFIG_GENERIC_IRQ_CHIP and does not select CONFIG_IRQ_DOMAIN, but it does
+> look like there is a dependency here.
+It is enabled by GPIO_PCH as seen here:
 
-							Thanx, Paul
+config GPIO_PCH
+         tristate "Intel EG20T PCH/LAPIS Semiconductor 
+IOH(ML7223/ML7831) GPIO"
+         depends on PCI && X86
+         select GENERIC_IRQ_CHIP
+         help
+           This driver is for PCH(Platform controller Hub) GPIO of Intel 
+Topcliff
+           which is an IOH(Input/Output Hub) for x86 embedded processor.
+           This driver can access PCH GPIO device.
 
-> +		return;
-> +	}
-> +
->  	if (!spin_do_trylock(&base->lock)) {
->  		raise_softirq(TIMER_SOFTIRQ);
->  		return;
->  	}
->  #endif
-> -	if (!base->active_timers) {
-> -#ifdef CONFIG_PREEMPT_RT_FULL
-> -		/* On RT, irq work runs from softirq */
-> -		if (!irq_work_needs_cpu())
-> -#endif
-> -			goto out;
-> -	}
-> +
-> +	if (!base->active_timers)
-> +		goto out;
-> 
->  	/* Check whether the next pending timer has expired */
->  	if (time_before_eq(base->next_timer, jiffies))
-> 
+>
+> So, if this dependency is reasonable, it begs the question of why we have
+> CONFIG_GENERIC_IRQ_CHIP at all and shouldn't just make generic-chip.c
+> depend on CONFIG_IRQ_DOMAIN.
+Looking at the code there are cases where IRQ_DOMAIN functionality is used
+without using the GENERIC_IRQ_CHIP. So making generic-chip.c depend
+on CONFIG_IRQ_DOMAIN in the makefile will reduce the flexibility of using
+these config options separately.
+
+Nitin
+
 
