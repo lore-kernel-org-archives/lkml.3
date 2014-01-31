@@ -1,108 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732AbaAaR70 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:59:26 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:38847 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbaAaR7X (ORCPT
+	id S932841AbaAaSD1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:03:27 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40173 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932170AbaAaSDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:59:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <309B89C4C689E141A5FF6A0C5FB2118B7314C430@ORSMSX101.amr.corp.intel.com>
-References: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <309B89C4C689E141A5FF6A0C5FB2118B7314C430@ORSMSX101.amr.corp.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 31 Jan 2014 10:59:02 -0700
-Message-ID: <CAErSpo627wEtBypSrX8QGLW=QAnpa0q-g2z+kSM9hBdRcFNv-Q@mail.gmail.com>
-Subject: Re: [E1000-devel] [PATCH 0/2] Remove dead code
-To: "Brown, Aaron F" <aaron.f.brown@intel.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 31 Jan 2014 13:03:25 -0500
+Message-ID: <1391191383.4405.83.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH v2 2/4] net: ethoc: implement ethtool get/set settings
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Marc Gauthier <marc@cadence.com>
+Date: Fri, 31 Jan 2014 18:03:03 +0000
+In-Reply-To: <1391146867-30508-3-git-send-email-jcmvbkbc@gmail.com>
+References: <1391146867-30508-1-git-send-email-jcmvbkbc@gmail.com>
+	 <1391146867-30508-3-git-send-email-jcmvbkbc@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-0DRz3IWApEQVGdLXE1zW"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 91.182.218.116
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 2:10 AM, Brown, Aaron F <aaron.f.brown@intel.com> wrote:
->> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
->> Sent: Thursday, January 30, 2014 11:21 AM
->> To: linux-pci@vger.kernel.org
->> Cc: e1000-devel@lists.sourceforge.net; Arjan van de Ven; linux-
->> kernel@vger.kernel.org
->> Subject: [E1000-devel] [PATCH 0/2] Remove dead code
->>
->> This is a rework of part of Stephen's patch [1].
->>
->> This removes the MMIO exclusivity support that was added as part of an
->> e1000e bug hunt.
->>
->> The e1000e driver still uses pci_request_selected_regions_exclusive(), but
->> there are no callers of pci_request_region_exclusive() and
->> pci_request_regions_exclusive().  I thought it was cleaner to remove the
->> whole thing than to leave parts of it in place.  But I could easily be
->> convinced to leave part or all of this in place if people think it's still
->> useful.
->
-> Thanks Bjorn, I have added these to Jeff's queue.
 
-Let's wait for a bit more discussion on this.
+--=-0DRz3IWApEQVGdLXE1zW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-For one thing, Fengguang's autobuilder found a handful of issues,
-including a couple more users of the exclusive mappings.  For another,
-Arjan reminded me that the e1000e bug hung was for a problem that
-bricked the device, requiring replacement of the part or significant
-effort to fix the EEPROM.  I *suspect* this is a potential issue for
-many devices, but if the e1000e is particularly susceptible for some
-reason, we might want to keep the exclusive mappings for it.
+On Fri, 2014-01-31 at 09:41 +0400, Max Filippov wrote:
+> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 
-If you want to apply just the e1000e part that removes its use of
-pci_request_selected_regions_exclusive(), I would have no complaints
-about that, of course.  But we can't apply the whole thing as-is
-without at least fixing the build issues.
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
 
->> It also removes SR-IOV migration support, which is completely unused, as
->> far as I can tell.
->>
->> [1]
->> http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.n
->> et
->>
->> ---
->>
->> Bjorn Helgaas (2):
->>       PCI: Remove unused MMIO exclusivity support
->>       PCI: Remove unused SR-IOV VF Migration support
->>
->>
->>  Documentation/PCI/pci-iov-howto.txt        |    4 -
->>  Documentation/kernel-parameters.txt        |    4 -
->>  arch/x86/mm/init.c                         |    2
->>  drivers/net/ethernet/intel/e1000e/netdev.c |    3 -
->>  drivers/pci/iov.c                          |  119 -----------------------
->> -----
->>  drivers/pci/pci-sysfs.c                    |    3 -
->>  drivers/pci/pci.c                          |  112 +++--------------------
->> ---
->>  drivers/pci/pci.h                          |    4 -
->>  include/linux/ioport.h                     |    5 -
->>  include/linux/pci.h                        |    7 --
->>  kernel/resource.c                          |   54 -------------
->>  11 files changed, 14 insertions(+), 303 deletions(-)
->>
->> --------------------------------------------------------------------------
->> ----
->> WatchGuard Dimension instantly turns raw network data into actionable
->> security intelligence. It gives you real-time visual feedback on key
->> security issues and trends.  Skip the complicated setup - simply import a
->> virtual appliance and go from zero to informed in seconds.
->> http://pubads.g.doubleclick.net/gampad/clk?id=123612991&iu=/4140/ostg.clkt
->> rk
->> _______________________________________________
->> E1000-devel mailing list
->> E1000-devel@lists.sourceforge.net
->> https://lists.sourceforge.net/lists/listinfo/e1000-devel
->> To learn more about Intel&#174; Ethernet, visit
->> http://communities.intel.com/community/wired
+> ---
+> Changes v1->v2:
+> - fix {get,set}_settings return code in case there's no PHY.
+>=20
+>  drivers/net/ethernet/ethoc.c | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+>=20
+> diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+> index 0623c20..779d3c3 100644
+> --- a/drivers/net/ethernet/ethoc.c
+> +++ b/drivers/net/ethernet/ethoc.c
+> @@ -890,7 +890,31 @@ out:
+>  	return NETDEV_TX_OK;
+>  }
+> =20
+> +static int ethoc_get_settings(struct net_device *dev, struct ethtool_cmd=
+ *cmd)
+> +{
+> +	struct ethoc *priv =3D netdev_priv(dev);
+> +	struct phy_device *phydev =3D priv->phy;
+> +
+> +	if (!phydev)
+> +		return -EOPNOTSUPP;
+> +
+> +	return phy_ethtool_gset(phydev, cmd);
+> +}
+> +
+> +static int ethoc_set_settings(struct net_device *dev, struct ethtool_cmd=
+ *cmd)
+> +{
+> +	struct ethoc *priv =3D netdev_priv(dev);
+> +	struct phy_device *phydev =3D priv->phy;
+> +
+> +	if (!phydev)
+> +		return -EOPNOTSUPP;
+> +
+> +	return phy_ethtool_sset(phydev, cmd);
+> +}
+> +
+>  const struct ethtool_ops ethoc_ethtool_ops =3D {
+> +	.get_settings =3D ethoc_get_settings,
+> +	.set_settings =3D ethoc_set_settings,
+>  	.get_link =3D ethtool_op_get_link,
+>  	.get_ts_info =3D ethtool_op_get_ts_info,
+>  };
+
+--=20
+Ben Hutchings
+It is easier to write an incorrect program than to understand a correct one=
+.
+
+--=-0DRz3IWApEQVGdLXE1zW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIVAwUAUuvlV+e/yOyVhhEJAQqa5A//VeJVtFoD5yLhcrp3XWsv2zOpkE+nCrPa
+SMVdsxSrIT7Na0MMRji4918It4offs9CaUh+kUtnAQ6A94cpwGq5EUC/s+4A+wLT
+OU+eiccyQ7w5Zn+QXqbVRHD3/n7E4GdWA3/MfFq5kv/DAQBh/kZrEmQBJs2BnNvG
+5+FNEHV8BwUl0kP3QxvUz6OjW4M2gn46OEIclMHhWw9DOgCvaZgOSmlnz4PFi9ut
+iyoOtODK5r7bD1uWHZUDQG7f3o9+zLrpmYr/sSpTSnYkNcZ1MNipZR3WNYIoOaxH
+JsYwCO+L+v8axWQCU3IVR8rvoW9wLph3GIurFteOWg2iE19ufL8W9D1I9vNfFLAX
+geY9vSgpgw/M7dF3t66EJ8FDsckg2EaHAaHY6lW+jsJ300FeRPN1ty+CIviXbLHb
+25ZlEQqzKlN0CnnNy1N+eKOkRmY4StnyqXlo0t7Oi3XJKM/93b6D+Pt7c0YExmRy
+s0HGQ8xZCKu5I/8X26HBY/lbzdqhy01/O9scKux4uXY6bkLVKwrOAAvNc6SU5Fd/
+VmrecDeSPq3S8rJADd0H7eVtF7iuzm8aANqtl7V476jHiKpx6ghcRtvDdauegx0d
+gXaH7dCeIWQTmMp/NUJcIi2VXcRyyjLrWjTj35ze/FjsK/rVScGoCAXJ7bTJHhRD
+3jFQWhFMvvA=
+=RRYS
+-----END PGP SIGNATURE-----
+
+--=-0DRz3IWApEQVGdLXE1zW--
