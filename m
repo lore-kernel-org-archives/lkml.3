@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938AbaAaWuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 17:50:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:45530 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932271AbaAaWuD (ORCPT
+	id S932979AbaAaWw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 17:52:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52195 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313AbaAaWw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 17:50:03 -0500
-Date: Fri, 31 Jan 2014 23:47:04 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH v3 3/5] spi: sunxi: Add Allwinner A31 SPI controller
- driver
-Message-ID: <20140131224704.GI2950@lukather>
-References: <1391165752-1819-1-git-send-email-maxime.ripard@free-electrons.com>
- <1391165752-1819-4-git-send-email-maxime.ripard@free-electrons.com>
- <20140131124809.GE22609@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RHdRtM27np9fZUoh"
-Content-Disposition: inline
-In-Reply-To: <20140131124809.GE22609@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 31 Jan 2014 17:52:26 -0500
+Date: Fri, 31 Jan 2014 14:52:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] Revert
+ "thp: make MADV_HUGEPAGE check for mm->def_flags"
+Message-Id: <20140131145224.7f8efc67d882a2e1a89b0778@linux-foundation.org>
+In-Reply-To: <1391192628-113858-3-git-send-email-athorlton@sgi.com>
+References: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
+	<1391192628-113858-3-git-send-email-athorlton@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 31 Jan 2014 12:23:43 -0600 Alex Thorlton <athorlton@sgi.com> wrote:
 
---RHdRtM27np9fZUoh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This reverts commit 8e72033f2a489b6c98c4e3c7cc281b1afd6cb85cm, and adds
 
-On Fri, Jan 31, 2014 at 12:48:09PM +0000, Mark Brown wrote:
-> On Fri, Jan 31, 2014 at 11:55:50AM +0100, Maxime Ripard wrote:
->=20
-> > +	master =3D devm_spi_alloc_master(&pdev->dev, sizeof(struct sun6i_spi)=
-);
-> > +	if (!master) {
-> > +		dev_err(&pdev->dev, "Unable to allocate SPI Master\n");
-> > +		return -ENOMEM;
-> > +	}
->=20
-> This now depends on your other series which as I said doesn't look like
-> the best approach.
+'m' is not a hex digit ;)
 
-Indeed, I forgot to mention it in the cover letter. My bad.
+> in code to fix up any issues caused by the revert.
+> 
+> The revert is necessary because hugepage_madvise would return -EINVAL
+> when VM_NOHUGEPAGE is set, which will break subsequent chunks of this
+> patch set.
 
->=20
-> > +	pm_runtime_enable(&pdev->dev);
-> > +	if (!pm_runtime_enabled(&pdev->dev)) {
-> > +		ret =3D sun6i_spi_runtime_resume(&pdev->dev);
-> > +		if (ret) {
-> > +			dev_err(&pdev->dev, "Couldn't resume the device\n");
-> > +			return ret;
-> > +		}
-> > +	}
->=20
-> No, as discussed don't do this - notice how other drivers aren't written
-> this way either.  Like I said leave the device powered on startup and
-> then let it be idled by runtime PM.
+This is a bit skimpy.  Why doesn't the patch re-break kvm-on-s390?
 
-Well, some SPI drivers are actually written like that (all the tegra
-SPI drivers for example). It's not an excuse, but waking up the device
-only to put it back in suspend right away seems kind of
-inefficient. Plus, the pm_runtime_idle callback you suggested are
-actually calling runtime_idle, while we want to call runtime_suspend.
+it would be nice to have a lot more detail here, please.  What was the
+intent of 8e72033f2a48, how this patch retains 8e72033f2a48's behavior,
+etc.
+
+> --- a/arch/s390/mm/pgtable.c
+> +++ b/arch/s390/mm/pgtable.c
+> @@ -504,6 +504,9 @@ static int gmap_connect_pgtable(unsigned long address, unsigned long segment,
+>  	if (!pmd_present(*pmd) &&
+>  	    __pte_alloc(mm, vma, pmd, vmaddr))
+>  		return -ENOMEM;
+> +	/* large pmds cannot yet be handled */
+> +	if (pmd_large(*pmd))
+> +		return -EFAULT;
+
+This bit wasn't in 8e72033f2a48.
 
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---RHdRtM27np9fZUoh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS7CfoAAoJEBx+YmzsjxAg0tcQAIsQCJpG97ymE6ms+cNXMBnA
-dYPjkpfZ0YbI4PoiFc1PLfaR+wiWbFeJaPn4apMAfoRZ6FFgM1jN5qDLfmui6my3
-fUnIxeU5f4VExsphF/7MRdbfASzIGRJ9o33bZn1UqcWX4+54/pVB40nSXRoX2pQn
-eepkHylLuO4NZhJApXzrB9eOOrzJxtoai7HGSNyiAT/T+HgA3BbPpN+7gGzb81q3
-qi9wHA9lryOhQQMmuGdeVWJTgbLMwtxBkbmYhK9OFk5QXKuPcnzpU+0XaRhYSVdO
-77hyafL3dX+06NRM0sKwIZEB17gIyQpV1q2RdeV7o3JdxCu1VDMw7VjF0G8TBlXI
-JoBbh+XRP9Bx4yxZrnQzI+0vwUOsL0QVYDXX1N7uJ7pkJgUSvn4vaYRGEwyQsz2R
-4vDlZJYSZZyMvQoEbqbJIFstMCuegVgfHSUmDjX9j8oM1EAkMSaf7FUN/bWbae3C
-uryCMzHElW5AG7LXFdAHk6h0V1GuJtmhN0lin3d61aBOaWMI7PqJbOOqzB/tpFdA
-hT/p800S/Jn7Ao1pX8ShM6s2EIM8HgtweeKUiQA/MznUSVg7ol2cE27ojfeDcoJM
-Vp7NTIQaohtiBo/CTpu42C8sHa2JcmrNJGNWRxDONEh19byl4iuZtXniU243wrsI
-KztbtMoaJNLDBPoIaSQI
-=FmH2
------END PGP SIGNATURE-----
-
---RHdRtM27np9fZUoh--
