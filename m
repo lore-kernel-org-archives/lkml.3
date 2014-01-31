@@ -1,170 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144AbaAaXMZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 18:12:25 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:37946 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbaAaXMX (ORCPT
+	id S933122AbaAaXNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 18:13:55 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:58855 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120AbaAaXNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 18:12:23 -0500
+	Fri, 31 Jan 2014 18:13:53 -0500
+Date: Fri, 31 Jan 2014 15:11:59 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Christian Daudt <bcm@fixthebug.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Arm Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>, Kevin Hilman <khilman@linaro.org>
+Subject: Re: [RESEND PATCH] ARM: dts: bcm28155-ap: Fix Card Detection GPIO
+Message-ID: <20140131231159.GA11138@quad.lixom.net>
+References: <1389120821-12007-1-git-send-email-tim.kryger@linaro.org>
+ <CAEPRUYo0r5YcRTYdgSNLqedVV4D0bsor7USBoxRRpBXRs7wpbw@mail.gmail.com>
+ <CAAYSxhpgJwnq63fUdYBtmneRads_69c2mik8upofvAS1Y25fOA@mail.gmail.com>
+ <CAEPRUYpyr2_3pfa3rqYiYPAOwJfA+0AdqyGaf5s7YiWH=zfTeA@mail.gmail.com>
+ <CAAYSxhpSz8ZF_urMfQ4xdc1fhFdQC-_=9U1dvNn=EU_OoNsWbw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1391110993.945.19.camel@wall-e.seibold.net>
-References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
- <1391078953-1575-5-git-send-email-stefani@seibold.net> <CALCETrXMPkA3ZfwGo8iQQDL=7HXBE3Mo8j6Zi+bTu=eoL-b43w@mail.gmail.com>
- <1391110993.945.19.camel@wall-e.seibold.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 31 Jan 2014 15:12:02 -0800
-Message-ID: <CALCETrWw4UxaDBE_eWTcEQxGZDwfzzrR9PUT=iJbhUs3eoqXuw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] Add 32 bit VDSO support for 64 kernel
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAYSxhpSz8ZF_urMfQ4xdc1fhFdQC-_=9U1dvNn=EU_OoNsWbw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 11:43 AM, Stefani Seibold <stefani@seibold.net> wrote:
-> Am Donnerstag, den 30.01.2014, 10:21 -0800 schrieb Andy Lutomirski:
->> On Thu, Jan 30, 2014 at 2:49 AM,  <stefani@seibold.net> wrote:
->> > From: Stefani Seibold <stefani@seibold.net>
->> >
->> > This patch add the support for the IA32 Emulation Layer to run 32 bit
->> > applications on a 64 bit kernel.
->> >
->> > Due the nature of the kernel headers and the LP64 compiler where the
->> > size of a long and a pointer differs against a 32 bit compiler, there
->> > is a lot of type hacking necessary.
->> >
->> > This kind of type hacking could be prevent in the future by doing a call to the
->> > 64 bit code by the following sequence:
->> >
->> > - Compile the arch/x86/vdso/vclock_gettime.c as 64 bit, but only generate
->> >   the assemble output.
->> > - Next compile a 32 bit object by including the 64 bit vclock_gettime.s
->> >   prefixed with .code64
->> > - At least we need a trampolin code which invokes the 64 bit code and do
->> >   the API conversation (64 bit longs to 32 bit longs), like the
->> >   followig snipped:
->> >
->> > ENTRY(call64)
->> >         push %ebp
->> >         movl %esp, %ebp
->> >         ljmp $__USER_CS, $1f
->> > .code64
->>
->> I bet that this trampoline takes at least as long as a syscall /
->> sysenter instruction.  I'd be surprised if designers of modern cpus
->> care at all about ljmp latency.
->>
->
-> I have no idea, this must be measured. The code is smaller and it would
-> save a lot of compaility issues.
->
->>
->> >
->> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
->> > ---
->> >  arch/x86/vdso/vclock_gettime.c        | 112 ++++++++++++++++++++++++++--------
->> >  arch/x86/vdso/vdso32/vclock_gettime.c |   7 +++
->> >  2 files changed, 95 insertions(+), 24 deletions(-)
->> >
->> > diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
->> > index 19b2a49..a2417e2 100644
->> > --- a/arch/x86/vdso/vclock_gettime.c
->> > +++ b/arch/x86/vdso/vclock_gettime.c
->> > @@ -31,12 +31,24 @@
->> >
->> >  #define gtod (&VVAR(vsyscall_gtod_data))
->> >
->> > +struct api_timeval {
->> > +       long    tv_sec;         /* seconds */
->> > +       long    tv_usec;        /* microseconds */
->> > +};
->> > +
->> > +struct api_timespec {
->> > +       long    tv_sec;         /* seconds */
->> > +       long    tv_nsec;        /* microseconds */
->> > +};
->> > +
->> > +typedef long api_time_t;
->> > +
->> >  static notrace cycle_t vread_hpet(void)
->> >  {
->> >         return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
->> >  }
->> >
->> > -notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
->> > +notrace static long vdso_fallback_gettime(long clock, struct api_timespec *ts)
->> >  {
->> >         long ret;
->> >         asm("syscall" : "=a" (ret) :
->> > @@ -44,7 +56,8 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
->> >         return ret;
->> >  }
->> >
->> > -notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
->> > +notrace static long vdso_fallback_gtod(struct api_timeval *tv,
->> > +               struct timezone *tz)
->> >  {
->> >         long ret;
->> >
->> > @@ -54,20 +67,68 @@ notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
->> >  }
->> >  #else
->> >
->> > +#ifdef CONFIG_IA32_EMULATION
->> > +typedef s64    arch_time_t;
->> > +
->> > +struct arch_timespec {
->> > +       s64     tv_sec;
->> > +       s64     tv_nsec;
->> > +};
->> > +
->> > +#define ALIGN8 __attribute__ ((aligned (8)))
->> > +
->> > +struct arch_vsyscall_gtod_data {
->> > +       seqcount_t      seq ALIGN8;
->> > +
->> > +       struct { /* extract of a clocksource struct */
->> > +               int vclock_mode ALIGN8;
->> > +               cycle_t cycle_last ALIGN8;
->> > +               cycle_t mask ALIGN8;
->> > +               u32     mult;
->> > +               u32     shift;
->> > +       } clock;
->> > +
->> > +       /* open coded 'struct timespec' */
->> > +       arch_time_t     wall_time_sec;
->> > +       u64             wall_time_snsec;
->> > +       u64             monotonic_time_snsec;
->> > +       arch_time_t     monotonic_time_sec;
->> > +
->> > +       struct timezone sys_tz;
->> > +       struct arch_timespec wall_time_coarse;
->> > +       struct arch_timespec monotonic_time_coarse;
->> > +};
->>
->> Yuck!
->>
->> Can you see how hard it would be to just make the real gtod data have
->> the same layout for 32-bit and 64-bit code?
->>
->
-> It is not easy, because the there are a lot of data types which use
-> longs (struct timespec, time_t) and seqcount has a variable size
-> depending on the kernel configuration.
+On Fri, Jan 24, 2014 at 10:48:40AM -0800, Tim Kryger wrote:
+> On Wed, Jan 8, 2014 at 4:54 PM, Christian Daudt <bcm@fixthebug.org> wrote:
+> > On Wed, Jan 8, 2014 at 4:28 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> >> On Wed, Jan 8, 2014 at 3:38 PM, Christian Daudt <bcm@fixthebug.org> wrote:
+> >>> On Tue, Jan 7, 2014 at 10:53 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> >>>> The board schematic states that the "SD_CARD_DET_N gets pulled to GND
+> >>>> when card is inserted" so the polarity has been updated to active low.
+> >>>>
+> >>>> Polarity is now specified with a GPIO define instead of a magic number.
+> >>>>
+> >>>> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> >>>> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> >>>> ---
+> >>>>  arch/arm/boot/dts/bcm28155-ap.dts | 4 +++-
+> >>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+> >>>>
+> >>>> diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
+> >>>> index 08e47c2..27dd110 100644
+> >>>> --- a/arch/arm/boot/dts/bcm28155-ap.dts
+> >>>> +++ b/arch/arm/boot/dts/bcm28155-ap.dts
+> >>>> @@ -13,6 +13,8 @@
+> >>>>
+> >>>>  /dts-v1/;
+> >>>>
+> >>>> +#include <dt-bindings/gpio/gpio.h>
+> >>>> +
+> >>>>  #include "bcm11351.dtsi"
+> >>>>
+> >>>>  / {
+> >>>> @@ -40,7 +42,7 @@
+> >>>>
+> >>>>         sdio4: sdio@3f1b0000 {
+> >>>>                 max-frequency = <48000000>;
+> >>>> -               cd-gpios = <&gpio 14 0>;
+> >>>> +               cd-gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
+> >>>>                 status = "okay";
+> >>>>         };
+> >>>>  };
+> >>>> --
+> >>>> 1.8.0.1
+> >>>>
+> >>> Tim,
+> >>>  Does bcm11351-brt not also suffer from the same bug? If it does can
+> >>> you pls update the patch to also fix it?
+> >>>
+> >>>  Thanks,
+> >>>    csd
+> >>
+> >> The BRT and AP boards are similar so it may have the same problem but
+> >> I don't have a BRT and wouldn't be able to test any changes to its DTS
+> >> file.
+> >>
+> >> -Tim
+> >
+> > [sorry for the resend for those that get it twice]
+> > Agreed - it's time that dts file go away. In this case:
+> > Acked-by: Christian Daudt <bcm@fixthebug.org>
+> >
+> > Olof - can you pls pull in this patch. This is the bugfix that was
+> > discussed in irc earlier today.
+> >
+> >  thanks,
+> >    csd
+> 
+> Christian,
+> 
+> I'm not sure Olof saw your reply.  Olof and Kevin are now on CC.
 
-It's probably worth open-coding that seqcount at least -- having
-lockdep data in the vvar page isn't doing anyone any favors.
+Nope, applied now. Had to touch it up a bit since we're missing some of the
+patches that this was based on for 3.14, but the cd-gpios property is fixed.
 
---Andy
+
+-Olof
