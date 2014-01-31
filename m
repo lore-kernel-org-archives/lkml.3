@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948AbaAaRf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:35:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55223 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932709AbaAaRcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932714AbaAaRcq (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 31 Jan 2014 12:32:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55177 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455AbaAaRco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 12:32:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 03/14] drm/i915: fix DDI PLLs HW state readout code
-Date: Fri, 31 Jan 2014 09:32:06 -0800
-Message-Id: <1391189537-20777-4-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 05/14] md/raid5: Fix possible confusion when multiple write errors occur.
+Date: Fri, 31 Jan 2014 09:32:08 -0800
+Message-Id: <1391189537-20777-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -28,49 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 0882dae983707455e97479e5e904e37673517ebc upstream.
+commit 1cc03eb93245e63b0b7a7832165efdc52e25b4e6 upstream.
 
-Properly zero the refcounts and crtc->ddi_pll_set so the previous HW
-state doesn't affect the result of reading the current HW state.
+commit 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+    md: raid5 crash during degradation
 
-This fixes WARNs about WRPLL refcount if we have an HDMI monitor on
-HSW and then suspend/resume.
+Fixed a crash in an overly simplistic way which could leave
+R5_WriteError or R5_MadeGood set in the stripe cache for devices
+for which it is no longer relevant.
+When those devices are removed and spares added the flags are still
+set and can cause incorrect behaviour.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64379
-Tested-by: Qingshuai Tian <qingshuai.tian@intel.com>
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+commit 14a75d3e07c784c004b4b44b34af996b8e4ac453
+    md/raid5: preferentially read from replacement device if possible.
+
+Fixed the same bug if a more effective way, so we can now revert
+the original commit.
+
+Reported-and-tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Fixes: 5d8c71f9e5fbdd95650be00294d238e27a363b5c
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_ddi.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/md/raid5.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
-index b8e53d9..6f09de3 100644
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -1178,12 +1178,18 @@ void intel_ddi_setup_hw_pll_state(struct drm_device *dev)
- 	enum pipe pipe;
- 	struct intel_crtc *intel_crtc;
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 51887b3..2ffa02c 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3420,7 +3420,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+ 			 */
+ 			set_bit(R5_Insync, &dev->flags);
  
-+	dev_priv->ddi_plls.spll_refcount = 0;
-+	dev_priv->ddi_plls.wrpll1_refcount = 0;
-+	dev_priv->ddi_plls.wrpll2_refcount = 0;
-+
- 	for_each_pipe(pipe) {
- 		intel_crtc =
- 			to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
- 
--		if (!intel_crtc->active)
-+		if (!intel_crtc->active) {
-+			intel_crtc->ddi_pll_sel = PORT_CLK_SEL_NONE;
- 			continue;
-+		}
- 
- 		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
- 								 pipe);
+-		if (rdev && test_bit(R5_WriteError, &dev->flags)) {
++		if (test_bit(R5_WriteError, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+@@ -3433,7 +3433,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+ 			} else
+ 				clear_bit(R5_WriteError, &dev->flags);
+ 		}
+-		if (rdev && test_bit(R5_MadeGood, &dev->flags)) {
++		if (test_bit(R5_MadeGood, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
 -- 
 1.8.3.2
 
