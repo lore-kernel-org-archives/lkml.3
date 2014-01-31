@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaAaVns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:43:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51773 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033AbaAaVnr (ORCPT
+	id S1754444AbaAaVpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:45:09 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:48294 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151AbaAaVpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:43:47 -0500
-Date: Fri, 31 Jan 2014 13:43:45 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Salman Qazi <sqazi@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Reverting warning for vmalloc and kmemcheck faults in NMI
-Message-Id: <20140131134345.0d63bce0fc19d5fe86541e13@linux-foundation.org>
-In-Reply-To: <CANN689FzOonHtEazR6KE+yZzohetwVQKaXHHnNYgC+615JszLw@mail.gmail.com>
-References: <CANN689FzOonHtEazR6KE+yZzohetwVQKaXHHnNYgC+615JszLw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Jan 2014 16:45:03 -0500
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, peterz@infradead.org, sasha.levin@oracle.com,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH 0/2] tools: lockdep: build fixes
+Date: Fri, 31 Jan 2014 13:35:30 -0800
+Message-Id: <1391204132-14071-1-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.8.3.2
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (ovro.ovro.caltech.edu [0.0.0.0]); Fri, 31 Jan 2014 13:35:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014 19:06:58 -0800 Michel Lespinasse <walken@google.com> wrote:
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 
-> Hi,
-> 
-> Way back in 2010, Frederic added commit
-> ebc8827f75954fe315492883eee5cb3f355d547d to warn us about cases where
-> faults were incorrectly firing during NMI handling on x86, as the IRET
-> from such faults would possibly trigger nested NMIs.
-> 
-> Later (2012), Salman added commit
-> 28696f434fef0efa97534b59986ad33b9c4df7f8 to enable nested NMI
-> handling. See http://lwn.net/Articles/484932/
-> 
-> So, I believe such faults nesting under NMI are not an issue anymore,
-> and we could revert ebc8827f75954fe315492883eee5cb3f355d547d ?
+Included are some fixes to the tools/lib/lockdep source tree to fix some
+build issues.
 
-Seems logical.
+Ira W. Snyder (2):
+  tools: lockdep: fix include of asm/hash.h
+  tools: lockdep: add include directory to allow tests to compile
 
-> Background: I'm asking this because at Google we like to dump memory
-> regions pointed by registers in our arch_trigger_all_cpu_backtrace
-> handler, and this occasionally causes the vmalloc_fault in_nmi()
-> warning to fire.
-> 
+ tools/lib/lockdep/Makefile            | 2 +-
+ tools/lib/lockdep/uinclude/asm/hash.h | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+ create mode 100644 tools/lib/lockdep/uinclude/asm/hash.h
 
-It seems odd that x86 arch_trigger_all_cpu_backtrace() uses NMI - why
-didn't it use the regular old IPI?  If a CPU is stuck with interrupts
-disable, the NMI watchdog will provide the diagnostic?
+-- 
+1.8.3.2
 
