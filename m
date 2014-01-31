@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbaAaKR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 05:17:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42518 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649AbaAaKRy (ORCPT
+	id S1754034AbaAaKT2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 05:19:28 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:63916 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410AbaAaKT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 05:17:54 -0500
-Date: Fri, 31 Jan 2014 11:17:29 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: George Spelvin <linux@horizon.com>
-Cc: Waiman.Long@hp.com, akpm@linux-foundation.org, andi@firstfloor.org,
-        arnd@arndb.de, aswin@hp.com, hpa@zytor.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        paulmck@linux.vnet.ibm.com, raghavendra.kt@linux.vnet.ibm.com,
-        riel@redhat.com, rostedt@goodmis.org, scott.norton@hp.com,
-        tglx@linutronix.de, tim.c.chen@linux.intel.com,
-        torvalds@linux-foundation.org, walken@google.com, x86@kernel.org
-Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
- implementation
-Message-ID: <20140131101729.GA8874@twins.programming.kicks-ass.net>
-References: <20140131092616.GC5126@laptop.programming.kicks-ass.net>
- <20140131100348.8867.qmail@science.horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140131100348.8867.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 31 Jan 2014 05:19:27 -0500
+Message-ID: <52EB78A9.4020306@gmail.com>
+Date: Fri, 31 Jan 2014 11:19:21 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 09/21] pinctrl: mvebu: dove: provide generic mpp callbacks
+References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390869573-27624-10-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkdYpGm-KAFqU5cpzbhrM1NaZJYtQa86wP7qJFrai2bDYbw@mail.gmail.com>
+In-Reply-To: <CACRpkdYpGm-KAFqU5cpzbhrM1NaZJYtQa86wP7qJFrai2bDYbw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 05:03:48AM -0500, George Spelvin wrote:
-> How about getting rid of that TICKET_MSB mess and doing something like:
-> 
-> #define TICKET_MASK	0xFFFF
-> 
-> static inline void ticket_spin_unlock(atomic_t *tickets)
-> {
-> 	u32 t = *tickets;
-> 
-> 	smp_mb__before_atomic_inc();
-> 
-> 	/* Increment the low 16 bits without affecting the upper. */
-> 	if (unlikely((~t & TICKET_MASK) == 0))
-> 		atomic_add(-(atomic_t)TICKET_MASK, tickets);
-> 	else
-> 		atomic_inc(tickets);
-> }
-> 
-> That also allows up to 2^16 waiters, up from 2^15.
-> (Minus one on both cases, if you want to be fussy.)
+On 01/31/14 11:13, Linus Walleij wrote:
+> On Tue, Jan 28, 2014 at 1:39 AM, Sebastian Hesselbarth
+> <sebastian.hesselbarth@gmail.com> wrote:
+>
+>> We want to get rid of passing register addresses to common pinctrl
+>> driver, so provide set/get callbacks for generic mpp pins.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+[...]
+>> @@ -374,7 +398,7 @@ static struct mvebu_mpp_ctrl dove_mpp_controls[] = {
+>>          MPP_FUNC_CTRL(13, 13, "mpp13", dove_pmu_mpp_ctrl),
+>>          MPP_FUNC_CTRL(14, 14, "mpp14", dove_pmu_mpp_ctrl),
+>>          MPP_FUNC_CTRL(15, 15, "mpp15", dove_pmu_mpp_ctrl),
+>> -       MPP_REG_CTRL(16, 23),
+>> +       MPP_FUNC_CTRL(16, 23, NULL, dove_mpp_ctrl),
+>
+> What does this have to do with the rest of the patch?
+>
+> (Maybe I'm stupid, beware I'm just glancing over this stuff as I
+> see the patch set is still in development.)
 
-Ah indeed. That'll work. That said, any arch that can single-copy
-address shorts can probably do better than this generic atomic_t thing.
+Not really, the driver is slightly misdesigned and this patches
+try to clean this up a bit. I have prepared a v3 branch for the
+MVEBU guys to have a look at first.
 
-My main point was that we should seriously look at a ticket lock instead
-of the MCS one, because while the MCS has better contention behaviour,
-we shouldn't optimize locks for the worst contention.
+Short version: Thanks for trying to review this, but I guess your time
+would be better spent on a soon to be posted v3.
+
+Long version:
+Not having a callback identifies each control as "generic mpp pins",
+so by passing a callback we make them "SoC specific" as a preparation
+to remove the common "generic mpp" set/get function.
+
+Sebastian
+
