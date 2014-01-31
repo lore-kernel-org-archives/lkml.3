@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830AbaAaXF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 18:05:56 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:39910 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145AbaAaXFz (ORCPT
+	id S933050AbaAaXGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 18:06:17 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:35262 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932866AbaAaXGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 18:05:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <d7d5035ad3b10befcd45476a4677f16fde5d1744.1391209433.git.luto@amacapital.net>
-References: <d7d5035ad3b10befcd45476a4677f16fde5d1744.1391209433.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 31 Jan 2014 15:05:34 -0800
-Message-ID: <CALCETrWa2dzLNChxVO83-OHFmxn74tAxdAjAqG3B_33nHaCAZQ@mail.gmail.com>
-Subject: Re: [PATCH] x86: Zero-pad the VVAR page with zeros
-To: X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 31 Jan 2014 18:06:14 -0500
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Chris Ball <chris@printf.net>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Tejun Heo <tj@kernel.org>, Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCH] mmc: move clock gating work to power efficient workqueue
+Date: Fri, 31 Jan 2014 15:05:41 -0800
+Message-Id: <1391209541-17288-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*sigh*.  Feel free to make the subject less dumb if you apply this.
+From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
---Andy
+Instead of binding the clock gating work to the CPU that scheduled it,
+allow the scheduler to select the best CPU to handle it. This extends
+idle residency times and conserves power.
 
-On Fri, Jan 31, 2014 at 3:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> This has probably been broken since the VVAR page was introduced.
-> The symptom is that BIOS crud can be left behind where userspace can
-> see it.  (I saw this with QEMU.)
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/kernel/vmlinux.lds.S | 5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-> index da6b35a..331a66f 100644
-> --- a/arch/x86/kernel/vmlinux.lds.S
-> +++ b/arch/x86/kernel/vmlinux.lds.S
-> @@ -165,6 +165,11 @@ SECTIONS
->  #undef __VVAR_KERNEL_LDS
->  #undef EMIT_VVAR
->
-> +               /*
-> +                * Pad the rest of the page with zeros.  Otherwise the loader
-> +                * can leave garbage here.
-> +                */
-> +               . = __vvar_beginning_hack + PAGE_SIZE;
->         } :data
->
->         . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
-> --
-> 1.8.5.3
->
+This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
 
+Cc: Chris Ball <chris@printf.net>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Simon Baatz <gmbnomis@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+[zoran.markovic@linaro.org: Rebased to latest kernel. Added commit message.
+Fixed code alignment.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ drivers/mmc/core/host.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-
+diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+index 49bc403..a787f1b 100644
+--- a/drivers/mmc/core/host.c
++++ b/drivers/mmc/core/host.c
+@@ -207,8 +207,9 @@ void mmc_host_clk_release(struct mmc_host *host)
+ 	host->clk_requests--;
+ 	if (mmc_host_may_gate_card(host->card) &&
+ 	    !host->clk_requests)
+-		schedule_delayed_work(&host->clk_gate_work,
+-				      msecs_to_jiffies(host->clkgate_delay));
++		queue_delayed_work(system_power_efficient_wq,
++				   &host->clk_gate_work,
++				   msecs_to_jiffies(host->clkgate_delay));
+ 	spin_unlock_irqrestore(&host->clk_lock, flags);
+ }
+ 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.9.5
+
