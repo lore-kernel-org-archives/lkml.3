@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaAaDqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 22:46:17 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:43085 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069AbaAaDqQ (ORCPT
+	id S932163AbaAaDsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 22:48:19 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:48118 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753609AbaAaDsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 22:46:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391134615.28432.83.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <alpine.DEB.2.10.1401180036020.18419@dinf>
-	<1390062576.31367.519.camel@edumazet-glaptop2.roam.corp.google.com>
-	<alpine.DEB.2.02.1401181101220.579@dtop>
-	<alpine.DEB.2.02.1401292301070.5905@dtop>
-	<1391134615.28432.83.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Thu, 30 Jan 2014 19:46:15 -0800
-Message-ID: <CAADnVQ+vCikFY-te2U8wD+ustNW-o6Cqs8ye5ZfyNcU6vPQzNA@mail.gmail.com>
-Subject: Re: kmem_cache_alloc panic in 3.10+
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: dormando <dormando@rydia.net>, netdev@vger.kernel.org,
+	Thu, 30 Jan 2014 22:48:17 -0500
+Date: Fri, 31 Jan 2014 09:18:03 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        spear-devel <spear-devel@list.st.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH V3 4/8] phy: Initialize phy core with subsys_initcall
+Message-ID: <20140131034803.GA2618@pratyush-vbox>
+References: <cover.1391077731.git.mohit.kumar@st.com>
+ <52EA3AE9.3030000@ti.com>
+ <20140130115212.GA1171@pratyush-vbox>
+ <201401301344.59196.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201401301344.59196.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 6:16 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Wed, 2014-01-29 at 23:05 -0800, dormando wrote:
->
->> We hit the routing code fairly hard. Any hints for what to look at or how
->> to instrument it? Or if it's fixed already? It's a real pain to iterate
->> since it takes ~30 days to crash, usually. Sometimes.
+On Thu, Jan 30, 2014 at 08:44:58PM +0800, Arnd Bergmann wrote:
+> On Thursday 30 January 2014, Pratyush Anand wrote:
+> > On Thu, Jan 30, 2014 at 07:43:37PM +0800, Kishon Vijay Abraham I wrote:
+> > > Hi,
+> > > 
+> > > On Thursday 30 January 2014 04:18 PM, Mohit Kumar wrote:
+> > > > From: Pratyush Anand <pratyush.anand@st.com>
+> > > > 
+> > > > PCIe RC drivers are initialized with subsys_initcall. Few PCIe drivers
+> > > > like SPEAr13xx needs phy drivers to be initialized.
+> > > 
+> > > Instead change PCIe RC drivers to module init. Phy drivers should be loaded
+> > > very early otherwise. (Hint: drivers/Makefile).
+> > 
+> > I think PCIe RC driver can not be made module init. Bjorn can comment
+> > better.
+> 
+> I don't think there is any problem here: the PCI devices will only appear
+> after the PCIe root bus has been probed. All drivers using the regular
+> pci_driver framework should work fine even if they are loaded before the
+> device is found. There are a handful of drivers using 'pci_get_device'
+> rather than pci_register_driver, and those will break. As far as I can
+> tell, those drivers are all x86 specific, and you should not worry about
+> them.
+> 
+> Having the PHY driver get initialized after the PCI root driver should
+> also work, but it requires correct handling of -EPROBE_DEFER: if phy_get
 
-sounds like adding mdelay() didn't help to crash it sooner. Then I don't
-see how my dst fix was causing it to crash more often. Something odd.
-fyi just to check it more thoroughly I've been running with mdelay()
-and config_slub_debug_on for a week without issues.
+I had issue with phy-core driver getting initialized after pcie rc
+driver. I found a kernel crash, as devm_phy_get was called before
+phy_class was created. I think this too need to be fixed, we should
+not see a crash.
 
-> I really wonder... it looks like a possible in SLUB. (might be already
-> fixed)
->
-> Could you try using SLAB instead ?
+Anyway, I will keep spear phy and rc driver both with module_init and
+-EPROBE_DEFER implementation.
 
-try config_slub_debug_on=y ? it should catch double free and other things.
+Regards
+Pratyush
+> returns this error, the PCI driver must silently return the same error
+> from its probe() function so it will get called again at a later time
+> (after some other devices have been probed successfully).
+> 
+> 	Arnd
