@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622AbaAaRcd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55164 "EHLO
+	id S932871AbaAaRcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:32:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55221 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaAaRcb (ORCPT
+	with ESMTP id S932685AbaAaRcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:32:31 -0500
+	Fri, 31 Jan 2014 12:32:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kamal Mostafa <kamal@canonical.com>
-Subject: [3.8.y.z extended stable] Linux 3.8.13.17 stable review
-Date: Fri, 31 Jan 2014 09:32:03 -0800
-Message-Id: <1391189537-20777-1-git-send-email-kamal@canonical.com>
+Cc: PaX Team <pageexec@freemail.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 14/14] x86, x32: Correct invalid use of user timespec in the kernel
+Date: Fri, 31 Jan 2014 09:32:17 -0800
+Message-Id: <1391189537-20777-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
+References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the review cycle for the Linux 3.8.13.17 stable kernel.
+3.8.13.17 -stable review patch.  If anyone has any objections, please let me know.
 
-This version contains 14 new patches, summarized below.  The new patches are
-posted as replies to this message and also available in this git branch:
+------------------
 
-http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.8.y-review;a=shortlog
+From: PaX Team <pageexec@freemail.hu>
 
-git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.8.y-review
+commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
 
-The review period for version 3.8.13.17 will be open for the next 24 hours.
-To report a problem, please reply to the relevant follow-up patch message.
+The x32 case for the recvmsg() timout handling is broken:
 
-For more information about the Linux 3.8.y.z extended stable kernel version,
-see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+                                      unsigned int vlen, unsigned int flags,
+                                      struct compat_timespec __user *timeout)
+  {
+          int datagrams;
+          struct timespec ktspec;
 
- -Kamal
+          if (flags & MSG_CMSG_COMPAT)
+                  return -EINVAL;
 
---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c        | 53 +++++++++++++++++++++----
- arch/x86/kernel/entry_32.S                      |  4 +-
- arch/x86/kernel/entry_64.S                      |  2 +-
- drivers/gpu/drm/i915/intel_ddi.c                |  8 +++-
- drivers/hwmon/coretemp.c                        |  2 +-
- drivers/md/raid10.c                             | 12 +++---
- drivers/md/raid5.c                              |  4 +-
- drivers/staging/comedi/drivers/8255_pci.c       | 20 ++++++++--
- drivers/staging/comedi/drivers/addi_apci_1032.c |  4 +-
- fs/dcache.c                                     |  7 +++-
- fs/fs-writeback.c                               | 15 ++++---
- fs/nilfs2/segment.c                             | 10 +++--
- net/compat.c                                    |  9 +----
- net/rds/ib_recv.c                               |  7 ++--
- 14 files changed, 109 insertions(+), 48 deletions(-)
+          if (COMPAT_USE_64BIT_TIME)
+                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+                                        flags | MSG_CMSG_COMPAT,
+                                        (struct timespec *) timeout);
+          ...
 
-Andreas Rohner (1):
-      nilfs2: fix segctor bug that causes file system corruption
+The timeout pointer parameter is provided by userland (hence the __user
+annotation) but for x32 syscalls it's simply cast to a kernel pointer
+and is passed to __sys_recvmmsg which will eventually directly
+dereference it for both reading and writing.  Other callers to
+__sys_recvmmsg properly copy from userland to the kernel first.
 
-Eric W. Biederman (1):
-      vfs: In d_path don't call d_dname on a mount point
+The bug was introduced by commit ee4fa23c4bfc ("compat: Use
+COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
+since 3.4 (and perhaps vendor kernels if they backported x32 support
+along with this code).
 
-Gerald Schaefer (1):
-      net: rds: fix per-cpu helper usage
+Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
+CONFIG_X86_X32 is enabled and ld can build x32 executables.
 
-H Hartley Sweeten (1):
-      staging: comedi: addi_apci_1032: fix subdevice type/flags bug
+Other uses of COMPAT_USE_64BIT_TIME seem fine.
 
-Ian Abbott (1):
-      staging: comedi: 8255_pci: fix for newer PCI-DIO48H
+This addresses CVE-2014-0038.
 
-Jan Kara (1):
-      writeback: Fix data corruption on NFS
+Signed-off-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/compat.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-Jean Delvare (1):
-      hwmon: (coretemp) Fix truncated name of alarm attributes
+diff --git a/net/compat.c b/net/compat.c
+index dd32e34..f50161f 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -780,21 +780,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 	if (flags & MSG_CMSG_COMPAT)
+ 		return -EINVAL;
+ 
+-	if (COMPAT_USE_64BIT_TIME)
+-		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+-				      flags | MSG_CMSG_COMPAT,
+-				      (struct timespec *) timeout);
+-
+ 	if (timeout == NULL)
+ 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				      flags | MSG_CMSG_COMPAT, NULL);
+ 
+-	if (get_compat_timespec(&ktspec, timeout))
++	if (compat_get_timespec(&ktspec, timeout))
+ 		return -EFAULT;
+ 
+ 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				   flags | MSG_CMSG_COMPAT, &ktspec);
+-	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
++	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
+ 		datagrams = -EFAULT;
+ 
+ 	return datagrams;
+-- 
+1.8.3.2
 
-NeilBrown (3):
-      md/raid5: Fix possible confusion when multiple write errors occur.
-      md/raid10: fix two bugs in handling of known-bad-blocks.
-      md/raid10: fix bug when raid10 recovery fails to recover a block.
-
-PaX Team (1):
-      x86, x32: Correct invalid use of user timespec in the kernel
-
-Paulo Zanoni (1):
-      drm/i915: fix DDI PLLs HW state readout code
-
-Robert Richter (1):
-      perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
-
-Steven Rostedt (1):
-      ftrace/x86: Load ftrace_ops in parameter not the variable holding it
