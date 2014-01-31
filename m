@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614AbaAaPHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:07:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9717 "EHLO mx1.redhat.com"
+	id S932946AbaAaPPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:15:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23897 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932583AbaAaPHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:30 -0500
+	id S932617AbaAaPHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:34 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Amir Vadai <amirv@mellanox.com>, netdev@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH 14/34] igb: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:33 +0100
-Message-Id: <af7e2d8611ac6590fad19ea6c0061017558bff2e.1391172839.git.agordeev@redhat.com>
+Subject: [PATCH 18/34] mlx4: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:37 +0100
+Message-Id: <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,29 +29,48 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 46d31a4..84dfa3f 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -1111,10 +1111,11 @@ static void igb_set_interrupt_capability(struct igb_adapter *adapter, bool msix)
- 	for (i = 0; i < numvecs; i++)
- 		adapter->msix_entries[i].entry = i;
+diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
+index d711158..a9d1249 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -1976,7 +1976,6 @@ static void mlx4_enable_msi_x(struct mlx4_dev *dev)
+ 	int nreq = min_t(int, dev->caps.num_ports *
+ 			 min_t(int, netif_get_num_default_rss_queues() + 1,
+ 			       MAX_MSIX_P_PORT) + MSIX_LEGACY_SZ, MAX_MSIX);
+-	int err;
+ 	int i;
  
--	err = pci_enable_msix(adapter->pdev,
--			      adapter->msix_entries,
--			      numvecs);
--	if (err == 0)
-+	err = pci_enable_msix_range(adapter->pdev,
-+				    adapter->msix_entries,
-+				    numvecs,
-+				    numvecs);
-+	if (err > 0)
- 		return;
+ 	if (msi_x) {
+@@ -1990,22 +1989,12 @@ static void mlx4_enable_msi_x(struct mlx4_dev *dev)
+ 		for (i = 0; i < nreq; ++i)
+ 			entries[i].entry = i;
  
- 	igb_reset_interrupt_capability(adapter);
+-	retry:
+-		err = pci_enable_msix(dev->pdev, entries, nreq);
+-		if (err) {
+-			/* Try again if at least 2 vectors are available */
+-			if (err > 1) {
+-				mlx4_info(dev, "Requested %d vectors, "
+-					  "but only %d MSI-X vectors available, "
+-					  "trying again\n", nreq, err);
+-				nreq = err;
+-				goto retry;
+-			}
++		nreq = pci_enable_msix_range(dev->pdev, entries, 2, nreq);
++
++		if (nreq < 0) {
+ 			kfree(entries);
+ 			goto no_msi;
+-		}
+-
+-		if (nreq <
++		} else if (nreq <
+ 		    MSIX_LEGACY_SZ + dev->caps.num_ports * MIN_MSIX_P_PORT) {
+ 			/*Working in legacy mode , all EQ's shared*/
+ 			dev->caps.comp_pool           = 0;
 -- 
 1.7.7.6
 
