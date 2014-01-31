@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863AbaAaUKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:10:38 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:43916 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaAaUKh (ORCPT
+	id S932973AbaAaULn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:11:43 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:53047 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325AbaAaULl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:10:37 -0500
+	Fri, 31 Jan 2014 15:11:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
-References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
-Date: Fri, 31 Jan 2014 12:10:36 -0800
-Message-ID: <CAME+o4no3HGycLM97+Py3y3yrs5Qm07iPh=84ZLCzp1GbbHFVA@mail.gmail.com>
-Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient workqueue
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
+In-Reply-To: <1391107002-21470-3-git-send-email-galak@codeaurora.org>
+References: <1391107002-21470-1-git-send-email-galak@codeaurora.org>
+	<1391107002-21470-3-git-send-email-galak@codeaurora.org>
+Date: Fri, 31 Jan 2014 14:11:40 -0600
+Message-ID: <CAL_JsqKWa91vDu2oFdOb7Y8XSB-UecYDOK6CmyjXr1ZW81Snqg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] arm: qcom: Split Qualcomm support into legacy and multiplatform
+From: Rob Herring <robherring2@gmail.com>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
-
-On 31 January 2014 11:53, Zoran Markovic <zoran.markovic@linaro.org> wrote:
-> From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+On Thu, Jan 30, 2014 at 12:36 PM, Kumar Gala <galak@codeaurora.org> wrote:
+> Introduce a new mach-qcom that will support SoCs that intend to be
+> multiplatform compatiable while keeping mach-msm to legacy SoC/board
+> support that will not transition over to multiplatform.
 >
-> For better use of CPU idle time, allow the scheduler to select the CPU
-> on which the SRCU grace period work would be scheduled. This improves
-> idle residency time and conserves power.
+> As part of this, we move support for MSM8X60, MSM8960 and MSM8974 over
+> to mach-qcom.
 >
-> This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
->
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Dipankar Sarma <dipankar@in.ibm.com>
-> Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
-> [zoran.markovic@linaro.org: Rebased to latest kernel version. Added commit
-> message. Fixed code alignment.]
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
 > ---
->  kernel/rcu/srcu.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+
+[snip]
+
+> diff --git a/arch/arm/mach-qcom/Kconfig b/arch/arm/mach-qcom/Kconfig
+> new file mode 100644
+> index 0000000..8830431
+> --- /dev/null
+> +++ b/arch/arm/mach-qcom/Kconfig
+> @@ -0,0 +1,34 @@
+> +config ARCH_QCOM
+> +       bool "Qualcomm Support" if ARCH_MULTI_V7
+> +       select ARCH_REQUIRE_GPIOLIB
+> +       select CLKSRC_OF
+> +       select GENERIC_CLOCKEVENTS
+> +       select ARM_GIC
+> +       select CPU_V7
+
+CPU_V7 is already selected by MULTI_V7.
+
+
+[snip]
+
+> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-qcom/smp.c
+> similarity index 97%
+> rename from arch/arm/mach-msm/platsmp.c
+> rename to arch/arm/mach-qcom/smp.c
+> index 42eb6b7..28364cb 100644
+> --- a/arch/arm/mach-msm/platsmp.c
+> +++ b/arch/arm/mach-qcom/smp.c
+> @@ -2,6 +2,7 @@
+>   *  Copyright (C) 2002 ARM Ltd.
+>   *  All Rights Reserved
+>   *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+> + *  Copyright (c) 2014 The Linux Foundation. All rights reserved.
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -20,7 +21,6 @@
+>  #include <asm/smp_plat.h>
 >
-> diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-> index 3318d82..a1ebe6d 100644
-> --- a/kernel/rcu/srcu.c
-> +++ b/kernel/rcu/srcu.c
-> @@ -398,7 +398,7 @@ void call_srcu(struct srcu_struct *sp, struct rcu_head *head,
->         rcu_batch_queue(&sp->batch_queue, head);
->         if (!sp->running) {
->                 sp->running = true;
-> -               schedule_delayed_work(&sp->work, 0);
-> +               queue_delayed_work(system_power_efficient_wq, &sp->work, 0);
->         }
->         spin_unlock_irqrestore(&sp->queue_lock, flags);
->  }
-> @@ -674,7 +674,8 @@ static void srcu_reschedule(struct srcu_struct *sp)
->         }
+>  #include "scm-boot.h"
+> -#include "common.h"
 >
->         if (pending)
-> -               schedule_delayed_work(&sp->work, SRCU_INTERVAL);
-> +               queue_delayed_work(system_power_efficient_wq,
-> +                                  &sp->work, SRCU_INTERVAL);
->  }
+>  #define VDD_SC1_ARRAY_CLAMP_GFS_CTL    0x35a0
+>  #define SCSS_CPU1CORE_RESET            0x2d80
+> @@ -48,6 +48,15 @@ extern void secondary_startup(void);
 >
->  /*
-> --
-> 1.7.9.5
+>  static DEFINE_SPINLOCK(boot_lock);
 >
+> +static void __ref msm_cpu_die(unsigned int cpu)
+> +{
+> +
+> +       asm("wfi"
+> +           :
+> +           :
+> +           : "memory", "cc");
+> +}
+
+I realize this is just a move, but there is a wfi() macro that can be
+used here instead.
+
+Rob
