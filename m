@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799AbaAaRct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55187 "EHLO
+	id S932910AbaAaRee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:34:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55232 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932499AbaAaRco (ORCPT
+	with ESMTP id S932774AbaAaRcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:32:44 -0500
+	Fri, 31 Jan 2014 12:32:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 06/14] md/raid10: fix two bugs in handling of known-bad-blocks.
-Date: Fri, 31 Jan 2014 09:32:09 -0800
-Message-Id: <1391189537-20777-7-git-send-email-kamal@canonical.com>
+Cc: Andreas Rohner <andreas.rohner@gmx.net>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 09/14] nilfs2: fix segctor bug that causes file system corruption
+Date: Fri, 31 Jan 2014 09:32:12 -0800
+Message-Id: <1391189537-20777-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -26,52 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Andreas Rohner <andreas.rohner@gmx.net>
 
-commit b50c259e25d9260b9108dc0c2964c26e5ecbe1c1 upstream.
+commit 70f2fe3a26248724d8a5019681a869abdaf3e89a upstream.
 
-If we discover a bad block when reading we split the request and
-potentially read some of it from a different device.
+There is a bug in the function nilfs_segctor_collect, which results in
+active data being written to a segment, that is marked as clean.  It is
+possible, that this segment is selected for a later segment
+construction, whereby the old data is overwritten.
 
-The code path of this has two bugs in RAID10.
-1/ we get a spin_lock with _irq, but unlock without _irq!!
-2/ The calculation of 'sectors_handled' is wrong, as can be clearly
-   seen by comparison with raid1.c
+The problem shows itself with the following kernel log message:
 
-This leads to at least 2 warnings and a probable crash is a RAID10
-ever had known bad blocks.
+  nilfs_sufile_do_cancel_free: segment 6533 must be clean
 
-Fixes: 856e08e23762dfb92ffc68fd0a8d228f9e152160
-Reported-by: Damian Nowak <spam@nowaker.net>
-URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
-Signed-off-by: NeilBrown <neilb@suse.de>
+Usually a few hours later the file system gets corrupted:
+
+  NILFS: bad btree node (blocknr=8748107): level = 0, flags = 0x0, nchildren = 0
+  NILFS error (device sdc1): nilfs_bmap_last_key: broken bmap (inode number=114660)
+
+The issue can be reproduced with a file system that is nearly full and
+with the cleaner running, while some IO intensive task is running.
+Although it is quite hard to reproduce.
+
+This is what happens:
+
+ 1. The cleaner starts the segment construction
+ 2. nilfs_segctor_collect is called
+ 3. sc_stage is on NILFS_ST_SUFILE and segments are freed
+ 4. sc_stage is on NILFS_ST_DAT current segment is full
+ 5. nilfs_segctor_extend_segments is called, which
+    allocates a new segment
+ 6. The new segment is one of the segments freed in step 3
+ 7. nilfs_sufile_cancel_freev is called and produces an error message
+ 8. Loop around and the collection starts again
+ 9. sc_stage is on NILFS_ST_SUFILE and segments are freed
+    including the newly allocated segment, which will contain active
+    data and can be allocated at a later time
+10. A few hours later another segment construction allocates the
+    segment and causes file system corruption
+
+This can be prevented by simply reordering the statements.  If
+nilfs_sufile_cancel_freev is called before nilfs_segctor_extend_segments
+the freed segments are marked as dirty and cannot be allocated any more.
+
+Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
+Reviewed-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid10.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nilfs2/segment.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index b8f5688..4b4e094 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1276,7 +1276,7 @@ read_again:
- 			/* Could not read all from this device, so we will
- 			 * need another r10_bio.
- 			 */
--			sectors_handled = (r10_bio->sectors + max_sectors
-+			sectors_handled = (r10_bio->sector + max_sectors
- 					   - bio->bi_sector);
- 			r10_bio->sectors = max_sectors;
- 			spin_lock_irq(&conf->device_lock);
-@@ -1284,7 +1284,7 @@ read_again:
- 				bio->bi_phys_segments = 2;
- 			else
- 				bio->bi_phys_segments++;
--			spin_unlock(&conf->device_lock);
-+			spin_unlock_irq(&conf->device_lock);
- 			/* Cannot call generic_make_request directly
- 			 * as that will be queued in __generic_make_request
- 			 * and subsequent mempool_alloc might block
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index cbd6618..958a5b5 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -1440,17 +1440,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
+ 
+ 		nilfs_clear_logs(&sci->sc_segbufs);
+ 
+-		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
+-		if (unlikely(err))
+-			return err;
+-
+ 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
+ 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
+ 							sci->sc_freesegs,
+ 							sci->sc_nfreesegs,
+ 							NULL);
+ 			WARN_ON(err); /* do not happen */
++			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
+ 		}
++
++		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
++		if (unlikely(err))
++			return err;
++
+ 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
+ 		sci->sc_stage = prev_stage;
+ 	}
 -- 
 1.8.3.2
 
