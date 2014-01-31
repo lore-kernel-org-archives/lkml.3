@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032AbaAaPUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:20:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45666 "EHLO mx1.redhat.com"
+	id S932289AbaAaPHD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:07:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932307AbaAaPHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:04 -0500
+	id S1753976AbaAaPHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:00 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 03/34] tg3: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:22 +0100
-Message-Id: <21689343cc3c785d2bae8d1187741f404b03c84d.1391172839.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Michael Chan <mchan@broadcom.com>,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH 01/34] bnx2: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:20 +0100
+Message-Id: <434a34e01c353441131204edef36126a95e8928a.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,28 +27,42 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2.c |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index e2ca03e..fca9996 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -11361,12 +11361,10 @@ static bool tg3_enable_msix(struct tg3 *tp)
- 		msix_ent[i].vector = 0;
- 	}
+diff --git a/drivers/net/ethernet/broadcom/bnx2.c b/drivers/net/ethernet/broadcom/bnx2.c
+index 9d2deda..3df63b2 100644
+--- a/drivers/net/ethernet/broadcom/bnx2.c
++++ b/drivers/net/ethernet/broadcom/bnx2.c
+@@ -6206,7 +6206,7 @@ bnx2_free_irq(struct bnx2 *bp)
+ static void
+ bnx2_enable_msix(struct bnx2 *bp, int msix_vecs)
+ {
+-	int i, total_vecs, rc;
++	int i, total_vecs;
+ 	struct msix_entry msix_ent[BNX2_MAX_MSIX_VEC];
+ 	struct net_device *dev = bp->dev;
+ 	const int len = sizeof(bp->irq_tbl[0].name);
+@@ -6229,16 +6229,9 @@ bnx2_enable_msix(struct bnx2 *bp, int msix_vecs)
+ #ifdef BCM_CNIC
+ 	total_vecs++;
+ #endif
+-	rc = -ENOSPC;
+-	while (total_vecs >= BNX2_MIN_MSIX_VEC) {
+-		rc = pci_enable_msix(bp->pdev, msix_ent, total_vecs);
+-		if (rc <= 0)
+-			break;
+-		if (rc > 0)
+-			total_vecs = rc;
+-	}
+-
+-	if (rc != 0)
++	total_vecs = pci_enable_msix_range(bp->pdev, msix_ent,
++					   BNX2_MIN_MSIX_VEC, total_vecs);
++	if (total_vecs < 0)
+ 		return;
  
--	rc = pci_enable_msix(tp->pdev, msix_ent, tp->irq_cnt);
-+	rc = pci_enable_msix_range(tp->pdev, msix_ent, 1, tp->irq_cnt);
- 	if (rc < 0) {
- 		return false;
--	} else if (rc != 0) {
--		if (pci_enable_msix(tp->pdev, msix_ent, rc))
--			return false;
-+	} else if (rc < tp->irq_cnt) {
- 		netdev_notice(tp->dev, "Requested %d MSI-X vectors, received %d\n",
- 			      tp->irq_cnt, rc);
- 		tp->irq_cnt = rc;
+ 	msix_vecs = total_vecs;
 -- 
 1.7.7.6
 
