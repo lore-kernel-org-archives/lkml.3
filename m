@@ -1,42 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaAaAtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:49:42 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:49374 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809AbaAaAtl (ORCPT
+	id S1753881AbaAaAuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:50:15 -0500
+Received: from s3.neomailbox.net ([178.209.62.157]:47925 "EHLO
+	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567AbaAaAuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:49:41 -0500
-Date: Thu, 30 Jan 2014 16:49:39 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Randy Dunlap <rdunlap@infradead.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andiry Xu <andiry.xu@gmail.com>, Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation: fix memmap= language in
- kernel-parameters.txt
-In-Reply-To: <52EAEFD8.6030003@infradead.org>
-Message-ID: <alpine.DEB.2.02.1401301649280.32652@chino.kir.corp.google.com>
-References: <52EAEFD8.6030003@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 30 Jan 2014 19:50:13 -0500
+Message-ID: <52EAF2E5.8090403@meshcoding.com>
+Date: Fri, 31 Jan 2014 01:48:37 +0100
+From: Antonio Quartulli <antonio@meshcoding.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Zoran Markovic <zoran.markovic@linaro.org>, linux-kernel@vger.kernel.org
+CC: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>, Julian Anastasov <ja@ssi.bg>,
+        Flavio Leitner <fbl@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Patrick McHardy <kaber@trash.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Amerigo Wang <amwang@redhat.com>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>, Simon Horman <horms@verge.net.au>,
+        Nikolay Aleksandrov <nikolay@redhat.com>
+Subject: Re: [RFC PATCH] net: core: move core networking work to power efficient
+ workqueue
+References: <1391128402-10725-1-git-send-email-zoran.markovic@linaro.org>
+In-Reply-To: <1391128402-10725-1-git-send-email-zoran.markovic@linaro.org>
+X-Enigmail-Version: 1.6
+OpenPGP: id=43FD7307
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="FgmjO4qw8O7x8rjEXkT6tBV3b3GrgqAVj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014, Randy Dunlap wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--FgmjO4qw8O7x8rjEXkT6tBV3b3GrgqAVj
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Clean up descriptions of memmap= boot options.
-> 
-> Add periods (full stops), drop commas, change "used" to
-> "reserved" or "marked".
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Andiry Xu <andiry.xu@gmail.com>
-> Cc: David Rientjes <rientjes@google.com>
+On 31/01/14 01:33, Zoran Markovic wrote:
+> From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-Acked-by: David Rientjes <rientjes@google.com>
+[...]
+
+> -		schedule_delayed_work(&linkwatch_work, delay);
+> +		queue_delayed_work(system_power_efficient_wq,
+> +			&linkwatch_work, delay);
+
+before talking about technical details, here and in other spots of this
+patch the alignment is wrong. I think checkpatch should have said
+something about it. The first parameter on the new line should be
+aligned up to the column after the opening parenthesis.
+
+Regards,
+
+>  }
+> =20
+> =20
+> diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+> index c03f3de..2c8f839 100644
+> --- a/net/core/netpoll.c
+> +++ b/net/core/netpoll.c
+> @@ -101,7 +101,8 @@ static void queue_process(struct work_struct *work)=
+
+>  			__netif_tx_unlock(txq);
+>  			local_irq_restore(flags);
+> =20
+> -			schedule_delayed_work(&npinfo->tx_work, HZ/10);
+> +			queue_delayed_work(system_power_efficient_wq,
+> +				&npinfo->tx_work, HZ/10);
+>  			return;
+>  		}
+>  		__netif_tx_unlock(txq);
+> @@ -423,7 +424,8 @@ void netpoll_send_skb_on_dev(struct netpoll *np, st=
+ruct sk_buff *skb,
+> =20
+>  	if (status !=3D NETDEV_TX_OK) {
+>  		skb_queue_tail(&npinfo->txq, skb);
+> -		schedule_delayed_work(&npinfo->tx_work,0);
+> +		queue_delayed_work(system_power_efficient_wq,
+> +			&npinfo->tx_work, 0);
+>  	}
+>  }
+>  EXPORT_SYMBOL(netpoll_send_skb_on_dev);
+>=20
+
+
+--=20
+Antonio Quartulli
+
+
+--FgmjO4qw8O7x8rjEXkT6tBV3b3GrgqAVj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS6vLqAAoJEEKTMo6mOh1Vc90P/iKvO5sq4ALPq8OWN/NMb/Au
+WS+vNv3SWrjfV0he63ASF7a9Ygb2CTwsBfnAz6+fxkZZopUMIBFyt4lOa34bTxjh
+ycZZ6DyZbSpLIUTEoD9o5MSVPviVX3OulKDtG+np5FwTrf+Yt3KI6jwmSohXO2M6
+fAnh2kxSVrlfe7tanvXhV1a6XMkVAnjxDVdE/zcXr7N5LEQF29g94SfutrUZZS8E
+OO+87loydMq9XAD2/uV5UlJ2RmzQP0bEbkW5cDKJ4HXN19HsNTygl8sj8BqupWAK
+ousndDG2zqznta0pCiNeh9Szxvpqd/UVsxsb70S3sPGDbJXpoUuxDTSUpAUnbdkj
+NhVJnGq31AGSpmGWYDNYeuVEZWmP8WlbWzpvI9zal3neS7HOnMo/gIVirXLDEz3M
+NzkVqat9QtaJIhumiiRDykVCLYInjEMhGb3LPsUgkLRK8b1O1nhK50cPuP2X4XXh
+fD9rplHBm6XPd5jL9KOQwKq55MsJyLQHwA6mt6rpAAsSh7VcNEQZ/qEhtGzMSVTx
+yi0CPwwiKDzfvWYD44LkLVEsfAT3d3pCd7ORmNj5Ed2cZMURv9l2g2af6jKPfBs6
+Wq3sTbFAg82OL9sBTQOirU65Aowgz6YYelkMQC/tY+tlOnZWCm8SQD2BQXRGJFwt
+3Fr05KFkwUuSmX/hN8IY
+=Nmm0
+-----END PGP SIGNATURE-----
+
+--FgmjO4qw8O7x8rjEXkT6tBV3b3GrgqAVj--
