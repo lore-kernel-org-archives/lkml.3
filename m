@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910AbaAaRee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:34:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55232 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932774AbaAaRcs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932782AbaAaRcs (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 31 Jan 2014 12:32:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55181 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932460AbaAaRco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 12:32:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Rohner <andreas.rohner@gmx.net>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 09/14] nilfs2: fix segctor bug that causes file system corruption
-Date: Fri, 31 Jan 2014 09:32:12 -0800
-Message-Id: <1391189537-20777-10-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 07/14] md/raid10: fix bug when raid10 recovery fails to recover a block.
+Date: Fri, 31 Jan 2014 09:32:10 -0800
+Message-Id: <1391189537-20777-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -30,88 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Rohner <andreas.rohner@gmx.net>
+From: NeilBrown <neilb@suse.de>
 
-commit 70f2fe3a26248724d8a5019681a869abdaf3e89a upstream.
+commit e8b849158508565e0cd6bc80061124afc5879160 upstream.
 
-There is a bug in the function nilfs_segctor_collect, which results in
-active data being written to a segment, that is marked as clean.  It is
-possible, that this segment is selected for a later segment
-construction, whereby the old data is overwritten.
+commit e875ecea266a543e643b19e44cf472f1412708f9
+    md/raid10 record bad blocks as needed during recovery.
 
-The problem shows itself with the following kernel log message:
+added code to the "cannot recover this block" path to record a bad
+block rather than fail the whole recovery.
+Unfortunately this new case was placed *after* r10bio was freed rather
+than *before*, yet it still uses r10bio.
+This is will crash with a null dereference.
 
-  nilfs_sufile_do_cancel_free: segment 6533 must be clean
+So move the freeing of r10bio down where it is safe.
 
-Usually a few hours later the file system gets corrupted:
-
-  NILFS: bad btree node (blocknr=8748107): level = 0, flags = 0x0, nchildren = 0
-  NILFS error (device sdc1): nilfs_bmap_last_key: broken bmap (inode number=114660)
-
-The issue can be reproduced with a file system that is nearly full and
-with the cleaner running, while some IO intensive task is running.
-Although it is quite hard to reproduce.
-
-This is what happens:
-
- 1. The cleaner starts the segment construction
- 2. nilfs_segctor_collect is called
- 3. sc_stage is on NILFS_ST_SUFILE and segments are freed
- 4. sc_stage is on NILFS_ST_DAT current segment is full
- 5. nilfs_segctor_extend_segments is called, which
-    allocates a new segment
- 6. The new segment is one of the segments freed in step 3
- 7. nilfs_sufile_cancel_freev is called and produces an error message
- 8. Loop around and the collection starts again
- 9. sc_stage is on NILFS_ST_SUFILE and segments are freed
-    including the newly allocated segment, which will contain active
-    data and can be allocated at a later time
-10. A few hours later another segment construction allocates the
-    segment and causes file system corruption
-
-This can be prevented by simply reordering the statements.  If
-nilfs_sufile_cancel_freev is called before nilfs_segctor_extend_segments
-the freed segments are marked as dirty and cannot be allocated any more.
-
-Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
-Reviewed-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: e875ecea266a543e643b19e44cf472f1412708f9
+Reported-by: Damian Nowak <spam@nowaker.net>
+URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nilfs2/segment.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/md/raid10.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index cbd6618..958a5b5 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1440,17 +1440,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
- 
- 		nilfs_clear_logs(&sci->sc_segbufs);
- 
--		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
--		if (unlikely(err))
--			return err;
--
- 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
- 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
- 							sci->sc_freesegs,
- 							sci->sc_nfreesegs,
- 							NULL);
- 			WARN_ON(err); /* do not happen */
-+			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 4b4e094..dfd6eba 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -3153,10 +3153,6 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 			if (j == conf->copies) {
+ 				/* Cannot recover, so abort the recovery or
+ 				 * record a bad block */
+-				put_buf(r10_bio);
+-				if (rb2)
+-					atomic_dec(&rb2->remaining);
+-				r10_bio = rb2;
+ 				if (any_working) {
+ 					/* problem is that there are bad blocks
+ 					 * on other device(s)
+@@ -3188,6 +3184,10 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 					mirror->recovery_disabled
+ 						= mddev->recovery_disabled;
+ 				}
++				put_buf(r10_bio);
++				if (rb2)
++					atomic_dec(&rb2->remaining);
++				r10_bio = rb2;
+ 				break;
+ 			}
  		}
-+
-+		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
-+		if (unlikely(err))
-+			return err;
-+
- 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
- 		sci->sc_stage = prev_stage;
- 	}
 -- 
 1.8.3.2
 
