@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599AbaAaVN3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:13:29 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:45968 "EHLO fiona.linuxhacker.ru"
+	id S1754498AbaAaVOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:14:32 -0500
+Received: from www.sr71.net ([198.145.64.142]:57327 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754431AbaAaVN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:13:27 -0500
-X-Greylist: delayed 1850 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Jan 2014 16:13:27 EST
-Subject: Re: [PATCH] Fix mountpoint reference leakage in linkat
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140131210334.GO10323@ZenIV.linux.org.uk>
-Date: Fri, 31 Jan 2014 16:13:19 -0500
-Cc: linux-kernel@vger.kernel.org, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org
+	id S1754473AbaAaVOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 16:14:31 -0500
+Message-ID: <52EC1235.30909@sr71.net>
+Date: Fri, 31 Jan 2014 13:14:29 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Petr Tesarik <ptesarik@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+CC: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: fix the initialization of physnode_map
+References: <20140131110517.4b7e86d6@hananiah.suse.cz>
+In-Reply-To: <20140131110517.4b7e86d6@hananiah.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <A3886415-1FA1-4090-8F64-F5B4D4DDD786@linuxhacker.ru>
-References: <1391200918-29185-1-git-send-email-green@linuxhacker.ru> <20140131210334.GO10323@ZenIV.linux.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/31/2014 02:05 AM, Petr Tesarik wrote:
+> With DISCONTIGMEM, the mapping between a pfn and its owning node is
+> initialized using data provided by the BIOS or from the command line.
+> However, the initialization may fail if the extents are not aligned
+> to section boundary (64M).
 
-On Jan 31, 2014, at 4:03 PM, Al Viro wrote:
->> diff --git a/fs/namei.c b/fs/namei.c
->> index bcb838e..e620937 100644
->> --- a/fs/namei.c
->> +++ b/fs/namei.c
->> @@ -3931,6 +3931,7 @@ out_dput:
->> 			goto retry;
->> 	}
->> 	if (retry_estale(error, how)) {
->> +		path_put(&old_path);
->> 		how |= LOOKUP_REVAL;
->> 		goto retry;
->> 	}
-> Umm...  That obviously can't be right - we have another goto retry
-> in the same situation (see in your diff context).  I agree that
-> we have a leak there, but you've fixed only a half of it.
+So is this a problem that shows up with DISCONTIGMEM?  Just curious, but
+what the heck kind of 32-bit NUMA hardware is still in the wild?  Did
+someon buy a NUMA-Q on eBay? :)
 
-Hm, you are right, I did not notice this other one somehow.
+>  void memory_present(int nid, unsigned long start, unsigned long end)
+>  {
+> -	unsigned long pfn;
+> +	unsigned long sect, endsect;
+>  
+>  	printk(KERN_INFO "Node: %d, start_pfn: %lx, end_pfn: %lx\n",
+>  			nid, start, end);
+>  	printk(KERN_DEBUG "  Setting physnode_map array to node %d for pfns:\n", nid);
+>  	printk(KERN_DEBUG "  ");
+> -	for (pfn = start; pfn < end; pfn += PAGES_PER_SECTION) {
+> -		physnode_map[pfn / PAGES_PER_SECTION] = nid;
+> -		printk(KERN_CONT "%lx ", pfn);
+> +	endsect = (end - 1) / PAGES_PER_SECTION;
+> +	for (sect = start / PAGES_PER_SECTION; sect <= endsect; ++sect) {
+> +		physnode_map[sect] = nid;
+> +		printk(KERN_CONT "%lx ", sect * PAGES_PER_SECTION);
+>  	}
+>  	printk(KERN_CONT "\n");
+>  }
 
-So, not to take any guesses, should I convert the other goto retry into
-retry_deleg similar in style to what happens in rename and unlink, only
-make retry)deleg label before call to the security_path_link?
-After the call to the security_path_link?
-Or would you prefer to just free old_path in both cases?
+So, if start and end are not aligned to section boundaries, we will miss
+setting physnode_map[] for the final section?
 
-Bye,
-    Oleg
+For instance, if we have a 64MB section size and try to call
+memory_present(32MB -> 96MB), we will set 0->64MB present, but not set
+the 64MB->128MB section as present.
+
+Right?
+
+Can you just align 'start' down to the section's start and 'end' up to
+the end of the section that contains it?  I guess you do that
+implicitly, but you should be able to do it without refactoring the for
+loop entirely.
+
