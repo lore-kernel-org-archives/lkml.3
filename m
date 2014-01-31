@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931AbaAaSQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:16:30 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:37874 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331AbaAaSQ3 (ORCPT
+	id S933030AbaAaSRK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:17:10 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64749 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932821AbaAaSRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:16:29 -0500
-Message-ID: <52EBE875.3070107@hp.com>
-Date: Fri, 31 Jan 2014 13:16:21 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 31 Jan 2014 13:17:08 -0500
+Message-ID: <52EBF6BE.8000201@cogentembedded.com>
+Date: Fri, 31 Jan 2014 22:17:18 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
- implementation
-References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>  <1390933151-1797-2-git-send-email-Waiman.Long@hp.com> <1391108430.3138.86.camel@schen9-DESK>
-In-Reply-To: <1391108430.3138.86.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 12/34] e1000e: Use pci_enable_msix_range()
+References: <cover.1391172839.git.agordeev@redhat.com> <0ec36309e17031a66d3a6ab489fc60702b6d76b3.1391172839.git.agordeev@redhat.com>
+In-Reply-To: <0ec36309e17031a66d3a6ab489fc60702b6d76b3.1391172839.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2014 02:00 PM, Tim Chen wrote:
-> On Tue, 2014-01-28 at 13:19 -0500, Waiman Long wrote:
->
->> +/**
->> + * queue_spin_lock_slowpath - acquire the queue spinlock
->> + * @lock: Pointer to queue spinlock structure
->> + */
->> +void queue_spin_lock_slowpath(struct qspinlock *lock)
->> +{
->> +	unsigned int cpu_nr, qn_idx;
->> +	struct qnode *node, *next = NULL;
->> +	u32 prev_qcode, my_qcode;
->> +
->> +	/*
->> +	 * Get the queue node
->> +	 */
->> +	cpu_nr = smp_processor_id();
->> +	node   = this_cpu_ptr(&qnodes[0]);
->> +	qn_idx = 0;
->> +
->> +	if (unlikely(node->used)) {
->> +		/*
->> +		 * This node has been used, try to find an empty queue
->> +		 * node entry.
->> +		 */
->> +		for (qn_idx = 1; qn_idx<  MAX_QNODES; qn_idx++)
->> +			if (!node[qn_idx].used)
->> +				break;
->> +		if (unlikely(qn_idx == MAX_QNODES)) {
->> +			/*
->> +			 * This shouldn't happen, print a warning message
->> +			 *&  busy spinning on the lock.
->> +			 */
->> +			printk_sched(
->> +			  "qspinlock: queue node table exhausted at cpu %d!\n",
->> +			  cpu_nr);
->> +			while (!unfair_trylock(lock))
->> +				arch_mutex_cpu_relax();
->> +			return;
->> +		}
->> +		/* Adjust node pointer */
->> +		node += qn_idx;
->> +	}
->> +
->> +	/*
->> +	 * Set up the new cpu code to be exchanged
->> +	 */
->> +	my_qcode = SET_QCODE(cpu_nr, qn_idx);
->> +
-> If we get interrupted here before we have a chance to set the used flag,
-> the interrupt handler could pick up the same qnode if it tries to
-> acquire queued spin lock.  Then we could overwrite the qcode we have set
-> here.
->
-> Perhaps an exchange operation for the used flag to prevent this race
-> condition?
->
-> Tim
+Hello.
 
-That actually is fine. I am assuming that whenever an interrupt handler 
-needs to acquire a spinlock, it can use the same queue node as the 
-interrupted function as long as it can finish the lock acquisition and 
-release queue node back to the pool before returning to the interrupted 
-function. The only case where an interrupt handler cannot use the queue 
-node is when useful data were already there indicated by the setting of 
-the used flag.
+On 01/31/2014 06:08 PM, Alexander Gordeev wrote:
 
-I will add comment to clarify this possible scenario.
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range() and pci_enable_msix_range()
+> interfaces.
 
--Longman
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>   drivers/net/ethernet/intel/e1000e/netdev.c |    9 +++++----
+>   1 files changed, 5 insertions(+), 4 deletions(-)
+
+> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+> index 6d91933..7735d1a 100644
+> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
+> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+> @@ -2041,10 +2041,11 @@ void e1000e_set_interrupt_capability(struct e1000_adapter *adapter)
+>   				for (i = 0; i < adapter->num_vectors; i++)
+>   					adapter->msix_entries[i].entry = i;
+>
+> -				err = pci_enable_msix(adapter->pdev,
+> -						      adapter->msix_entries,
+> -						      adapter->num_vectors);
+> -				if (err == 0)
+> +				err = pci_enable_msix_range(adapter->pdev,
+> +							adapter->msix_entries,
+> +							adapter->num_vectors,
+> +							adapter->num_vectors);
+
+    You should align all 'adapter' references under each other, according to 
+networking coding rules.
+
+WBR, Sergei
+
