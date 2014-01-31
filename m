@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224AbaAaAzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:55:09 -0500
-Received: from smtprelay0198.hostedemail.com ([216.40.44.198]:58398 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753515AbaAaAzF (ORCPT
+	id S932244AbaAaA4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:56:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36988 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaAaA4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:55:05 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:421:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:6120:7576:7652:9038:10004:10400:10848:11026:11232:11658:11914:12043:12219:12438:12517:12519:12740:13069:13095:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: offer62_66613764a4222
-X-Filterd-Recvd-Size: 1583
-Message-ID: <1391129701.2422.75.camel@joe-AO722>
-Subject: Re: [RFC PATCH] net: core: move core networking work to power
- efficient workqueue
-From: Joe Perches <joe@perches.com>
-To: Antonio Quartulli <antonio@meshcoding.com>
-Cc: Zoran Markovic <zoran.markovic@linaro.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Thu, 30 Jan 2014 16:55:01 -0800
-In-Reply-To: <52EAF2E5.8090403@meshcoding.com>
-References: <1391128402-10725-1-git-send-email-zoran.markovic@linaro.org>
-	 <52EAF2E5.8090403@meshcoding.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 30 Jan 2014 19:56:36 -0500
+Message-ID: <52EAF4C3.1040009@infradead.org>
+Date: Thu, 30 Jan 2014 16:56:35 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Long Wind <longwind2009@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: how to use memmap= option
+References: <CAB-gxZAkGJpZjQMbhAm=Wip1wpm=oUvw_rUQpTkGb+n+qsgL0w@mail.gmail.com> <CAB-gxZAGL8TqvN+Jmc1vwEU+Vcos=FTWJ5No0tp-cDiJ4YPt3w@mail.gmail.com>
+In-Reply-To: <CAB-gxZAGL8TqvN+Jmc1vwEU+Vcos=FTWJ5No0tp-cDiJ4YPt3w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-31 at 01:48 +0100, Antonio Quartulli wrote:
-> On 31/01/14 01:33, Zoran Markovic wrote:
-> > From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+On 01/08/2014 06:06 AM, Long Wind wrote:
+> On 1/8/14, Long Wind <longwind2009@gmail.com> wrote:
+>> I have asked Debian users, they don't seem to know
+>> kernel 2.4/2.6 fail to boot on my PC
+>> probably because it can't detect my memory
+>> so I have to tell kernel memory map
+>>
+>> the following is copied from kernel-parameters.txt:
+>>
+>> memmap=exactmap	[KNL,X86] Enable setting of an exact
+>> 			E820 memory map, as specified by the user.
+>> 			Such memmap=exactmap lines can be constructed based on
+>> 			BIOS output or other requirements. See the memmap=nn@ss
+>> 			option description.
+>>
+>>
+>>
+>> Could you tell me how to construct memmap= lines?
+>>
 > 
-> [...]
-> 
-> > -		schedule_delayed_work(&linkwatch_work, delay);
-> > +		queue_delayed_work(system_power_efficient_wq,
-> > +			&linkwatch_work, delay);
-> 
-> before talking about technical details, here and in other spots of this
-> patch the alignment is wrong. I think checkpatch should have said
-> something about it. The first parameter on the new line should be
-> aligned up to the column after the opening parenthesis.
+> Sorry, it seems that I have posted wrong list
+> If you could tell me which list I should join, I will very appreciate
+> I'm leaving the list
 
-Using "scripts/checkpatch.pl --strict" would emit an
-alignment message, otherwise not.
 
+No, this is the correct mailing list for your question (or use
+linux-mm@kvack.org).
+
+First you obtain a listing of your computer's valid memory map,
+either from Linux booting on it (maybe not so likely on your computer)
+or maybe from BIOS SETUP.
+
+With that information, you construct a kernel command line with multiple
+memmap= options.
+You can see an example of this here:
+http://lkml.indiana.edu/hypermail/linux/kernel/0809.1/0664.html
+
+
+Hope that helps you.
+-- 
+~Randy
