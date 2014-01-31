@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbaAaPuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:50:32 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41049 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173AbaAaPua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:50:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,758,1384329600"; 
-   d="scan'208";a="467851553"
-Message-ID: <52EBC645.2040607@linux.intel.com>
-Date: Fri, 31 Jan 2014 07:50:29 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932677AbaAaPuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:50:52 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:55999 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932278AbaAaPut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:50:49 -0500
+Message-ID: <52EBC65C.5020404@linux.vnet.ibm.com>
+Date: Fri, 31 Jan 2014 16:50:52 +0100
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, nicolas.pitre@linaro.org,
-        mingo@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net> <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com> <52EBC33A.6080101@linaro.org>
-In-Reply-To: <52EBC33A.6080101@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Meelis Roos <mroos@linux.ee>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: 3.13: BUG: unable to handle kernel paging request at 00000000b4343e88
+References: <alpine.SOC.1.00.1401211228410.25614@math.ut.ee> <20140121141037.f76dba61212c5597ff733207@linux-foundation.org> <alpine.SOC.1.00.1401221731150.3033@math.ut.ee> <52E26EF3.1090901@linux.vnet.ibm.com> <alpine.SOC.1.00.1401242249540.16252@math.ut.ee> <52E68111.6010005@linux.vnet.ibm.com> <alpine.SOC.1.00.1401280832500.5459@math.ut.ee> <52E918C9.7030408@linux.vnet.ibm.com> <alpine.SOC.1.00.1401292242390.12718@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1401292242390.12718@math.ut.ee>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14013115-0542-0000-0000-000007D4B6C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/31/2014 7:37 AM, Daniel Lezcano wrote:
-> On 01/31/2014 04:07 PM, Arjan van de Ven wrote:
->>>>>
->>>>> Hence I think this patch would make sense only with additional
->>>>> information
->>>>> like exit_latency or target_residency is present for the scheduler.
->>>>> The idle
->>>>> state index alone will not be sufficient.
->>>>
->>>> Alternatively, can we enforce sanity on the cpuidle infrastructure to
->>>> make the index naturally ordered? If not, please explain why :-)
->>>
->>> The commit id 71abbbf856a0e70 says that there are SOCs which could have
->>> their target_residency and exit_latency values change at runtime. This
->>> commit thus removed the ordering of the idle states according to their
->>> target_residency/exit_latency. Adding Len and Arjan to the CC.
+On 29.01.2014 21:44, Meelis Roos wrote:
+>>> I do not get very far - it still crashes on startuo. PNG attached.
 >>
->> the ARM folks wanted a dynamic exit latency, so.... it makes much more
->> sense
->> to me to store the thing you want to use (exit latency) than the number
->> of the state.
->>
->> more than that, you can order either by target residency OR by exit
->> latency,
->> if you sort by one, there is no guarantee that you're also sorted by the
->> other
->
-> IMO, it would be preferable to store the index for the moment as we are integrating cpuidle with the scheduler. The index allows to access more informations. Then when
-> everything is fully integrated we can improve the result, no ?
+>> I tried to reproduce this behavior a couple of times with no success.
+>> Could you post your kernel configuration? I've also modified the
+>> debugging patch to ensure that the gcov_info structure passed to
+>> gcov_init() is no longer accessed beyond displaying the first 64
+>> bytes. If you could apply this and send dmesg output, this might
+>> hopefully provide a clue as to why the kernel cannot handle these
+>> data structures correctly.
+> 
+> This patch makes it boot. dmesg and config are below.
 
-more information, yes. but if the information isn't actually accurate (because it keeps changing
-in the datastructure away from what it was for the cpu)... are you really achieving what you want?
+Using your config I was able to reproduce the crash and locate the
+cause. Commit d61931d89b, "x86: Add optimized popcnt variants" adds
+option -fcall-saved-rdi to the compile flags of lib/hweight.c when
+compiling for x86_64. Together with options --coverage and -O2, this
+results in a broken constructor being generated by GCC for this object
+file which in turn causes __gcov_init() to overwrite random memory
+locations (a mutex in your case).
 
-on x86 I don't care; we don't actually change these dynamically much[1]. But if you have 1 or 2 things in mind to use,
-I would suggest copying those 2 integers instead as we go, rather than the index.
-Saves refcounting/locking etc etc nightmare as well on the other subsystems' datastructures..
-... which you likely need to do to actually follow that index.
+I tried to report this as a bug against GCC [1] but the report was
+closed as invalid citing the following section from GCC documentation
+for -fcall-saved-*:
+
+  It is an error to use this flag with the frame pointer or stack
+  pointer. Use of this flag for other registers that have fixed
+  pervasive roles in the machine's execution model produces disastrous
+  results.
+
+Apparently %rdi is the first parameter register on x86_64 and therefore
+qualifies as having a fixed pervasive role.
+
+Digging deeper into the history of commit d61931d89b I found a
+discussion [2] indicating that the use of -fcall-saved-rdi is not
+strictly necessary with a dummy inline asm constraint being a potential
+alternative. I've added Borislav Petkov and H. Peter Anvin who have been
+involved in the discussion of this commit to CC:, hoping that they might
+be able to provide a solution to this problem.
 
 
+[1] http://gcc.gnu.org/bugzilla/show_bug.cgi?id=60008
+[2] http://lkml.org/lkml/2010/2/23/24
 
-[1] Although in an ACPI world, the total number of C states can vary, for example it used to be quite common
-that you got an extra C state on battery versus on wall power. This sort of dynamic thing requires refcounting
-if more than the local cpuidle uses the data structures.
+-- 
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
