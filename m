@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524AbaAaPhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:37:35 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:40665 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170AbaAaPhe (ORCPT
+	id S932570AbaAaPie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:38:34 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:53218 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006AbaAaPic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:37:34 -0500
-Message-ID: <52EBC33A.6080101@linaro.org>
-Date: Fri, 31 Jan 2014 16:37:30 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, nicolas.pitre@linaro.org,
-        mingo@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net> <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com>
-In-Reply-To: <52EBBC23.8020603@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 31 Jan 2014 10:38:32 -0500
+From: Matt Ranostay <mranostay@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Cc: matt.porter@linaro.org, koen@dominion.thruhere.net,
+        pantelis.antoniou@gmail.com, Matt Ranostay <mranostay@gmail.com>
+Subject: [PATCH 1/2] iio: add IIO_DISTANCE type
+Date: Fri, 31 Jan 2014 07:38:22 -0800
+Message-Id: <1391182703-2201-1-git-send-email-mranostay@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 04:07 PM, Arjan van de Ven wrote:
->>>>
->>>> Hence I think this patch would make sense only with additional
->>>> information
->>>> like exit_latency or target_residency is present for the scheduler.
->>>> The idle
->>>> state index alone will not be sufficient.
->>>
->>> Alternatively, can we enforce sanity on the cpuidle infrastructure to
->>> make the index naturally ordered? If not, please explain why :-)
->>
->> The commit id 71abbbf856a0e70 says that there are SOCs which could have
->> their target_residency and exit_latency values change at runtime. This
->> commit thus removed the ordering of the idle states according to their
->> target_residency/exit_latency. Adding Len and Arjan to the CC.
->
-> the ARM folks wanted a dynamic exit latency, so.... it makes much more
-> sense
-> to me to store the thing you want to use (exit latency) than the number
-> of the state.
->
-> more than that, you can order either by target residency OR by exit
-> latency,
-> if you sort by one, there is no guarantee that you're also sorted by the
-> other
+Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+---
+ drivers/iio/industrialio-core.c | 1 +
+ include/linux/iio/types.h       | 1 +
+ 2 files changed, 2 insertions(+)
 
-IMO, it would be preferable to store the index for the moment as we are 
-integrating cpuidle with the scheduler. The index allows to access more 
-informations. Then when everything is fully integrated we can improve 
-the result, no ?
-
-> (for example, you can on a hardware level make a "fast exit" state, and
-> burn power for this faster exit,
-> which means your break even gets longer to recoup this extra power
-> compared to the same state without
-> the fast exit)
->
-
-
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index acc911a..ac999ab 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
+ 	[IIO_CCT] = "cct",
+ 	[IIO_PRESSURE] = "pressure",
+ 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
++	[IIO_DISTANCE] = "distance",
+ };
+ 
+ static const char * const iio_modifier_names[] = {
+diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+index 084d882..675c2d8 100644
+--- a/include/linux/iio/types.h
++++ b/include/linux/iio/types.h
+@@ -30,6 +30,7 @@ enum iio_chan_type {
+ 	IIO_CCT,
+ 	IIO_PRESSURE,
+ 	IIO_HUMIDITYRELATIVE,
++	IIO_DISTANCE,
+ };
+ 
+ enum iio_modifier {
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.3.2
 
