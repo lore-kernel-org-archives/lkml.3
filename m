@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830AbaAaUIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:08:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54981 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaAaUIj (ORCPT
+	id S932863AbaAaUKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:10:38 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:43916 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325AbaAaUKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:08:39 -0500
-Date: Fri, 31 Jan 2014 21:08:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Message-ID: <20140131200825.GS5002@laptop.programming.kicks-ass.net>
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-6-git-send-email-jason.low2@hp.com>
- <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
- <1390949495.2807.52.camel@j-VirtualBox>
- <20140129115142.GE9636@twins.programming.kicks-ass.net>
- <1391138977.6284.82.camel@j-VirtualBox>
- <20140131140941.GF4941@twins.programming.kicks-ass.net>
- <CAGQ1y=72+N4=yjVpjsTKjr-8xSQRS2xw4gcOGOipLgwPwgnA7A@mail.gmail.com>
+	Fri, 31 Jan 2014 15:10:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGQ1y=72+N4=yjVpjsTKjr-8xSQRS2xw4gcOGOipLgwPwgnA7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+References: <1391197986-12774-1-git-send-email-zoran.markovic@linaro.org>
+Date: Fri, 31 Jan 2014 12:10:36 -0800
+Message-ID: <CAME+o4no3HGycLM97+Py3y3yrs5Qm07iPh=84ZLCzp1GbbHFVA@mail.gmail.com>
+Subject: Re: [RFC PATCH] rcu: move SRCU grace period work to power efficient workqueue
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 12:01:37PM -0800, Jason Low wrote:
-> On Fri, Jan 31, 2014 at 6:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > I've downloaded AIM7 from sf.net and I hope I'm running it with 100+
-> > loads but I'm not entirely sure I got this thing right, its not really
-> > making progress with or without patch :/
-> 
-> Ingo's program http://lkml.org/lkml/2006/1/8/50 using the V option may
-> be able to generate similar mutex contention.
-> 
-> Currently still getting soft lockups with the updated version.
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
 
-Bugger.. ok clearly I need to think harder still. I'm fairly sure this
-cancelation can work though, just seems tricky to get right :-)
-
-I'll give that proglet from Ingo a go, although that might be Monday ere
-I get to it.
+On 31 January 2014 11:53, Zoran Markovic <zoran.markovic@linaro.org> wrote:
+> From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+>
+> For better use of CPU idle time, allow the scheduler to select the CPU
+> on which the SRCU grace period work would be scheduled. This improves
+> idle residency time and conserves power.
+>
+> This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
+>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+> [zoran.markovic@linaro.org: Rebased to latest kernel version. Added commit
+> message. Fixed code alignment.]
+> ---
+>  kernel/rcu/srcu.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
+> index 3318d82..a1ebe6d 100644
+> --- a/kernel/rcu/srcu.c
+> +++ b/kernel/rcu/srcu.c
+> @@ -398,7 +398,7 @@ void call_srcu(struct srcu_struct *sp, struct rcu_head *head,
+>         rcu_batch_queue(&sp->batch_queue, head);
+>         if (!sp->running) {
+>                 sp->running = true;
+> -               schedule_delayed_work(&sp->work, 0);
+> +               queue_delayed_work(system_power_efficient_wq, &sp->work, 0);
+>         }
+>         spin_unlock_irqrestore(&sp->queue_lock, flags);
+>  }
+> @@ -674,7 +674,8 @@ static void srcu_reschedule(struct srcu_struct *sp)
+>         }
+>
+>         if (pending)
+> -               schedule_delayed_work(&sp->work, SRCU_INTERVAL);
+> +               queue_delayed_work(system_power_efficient_wq,
+> +                                  &sp->work, SRCU_INTERVAL);
+>  }
+>
+>  /*
+> --
+> 1.7.9.5
+>
