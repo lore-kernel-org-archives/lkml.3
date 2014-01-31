@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871AbaAaRcx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55221 "EHLO
+	id S932851AbaAaRcw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:32:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55218 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685AbaAaRcq (ORCPT
+	with ESMTP id S932675AbaAaRcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 12:32:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: PaX Team <pageexec@freemail.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 14/14] x86, x32: Correct invalid use of user timespec in the kernel
-Date: Fri, 31 Jan 2014 09:32:17 -0800
-Message-Id: <1391189537-20777-15-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 04/14] ftrace/x86: Load ftrace_ops in parameter not the variable holding it
+Date: Fri, 31 Jan 2014 09:32:07 -0800
+Message-Id: <1391189537-20777-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -28,82 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: PaX Team <pageexec@freemail.hu>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
+commit 1739f09e33d8f66bf48ddbc3eca615574da6c4f6 upstream.
 
-The x32 case for the recvmsg() timout handling is broken:
+Function tracing callbacks expect to have the ftrace_ops that registered it
+passed to them, not the address of the variable that holds the ftrace_ops
+that registered it.
 
-  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
-                                      unsigned int vlen, unsigned int flags,
-                                      struct compat_timespec __user *timeout)
-  {
-          int datagrams;
-          struct timespec ktspec;
+Use a mov instead of a lea to store the ftrace_ops into the parameter
+of the function tracing callback.
 
-          if (flags & MSG_CMSG_COMPAT)
-                  return -EINVAL;
-
-          if (COMPAT_USE_64BIT_TIME)
-                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
-                                        flags | MSG_CMSG_COMPAT,
-                                        (struct timespec *) timeout);
-          ...
-
-The timeout pointer parameter is provided by userland (hence the __user
-annotation) but for x32 syscalls it's simply cast to a kernel pointer
-and is passed to __sys_recvmmsg which will eventually directly
-dereference it for both reading and writing.  Other callers to
-__sys_recvmmsg properly copy from userland to the kernel first.
-
-The bug was introduced by commit ee4fa23c4bfc ("compat: Use
-COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
-since 3.4 (and perhaps vendor kernels if they backported x32 support
-along with this code).
-
-Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
-CONFIG_X86_X32 is enabled and ld can build x32 executables.
-
-Other uses of COMPAT_USE_64BIT_TIME seem fine.
-
-This addresses CVE-2014-0038.
-
-Signed-off-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/20131113152004.459787f9@gandalf.local.home
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/compat.c | 9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ arch/x86/kernel/entry_32.S | 4 ++--
+ arch/x86/kernel/entry_64.S | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/compat.c b/net/compat.c
-index dd32e34..f50161f 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -780,21 +780,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 6ed91d9..1d7fdbe 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1113,7 +1113,7 @@ ENTRY(ftrace_caller)
+ 	pushl $0	/* Pass NULL as regs pointer */
+ 	movl 4*4(%esp), %eax
+ 	movl 0x4(%ebp), %edx
+-	leal function_trace_op, %ecx
++	movl function_trace_op, %ecx
+ 	subl $MCOUNT_INSN_SIZE, %eax
  
--	if (COMPAT_USE_64BIT_TIME)
--		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
--				      flags | MSG_CMSG_COMPAT,
--				      (struct timespec *) timeout);
--
- 	if (timeout == NULL)
- 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				      flags | MSG_CMSG_COMPAT, NULL);
+ .globl ftrace_call
+@@ -1171,7 +1171,7 @@ ENTRY(ftrace_regs_caller)
+ 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
+ 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
+ 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
+-	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
++	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+ 	pushl %esp		/* Save pt_regs as 4th parameter */
  
--	if (get_compat_timespec(&ktspec, timeout))
-+	if (compat_get_timespec(&ktspec, timeout))
- 		return -EFAULT;
+ GLOBAL(ftrace_regs_call)
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index cb3c591..310b270 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -88,7 +88,7 @@ END(function_hook)
+ 	MCOUNT_SAVE_FRAME \skip
  
- 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				   flags | MSG_CMSG_COMPAT, &ktspec);
--	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
-+	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
- 		datagrams = -EFAULT;
+ 	/* Load the ftrace_ops into the 3rd parameter */
+-	leaq function_trace_op, %rdx
++	movq function_trace_op(%rip), %rdx
  
- 	return datagrams;
+ 	/* Load ip into the first parameter */
+ 	movq RIP(%rsp), %rdi
 -- 
 1.8.3.2
 
