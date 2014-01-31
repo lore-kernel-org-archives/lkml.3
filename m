@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866AbaAaPIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:08:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932811AbaAaPID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:08:03 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Shradha Shah <sshah@solarflare.com>,
-        Solarflare maintainers <linux-net-drivers@solarflare.com>,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 31/34] efx: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:50 +0100
-Message-Id: <433fe68f834c10679986274f4bb605aa4ed5eaf3.1391172839.git.agordeev@redhat.com>
-In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
-References: <cover.1391172839.git.agordeev@redhat.com>
+	id S932883AbaAaPJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:09:01 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48327 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932811AbaAaPI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:08:58 -0500
+Date: Fri, 31 Jan 2014 16:08:32 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+Message-ID: <20140131150832.GG4941@twins.programming.kicks-ass.net>
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
+ <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+On Tue, Jan 28, 2014 at 01:19:10PM -0500, Waiman Long wrote:
+> For single-thread performance (no contention), a 256K lock/unlock
+> loop was run on a 2.4Ghz Westmere x86-64 CPU.  The following table
+> shows the average time (in ns) for a single lock/unlock sequence
+> (including the looping and timing overhead):
+> 
+>   Lock Type			Time (ns)
+>   ---------			---------
+>   Ticket spinlock		  14.1
+>   Queue spinlock (Normal)	   8.8*
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/sfc/efx.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+What CONFIG_NR_CPUS ?
 
-diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-index 83d4643..297b97a 100644
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -1346,20 +1346,23 @@ static int efx_probe_interrupts(struct efx_nic *efx)
- 
- 		for (i = 0; i < n_channels; i++)
- 			xentries[i].entry = i;
--		rc = pci_enable_msix(efx->pci_dev, xentries, n_channels);
--		if (rc > 0) {
-+		rc = pci_enable_msix_range(efx->pci_dev,
-+					   xentries, 1, n_channels);
-+		if (rc < 0) {
-+			/* Fall back to single channel MSI */
-+			efx->interrupt_mode = EFX_INT_MODE_MSI;
-+			netif_err(efx, drv, efx->net_dev,
-+				  "could not enable MSI-X\n");
-+		} else if (rc < n_channels) {
- 			netif_err(efx, drv, efx->net_dev,
- 				  "WARNING: Insufficient MSI-X vectors"
- 				  " available (%d < %u).\n", rc, n_channels);
- 			netif_err(efx, drv, efx->net_dev,
- 				  "WARNING: Performance may be reduced.\n");
--			EFX_BUG_ON_PARANOID(rc >= n_channels);
- 			n_channels = rc;
--			rc = pci_enable_msix(efx->pci_dev, xentries,
--					     n_channels);
- 		}
- 
--		if (rc == 0) {
-+		if (rc > 0) {
- 			efx->n_channels = n_channels;
- 			if (n_channels > extra_channels)
- 				n_channels -= extra_channels;
-@@ -1375,11 +1378,6 @@ static int efx_probe_interrupts(struct efx_nic *efx)
- 			for (i = 0; i < efx->n_channels; i++)
- 				efx_get_channel(efx, i)->irq =
- 					xentries[i].vector;
--		} else {
--			/* Fall back to single channel MSI */
--			efx->interrupt_mode = EFX_INT_MODE_MSI;
--			netif_err(efx, drv, efx->net_dev,
--				  "could not enable MSI-X\n");
- 		}
- 	}
- 
--- 
-1.7.7.6
+Because for CONFIG_NR_CPUS < 128 (or 256 if you got !PARAVIRT), the fast
+path code should be:
 
+ticket:
+
+  mov $0x100,eax
+  lock xadd %ax,(%rbx)
+  cmp %al,%ah
+  jne ...
+
+although my GCC is being silly and writes:
+
+  mov $0x100,eax
+  lock xadd %ax,(%rbx)
+  movzbl %ah,%edx
+  cmp %al,%dl
+  jne ...
+
+Which seems rather like a waste of a perfectly good cycle.
+
+With a bigger NR_CPUS you do indeed need more ops:
+
+  mov $0x10000,%edx
+  lock xadd %edx,(%rbx)
+  mov %edx,%ecx
+  shr $0x10,%ecx
+  cmp %dx,%cx
+  jne ...
+
+
+Whereas for the straight cmpxchg() you'd get something relatively simple
+like:
+
+  mov %edx,%eax
+  lock cmpxchg %ecx,(%rbx)
+  cmp %edx,%eax
+  jne ...
+
+
+
+Anyway, as soon as you get some (light) contention you're going to tank
+because you have to pull in extra cachelines, which is sad.
+
+
+I suppose we could from the ticket code more and optimize the
+uncontended path, but that'll make the contended path more expensive
+again, although probably not as bad as hitting a new cacheline.
