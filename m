@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905AbaAaPO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:14:57 -0500
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:51884 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932344AbaAaPOz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:14:55 -0500
-Date: Fri, 31 Jan 2014 09:14:51 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-cc: David Rientjes <rientjes@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Anton Blanchard <anton@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Jan Kara <jack@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] kthread: ensure locality of task_struct allocations
-In-Reply-To: <20140130230812.GA874@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.10.1401310913540.5218@nuc>
-References: <20140128183808.GB9315@linux.vnet.ibm.com> <alpine.DEB.2.02.1401290012460.10268@chino.kir.corp.google.com> <alpine.DEB.2.10.1401290957350.23856@nuc> <alpine.DEB.2.02.1401291622550.22974@chino.kir.corp.google.com>
- <1391062491.28432.68.camel@edumazet-glaptop2.roam.corp.google.com> <alpine.DEB.2.02.1401301446320.12223@chino.kir.corp.google.com> <20140130230812.GA874@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932636AbaAaPHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:07:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932436AbaAaPH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:28 -0500
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 13/34] i40e: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:32 +0100
+Message-Id: <e372ccd454aaa80f494851943d2d58646556bcee.1391172839.git.agordeev@redhat.com>
+In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
+References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jan 2014, Nishanth Aravamudan wrote:
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-> In the presence of memoryless nodes, numa_node_id() will return the
-> current CPU's NUMA node, but that may not be where we expect to allocate
-> from memory from. Instead, we should rely on the fallback code in the
-> memory allocator itself, by using NUMA_NO_NODE. Also, when calling
-> kthread_create_on_node(), use the nearest node with memory to the cpu in
-> question, rather than the node it is running on.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ drivers/net/ethernet/intel/i40e/i40e_main.c |   33 +++++----------------------
+ 1 files changed, 6 insertions(+), 27 deletions(-)
 
-Looks good to me.
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c b/drivers/net/ethernet/intel/i40e/i40e_main.c
+index a4b9408..89d7fce 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_main.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+@@ -5849,37 +5849,16 @@ err_out:
+  **/
+ static int i40e_reserve_msix_vectors(struct i40e_pf *pf, int vectors)
+ {
+-	int err = 0;
+-
+-	pf->num_msix_entries = 0;
+-	while (vectors >= I40E_MIN_MSIX) {
+-		err = pci_enable_msix(pf->pdev, pf->msix_entries, vectors);
+-		if (err == 0) {
+-			/* good to go */
+-			pf->num_msix_entries = vectors;
+-			break;
+-		} else if (err < 0) {
+-			/* total failure */
+-			dev_info(&pf->pdev->dev,
+-				 "MSI-X vector reservation failed: %d\n", err);
+-			vectors = 0;
+-			break;
+-		} else {
+-			/* err > 0 is the hint for retry */
+-			dev_info(&pf->pdev->dev,
+-				 "MSI-X vectors wanted %d, retrying with %d\n",
+-				 vectors, err);
+-			vectors = err;
+-		}
+-	}
+-
+-	if (vectors > 0 && vectors < I40E_MIN_MSIX) {
++	vectors = pci_enable_msix_range(pf->pdev, pf->msix_entries,
++					I40E_MIN_MSIX, vectors);
++	if (vectors < 0) {
+ 		dev_info(&pf->pdev->dev,
+-			 "Couldn't get enough vectors, only %d available\n",
+-			 vectors);
++			 "MSI-X vector reservation failed: %d\n", vectors);
+ 		vectors = 0;
+ 	}
+ 
++	pf->num_msix_entries = vectors;
++
+ 	return vectors;
+ }
+ 
+-- 
+1.7.7.6
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
