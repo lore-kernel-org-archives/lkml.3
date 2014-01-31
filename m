@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaAaJCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 04:02:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41469 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaAaJCl (ORCPT
+	id S1753901AbaAaJKM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 04:10:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:47699 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410AbaAaJKJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 04:02:41 -0500
-Date: Fri, 31 Jan 2014 10:02:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, nicolas.pitre@linaro.org,
-        mingo@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140131090230.GM5002@laptop.programming.kicks-ass.net>
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
- <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
- <20140130153150.GD5002@laptop.programming.kicks-ass.net>
- <52EA7D8A.6080604@linaro.org>
- <20140130163501.GG5002@laptop.programming.kicks-ass.net>
- <52EA8B07.6020206@linaro.org>
- <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
+	Fri, 31 Jan 2014 04:10:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,756,1384329600"; 
+   d="scan'208";a="467708025"
+From: "Brown, Aaron F" <aaron.f.brown@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] [PATCH 0/2] Remove dead code
+Thread-Topic: [E1000-devel] [PATCH 0/2] Remove dead code
+Thread-Index: AQHPHfClu3RgmFazZUuNyVHLjAAKjZqejAWQ
+Date: Fri, 31 Jan 2014 09:10:06 +0000
+Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B7314C430@ORSMSX101.amr.corp.intel.com>
+References: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140130192011.25426.45702.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 02:15:47PM +0530, Preeti Murthy wrote:
-> >
-> > If the driver does its own random mapping that will break the governor
-> > logic. So yes, the states are ordered, the higher the index is, the more you
-> > save power and the higher the exit latency is.
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Thursday, January 30, 2014 11:21 AM
+> To: linux-pci@vger.kernel.org
+> Cc: e1000-devel@lists.sourceforge.net; Arjan van de Ven; linux-
+> kernel@vger.kernel.org
+> Subject: [E1000-devel] [PATCH 0/2] Remove dead code
 > 
-> The above point holds true for only the ladder governor which sees the idle
-> states indexed in the increasing order of target_residency/exit_latency.
+> This is a rework of part of Stephen's patch [1].
 > 
-> However this is not true as far as I can see in the menu governor. It
-> acknowledges the dynamic ordering of idle states as can be seen in the
-> menu_select() function in the menu governor, where the idle state for the
-> CPU gets chosen.  You will notice that, even if it is found that the predicted
-> idle time of the CPU is smaller than the target residency of an idle state,
-> the governor continues to search for suitable idle states in the higher indexed
-> states although it should have halted if the idle states' were ordered according
-> to their target residency.. The same holds for exit_latency.
+> This removes the MMIO exclusivity support that was added as part of an
+> e1000e bug hunt.
 > 
-> Hence I think this patch would make sense only with additional information
-> like exit_latency or target_residency is present for the scheduler. The idle
-> state index alone will not be sufficient.
+> The e1000e driver still uses pci_request_selected_regions_exclusive(), but
+> there are no callers of pci_request_region_exclusive() and
+> pci_request_regions_exclusive().  I thought it was cleaner to remove the
+> whole thing than to leave parts of it in place.  But I could easily be
+> convinced to leave part or all of this in place if people think it's still
+> useful.
 
-Alternatively, can we enforce sanity on the cpuidle infrastructure to
-make the index naturally ordered? If not, please explain why :-)
+Thanks Bjorn, I have added these to Jeff's queue.
+
+> 
+> It also removes SR-IOV migration support, which is completely unused, as
+> far as I can tell.
+> 
+> [1]
+> http://lkml.kernel.org/r/20131227132710.7190647c@nehalam.linuxnetplumber.n
+> et
+> 
+> ---
+> 
+> Bjorn Helgaas (2):
+>       PCI: Remove unused MMIO exclusivity support
+>       PCI: Remove unused SR-IOV VF Migration support
+> 
+> 
+>  Documentation/PCI/pci-iov-howto.txt        |    4 -
+>  Documentation/kernel-parameters.txt        |    4 -
+>  arch/x86/mm/init.c                         |    2
+>  drivers/net/ethernet/intel/e1000e/netdev.c |    3 -
+>  drivers/pci/iov.c                          |  119 -----------------------
+> -----
+>  drivers/pci/pci-sysfs.c                    |    3 -
+>  drivers/pci/pci.c                          |  112 +++--------------------
+> ---
+>  drivers/pci/pci.h                          |    4 -
+>  include/linux/ioport.h                     |    5 -
+>  include/linux/pci.h                        |    7 --
+>  kernel/resource.c                          |   54 -------------
+>  11 files changed, 14 insertions(+), 303 deletions(-)
+> 
+> --------------------------------------------------------------------------
+> ----
+> WatchGuard Dimension instantly turns raw network data into actionable
+> security intelligence. It gives you real-time visual feedback on key
+> security issues and trends.  Skip the complicated setup - simply import a
+> virtual appliance and go from zero to informed in seconds.
+> http://pubads.g.doubleclick.net/gampad/clk?id=123612991&iu=/4140/ostg.clkt
+> rk
+> _______________________________________________
+> E1000-devel mailing list
+> E1000-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> To learn more about Intel&#174; Ethernet, visit
+> http://communities.intel.com/community/wired
