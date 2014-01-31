@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaAaGun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 01:50:43 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:43430 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaAaGum (ORCPT
+	id S1753931AbaAaGvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 01:51:13 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43541 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaAaGvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 01:50:42 -0500
-Date: Fri, 31 Jan 2014 07:50:36 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] tile: remove compat_sys_lookup_dcookie declaration to fix
- compile error
-Message-ID: <20140131065036.GB4114@osiris>
+	Fri, 31 Jan 2014 01:51:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14013106-8372-0000-0000-0000087C7FC4
+In-Reply-To: <20140128031324.GH10628@intel.com>
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+	<1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+	<52E0FC22.8060903@metafoo.de>
+	<CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
+	<52E2698B.6070001@metafoo.de>
+	<20140126135933.GD10628@intel.com>
+	<52E54849.2000208@metafoo.de>
+	<CA+mB=1JvnTcyRnuvdnW1BCeiMLSTMrrAbKwVKgwFUmWrVuXzSw@mail.gmail.com>
+	<20140128031324.GH10628@intel.com>
+Date: Fri, 31 Jan 2014 12:21:09 +0530
+X-Google-Sender-Auth: D7Ep_hvXDTzX-T1zF01PD6f0O9A
+Message-ID: <CA+mB=1K8Cqe_c6_ce-fLyphvqcr90mhCjFdZ_d4BV-VkUk-gXw@mail.gmail.com>
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
+ driver support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Srikanth Thokala <sthokal@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, dan.j.williams@intel.com,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With d8d14bd09cdd "fs/compat: fix lookup_dcookie() parameter handling" I
-changed the type of the len parameter of the lookup_dcookie() syscall.
+Hi Vinod,
 
-However I missed that there was still a stale declaration in arch/tile/..
-which now causes a compile error on tile:
+On Tue, Jan 28, 2014 at 8:43 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Mon, Jan 27, 2014 at 06:42:36PM +0530, Srikanth Thokala wrote:
+>> Hi Lars/Vinod,
+>> >> The question here i think would be waht this device supports? Is the hardware
+>> >> capable of doing interleaved transfers, then would make sense.
+>> >
+>> > The hardware does 2D transfers. The parameters for a transfer are height,
+>> > width and stride. That's only a subset of what interleaved transfers can be
+>> > (xt->num_frames must be one for 2d transfers). But if I remember correctly
+>> > there has been some discussion on this in the past and the result of that
+>> > discussion was that using interleaved transfers for 2D transfers is
+>> > preferred over adding a custom API for 2D transfers.
+>>
+>> I went through the prep_interleaved_dma API and I see only one descriptor
+>> is prepared per API call (i.e. per frame).  As our IP supports upto 16 frame
+>> buffers (can be more in future), isn't it less efficient compared to the
+>> prep_slave_sg where we get a single sg list and can prepare all the descriptors
+>> (of non-contiguous buffers) in one go?  Correct me, if am wrong and let me
+>> know your opinions.
+> Well the descriptor maybe one, but that can represent multiple frames, for
+> example 16 as in your case. Can you read up the documentation of how multiple
+> frames are passed. Pls see include/linux/dmaengine.h
+>
+> /**
+>  * Interleaved Transfer Request
+>  * ----------------------------
+>  * A chunk is collection of contiguous bytes to be transfered.
+>  * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+>  * ICGs may or maynot change between chunks.
+>  * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+>  *  that when repeated an integral number of times, specifies the transfer.
+>  * A transfer template is specification of a Frame, the number of times
+>  *  it is to be repeated and other per-transfer attributes.
+>  *
+>  * Practically, a client driver would have ready a template for each
+>  *  type of transfer it is going to need during its lifetime and
+>  *  set only 'src_start' and 'dst_start' before submitting the requests.
+>  *
+>  *
+>  *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+>  *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+>  *
+>  *    ==  Chunk size
+>  *    ... ICG
+>  */
 
-In file included from fs/dcookies.c:28:0:
-include/linux/compat.h:425:17: error: conflicting types for 'compat_sys_lookup_dcookie'
-fs/dcookies.c:207:1: error: conflicting types for 'compat_sys_lookup_dcookie'
+Yes, it can handle multiple frames specified by 'numf' each of size
+'frame_size * sgl[0].size'.
+But, I see it only works if all the frames' memory is contiguous and
+in this case we
+can just increment 'src_start' by the total frame size 'numf' number
+of times to fill in
+for each HW descriptor (each frame is one HW descriptor).  So, there
+is no issue when the
+memory is contiguous.  If the frames are non contiguous, we have to
+call this API for each
+frame (hence for each descriptor), as the src_start for each frame is
+different.  Is it correct?
 
-Simply remove the declaration in the tile architecture, which is only a
-leftover from before the different compat lookup_dcookie() versions have
-been merged.
-The declaration is now in include/linux/compat.h
+FYI: This hardware has an inbuilt Scatter-Gather engine.
 
-The build error was reported by Fenguang's build bot.
+Srikanth
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- arch/tile/include/asm/compat.h | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
-index 78f1f2ded86c..ffd4493efc78 100644
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -281,7 +281,6 @@ long compat_sys_pread64(unsigned int fd, char __user *ubuf, size_t count,
- 			u32 dummy, u32 low, u32 high);
- long compat_sys_pwrite64(unsigned int fd, char __user *ubuf, size_t count,
- 			 u32 dummy, u32 low, u32 high);
--long compat_sys_lookup_dcookie(u32 low, u32 high, char __user *buf, size_t len);
- long compat_sys_sync_file_range2(int fd, unsigned int flags,
- 				 u32 offset_lo, u32 offset_hi,
- 				 u32 nbytes_lo, u32 nbytes_hi);
--- 
-1.8.4.5
-
+>
+> --
+> ~Vinod
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
