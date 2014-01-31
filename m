@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932688AbaAaTqV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:46:21 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54248 "EHLO
+	id S932791AbaAaTrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:47:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54283 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033AbaAaTqT (ORCPT
+	with ESMTP id S1752785AbaAaTri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:46:19 -0500
-Date: Fri, 31 Jan 2014 20:45:35 +0100
+	Fri, 31 Jan 2014 14:47:38 -0500
+Date: Fri, 31 Jan 2014 20:47:18 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Waiman Long <waiman.long@hp.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
         linux-arch@vger.kernel.org, x86@kernel.org,
         linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
@@ -22,72 +21,46 @@ Cc: Tim Chen <tim.c.chen@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
         George Spelvin <linux@horizon.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Alexander Fyodorov <halcy@yandex.ru>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
+        Scott J Norton <scott.norton@hp.com>
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
  implementation
-Message-ID: <20140131194535.GN5002@laptop.programming.kicks-ass.net>
-References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com>
- <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
- <1391108430.3138.86.camel@schen9-DESK>
- <20140130192835.GK5002@laptop.programming.kicks-ass.net>
- <52EBEAD5.3000502@hp.com>
+Message-ID: <20140131194718.GO5002@laptop.programming.kicks-ass.net>
+References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
+ <20140130130453.GB2936@laptop.programming.kicks-ass.net>
+ <20140130151715.GA5126@laptop.programming.kicks-ass.net>
+ <20140131092616.GC5126@laptop.programming.kicks-ass.net>
+ <52EBF276.1020505@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52EBEAD5.3000502@hp.com>
+In-Reply-To: <52EBF276.1020505@hp.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 01:26:29PM -0500, Waiman Long wrote:
-> >I don't get why we need the used thing at all; something like:
+On Fri, Jan 31, 2014 at 01:59:02PM -0500, Waiman Long wrote:
+> On 01/31/2014 04:26 AM, Peter Zijlstra wrote:
+> >On Thu, Jan 30, 2014 at 04:17:15PM +0100, Peter Zijlstra wrote:
+> >>The below is still small and actually works.
+> >OK, so having actually worked through the thing; I realized we can
+> >actually do a version without MCS lock and instead use a ticket lock for
+> >the waitqueue.
 > >
-> >struct qna {
-> >	int cnt;
-> >	struct qnode nodes[4];
-> >};
+> >This is both smaller (back to 8 bytes for the rwlock_t), and should be
+> >faster under moderate contention for not having to touch extra
+> >cachelines.
 > >
-> >DEFINE_PER_CPU(struct qna, qna);
+> >Completely untested and with a rather crude generic ticket lock
+> >implementation to illustrate the concept:
 > >
-> >struct qnode *get_qnode(void)
-> >{
-> >	struct qna *qna = this_cpu_ptr(&qna);
-> >
-> >	return qna->nodes[qna->cnt++]; /* RMW */
-> >}
-> >
-> >void put_qnode(struct qnode *qnode)
-> >{
-> >	struct qna *qna = this_cpu_ptr(&qna);
-> >	qna->cnt--;
-> >}
-> >
-> >Should do fine, right?
 > 
-> Yes, we can do something like that. However I think put_qnode() needs to use
-> atomic dec as well. As a result, we will need 2 additional atomic operations
-> per slowpath invocation. The code may look simpler, but I don't think it
-> will be faster than what I am currently doing as the cases where the used
-> flag is set will be relatively rare.
+> Using a ticket lock instead will have the same scalability problem as the
+> ticket spinlock as all the waiting threads will spin on the lock cacheline
+> causing a lot of cache bouncing traffic. That is the reason why I want to
+> replace ticket spinlock with queue spinlock.
 
-No, put doesn't need an atomic; nor is it as well; because the inc
-doesn't need an atomic either.
+But but but, just fix such heavily contended locks. Don't make sensible
+code that is lightly contended run slower because of it.
 
-> >If we interrupt the RMW above the interrupted context hasn't yet used
-> >the queue and once we return its free again, so all should be well even
-> >on load-store archs.
-> >
-> >The nodes array might as well be 3, because NMIs should never contend on
-> >a spinlock, so all we're left with is task, softirq and hardirq context.
-> 
-> I am not so sure about NMI not taking a spinlock. I seem to remember seeing
-> code that did that. Actually, I think the NMI code is trying to printk
-> something which, in turn, need to acquire a spinlock.
-
-Yeah I know, terribly broken that, I've been waiting for that to explode
-:-)
