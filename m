@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558AbaAaSdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:33:17 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:57107 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaAaSdQ (ORCPT
+	id S932609AbaAaSnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:43:05 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54446 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236AbaAaSnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:33:16 -0500
-From: David Long <dave.long@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        James Hogan <james.hogan@imgtec.com>, Andi Kleen <ak@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Detect section mismatches in thumb relocations
-Date: Fri, 31 Jan 2014 13:33:13 -0500
-Message-Id: <1391193193-28572-1-git-send-email-dave.long@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 31 Jan 2014 13:43:03 -0500
+Date: Fri, 31 Jan 2014 18:42:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH] dcache: make d_splice_alias use d_materialise_unique
+Message-ID: <20140131184258.GN10323@ZenIV.linux.org.uk>
+References: <20140115151749.GF23999@fieldses.org>
+ <20140117121723.GA18375@infradead.org>
+ <20140117153917.GA26636@fieldses.org>
+ <20140117210343.GD26636@fieldses.org>
+ <20140117212655.GE26636@fieldses.org>
+ <20140123212700.GA30466@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140123212700.GA30466@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David A. Long" <dave.long@linaro.org>
+On Thu, Jan 23, 2014 at 04:27:00PM -0500, J. Bruce Fields wrote:
+> From: "J. Bruce Fields" <bfields@redhat.com>
+> 
+> d_splice_alias can create duplicate directory aliases (in the !new
+> case), or (in the new case) d_move directories without holding
+> appropriate locks.
 
-Add processing for normally encountered thumb relocation types so that
-section mismatches will be detected.
+Details, please.  In the new case, we have IS_ROOT() alias found;
+what locks would that need?  Note that d_materialise_unique() won't
+bother with __d_unalias() in such case - it does what d_move() would've
+done, without taking any mutex.
 
-Signed-off-by: David A. Long <dave.long@linaro.org>
----
- scripts/mod/modpost.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+In the !new case, we'd need a preexisting dentry alias, complete with
+parent.  IOW, that's the case when directory already in the tree
+has been found during lookup from another parent.  In which case
+we shouldn't be using d_splice_alias() at all, as it is (and it
+certainly can't happen for any local fs).
 
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 1785576..9e6c996 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1498,6 +1498,16 @@ static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
- #define R_ARM_JUMP24	29
- #endif
- 
-+#ifndef	R_ARM_THM_CALL
-+#define	R_ARM_THM_CALL		10
-+#endif
-+#ifndef	R_ARM_THM_JUMP24
-+#define	R_ARM_THM_JUMP24	30
-+#endif
-+#ifndef	R_ARM_THM_JUMP19
-+#define	R_ARM_THM_JUMP19	51
-+#endif
-+
- static int addend_arm_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
- {
- 	unsigned int r_typ = ELF_R_TYPE(r->r_info);
-@@ -1511,6 +1521,9 @@ static int addend_arm_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
- 	case R_ARM_PC24:
- 	case R_ARM_CALL:
- 	case R_ARM_JUMP24:
-+	case R_ARM_THM_CALL:
-+	case R_ARM_THM_JUMP24:
-+	case R_ARM_THM_JUMP19:
- 		/* From ARM ABI: ((S + A) | T) - P */
- 		r->r_addend = (int)(long)(elf->hdr +
- 		              sechdr->sh_offset +
--- 
-1.8.1.2
-
+Now, I agree that merging that with d_materialise_unique() might be
+a good idea, but commit message is wrong as it, AFAICS.
