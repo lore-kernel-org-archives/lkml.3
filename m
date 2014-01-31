@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaAaOEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:04:40 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:50920 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167AbaAaOEj (ORCPT
+	id S932476AbaAaOHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:07:54 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:36860 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281AbaAaOHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:04:39 -0500
-Message-ID: <52EBAD70.6040303@linaro.org>
-Date: Fri, 31 Jan 2014 15:04:32 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 31 Jan 2014 09:07:52 -0500
+Message-ID: <52EBAE41.8060403@cogentembedded.com>
+Date: Fri, 31 Jan 2014 18:08:01 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Len Brown <len.brown@intel.com>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, nicolas.pitre@linaro.org,
-        mingo@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net> <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com>
-In-Reply-To: <52EB6F65.8050008@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Andreas Larsson <andreas@gaisler.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] can: sja1000: of: add reg-io-width property for
+ 8, 16 and 32-bit register access
+References: <1391175277-19833-1-git-send-email-florian.vaussard@epfl.ch> <1391175277-19833-6-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1391175277-19833-6-git-send-email-florian.vaussard@epfl.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 10:39 AM, Preeti U Murthy wrote:
-> Hi Peter,
+Hello.
+
+On 31-01-2014 17:34, Florian Vaussard wrote:
+
+> Add the 'reg-io-width' property for 8, 16 and 32-bit access, like
+> what is currently done with IORESOURCE_MEM_{8,16,32}BIT for non-OF
+> boot.
+
+> Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+> ---
+>   drivers/net/can/sja1000/sja1000_platform.c | 16 ++++++++++++++--
+>   1 file changed, 14 insertions(+), 2 deletions(-)
+
+> diff --git a/drivers/net/can/sja1000/sja1000_platform.c b/drivers/net/can/sja1000/sja1000_platform.c
+> index 50dece8..25122bf 100644
+> --- a/drivers/net/can/sja1000/sja1000_platform.c
+> +++ b/drivers/net/can/sja1000/sja1000_platform.c
+> @@ -102,8 +102,20 @@ static void sp_populate_of(struct sja1000_priv *priv, struct device_node *of)
+>   	int err;
+>   	u32 prop;
 >
-> On 01/31/2014 02:32 PM, Peter Zijlstra wrote:
->> On Fri, Jan 31, 2014 at 02:15:47PM +0530, Preeti Murthy wrote:
->>>>
->>>> If the driver does its own random mapping that will break the governor
->>>> logic. So yes, the states are ordered, the higher the index is, the more you
->>>> save power and the higher the exit latency is.
->>>
->>> The above point holds true for only the ladder governor which sees the idle
->>> states indexed in the increasing order of target_residency/exit_latency.
->>>
->>> However this is not true as far as I can see in the menu governor. It
->>> acknowledges the dynamic ordering of idle states as can be seen in the
->>> menu_select() function in the menu governor, where the idle state for the
->>> CPU gets chosen.  You will notice that, even if it is found that the predicted
->>> idle time of the CPU is smaller than the target residency of an idle state,
->>> the governor continues to search for suitable idle states in the higher indexed
->>> states although it should have halted if the idle states' were ordered according
->>> to their target residency.. The same holds for exit_latency.
->>>
->>> Hence I think this patch would make sense only with additional information
->>> like exit_latency or target_residency is present for the scheduler. The idle
->>> state index alone will not be sufficient.
->>
->> Alternatively, can we enforce sanity on the cpuidle infrastructure to
->> make the index naturally ordered? If not, please explain why :-)
->
-> The commit id 71abbbf856a0e70 says that there are SOCs which could have
-> their target_residency and exit_latency values change at runtime. This
-> commit thus removed the ordering of the idle states according to their
-> target_residency/exit_latency. Adding Len and Arjan to the CC.
+> -	priv->read_reg = sp_read_reg8;
+> -	priv->write_reg = sp_write_reg8;
+> +	err = of_property_read_u32(of, "reg-io-width", &prop);
+> +	if (err)
+> +		prop = 1;
+> +
+> +	if (prop == 4) {
 
-This commit is outdated, AFAICT.
+    This is asking to be a *switch* statement instead.
 
-Indeed, there are dynamic idle states. Some idle states are added or 
-removed when a laptop is going to battery or plugged in.
+> +		priv->read_reg = sp_read_reg32;
+> +		priv->write_reg = sp_write_reg32;
+> +	} else if (prop == 2) {
+> +		priv->read_reg = sp_read_reg16;
+> +		priv->write_reg = sp_write_reg16;
+> +	} else {
+> +		priv->read_reg = sp_read_reg8;
+> +		priv->write_reg = sp_write_reg8;
+> +	}
 
-In ACPI, the power event leads the acpi cpuidle driver to disable the 
-cpuidle framework, get the idle states which are ordered, and re-enable 
-the cpuidle framework which in turn kicks all the cpus. So the index in 
-the struct rq should be always ok.
-
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+WBR, Sergei
 
