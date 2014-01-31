@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840AbaAaUOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:14:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55152 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaAaUOV (ORCPT
+	id S932966AbaAaUPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:15:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64722 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325AbaAaUPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:14:21 -0500
-Date: Fri, 31 Jan 2014 21:14:01 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
- implementation
-Message-ID: <20140131201401.GD2936@laptop.programming.kicks-ass.net>
-References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
- <20140130130453.GB2936@laptop.programming.kicks-ass.net>
- <20140130151715.GA5126@laptop.programming.kicks-ass.net>
- <20140131092616.GC5126@laptop.programming.kicks-ass.net>
- <52EBF276.1020505@hp.com>
+	Fri, 31 Jan 2014 15:15:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: srinivas kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH 1/4] ARM: STi: add stid127 soc support
+Date: Fri, 31 Jan 2014 21:15:33 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
+        Stuart Menefy <stuart.menefy@st.com>, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>, maxime.coquelin@st.com,
+        alexandre.torgue@st.com
+References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <201401301939.08302.arnd@arndb.de> <52EB96BB.6070800@st.com>
+In-Reply-To: <52EB96BB.6070800@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EBF276.1020505@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401312115.33731.arnd@arndb.de>
+X-Provags-ID: V02:K0:hjgdS8/F5kKIw1Lzcy5IWav8vgp8ga4NmpebA6RUu3t
+ AzPGamwJsWmQsMWzT9uWQuT/6K7UgfUxa9/Odn/qtj1A+jGDgf
+ /2Jbmn3+Jnxu8LUhM6zg9JXti2Z7PW8/h11+Q/+mDBxbDFsn5s
+ H2nHZ3YVecXTyoayMX+LLS/tekbyz3WrY0tWadkDkW2exlJ9Jp
+ Phvg3W5ca2wB6LM22xRZa0gIW/vy3iIorc3giQuh3Vsy47mIaP
+ 6atYkCrcr8WUp+NPZ13mCSXA0WPNAukUIQlqYlyGaOC76m3QDP
+ 3s3bQAAX6HmWbxyqCYGQgvzJ/fdFquOr+G3Av70hwyUOCZvlLL
+ L6uGWY4hCbU6yjB4/HX0IARa7pePkvmKOP89W6EIW
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 01:59:02PM -0500, Waiman Long wrote:
-> On 01/31/2014 04:26 AM, Peter Zijlstra wrote:
-> >On Thu, Jan 30, 2014 at 04:17:15PM +0100, Peter Zijlstra wrote:
-> >>The below is still small and actually works.
-> >OK, so having actually worked through the thing; I realized we can
-> >actually do a version without MCS lock and instead use a ticket lock for
-> >the waitqueue.
-> >
-> >This is both smaller (back to 8 bytes for the rwlock_t), and should be
-> >faster under moderate contention for not having to touch extra
-> >cachelines.
-> >
-> >Completely untested and with a rather crude generic ticket lock
-> >implementation to illustrate the concept:
-> >
-> 
-> Using a ticket lock instead will have the same scalability problem as the
-> ticket spinlock as all the waiting threads will spin on the lock cacheline
-> causing a lot of cache bouncing traffic.
+On Friday 31 January 2014, srinivas kandagatla wrote:
 
-A much more important point for me is that a fair rwlock has a _much_
-better worst case behaviour than the current mess. That's the reason I
-was interested in the qrwlock thing. Not because it can run contended on
-a 128 CPU system and be faster at being contended.
+> > Sorry if I missed the initial review, but can you explain
+> > why this is needed to start with?
+>
+> On ST SoCs the default value for L2 AUX_CTRL register is 0x0, so we  set
+> the way-size explicit here.
 
-If you contend a lock with 128 CPUs you need to go fix that code that
-causes this abysmal behaviour in the first place.
+Unfortunately, we keep going back and forth on the L2 cache controller
+setup between "it should work automatically" and "we don't want to
+have configuration data in DT", where my personal opinion is that
+the first one is more important here.
 
+Now, there are a couple of properties that are defined in
+Documentation/devicetree/bindings/arm/l2cc.txt to let some of the
+things get set up automatically already. Can you check which bits
+are missing there, if any? Are they better described as "configuration"
+or "hardware" settings?
 
+	Arnd
