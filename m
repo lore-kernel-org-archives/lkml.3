@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaAaA33 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:29:29 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:32827 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaAaA32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:29:28 -0500
-Date: Thu, 30 Jan 2014 16:29:26 -0800 (PST)
-Message-Id: <20140130.162926.561686911250624301.davem@davemloft.net>
-To: ryao@gentoo.org
-Cc: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
-        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@gentoo.org,
-        aneesh.kumar@linux.vnet.ibm.com, will.deacon@arm.com,
-        cov@codeaurora.org, behlendorf1@llnl.gov, mthode@mthode.org
-Subject: Re: [PATCH] 9p/trans_virtio.c: Fix broken zero-copy on vmalloc()
- buffers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1391104968-10258-2-git-send-email-ryao@gentoo.org>
-References: <1391104968-10258-1-git-send-email-ryao@gentoo.org>
-	<1391104968-10258-2-git-send-email-ryao@gentoo.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932126AbaAaAbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:31:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997AbaAaAbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 19:31:48 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <3301.1391128114@warthog.procyon.org.uk>
+References: <3301.1391128114@warthog.procyon.org.uk> <3255.1391127686@warthog.procyon.org.uk> <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> <8761p1m98f.fsf@xmission.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+Date: Fri, 31 Jan 2014 00:31:21 +0000
+Message-ID: <3349.1391128281@warthog.procyon.org.uk>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Yao <ryao@gentoo.org>
-Date: Thu, 30 Jan 2014 13:02:48 -0500
+David Howells <dhowells@redhat.com> wrote:
 
-> The 9p-virtio transport does zero copy on things larger than 1024 bytes
-> in size. It accomplishes this by returning the physical addresses of
-> pages to the virtio-pci device. At present, the translation is usually a
-> bit shift.
+> > > I think this is a pretty strong argument. Counter-arguments, anybody?
+> > 
+> > Yes.  CAP_DAC_READ_SEARCH.
 > 
-> However, that approach produces an invalid page address when we
-> read/write to vmalloc buffers, such as those used for Linux kernle
-> modules. This causes QEMU to die printing:
-> 
-> qemu-system-x86_64: virtio: trying to map MMIO memory
-> 
-> This patch enables 9p-virtio to correctly handle this case. This not
-> only enables us to load Linux kernel modules off virtfs, but also
-> enables ZFS file-based vdevs on virtfs to be used without killing QEMU.
-> 
-> Also, special thanks to both Avi Kivity and Alexander Graf for their
-> interpretation of QEMU backtraces. Without their guidence, tracking down
-> this bug would have taken much longer.
-> 
-> Signed-off-by: Richard Yao <ryao@gentoo.org>
-> Acked-by: Alexander Graf <agraf@suse.de>
-> Reviewed-by: Will Deacon <will.deacon@arm.com>
+> No, it would seem unlikely it's that, but I guess there's another capability
+> override because the process is owned by root.
 
-Applied, thanks.
+CAP_DAC_OVERRIDE, I think.
+
+	int generic_permission(struct inode *inode, int mask)
+	{
+	...
+		/*
+		 * Read/write DACs are always overridable.
+		 * Executable DACs are overridable when there is
+		 * at least one exec bit set.
+		 */
+		if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
+			if (inode_capable(inode, CAP_DAC_OVERRIDE))
+				return 0;
+	...
+	}
+
+David
