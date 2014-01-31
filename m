@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847AbaAaTVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:21:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:53312 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292AbaAaTVN (ORCPT
+	id S932771AbaAaTYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:24:41 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:39811 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271AbaAaTYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:21:13 -0500
-Message-ID: <52EBF790.3090407@ti.com>
-Date: Fri, 31 Jan 2014 14:20:48 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 31 Jan 2014 14:24:39 -0500
+Message-ID: <52EBF871.5020603@hp.com>
+Date: Fri, 31 Jan 2014 14:24:33 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <ivan.khoronzhuk@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: keystone: switch to use runtime pm
-References: <1391174426-13773-1-git-send-email-grygorii.strashko@ti.com> <20140131151955.GB20736@saruman.home> <52EBC499.2070302@ti.com> <20140131154721.GD20736@saruman.home> <52EBC650.50305@ti.com> <20140131164534.GL20736@saruman.home>
-In-Reply-To: <20140131164534.GL20736@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <1390933151-1797-2-git-send-email-Waiman.Long@hp.com> <20140131150832.GG4941@twins.programming.kicks-ass.net>
+In-Reply-To: <20140131150832.GG4941@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 31 January 2014 11:45 AM, Felipe Balbi wrote:
-> On Fri, Jan 31, 2014 at 10:50:40AM -0500, Santosh Shilimkar wrote:
->> On Friday 31 January 2014 10:47 AM, Felipe Balbi wrote:
->>> On Fri, Jan 31, 2014 at 10:43:21AM -0500, Santosh Shilimkar wrote:
->>>> On Friday 31 January 2014 10:19 AM, Felipe Balbi wrote:
->>>>> Hi,
->>>>>
->>>>> On Fri, Jan 31, 2014 at 03:20:26PM +0200, Grygorii Strashko wrote:
->>>>>> The Keystone PM management layer has been implemented using PM bus for
->>>>>> power management clocks. As result, most of Keystone drivers don't need
->>>>>> to manage clocks directly. They just need to enable runtime PM and use it
->>>>>> to handle their PM state and clocks.
->>>>>>
->>>>>> Hence, remove clock management code and switch to use runtime PM.
->>>>>>
->>>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>>>
->>>>> quite a few weeks back I sent a series enabling runtime pm for all glue
->>>>> layers. I'll use that version instead, sorry.
->>>>>
->>>> That should be fine but you need to drop clk_*() related code
->>>> from that patch. I assume you will send refresh version of it then.
->>>
->>> why ? it makes no difference if you enable twice and disable twice.
->>>
->> Sure but why do you want to have the clock node handling code in drivers
->> if it is not needed. Isn't that better ?
-> 
-> It might, but then way that I wanted to see it is so that I can make
-> assumptions about the device state. From a driver perspective, what I
-> would love to see is the ability to assume that when my probe gets
-> called the device is already enabled. So if you can make sure that
-> clk_enable() happens before my probe and that you call
-> pm_runtime_set_active() before my probe too, then I can more than
-> hapilly remove clk_* calls from the driver ;-)
-> 
-> either that or maintain the driver like so:
-> 
-> probe()
-> {
-> 	...
-> 
-> 	clk_get(dev, "fck");
-> 	clk_prepare(clk);
-> 	clk_enable(clk);
-> 	pm_runtime_set_active(dev);
-> 	pm_runtime_enable(dev);
-> 	pm_runtime_get_sync(dev);
-> 	...
-> }
-> 
-> runtime_suspend()
-> {
-> 	clk_disable(dev);
-> }
-> 
-> runtime_resume()
-> {
-> 	clk_enable(dev);
-> }
-> 
-> note that because of pm_runtime_set_active() that first
-> pm_runtime_get_sync() in probe() will simply increase the reference
-> counter without calling my ->runtime_resume() callback, which is exactly
-> what we want, as that would completely avoid situations of bad context
-> being restored because of that initial pm_runtime_get_sync().
-> 
-Thanks for making your point bit clear. 
+On 01/31/2014 10:08 AM, Peter Zijlstra wrote:
+> On Tue, Jan 28, 2014 at 01:19:10PM -0500, Waiman Long wrote:
+>> For single-thread performance (no contention), a 256K lock/unlock
+>> loop was run on a 2.4Ghz Westmere x86-64 CPU.  The following table
+>> shows the average time (in ns) for a single lock/unlock sequence
+>> (including the looping and timing overhead):
+>>
+>>    Lock Type			Time (ns)
+>>    ---------			---------
+>>    Ticket spinlock		  14.1
+>>    Queue spinlock (Normal)	   8.8*
+> What CONFIG_NR_CPUS ?
 
-> Then, we can even make pm_runtime completely async easily, because
-> clk_prepare() was called only on probe() (or before it, for that
-> matter).
-> 
-> Bottomline is, if you can guarantee me that clk_get(), clk_prepare(),
-> clk_enable() and pm_runtime_set_active() will be called properly before
-> my probe, i'll be more than happy to comply with your request above as
-> that will greatly simplify my driver.
-> 
-Which is the case at least I see on Keystone. And hence the patch from
-Grygorii works. I also noticed your proposal for wider platform to
-enforce above behavior which seems to be a good idea.
+I was testing on a RHEL6.4 system which has a CONFIG_NR_CPUS of 4096.
 
-> Just make, also, that if this clock is shared between dwc3-keystone
-> wrapper and dwc3 core, you clk_get() on both driver's probe.
-> 
-I understand. In summary, whichever patch you pick(yours) or Grygorii's,
-its completely safe to remove the clock handling from Keystone USB driver.
+>
+> Because for CONFIG_NR_CPUS<  128 (or 256 if you got !PARAVIRT), the fast
+> path code should be:
+>
+> ticket:
+>
+>    mov $0x100,eax
+>    lock xadd %ax,(%rbx)
+>    cmp %al,%ah
+>    jne ...
+>
+> although my GCC is being silly and writes:
+>
+>    mov $0x100,eax
+>    lock xadd %ax,(%rbx)
+>    movzbl %ah,%edx
+>    cmp %al,%dl
+>    jne ...
+>
+> Which seems rather like a waste of a perfectly good cycle.
+>
+> With a bigger NR_CPUS you do indeed need more ops:
+>
+>    mov $0x10000,%edx
+>    lock xadd %edx,(%rbx)
+>    mov %edx,%ecx
+>    shr $0x10,%ecx
+>    cmp %dx,%cx
+>    jne ...
+>
+>
+> Whereas for the straight cmpxchg() you'd get something relatively simple
+> like:
+>
+>    mov %edx,%eax
+>    lock cmpxchg %ecx,(%rbx)
+>    cmp %edx,%eax
+>    jne ...
 
-Regards,
-Santosh
+I believe the speeds of the lock functions are about the same. However, 
+qspinlock has a much simpler unlock function which probably account of 
+most of the speed gain.
+
+> Anyway, as soon as you get some (light) contention you're going to tank
+> because you have to pull in extra cachelines, which is sad.
+
+Light contention is the only case where the qspinlock may not perform as 
+good as the ticket spinlock. I know this is the most common case. 
+However, I would argue that the slowdown, if any, will not be really 
+noticeable. This is what I will try to find out.
+
+
+> I suppose we could from the ticket code more and optimize the
+> uncontended path, but that'll make the contended path more expensive
+> again, although probably not as bad as hitting a new cacheline.
+
+I don't get what you are trying to say.
+
+Right now, I am using only bit 0 as a lock bit. I can use  bit 4, for 
+instance, as a pending locker bit and spin until bit 0 is clear. So if 
+there is only 1 other task spinning, it won't need to  fetch another 
+cacheline. However, it will slow down the uncontended path as I can't 
+assign a 0 byte to free the lock. I have to use an atomic subtraction or 
+clear bit instead.
+
+-Longman
