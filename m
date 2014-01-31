@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207AbaAaSYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:24:44 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:33318 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933192AbaAaSYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:24:42 -0500
-Message-ID: <52EBF885.30309@cogentembedded.com>
-Date: Fri, 31 Jan 2014 22:24:53 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: Hyong-Youb Kim <hykim@myri.com>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 20/34] myri10ge: Use pci_enable_msix_range()
-References: <cover.1391172839.git.agordeev@redhat.com> <1253b3c920637ab6bb987defb88d1698ac1e4851.1391172839.git.agordeev@redhat.com>
-In-Reply-To: <1253b3c920637ab6bb987defb88d1698ac1e4851.1391172839.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933215AbaAaSZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:25:21 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:46971 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933148AbaAaSYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 13:24:01 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alex Thorlton <athorlton@sgi.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Oleg Nesterov <oleg@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 3/3] exec: kill the unnecessary mm->def_flags setting in load_elf_binary()
+Date: Fri, 31 Jan 2014 12:23:47 -0600
+Message-Id: <1391192628-113858-7-git-send-email-athorlton@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
+References: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+load_elf_binary() sets current->mm->def_flags = def_flags and
+def_flags is always zero. Not only this looks strange, this is
+unnecessary because mm_init() has already set ->def_flags = 0.
 
-On 01/31/2014 06:08 PM, Alexander Gordeev wrote:
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
 
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
+---
+ fs/binfmt_elf.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->   drivers/net/ethernet/myricom/myri10ge/myri10ge.c |   32 ++++++++++-----------
->   1 files changed, 15 insertions(+), 17 deletions(-)
-
-> diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-> index 68026f7..9f717d6 100644
-> --- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-> +++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-> @@ -2329,16 +2329,14 @@ static int myri10ge_request_irq(struct myri10ge_priv *mgp)
->   	status = 0;
->   	if (myri10ge_msi) {
->   		if (mgp->num_slices > 1) {
-> -			status =
-> -			    pci_enable_msix(pdev, mgp->msix_vectors,
-> -					    mgp->num_slices);
-> -			if (status == 0) {
-> -				mgp->msix_enabled = 1;
-> -			} else {
-> +			status = pci_enable_msix_range(pdev, mgp->msix_vectors,
-> +					mgp->num_slices, mgp->num_slices);
-> +			if (status < 0) {
->   				dev_err(&pdev->dev,
->   					"Error %d setting up MSI-X\n", status);
->   				return status;
->   			}
-> +			mgp->msix_enabled = 1;
->   		}
->   		if (mgp->msix_enabled == 0) {
->   			status = pci_enable_msi(pdev);
-> @@ -3901,23 +3899,23 @@ static void myri10ge_probe_slices(struct myri10ge_priv *mgp)
->   	}
->
->   	while (mgp->num_slices > 1) {
-> -		/* make sure it is a power of two */
-> -		while (!is_power_of_2(mgp->num_slices))
-> -			mgp->num_slices--;
-> +		mgp->num_slices = rounddown_pow_of_two(mgp->num_slices);
->   		if (mgp->num_slices == 1)
->   			goto disable_msix;
-> -		status = pci_enable_msix(pdev, mgp->msix_vectors,
-> -					 mgp->num_slices);
-> -		if (status == 0) {
-> -			pci_disable_msix(pdev);
-> +		status = pci_enable_msix_range(pdev, mgp->msix_vectors,
-> +					mgp->num_slices, mgp->num_slices);
-
-    The continuation line(s) should be aligned to start right under 'pdev', 
-according to the networking coding rules.
-
-> +		if (status < 0)
-> +			goto disable_msix;
-
-    Hm, if enabling MSI failed, we don't need to disable it, right? So, 
-perhaps the label should be renamed?
-
-> +
-> +		pci_disable_msix(pdev);
-> +
-> +		if (status == mgp->num_slices) {
->   			if (old_allocated)
->   				kfree(old_fw);
->   			return;
-> -		}
-> -		if (status > 0)
-> +		} else {
->   			mgp->num_slices = status;
-> -		else
-> -			goto disable_msix;
-> +		}
->   	}
->
->   disable_msix:
-
-WBR, Sergei
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 67be295..d09bd9c 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -579,7 +579,6 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	unsigned long start_code, end_code, start_data, end_data;
+ 	unsigned long reloc_func_desc __maybe_unused = 0;
+ 	int executable_stack = EXSTACK_DEFAULT;
+-	unsigned long def_flags = 0;
+ 	struct pt_regs *regs = current_pt_regs();
+ 	struct {
+ 		struct elfhdr elf_ex;
+@@ -719,9 +718,6 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	if (retval)
+ 		goto out_free_dentry;
+ 
+-	/* OK, This is the point of no return */
+-	current->mm->def_flags = def_flags;
+-
+ 	/* Do this immediately, since STACK_TOP as used in setup_arg_pages
+ 	   may depend on the personality.  */
+ 	SET_PERSONALITY(loc->elf_ex);
+-- 
+1.7.12.4
 
