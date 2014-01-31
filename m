@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903AbaAaPMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:12:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49648 "EHLO mx1.redhat.com"
+	id S932704AbaAaPHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:07:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41551 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932707AbaAaPHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:46 -0500
+	id S932583AbaAaPHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:40 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 25/34] forcedeth: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:44 +0100
-Message-Id: <76d50819eba2af613e37b97abd328287c5ea346c.1391172839.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>, Jon Mason <jdmason@kudzu.us>,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH 21/34] s2io: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:40 +0100
+Message-Id: <d1a9bf16ad8e822bb8fc7d42819f13d08dc8e430.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,27 +27,26 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/neterion/s2io.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 74da489..bad3c05 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -3946,8 +3946,11 @@ static int nv_request_irq(struct net_device *dev, int intr_test)
- 	if (np->msi_flags & NV_MSI_X_CAPABLE) {
- 		for (i = 0; i < (np->msi_flags & NV_MSI_X_VECTORS_MASK); i++)
- 			np->msi_x_entry[i].entry = i;
--		ret = pci_enable_msix(np->pci_dev, np->msi_x_entry, (np->msi_flags & NV_MSI_X_VECTORS_MASK));
--		if (ret == 0) {
-+		ret = pci_enable_msix_range(np->pci_dev,
-+					    np->msi_x_entry,
-+					    np->msi_flags & NV_MSI_X_VECTORS_MASK,
-+					    np->msi_flags & NV_MSI_X_VECTORS_MASK);
-+		if (ret > 0) {
- 			np->msi_flags |= NV_MSI_X_ENABLED;
- 			if (optimization_mode == NV_OPTIMIZATION_MODE_THROUGHPUT && !intr_test) {
- 				/* Request irq for rx handling */
+diff --git a/drivers/net/ethernet/neterion/s2io.c b/drivers/net/ethernet/neterion/s2io.c
+index 9eeddbd..56e3a9d 100644
+--- a/drivers/net/ethernet/neterion/s2io.c
++++ b/drivers/net/ethernet/neterion/s2io.c
+@@ -3792,9 +3792,10 @@ static int s2io_enable_msi_x(struct s2io_nic *nic)
+ 	writeq(rx_mat, &bar0->rx_mat);
+ 	readq(&bar0->rx_mat);
+ 
+-	ret = pci_enable_msix(nic->pdev, nic->entries, nic->num_entries);
++	ret = pci_enable_msix_range(nic->pdev, nic->entries,
++				    nic->num_entries, nic->num_entries);
+ 	/* We fail init if error or we get less vectors than min required */
+-	if (ret) {
++	if (ret < 0) {
+ 		DBG_PRINT(ERR_DBG, "Enabling MSI-X failed\n");
+ 		kfree(nic->entries);
+ 		swstats->mem_freed += nic->num_entries *
 -- 
 1.7.7.6
 
