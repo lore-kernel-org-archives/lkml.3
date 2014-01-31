@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121AbaAaA2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:28:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:32815 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaAaA2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:28:42 -0500
-Date: Thu, 30 Jan 2014 16:28:41 -0800 (PST)
-Message-Id: <20140130.162841.525938031146003411.davem@davemloft.net>
-To: teg@jklm.no
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephen@networkplumber.org, avi.kp.137@gmail.com, mchehab@redhat.com,
-        horms@verge.net.au, marcel@holtmann.org, gregkh@linuxfoundation.org,
-        kay@vrfy.org
-Subject: Re: [PATCH] net: set default DEVTYPE for all ethernet based devices
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1391088002-15650-1-git-send-email-teg@jklm.no>
-References: <1391088002-15650-1-git-send-email-teg@jklm.no>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753956AbaAaA3C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:29:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9611 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803AbaAaA3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 19:29:00 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <3255.1391127686@warthog.procyon.org.uk>
+References: <3255.1391127686@warthog.procyon.org.uk> <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> <8761p1m98f.fsf@xmission.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-afs@lists.infradead.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
+Date: Fri, 31 Jan 2014 00:28:34 +0000
+Message-ID: <3301.1391128114@warthog.procyon.org.uk>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 30 Jan 2014 14:20:02 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-> In systemd's networkd and udevd, we would like to give the administrator a
-> simple way to filter net devices by their DEVTYPE [0][1]. Other software
-> such as ConnMan and NetworkManager uses a similar filtering already.
+> > I think this is a pretty strong argument. Counter-arguments, anybody?
 > 
-> Currently, plain ethernet devices have DEVTYPE=(null). This patch sets the
-> devtype to "ethernet" instead. This avoids the need for special-casing the
-> DEVTYPE=(null) case in userspace, and also avoids false positives, as there
-> are several other types of netdevs that also have DEVTYPE=(null).
-> 
-> Notice that this is done, as suggested by Marcel, in alloc_etherdev_mqs(),
-> and as best I can tell it will not give any false positives. I considered
-> doing it in ether_setup() instead as that seemed more intuitive, but that
-> would give a lot of false positives indeed.
-> 
-> [0]: <http://www.freedesktop.org/software/systemd/man/systemd-networkd.service.html#Type>
-> [1]: <http://www.freedesktop.org/software/systemd/man/udev.html#Type>
-> 
-> Signed-off-by: Tom Gundersen <teg@jklm.no>
+> Yes.  CAP_DAC_READ_SEARCH.
 
-Assuming that all users of alloc_etherdev*() are ethernet devices is
-really not going to work.
+No, it would seem unlikely it's that, but I guess there's another capability
+override because the process is owned by root.
+
+David
