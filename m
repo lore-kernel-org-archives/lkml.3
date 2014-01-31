@@ -1,159 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbaAaIPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 03:15:53 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:42438 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392AbaAaIPE (ORCPT
+	id S932083AbaAaIRs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 03:17:48 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:52322 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaAaIRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 03:15:04 -0500
-Date: Fri, 31 Jan 2014 09:11:47 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
-        linux-spi@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH v2 3/5] spi: sunxi: Add Allwinner A31 SPI controller
- driver
-Message-ID: <20140131081147.GC2950@lukather>
-References: <1390993850-9054-1-git-send-email-maxime.ripard@free-electrons.com>
- <1390993850-9054-4-git-send-email-maxime.ripard@free-electrons.com>
- <20140129122520.GY11841@sirena.org.uk>
- <20140129133227.GQ3867@lukather>
- <CAGa+x854huSmiWmEv2EgOPUgZKcp3iitNaBvKXt8DiEj8msSVg@mail.gmail.com>
+	Fri, 31 Jan 2014 03:17:46 -0500
+Date: Fri, 31 Jan 2014 09:17:39 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20140131081739.GB7544@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NU0Ex4SbNnrxsi6C"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGa+x854huSmiWmEv2EgOPUgZKcp3iitNaBvKXt8DiEj8msSVg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
---NU0Ex4SbNnrxsi6C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull the latest sched-urgent-for-linus git tree from:
 
-Hi Kevin,
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
 
-On Thu, Jan 30, 2014 at 03:52:16PM -0800, Kevin Hilman wrote:
-> On Wed, Jan 29, 2014 at 5:32 AM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
-> > On Wed, Jan 29, 2014 at 12:25:20PM +0000, Mark Brown wrote:
-> >> On Wed, Jan 29, 2014 at 12:10:48PM +0100, Maxime Ripard wrote:
-> >>
-> >> > +config SPI_SUN6I
-> >> > +   tristate "Allwinner A31 SPI controller"
-> >> > +   depends on ARCH_SUNXI || COMPILE_TEST
-> >> > +   select PM_RUNTIME
-> >> > +   help
-> >> > +     This enables using the SPI controller on the Allwinner A31 SoC=
-s.
-> >> > +
-> >>
-> >> A select of PM_RUNTIME is both surprising and odd - why is that there?
-> >> The usual idiom is that the device starts out powered up (flagged using
-> >> pm_runtime_set_active()) and then runtime PM then suspends it when it's
-> >> compiled in.  That way if for some reason people want to avoid runtime
-> >> PM they can still use the device.
-> >
-> > Since pm_runtime_set_active and all the pm_runtime* callbacks in
-> > general are defined to pretty much empty functions, how the
-> > suspend/resume callbacks are called then? Obviously, we need them to
-> > be run, hence why I added the select here, but now I'm seeing a
-> > construct like what's following acceptable then?
->=20
-> Even with your 'select', The runtime PM callbacks will never be called
-> in the current driver.  pm_runtime_enable() doesn't do any runtime PM
-> transitions.  It just allows transitions to happen when they're
-> triggered by _get()/_put()/etc.
+   # HEAD: a57beec5d427086cdc8d75fd51164577193fa7f4 sched: Make sched_class::get_rr_interval() optional
 
-Actually, pm_runtime_get_sync is called by the SPI framework whenever
-the device needs to be used. And pm_runtime_put whenever it's not used
-anymore, so the callbacks are actually called.
+A crash fix and documentation updates.
 
->=20
-> > pm_runtime_enable(&pdev->dev);
-> > if (!pm_runtime_enabled(&pdev->dev))
-> >    sun6i_spi_runtime_resume(&pdev->dev);
->=20
-> Similarily here, it's not the pm_runtime_enable that will fail when
-> runtime PM is disabled (or not built-in), it's a pm_runtime_get_sync()
-> that will fail.
+ Thanks,
 
-In the case where pm_runtime is disabled, pm_runtime_enabled will only
-return false, and hence the resume callback will be called. get_sync
-will fail too when the framework will call it, but since the device is
-already initialized, it's fine I guess.
+	Ingo
 
-> What you want is something like this in ->probe()
->=20
->    sun6i_spi_runtime_resume();
->    /* now, device is always activated whether or not runtime PM is enable=
-d */
->    pm_runtime_enable();
->    pm_runtime_set_active();  /* tells runtime PM core device is
-> already active */
->    pm_runtime_get_sync();
->=20
-> This 'get' will increase the usecount, but not actually call the
-> callbacks because we told the RPM core that the device was already
-> activated with _set_active().
->=20
-> And then, in ->remove(), you'll want
->=20
->    pm_runtime_put();
->    pm_runtime_disable();
->=20
-> And if runtime PM is not enabled in the kernel, then the device will
-> be left on (which is kinda what you want if you didn't build runtime
-> PM into the kernel.)
+------------------>
+Dario Faggioli (1):
+      sched/deadline: Add sched_dl documentation
 
-Yes, but that also mean that the device is actually on after the
-probe, even if it's never going to be used. From what I got reading
-the pm_runtime code, the suspend callback is called only whenever you
-call _put, so the device will be suspended only after it's been used
-the first time, right?
+Masanari Iida (1):
+      sched: Fix docbook parameter annotation error in wait.h
 
-Wouldn't it be better if it was suspended by default, and just waken
-up whenever the framework needs it?
+Peter Zijlstra (1):
+      sched: Make sched_class::get_rr_interval() optional
 
-Thanks!
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+ Documentation/scheduler/00-INDEX           |   2 +
+ Documentation/scheduler/sched-deadline.txt | 281 +++++++++++++++++++++++++++++
+ include/linux/wait.h                       |   4 +-
+ kernel/sched/core.c                        |   4 +-
+ kernel/sched/deadline.c                    |   3 +-
+ 5 files changed, 290 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/scheduler/sched-deadline.txt
 
---NU0Ex4SbNnrxsi6C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS61rDAAoJEBx+YmzsjxAgs94P/2nc5NFGnlbEGkSHTiiI/YNb
-4b1WeSAbr7OyIUG/BgxUtPbuSHLhizYRYI1nrMfPRyxoALm8zI3mRXjK/R4UqHLB
-id+qUlOkJn3RQ2GJEzD8PQiIXZYt884mIeT2OveC55B3UUYSqUwemhFUfRVlJu0i
-+hAIyuAg/y7Vcsys6uvof8S8zcAXqvxyw/RVPs3VBy6BMHg6y+BaJEV0AI6FvInJ
-y3oc8RYMzFwdqILVdCyXMKA3pqIe3sVI94BxVor9izSe5Rm+U7v+qykGNKZXWWDc
-telhJ5d1owWiYpQRuFGoTx+EHhWkRplUfYaYULAvaXpyA0SW5IrG7i6qNeXm0v/O
-35RhVDYEXirnLvUdHSFL+dcX5aL5E+g+hye/7Oia3k3c5JCedRTq3xcLa4s9jsEy
-rPeJ9ZaxYW6Togrxv5NyEJT9CTqyZ2zw4z9mnQQeb3iDobKyWfXJVrcr3L6sJU9r
-R4LGi2xCb7OtC3FRJB9p4rKtH2Gf+xMOFuI/xWSLBFpudiBzXFcWoBFda8GNQKz8
-P9I9O38wOCpl2eQTwG0ZXiXzGmzekiC8olt+q/MOIKTNBNVtCCkjvDSaNgjwCRmq
-B2f9oGys2WHBoD0KksWUBF63ONMNmMjLQT6+KNT29CddkTq9b3+nGFv5ZrkdPrtj
-EdmMn6thUFVatmZdq6Ww
-=k/rz
------END PGP SIGNATURE-----
-
---NU0Ex4SbNnrxsi6C--
+diff --git a/Documentation/scheduler/00-INDEX b/Documentation/scheduler/00-INDEX
+index d2651c4..46702e4 100644
+--- a/Documentation/scheduler/00-INDEX
++++ b/Documentation/scheduler/00-INDEX
+@@ -10,5 +10,7 @@ sched-nice-design.txt
+ 	- How and why the scheduler's nice levels are implemented.
+ sched-rt-group.txt
+ 	- real-time group scheduling.
++sched-deadline.txt
++	- deadline scheduling.
+ sched-stats.txt
+ 	- information on schedstats (Linux Scheduler Statistics).
+diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+new file mode 100644
+index 0000000..18adc92
+--- /dev/null
++++ b/Documentation/scheduler/sched-deadline.txt
+@@ -0,0 +1,281 @@
++			  Deadline Task Scheduling
++			  ------------------------
++
++CONTENTS
++========
++
++ 0. WARNING
++ 1. Overview
++ 2. Scheduling algorithm
++ 3. Scheduling Real-Time Tasks
++ 4. Bandwidth management
++   4.1 System-wide settings
++   4.2 Task interface
++   4.3 Default behavior
++ 5. Tasks CPU affinity
++   5.1 SCHED_DEADLINE and cpusets HOWTO
++ 6. Future plans
++
++
++0. WARNING
++==========
++
++ Fiddling with these settings can result in an unpredictable or even unstable
++ system behavior. As for -rt (group) scheduling, it is assumed that root users
++ know what they're doing.
++
++
++1. Overview
++===========
++
++ The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
++ basically an implementation of the Earliest Deadline First (EDF) scheduling
++ algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
++ that makes it possible to isolate the behavior of tasks between each other.
++
++
++2. Scheduling algorithm
++==================
++
++ SCHED_DEADLINE uses three parameters, named "runtime", "period", and
++ "deadline" to schedule tasks. A SCHED_DEADLINE task is guaranteed to receive
++ "runtime" microseconds of execution time every "period" microseconds, and
++ these "runtime" microseconds are available within "deadline" microseconds
++ from the beginning of the period.  In order to implement this behaviour,
++ every time the task wakes up, the scheduler computes a "scheduling deadline"
++ consistent with the guarantee (using the CBS[2,3] algorithm). Tasks are then
++ scheduled using EDF[1] on these scheduling deadlines (the task with the
++ smallest scheduling deadline is selected for execution). Notice that this
++ guaranteed is respected if a proper "admission control" strategy (see Section
++ "4. Bandwidth management") is used.
++
++ Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
++ that each task runs for at most its runtime every period, avoiding any
++ interference between different tasks (bandwidth isolation), while the EDF[1]
++ algorithm selects the task with the smallest scheduling deadline as the one
++ to be executed first.  Thanks to this feature, also tasks that do not
++ strictly comply with the "traditional" real-time task model (see Section 3)
++ can effectively use the new policy.
++
++ In more details, the CBS algorithm assigns scheduling deadlines to
++ tasks in the following way:
++
++  - Each SCHED_DEADLINE task is characterised by the "runtime",
++    "deadline", and "period" parameters;
++
++  - The state of the task is described by a "scheduling deadline", and
++    a "current runtime". These two parameters are initially set to 0;
++
++  - When a SCHED_DEADLINE task wakes up (becomes ready for execution),
++    the scheduler checks if
++
++                    current runtime                runtime
++         ---------------------------------- > ----------------
++         scheduling deadline - current time         period
++
++    then, if the scheduling deadline is smaller than the current time, or
++    this condition is verified, the scheduling deadline and the
++    current budget are re-initialised as
++
++         scheduling deadline = current time + deadline
++         current runtime = runtime
++
++    otherwise, the scheduling deadline and the current runtime are
++    left unchanged;
++
++  - When a SCHED_DEADLINE task executes for an amount of time t, its
++    current runtime is decreased as
++
++         current runtime = current runtime - t
++
++    (technically, the runtime is decreased at every tick, or when the
++    task is descheduled / preempted);
++
++  - When the current runtime becomes less or equal than 0, the task is
++    said to be "throttled" (also known as "depleted" in real-time literature)
++    and cannot be scheduled until its scheduling deadline. The "replenishment
++    time" for this task (see next item) is set to be equal to the current
++    value of the scheduling deadline;
++
++  - When the current time is equal to the replenishment time of a
++    throttled task, the scheduling deadline and the current runtime are
++    updated as
++
++         scheduling deadline = scheduling deadline + period
++         current runtime = current runtime + runtime
++
++
++3. Scheduling Real-Time Tasks
++=============================
++
++ * BIG FAT WARNING ******************************************************
++ *
++ * This section contains a (not-thorough) summary on classical deadline
++ * scheduling theory, and how it applies to SCHED_DEADLINE.
++ * The reader can "safely" skip to Section 4 if only interested in seeing
++ * how the scheduling policy can be used. Anyway, we strongly recommend
++ * to come back here and continue reading (once the urge for testing is
++ * satisfied :P) to be sure of fully understanding all technical details.
++ ************************************************************************
++
++ There are no limitations on what kind of task can exploit this new
++ scheduling discipline, even if it must be said that it is particularly
++ suited for periodic or sporadic real-time tasks that need guarantees on their
++ timing behavior, e.g., multimedia, streaming, control applications, etc.
++
++ A typical real-time task is composed of a repetition of computation phases
++ (task instances, or jobs) which are activated on a periodic or sporadic
++ fashion.
++ Each job J_j (where J_j is the j^th job of the task) is characterised by an
++ arrival time r_j (the time when the job starts), an amount of computation
++ time c_j needed to finish the job, and a job absolute deadline d_j, which
++ is the time within which the job should be finished. The maximum execution
++ time max_j{c_j} is called "Worst Case Execution Time" (WCET) for the task.
++ A real-time task can be periodic with period P if r_{j+1} = r_j + P, or
++ sporadic with minimum inter-arrival time P is r_{j+1} >= r_j + P. Finally,
++ d_j = r_j + D, where D is the task's relative deadline.
++
++ SCHED_DEADLINE can be used to schedule real-time tasks guaranteeing that
++ the jobs' deadlines of a task are respected. In order to do this, a task
++ must be scheduled by setting:
++
++  - runtime >= WCET
++  - deadline = D
++  - period <= P
++
++ IOW, if runtime >= WCET and if period is >= P, then the scheduling deadlines
++ and the absolute deadlines (d_j) coincide, so a proper admission control
++ allows to respect the jobs' absolute deadlines for this task (this is what is
++ called "hard schedulability property" and is an extension of Lemma 1 of [2]).
++
++ References:
++  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
++      ming in a hard-real-time environment. Journal of the Association for
++      Computing Machinery, 20(1), 1973.
++  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
++      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
++      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
++  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
++      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
++
++4. Bandwidth management
++=======================
++
++ In order for the -deadline scheduling to be effective and useful, it is
++ important to have some method to keep the allocation of the available CPU
++ bandwidth to the tasks under control.
++ This is usually called "admission control" and if it is not performed at all,
++ no guarantee can be given on the actual scheduling of the -deadline tasks.
++
++ Since when RT-throttling has been introduced each task group has a bandwidth
++ associated, calculated as a certain amount of runtime over a period.
++ Moreover, to make it possible to manipulate such bandwidth, readable/writable
++ controls have been added to both procfs (for system wide settings) and cgroupfs
++ (for per-group settings).
++ Therefore, the same interface is being used for controlling the bandwidth
++ distrubution to -deadline tasks.
++
++ However, more discussion is needed in order to figure out how we want to manage
++ SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
++ uses (for now) a less sophisticated, but actually very sensible, mechanism to
++ ensure that a certain utilization cap is not overcome per each root_domain.
++
++ Another main difference between deadline bandwidth management and RT-throttling
++ is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
++ and thus we don't need an higher level throttling mechanism to enforce the
++ desired bandwidth.
++
++4.1 System wide settings
++------------------------
++
++ The system wide settings are configured under the /proc virtual file system.
++
++ For now the -rt knobs are used for dl admission control and the -deadline
++ runtime is accounted against the -rt runtime. We realise that this isn't
++ entirely desirable; however, it is better to have a small interface for now,
++ and be able to change it easily later. The ideal situation (see 5.) is to run
++ -rt tasks from a -deadline server; in which case the -rt bandwidth is a direct
++ subset of dl_bw.
++
++ This means that, for a root_domain comprising M CPUs, -deadline tasks
++ can be created while the sum of their bandwidths stays below:
++
++   M * (sched_rt_runtime_us / sched_rt_period_us)
++
++ It is also possible to disable this bandwidth management logic, and
++ be thus free of oversubscribing the system up to any arbitrary level.
++ This is done by writing -1 in /proc/sys/kernel/sched_rt_runtime_us.
++
++
++4.2 Task interface
++------------------
++
++ Specifying a periodic/sporadic task that executes for a given amount of
++ runtime at each instance, and that is scheduled according to the urgency of
++ its own timing constraints needs, in general, a way of declaring:
++  - a (maximum/typical) instance execution time,
++  - a minimum interval between consecutive instances,
++  - a time constraint by which each instance must be completed.
++
++ Therefore:
++  * a new struct sched_attr, containing all the necessary fields is
++    provided;
++  * the new scheduling related syscalls that manipulate it, i.e.,
++    sched_setattr() and sched_getattr() are implemented.
++
++
++4.3 Default behavior
++---------------------
++
++ The default value for SCHED_DEADLINE bandwidth is to have rt_runtime equal to
++ 950000. With rt_period equal to 1000000, by default, it means that -deadline
++ tasks can use at most 95%, multiplied by the number of CPUs that compose the
++ root_domain, for each root_domain.
++
++ A -deadline task cannot fork.
++
++5. Tasks CPU affinity
++=====================
++
++ -deadline tasks cannot have an affinity mask smaller that the entire
++ root_domain they are created on. However, affinities can be specified
++ through the cpuset facility (Documentation/cgroups/cpusets.txt).
++
++5.1 SCHED_DEADLINE and cpusets HOWTO
++------------------------------------
++
++ An example of a simple configuration (pin a -deadline task to CPU0)
++ follows (rt-app is used to create a -deadline task).
++
++ mkdir /dev/cpuset
++ mount -t cgroup -o cpuset cpuset /dev/cpuset
++ cd /dev/cpuset
++ mkdir cpu0
++ echo 0 > cpu0/cpuset.cpus
++ echo 0 > cpu0/cpuset.mems
++ echo 1 > cpuset.cpu_exclusive
++ echo 0 > cpuset.sched_load_balance
++ echo 1 > cpu0/cpuset.cpu_exclusive
++ echo 1 > cpu0/cpuset.mem_exclusive
++ echo $$ > cpu0/tasks
++ rt-app -t 100000:10000:d:0 -D5 (it is now actually superfluous to specify
++ task affinity)
++
++6. Future plans
++===============
++
++ Still missing:
++
++  - refinements to deadline inheritance, especially regarding the possibility
++    of retaining bandwidth isolation among non-interacting tasks. This is
++    being studied from both theoretical and practical points of view, and
++    hopefully we should be able to produce some demonstrative code soon;
++  - (c)group based bandwidth management, and maybe scheduling;
++  - access control for non-root users (and related security concerns to
++    address), which is the best way to allow unprivileged use of the mechanisms
++    and how to prevent non-root users "cheat" the system?
++
++ As already discussed, we are planning also to merge this work with the EDF
++ throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
++ the preliminary phases of the merge and we really seek feedback that would
++ help us decide on the direction it should take.
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index eaa00b1..559044c 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -286,8 +286,8 @@ do {									\
+  * wait_event_cmd - sleep until a condition gets true
+  * @wq: the waitqueue to wait on
+  * @condition: a C expression for the event to wait for
+- * cmd1: the command will be executed before sleep
+- * cmd2: the command will be executed after sleep
++ * @cmd1: the command will be executed before sleep
++ * @cmd2: the command will be executed after sleep
+  *
+  * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
+  * @condition evaluates to true. The @condition is checked each time
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 36c951b..81343d6 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4324,7 +4324,9 @@ SYSCALL_DEFINE2(sched_rr_get_interval, pid_t, pid,
+ 		goto out_unlock;
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	time_slice = p->sched_class->get_rr_interval(rq, p);
++	time_slice = 0;
++	if (p->sched_class->get_rr_interval)
++		time_slice = p->sched_class->get_rr_interval(rq, p);
+ 	task_rq_unlock(rq, p, &flags);
+ 
+ 	rcu_read_unlock();
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 0de2482..0dd5e09 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -351,7 +351,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
+  * disrupting the schedulability of the system. Otherwise, we should
+  * refill the runtime and set the deadline a period in the future,
+  * because keeping the current (absolute) deadline of the task would
+- * result in breaking guarantees promised to other tasks.
++ * result in breaking guarantees promised to other tasks (refer to
++ * Documentation/scheduler/sched-deadline.txt for more informations).
+  *
+  * This function returns true if:
+  *
