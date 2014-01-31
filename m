@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895AbaAaPQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:16:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56755 "EHLO mx1.redhat.com"
+	id S932985AbaAaPRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:17:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35193 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932584AbaAaPHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:32 -0500
+	id S932547AbaAaPHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:17 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 12/34] e1000e: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:31 +0100
-Message-Id: <0ec36309e17031a66d3a6ab489fc60702b6d76b3.1391172839.git.agordeev@redhat.com>
+        Christian Benvenuti <benve@cisco.com>,
+        Sujith Sankar <ssujith@cisco.com>,
+        Govindarajulu Varadarajan <govindarajulu90@gmail.com>,
+        Neel Patel <neepatel@cisco.com>, Nishank Trivedi <nistrive@cisco.com>,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH 10/34] enic: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:29 +0100
+Message-Id: <198b4ebcab97d1ce115670f12131679566ae30f6.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,29 +31,33 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/intel/e1000e/netdev.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/cisco/enic/enic_main.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 6d91933..7735d1a 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -2041,10 +2041,11 @@ void e1000e_set_interrupt_capability(struct e1000_adapter *adapter)
- 				for (i = 0; i < adapter->num_vectors; i++)
- 					adapter->msix_entries[i].entry = i;
+diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
+index b740bfc..dcd58f2 100644
+--- a/drivers/net/ethernet/cisco/enic/enic_main.c
++++ b/drivers/net/ethernet/cisco/enic/enic_main.c
+@@ -1796,7 +1796,8 @@ static int enic_set_intr_mode(struct enic *enic)
+ 	    enic->cq_count >= n + m &&
+ 	    enic->intr_count >= n + m + 2) {
  
--				err = pci_enable_msix(adapter->pdev,
--						      adapter->msix_entries,
--						      adapter->num_vectors);
--				if (err == 0)
-+				err = pci_enable_msix_range(adapter->pdev,
-+							adapter->msix_entries,
-+							adapter->num_vectors,
-+							adapter->num_vectors);
-+				if (err > 0)
- 					return;
- 			}
- 			/* MSI-X failed, so fall through and try MSI */
+-		if (!pci_enable_msix(enic->pdev, enic->msix_entry, n + m + 2)) {
++		if (pci_enable_msix_range(enic->pdev, enic->msix_entry,
++					  n + m + 2, n + m + 2) > 0) {
+ 
+ 			enic->rq_count = n;
+ 			enic->wq_count = m;
+@@ -1815,7 +1816,8 @@ static int enic_set_intr_mode(struct enic *enic)
+ 	    enic->wq_count >= m &&
+ 	    enic->cq_count >= 1 + m &&
+ 	    enic->intr_count >= 1 + m + 2) {
+-		if (!pci_enable_msix(enic->pdev, enic->msix_entry, 1 + m + 2)) {
++		if (pci_enable_msix_range(enic->pdev, enic->msix_entry,
++					  1 + m + 2, 1 + m + 2) > 0) {
+ 
+ 			enic->rq_count = 1;
+ 			enic->wq_count = m;
 -- 
 1.7.7.6
 
