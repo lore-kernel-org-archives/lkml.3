@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851AbaAaRcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55218 "EHLO
+	id S932833AbaAaRcv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:32:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55176 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675AbaAaRcq (ORCPT
+	with ESMTP id S932236AbaAaRco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:32:46 -0500
+	Fri, 31 Jan 2014 12:32:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 04/14] ftrace/x86: Load ftrace_ops in parameter not the variable holding it
-Date: Fri, 31 Jan 2014 09:32:07 -0800
-Message-Id: <1391189537-20777-5-git-send-email-kamal@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 02/14] writeback: Fix data corruption on NFS
+Date: Fri, 31 Jan 2014 09:32:05 -0800
+Message-Id: <1391189537-20777-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -28,62 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 1739f09e33d8f66bf48ddbc3eca615574da6c4f6 upstream.
+commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
 
-Function tracing callbacks expect to have the ftrace_ops that registered it
-passed to them, not the address of the variable that holds the ftrace_ops
-that registered it.
+Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
+a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
+mode because there we also want to wait for outstanding writeback on
+possibly clean inode. This was causing occasional data corruption issues
+on NFS because it uses sync_inode() to make sure all outstanding writes
+are flushed to the server before truncating the inode and with
+sync_inode() returning prematurely file was sometimes extended back
+by an outstanding write after it was truncated.
 
-Use a mov instead of a lea to store the ftrace_ops into the parameter
-of the function tracing callback.
+So modify the test to also check for pages under writeback in
+WB_SYNC_ALL mode.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/20131113152004.459787f9@gandalf.local.home
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
+Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/entry_32.S | 4 ++--
- arch/x86/kernel/entry_64.S | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/fs-writeback.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 6ed91d9..1d7fdbe 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1113,7 +1113,7 @@ ENTRY(ftrace_caller)
- 	pushl $0	/* Pass NULL as regs pointer */
- 	movl 4*4(%esp), %eax
- 	movl 0x4(%ebp), %edx
--	leal function_trace_op, %ecx
-+	movl function_trace_op, %ecx
- 	subl $MCOUNT_INSN_SIZE, %eax
- 
- .globl ftrace_call
-@@ -1171,7 +1171,7 @@ ENTRY(ftrace_regs_caller)
- 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
- 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
- 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
--	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
-+	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
- 	pushl %esp		/* Save pt_regs as 4th parameter */
- 
- GLOBAL(ftrace_regs_call)
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index cb3c591..310b270 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -88,7 +88,7 @@ END(function_hook)
- 	MCOUNT_SAVE_FRAME \skip
- 
- 	/* Load the ftrace_ops into the 3rd parameter */
--	leaq function_trace_op, %rdx
-+	movq function_trace_op(%rip), %rdx
- 
- 	/* Load ip into the first parameter */
- 	movq RIP(%rsp), %rdi
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 310972b..17eaad5 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -517,13 +517,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+ 	}
+ 	WARN_ON(inode->i_state & I_SYNC);
+ 	/*
+-	 * Skip inode if it is clean. We don't want to mess with writeback
+-	 * lists in this function since flusher thread may be doing for example
+-	 * sync in parallel and if we move the inode, it could get skipped. So
+-	 * here we make sure inode is on some writeback list and leave it there
+-	 * unless we have completely cleaned the inode.
++	 * Skip inode if it is clean and we have no outstanding writeback in
++	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
++	 * function since flusher thread may be doing for example sync in
++	 * parallel and if we move the inode, it could get skipped. So here we
++	 * make sure inode is on some writeback list and leave it there unless
++	 * we have completely cleaned the inode.
+ 	 */
+-	if (!(inode->i_state & I_DIRTY))
++	if (!(inode->i_state & I_DIRTY) &&
++	    (wbc->sync_mode != WB_SYNC_ALL ||
++	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
+ 		goto out;
+ 	inode->i_state |= I_SYNC;
+ 	spin_unlock(&inode->i_lock);
 -- 
 1.8.3.2
 
