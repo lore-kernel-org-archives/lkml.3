@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782AbaAaRcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55181 "EHLO
+	id S932928AbaAaRe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:34:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55230 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932460AbaAaRco (ORCPT
+	with ESMTP id S932744AbaAaRcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:32:44 -0500
+	Fri, 31 Jan 2014 12:32:47 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 07/14] md/raid10: fix bug when raid10 recovery fails to recover a block.
-Date: Fri, 31 Jan 2014 09:32:10 -0800
-Message-Id: <1391189537-20777-8-git-send-email-kamal@canonical.com>
+Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 10/14] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
+Date: Fri, 31 Jan 2014 09:32:13 -0800
+Message-Id: <1391189537-20777-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -26,56 +28,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Robert Richter <rric@kernel.org>
 
-commit e8b849158508565e0cd6bc80061124afc5879160 upstream.
+commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
 
-commit e875ecea266a543e643b19e44cf472f1412708f9
-    md/raid10 record bad blocks as needed during recovery.
+On AMD family 10h we see following error messages while waking up from
+S3 for all non-boot CPUs leading to a failed IBS initialization:
 
-added code to the "cannot recover this block" path to record a bad
-block rather than fail the whole recovery.
-Unfortunately this new case was placed *after* r10bio was freed rather
-than *before*, yet it still uses r10bio.
-This is will crash with a null dereference.
+ Enabling non-boot CPUs ...
+ smpboot: Booting Node 0 Processor 1 APIC 0x1
+ [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
+ perf: IBS APIC setup failed on cpu #1
+ process: Switch to broadcast mode on CPU1
+ CPU1 is up
+ ...
+ ACPI: Waking up from system sleep state S3
 
-So move the freeing of r10bio down where it is safe.
+Reason for this is that during suspend the LVT offset for the IBS
+vector gets lost and needs to be reinialized while resuming.
 
-Fixes: e875ecea266a543e643b19e44cf472f1412708f9
-Reported-by: Damian Nowak <spam@nowaker.net>
-URL: https://bugzilla.kernel.org/show_bug.cgi?id=68181
-Signed-off-by: NeilBrown <neilb@suse.de>
+The offset is read from the IBSCTL msr. On family 10h the offset needs
+to be 1 as offset 0 is used for the MCE threshold interrupt, but
+firmware assings it for IBS to 0 too. The kernel needs to reprogram
+the vector. The msr is a readonly node msr, but a new value can be
+written via pci config space access. The reinitialization is
+implemented for family 10h in setup_ibs_ctl() which is forced during
+IBS setup.
+
+This patch fixes IBS setup after waking up from S3 by adding
+resume/supend hooks for the boot cpu which does the offset
+reinitialization.
+
+Marking it as stable to let distros pick up this fix.
+
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid10.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c | 53 +++++++++++++++++++++++++++-----
+ 1 file changed, 45 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 4b4e094..dfd6eba 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -3153,10 +3153,6 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
- 			if (j == conf->copies) {
- 				/* Cannot recover, so abort the recovery or
- 				 * record a bad block */
--				put_buf(r10_bio);
--				if (rb2)
--					atomic_dec(&rb2->remaining);
--				r10_bio = rb2;
- 				if (any_working) {
- 					/* problem is that there are bad blocks
- 					 * on other device(s)
-@@ -3188,6 +3184,10 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
- 					mirror->recovery_disabled
- 						= mddev->recovery_disabled;
- 				}
-+				put_buf(r10_bio);
-+				if (rb2)
-+					atomic_dec(&rb2->remaining);
-+				r10_bio = rb2;
- 				break;
- 			}
- 		}
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index 6336bcb..0798e5f 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/ptrace.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <asm/apic.h>
+ 
+@@ -816,6 +817,18 @@ out:
+ 	return ret;
+ }
+ 
++static void ibs_eilvt_setup(void)
++{
++	/*
++	 * Force LVT offset assignment for family 10h: The offsets are
++	 * not assigned by the BIOS for this family, so the OS is
++	 * responsible for doing it. If the OS assignment fails, fall
++	 * back to BIOS settings and try to setup this.
++	 */
++	if (boot_cpu_data.x86 == 0x10)
++		force_ibs_eilvt_setup();
++}
++
+ static inline int get_ibs_lvt_offset(void)
+ {
+ 	u64 val;
+@@ -851,6 +864,36 @@ static void clear_APIC_ibs(void *dummy)
+ 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
+ }
+ 
++#ifdef CONFIG_PM
++
++static int perf_ibs_suspend(void)
++{
++	clear_APIC_ibs(NULL);
++	return 0;
++}
++
++static void perf_ibs_resume(void)
++{
++	ibs_eilvt_setup();
++	setup_APIC_ibs(NULL);
++}
++
++static struct syscore_ops perf_ibs_syscore_ops = {
++	.resume		= perf_ibs_resume,
++	.suspend	= perf_ibs_suspend,
++};
++
++static void perf_ibs_pm_init(void)
++{
++	register_syscore_ops(&perf_ibs_syscore_ops);
++}
++
++#else
++
++static inline void perf_ibs_pm_init(void) { }
++
++#endif
++
+ static int __cpuinit
+ perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+@@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
+ 	if (!caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	/*
+-	 * Force LVT offset assignment for family 10h: The offsets are
+-	 * not assigned by the BIOS for this family, so the OS is
+-	 * responsible for doing it. If the OS assignment fails, fall
+-	 * back to BIOS settings and try to setup this.
+-	 */
+-	if (boot_cpu_data.x86 == 0x10)
+-		force_ibs_eilvt_setup();
++	ibs_eilvt_setup();
+ 
+ 	if (!ibs_eilvt_valid())
+ 		goto out;
+ 
++	perf_ibs_pm_init();
+ 	get_online_cpus();
+ 	ibs_caps = caps;
+ 	/* make ibs_caps visible to other cpus: */
 -- 
 1.8.3.2
 
