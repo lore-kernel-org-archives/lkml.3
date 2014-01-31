@@ -1,72 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaAaOXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:23:35 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54167 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191AbaAaOXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:23:33 -0500
-Date: Fri, 31 Jan 2014 15:23:18 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Russ Anderson <rja@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Alex Thorlton <athorlton@sgi.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
-Message-ID: <20140131142318.GC21873@pd.tnic>
-References: <20140127222129.GK6839@pd.tnic>
- <20140128110552.GA815@pd.tnic>
- <20140128200754.GZ18196@sgi.com>
- <20140128225905.GN815@pd.tnic>
- <20140128234036.GB18196@sgi.com>
- <20140129141822.GC24887@pd.tnic>
- <20140130221950.GJ3105@sgi.com>
- <52EAD0F2.7090101@zytor.com>
- <20140131100722.GA21873@pd.tnic>
- <20140131140220.GC22498@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140131140220.GC22498@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754382AbaAaOZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:25:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39654 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753859AbaAaOZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 09:25:23 -0500
+Message-ID: <1391178285.4405.78.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3/3] net: via-rhine: add OF bus binding
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, Tony Prisk <linux@prisktech.co.nz>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Roger Luethi <rl@hellgate.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 31 Jan 2014 14:24:45 +0000
+In-Reply-To: <CABjd4Yx5HtbGjo_ZsOJ5SvqFQZey1fv5K36PD=D9fUUn0SanVQ@mail.gmail.com>
+References: <1385227995-3956-1-git-send-email-alchark@gmail.com>
+	 <1390823503-24087-1-git-send-email-alchark@gmail.com>
+	 <1390823503-24087-4-git-send-email-alchark@gmail.com>
+	 <1390834654.2735.148.camel@deadeye.wl.decadent.org.uk>
+	 <CABjd4Yz2Kfed_qBfSAEXoAcVxfsmhTBA-83YJ9_iSwPZ+r1qYQ@mail.gmail.com>
+	 <1390866011.4405.2.camel@deadeye.wl.decadent.org.uk>
+	 <CABjd4Yx5HtbGjo_ZsOJ5SvqFQZey1fv5K36PD=D9fUUn0SanVQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Ukx7+zuu4lv+42VvjKMo"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 80.76.121.1
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 08:02:21AM -0600, Russ Anderson wrote:
-> I'm not sure what you are asking for. We had a reliable
-> way to boot before the recent patch broke it. (commit
-> d2f7cbe7b26a74dbbbf8f325b2a6fd01bc34032c)
 
-So we should stop any further development just because your machines did
-boot nicely before that. What about the other machines and kexec we're
-fixing with the work above? Jeez...
+--=-Ukx7+zuu4lv+42VvjKMo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Ok, let me give it in a more detailed fashion for ya:
+On Tue, 2014-01-28 at 22:31 +0400, Alexey Charkov wrote:
+> 2014/1/28 Ben Hutchings <ben@decadent.org.uk>:
+> > On Mon, 2014-01-27 at 19:34 +0400, Alexey Charkov wrote:
+> >> 2014/1/27 Ben Hutchings <ben@decadent.org.uk>:
+> >> > On Mon, 2014-01-27 at 15:51 +0400, Alexey Charkov wrote:
+> >> >> This should make the driver usable with VIA/WonderMedia ARM-based
+> >> >> Systems-on-Chip integrated Rhine III adapters. Note that these
+> >> >> are always in MMIO mode, and don't have any known EEPROM.
+> >> > [...]
+> >> >> --- a/drivers/net/ethernet/via/Kconfig
+> >> >> +++ b/drivers/net/ethernet/via/Kconfig
+> >> >> @@ -19,7 +19,7 @@ if NET_VENDOR_VIA
+> >> >>
+> >> >>  config VIA_RHINE
+> >> >>         tristate "VIA Rhine support"
+> >> >> -       depends on PCI
+> >> >> +       depends on (PCI || USE_OF)
+> >> >>         select CRC32
+> >> >>         select MII
+> >> >>         ---help---
+> >> >
+> >> > This seems like the right thing to do, but it means you need to add
+> >> > #ifdef CONFIG_PCI and #ifdef CONFIG_USE_OF around the driver structu=
+res
+> >> > and related functions.
+> >>
+> >> Frankly, I would like to avoid that if possible (as pointed out in the
+> >> cover email), as I believe we would get a cleaner driver without
+> >> #ifdef. This is also the way it was done in via-velocity, and it works
+> >> just fine.
+> >
+> > OK, I'm surprised that all the PCI functions have dummy definitions.
+> >
+> >> > You should compile-test in configurations that have just one of thos=
+e
+> >> > dependencies enabled.
+> >>
+> >> This has been compile-tested and runtime-tested in OF-only
+> >> configuration on WM8950, and Roger also tested it in PCI-only
+> >> configuration, so it seems to work fine.
+> > [...]
+> >
+> > Good, then I have no objection.
+>=20
+> Thanks Ben! Would it be fine to add your Reviewed-by at the next
+> iteration, once I fix indentation of function arguments and
+> dev_is_pci()?
 
-1. uv_bios_init remaps the UV systab table which is at physical address
-efi.uv_systab
+Sorry, I don't think I know enough to claim that I've reviewed the whole
+thing properly.
 
-2. Then, it copies it into uv_systab. The purpose of this is for you to
-be able to call the uv_systab.function callback and thus call into your
-firmware.
+Ben.
 
-3. Now, uv_systab.function points to a region of code which contains
-your BIOS callback, and that pointer is the entry point into that
-function.
+--=20
+Ben Hutchings
+It is easier to write an incorrect program than to understand a correct one=
+.
 
-And now my question:
+--=-Ukx7+zuu4lv+42VvjKMo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-How can I reliably find out which region contains that
-uv_systab.function call?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-I need it so that I can map it in the EFI page table and you can
-continue to call that function and you can get back to your reliable way
-to boot.
+iQIVAwUAUuuyLee/yOyVhhEJAQqvzg//caUdw/Wy0UwppsS6BH3mjNN2YpXpreaL
+XOXbY2Q9Ii4ficGl3/bs8aHs0soIMYUa8p87nXubSZrb8AF2bULav7Su/HgKJsyX
+AaYRIAMrPPkooFQPUoyL32LSMMVXV8K8+Inrc9H+Xf8IpwpKs+HDILw52zhL7The
+LpG8SkeDEQveKkSeOF5l/DARpM0ZlSINvSSpBeN5BFCXJ7NVgzONX/fkBrw0ZbbD
+zWiyk31TjVySuGrcf/z8031GLj0t1fG2ZnCiFreMUPeFd/i9c6XhEhxUrz8nnZQp
+k1NVYjGRIf6BQVpm1xT3N8tMV5RAY8yimQo3V2quIbvnOH+35+TgpqT2caWN8lKh
+c39XtdujUe/G2JsG31nP6tAIvJYY3wEFaIIfIFN5s5EwbJkSeR9WpSMeYCw84y5r
+Hi01TphAjaKDZpEprzwzURfSvp6suu8hV3gIdXtmAlfaInsolfoFJsw1l83V5mcG
+nnZS/a8gIR5V4qbMg2zilGdxSySKDTGspENimT3lp59tlo9Ob4dRFhTuuYlRBt97
+OUQwcPKqeHxAYbzZ15spztPFO9p3ckLY6Bt5ZIqR2m2C/I3X2N4Xspj/Yw+TIxte
++M6NREFIaAUN4nz6zgU+8A0NVFzGYUHEhpSGMswYDD79L2D3r5EXCP+tyNBKZiwH
+owAkBVdKcSY=
+=iOTg
+-----END PGP SIGNATURE-----
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--=-Ukx7+zuu4lv+42VvjKMo--
