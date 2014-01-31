@@ -1,92 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445AbaAaNO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 08:14:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932263AbaAaNO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 08:14:58 -0500
-Message-ID: <52EBA1BD.8050607@redhat.com>
-Date: Fri, 31 Jan 2014 08:14:37 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu disable
-References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932462AbaAaNRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 08:17:32 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65379 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249AbaAaNRa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 08:17:30 -0500
+Message-ID: <1391174223.6395.3.camel@marge.simpson.net>
+Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
+ Mobile
+From: Mike Galbraith <bitbucket@online.de>
+To: astx <astx@aws-it.at>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Fri, 31 Jan 2014 14:17:03 +0100
+In-Reply-To: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@aws-it.at>
+References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@aws-it.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:5B4pGZLNM4XB7t8NhZ943FB8++MtAyBifLdzE28Zcp6
+ whxceYhSr7YvFHDqjOV0m+qxEMV2jErYXIQPWP3R/9FWkDMAAt
+ pW+d0on87qrqosmDplOs2TCA24tnJIDZMYdD1x20nWtqcgnFrv
+ OgT9+GkcPv+mMdPDPO8czJ/UFN/hjM0ZB5TLfPXj7y2F189A6I
+ JuKRgznQ6htIU8xZ9R8QProWqpxZc2yLitDc5BX6KkXbqzQhQ6
+ JzKpRO75NFspcP45V1O0apNiKv99egFB7AdevNwY9dVmsnPg4E
+ U8PD1R5E4irpYguG/QyGqy3qoAizb8DRmVmCgRWXzd3zfzeExr
+ 9Wxqfn8n1PCv9uvKOgYb9N1UvfESEcxguHHC6P7scaGBgo0sb2
+ w/7jy58u5163A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(CC netdev)
+
+On Fri, 2014-01-31 at 12:05 +0100, astx wrote: 
+> Using Polycom video conferencing software my homebrew linux NAT router  
+> crashes with attached kernel oops message.
+> This error can be reproduced also using kernel 3.2.54. Kernel 2.6.35  
+> seems to be stable.
+> 
+> Disabling nf_nat_h323 and nf_conntrack_h323 avoids crash - but video  
+> conferencing software is no more usable.
+> 
+> 
+> ===================================================================================
+>   BUG: unable to handle kernel paging request at 00100104
+> IP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
+> *pdpt = 00000000359aa001 *pde = 0000000000000000
+> Oops: 0002 [#1] SMP
+> Modules linked in: nf_conntrack_netlink nfnetlink xt_mac xt_TCPMSS  
+> ipt_MASQUERADE
+>   xt_pkttype xt_multiport xt_REDIRECT xt_nat iptable_mangle xt_LOG  
+> xt_limit af_packet
+>   act_mirred cls_u32 sch_ingress sch_hfsc ifb xt_tcpudp ip6t_REJECT ipt_REJECT
+>   ip6table_raw iptable_raw xt_CT iptable_filter nf_nat_pptp nf_nat_proto_gre
+>   nf_conntrack_proto_udplite nf_conntrack_proto_dccp ip6table_mangle  
+> iptable_nat
+>   nf_nat_ipv4 nf_nat_sip nf_nat_irc nf_nat_snmp_basic nf_conntrack_snmp
+>   nf_conntrack_broadcast nf_nat_h323 nf_nat_tftp nf_nat_ftp nf_nat  
+> nf_conntrack_h323
+>   nf_conntrack_tftp nf_conntrack_proto_sctp nf_conntrack_sip nf_conntrack_irc
+>   nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_ftp nf_conntrack_ipv4
+>   nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables
+>   x_tables padlock_sha padlock_aes e_powersaver freq_table mperf via_cputemp
+>   hwmon_vid serio_raw pcspkr i2c_viapro ehci_pci fan thermal processor 8139too
+>   sg thermal_sys button shpchp 8139cp pci_hotplug mii via_agp ext4 crc16 jbd2
+>   pata_via sata_via libata sd_mod scsi_mod ohci_hcd uhci_hcd ehci_hcd
+> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.28-9500-smp_m #1
+> Hardware name:    /CN700-8237, BIOS 6.00 PG 08/30/2007
+> task: c07ce180 ti: f6408000 task.ti: c07c2000
+> EIP: 0060:[<f8214f07>] EFLAGS: 00210206 CPU: 0
+> EIP is at nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
+> EAX: 00100100 EBX: eb636bc0 ECX: 00000000 EDX: eb461540
+> ESI: c0804e00 EDI: eb461544 EBP: f6409f08 ESP: f6409eec
+>   DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> CR0: 8005003b CR2: 00100104 CR3: 359d4000 CR4: 000006b0
+> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> DR6: ffff0ff0 DR7: 00000400
+> Stack:
+>   00000000 00200286 f6409f08 c0244bd8 eb636bc0 00100100 00000000 f6409f18
+>   f8215687 f598ede8 c0804e00 f6409f28 f8211c99 f598ede8 f598ee50 f6409f5c
+>   f8212e5e 00000003 00000000 00000000 00000004 eb461514 f598ede8 00000000
+> Call Trace:
+>   [<c0244bd8>] ? del_timer+0x48/0x70
+>   [<f8215687>] nf_ct_remove_expectations+0x47/0x60 [nf_conntrack]
+>   [<f8211c99>] nf_ct_delete_from_lists+0x59/0x90 [nf_conntrack]
+>   [<f8212e5e>] death_by_timeout+0x14e/0x1c0 [nf_conntrack]
+>   [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
+>   [<c024442d>] call_timer_fn+0x1d/0x80
+>   [<c024461e>] run_timer_softirq+0x18e/0x1a0
+>   [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
+>   [<c023e6f3>] __do_softirq+0xa3/0x170
+>   [<c023e650>] ? __local_bh_enable+0x70/0x70
+>   <IRQ>
+>   [<c023e587>] ? irq_exit+0x67/0xa0
+>   [<c0202af6>] ? do_IRQ+0x46/0xb0
+>   [<c027ad05>] ? clockevents_notify+0x35/0x110
+>   [<c066ac6c>] ? common_interrupt+0x2c/0x40
+>   [<c056e3c1>] ? cpuidle_enter_state+0x41/0xf0
+>   [<c056e6fb>] ? cpuidle_idle_call+0x8b/0x100
+>   [<c02085f8>] ? arch_cpu_idle+0x8/0x30
+>   [<c027314b>] ? cpu_idle_loop+0x4b/0x140
+>   [<c0273258>] ? cpu_startup_entry+0x18/0x20
+>   [<c066056d>] ? rest_init+0x5d/0x70
+>   [<c0813ac8>] ? start_kernel+0x2ec/0x2f2
+>   [<c081364f>] ? repair_env_string+0x5b/0x5b
+>   [<c0813269>] ? i386_start_kernel+0x33/0x35
+> Code: 8b 7b 0c 8b b6 98 00 00 00 85 c0 89 07 74 03 89 78 04 c7 43 0c 00
+>   02 20 00 83 ae ec 05 00 00 01 8b 03 8b 7b 04 85 c0 89 07 74 03 <89> 78
+>   04 8b 43 7c c7 03 00 01 10 00 c7 43 04 00 02 20 00 80 6c
+> EIP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]  
+> SS:ESP 0068:f6409eec
+> CR2: 0000000000100104
+> ---[ end trace 79fe2e6b81f54dee ]---
+> Kernel panic - not syncing: Fatal exception in interrupt
+> Rebooting in 300 seconds..
+> ===================================================================================
+> 
+> 
+> Polycom Version: 3.1-44477
+> running on device: Apple iPad Mini
+> using operating system: iOS Version: 7.0.4
+> 
+> 
+> Attached also my kernel config. Hopefully someone could help...
+> 
+> BR, Toni
 
 
-On 01/28/2014 04:54 PM, Yinghai Lu wrote:
-> used_vectors is a bitmap for vectors that are not tracked in per_cpu
-> vector_irq.
-> used_vectors contains information on the first 32 exceptions, the system vectors.
-> the IA32_SYSCALL_VECTOR (0x80), and the IRQ_MOVE_CLEANUP_VECTOR (0x20).
-> 
-> assign_irq_vectors() assigns vectors up to first_system_vector and
-> it will not use vectors that are set used_vectors.
-> 
-> This patch modifies the code to scan up to first_system_vector
-> and do a test on the used_vectors bitmap.
-> 
-> So count avaiable vectors correctly.
-> 
-> -v2: fix compiling problem.
-> -v3: update changelog and commets
-> 
-
-Yinghai, I have not forgotten about this patch.  I'm waiting for the system to
-become available so that I can test it.  My apologies for the inconvenience,
-
-P.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/kernel/irq.c |   18 ++++++++++++++++--
->  1 file changed, 16 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/irq.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/irq.c
-> +++ linux-2.6/arch/x86/kernel/irq.c
-> @@ -17,6 +17,7 @@
->  #include <asm/idle.h>
->  #include <asm/mce.h>
->  #include <asm/hw_irq.h>
-> +#include <asm/desc.h>
->  
->  #define CREATE_TRACE_POINTS
->  #include <asm/trace/irq_vectors.h>
-> @@ -321,8 +322,21 @@ int check_irq_vectors_for_cpu_disable(vo
->  	for_each_online_cpu(cpu) {
->  		if (cpu == this_cpu)
->  			continue;
-> -		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
-> -		     vector++) {
-> +
-> +		/*
-> +		 * assign_irq_vector() only scan per_cpu vectors from
-> +		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
-> +		 * It aslo skip vectors that are set in used_vectors bitmask.
-> +		 * used_vectors could have bits set for
-> +		 *	IA32_SYSCALL_VECTOR (0x80)
-> +		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
-> +		 * Don't count those as available vectors.
-> +		 */
-> +		for (vector = FIRST_EXTERNAL_VECTOR;
-> +		     vector < first_system_vector; vector++) {
-> +			if (test_bit(vector, used_vectors))
-> +				continue;
-> +
->  			if (per_cpu(vector_irq, cpu)[vector] < 0)
->  				count++;
->  		}
