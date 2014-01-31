@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774AbaAaRJI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:09:08 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:52257 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932492AbaAaRJG (ORCPT
+	id S932777AbaAaRLH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:11:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:35957 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932492AbaAaRLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:09:06 -0500
+	Fri, 31 Jan 2014 12:11:06 -0500
+Date: Fri, 31 Jan 2014 12:11:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
+ do
+Message-ID: <20140131121104.382942cc@gandalf.local.home>
+In-Reply-To: <20140131120757.594e24d6@gandalf.local.home>
+References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
+	<1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
+	<20140131120757.594e24d6@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Reply-To: for.poige+linux@gmail.com
-In-Reply-To: <52EBD613.3040902@gmail.com>
-References: <CA+sTkh4fYZr-8vBuhA0c1BRt5D7oNiK=KrSF+kJ2KRW7e_LFaA@mail.gmail.com>
- <CA+sTkh4p10P_BbxEx0vxS9uF0zA9G97K+4B_Q1Np55Ui83LVDQ@mail.gmail.com> <52EBD613.3040902@gmail.com>
-From: Igor Podlesny <for.poige+linux@gmail.com>
-Date: Sat, 1 Feb 2014 01:08:35 +0800
-X-Google-Sender-Auth: aSPa8UGC6aNVkfKaPpDUVq8e5rA
-Message-ID: <CA+sTkh6uR11zsgb7qRyBEwzn5f+s66dpM=JvvS8mYO8DwtG9-Q@mail.gmail.com>
-Subject: Re: That greedy Linux VM cache
-To: "Austin S. Hemmelgarn" <ahferroin7@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-On 1 February 2014 00:57, Austin S. Hemmelgarn <ahferroin7@gmail.com> wrote:
-> If I remember correctly, there is a sysctl for configuring how
-> aggressively the system tries to retain the VFS cache, changing the
-> value there might improve things for you.
+On Fri, 31 Jan 2014 12:07:57 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+ 
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index 106968f..426d114 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -1461,18 +1461,20 @@ void run_local_timers(void)
+>  	 * the timer softirq.
+>  	 */
+>  #ifdef CONFIG_PREEMPT_RT_FULL
+> +	/* On RT, irq work runs from softirq */
+> +	if (irq_work_needs_cpu()) {
+> +		raise_softirq(TIMER_SOFTIRQ);
+> +		return;
+> +	}
+> +
+>  	if (!spin_do_trylock(&base->lock)) {
+>  		raise_softirq(TIMER_SOFTIRQ);
+>  		return;
+>  	}
+>  #endif
 
-   Yeah, in theory. On practice I never saw a difference even with
-vm.vfs_cache_pressure set to 800000.
+Note, I debated about doing:
 
--- 
-End of message. Next message?
+	if (irq_work_needs_cpu() ||
+	    !spin_do_trylock(&base->lock)) {
+		raise_softirq(TIMER_SOFTIRQ);
+		return;
+	}
+
+instead, which is pretty much the same code. But I find it rather ugly,
+and does not read as well. I haven't looked at the disassembly, but I
+would hope that gcc would make my original version have the same result
+as this one.
+
+-- Steve
