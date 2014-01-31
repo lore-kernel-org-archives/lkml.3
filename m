@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121AbaAaCRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 21:17:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932068AbaAaCRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 21:17:40 -0500
-Date: Thu, 30 Jan 2014 21:17:30 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: alexander.deucher@amd.com
-Subject: drm/radeon/dpm: fix uninitialized read from stack in
- kv_dpm_late_enable
-Message-ID: <20140131021730.GA11601@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	alexander.deucher@amd.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932167AbaAaCS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 21:18:58 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:61562 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068AbaAaCS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 21:18:56 -0500
+Message-ID: <52EB080A.2020200@gmail.com>
+Date: Fri, 31 Jan 2014 03:18:50 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/21] pinctrl: mvebu: restructure and remove hardcoded
+ addresses from Dove pinctrl
+References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140130182925.GM10864@lunn.ch> <52EA9EFA.1030609@gmail.com> <20140130202500.GN10864@lunn.ch>
+In-Reply-To: <20140130202500.GN10864@lunn.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we take the false branch of the if quoted in the diff below, we
-end up doing a return ret, without ever having initialized it.
+On 01/30/2014 09:25 PM, Andrew Lunn wrote:
+> On Thu, Jan 30, 2014 at 07:50:34PM +0100, Sebastian Hesselbarth wrote:
+>> On 01/30/2014 07:29 PM, Andrew Lunn wrote:
+>>> On Tue, Jan 28, 2014 at 01:39:12AM +0100, Sebastian Hesselbarth wrote:
+>>>> This patch set is one required step for Dove to hop into mach-mvebu.
+>>>> Until now, pinctrl-dove was hardcoding some registers that do not
+>>>> directly belong to MPP core registers. This is not compatible with
+>>>> what we want for mach-mvebu.
+>>>
+>>> I think there might be something wrong here....
+>>
+>> There _is_ something wrong. I'll have a look at it. For the record,
+>> what SoC are you testing with? From the base address, I guess it is
+>> Kirkwood?
+>
+> Yes, Kirkwood. Sorry for not saying.
 
-Picked up by coverity.
+This time I push a branch before sending out the patches. Also, I
+think I'll postpone removal of hardcoded addresses until this is
+sorted out. The patch set was growing way to quick and I have to
+do this step-by-step for me and everybody else to actually understand ;)
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
- 
-diff --git a/drivers/gpu/drm/radeon/kv_dpm.c b/drivers/gpu/drm/radeon/kv_dpm.c
-index b6e01d5d2cce..351db361239d 100644
---- a/drivers/gpu/drm/radeon/kv_dpm.c
-+++ b/drivers/gpu/drm/radeon/kv_dpm.c
-@@ -1223,7 +1223,7 @@ int kv_dpm_enable(struct radeon_device *rdev)
- 
- int kv_dpm_late_enable(struct radeon_device *rdev)
- {
--	int ret;
-+	int ret = 0;
- 
- 	if (rdev->irq.installed &&
- 	    r600_is_internal_thermal_sensor(rdev->pm.int_thermal_type)) {
+So, at least the MVEBU guys should test the following branch on
+their SoCs. Again, I have tested Dove and now confirmed that settings
+are still correct. The others are compile-tested.
+
+https://github.com/shesselba/linux-dove.git unstable/mvebu-pinctrl-v3.14_v3
+
+@Thomas, Gregory: Do you think that the above branch will be
+restructured enough allow support for orion5x and mv78xx0? I had a
+quick look at mach-{orion5x,mv78xx0}/mpp.h and didn't see anything
+weird.
+
+Sebastian
