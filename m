@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596AbaAaTeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:34:46 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:48256 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754015AbaAaTeo (ORCPT
+	id S932738AbaAaTfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:35:13 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58854 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932619AbaAaTfK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:34:44 -0500
-Date: Fri, 31 Jan 2014 14:34:41 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
- do
-Message-ID: <20140131143441.478f79ee@gandalf.local.home>
-In-Reply-To: <52EBF8FE.3080608@linutronix.de>
-References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
-	<1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
-	<20140131120757.594e24d6@gandalf.local.home>
-	<20140131174227.GN9012@linux.vnet.ibm.com>
-	<20140131125719.73340f6e@gandalf.local.home>
-	<52EBF8FE.3080608@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Fri, 31 Jan 2014 14:35:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arm: qcom: Split Qualcomm support into legacy and multiplatform
+Date: Fri, 31 Jan 2014 20:34:46 +0100
+Message-ID: <3511712.H3ChLoqCm7@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <2B2190A4-6689-40D8-A3D7-BD2D882A2CF6@codeaurora.org>
+References: <1391107002-21470-1-git-send-email-galak@codeaurora.org> <201401312020.16984.arnd@arndb.de> <2B2190A4-6689-40D8-A3D7-BD2D882A2CF6@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:lhmfco6L7Nzne+FR9MmqC1cVNWla381SJvzMJcQO5um
+ 7I6EfRAd4IJENxdmvbO1i976gT7vLwDKPZYwe6NrZbSp/QA+7N
+ 2Ud2EseNtUnRJPF4QfBe9ifrUdOuaizpJRpUsxo84dK9fC+j4m
+ 1IxHaLIsapncv5J/lhrVDRcTRcO7DMWPnXFIVD0kZ1J27DjxUc
+ dPjsRFiNrv7CZ/z+v1ngqs3Queez9Z+H5HXpSBD5XSyj4yHzBW
+ THbO+Nk6vdxOytxetRedmyrfbm7b+28JKx1AlnX9i4ExRn5rub
+ sx345NfaG3M5ScZOJO7AW5ippXxsNDjEFZBidauSXKE2a4vpQC
+ 4e32N/Zg862M6Eoo9J00=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Jan 2014 20:26:54 +0100
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-
-> On 01/31/2014 06:57 PM, Steven Rostedt wrote:
+On Friday 31 January 2014 13:25:25 Kumar Gala wrote:
+> > The hotplug.c change sticks out as something that isn't just a move
+> > of code to another place, but deletion of unused code. It would
+> > be nice to split that out into a separate change, possibly together
+> > with the trivial board.c and smp.c changes.
 > 
-> > In vanilla Linux, irq_work_run() is called from update_process_times()
-> > when it is called from the timer interrupt. In -rt, there's reasons we
+> That’s not 100% true, the hotplug.c code implemented msm_cpu_die, which moved into smp.c
 > 
-> and in vanilla Linux some architectures (like x86 or sparc to name just
-> a few) overwrite arch_irq_work_raise() which means they provide
-> their "own" interrupt like callback. That means on those architectures
-> irq_work_run() gets invoked twice: once via update_process_times() and
-> via and once the custom interface.
-> So my question to the original inventor of this code: Peter, do we
-> really need that arch specific callback? Wouldn't one be enough? Is it
-> that critical that it can't wait to the next timer tick?
+> I can split out scm*/smp* into a patch to enable smp if that is really desired, but not exactly sure what it gets us.
+> 
 
-There's flags that determine when the next call should be invoked. The
-irq_work_run() should return immediately if it was already done by the
-arch specific call. The work wont be called twice.
+It's not extremely important, I just prefer splitting patches
+that have any kind of functional change from trivial moves.
 
-As I have worked on code that uses irq_work() I can say that we want
-the arch specific interrupts. For those architectures that don't have
-it will experience larger latencies for the work required. It's
-basically, a "too bad" for them.
+If something happens to break for an unforseen reason, it's
+easier to bisect to the patch that does the change.
 
-But to answer your question, no we want the immediate response.
-
--- Steve
+	Arnd
