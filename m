@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791AbaAaTrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 14:47:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54283 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785AbaAaTri (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 14:47:38 -0500
-Date: Fri, 31 Jan 2014 20:47:18 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, aswin@hp.com,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
- implementation
-Message-ID: <20140131194718.GO5002@laptop.programming.kicks-ass.net>
-References: <1390537731-45996-1-git-send-email-Waiman.Long@hp.com>
- <20140130130453.GB2936@laptop.programming.kicks-ass.net>
- <20140130151715.GA5126@laptop.programming.kicks-ass.net>
- <20140131092616.GC5126@laptop.programming.kicks-ass.net>
- <52EBF276.1020505@hp.com>
+	id S932851AbaAaTse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 14:48:34 -0500
+Received: from fieldses.org ([174.143.236.118]:49832 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932795AbaAaTsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 14:48:32 -0500
+Date: Fri, 31 Jan 2014 14:47:58 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH] dcache: make d_splice_alias use d_materialise_unique
+Message-ID: <20140131194758.GA24618@fieldses.org>
+References: <20140115151749.GF23999@fieldses.org>
+ <20140117121723.GA18375@infradead.org>
+ <20140117153917.GA26636@fieldses.org>
+ <20140117210343.GD26636@fieldses.org>
+ <20140117212655.GE26636@fieldses.org>
+ <20140123212700.GA30466@fieldses.org>
+ <20140131184258.GN10323@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52EBF276.1020505@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140131184258.GN10323@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 01:59:02PM -0500, Waiman Long wrote:
-> On 01/31/2014 04:26 AM, Peter Zijlstra wrote:
-> >On Thu, Jan 30, 2014 at 04:17:15PM +0100, Peter Zijlstra wrote:
-> >>The below is still small and actually works.
-> >OK, so having actually worked through the thing; I realized we can
-> >actually do a version without MCS lock and instead use a ticket lock for
-> >the waitqueue.
-> >
-> >This is both smaller (back to 8 bytes for the rwlock_t), and should be
-> >faster under moderate contention for not having to touch extra
-> >cachelines.
-> >
-> >Completely untested and with a rather crude generic ticket lock
-> >implementation to illustrate the concept:
-> >
+On Fri, Jan 31, 2014 at 06:42:58PM +0000, Al Viro wrote:
+> On Thu, Jan 23, 2014 at 04:27:00PM -0500, J. Bruce Fields wrote:
+> > From: "J. Bruce Fields" <bfields@redhat.com>
+> > 
+> > d_splice_alias can create duplicate directory aliases (in the !new
+> > case), or (in the new case) d_move directories without holding
+> > appropriate locks.
 > 
-> Using a ticket lock instead will have the same scalability problem as the
-> ticket spinlock as all the waiting threads will spin on the lock cacheline
-> causing a lot of cache bouncing traffic. That is the reason why I want to
-> replace ticket spinlock with queue spinlock.
+> Details, please.  In the new case, we have IS_ROOT() alias found;
+> what locks would that need?  Note that d_materialise_unique() won't
+> bother with __d_unalias() in such case - it does what d_move() would've
+> done, without taking any mutex.
 
-But but but, just fix such heavily contended locks. Don't make sensible
-code that is lightly contended run slower because of it.
+Of course you're right, and Miklos had pointed this out already and I
+forgot to update the changelog.  Apologies!
 
+> In the !new case, we'd need a preexisting dentry alias, complete with
+> parent.  IOW, that's the case when directory already in the tree
+> has been found during lookup from another parent.  In which case
+> we shouldn't be using d_splice_alias() at all, as it is (and it
+> certainly can't happen for any local fs).
+
+Yes, except: won't a local filesystem will still hit this case on a
+filesystem that's corrupted to link a directory into multiple parents?
+
+Though in that case arguably the right behavior might be, say, WARN and
+return -EIO.
+
+> Now, I agree that merging that with d_materialise_unique() might be
+> a good idea, but commit message is wrong as it, AFAICS.
+
+Agreed, I'll fix and resend.
+
+Though now I wonder whether it's worth keeping two different interfaces,
+one for the case when finding a parent in a different directory is an
+error and one for the case when it's normal and you'd just like it fixed
+up.
+
+(Then one remaining thing I don't understand is how to make that fixing
+up reliable.  Or is there some reason nobody hits the _EBUSY case of
+__d_unalias?)
+
+--b.
