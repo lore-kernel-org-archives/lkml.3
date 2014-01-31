@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbaAaKR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 05:17:26 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:47097 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649AbaAaKRY (ORCPT
+	id S932299AbaAaKR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 05:17:56 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42518 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649AbaAaKRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 05:17:24 -0500
+	Fri, 31 Jan 2014 05:17:54 -0500
+Date: Fri, 31 Jan 2014 11:17:29 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: George Spelvin <linux@horizon.com>
+Cc: Waiman.Long@hp.com, akpm@linux-foundation.org, andi@firstfloor.org,
+        arnd@arndb.de, aswin@hp.com, hpa@zytor.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        paulmck@linux.vnet.ibm.com, raghavendra.kt@linux.vnet.ibm.com,
+        riel@redhat.com, rostedt@goodmis.org, scott.norton@hp.com,
+        tglx@linutronix.de, tim.c.chen@linux.intel.com,
+        torvalds@linux-foundation.org, walken@google.com, x86@kernel.org
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock
+ implementation
+Message-ID: <20140131101729.GA8874@twins.programming.kicks-ass.net>
+References: <20140131092616.GC5126@laptop.programming.kicks-ass.net>
+ <20140131100348.8867.qmail@science.horizon.com>
 MIME-Version: 1.0
-In-Reply-To: <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Fri, 31 Jan 2014 11:17:23 +0100
-Message-ID: <CACRpkda5HRxpLWWizT_58SJ6Fb=TQpO=Y5yFThpZkUbUYmU8fg@mail.gmail.com>
-Subject: Re: [PATCH v2 00/21] pinctrl: mvebu: restructure and remove hardcoded
- addresses from Dove pinctrl
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140131100348.8867.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 1:39 AM, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
+On Fri, Jan 31, 2014 at 05:03:48AM -0500, George Spelvin wrote:
+> How about getting rid of that TICKET_MSB mess and doing something like:
+> 
+> #define TICKET_MASK	0xFFFF
+> 
+> static inline void ticket_spin_unlock(atomic_t *tickets)
+> {
+> 	u32 t = *tickets;
+> 
+> 	smp_mb__before_atomic_inc();
+> 
+> 	/* Increment the low 16 bits without affecting the upper. */
+> 	if (unlikely((~t & TICKET_MASK) == 0))
+> 		atomic_add(-(atomic_t)TICKET_MASK, tickets);
+> 	else
+> 		atomic_inc(tickets);
+> }
+> 
+> That also allows up to 2^16 waiters, up from 2^15.
+> (Minus one on both cases, if you want to be fussy.)
 
-> This patch set is one required step for Dove to hop into mach-mvebu.
-> Until now, pinctrl-dove was hardcoding some registers that do not
-> directly belong to MPP core registers. This is not compatible with
-> what we want for mach-mvebu.
+Ah indeed. That'll work. That said, any arch that can single-copy
+address shorts can probably do better than this generic atomic_t thing.
 
-All this stuff is really nice, so if you can get Thomas to add his
-review-tag on this stuff and maybe have some Tested-by:s
-from other parties, I'd be happy to pull the end result to the
-pinctrl tree, or alternatively provide my ACK for you to take this
-through ARM SoC.
-
-Yours,
-Linus Walleij
+My main point was that we should seriously look at a ticket lock instead
+of the MCS one, because while the MCS has better contention behaviour,
+we shouldn't optimize locks for the worst contention.
