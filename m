@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbaAaRfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:35:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55224 "EHLO
+	id S932948AbaAaRf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:35:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55223 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932704AbaAaRcq (ORCPT
+	with ESMTP id S932709AbaAaRcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 12:32:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 08/14] hwmon: (coretemp) Fix truncated name of alarm attributes
-Date: Fri, 31 Jan 2014 09:32:11 -0800
-Message-Id: <1391189537-20777-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 03/14] drm/i915: fix DDI PLLs HW state readout code
+Date: Fri, 31 Jan 2014 09:32:06 -0800
+Message-Id: <1391189537-20777-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -27,36 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 3f9aec7610b39521c7c69d754de7265f6994c194 upstream.
+commit 0882dae983707455e97479e5e904e37673517ebc upstream.
 
-When the core number exceeds 9, the size of the buffer storing the
-alarm attribute name is insufficient and the attribute name is
-truncated. This causes libsensors to skip these attributes as the
-truncated name is not recognized.
+Properly zero the refcounts and crtc->ddi_pll_set so the previous HW
+state doesn't affect the result of reading the current HW state.
 
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+This fixes WARNs about WRPLL refcount if we have an HDMI monitor on
+HSW and then suspend/resume.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64379
+Tested-by: Qingshuai Tian <qingshuai.tian@intel.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/coretemp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_ddi.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index d64923d..67c05db 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -52,7 +52,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
+index b8e53d9..6f09de3 100644
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -1178,12 +1178,18 @@ void intel_ddi_setup_hw_pll_state(struct drm_device *dev)
+ 	enum pipe pipe;
+ 	struct intel_crtc *intel_crtc;
  
- #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
- #define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
--#define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
-+#define CORETEMP_NAME_LENGTH	19	/* String Length of attrs */
- #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
- #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
- #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
++	dev_priv->ddi_plls.spll_refcount = 0;
++	dev_priv->ddi_plls.wrpll1_refcount = 0;
++	dev_priv->ddi_plls.wrpll2_refcount = 0;
++
+ 	for_each_pipe(pipe) {
+ 		intel_crtc =
+ 			to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
+ 
+-		if (!intel_crtc->active)
++		if (!intel_crtc->active) {
++			intel_crtc->ddi_pll_sel = PORT_CLK_SEL_NONE;
+ 			continue;
++		}
+ 
+ 		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
+ 								 pipe);
 -- 
 1.8.3.2
 
