@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405AbaAaMhd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 07:37:33 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56308 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355AbaAaMhb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 07:37:31 -0500
-Message-ID: <52EB9908.2090903@pengutronix.de>
-Date: Fri, 31 Jan 2014 13:37:28 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
-MIME-Version: 1.0
-To: Florian Vaussard <florian.vaussard@epfl.ch>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/6] can: sja1000: cleanups and new OF property
-References: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch>
-In-Reply-To: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S932424AbaAaMjZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 07:39:25 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932145AbaAaMjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 07:39:24 -0500
+From: Richard Weinberger <richard@nod.at>
+To: computersforpeace@gmail.com
+Cc: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com,
+        ezequiel.garcia@free-electrons.com, pekon@ti.com,
+        jussi.kivilinna@iki.fi, acourbot@nvidia.com, shc_work@mail.ru,
+        ivan.khoronzhuk@ti.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] nand,flctl: Add dependency on HAS_IOMEM and HAS_DMA
+Date: Fri, 31 Jan 2014 13:39:07 +0100
+Message-Id: <1391171947-17638-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On archs like S390 or um this driver cannot build nor work.
+Make it depend on HAS_IOMEM and HAS_DMA to bypass build failures.
 
-On 01/31/2014 11:35 AM, Florian Vaussard wrote:
-> Hello,
->=20
-> Changes sinces v1:
-> - Merge sja1000_of_platform.c into sja1000_platform.c (patch 4)
->=20
-> The first part of this series performs serveral small cleanups
-> (patches 1 to 3).
->=20
-> Patch 4 merges sja1000_of_platform.c into sja1000_platform.c.
-> Changes are pretty conservatives (mostly copy/paste/move). IRQ
-> is treated differently in the OF and non-OF versions, thus this
-> is where the fused version differs the most.
->=20
-> The final part introduces the 'reg-io-width' binding (already used
-> by some other drivers) to perform a similar job as what was done
-> with IORESOURCE_MEM_XXBIT. This is needed on my system to correctly
-> take into account the aliasing of the address bus.
+drivers/built-in.o: In function `flctl_probe':
+drivers/mtd/nand/sh_flctl.c:1097: undefined reference to `devm_ioremap_resource'
+drivers/built-in.o: In function `flctl_dma_fifo0_transfer':
+drivers/mtd/nand/sh_flctl.c:368: undefined reference to `dma_map_single'
+drivers/mtd/nand/sh_flctl.c:407: undefined reference to `dma_unmap_single'
 
-Good work, please keep compatibility for DTs without the 'reg-io-width'
-binding. The rest of my comments are only nitpicks. :)
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/nand/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Marc
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index 90ff447..a5bb738 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -459,6 +459,8 @@ config MTD_NAND_MXC
+ config MTD_NAND_SH_FLCTL
+ 	tristate "Support for NAND on Renesas SuperH FLCTL"
+ 	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
++	depends on HAS_IOMEM
++	depends on HAS_DMA
+ 	help
+ 	  Several Renesas SuperH CPU has FLCTL. This option enables support
+ 	  for NAND Flash using FLCTL.
+-- 
+1.8.1.4
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlLrmQgACgkQjTAFq1RaXHO95QCcC/M7NBTZHBMhoIfldr5iPzJA
-z/sAn3TxzCSDJMBKRfLPp/skNhrGeEFa
-=Fotn
------END PGP SIGNATURE-----
-
---Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ--
