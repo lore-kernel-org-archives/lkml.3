@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833AbaAaRcv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55176 "EHLO
+	id S932816AbaAaRcu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:32:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaAaRco (ORCPT
+	with ESMTP id S932524AbaAaRco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 12:32:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 02/14] writeback: Fix data corruption on NFS
-Date: Fri, 31 Jan 2014 09:32:05 -0800
-Message-Id: <1391189537-20777-3-git-send-email-kamal@canonical.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 12/14] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
+Date: Fri, 31 Jan 2014 09:32:15 -0800
+Message-Id: <1391189537-20777-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -26,57 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit f9b0e058cbd04ada76b13afffa7e1df830543c24 upstream.
+based on
+commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
 
-Commit 4f8ad655dbc8 "writeback: Refactor writeback_single_inode()" added
-a condition to skip clean inode. However this is wrong in WB_SYNC_ALL
-mode because there we also want to wait for outstanding writeback on
-possibly clean inode. This was causing occasional data corruption issues
-on NFS because it uses sync_inode() to make sure all outstanding writes
-are flushed to the server before truncating the inode and with
-sync_inode() returning prematurely file was sometimes extended back
-by an outstanding write after it was truncated.
+At some point, Measurement Computing / ComputerBoards redesigned the
+PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
+This meant they had to put their hardware registers in the PCI BAR 2
+region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
+device ID for the new design.  This means the driver recognizes the
+newer cards, but doesn't work (and is likely to screw up the local
+configuration registers of the PLX chip) because it's using the wrong
+region.
 
-So modify the test to also check for pages under writeback in
-WB_SYNC_ALL mode.
+Since  the PCI subvendor and subdevice IDs were both zero on the old
+design, but are the same as the vendor and device on the new design, we
+can tell the old design and new design apart easily enough.  To avoid
+adding extra data to `pci_8255_boards[]`, treat the board as a special
+case in `pci_8255_auto_attach[]`.  It's safer to use the fact that the
+PCI BAR 2 region will have non-zero length only on the newer design, so
+use that fact to distinguish them.
 
-Fixes: 4f8ad655dbc82cf05d2edc11e66b78a42d38bf93
-Reported-and-tested-by: Dan Duval <dan.duval@oracle.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: kernel-team@lists.ubuntu.com
+[ ian: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/fs-writeback.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/8255_pci.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 310972b..17eaad5 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -517,13 +517,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
- 	}
- 	WARN_ON(inode->i_state & I_SYNC);
- 	/*
--	 * Skip inode if it is clean. We don't want to mess with writeback
--	 * lists in this function since flusher thread may be doing for example
--	 * sync in parallel and if we move the inode, it could get skipped. So
--	 * here we make sure inode is on some writeback list and leave it there
--	 * unless we have completely cleaned the inode.
-+	 * Skip inode if it is clean and we have no outstanding writeback in
-+	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
-+	 * function since flusher thread may be doing for example sync in
-+	 * parallel and if we move the inode, it could get skipped. So here we
-+	 * make sure inode is on some writeback list and leave it there unless
-+	 * we have completely cleaned the inode.
- 	 */
--	if (!(inode->i_state & I_DIRTY))
-+	if (!(inode->i_state & I_DIRTY) &&
-+	    (wbc->sync_mode != WB_SYNC_ALL ||
-+	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
- 		goto out;
- 	inode->i_state |= I_SYNC;
- 	spin_unlock(&inode->i_lock);
+diff --git a/drivers/staging/comedi/drivers/8255_pci.c b/drivers/staging/comedi/drivers/8255_pci.c
+index e0a7952..92ee23e 100644
+--- a/drivers/staging/comedi/drivers/8255_pci.c
++++ b/drivers/staging/comedi/drivers/8255_pci.c
+@@ -122,7 +122,7 @@ static const struct pci_8255_boardinfo pci_8255_boards[] = {
+ 		.name		= "cb_pci-dio48h",
+ 		.vendor		= PCI_VENDOR_ID_CB,
+ 		.device		= PCI_DEVICE_ID_CB_PCIDIO48H,
+-		.dio_badr	= 1,
++		.dio_badr	= 1,	/* only for older boards */
+ 		.n_8255		= 2,
+ 	}, {
+ 		.name		= "cb_pci-dio96h",
+@@ -224,6 +224,7 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
+ 	unsigned long len;
+ 	int ret;
+ 	int i;
++	int dio_badr;
+ 
+ 	board = pci_8255_find_boardinfo(dev, pcidev);
+ 	if (!board)
+@@ -239,8 +240,21 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
+ 	ret = comedi_pci_enable(pcidev, dev->board_name);
+ 	if (ret)
+ 		return ret;
+-	iobase = pci_resource_start(pcidev, board->dio_badr);
+-	len = pci_resource_len(pcidev, board->dio_badr);
++	dio_badr = board->dio_badr;
++	/*
++	 * For Measurement Computing / ComputerBoards PCI-DIO48H, use the
++	 * PCI BAR 2 region, if non-zero length, else use the PCI BAR 1 region
++	 * from the board entry.  This is because the board was redesigned to
++	 * use a different PCI interface chip, with the user registers in a
++	 * different PCI BAR region.
++	 */
++	if (pcidev->vendor == PCI_VENDOR_ID_CB &&
++	    pcidev->device == PCI_DEVICE_ID_CB_PCIDIO48H &&
++	    pci_resource_len(pcidev, 2))
++		dio_badr = 2;
++
++	iobase = pci_resource_start(pcidev, dio_badr);
++	len = pci_resource_len(pcidev, dio_badr);
+ 
+ 	if (board->is_mmio) {
+ 		devpriv->mmio_base = ioremap(iobase, len);
 -- 
 1.8.3.2
 
