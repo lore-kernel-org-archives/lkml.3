@@ -1,34 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaAaAV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:21:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28884 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348AbaAaAVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:21:55 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com>
-References: <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> <8761p1m98f.fsf@xmission.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-afs@lists.infradead.org,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Date: Fri, 31 Jan 2014 00:21:26 +0000
-Message-ID: <3255.1391127686@warthog.procyon.org.uk>
+	id S932089AbaAaA2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:28:31 -0500
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:39027 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaAaA2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 19:28:30 -0500
+From: Greg Thelen <gthelen@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+	<xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
+	<20140130123044.GB13509@dhcp22.suse.cz>
+Date: Thu, 30 Jan 2014 16:28:27 -0800
+Message-ID: <xr931tzphu50.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.130007 (Ma Gnus v0.7) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Thu, Jan 30 2014, Michal Hocko wrote:
 
-> I think this is a pretty strong argument. Counter-arguments, anybody?
+> On Wed 29-01-14 11:08:46, Greg Thelen wrote:
+> [...]
+>> The series looks useful.  We (Google) have been using something similar.
+>> In practice such a low_limit (or memory guarantee), doesn't nest very
+>> well.
+>> 
+>> Example:
+>>   - parent_memcg: limit 500, low_limit 500, usage 500
+>>     1 privately charged non-reclaimable page (e.g. mlock, slab)
+>>   - child_memcg: limit 500, low_limit 500, usage 499
+>
+> I am not sure this is a good example. Your setup basically say that no
+> single page should be reclaimed. I can imagine this might be useful in
+> some cases and I would like to allow it but it sounds too extreme (e.g.
+> a load which would start trashing heavily once the reclaim starts and it
+> makes more sense to start it again rather than crowl - think about some
+> mathematical simulation which might diverge).
 
-Yes.  CAP_DAC_READ_SEARCH.
+Pages will still be reclaimed the usage_in_bytes is exceeds
+limit_in_bytes.  I see the low_limit as a way to tell the kernel: don't
+reclaim my memory due to external pressure, but internal pressure is
+different.
 
-David
+>> If a streaming file cache workload (e.g. sha1sum) starts gobbling up
+>> page cache it will lead to an oom kill instead of reclaiming. 
+>
+> Does it make any sense to protect all of such memory although it is
+> easily reclaimable?
+
+I think protection makes sense in this case.  If I know my workload
+needs 500 to operate well, then I reserve 500 using low_limit.  My app
+doesn't want to run with less than its reservation.
+
+>> One could argue that this is working as intended because child_memcg
+>> was promised 500 but can only get 499.  So child_memcg is oom killed
+>> rather than being forced to operate below its promised low limit.
+>> 
+>> This has led to various internal workarounds like:
+>> - don't charge any memory to interior tree nodes (e.g. parent_memcg);
+>>   only charge memory to cgroup leafs.  This gets tricky when dealing
+>>   with reparented memory inherited to parent from child during cgroup
+>>   deletion.
+>
+> Do those need any protection at all?
+
+Interior tree nodes don't need protection from their children.  But
+children and interior nodes need protection from siblings and parents.
+
+>> - don't set low_limit on non leafs (e.g. do not set low limit on
+>>   parent_memcg).  This constrains the cgroup layout a bit.  Some
+>>   customers want to purchase $MEM and setup their workload with a few
+>>   child cgroups.  A system daemon hands out $MEM by setting low_limit
+>>   for top-level containers (e.g. parent_memcg).  Thereafter such
+>>   customers are able to partition their workload with sub memcg below
+>>   child_memcg.  Example:
+>>      parent_memcg
+>>          \
+>>           child_memcg
+>>             /     \
+>>         server   backup
+>
+> I think that the low_limit makes sense where you actually want to
+> protect something from reclaim. And backup sounds like a bad fit for
+> that.
+
+The backup job would presumably have a small low_limit, but it may still
+have a minimum working set required to make useful forward progress.
+
+Example:
+  parent_memcg
+      \
+       child_memcg limit 500, low_limit 500, usage 500
+         /     \
+         |   backup   limit 10, low_limit 10, usage 10
+         |
+      server limit 490, low_limit 490, usage 490
+
+One could argue that problems appear when
+server.low_limit+backup.lower_limit=child_memcg.limit.  So the safer
+configuration is leave some padding:
+  server.low_limit + backup.low_limit + padding = child_memcg.limit
+but this just defers the problem.  As memory is reparented into parent,
+then padding must grow.
+
+>>   Thereafter customers often want some weak isolation between server and
+>>   backup.  To avoid undesired oom kills the server/backup isolation is
+>>   provided with a softer memory guarantee (e.g. soft_limit).  The soft
+>>   limit acts like the low_limit until priority becomes desperate.
+>
+> Johannes was already suggesting that the low_limit should allow for a
+> weaker semantic as well. I am not very much inclined to that but I can
+> leave with a knob which would say oom_on_lowlimit (on by default but
+> allowed to be set to 0). We would fallback to the full reclaim if
+> no groups turn out to be reclaimable.
+
+I like the strong semantic of your low_limit at least at level:1 cgroups
+(direct children of root).  But I have also encountered situations where
+a strict guarantee is too strict and a mere preference is desirable.
+Perhaps the best plan is to continue with the proposed strict low_limit
+and eventually provide an additional mechanism which provides weaker
+guarantees (e.g. soft_limit or something else if soft_limit cannot be
+altered).  These two would offer good support for a variety of use
+cases.
+
+I thinking of something like:
+
+bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
+		struct mem_cgroup *root,
+		int priority)
+{
+	do {
+		if (memcg == root)
+			break;
+		if (!res_counter_low_limit_excess(&memcg->res))
+			return false;
+		if ((priority >= DEF_PRIORITY - 2) &&
+		    !res_counter_soft_limit_exceed(&memcg->res))
+			return false;
+	} while ((memcg = parent_mem_cgroup(memcg)));
+	return true;
+}
+
+But this soft_limit,priority extension can be added later.
