@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171AbaAaU2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:28:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55432 "EHLO
+	id S933155AbaAaU2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:28:10 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55425 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933078AbaAaU17 (ORCPT
+	with ESMTP id S933069AbaAaU16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:27:59 -0500
+	Fri, 31 Jan 2014 15:27:58 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/12] perf machine: Set up ref_reloc_sym in machine__create_kernel_maps()
-Date: Fri, 31 Jan 2014 17:27:30 -0300
-Message-Id: <1391200055-18250-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/12] perf symbols: Fix symbol annotation for relocated kernel
+Date: Fri, 31 Jan 2014 17:27:27 -0300
+Message-Id: <1391200055-18250-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1391200055-18250-1-git-send-email-acme@infradead.org>
 References: <1391200055-18250-1-git-send-email-acme@infradead.org>
@@ -32,10 +32,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-The ref_reloc_sym is always needed for the kernel map in order to check
-for relocation.  Consequently set it up when the kernel map is created.
-Otherwise it was only being set up by 'perf record'.
+Kernel maps map memory addresses to file offsets.
 
+For symbol annotation, objdump needs the object VMA addresses.  For an
+unrelocated kernel, that is the same as the memory address.
+
+The addresses passed to objdump for symbol annotation did not take into
+account kernel relocation.
+
+This patch fixes that.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Tested-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -47,70 +54,69 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-5-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1391004884-10334-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 23 +++++++++++++++++++++++
- tools/perf/util/machine.h |  2 ++
- 2 files changed, 25 insertions(+)
+ tools/perf/util/map.c        | 5 +++--
+ tools/perf/util/map.h        | 1 +
+ tools/perf/util/symbol-elf.c | 2 ++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 290c2e6d4001..c872991e0f65 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -832,9 +832,25 @@ static int machine__create_modules(struct machine *machine)
- 	return 0;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 3b97513f0e77..39cd2d0faff6 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -39,6 +39,7 @@ void map__init(struct map *map, enum map_type type,
+ 	map->start    = start;
+ 	map->end      = end;
+ 	map->pgoff    = pgoff;
++	map->reloc    = 0;
+ 	map->dso      = dso;
+ 	map->map_ip   = map__map_ip;
+ 	map->unmap_ip = map__unmap_ip;
+@@ -288,7 +289,7 @@ u64 map__rip_2objdump(struct map *map, u64 rip)
+ 	if (map->dso->rel)
+ 		return rip - map->pgoff;
+ 
+-	return map->unmap_ip(map, rip);
++	return map->unmap_ip(map, rip) - map->reloc;
  }
  
-+const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
-+
- int machine__create_kernel_maps(struct machine *machine)
- {
- 	struct dso *kernel = machine__get_kernel(machine);
-+	char filename[PATH_MAX];
-+	const char *name;
-+	u64 addr = 0;
-+	int i;
-+
-+	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
-+
-+	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
-+		addr = kallsyms__get_function_start(filename, name);
-+		if (addr)
-+			break;
-+	}
-+	if (!addr)
-+		return -1;
+ /**
+@@ -311,7 +312,7 @@ u64 map__objdump_2mem(struct map *map, u64 ip)
+ 	if (map->dso->rel)
+ 		return map->unmap_ip(map, ip + map->pgoff);
  
- 	if (kernel == NULL ||
- 	    __machine__create_kernel_maps(machine, kernel) < 0)
-@@ -853,6 +869,13 @@ int machine__create_kernel_maps(struct machine *machine)
- 	 * Now that we have all the maps created, just set the ->end of them:
- 	 */
- 	map_groups__fixup_end(&machine->kmaps);
-+
-+	if (maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps, name,
-+					     addr)) {
-+		machine__destroy_kernel_maps(machine);
-+		return -1;
-+	}
-+
- 	return 0;
+-	return ip;
++	return ip + map->reloc;
  }
  
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 477133015440..f77e91e483dc 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -18,6 +18,8 @@ union perf_event;
- #define	HOST_KERNEL_ID			(-1)
- #define	DEFAULT_GUEST_KERNEL_ID		(0)
- 
-+extern const char *ref_reloc_sym_names[];
-+
- struct machine {
- 	struct rb_node	  rb_node;
- 	pid_t		  pid;
+ void map_groups__init(struct map_groups *mg)
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 18068c6b71c1..257e513205ce 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -36,6 +36,7 @@ struct map {
+ 	bool			erange_warned;
+ 	u32			priv;
+ 	u64			pgoff;
++	u64			reloc;
+ 	u32			maj, min; /* only valid for MMAP2 record */
+ 	u64			ino;      /* only valid for MMAP2 record */
+ 	u64			ino_generation;/* only valid for MMAP2 record */
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 8f12f0f5101d..3e9f336740fa 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -751,6 +751,8 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 			if (strcmp(elf_name, kmap->ref_reloc_sym->name))
+ 				continue;
+ 			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
++			map->reloc = kmap->ref_reloc_sym->addr -
++				     kmap->ref_reloc_sym->unrelocated_addr;
+ 			break;
+ 		}
+ 	}
 -- 
 1.8.1.4
 
