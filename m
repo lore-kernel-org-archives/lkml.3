@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbaAaUPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:15:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64722 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaAaUPo (ORCPT
+	id S932874AbaAaUYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:24:04 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56376 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033AbaAaUYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 15:15:44 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: srinivas kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 1/4] ARM: STi: add stid127 soc support
-Date: Fri, 31 Jan 2014 21:15:33 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, maxime.coquelin@st.com,
-        alexandre.torgue@st.com
-References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <201401301939.08302.arnd@arndb.de> <52EB96BB.6070800@st.com>
-In-Reply-To: <52EB96BB.6070800@st.com>
+	Fri, 31 Jan 2014 15:24:02 -0500
+Message-ID: <52EC0658.3010205@linutronix.de>
+Date: Fri, 31 Jan 2014 21:23:52 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work
+ to do
+References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de> <1391178845-15837-2-git-send-email-bigeasy@linutronix.de> <20140131120757.594e24d6@gandalf.local.home> <20140131174227.GN9012@linux.vnet.ibm.com> <20140131125719.73340f6e@gandalf.local.home> <52EBF8FE.3080608@linutronix.de> <20140131143441.478f79ee@gandalf.local.home> <52EBFE1D.4020201@linutronix.de> <20140131200535.GR5002@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140131200535.GR5002@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401312115.33731.arnd@arndb.de>
-X-Provags-ID: V02:K0:hjgdS8/F5kKIw1Lzcy5IWav8vgp8ga4NmpebA6RUu3t
- AzPGamwJsWmQsMWzT9uWQuT/6K7UgfUxa9/Odn/qtj1A+jGDgf
- /2Jbmn3+Jnxu8LUhM6zg9JXti2Z7PW8/h11+Q/+mDBxbDFsn5s
- H2nHZ3YVecXTyoayMX+LLS/tekbyz3WrY0tWadkDkW2exlJ9Jp
- Phvg3W5ca2wB6LM22xRZa0gIW/vy3iIorc3giQuh3Vsy47mIaP
- 6atYkCrcr8WUp+NPZ13mCSXA0WPNAukUIQlqYlyGaOC76m3QDP
- 3s3bQAAX6HmWbxyqCYGQgvzJ/fdFquOr+G3Av70hwyUOCZvlLL
- L6uGWY4hCbU6yjB4/HX0IARa7pePkvmKOP89W6EIW
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 31 January 2014, srinivas kandagatla wrote:
+On 01/31/2014 09:05 PM, Peter Zijlstra wrote:
+> On Fri, Jan 31, 2014 at 08:48:45PM +0100, Sebastian Andrzej Siewior wrote:
+>>
+>> How "bad" is it? Is this something generic or just not getting
+>> perf events fast enough out? Most users don't seem to require small
+>> latencies.
+> 
+> I have vague memories of there being an actual perf problem if there's a
+> hole between the NMI/IRQ triggering the irq_work and the interrupt
+> running the work.
+> 
+> I should have some notes on it somewhere and an todo entry to plug the
+> hole.
+> 
+> But note that the MCE code also uses irq_work, they really _need_ to be
+> fast because the system might be crumbling under their feet.
 
-> > Sorry if I missed the initial review, but can you explain
-> > why this is needed to start with?
->
-> On ST SoCs the default value for L2 AUX_CTRL register is 0x0, so we  set
-> the way-size explicit here.
+Okay, this makes sense. What looked odd was the powerpc implementation
+where they let the timer interrupt expire and call the irq_work from
+the timer interrupt just before the clockevents callback is executed
+(which would invoke the irq_work callback as well).
 
-Unfortunately, we keep going back and forth on the L2 cache controller
-setup between "it should work automatically" and "we don't want to
-have configuration data in DT", where my personal opinion is that
-the first one is more important here.
+Would it be a win if we would remove the arch specific code and instead
+raise the timer interrupt asap? It sure won't be a win or change for
+-RT but it would allow all architectures to get irq_work done as soon
+as possible in IRQ context (and out of NMI context if I understand
+correct) without an arch specific implementation.
 
-Now, there are a couple of properties that are defined in
-Documentation/devicetree/bindings/arm/l2cc.txt to let some of the
-things get set up automatically already. Can you check which bits
-are missing there, if any? Are they better described as "configuration"
-or "hardware" settings?
-
-	Arnd
+Sebastian
