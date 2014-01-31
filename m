@@ -1,96 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaAaNOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 08:14:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44206 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274AbaAaNOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 08:14:20 -0500
-Message-ID: <52EBA1A5.3010602@pengutronix.de>
-Date: Fri, 31 Jan 2014 14:14:13 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
+	id S932445AbaAaNO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 08:14:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932263AbaAaNO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 08:14:58 -0500
+Message-ID: <52EBA1BD.8050607@redhat.com>
+Date: Fri, 31 Jan 2014 08:14:37 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: florian.vaussard@epfl.ch, Wolfgang Grandegger <wg@grandegger.com>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andreas Larsson <andreas@gaisler.com>
-Subject: Re: [PATCH v2 4/6] can: sja1000: fuse of_platform into platform
-References: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch> <1391164513-11529-5-git-send-email-florian.vaussard@epfl.ch> <52EB9824.2010703@pengutronix.de> <52EB9AEA.4010503@epfl.ch> <52EB9BE1.6060407@pengutronix.de> <52EB9C48.3010205@pengutronix.de> <52EB9E54.2020008@epfl.ch>
-In-Reply-To: <52EB9E54.2020008@epfl.ch>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="bQFdJaujBICQ7CtawG7LkkHnqGM0vofiM"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu disable
+References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---bQFdJaujBICQ7CtawG7LkkHnqGM0vofiM
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 01/31/2014 02:00 PM, Florian Vaussard wrote:
->=20
->=20
-> On 01/31/2014 01:51 PM, Marc Kleine-Budde wrote:
->> On 01/31/2014 01:49 PM, Marc Kleine-Budde wrote:
->>> On 01/31/2014 01:45 PM, Florian Vaussard wrote:
->>>> Hello Marc,
->>>>
->>>> On 01/31/2014 01:33 PM, Marc Kleine-Budde wrote:
->>>>> On 01/31/2014 11:35 AM, Florian Vaussard wrote:
->>>>>> The OpenFirmware probe can be merged into the standard platform
->>>>>> probe to leverage common code.
->>>>>
->>>>> Good work, as we want to replace the existing driver, I'm quite pic=
-ky on
->>>>> this patch, see more comments inline.
->>>>>
->>>>> Please don't delete of of_platform driver, yet.
->>>>>
->>>>
->>>> Do you have any reason for not deleting of_platform? After this patc=
-h,
->>>> we will have duplicated functionalities, this may be misleading for
->>>> other people.
->>>
->>> Okay.
->>> IIRC there _was_ a problem on sparc, it _should_ be fixed now, better=
-
->>> get a Tested-by from Andreas (Cc'ed).
->>
->=20
-> So it is ok for you if I remove of_platform, right?
-
-If you get a Tested-by for this patch by a sparc user.
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
---bQFdJaujBICQ7CtawG7LkkHnqGM0vofiM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+On 01/28/2014 04:54 PM, Yinghai Lu wrote:
+> used_vectors is a bitmap for vectors that are not tracked in per_cpu
+> vector_irq.
+> used_vectors contains information on the first 32 exceptions, the system vectors.
+> the IA32_SYSCALL_VECTOR (0x80), and the IRQ_MOVE_CLEANUP_VECTOR (0x20).
+> 
+> assign_irq_vectors() assigns vectors up to first_system_vector and
+> it will not use vectors that are set used_vectors.
+> 
+> This patch modifies the code to scan up to first_system_vector
+> and do a test on the used_vectors bitmap.
+> 
+> So count avaiable vectors correctly.
+> 
+> -v2: fix compiling problem.
+> -v3: update changelog and commets
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Yinghai, I have not forgotten about this patch.  I'm waiting for the system to
+become available so that I can test it.  My apologies for the inconvenience,
 
-iEYEARECAAYFAlLroaUACgkQjTAFq1RaXHOAnQCZAQ6JF21QKAbxCpHaBVn2MuY6
-5mQAoI/qtFfbnmcfUFUDHND2dZ56jFB/
-=sevQ
------END PGP SIGNATURE-----
+P.
 
---bQFdJaujBICQ7CtawG7LkkHnqGM0vofiM--
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/kernel/irq.c |   18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/kernel/irq.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/irq.c
+> +++ linux-2.6/arch/x86/kernel/irq.c
+> @@ -17,6 +17,7 @@
+>  #include <asm/idle.h>
+>  #include <asm/mce.h>
+>  #include <asm/hw_irq.h>
+> +#include <asm/desc.h>
+>  
+>  #define CREATE_TRACE_POINTS
+>  #include <asm/trace/irq_vectors.h>
+> @@ -321,8 +322,21 @@ int check_irq_vectors_for_cpu_disable(vo
+>  	for_each_online_cpu(cpu) {
+>  		if (cpu == this_cpu)
+>  			continue;
+> -		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+> -		     vector++) {
+> +
+> +		/*
+> +		 * assign_irq_vector() only scan per_cpu vectors from
+> +		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
+> +		 * It aslo skip vectors that are set in used_vectors bitmask.
+> +		 * used_vectors could have bits set for
+> +		 *	IA32_SYSCALL_VECTOR (0x80)
+> +		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
+> +		 * Don't count those as available vectors.
+> +		 */
+> +		for (vector = FIRST_EXTERNAL_VECTOR;
+> +		     vector < first_system_vector; vector++) {
+> +			if (test_bit(vector, used_vectors))
+> +				continue;
+> +
+>  			if (per_cpu(vector_irq, cpu)[vector] < 0)
+>  				count++;
+>  		}
