@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221AbaAaOwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:52:09 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:62972 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963AbaAaOwG (ORCPT
+	id S1754286AbaAaOzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:55:05 -0500
+Received: from fallback.mail.elte.hu ([157.181.151.13]:34400 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314AbaAaOzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:52:06 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52EBB897.6040300@roeck-us.net>
-Date: Fri, 31 Jan 2014 06:52:07 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 31 Jan 2014 09:55:03 -0500
+X-Greylist: delayed 4013 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Jan 2014 09:55:03 EST
+Message-ID: <20140131120359.10225hf4e3l6cowv@webmail.elte.hu>
+Date: Fri, 31 Jan 2014 12:03:59 +0100
+From: Yung Kyu Kim <cham113@qi88.com>
+Reply-to: 2794615276@qq.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu
-CC: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 10/10] watchdog: xilinx: Enable this driver for Zynq
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <f7bdfada576e93eaab8f6dc2ecd881da8f43911c.1391177880.git.michal.simek@xilinx.com>
-In-Reply-To: <f7bdfada576e93eaab8f6dc2ecd881da8f43911c.1391177880.git.michal.simek@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Originating-IP: 41.203.69.6
+X-ELTE-Username: szabari
+X-ELTE-SpamScore: 3.3
+X-ELTE-SpamLevel: sss
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 3.0 
+X-ELTE-SpamCheck-Details: score=3.3 required=5.9 tests=BAYES_00,LOTS_OF_MONEY,RCVD_IN_SBL,SINGLE_HEADER_2K,US_DOLLARS_3 autolearn=no SpamAssassin version=3.3.2
+  1.0 SINGLE_HEADER_2K       A single header contains 2K-3K characters
+  1.8 US_DOLLARS_3           BODY: Mentions millions of $ ($NN,NNN,NNN.NN)
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  2.5 RCVD_IN_SBL            RBL: Received via a relay in Spamhaus SBL
+                             [41.203.69.6 listed in zen.spamhaus.org]
+  0.0 LOTS_OF_MONEY          Huge... sums of money
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 06:18 AM, Michal Simek wrote:
-> Enable this driver for Zynq.
-> Move it to architecture independent Kconfig part.
->
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
->
-> Build tested by zero day testing system.
-> ---
->   drivers/watchdog/Kconfig | 22 +++++++++-------------
->   1 file changed, 9 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 9db5d3c..6120403 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -111,6 +111,15 @@ config WM8350_WATCHDOG
->   	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
->   	  the watchdog triggers the system will be reset.
->
-> +config XILINX_WATCHDOG
-> +	tristate "Xilinx Watchdog timer"
-> +	select WATCHDOG_CORE
+Hello,
 
-This needs to depend on HAS_IOMEM.
+The Project is about the exportation of 100,000 barrels of Light Crude
+Oil daily out from Iraq to Turkey through my client's company in Iraq
+at the rate of $92.00 a barrel. This amount to $9,200,000 daily. I ask
+for your support as a foreigner to handle this business project with my
+client and you are not expected to invest in Iraq
 
-Thanks,
-Guenter
+If yes, let me know and we will discuss this project proper.
+
+Yung Kyu Kim.
+Email: 2794615276@qq.com
 
