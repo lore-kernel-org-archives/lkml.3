@@ -1,146 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757AbaAaRGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:06:35 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:59682 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbaAaRGb (ORCPT
+	id S932767AbaAaRIB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:08:01 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:62759 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932633AbaAaRH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:06:31 -0500
-Date: Fri, 31 Jan 2014 18:07:30 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [GIT PULL] rename2 syscall
-Message-ID: <20140131170730.GM24171@tucsk.piliscsaba.szeredi.hu>
-References: <20140123085656.GK24171@tucsk.piliscsaba.szeredi.hu>
+	Fri, 31 Jan 2014 12:07:59 -0500
+Date: Fri, 31 Jan 2014 12:07:57 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 2/2] timer: really raise softirq if there is irq_work to
+ do
+Message-ID: <20140131120757.594e24d6@gandalf.local.home>
+In-Reply-To: <1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
+References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
+	<1391178845-15837-2-git-send-email-bigeasy@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140123085656.GK24171@tucsk.piliscsaba.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 31 Jan 2014 15:34:05 +0100
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-On Thu, Jan 23, 2014 at 09:56:56AM +0100, Miklos Szeredi wrote:
+> from looking at the code, it seems that the softirq is only raised (in
+> the !base->active_timers case) if we have also an expired timer
+> (time_before_eq() is true). This patch ensures that the timer softirq is
+> also raised in the !base->active_timers && no timer expired.
 
-> Could you please consider pulling the cross-rename patches.  The git tree has a
-> conflict in arch/x86/syscalls/syscall_64.tbl where the syscall number needs to
-> be fixed.  The patchset has been reviewed by Jan Kara and the man page and
-> usperpace API by Michael Kerrisk.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename
+A couple of things. If there is no active timers, we do not need to
+check the expired timers. That may contain a deferred timer that does
+not need to be raised if the system is idle. This will just
+re-introduce the problems that other people have been seeing.
 
-I updated the cross-rename patches to apply cleanly against latest mainline
-(three trivial conflicts and fixup of up a warning in fs/kernfs/dir.c).  The
-updated tree is here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git cross-rename.rebase
-
-Please pull.
-
-Thanks,
-Miklos
+The bug that I found is that if there *are* active timers, but they
+have not expired yet. Why is this a problem? Because in that case we do
+not check if there is irq_work to be done. That means the irq_work will
+have to wait till the timer expires, and since RCU depends on this,
+that can take a while. I've had a synchronize_sched() take up to 5
+seconds to complete due to this!
 
 
-> 
-> This series adds a new syscall, renameat2(), which is the same as renameat() but
-> with a flags argument.
-> 
-> The purpose of extending rename is to add cross-rename, a symmetric variant of
-> rename, which exchanges the two files.  This allows interesting things, which
-> were not possible before, for example atomically replacing a directory tree with
-> a symlink, etc...  This also allows overlayfs and friends to operate on
-> whiteouts atomically.
-> 
-> Andy Lutomirski also suggested a "noreplace" flag, which disables the
-> overwriting behavior of rename.
-> 
-> These two flags, RENAME_EXCHANGE and RENAME_NOREPLACE are only implemented for
-> ext4 as an example and for testing.
-> 
-> Thanks,
-> Miklos
-> ----
-> 
-> Miklos Szeredi (11):
->       vfs: add d_is_dir()
->       vfs: rename: move d_move() up
->       vfs: rename: use common code for dir and non-dir
->       vfs: add renameat2 syscall
->       vfs: add RENAME_NOREPLACE flag
->       security: add flags to rename hooks
->       vfs: add cross-rename
->       ext4: rename: create ext4_renament structure for local vars
->       ext4: rename: move EMLINK check up
->       ext4: rename: split out helper functions
->       ext4: add cross rename support
-> 
-> ---
->  Documentation/filesystems/Locking                  |   2 +-
->  Documentation/filesystems/vfs.txt                  |   4 +-
->  arch/x86/syscalls/syscall_64.tbl                   |   1 +
->  .../lustre/lustre/include/linux/lustre_compat25.h  |   4 +-
->  drivers/staging/lustre/lustre/llite/namei.c        |   3 +-
->  drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |   2 +-
->  fs/9p/v9fs.h                                       |   3 +-
->  fs/9p/vfs_inode.c                                  |   4 +-
->  fs/affs/affs.h                                     |   3 +-
->  fs/affs/namei.c                                    |   3 +-
->  fs/afs/dir.c                                       |   6 +-
->  fs/bad_inode.c                                     |   3 +-
->  fs/bfs/dir.c                                       |   3 +-
->  fs/btrfs/inode.c                                   |   3 +-
->  fs/cachefiles/namei.c                              |   4 +-
->  fs/ceph/dir.c                                      |   3 +-
->  fs/cifs/cifsfs.h                                   |   2 +-
->  fs/cifs/inode.c                                    |   3 +-
->  fs/coda/dir.c                                      |   8 +-
->  fs/dcache.c                                        |  46 ++-
->  fs/debugfs/inode.c                                 |   2 +-
->  fs/ecryptfs/inode.c                                |   5 +-
->  fs/exofs/namei.c                                   |   3 +-
->  fs/ext2/namei.c                                    |   5 +-
->  fs/ext3/namei.c                                    |   5 +-
->  fs/ext4/namei.c                                    | 396 ++++++++++++++-------
->  fs/ext4/super.c                                    |   6 +-
->  fs/f2fs/namei.c                                    |   3 +-
->  fs/fat/namei_msdos.c                               |   3 +-
->  fs/fat/namei_vfat.c                                |   3 +-
->  fs/fuse/dir.c                                      |   3 +-
->  fs/gfs2/inode.c                                    |   3 +-
->  fs/hfs/dir.c                                       |   3 +-
->  fs/hfsplus/dir.c                                   |   3 +-
->  fs/hostfs/hostfs_kern.c                            |   5 +-
->  fs/hpfs/namei.c                                    |   3 +-
->  fs/jffs2/dir.c                                     |   5 +-
->  fs/jfs/namei.c                                     |   3 +-
->  fs/libfs.c                                         |   3 +-
->  fs/logfs/dir.c                                     |   3 +-
->  fs/minix/namei.c                                   |   5 +-
->  fs/namei.c                                         | 317 +++++++++--------
->  fs/ncpfs/dir.c                                     |   5 +-
->  fs/nfs/dir.c                                       |   3 +-
->  fs/nfs/internal.h                                  |   3 +-
->  fs/nfsd/vfs.c                                      |   2 +-
->  fs/nilfs2/namei.c                                  |   3 +-
->  fs/ocfs2/namei.c                                   |   3 +-
->  fs/omfs/dir.c                                      |   3 +-
->  fs/reiserfs/namei.c                                |   3 +-
->  fs/sysv/namei.c                                    |   5 +-
->  fs/ubifs/dir.c                                     |   3 +-
->  fs/udf/namei.c                                     |   3 +-
->  fs/ufs/namei.c                                     |   3 +-
->  fs/xfs/xfs_iops.c                                  |   3 +-
->  include/linux/dcache.h                             |   8 +-
->  include/linux/fs.h                                 |   7 +-
->  include/linux/security.h                           |  12 +-
->  include/uapi/linux/fs.h                            |   3 +
->  kernel/cgroup.c                                    |   5 +-
->  mm/shmem.c                                         |   2 +-
->  security/security.c                                |  22 +-
->  62 files changed, 631 insertions(+), 367 deletions(-)
+The real fix is the following:
+
+timer/rt: Always raise the softirq if there's irq_work to be done
+
+It was previously discovered that some systems would hang on boot up
+with a previous version of 3.12-rt. This was due to RCU using irq_work,
+and RT defers the irq_work to a softirq. But if there's no active
+timers, the softirq will not be raised, and RCU work will not get done,
+causing the system to hang.  The fix was to check that if there was no
+active timers but irq_work to be done, then we should raise the softirq.
+
+But this fix was not 100% correct. It left out the case that there were
+active timers that were not expired yet. This would have the softirq
+not get raised even if there was irq work to be done.
+
+If there is irq_work to be done, then we must raise the timer softirq
+regardless of if there is active timers or whether they are expired or
+not. The softirq can handle those cases. But we can never ignore
+irq_work.
+
+As it is only PREEMPT_RT_FULL that requires irq_work to be done in the
+softirq, we can pull out the check in the active_timers condition, and
+make the code a bit cleaner by having the irq_work check separate, and
+put the code in with the other #ifdef PREEMPT_RT. If there is irq_work
+to be done, there's no need to check the active timers or if they are
+expired. Just raise the time softirq and be done with it. Otherwise, we
+can do the timer checks just like we do with non -rt.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 106968f..426d114 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1461,18 +1461,20 @@ void run_local_timers(void)
+ 	 * the timer softirq.
+ 	 */
+ #ifdef CONFIG_PREEMPT_RT_FULL
++	/* On RT, irq work runs from softirq */
++	if (irq_work_needs_cpu()) {
++		raise_softirq(TIMER_SOFTIRQ);
++		return;
++	}
++
+ 	if (!spin_do_trylock(&base->lock)) {
+ 		raise_softirq(TIMER_SOFTIRQ);
+ 		return;
+ 	}
+ #endif
+-	if (!base->active_timers) {
+-#ifdef CONFIG_PREEMPT_RT_FULL
+-		/* On RT, irq work runs from softirq */
+-		if (!irq_work_needs_cpu())
+-#endif
+-			goto out;
+-	}
++
++	if (!base->active_timers)
++		goto out;
+ 
+ 	/* Check whether the next pending timer has expired */
+ 	if (time_before_eq(base->next_timer, jiffies))
