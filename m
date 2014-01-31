@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412AbaAaPHH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:07:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34612 "EHLO mx1.redhat.com"
+	id S932494AbaAaPHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:07:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30038 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015AbaAaPHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:07:01 -0500
+	id S932436AbaAaPHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:07:08 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Ariel Elior <ariele@broadcom.com>,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 02/34] bnx2x: Use pci_enable_msix_range()
-Date: Fri, 31 Jan 2014 16:08:21 +0100
-Message-Id: <911884c4e906af8acfa4c06ee3206387449f1d84.1391172839.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Santosh Raspatur <santosh@chelsio.com>, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 06/34] cxgb3: Use pci_enable_msix_range()
+Date: Fri, 31 Jan 2014 16:08:25 +0100
+Message-Id: <d64d3732650c539b611a786cbb9e25ba23b1317c.1391172839.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391172839.git.agordeev@redhat.com>
 References: <cover.1391172839.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,84 +28,50 @@ interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   48 ++++++++++-------------
- 1 files changed, 21 insertions(+), 27 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c |   23 +++++++++--------------
+ 1 files changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 9d7419e..b396d74 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -1638,24 +1638,36 @@ int bnx2x_enable_msix(struct bnx2x *bp)
- 	DP(BNX2X_MSG_SP, "about to request enable msix with %d vectors\n",
- 	   msix_vec);
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
+index b72d2ed..07bbb71 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
+@@ -3088,27 +3088,22 @@ static int cxgb_enable_msix(struct adapter *adap)
+ {
+ 	struct msix_entry entries[SGE_QSETS + 1];
+ 	int vectors;
+-	int i, err;
++	int i;
  
--	rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], msix_vec);
+ 	vectors = ARRAY_SIZE(entries);
+ 	for (i = 0; i < vectors; ++i)
+ 		entries[i].entry = i;
+ 
+-	while ((err = pci_enable_msix(adap->pdev, entries, vectors)) > 0)
+-		vectors = err;
 -
-+	rc = pci_enable_msix_range(bp->pdev, &bp->msix_table[0],
-+				   BNX2X_MIN_MSIX_VEC_CNT(bp), msix_vec);
- 	/*
- 	 * reconfigure number of tx/rx queues according to available
- 	 * MSI-X vectors
- 	 */
--	if (rc >= BNX2X_MIN_MSIX_VEC_CNT(bp)) {
-+	if (rc < 0) {
-+		BNX2X_DEV_INFO("MSI-X is not attainable rc %d\n", rc);
-+		goto no_msix;
-+	} else if (rc == -ENOSPC) {
-+		/* Get by with single vector */
-+		rc = pci_enable_msix_range(bp->pdev, &bp->msix_table[0], 1, 1);
-+		if (rc < 0) {
-+			BNX2X_DEV_INFO("Single MSI-X is not attainable rc %d\n",
-+				       rc);
-+			goto no_msix;
-+		}
-+
-+		BNX2X_DEV_INFO("Using single MSI-X vector\n");
-+		bp->flags |= USING_SINGLE_MSIX_FLAG;
-+
-+		BNX2X_DEV_INFO("set number of queues to 1\n");
-+		bp->num_ethernet_queues = 1;
-+		bp->num_queues = bp->num_ethernet_queues + bp->num_cnic_queues;
-+	} else if (rc < msix_vec) {
- 		/* how less vectors we will have? */
- 		int diff = msix_vec - rc;
+-	if (!err && vectors < (adap->params.nports + 1)) {
+-		pci_disable_msix(adap->pdev);
+-		err = -1;
+-	}
++	vectors = pci_enable_msix_range(adap->pdev, entries,
++					adap->params.nports + 1, vectors);
++	if (vectors < 0)
++		return vectors;
  
- 		BNX2X_DEV_INFO("Trying to use less MSI-X vectors: %d\n", rc);
+-	if (!err) {
+-		for (i = 0; i < vectors; ++i)
+-			adap->msix_info[i].vec = entries[i].vector;
+-		adap->msix_nvectors = vectors;
+-	}
++	for (i = 0; i < vectors; ++i)
++		adap->msix_info[i].vec = entries[i].vector;
++	adap->msix_nvectors = vectors;
  
--		rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], rc);
--
--		if (rc) {
--			BNX2X_DEV_INFO("MSI-X is not attainable rc %d\n", rc);
--			goto no_msix;
--		}
- 		/*
- 		 * decrease number of queues by number of unallocated entries
- 		 */
-@@ -1664,24 +1676,6 @@ int bnx2x_enable_msix(struct bnx2x *bp)
+-	return err;
++	return 0;
+ }
  
- 		BNX2X_DEV_INFO("New queue configuration set: %d\n",
- 			       bp->num_queues);
--	} else if (rc > 0) {
--		/* Get by with single vector */
--		rc = pci_enable_msix(bp->pdev, &bp->msix_table[0], 1);
--		if (rc) {
--			BNX2X_DEV_INFO("Single MSI-X is not attainable rc %d\n",
--				       rc);
--			goto no_msix;
--		}
--
--		BNX2X_DEV_INFO("Using single MSI-X vector\n");
--		bp->flags |= USING_SINGLE_MSIX_FLAG;
--
--		BNX2X_DEV_INFO("set number of queues to 1\n");
--		bp->num_ethernet_queues = 1;
--		bp->num_queues = bp->num_ethernet_queues + bp->num_cnic_queues;
--	} else if (rc < 0) {
--		BNX2X_DEV_INFO("MSI-X is not attainable  rc %d\n", rc);
--		goto no_msix;
- 	}
- 
- 	bp->flags |= USING_MSIX_FLAG;
+ static void print_port_info(struct adapter *adap, const struct adapter_info *ai)
 -- 
 1.7.7.6
 
