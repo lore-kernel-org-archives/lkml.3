@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaAaKWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 05:22:51 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:45461 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaAaKWu (ORCPT
+	id S1754120AbaAaKXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 05:23:16 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55901 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaAaKXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 05:22:50 -0500
-Message-ID: <52EB796F.9000109@gmail.com>
-Date: Fri, 31 Jan 2014 11:22:39 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 00/21] pinctrl: mvebu: restructure and remove hardcoded
- addresses from Dove pinctrl
-References: <1390674856-4993-1-git-send-email-sebastian.hesselbarth@gmail.com> <1390869573-27624-1-git-send-email-sebastian.hesselbarth@gmail.com> <CACRpkda5HRxpLWWizT_58SJ6Fb=TQpO=Y5yFThpZkUbUYmU8fg@mail.gmail.com>
-In-Reply-To: <CACRpkda5HRxpLWWizT_58SJ6Fb=TQpO=Y5yFThpZkUbUYmU8fg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 31 Jan 2014 05:23:14 -0500
+Date: Fri, 31 Jan 2014 11:23:12 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        llvmlinux@lists.linuxfoundation.org
+Subject: Re: [PATCH] x86: Build 16-bit code with -m16 where possible
+Message-ID: <20140131102312.GA1534@amd.pavel.ucw.cz>
+References: <1389180083-23249-1-git-send-email-David.Woodhouse@intel.com>
+ <1389180083-23249-3-git-send-email-David.Woodhouse@intel.com>
+ <1390997485.20153.129.camel@i7.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390997485.20153.129.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/14 11:17, Linus Walleij wrote:
-> On Tue, Jan 28, 2014 at 1:39 AM, Sebastian Hesselbarth
-> <sebastian.hesselbarth@gmail.com> wrote:
->
->> This patch set is one required step for Dove to hop into mach-mvebu.
->> Until now, pinctrl-dove was hardcoding some registers that do not
->> directly belong to MPP core registers. This is not compatible with
->> what we want for mach-mvebu.
->
-> All this stuff is really nice, so if you can get Thomas to add his
-> review-tag on this stuff and maybe have some Tested-by:s
-> from other parties, I'd be happy to pull the end result to the
-> pinctrl tree, or alternatively provide my ACK for you to take this
-> through ARM SoC.
+On Wed 2014-01-29 12:11:25, David Woodhouse wrote:
+> Both clang 3.5 and GCC 4.9 will support this (as of r207196 and r199754
+> respectively). Both have been tested to produce booting kernels when the
+> 16-bit code is built with -m16. (Modulo LLVM PR3997, at least.)
 
-Luckily, we have a "pinctrl/mvebu" subfolder these patches will mess
-with. I think it will be better to keep then all together and take
-them through the MVEBU branch. This way we can have an eye on it and 
-base off subsequent patches without bothering you.
+Will this break compilation with older GCC versions? Current minimum
+gcc is 3.2.
 
-I'll come back to request your ACK as soon as we have sorted it out.
+								Pavel
 
-Sebastian
 
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
