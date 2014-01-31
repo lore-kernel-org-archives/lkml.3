@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbaAaOWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:22:07 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:51779
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753963AbaAaOWF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:22:05 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VPS-6(z579ehz9371I103dK542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275dh1de097hz2dh109h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h1155h)
-X-WSS-ID: 0N09RWG-08-AZB-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: drm/radeon/dpm: fix uninitialized read from stack in
- kv_dpm_late_enable
-Thread-Topic: drm/radeon/dpm: fix uninitialized read from stack in
- kv_dpm_late_enable
-Thread-Index: AQHPHiqgl4bmHAqS5Uy0KM2EnAp1O5qe4ybw
-Date: Fri, 31 Jan 2014 14:21:56 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D03EC73132@satlexdag05.amd.com>
-References: <20140131021730.GA11601@redhat.com>
-In-Reply-To: <20140131021730.GA11601@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.180.168.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754346AbaAaOXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:23:35 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54167 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754191AbaAaOXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 09:23:33 -0500
+Date: Fri, 31 Jan 2014 15:23:18 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Russ Anderson <rja@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Alex Thorlton <athorlton@sgi.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
+Message-ID: <20140131142318.GC21873@pd.tnic>
+References: <20140127222129.GK6839@pd.tnic>
+ <20140128110552.GA815@pd.tnic>
+ <20140128200754.GZ18196@sgi.com>
+ <20140128225905.GN815@pd.tnic>
+ <20140128234036.GB18196@sgi.com>
+ <20140129141822.GC24887@pd.tnic>
+ <20140130221950.GJ3105@sgi.com>
+ <52EAD0F2.7090101@zytor.com>
+ <20140131100722.GA21873@pd.tnic>
+ <20140131140220.GC22498@sgi.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140131140220.GC22498@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dave Jones [mailto:davej@redhat.com]
-> Sent: Thursday, January 30, 2014 9:18 PM
-> To: Linux Kernel Mailing List
-> Cc: Deucher, Alexander
-> Subject: drm/radeon/dpm: fix uninitialized read from stack in
-> kv_dpm_late_enable
-> 
-> If we take the false branch of the if quoted in the diff below, we
-> end up doing a return ret, without ever having initialized it.
-> 
-> Picked up by coverity.
-> 
-> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+On Fri, Jan 31, 2014 at 08:02:21AM -0600, Russ Anderson wrote:
+> I'm not sure what you are asking for. We had a reliable
+> way to boot before the recent patch broke it. (commit
+> d2f7cbe7b26a74dbbbf8f325b2a6fd01bc34032c)
 
-Applied.  Thanks!
+So we should stop any further development just because your machines did
+boot nicely before that. What about the other machines and kexec we're
+fixing with the work above? Jeez...
 
-Alex
+Ok, let me give it in a more detailed fashion for ya:
 
-> 
-> diff --git a/drivers/gpu/drm/radeon/kv_dpm.c
-> b/drivers/gpu/drm/radeon/kv_dpm.c
-> index b6e01d5d2cce..351db361239d 100644
-> --- a/drivers/gpu/drm/radeon/kv_dpm.c
-> +++ b/drivers/gpu/drm/radeon/kv_dpm.c
-> @@ -1223,7 +1223,7 @@ int kv_dpm_enable(struct radeon_device *rdev)
-> 
->  int kv_dpm_late_enable(struct radeon_device *rdev)
->  {
-> -	int ret;
-> +	int ret = 0;
-> 
->  	if (rdev->irq.installed &&
->  	    r600_is_internal_thermal_sensor(rdev->pm.int_thermal_type)) {
+1. uv_bios_init remaps the UV systab table which is at physical address
+efi.uv_systab
 
+2. Then, it copies it into uv_systab. The purpose of this is for you to
+be able to call the uv_systab.function callback and thus call into your
+firmware.
 
+3. Now, uv_systab.function points to a region of code which contains
+your BIOS callback, and that pointer is the entry point into that
+function.
+
+And now my question:
+
+How can I reliably find out which region contains that
+uv_systab.function call?
+
+I need it so that I can map it in the EFI page table and you can
+continue to call that function and you can get back to your reliable way
+to boot.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
