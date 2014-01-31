@@ -1,140 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830AbaAaSvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:51:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53179 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491AbaAaSvr (ORCPT
+	id S932524AbaAaSxF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:53:05 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:64950 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491AbaAaSxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:51:47 -0500
-From: Zoran Markovic <zoran.markovic@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>, Julian Anastasov <ja@ssi.bg>,
-        Flavio Leitner <fbl@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Patrick McHardy <kaber@trash.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Amerigo Wang <amwang@redhat.com>, Joe Perches <joe@perches.com>,
-        Jason Wang <jasowang@redhat.com>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        Simon Horman <horms@verge.net.au>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Zoran Markovic <zoran.markovic@linaro.org>
-Subject: [RFC PATCHv2] net: core: move core networking work to power efficient workqueue
-Date: Fri, 31 Jan 2014 10:51:22 -0800
-Message-Id: <1391194282-12265-1-git-send-email-zoran.markovic@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 31 Jan 2014 13:53:03 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6847:3965:b063:9aac]
+In-Reply-To: <1390685924-11877-1-git-send-email-marek@goldelico.com>
+References: <1390685924-11877-1-git-send-email-marek@goldelico.com>
+Date: Fri, 31 Jan 2014 10:53:01 -0800
+Message-ID: <CAOesGMhFEMNFbAC4rUdccYVHM8yX9Mz+Vx73jGxBYGrSOa4Gaw@mail.gmail.com>
+Subject: Re: [PATCH] of: add vendor prefix for Honeywell
+From: Olof Johansson <olof@lixom.net>
+To: Marek Belisko <marek@goldelico.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaibal Dutta <shaibal.dutta@broadcom.com>
+On Sat, Jan 25, 2014 at 1:38 PM, Marek Belisko <marek@goldelico.com> wrote:
+> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> ---
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 3f900cd..b14c617 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -40,6 +40,7 @@ gmt   Global Mixed-mode Technology, Inc.
+>  gumstix        Gumstix, Inc.
+>  haoyu  Haoyu Microelectronic Co. Ltd.
+>  hisilicon      Hisilicon Limited.
+> +honeywell      Honeywell
 
-This patch moves the following work to the power efficient workqueue:
-  - Transmit work of netpoll
-  - Destination cache garbage collector work
-  - Link watch event handler work
+The norm has usually been to use the the stock ticker symbol of a
+public company if it is available. In other words, I think the prefix
+here should be 'hon', since Honeywell is a publicly traded company
+under that ticker.
 
-In general, assignment of CPUs to pending work could be deferred to
-the scheduler in order to extend idle residency time and improve
-power efficiency. I would value community's opinion on the migration
-of this work to the power efficient workqueue, with an emphasis on
-migration of netpoll's transmit work.
 
-This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jiri Pirko <jiri@resnulli.us>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Flavio Leitner <fbl@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: John Fastabend <john.r.fastabend@intel.com>
-Cc: Amerigo Wang <amwang@redhat.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: Antonio Quartulli <antonio@meshcoding.com>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Nikolay Aleksandrov <nikolay@redhat.com>
-Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
-[zoran.markovic@linaro.org: Rebased to latest kernel version. Edited
-calls to mod_delayed_work to reference power efficient workqueue.
-Added commit message. Fixed code alignment.]
-Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
----
- net/core/dst.c        |    5 +++--
- net/core/link_watch.c |    5 +++--
- net/core/netpoll.c    |    6 ++++--
- 3 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/net/core/dst.c b/net/core/dst.c
-index ca4231e..57fba10 100644
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -135,7 +135,8 @@ loop:
- 		 */
- 		if (expires > 4*HZ)
- 			expires = round_jiffies_relative(expires);
--		schedule_delayed_work(&dst_gc_work, expires);
-+		queue_delayed_work(system_power_efficient_wq,
-+				   &dst_gc_work, expires);
- 	}
- 
- 	spin_unlock_bh(&dst_garbage.lock);
-@@ -223,7 +224,7 @@ void __dst_free(struct dst_entry *dst)
- 	if (dst_garbage.timer_inc > DST_GC_INC) {
- 		dst_garbage.timer_inc = DST_GC_INC;
- 		dst_garbage.timer_expires = DST_GC_MIN;
--		mod_delayed_work(system_wq, &dst_gc_work,
-+		mod_delayed_work(system_power_efficient_wq, &dst_gc_work,
- 				 dst_garbage.timer_expires);
- 	}
- 	spin_unlock_bh(&dst_garbage.lock);
-diff --git a/net/core/link_watch.c b/net/core/link_watch.c
-index 9c3a839..6899935 100644
---- a/net/core/link_watch.c
-+++ b/net/core/link_watch.c
-@@ -135,9 +135,10 @@ static void linkwatch_schedule_work(int urgent)
- 	 * override the existing timer.
- 	 */
- 	if (test_bit(LW_URGENT, &linkwatch_flags))
--		mod_delayed_work(system_wq, &linkwatch_work, 0);
-+		mod_delayed_work(system_power_efficient_wq, &linkwatch_work, 0);
- 	else
--		schedule_delayed_work(&linkwatch_work, delay);
-+		queue_delayed_work(system_power_efficient_wq,
-+				   &linkwatch_work, delay);
- }
- 
- 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index c03f3de..6685938 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -101,7 +101,8 @@ static void queue_process(struct work_struct *work)
- 			__netif_tx_unlock(txq);
- 			local_irq_restore(flags);
- 
--			schedule_delayed_work(&npinfo->tx_work, HZ/10);
-+			queue_delayed_work(system_power_efficient_wq,
-+					   &npinfo->tx_work, HZ/10);
- 			return;
- 		}
- 		__netif_tx_unlock(txq);
-@@ -423,7 +424,8 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
- 
- 	if (status != NETDEV_TX_OK) {
- 		skb_queue_tail(&npinfo->txq, skb);
--		schedule_delayed_work(&npinfo->tx_work,0);
-+		queue_delayed_work(system_power_efficient_wq,
-+				   &npinfo->tx_work, 0);
- 	}
- }
- EXPORT_SYMBOL(netpoll_send_skb_on_dev);
--- 
-1.7.9.5
-
+-Olof
