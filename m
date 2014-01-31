@@ -1,128 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718AbaAaPv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 10:51:57 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:56599 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932278AbaAaPvx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 10:51:53 -0500
+	id S1754291AbaAaPzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 10:55:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:62899 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674AbaAaPzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 10:55:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,758,1384329600"; 
+   d="scan'208";a="467853387"
+Date: Fri, 31 Jan 2014 18:01:57 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [Update][PATCH 4/5][RFT] ACPI / hotplug / PCI: Simplify
+ acpi_install_hotplug_notify_handler()
+Message-ID: <20140131160157.GL18029@intel.com>
+References: <2217793.001RY6hKlo@vostro.rjw.lan>
+ <18315277.jcVt0SJ67s@vostro.rjw.lan>
+ <20140131152836.GJ18029@intel.com>
+ <4082824.GsiGP0lQhc@vostro.rjw.lan>
+ <20140131154011.GK18029@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
-References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
-Date: Fri, 31 Jan 2014 19:51:52 +0400
-X-Google-Sender-Auth: mhsD001yhUHPDE5g3a5IU8bMDuQ
-Message-ID: <CAKywueSAWjOFH7cCvjQScSiBMGLzGEApjTYNoV03gmzec8uxjQ@mail.gmail.com>
-Subject: Re: [PATCH v7 0/7] Add O_DENY* support for VFS and CIFS/NFS
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Bruce Fields <bfields@fieldses.org>
-Cc: linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140131154011.GK18029@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-17 Pavel Shilovsky <piastry@etersoft.ru>:
-> This patchset adds support of O_DENY* flags for Linux fs layer. These flags can be used by any application that needs share reservations to organize a file access. VFS already has some sort of this capability - now it's done through flock/LOCK_MAND mechanis, but that approach is non-atomic. This patchset build new capabilities on top of the existing one but doesn't bring any changes into the flock call semantic.
->
-> These flags can be used by NFS (built-in-kernel) and CIFS (Samba) servers and Wine applications through VFS (for local filesystems) or CIFS/NFS modules. This will help when e.g. Samba and NFS server share the same directory for Windows and Linux users or Wine applications use Samba/NFS share to access the same data from different clients.
->
-> According to the previous discussions the most problematic question is how to prevent situations like DoS attacks where e.g /lib/liba.so file can be open with DENYREAD, or smth like this. That's why extra mount option 'sharelock' is added for switching on/off O_DENY* flags processing. It allows to avoid use of these flags on critical places (like /, /lib) and turn them on if we really want it proccessed that way.
->
-> So, we have 3 new flags:
-> O_DENYREAD - to prevent other opens with read access,
-> O_DENYWRITE - to prevent other opens with write access,
-> O_DENYDELETE - to prevent delete operations
->
-> The patchset avoids data races problem on newely created files: open with O_CREAT can return the -ESHAREDENIED error for a successfully created file if this files was locked with a sharelock by another task. Also, it turns flock/LOCK_MAND capability off for mounts with 'sharelock' option. This lets not mix one share reservation approach with another.
->
-> Patches #1, #2 and #3 add O_DENY* flags to fcntl and implement VFS part. A patch #4 is related to CIFS client changes, #5 -- NFSD, #6 and #7 describe NFSv4 client parts.
->
-> The preliminary patch for Samba that replaces the existing use of flock/LOCK_MAND mechanism with O_DENY* flags:
-> http://git.etersoft.ru/people/piastry/packages/?p=samba.git;a=commitdiff;h=173070262b7f29134ad6b2e49a760017c11aec4a
->
-> The future part of open man page patch:
->
-> -----
-> O_DENYREAD, O_DENYWRIYE, O_DENYDELETE - used to inforce a mandatory share reservation scheme of the file access. If these flag is passed, the open fails with -ESHAREDENIED in following cases:
-> 1) if O_DENYREAD flag is specified and there is another open with READ access to the file;
-> 2) if O_DENYWRITE flag is specified and there is another open with WRITE access to the file;
-> 3) if READ access is requested and there is another open with O_DENYREAD flags;
-> 4) if WRITE access is requested and there is another open with O_DENYWRITE flags.
->
-> If O_DENYDELETE flag is specified and the open succeded, any further unlink operation will fail with -ESHAREDENIED untill this open is closed. Now this flag is processed by VFS and CIFS filesystem. NFS returns -EINVAL for opens with this flag.
->
-> This mechanism is done through flocks. If O_DENY* flags are specified, flock syscall is processed after the open. The share modes are translated into flock according the following rules:
-> 1) !O_DENYREAD   -> LOCK_READ   | LOCK_MAND
-> 2) !O_DENYWRITE  -> LOCK_WRITE  | LOCK_MAND
-> 3) !O_DENYDELETE -> LOCK_DELETE | LOCK_MAND
-> -----
->
-> Pavel Shilovsky (7):
->   VFS: Introduce new O_DENY* open flags
->   VFS: Add O_DENYDELETE support for VFS
->   locks: Disable LOCK_MAND support for MS_SHARELOCK mounts
->   CIFS: Add O_DENY* open flags support
->   NFSD: Pass share reservations flags to VFS
->   NFSv4: Add deny state handling for nfs4_state struct
->   NFSv4: Add O_DENY* open flags support
->
->  arch/alpha/include/uapi/asm/errno.h  |    2 +
->  arch/alpha/include/uapi/asm/fcntl.h  |    3 +
->  arch/mips/include/uapi/asm/errno.h   |    2 +
->  arch/parisc/include/uapi/asm/errno.h |    2 +
->  arch/parisc/include/uapi/asm/fcntl.h |    3 +
->  arch/sparc/include/uapi/asm/errno.h  |    2 +
->  arch/sparc/include/uapi/asm/fcntl.h  |    3 +
->  fs/cifs/cifsacl.c                    |    2 +
->  fs/cifs/cifsfs.c                     |    2 +-
->  fs/cifs/cifsglob.h                   |   17 +-
->  fs/cifs/cifssmb.c                    |    2 +-
->  fs/cifs/dir.c                        |    6 +
->  fs/cifs/file.c                       |   20 ++-
->  fs/cifs/inode.c                      |   12 +-
->  fs/cifs/link.c                       |    2 +
->  fs/cifs/netmisc.c                    |    2 +-
->  fs/cifs/smb1ops.c                    |    3 +
->  fs/cifs/smb2inode.c                  |    1 +
->  fs/cifs/smb2maperror.c               |    2 +-
->  fs/cifs/smb2ops.c                    |    6 +
->  fs/cifs/smb2pdu.c                    |    2 +-
->  fs/fcntl.c                           |    5 +-
->  fs/locks.c                           |  161 ++++++++++++++++--
->  fs/namei.c                           |   56 +++++-
->  fs/nfs/dir.c                         |   39 ++++-
->  fs/nfs/inode.c                       |    8 +-
->  fs/nfs/internal.h                    |    3 +-
->  fs/nfs/nfs4_fs.h                     |   83 ++++++++-
->  fs/nfs/nfs4file.c                    |    8 +-
->  fs/nfs/nfs4proc.c                    |  310 +++++++++++++++++++++++-----------
->  fs/nfs/nfs4state.c                   |   65 ++++---
->  fs/nfs/nfs4super.c                   |    9 +-
->  fs/nfs/nfs4xdr.c                     |   21 ++-
->  fs/nfs/super.c                       |    7 +-
->  fs/nfsd/nfs4state.c                  |   46 ++++-
->  fs/nfsd/nfsproc.c                    |    1 +
->  fs/proc_namespace.c                  |    1 +
->  include/linux/fs.h                   |   15 ++
->  include/linux/nfs_fs.h               |    5 +-
->  include/linux/nfs_xdr.h              |    1 +
->  include/uapi/asm-generic/errno.h     |    2 +
->  include/uapi/asm-generic/fcntl.h     |   12 ++
->  include/uapi/linux/fs.h              |    1 +
->  43 files changed, 789 insertions(+), 166 deletions(-)
->
-> --
-> 1.7.10.4
->
+On Fri, Jan 31, 2014 at 05:40:11PM +0200, Mika Westerberg wrote:
+> On Fri, Jan 31, 2014 at 04:42:21PM +0100, Rafael J. Wysocki wrote:
+> > On Friday, January 31, 2014 05:28:36 PM Mika Westerberg wrote:
+> > > On Wed, Jan 29, 2014 at 01:00:57AM +0100, Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > 
+> > > > Use the observation that the ACPI scan handler of the device object
+> > > > in acpi_hotplug_notify_cb() can be obtained from that device object's
+> > > > handler pointer and do not pass it as data to
+> > > > acpi_install_hotplug_notify_handler() in acpi_scan_init_hotplug().
+> > > > 
+> > > > That allows the second argument of acpi_install_hotplug_notify_handler()
+> > > > to be dropped, so do it and update its callers accordingly.
+> > > > 
+> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > ---
+> > > >  drivers/acpi/scan.c                |   31 ++++++++++++++++++-------------
+> > > >  drivers/pci/hotplug/acpiphp_glue.c |    2 +-
+> > > >  include/acpi/acpi_bus.h            |    2 +-
+> > > >  3 files changed, 20 insertions(+), 15 deletions(-)
+> > > > 
+> > > > Index: linux-pm/drivers/acpi/scan.c
+> > > > ===================================================================
+> > > > --- linux-pm.orig/drivers/acpi/scan.c
+> > > > +++ linux-pm/drivers/acpi/scan.c
+> > > > @@ -487,7 +487,6 @@ static void acpi_device_hotplug(void *da
+> > > >  
+> > > >  static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+> > > >  {
+> > > > -	struct acpi_scan_handler *handler = data;
+> > > >  	u32 ost_code = ACPI_OST_SC_SUCCESS;
+> > > >  	struct acpi_device *adev;
+> > > >  	acpi_status status;
+> > > > @@ -503,13 +502,6 @@ static void acpi_hotplug_notify_cb(acpi_
+> > > >  
+> > > >  	case ACPI_NOTIFY_EJECT_REQUEST:
+> > > >  		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
+> > > > -		if (handler && !handler->hotplug.enabled) {
+> > > > -			acpi_handle_err(handle, "Eject disabled\n");
+> > > > -			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> > > > -			goto out;
+> > > > -		}
+> > > > -		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+> > > > -					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> > > >  		break;
+> > > >  
+> > > >  	case ACPI_NOTIFY_DEVICE_WAKE:
+> > > > @@ -535,11 +527,24 @@ static void acpi_hotplug_notify_cb(acpi_
+> > > >  		goto out;
+> > > >  	}
+> > > >  
+> > > > +	mutex_lock(&acpi_scan_lock);
+> > > 
+> > > This is weird. I'm testing against your test-next branch which has this
+> > > patch included. If I remove locking here, TBT hotplug works fine. Otherwise
+> > > I can see the first hotplug/unplug works but after that I cannot get any
+> > > events anymore.
+> > 
+> > Weird indeed.  I don't seem to be able to reproduce that on my Aspire S5.
+> > 
+> > What system are you testing on?
+> 
+> This is Intel NUC. Let me see if I can reproduce this on S5 with longer
+> chain of devices.
 
-Any other thoughts/reviews on this patchset?
-
--- 
-Best regards,
-Pavel Shilovsky.
+OK, so on S5 this works even with longer chain. However, exactly the same
+kernel image on NUC fails after first hotplug/unplug cycle.
