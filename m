@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933146AbaAaSV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:21:57 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:44585 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564AbaAaSVz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:21:55 -0500
-Message-ID: <52EBF7DE.3080003@cogentembedded.com>
-Date: Fri, 31 Jan 2014 22:22:06 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>, Amir Vadai <amirv@mellanox.com>,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 18/34] mlx4: Use pci_enable_msix_range()
-References: <cover.1391172839.git.agordeev@redhat.com> <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
-In-Reply-To: <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933181AbaAaSYF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:24:05 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:38893 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932748AbaAaSX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 13:23:56 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alex Thorlton <athorlton@sgi.com>, Oleg Nesterov <oleg@redhat.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 1/3] Revert "thp: make MADV_HUGEPAGE check for mm->def_flags"
+Date: Fri, 31 Jan 2014 12:23:44 -0600
+Message-Id: <1391192628-113858-4-git-send-email-athorlton@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
+References: <1391192628-113858-1-git-send-email-athorlton@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This reverts commit 8e72033f2a489b6c98c4e3c7cc281b1afd6cb85cm, and adds
+in code to fix up any issues caused by the revert.
 
-On 01/31/2014 06:08 PM, Alexander Gordeev wrote:
+The revert is necessary because hugepage_madvise would return -EINVAL
+when VM_NOHUGEPAGE is set, which will break subsequent chunks of this
+patch set.
 
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->   drivers/net/ethernet/mellanox/mlx4/main.c |   19 ++++---------------
->   1 files changed, 4 insertions(+), 15 deletions(-)
+---
+ arch/s390/mm/pgtable.c | 3 +++
+ mm/huge_memory.c       | 4 ----
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-> diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
-> index d711158..a9d1249 100644
-> --- a/drivers/net/ethernet/mellanox/mlx4/main.c
-> +++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-[...]
-> @@ -1990,22 +1989,12 @@ static void mlx4_enable_msi_x(struct mlx4_dev *dev)
-[...]
-> +		nreq = pci_enable_msix_range(dev->pdev, entries, 2, nreq);
-> +
-> +		if (nreq < 0) {
->   			kfree(entries);
->   			goto no_msi;
-> -		}
-> -
-> -		if (nreq <
-> +		} else if (nreq <
->   		    MSIX_LEGACY_SZ + dev->caps.num_ports * MIN_MSIX_P_PORT) {
-
-    Please realign this line to start right under 'nreq'.
-
-WBR, Sergei
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index 3584ed9..a87cdb4 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -504,6 +504,9 @@ static int gmap_connect_pgtable(unsigned long address, unsigned long segment,
+ 	if (!pmd_present(*pmd) &&
+ 	    __pte_alloc(mm, vma, pmd, vmaddr))
+ 		return -ENOMEM;
++	/* large pmds cannot yet be handled */
++	if (pmd_large(*pmd))
++		return -EFAULT;
+ 	/* pmd now points to a valid segment table entry. */
+ 	rmap = kmalloc(sizeof(*rmap), GFP_KERNEL|__GFP_REPEAT);
+ 	if (!rmap)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 82166bf..a4310a5 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1968,8 +1968,6 @@ out:
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+-
+ 	switch (advice) {
+ 	case MADV_HUGEPAGE:
+ 		/*
+@@ -1977,8 +1975,6 @@ int hugepage_madvise(struct vm_area_struct *vma,
+ 		 */
+ 		if (*vm_flags & (VM_HUGEPAGE | VM_NO_THP))
+ 			return -EINVAL;
+-		if (mm->def_flags & VM_NOHUGEPAGE)
+-			return -EINVAL;
+ 		*vm_flags &= ~VM_NOHUGEPAGE;
+ 		*vm_flags |= VM_HUGEPAGE;
+ 		/*
+-- 
+1.7.12.4
 
