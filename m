@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259AbaAaUaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 15:30:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55434 "EHLO
+	id S933302AbaAaUbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 15:31:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55430 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933079AbaAaU17 (ORCPT
+	with ESMTP id S933074AbaAaU17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 15:27:59 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/12] perf symbols: Prevent the use of kcore if the kernel has moved
-Date: Fri, 31 Jan 2014 17:27:32 -0300
-Message-Id: <1391200055-18250-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/12] perf tools: Adjust kallsyms for relocated kernel
+Date: Fri, 31 Jan 2014 17:27:34 -0300
+Message-Id: <1391200055-18250-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1391200055-18250-1-git-send-email-acme@infradead.org>
 References: <1391200055-18250-1-git-send-email-acme@infradead.org>
@@ -32,13 +32,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Use of kcore is predicated upon it matching the recorded data.  If the
-kernel has been relocated at boot time (i.e. since the data was
-recorded) then do not use kcore.
+If the kernel is relocated at boot time, kallsyms will not match data
+recorded previously.
 
-Note that it is possible to make a copy of kcore at the time the data is
-recorded using 'perf buildid-cache'.  Then the perf tools will use the
-copy because it does match the data.
+That does not matter for modules because they are corrected anyway.  It
+also does not matter if vmlinux is being used for symbols. But if perf
+tools has only kallsyms then the symbols will not match.
+
+Fix by applying the delta gained by comparing the old and current
+addresses of the relocation reference symbol.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Tested-by: Jiri Olsa <jolsa@redhat.com>
@@ -51,69 +53,100 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-7-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1391004884-10334-9-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ tools/perf/util/symbol.c | 40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 39ce9adbaaf0..4ac1f871ec27 100644
+index 4ac1f871ec27..a9d758a3b371 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -976,6 +976,23 @@ static int validate_kcore_modules(const char *kallsyms_filename,
- 	return 0;
+@@ -627,7 +627,7 @@ static int dso__split_kallsyms_for_kcore(struct dso *dso, struct map *map,
+  * kernel range is broken in several maps, named [kernel].N, as we don't have
+  * the original ELF section names vmlinux have.
+  */
+-static int dso__split_kallsyms(struct dso *dso, struct map *map,
++static int dso__split_kallsyms(struct dso *dso, struct map *map, u64 delta,
+ 			       symbol_filter_t filter)
+ {
+ 	struct map_groups *kmaps = map__kmap(map)->kmaps;
+@@ -692,6 +692,12 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+ 			char dso_name[PATH_MAX];
+ 			struct dso *ndso;
+ 
++			if (delta) {
++				/* Kernel was relocated at boot time */
++				pos->start -= delta;
++				pos->end -= delta;
++			}
++
+ 			if (count == 0) {
+ 				curr_map = map;
+ 				goto filter_symbol;
+@@ -721,6 +727,10 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
+ 			curr_map->map_ip = curr_map->unmap_ip = identity__map_ip;
+ 			map_groups__insert(kmaps, curr_map);
+ 			++kernel_range;
++		} else if (delta) {
++			/* Kernel was relocated at boot time */
++			pos->start -= delta;
++			pos->end -= delta;
+ 		}
+ filter_symbol:
+ 		if (filter && filter(curr_map, pos)) {
+@@ -1130,15 +1140,41 @@ out_err:
+ 	return -EINVAL;
  }
  
-+static int validate_kcore_addresses(const char *kallsyms_filename,
-+				    struct map *map)
++/*
++ * If the kernel is relocated at boot time, kallsyms won't match.  Compute the
++ * delta based on the relocation reference symbol.
++ */
++static int kallsyms__delta(struct map *map, const char *filename, u64 *delta)
 +{
 +	struct kmap *kmap = map__kmap(map);
++	u64 addr;
 +
-+	if (kmap->ref_reloc_sym && kmap->ref_reloc_sym->name) {
-+		u64 start;
++	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->name)
++		return 0;
 +
-+		start = kallsyms__get_function_start(kallsyms_filename,
-+						     kmap->ref_reloc_sym->name);
-+		if (start != kmap->ref_reloc_sym->addr)
-+			return -EINVAL;
-+	}
++	addr = kallsyms__get_function_start(filename,
++					    kmap->ref_reloc_sym->name);
++	if (!addr)
++		return -1;
 +
-+	return validate_kcore_modules(kallsyms_filename, map);
++	*delta = addr - kmap->ref_reloc_sym->addr;
++	return 0;
 +}
 +
- struct kcore_mapfn_data {
- 	struct dso *dso;
- 	enum map_type type;
-@@ -1019,8 +1036,8 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 					     kallsyms_filename))
- 		return -EINVAL;
+ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 		       struct map *map, symbol_filter_t filter)
+ {
++	u64 delta = 0;
++
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return -1;
  
--	/* All modules must be present at their original addresses */
--	if (validate_kcore_modules(kallsyms_filename, map))
-+	/* Modules and kernel must be present at their original addresses */
-+	if (validate_kcore_addresses(kallsyms_filename, map))
- 		return -EINVAL;
+ 	if (dso__load_all_kallsyms(dso, filename, map) < 0)
+ 		return -1;
  
- 	md.dso = dso;
-@@ -1424,7 +1441,7 @@ static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
- 			continue;
- 		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
- 			  "%s/%s/kallsyms", dir, dent->d_name);
--		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+		if (!validate_kcore_addresses(kallsyms_filename, map)) {
- 			strlcpy(dir, kallsyms_filename, dir_sz);
- 			ret = 0;
- 			break;
-@@ -1479,7 +1496,7 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
- 		if (fd != -1) {
- 			close(fd);
- 			/* If module maps match go with /proc/kallsyms */
--			if (!validate_kcore_modules("/proc/kallsyms", map))
-+			if (!validate_kcore_addresses("/proc/kallsyms", map))
- 				goto proc_kallsyms;
- 		}
++	if (kallsyms__delta(map, filename, &delta))
++		return -1;
++
+ 	symbols__fixup_duplicate(&dso->symbols[map->type]);
+ 	symbols__fixup_end(&dso->symbols[map->type]);
  
+@@ -1150,7 +1186,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 	if (!dso__load_kcore(dso, map, filename))
+ 		return dso__split_kallsyms_for_kcore(dso, map, filter);
+ 	else
+-		return dso__split_kallsyms(dso, map, filter);
++		return dso__split_kallsyms(dso, map, delta, filter);
+ }
+ 
+ static int dso__load_perf_map(struct dso *dso, struct map *map,
 -- 
 1.8.1.4
 
