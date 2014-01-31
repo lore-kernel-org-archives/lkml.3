@@ -1,54 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126AbaAaAbt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 19:31:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997AbaAaAbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 19:31:48 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <3301.1391128114@warthog.procyon.org.uk>
-References: <3301.1391128114@warthog.procyon.org.uk> <3255.1391127686@warthog.procyon.org.uk> <CA+55aFwrBQJ=kVBXoo2GnBP4xoa3==6WDZfbt-u4OSxz8iQUoA@mail.gmail.com> <20140126122729.32113.19659.stgit@warthog.procyon.org.uk> <8761p1m98f.fsf@xmission.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-afs@lists.infradead.org,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Date: Fri, 31 Jan 2014 00:31:21 +0000
-Message-ID: <3349.1391128281@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+	id S932106AbaAaAdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 19:33:44 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:38011 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097AbaAaAdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 19:33:42 -0500
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>, Julian Anastasov <ja@ssi.bg>,
+        Flavio Leitner <fbl@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Patrick McHardy <kaber@trash.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Amerigo Wang <amwang@redhat.com>, Joe Perches <joe@perches.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Simon Horman <horms@verge.net.au>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Zoran Markovic <zoran.markovic@linaro.org>
+Subject: [RFC PATCH] net: core: move core networking work to power efficient workqueue
+Date: Thu, 30 Jan 2014 16:33:22 -0800
+Message-Id: <1391128402-10725-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+From: Shaibal Dutta <shaibal.dutta@broadcom.com>
 
-> > > I think this is a pretty strong argument. Counter-arguments, anybody?
-> > 
-> > Yes.  CAP_DAC_READ_SEARCH.
-> 
-> No, it would seem unlikely it's that, but I guess there's another capability
-> override because the process is owned by root.
+This patch moves the following work to the power efficient workqueue:
+  - Transmit work of netpoll
+  - Destination cache garbage collector work
+  - Link watch event handler work
 
-CAP_DAC_OVERRIDE, I think.
+In general, assignment of CPUs to pending work could be deferred to
+the scheduler in order to extend idle residency time and improve
+power efficiency. I would value community's opinion on the migration
+of this work to the power efficient workqueue, with an emphasis on
+migration of netpoll's transmit work.
 
-	int generic_permission(struct inode *inode, int mask)
-	{
-	...
-		/*
-		 * Read/write DACs are always overridable.
-		 * Executable DACs are overridable when there is
-		 * at least one exec bit set.
-		 */
-		if (!(mask & MAY_EXEC) || (inode->i_mode & S_IXUGO))
-			if (inode_capable(inode, CAP_DAC_OVERRIDE))
-				return 0;
-	...
-	}
+This functionality is enabled when CONFIG_WQ_POWER_EFFICIENT is selected.
 
-David
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Jiri Pirko <jiri@resnulli.us>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Flavio Leitner <fbl@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Cc: Amerigo Wang <amwang@redhat.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: Antonio Quartulli <antonio@meshcoding.com>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Shaibal Dutta <shaibal.dutta@broadcom.com>
+[zoran.markovic@linaro.org: Rebased to latest kernel version. Edited
+calls to mod_delayed_work to reference power efficient workqueue.
+Added commit message.]
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
+---
+ net/core/dst.c        |    5 +++--
+ net/core/link_watch.c |    5 +++--
+ net/core/netpoll.c    |    6 ++++--
+ 3 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/net/core/dst.c b/net/core/dst.c
+index ca4231e..cc28352 100644
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -135,7 +135,8 @@ loop:
+ 		 */
+ 		if (expires > 4*HZ)
+ 			expires = round_jiffies_relative(expires);
+-		schedule_delayed_work(&dst_gc_work, expires);
++		queue_delayed_work(system_power_efficient_wq,
++			&dst_gc_work, expires);
+ 	}
+ 
+ 	spin_unlock_bh(&dst_garbage.lock);
+@@ -223,7 +224,7 @@ void __dst_free(struct dst_entry *dst)
+ 	if (dst_garbage.timer_inc > DST_GC_INC) {
+ 		dst_garbage.timer_inc = DST_GC_INC;
+ 		dst_garbage.timer_expires = DST_GC_MIN;
+-		mod_delayed_work(system_wq, &dst_gc_work,
++		mod_delayed_work(system_power_efficient_wq, &dst_gc_work,
+ 				 dst_garbage.timer_expires);
+ 	}
+ 	spin_unlock_bh(&dst_garbage.lock);
+diff --git a/net/core/link_watch.c b/net/core/link_watch.c
+index 9c3a839..0ae3994 100644
+--- a/net/core/link_watch.c
++++ b/net/core/link_watch.c
+@@ -135,9 +135,10 @@ static void linkwatch_schedule_work(int urgent)
+ 	 * override the existing timer.
+ 	 */
+ 	if (test_bit(LW_URGENT, &linkwatch_flags))
+-		mod_delayed_work(system_wq, &linkwatch_work, 0);
++		mod_delayed_work(system_power_efficient_wq, &linkwatch_work, 0);
+ 	else
+-		schedule_delayed_work(&linkwatch_work, delay);
++		queue_delayed_work(system_power_efficient_wq,
++			&linkwatch_work, delay);
+ }
+ 
+ 
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index c03f3de..2c8f839 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -101,7 +101,8 @@ static void queue_process(struct work_struct *work)
+ 			__netif_tx_unlock(txq);
+ 			local_irq_restore(flags);
+ 
+-			schedule_delayed_work(&npinfo->tx_work, HZ/10);
++			queue_delayed_work(system_power_efficient_wq,
++				&npinfo->tx_work, HZ/10);
+ 			return;
+ 		}
+ 		__netif_tx_unlock(txq);
+@@ -423,7 +424,8 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 
+ 	if (status != NETDEV_TX_OK) {
+ 		skb_queue_tail(&npinfo->txq, skb);
+-		schedule_delayed_work(&npinfo->tx_work,0);
++		queue_delayed_work(system_power_efficient_wq,
++			&npinfo->tx_work, 0);
+ 	}
+ }
+ EXPORT_SYMBOL(netpoll_send_skb_on_dev);
+-- 
+1.7.9.5
+
