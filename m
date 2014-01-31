@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaAaMhB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 07:37:01 -0500
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:60525 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932343AbaAaMg7 (ORCPT
+	id S932405AbaAaMhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 07:37:33 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56308 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932355AbaAaMhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 07:36:59 -0500
-Message-ID: <52EB974D.3070403@st.com>
-Date: Fri, 31 Jan 2014 12:30:05 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 31 Jan 2014 07:37:31 -0500
+Message-ID: <52EB9908.2090903@pengutronix.de>
+Date: Fri, 31 Jan 2014 13:37:28 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
 MIME-Version: 1.0
-To: Patrice CHOTARD <patrice.chotard@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
-Cc: <maxime.coquelin@st.com>, <alexandre.torgue@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH 2/4] pinctrl: st: add stid127 support
-References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <1391093744-19905-3-git-send-email-patrice.chotard@st.com>
-In-Reply-To: <1391093744-19905-3-git-send-email-patrice.chotard@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
+To: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/6] can: sja1000: cleanups and new OF property
+References: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch>
+In-Reply-To: <1391164513-11529-1-git-send-email-florian.vaussard@epfl.ch>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good for me.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On 01/31/2014 11:35 AM, Florian Vaussard wrote:
+> Hello,
+>=20
+> Changes sinces v1:
+> - Merge sja1000_of_platform.c into sja1000_platform.c (patch 4)
+>=20
+> The first part of this series performs serveral small cleanups
+> (patches 1 to 3).
+>=20
+> Patch 4 merges sja1000_of_platform.c into sja1000_platform.c.
+> Changes are pretty conservatives (mostly copy/paste/move). IRQ
+> is treated differently in the OF and non-OF versions, thus this
+> is where the fused version differs the most.
+>=20
+> The final part introduces the 'reg-io-width' binding (already used
+> by some other drivers) to perform a similar job as what was done
+> with IORESOURCE_MEM_XXBIT. This is needed on my system to correctly
+> take into account the aliasing of the address bus.
 
-On 30/01/14 14:55, Patrice CHOTARD wrote:
-> From: Alexandre TORGUE <alexandre.torgue@st.com>
-> 
-> Add STid127 PIOs (psouth, pwest, peast) in pinctrl.
-> 
-> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
-> ---
->  drivers/pinctrl/pinctrl-st.c |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 9cadc68..01227de 100644
-> --- a/drivers/pinctrl/pinctrl-st.c
-> +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -336,6 +336,27 @@ static const struct st_pctl_data  stih416_data = {
->  	.alt = 0, .oe = 40, .pu = 50, .od = 60, .rt = 100,
->  };
->  
-> +/* STid127 data */
-> +static const struct st_pctl_data  stid127_data = {
-> +	.rt_style	= st_retime_style_dedicated,
-> +	/* reuse stih416 delays as they are identical */
-> +	.input_delays	= stih416_delays,
-> +	.ninput_delays	= 14,
-> +	/* reuse stih416 delays as they are identical */
-> +	.output_delays	= stih416_delays,
-> +	.noutput_delays = 14,
-> +	.alt = 0, .oe = 8, .pu = 10, .od = 12, .rt = 14,
-> +};
-> +
-> +static const struct st_pctl_data  stid127_psouth_data = {
-> +	.rt_style	= st_retime_style_dedicated,
-> +	.input_delays	= stid127_delays,
-> +	.ninput_delays	= 14,
-> +	.output_delays	= stid127_delays,
-> +	.noutput_delays = 14,
-> +	.alt = 0, .oe = 7, .pu = 9, .od = 11, .rt = 13,
-> +};
-> +
->  /* Low level functions.. */
->  static inline int st_gpio_bank(int gpio)
->  {
-> @@ -1264,6 +1285,10 @@ static struct of_device_id st_pctl_of_match[] = {
->  	{ .compatible = "st,stih416-rear-pinctrl", .data = &stih416_data},
->  	{ .compatible = "st,stih416-fvdp-fe-pinctrl", .data = &stih416_data},
->  	{ .compatible = "st,stih416-fvdp-lite-pinctrl", .data = &stih416_data},
-> +	{ .compatible = "st,stid127-pwest-pinctrl", .data = &stid127_data },
-> +	{ .compatible = "st,stid127-psouth-pinctrl",
-> +		.data = &stid127_psouth_data },
-> +	{ .compatible = "st,stid127-peast-pinctrl", .data = &stid127_data },
->  	{ /* sentinel */ }
->  };
->  
-> 
+Good work, please keep compatibility for DTs without the 'reg-io-width'
+binding. The rest of my comments are only nitpicks. :)
 
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlLrmQgACgkQjTAFq1RaXHO95QCcC/M7NBTZHBMhoIfldr5iPzJA
+z/sAn3TxzCSDJMBKRfLPp/skNhrGeEFa
+=Fotn
+-----END PGP SIGNATURE-----
+
+--Oa7Sro6m073fX57KnHK4WQbfb7s48rxXQ--
