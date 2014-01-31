@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570AbaAaOTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 09:19:17 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:36751 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263AbaAaOS6 (ORCPT
+	id S932546AbaAaOTO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 09:19:14 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:51999 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932255AbaAaOSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 09:18:58 -0500
+	Fri, 31 Jan 2014 09:18:55 -0500
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 09/10] watchdog: xilinx: Add missing binding
-Date: Fri, 31 Jan 2014 15:18:18 +0100
-Message-Id: <9c721b89ed2ceb6997809bb3363f852277e67dc2.1391177880.git.michal.simek@xilinx.com>
+Subject: [PATCH 08/10] watchdog: xilinx: Use correct comment indentation
+Date: Fri, 31 Jan 2014 15:18:17 +0100
+Message-Id: <45680208de6e22a49fe8311d49877096ccd702af.1391177880.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
 References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
 In-Reply-To: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
 References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-23171-1391177934-0001";
+    boundary="=_mimegpg-monstr-desktop-23161-1391177930-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,60 +32,49 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-23171-1391177934-0001
+--=_mimegpg-monstr-desktop-23161-1391177930-0001
 
-Document current driver binding.
+No functional changes.
 
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
 
- .../devicetree/bindings/watchdog/of-xilinx-wdt.txt | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/of-xilinx-wdt.txt
+ drivers/watchdog/of_xilinx_wdt.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/of-xilinx-wdt.txt b/Documentation/devicetree/bindings/watchdog/of-xilinx-wdt.txt
-new file mode 100644
-index 0000000..6d63782
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/of-xilinx-wdt.txt
-@@ -0,0 +1,23 @@
-+Xilinx AXI/PLB soft-core watchdog Device Tree Bindings
-+---------------------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "xlnx,xps-timebase-wdt-1.00.a" or
-+			  "xlnx,xps-timebase-wdt-1.01.a".
-+- reg			: Physical base address and size
-+
-+Optional properties:
-+- clock-frequency	: Frequency of clock in Hz
-+- xlnx,wdt-enable-once	: 0 - Watchdog can be restarted
-+			  1 - Watchdog can be enabled just once
-+- xlnx,wdt-interval	: Watchdog timeout interval in 2^<val> clock cycles,
-+			  <val> is integer from 8 to 31.
-+
-+Example:
-+axi-timebase-wdt@40100000 {
-+	clock-frequency = <50000000>;
-+	compatible = "xlnx,xps-timebase-wdt-1.00.a";
-+	reg = <0x40100000 0x10000>;
-+	xlnx,wdt-enable-once = <0x0>;
-+	xlnx,wdt-interval = <0x1b>;
-+} ;
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index 475440a6..7948def 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -190,10 +190,10 @@ static int xwdt_probe(struct platform_device *pdev)
+ 		watchdog_set_nowayout(xilinx_wdt_wdd, true);
+ 	}
+
+-/*
+- *  Twice of the 2^wdt_interval / freq  because the first wdt overflow is
+- *  ignored (interrupt), reset is only generated at second wdt overflow
+- */
++	/*
++	 * Twice of the 2^wdt_interval / freq  because the first wdt overflow is
++	 * ignored (interrupt), reset is only generated at second wdt overflow
++	 */
+ 	if (!no_timeout)
+ 		xilinx_wdt_wdd->timeout = 2 * ((1 << xdev->wdt_interval) /
+ 					  pfreq);
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-23171-1391177934-0001
+--=_mimegpg-monstr-desktop-23161-1391177930-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlLrsM4ACgkQykllyylKDCEetwCfR90ezoQ8kAYOAF21M+LkcxPy
-u8sAoJpV2sEEY4tRv9HpRTIZ1TZVDRf6
-=067l
+iEYEABECAAYFAlLrsMoACgkQykllyylKDCHXqACcCPeU4YUtCh3D0Y2JtbCZu+Sb
+Ua0An2fd/Jm4GHhRWlSlIbEyeuSUzpX8
+=5rkm
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-23171-1391177934-0001--
+--=_mimegpg-monstr-desktop-23161-1391177930-0001--
