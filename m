@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604AbaAaQEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 11:04:09 -0500
-Received: from www.aws-it.at ([83.218.181.38]:38892 "EHLO bigboss.aws-it.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932562AbaAaQEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 11:04:06 -0500
-Date: Fri, 31 Jan 2014 17:04:02 +0100
-Message-ID: <20140131170402.Horde.yIFUeQVjLycuS_8PGQoKmg5@aws-it.at>
-From: astx <astx@aws-it.at>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, netfilter@vger.kernel.org
-Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
- Mobile
-References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@bigboss.aws-it.at>
- <20140131125014.Horde.G2TRlt-60JJ0Nl_3Y8IniQ2@bigboss.aws-it.at>
-In-Reply-To: <20140131125014.Horde.G2TRlt-60JJ0Nl_3Y8IniQ2@bigboss.aws-it.at>
-User-Agent: Internet Messaging Program (IMP) H5 (6.0.4)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+	id S932489AbaAaQS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 11:18:27 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42092 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271AbaAaQSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 11:18:25 -0500
+Message-ID: <52EBCCCD.301@wwwdotorg.org>
+Date: Fri, 31 Jan 2014 09:18:21 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Disposition: inline
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Mark Brown <broonie@kernel.org>
+CC: linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] spi: switch to devm_spi_alloc_master
+References: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com> <1391163792-21819-4-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1391163792-21819-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexey,
+On 01/31/2014 03:23 AM, Maxime Ripard wrote:
+> Make the existing users of devm_spi_register_master use the
+> devm_spi_alloc_master function to avoid leaking memory.
 
-seems to help. Thank you for your quick response. Kernel 3.10.28 is  
-now stable using h323 / Polycom.
+> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
 
-Will test this patch with different kernel versions the next days.
+> @@ -1087,14 +1085,13 @@ static int tegra_spi_probe(struct platform_device *pdev)
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "Failed to register ISR for IRQ %d\n",
+>  					tspi->irq);
+> -		goto exit_free_master;
+> +		return ret;
+>  	}
+>  
+>  	tspi->clk = devm_clk_get(&pdev->dev, "spi");
+>  	if (IS_ERR(tspi->clk)) {
+>  		dev_err(&pdev->dev, "can not get clock\n");
+> -		ret = PTR_ERR(tspi->clk);
+> -		goto exit_free_irq;
+> +		return PTR_ERR(tspi->clk);
+>  	}
+>  
+>  	tspi->max_buf_size = SPI_FIFO_DEPTH << 2;
+> @@ -1152,8 +1149,6 @@ exit_rx_dma_free:
+>  	tegra_spi_deinit_dma_param(tspi, true);
+>  exit_free_irq:
+>  	free_irq(spi_irq, tspi);
+> -exit_free_master:
+> -	spi_master_put(master);
+>  	return ret;
 
-Best Regards,
-Toni
+Doesn't that s/goto exit_free_irq/return/ leak spi_irq? It's only OK to
+replace goto free_master with a direct return.
 
-
-Original message from Alexey Dobriyan:
---------------------------------------------------------------------------------------
-Date	Fri, 31 Jan 2014 16:29:58 +0300
-Subject	Re: OOPS in nf_ct_unlink_expect_report using Polycom  
-RealPresence Mobile
-From	Alexey Dobriyan <>
-
-
-> Disabling nf_nat_h323 and nf_conntrack_h323 avoids crash -
-> but video conferencing software is no more usable.
->
-> BUG: unable to handle kernel paging request at 00100104
-> IP: [<f8214f07>] nf_ct_unlink_expect_report
-
-This must be the same bug fixed in SIP module:
-commit 3f509c689a07a4aa989b426893d8491a7ffcc410
-netfilter: nf_nat_sip: fix incorrect handling of EBUSY for RTCP expectation
-
-Try attached patch (if this is mangled):
-
---- a/net/ipv4/netfilter/nf_nat_h323.c
-+++ b/net/ipv4/netfilter/nf_nat_h323.c
-@@ -229,7 +229,10 @@ static int nat_rtp_rtcp(struct sk_buff *skb,
-struct nf_conn *ct,
-   ret = nf_ct_expect_related(rtcp_exp);
-   if (ret == 0)
-   break;
-- else if (ret != -EBUSY) {
-+ else if (ret == -EBUSY) {
-+ nf_ct_unexpect_related(rtp_exp);
-+ continue;
-+ } else if (ret < 0) {
-   nf_ct_unexpect_related(rtp_exp);
-   nated_port = 0;
-   break;--- a/net/ipv4/netfilter/nf_nat_h323.c
-+++ b/net/ipv4/netfilter/nf_nat_h323.c
-@@ -229,7 +229,10 @@ static int nat_rtp_rtcp(struct sk_buff *skb,  
-struct nf_conn *ct,
-  			ret = nf_ct_expect_related(rtcp_exp);
-  			if (ret == 0)
-  				break;
--			else if (ret != -EBUSY) {
-+			else if (ret == -EBUSY) {
-+				nf_ct_unexpect_related(rtp_exp);
-+				continue;
-+			} else if (ret < 0) {
-  				nf_ct_unexpect_related(rtp_exp);
-  				nated_port = 0;
-  				break;
-
-
+The other two Tegra drivers don't seem to have this problem.
