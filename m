@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928AbaAaRe4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:34:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55230 "EHLO
+	id S932982AbaAaRfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:35:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55222 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744AbaAaRcr (ORCPT
+	with ESMTP id S932697AbaAaRcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:32:47 -0500
+	Fri, 31 Jan 2014 12:32:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 10/14] perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
-Date: Fri, 31 Jan 2014 09:32:13 -0800
-Message-Id: <1391189537-20777-11-git-send-email-kamal@canonical.com>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 13/14] staging: comedi: addi_apci_1032: fix subdevice type/flags bug
+Date: Fri, 31 Jan 2014 09:32:16 -0800
+Message-Id: <1391189537-20777-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
 References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
@@ -28,138 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <rric@kernel.org>
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-commit bee09ed91cacdbffdbcd3b05de8409c77ec9fcd6 upstream.
+commit 90daf69a7a3f1d1a41018c799968a0bb896d65e0 upstream
 
-On AMD family 10h we see following error messages while waking up from
-S3 for all non-boot CPUs leading to a failed IBS initialization:
+The SDF_CMD_READ should be one of the s->subdev_flags not part of
+the s->type.
 
- Enabling non-boot CPUs ...
- smpboot: Booting Node 0 Processor 1 APIC 0x1
- [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector 0x400, but the register is already in use for vector 0xf9 on another cpu
- perf: IBS APIC setup failed on cpu #1
- process: Switch to broadcast mode on CPU1
- CPU1 is up
- ...
- ACPI: Waking up from system sleep state S3
-
-Reason for this is that during suspend the LVT offset for the IBS
-vector gets lost and needs to be reinialized while resuming.
-
-The offset is read from the IBSCTL msr. On family 10h the offset needs
-to be 1 as offset 0 is used for the MCE threshold interrupt, but
-firmware assings it for IBS to 0 too. The kernel needs to reprogram
-the vector. The msr is a readonly node msr, but a new value can be
-written via pci config space access. The reinitialization is
-implemented for family 10h in setup_ibs_ctl() which is forced during
-IBS setup.
-
-This patch fixes IBS setup after waking up from S3 by adding
-resume/supend hooks for the boot cpu which does the offset
-reinitialization.
-
-Marking it as stable to let distros pick up this fix.
-
-Signed-off-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event_amd_ibs.c | 53 +++++++++++++++++++++++++++-----
- 1 file changed, 45 insertions(+), 8 deletions(-)
+ drivers/staging/comedi/drivers/addi_apci_1032.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index 6336bcb..0798e5f 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -10,6 +10,7 @@
- #include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/ptrace.h>
-+#include <linux/syscore_ops.h>
- 
- #include <asm/apic.h>
- 
-@@ -816,6 +817,18 @@ out:
- 	return ret;
- }
- 
-+static void ibs_eilvt_setup(void)
-+{
-+	/*
-+	 * Force LVT offset assignment for family 10h: The offsets are
-+	 * not assigned by the BIOS for this family, so the OS is
-+	 * responsible for doing it. If the OS assignment fails, fall
-+	 * back to BIOS settings and try to setup this.
-+	 */
-+	if (boot_cpu_data.x86 == 0x10)
-+		force_ibs_eilvt_setup();
-+}
-+
- static inline int get_ibs_lvt_offset(void)
- {
- 	u64 val;
-@@ -851,6 +864,36 @@ static void clear_APIC_ibs(void *dummy)
- 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
- }
- 
-+#ifdef CONFIG_PM
-+
-+static int perf_ibs_suspend(void)
-+{
-+	clear_APIC_ibs(NULL);
-+	return 0;
-+}
-+
-+static void perf_ibs_resume(void)
-+{
-+	ibs_eilvt_setup();
-+	setup_APIC_ibs(NULL);
-+}
-+
-+static struct syscore_ops perf_ibs_syscore_ops = {
-+	.resume		= perf_ibs_resume,
-+	.suspend	= perf_ibs_suspend,
-+};
-+
-+static void perf_ibs_pm_init(void)
-+{
-+	register_syscore_ops(&perf_ibs_syscore_ops);
-+}
-+
-+#else
-+
-+static inline void perf_ibs_pm_init(void) { }
-+
-+#endif
-+
- static int __cpuinit
- perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- {
-@@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
- 	if (!caps)
- 		return -ENODEV;	/* ibs not supported by the cpu */
- 
--	/*
--	 * Force LVT offset assignment for family 10h: The offsets are
--	 * not assigned by the BIOS for this family, so the OS is
--	 * responsible for doing it. If the OS assignment fails, fall
--	 * back to BIOS settings and try to setup this.
--	 */
--	if (boot_cpu_data.x86 == 0x10)
--		force_ibs_eilvt_setup();
-+	ibs_eilvt_setup();
- 
- 	if (!ibs_eilvt_valid())
- 		goto out;
- 
-+	perf_ibs_pm_init();
- 	get_online_cpus();
- 	ibs_caps = caps;
- 	/* make ibs_caps visible to other cpus: */
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1032.c b/drivers/staging/comedi/drivers/addi_apci_1032.c
+index 7f94242..97de74e 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1032.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
+@@ -331,8 +331,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
+ 	s = &dev->subdevices[1];
+ 	if (dev->irq) {
+ 		dev->read_subdev = s;
+-		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
+-		s->subdev_flags	= SDF_READABLE;
++		s->type		= COMEDI_SUBD_DI;
++		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
+ 		s->n_chan	= 1;
+ 		s->maxdata	= 1;
+ 		s->range_table	= &range_digital;
 -- 
 1.8.3.2
 
