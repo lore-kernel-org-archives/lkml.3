@@ -1,249 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaAaGQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 01:16:04 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:55163 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251AbaAaGQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 01:16:02 -0500
-Date: Fri, 31 Jan 2014 01:15:43 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Rob Clark <robdclark@gmail.com>, Jason Evans <je@fb.com>,
-        pliard@google.com
-Subject: Re: [PATCH v10 00/16] Volatile Ranges v10
-Message-ID: <20140131061543.GF6963@cmpxchg.org>
-References: <1388646744-15608-1-git-send-email-minchan@kernel.org>
- <20140129000359.GZ6963@cmpxchg.org>
- <52E85CDA.5090102@linaro.org>
- <20140129183032.GA6963@cmpxchg.org>
- <52EAFBF6.7020603@linaro.org>
+	id S1751624AbaAaGY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 01:24:26 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:8961 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251AbaAaGYZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 01:24:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 30 Jan 2014 22:22:54 -0800
+From: Manoj Chourasia <mchourasia@nvidia.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Date: Fri, 31 Jan 2014 11:54:46 +0530
+Subject: RE: [PATCH] usb: hub: Avoid tight loop holding hdev lock
+Thread-Topic: [PATCH] usb: hub: Avoid tight loop holding hdev lock
+Thread-Index: Ac8QkFBBQk4whKLXSkSuSus6OiO/jQNu5I5g
+Message-ID: <F1F6C959961EA744BBD5B8EEF8B8FEA16DE03B5041@BGMAIL02.nvidia.com>
+References: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDFCA6A2E@BGMAIL02.nvidia.com>
+ <20140113185034.GB11751@kroah.com>
+In-Reply-To: <20140113185034.GB11751@kroah.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EAFBF6.7020603@linaro.org>
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 05:27:18PM -0800, John Stultz wrote:
-> On 01/29/2014 10:30 AM, Johannes Weiner wrote:
-> > On Tue, Jan 28, 2014 at 05:43:54PM -0800, John Stultz wrote:
-> >> On 01/28/2014 04:03 PM, Johannes Weiner wrote:
-> >>> On Thu, Jan 02, 2014 at 04:12:08PM +0900, Minchan Kim wrote:
-> >>>> o Syscall interface
-> >>> Why do we need another syscall for this?  Can't we extend madvise to
-> >>> take MADV_VOLATILE, MADV_NONVOLATILE, and return -ENOMEM if something
-> >>> in the range was purged?
-> >> So the madvise interface is insufficient to provide the semantics
-> >> needed. Not so much for MADV_VOLATILE, but MADV_NONVOLATILE. For the
-> >> NONVOLATILE call, we have to atomically unmark the volatility status of
-> >> the byte range and provide the purge status, which informs the caller if
-> >> any of the data in the specified range was discarded (and thus needs to
-> >> be regenerated).
-> >>
-> >> The problem is that by clearing the range, we may need to allocate
-> >> memory (possibly by splitting in an existing range segment into two),
-> >> which possibly could fail. Unfortunately this could happen after we've
-> >> modified the volatile state of part of that range.  At this point we
-> >> can't just fail, because we've modified state and we also need to return
-> >> the purge status of the modified state.
-> > munmap() can theoretically fail for the same reason (splitting has to
-> > allocate a new vma) but it's not even documented.  The allocator does
-> > not fail allocations of that order.
-> >
-> > I'm not sure this is good enough, but to me it sounds a bit overkill
-> > to design a new system call around a non-existent problem.
+Hi Greg,
+
+Sorry, I forgot to mentioned base kernel version. Following patch based on linux-3.13.y till date.
+I don't find a better way to avoid infinite loops. Moreover in worst case I find that device lock is held forever. Usually usb_open was able to get this lock in less than 5 seconds but rarely issue reproduces when it never gets lock for more than 2 minutes. 
+
+--- drivers/usb/core/hub.c.orig 2014-01-30 12:49:39.797839231 +0530
++++ drivers/usb/core/hub.c      2014-01-30 12:49:56.189839229 +0530
+@@ -4895,6 +4895,9 @@ static void hub_events(void)
+                usb_unlock_device(hdev);
+                kref_put(&hub->kref, hub_release);
+
++               /* preventing tight loop holding hdev lock */
++               msleep(20);
++
+        } /* end while (1) */
+ }
+
+-Manoj
+
+
+-----Original Message-----
+From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org] 
+Sent: Tuesday, January 14, 2014 12:21 AM
+To: Manoj Chourasia
+Cc: linux-kernel@vger.kernel.org; stable@kernel.org
+Subject: Re: [PATCH] usb: hub: Avoid tight loop holding hdev lock
+
+On Tue, Dec 31, 2013 at 02:26:41PM +0530, Manoj Chourasia wrote:
+> Hi All,
 > 
-> I still think its problematic design issue. With munmap, I think
-> re-calling on failure should be fine. But with _NONVOLATILE we could
-> possibly lose the purge status on a second call (for instance if only
-> the first page of memory was purged, but we errored out mid-call w/
-> ENOMEM, on the second call it will seem like the range was successfully
-> set non-volatile with no memory purged).
+> I was facing an issue bad usb device which was affecting other system. Kernel was trying to enumerate the device but it was failing continuously. Unfortunately that device was on mounted onboard in the platform so I cannot remove it.
+> The continuous re-enumeration of the device causing other application malfunctioning which were using libusb. I found that usb_find_devices() call was stuck in usb_open for very long time. It was stuck in getting device lock which was taken in hub_event thread.
+> Solution was to add msleep in the loop to prevent is spinning tightly. 
 > 
-> And even if the current allocator never ever fails, I worry at some
-> point in the future that rule might change and then we'd have a broken
-> interface.
-
-Fair enough, we don't have to paint ourselves into a corner.
-
-> >>> 2. If page reclaim discards a page from the upper end of a a range,
-> >>>    you mark the whole range as purged.  If the user later marks the
-> >>>    lower half of the range as non-volatile, the syscall will report
-> >>>    purged=1 even though all requested pages are still there.
-> >> To me this aspect is a non-ideal but acceptable result of the usage pattern.
-> >>
-> >> Semantically, the hard rule would be we never report non-purged if pages
-> >> in a range were purged.  Reporting purged when pages technically weren't
-> >> is not optimal but acceptable side effect of unmarking a sub-range. And
-> >> could be avoided by applications marking and unmarking objects consistently.
-> >>
-> >>
-> >>>    The only way to make these semantics clean is either
-> >>>
-> >>>      a) have vrange() return a range ID so that only full ranges can
-> >>>      later be marked non-volatile, or
-> >>>
-> >>>      b) remember individual page purges so that sub-range changes can
-> >>>      properly report them
-> >>>
-> >>>    I don't like a) much because it's somewhat arbitrarily more
-> >>>    restrictive than madvise, mprotect, mmap/munmap etc.  
-> >> Agreed on A.
-> >>
-> >>> And for b),
-> >>>    the straight-forward solution would be to put purge-cookies into
-> >>>    the page tables to properly report purges in subrange changes, but
-> >>>    that would be even more coordination between vmas, page tables, and
-> >>>    the ad-hoc vranges.
-> >> And for B this would cause way too much overhead for the mark/unmark
-> >> operations, which have to be lightweight.
-> > Yes, and allocators/message passers truly don't need this because at
-> > the time they set a region to volatile the contents are invalidated
-> > and the non-volatile declaration doesn't give a hoot if content has
-> > been destroyed.
-> >
-> > But caches certainly would have to know if they should regenerate the
-> > contents.  And bigger areas should be using huge pages, so we'd check
-> > in 2MB steps.  Is this really more expensive than regenerating the
-> > contents on a false positive?
+> ----------------------------------------------------------------------
+> -----
+> usb: hub: Avoid tight loop holding hdev lock
 > 
-> So you make a good argument. I'd counter that the false-positives are
-> only caused when unmarking subranges of larger marked volatile range,
-> and for use cases that would care about regenerating the contents,
-> that's not a likely useage model (as they're probably going to be
-> marking objects in memory volatile/nonvolatile, not just arbitrary
-> ranges of pages).
-
-I can imagine that applications have continuous areas of same-sized
-objects and want to mark a whole range of them volatile in one go,
-then later come back for individual objects.
-
-Otherwise we'd require N adjacent objects to be marked individually
-through N syscalls to create N separate internal ranges, or they'd get
-strange and unexpected results.
-
-I'm agreeing with you about what's the most likely and common usecase,
-but it shouldn't get too weird around the edges.
-
-> > MADV_NONVOLATILE and MADV_NONVOLATILE_REPORT? (catchy, I know...)
+>    Other system call(like usb_open) to root port device
+>     starved in getting device lock when the while loop
+>     in hub_event loops tightly because of misbehaving device.
 > 
-> Something like this might be doable. I suspect the non-reporting
-> non-volatile is more of a special case (reporting should probably be the
-> default - as its safer), so it should probably have the longer name. 
-
-Sure thing.
-
-> >> As for real-disk-backed file volatility, I'm not particularly interested
-> >> in that, and fine with losing it. However, some have expressed
-> >> theoretical interest that there may be cases where throwing the memory
-> >> away is faster then writing it back to disk, so it might have some value
-> >> there. But I don't have any concrete use cases that need it.
-> > That could also be covered with an interface that clears dirty bits in
-> > a range of pages.
+>     Adding a small msleep provides chance to system calls to
+>     schedule.
 > 
-> Well.. possibly. The issues with real files are ugly, since you don't
-> want have stale data show up after the purge. In the past I proposed the
-> hole punching for this, but that could be just as costly then writing
-> the data back.
+>     The issue was returning -EPROTO and re-enumerating with
+>     continuous hub_events. That was makes the while loop in
+>     hub_event to spin tightly.
 > 
-> Practically, I really don't see how true-file volatility makes any sense.
+>     usb_find_devices call from libusb tries to open all devices
+>     including root hub. The call to usb_open stuck for very
+>     long time(sometimes forever) because the priority of
+>     kernel thread is higher than that system call in this case.
 > 
-> The only rational interest was made by Dave Chinner, but what he really
-> wanted was totally different. Something like a file-system persistent
-> (instead of in-memory) volatility, so that filesystems could pick chunks
-> of files to purge when disk space got tight.
+>     Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
 
-Yeah, it might be a good idea to keep this separate and focus on
-memory reclaim behavior for now.
+Please don't make me hand-edit patches in order to be able to apply them.  I don't scale at all, so if you want this applied, please resend it.
 
-It might even be beneficial if interfaces for memory volatility and
-filesystem volatility are not easily mistaken for each other :)
+Also, this isn't how you submit patches to the stable kernel tree, please read Documentation/stable_kernel_rules.txt for how to do that.
 
-> > The way I see it, the simplest design, the common denominator for
-> > private anon, true file, shmem, tmpfs, would be for MADV/FADV_VOLATILE
-> > to clear dirty bits off shared pages, or ptes/pmds in the private
-> > mapped case to keep the COW charade intact.  And for the NONVOLATILE
-> > side to set dirty on what's still present and report if something is
-> > missing.
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c index 
+> c5c3667..b968fd5 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -4899,6 +4899,9 @@ static void hub_events(void)
+>                 usb_unlock_device(hdev);
+>                 kref_put(&hub->kref, hub_release);
 > 
-> Hrmmm. This sounds reasonable, but I'm not sure its right.  It seems the
-> missing part here is (with anonymous scanning on swapless systems), we
-> still have to set the volatility of the page somewhere so the LRU
-> scanner will actually purge those made-clean pages, no? Otherwise won't
-> anon and tmpfs files either just be swapped or passed over and left in
-> memory? And again, for true-files, we don't want stale data.
+> +               /* preventing tight loop holding hdev lock */
+> +               msleep(20);
 
-During anon page reclaim, we walk all vmas that reference a page to
-check its reference bits, then add it to swap (sets PageDirty), walk
-all vmas again to unmap and install swap entries, then write it out
-and reclaim it.
+This feels like a horrible hack for some seriously broken hardware.  Now I know we work around broken hardware all the time, is this really the only way the system can recover?
 
-We should be able to modify the walk for reference bits to also check
-for dirty bits, and then don't add a page without any to swap.  It'll
-be unmapped (AFAICS try_to_unmap_one needs minor tweak) and discarded
-without swap.
+thanks,
 
-Unless I'm missing something, clean shmem pages are discarded like any
-other clean filesystem page.
-
-> > Allocators and message passers don't care about content once volatile,
-> > only about the memory.  They wouldn't even have to go through the
-> > non-volatile step anymore, they could just write to memory again and
-> > it'll set the dirty bits and refault what's missing.
-> 
-> So this would implicitly make any write effectively clear the volatility
-> of a page? That probably would be an ok semantic with the use cases I'm
-> aware of, but its new.
-
-Yes.
-
-> > Such an interface would be dead simple to use and consistent across
-> > all types.  The basic implementation would require only a couple of
-> > lines of code, and while O(pages), it would still be much cheaper than
-> > thrashing and swapping, and still cheaper than actively giving ranges
-> > back to the kernel and reallocating and repopulating them later on.
-> >
-> > Compare this to the diffstat of the current vrange implementation and
-> > the complexity and inconsistencies it introduces into the VM.  I'm not
-> > sure an O(pages) interface would be unattractive enough to justify it.
-> 
-> Ok. So I think we're in agreement with:
-> * Moving the volatility state for anonymous volatility into the VMA
-> * Getting anonymous scanning going again on swapless systems
-
-Cool!
-
-> I'm still not totally sure about, but willing to try
-> * Page granular volatile tracking
-
-Okay.
-
-> I'm still not convinced on:
-> * madvise as a sufficient interface
-
-Me neither :)
-
-> I'll try to work out a draft of what your proposing (probably just for
-> anonymous memory for now) and we can iterate from there?
-
-Sounds good to me.
+greg k-h
