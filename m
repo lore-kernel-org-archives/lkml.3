@@ -1,61 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaAaEFO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jan 2014 23:05:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:16451 "EHLO mga11.intel.com"
+	id S932363AbaAaENu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jan 2014 23:13:50 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40065 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753609AbaAaEFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jan 2014 23:05:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,754,1384329600"; 
-   d="scan'208";a="473662731"
-Date: Fri, 31 Jan 2014 09:35:05 +0530
-From: Jenny Tc <jenny.tc@intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Kim Milo <Milo.Kim@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sebastian Reichel <sre@ring0.de>, aaro.koskinen@iki.fi,
-        freemangordon@abv.bg, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 4/4] power_supply: bq24261 charger driver
-Message-ID: <20140131040505.GA32607@jenny-desktop>
-References: <1391103052-10954-1-git-send-email-jenny.tc@intel.com>
- <1391103052-10954-5-git-send-email-jenny.tc@intel.com>
- <20140130170154.GA16503@amd.pavel.ucw.cz>
+	id S932312AbaAaENq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jan 2014 23:13:46 -0500
+Subject: [PATCH 1/3] powerpc: Free up the slot of PPC_MSG_CALL_FUNC_SINGLE
+ IPI message
+To: deepthi@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com, toshi.kani@hp.com,
+        arnd@arndb.de, geoff@infradead.org, mpe@ellerman.id.au,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, afleming@freescale.com, anton@samba.org,
+        srivatsa.bhat@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        paulus@samba.org, ady8radu@gmail.com, linuxppc-dev@lists.ozlabs.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Date: Fri, 31 Jan 2014 09:40:07 +0530
+Message-ID: <20140131041007.13071.23707.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140131040631.13071.19603.stgit@preeti.in.ibm.com>
+References: <20140131040631.13071.19603.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140130170154.GA16503@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14013104-0320-0000-0000-000002587A58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 06:01:54PM +0100, Pavel Machek wrote:
-> Hi!
-> 
-> > diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-> > index 77535fd..6d184c8 100644
-> > --- a/drivers/power/Makefile
-> > +++ b/drivers/power/Makefile
-> > @@ -59,4 +59,5 @@ obj-$(CONFIG_CHARGER_BQ24735)	+= bq24735-charger.o
-> >  obj-$(CONFIG_POWER_AVS)		+= avs/
-> >  obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
-> >  obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
-> > +obj-$(CONFIG_BQ24261_CHARGER)	+= bq24261_charger.o
-> >  obj-$(CONFIG_POWER_RESET)	+= reset/
-> 
-> I believe I commented on this one before. Spot two inconsistencies.
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Sorry, couldn't find two inconsistencies. One is use of _. And the other?
+The IPI handlers for both PPC_MSG_CALL_FUNC and PPC_MSG_CALL_FUNC_SINGLE map
+to a common implementation - generic_smp_call_function_single_interrupt(). So,
+we can consolidate them and save one of the IPI message slots, (which are
+precious on powerpc, since only 4 of those slots are available).
+
+So, implement the functionality of PPC_MSG_CALL_FUNC_SINGLE using
+PPC_MSG_CALL_FUNC itself and release its IPI message slot, so that it can be
+used for something else in the future, if desired.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+Acked-by: Geoff Levand <geoff@infradead.org> [For the PS3 part]
+---
+
+ arch/powerpc/include/asm/smp.h          |    2 +-
+ arch/powerpc/kernel/smp.c               |   12 +++++-------
+ arch/powerpc/platforms/cell/interrupt.c |    2 +-
+ arch/powerpc/platforms/ps3/smp.c        |    2 +-
+ 4 files changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+index 084e080..9f7356b 100644
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -120,7 +120,7 @@ extern int cpu_to_core_id(int cpu);
+  * in /proc/interrupts will be wrong!!! --Troy */
+ #define PPC_MSG_CALL_FUNCTION   0
+ #define PPC_MSG_RESCHEDULE      1
+-#define PPC_MSG_CALL_FUNC_SINGLE	2
++#define PPC_MSG_UNUSED		2
+ #define PPC_MSG_DEBUGGER_BREAK  3
+ 
+ /* for irq controllers that have dedicated ipis per message (4) */
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index ac2621a..ee7d76b 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -145,9 +145,9 @@ static irqreturn_t reschedule_action(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static irqreturn_t call_function_single_action(int irq, void *data)
++static irqreturn_t unused_action(int irq, void *data)
+ {
+-	generic_smp_call_function_single_interrupt();
++	/* This slot is unused and hence available for use, if needed */
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -168,14 +168,14 @@ static irqreturn_t debug_ipi_action(int irq, void *data)
+ static irq_handler_t smp_ipi_action[] = {
+ 	[PPC_MSG_CALL_FUNCTION] =  call_function_action,
+ 	[PPC_MSG_RESCHEDULE] = reschedule_action,
+-	[PPC_MSG_CALL_FUNC_SINGLE] = call_function_single_action,
++	[PPC_MSG_UNUSED] = unused_action,
+ 	[PPC_MSG_DEBUGGER_BREAK] = debug_ipi_action,
+ };
+ 
+ const char *smp_ipi_name[] = {
+ 	[PPC_MSG_CALL_FUNCTION] =  "ipi call function",
+ 	[PPC_MSG_RESCHEDULE] = "ipi reschedule",
+-	[PPC_MSG_CALL_FUNC_SINGLE] = "ipi call function single",
++	[PPC_MSG_UNUSED] = "ipi unused",
+ 	[PPC_MSG_DEBUGGER_BREAK] = "ipi debugger",
+ };
+ 
+@@ -251,8 +251,6 @@ irqreturn_t smp_ipi_demux(void)
+ 			generic_smp_call_function_interrupt();
+ 		if (all & IPI_MESSAGE(PPC_MSG_RESCHEDULE))
+ 			scheduler_ipi();
+-		if (all & IPI_MESSAGE(PPC_MSG_CALL_FUNC_SINGLE))
+-			generic_smp_call_function_single_interrupt();
+ 		if (all & IPI_MESSAGE(PPC_MSG_DEBUGGER_BREAK))
+ 			debug_ipi_action(0, NULL);
+ 	} while (info->messages);
+@@ -280,7 +278,7 @@ EXPORT_SYMBOL_GPL(smp_send_reschedule);
+ 
+ void arch_send_call_function_single_ipi(int cpu)
+ {
+-	do_message_pass(cpu, PPC_MSG_CALL_FUNC_SINGLE);
++	do_message_pass(cpu, PPC_MSG_CALL_FUNCTION);
+ }
+ 
+ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+diff --git a/arch/powerpc/platforms/cell/interrupt.c b/arch/powerpc/platforms/cell/interrupt.c
+index 2d42f3b..adf3726 100644
+--- a/arch/powerpc/platforms/cell/interrupt.c
++++ b/arch/powerpc/platforms/cell/interrupt.c
+@@ -215,7 +215,7 @@ void iic_request_IPIs(void)
+ {
+ 	iic_request_ipi(PPC_MSG_CALL_FUNCTION);
+ 	iic_request_ipi(PPC_MSG_RESCHEDULE);
+-	iic_request_ipi(PPC_MSG_CALL_FUNC_SINGLE);
++	iic_request_ipi(PPC_MSG_UNUSED);
+ 	iic_request_ipi(PPC_MSG_DEBUGGER_BREAK);
+ }
+ 
+diff --git a/arch/powerpc/platforms/ps3/smp.c b/arch/powerpc/platforms/ps3/smp.c
+index 4b35166..00d1a7c 100644
+--- a/arch/powerpc/platforms/ps3/smp.c
++++ b/arch/powerpc/platforms/ps3/smp.c
+@@ -76,7 +76,7 @@ static int __init ps3_smp_probe(void)
+ 
+ 		BUILD_BUG_ON(PPC_MSG_CALL_FUNCTION    != 0);
+ 		BUILD_BUG_ON(PPC_MSG_RESCHEDULE       != 1);
+-		BUILD_BUG_ON(PPC_MSG_CALL_FUNC_SINGLE != 2);
++		BUILD_BUG_ON(PPC_MSG_UNUSED	      != 2);
+ 		BUILD_BUG_ON(PPC_MSG_DEBUGGER_BREAK   != 3);
+ 
+ 		for (i = 0; i < MSG_COUNT; i++) {
+
