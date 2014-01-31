@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811AbaAaSxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:53:46 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:55643 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932460AbaAaSxo (ORCPT
+	id S932790AbaAaS4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:56:22 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:33678 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932333AbaAaS4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:53:44 -0500
+	Fri, 31 Jan 2014 13:56:20 -0500
+X-IronPort-AV: E=Sophos;i="4.95,759,1384300800"; 
+   d="scan'208";a="96644967"
+Date: Fri, 31 Jan 2014 18:56:19 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@schaman.hu>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michael Chan <mchan@broadcom.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        <wei.liu2@citrix.com>
+Subject: Re: igb and bnx2: "NETDEV WATCHDOG: transmit queue timed out" when
+ skb has huge linear buffer
+Message-ID: <20140131185619.GB27553@zion.uk.xensource.com>
+References: <52EAA31B.1090606@schaman.hu>
 MIME-Version: 1.0
-In-Reply-To: <CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com>
-References: <1390895840.8373.2.camel@beeld>
-	<20140128164320.GB7596@redhat.com>
-	<CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
-	<20140129145535.GA12562@redhat.com>
-	<CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com>
-	<20140129183204.GA22808@redhat.com>
-	<CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com>
-Date: Sat, 1 Feb 2014 00:53:42 +0600
-Message-ID: <CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com>
-Subject: Re: Do we really need curr_target in signal_struct ?
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: multipart/mixed; boundary=089e0141a0a0610e3d04f148b17f
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52EAA31B.1090606@schaman.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0141a0a0610e3d04f148b17f
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, Jan 30, 2014 at 07:08:11PM +0000, Zoltan Kiss wrote:
+> Hi,
+> 
+> I've experienced some queue timeout problems mentioned in the
+> subject with igb and bnx2 cards. I haven't seen them on other cards
+> so far. I'm using XenServer with 3.10 Dom0 kernel (however igb were
+> already updated to latest version), and there are Windows guests
+> sending data through these cards. I noticed these problems in XenRT
+> test runs, and I know that they usually mean some lost interrupt
+> problem or other hardware error, but in my case they started to
+> appear more often, and they are likely connected to my netback grant
+> mapping patches. These patches causing skb's with huge (~64kb)
+> linear buffers to appear more often.
+> The reason for that is an old problem in the ring protocol:
+> originally the maximum amount of slots were linked to MAX_SKB_FRAGS,
+> as every slot ended up as a frag of the skb. When this value were
+> changed, netback had to cope with the situation by coalescing the
+> packets into fewer frags.
+> My patch series take a different approach: the leftover slots
+> (pages) were assigned to a new skb's frags, and that skb were
+> stashed to the frag_list of the first one. Then, before sending it
+> off to the stack it calls skb = skb_copy_expand(skb, 0, 0,
+> GFP_ATOMIC, __GFP_NOWARN), which basically creates a new skb and
+> copied all the data into it. As far as I understood, it put
+> everything into the linear buffer, which can amount to 64KB at most.
+> The original skb are freed then, and this new one were sent to the
+> stack.
 
-On Thu, Jan 30, 2014 at 1:02 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
-> On Thu, Jan 30, 2014 at 12:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 01/29, Rakib Mullick wrote:
->
->>> Are you thinking that , since things are not broken, then we shouldn't
->>> try to do anything?
->>
->> Hmm. No.
->>
->> I am thinking that, since you misunderstood the purpose of ->curr_target,
->> I should probably try to argue with your patch which blindly removes this
->> optimization ?
->>
-> Since the optimization (usages of ->curr_target) isn't perfect, so there's
-> chance of being misunderstood. This optimization is misleading too (I think),
-> cause curr_target don't have anything to do with wants_signal() and
->  ->curr_target is used only for this optimization and to get this optimization
-> needs to maintain it properly, and this maintenance does have cost and if
-> we don't get benefited too much, then it doesn't worth it (my pov).
->
->> I also think that this logic doesn't look perfect, but this is another
->> story.
->
-> Yes, this logic seems need to improve.
->
-As you've made few points about the current logic of thread picking in
-complete_signal(), I took a look and found that using while_each_thread()
-can make things better than current. Although my initial intent of this thread
-wasn't related to complete_signal() logic, but as you've pointed out that
-things could be better, so I prepared the attached patch (just to address
-complete_signal()'s thread finding logic) not using ->curr_target but it's been
-kept. What do you think?
+Just my two cents, if it is this case, you can try to call
+skb_copy_expand on every SKB netback receives to manually create SKBs
+with ~64KB linear buffer to see how it goes...
 
+Wei.
 
-Thanks,
-Rakib
-
---089e0141a0a0610e3d04f148b17f
-Content-Type: text/x-patch; charset=US-ASCII; name="signal_completion.patch"
-Content-Disposition: attachment; filename="signal_completion.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hr3t6gb00
-
-ZGlmZiAtLWdpdCBhL2tlcm5lbC9zaWduYWwuYyBiL2tlcm5lbC9zaWduYWwuYwppbmRleCA1MmY4
-ODFkLi4wNjRmODFmIDEwMDY0NAotLS0gYS9rZXJuZWwvc2lnbmFsLmMKKysrIGIva2VybmVsL3Np
-Z25hbC5jCkBAIC05NDQsNyArOTQ0LDcgQEAgc3RhdGljIGlubGluZSBpbnQgd2FudHNfc2lnbmFs
-KGludCBzaWcsIHN0cnVjdCB0YXNrX3N0cnVjdCAqcCkKIHN0YXRpYyB2b2lkIGNvbXBsZXRlX3Np
-Z25hbChpbnQgc2lnLCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKnAsIGludCBncm91cCkKIHsKIAlzdHJ1
-Y3Qgc2lnbmFsX3N0cnVjdCAqc2lnbmFsID0gcC0+c2lnbmFsOwotCXN0cnVjdCB0YXNrX3N0cnVj
-dCAqdDsKKwlzdHJ1Y3QgdGFza19zdHJ1Y3QgKnQgPSBwOwogCiAJLyoKIAkgKiBOb3cgZmluZCBh
-IHRocmVhZCB3ZSBjYW4gd2FrZSB1cCB0byB0YWtlIHRoZSBzaWduYWwgb2ZmIHRoZSBxdWV1ZS4K
-QEAgLTk1MiwzMyArOTUyLDI2IEBAIHN0YXRpYyB2b2lkIGNvbXBsZXRlX3NpZ25hbChpbnQgc2ln
-LCBzdHJ1Y3QgdGFza19zdHJ1Y3QgKnAsIGludCBncm91cCkKIAkgKiBJZiB0aGUgbWFpbiB0aHJl
-YWQgd2FudHMgdGhlIHNpZ25hbCwgaXQgZ2V0cyBmaXJzdCBjcmFjay4KIAkgKiBQcm9iYWJseSB0
-aGUgbGVhc3Qgc3VycHJpc2luZyB0byB0aGUgYXZlcmFnZSBiZWFyLgogCSAqLwotCWlmICh3YW50
-c19zaWduYWwoc2lnLCBwKSkKLQkJdCA9IHA7Ci0JZWxzZSBpZiAoIWdyb3VwIHx8IHRocmVhZF9n
-cm91cF9lbXB0eShwKSkKLQkJLyoKLQkJICogVGhlcmUgaXMganVzdCBvbmUgdGhyZWFkIGFuZCBp
-dCBkb2VzIG5vdCBuZWVkIHRvIGJlIHdva2VuLgotCQkgKiBJdCB3aWxsIGRlcXVldWUgdW5ibG9j
-a2VkIHNpZ25hbHMgYmVmb3JlIGl0IHJ1bnMgYWdhaW4uCi0JCSAqLwotCQlyZXR1cm47Ci0JZWxz
-ZSB7Ci0JCS8qCi0JCSAqIE90aGVyd2lzZSB0cnkgdG8gZmluZCBhIHN1aXRhYmxlIHRocmVhZC4K
-LQkJICovCi0JCXQgPSBzaWduYWwtPmN1cnJfdGFyZ2V0OwotCQl3aGlsZSAoIXdhbnRzX3NpZ25h
-bChzaWcsIHQpKSB7Ci0JCQl0ID0gbmV4dF90aHJlYWQodCk7Ci0JCQlpZiAodCA9PSBzaWduYWwt
-PmN1cnJfdGFyZ2V0KQotCQkJCS8qCi0JCQkJICogTm8gdGhyZWFkIG5lZWRzIHRvIGJlIHdva2Vu
-LgotCQkJCSAqIEFueSBlbGlnaWJsZSB0aHJlYWRzIHdpbGwgc2VlCi0JCQkJICogdGhlIHNpZ25h
-bCBpbiB0aGUgcXVldWUgc29vbi4KLQkJCQkgKi8KLQkJCQlyZXR1cm47CisJaWYgKCFncm91cCB8
-fCB0aHJlYWRfZ3JvdXBfZW1wdHkocCkpIHsKKwkJaWYgKHdhbnRzX3NpZ25hbChzaWcsIHQpKQor
-CQkJZ290byBmb3VuZDsKKwl9IGVsc2UgeworCQl3aGlsZV9lYWNoX3RocmVhZChwLCB0KSB7CisJ
-CQlpZiAod2FudHNfc2lnbmFsKHNpZywgdCkpCisJCQkJZ290byBmb3VuZDsKIAkJfQotCQlzaWdu
-YWwtPmN1cnJfdGFyZ2V0ID0gdDsKIAl9CiAKIAkvKgorCSAqIE5vIHRocmVhZCBuZWVkcyB0byBi
-ZSB3b2tlbi4KKwkgKiBBbnkgZWxpZ2libGUgdGhyZWFkcyB3aWxsIHNlZQorCSAqIHRoZSBzaWdu
-YWwgaW4gdGhlIHF1ZXVlIHNvb24uCisJICovCisJcmV0dXJuOworZm91bmQ6CisJc2lnbmFsLT5j
-dXJyX3RhcmdldCA9IHQ7CisKKwkvKgogCSAqIEZvdW5kIGEga2lsbGFibGUgdGhyZWFkLiAgSWYg
-dGhlIHNpZ25hbCB3aWxsIGJlIGZhdGFsLAogCSAqIHRoZW4gc3RhcnQgdGFraW5nIHRoZSB3aG9s
-ZSBncm91cCBkb3duIGltbWVkaWF0ZWx5LgogCSAqLwo=
---089e0141a0a0610e3d04f148b17f--
+> I suspect that this is the problem as it only happens when guests
+> send too much slots. Does anyone familiar with these drivers have
+> seen such issue before? (when these kind of skb's get stucked in the
+> queue)
+> 
+> Regards,
+> 
+> Zoltan Kiss
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
