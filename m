@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074AbaAaVvD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:51:03 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:60205 "EHLO quartz.orcorp.ca"
+	id S933102AbaAaVvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:51:15 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:36211 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320AbaAaVvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:51:00 -0500
+	id S932320AbaAaVvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 16:51:11 -0500
 From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 To: Rob Herring <robh+dt@kernel.org>
 Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH v2 1/2] dt: Document a compatible entry for MDIO ethernet Phys
-Date: Fri, 31 Jan 2014 14:50:44 -0700
-Message-Id: <1391205045-1751-1-git-send-email-jgunthorpe@obsidianresearch.com>
+        netdev@vger.kernel.org
+Subject: [PATCH 2/2] of_mdio: Allow the DT to specify the phy ID and avoid autoprobing
+Date: Fri, 31 Jan 2014 14:50:45 -0700
+Message-Id: <1391205045-1751-2-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1391205045-1751-1-git-send-email-jgunthorpe@obsidianresearch.com>
+References: <1391205045-1751-1-git-send-email-jgunthorpe@obsidianresearch.com>
 X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This describes a compatible entry of the form:
-  ethernet-phy-idAAAA,BBBB
-Which is modelled after the PCI structured compatible entry
-(pciVVVV,DDDD.SSSS.ssss.RR)
+This makes the generic of_mdiobus_register parse the DT compatible string for
+the pattern ethernet-phy-idAAAA.BBBB. If present it should be a value that
+matches the phy-id register normally readable through MDIO.
 
-If present the OF core will be able to use this information to
-directly create the correct phy without auto probing the bus.
+When the ID is given the phy autoprobing is defeated and the phy is
+created directly.
+
+This is necessary to support phy's that cannot be autoprobed when
+of_mdiobus_register is called. Specifically, my case has the phy in reset at
+of_mdiobus_register, the reset is only released once the ethernet driver
+starts, before it attaches to the phy.
+
+Tested on ARM Kirkwood with phy id 0x01410e90 (Marvell 88E1318)
 
 Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Acked-by: Rob Herring <robh@kernel.org>
 ---
- Documentation/devicetree/bindings/net/phy.txt | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
-Cc: devicetree@vger.kernel.org
+ drivers/of/of_mdio.c | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-index 7cd18fb..989122c 100644
---- a/Documentation/devicetree/bindings/net/phy.txt
-+++ b/Documentation/devicetree/bindings/net/phy.txt
-@@ -23,10 +23,18 @@ Optional Properties:
-   assume clause 22. The compatible list may also contain other
-   elements.
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index d5a57a9..c93287e 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -22,6 +22,30 @@
+ MODULE_AUTHOR("Grant Likely <grant.likely@secretlab.ca>");
+ MODULE_LICENSE("GPL");
  
-+  If the phy's identifier is known then the list may contain an entry
-+  of the form: "ethernet-phy-idAAAA.BBBB" where
-+     AAAA - The value of the 16 bit Phy Identifier 1 register as
-+            4 hex digits. This is the chip vendor OUI bits 3:18
-+     BBBB - The value of the 16 bit Phy Identifier 2 register as
-+            4 hex digits. This is the chip vendor OUI bits 19:24,
-+            followed by 10 bits of a vendor specific ID.
++/* Extract the clause 22 phy ID from the compatible string of the form
++ * ethernet-phy-idAAAA.BBBB */
++static int of_get_phy_id(struct device_node *device, u32 *phy_id)
++{
++	const char *cp;
++	int cplen, l;
++	unsigned int upper, lower;
 +
- Example:
++	cp = of_get_property(device, "compatible", &cplen);
++	if (cp == NULL)
++		return -EINVAL;
++	while (cplen > 0) {
++		if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
++			*phy_id = ((upper & 0xFFFF) << 16) | (lower & 0xFFFF);
++			return 0;
++		}
++
++		l = strlen(cp) + 1;
++		cp += l;
++		cplen -= l;
++	}
++	return -EINVAL;
++}
++
+ /**
+  * of_mdiobus_register - Register mii_bus and create PHYs from the device tree
+  * @mdio: pointer to mii_bus structure
+@@ -36,6 +60,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 	struct device_node *child;
+ 	const __be32 *paddr;
+ 	u32 addr;
++	u32 phy_id;
+ 	bool is_c45, scanphys = false;
+ 	int rc, i, len;
  
- ethernet-phy@0 {
--	compatible = "ethernet-phy-ieee802.3-c22";
-+	compatible = "ethernet-phy-id0141.0e90", "ethernet-phy-ieee802.3-c22";
- 	linux,phandle = <2452000>;
- 	interrupt-parent = <40000>;
- 	interrupts = <35 1>;
+@@ -81,7 +106,10 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 
+ 		is_c45 = of_device_is_compatible(child,
+ 						 "ethernet-phy-ieee802.3-c45");
+-		phy = get_phy_device(mdio, addr, is_c45);
++		if (!is_c45 && !of_get_phy_id(child, &phy_id))
++			phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
++		else
++			phy = get_phy_device(mdio, addr, is_c45);
+ 
+ 		if (!phy || IS_ERR(phy)) {
+ 			dev_err(&mdio->dev,
 -- 
 1.8.1.2
 
