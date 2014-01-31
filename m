@@ -1,132 +1,671 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462AbaAaNRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 08:17:32 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:65379 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249AbaAaNRa (ORCPT
+	id S932396AbaAaNY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 08:24:27 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:34569 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249AbaAaNY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 08:17:30 -0500
-Message-ID: <1391174223.6395.3.camel@marge.simpson.net>
-Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
- Mobile
-From: Mike Galbraith <bitbucket@online.de>
-To: astx <astx@aws-it.at>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Fri, 31 Jan 2014 14:17:03 +0100
-In-Reply-To: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@aws-it.at>
-References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@aws-it.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:5B4pGZLNM4XB7t8NhZ943FB8++MtAyBifLdzE28Zcp6
- whxceYhSr7YvFHDqjOV0m+qxEMV2jErYXIQPWP3R/9FWkDMAAt
- pW+d0on87qrqosmDplOs2TCA24tnJIDZMYdD1x20nWtqcgnFrv
- OgT9+GkcPv+mMdPDPO8czJ/UFN/hjM0ZB5TLfPXj7y2F189A6I
- JuKRgznQ6htIU8xZ9R8QProWqpxZc2yLitDc5BX6KkXbqzQhQ6
- JzKpRO75NFspcP45V1O0apNiKv99egFB7AdevNwY9dVmsnPg4E
- U8PD1R5E4irpYguG/QyGqy3qoAizb8DRmVmCgRWXzd3zfzeExr
- 9Wxqfn8n1PCv9uvKOgYb9N1UvfESEcxguHHC6P7scaGBgo0sb2
- w/7jy58u5163A==
+	Fri, 31 Jan 2014 08:24:26 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.01.1401301119560.30431@pmeerw.net>
+References: <1391076673-5623-1-git-send-email-mranostay@gmail.com> <1391076673-5623-2-git-send-email-mranostay@gmail.com> <alpine.DEB.2.01.1401301119560.30431@pmeerw.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 2/2] iio: Add AS3935 lightning sensor support
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Fri, 31 Jan 2014 13:24:16 +0000
+To: Peter Meerwald <pmeerw@pmeerw.net>, Matt Ranostay <mranostay@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        matt.porter@linaro.org, koen@dominion.thruhere.net,
+        pantelis.antoniou@gmail.com
+Message-ID: <08b2bae0-2f88-49b4-b9ba-3b05343f3608@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CC netdev)
-
-On Fri, 2014-01-31 at 12:05 +0100, astx wrote: 
-> Using Polycom video conferencing software my homebrew linux NAT router  
-> crashes with attached kernel oops message.
-> This error can be reproduced also using kernel 3.2.54. Kernel 2.6.35  
-> seems to be stable.
-> 
-> Disabling nf_nat_h323 and nf_conntrack_h323 avoids crash - but video  
-> conferencing software is no more usable.
-> 
-> 
-> ===================================================================================
->   BUG: unable to handle kernel paging request at 00100104
-> IP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
-> *pdpt = 00000000359aa001 *pde = 0000000000000000
-> Oops: 0002 [#1] SMP
-> Modules linked in: nf_conntrack_netlink nfnetlink xt_mac xt_TCPMSS  
-> ipt_MASQUERADE
->   xt_pkttype xt_multiport xt_REDIRECT xt_nat iptable_mangle xt_LOG  
-> xt_limit af_packet
->   act_mirred cls_u32 sch_ingress sch_hfsc ifb xt_tcpudp ip6t_REJECT ipt_REJECT
->   ip6table_raw iptable_raw xt_CT iptable_filter nf_nat_pptp nf_nat_proto_gre
->   nf_conntrack_proto_udplite nf_conntrack_proto_dccp ip6table_mangle  
-> iptable_nat
->   nf_nat_ipv4 nf_nat_sip nf_nat_irc nf_nat_snmp_basic nf_conntrack_snmp
->   nf_conntrack_broadcast nf_nat_h323 nf_nat_tftp nf_nat_ftp nf_nat  
-> nf_conntrack_h323
->   nf_conntrack_tftp nf_conntrack_proto_sctp nf_conntrack_sip nf_conntrack_irc
->   nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_ftp nf_conntrack_ipv4
->   nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables
->   x_tables padlock_sha padlock_aes e_powersaver freq_table mperf via_cputemp
->   hwmon_vid serio_raw pcspkr i2c_viapro ehci_pci fan thermal processor 8139too
->   sg thermal_sys button shpchp 8139cp pci_hotplug mii via_agp ext4 crc16 jbd2
->   pata_via sata_via libata sd_mod scsi_mod ohci_hcd uhci_hcd ehci_hcd
-> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.28-9500-smp_m #1
-> Hardware name:    /CN700-8237, BIOS 6.00 PG 08/30/2007
-> task: c07ce180 ti: f6408000 task.ti: c07c2000
-> EIP: 0060:[<f8214f07>] EFLAGS: 00210206 CPU: 0
-> EIP is at nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
-> EAX: 00100100 EBX: eb636bc0 ECX: 00000000 EDX: eb461540
-> ESI: c0804e00 EDI: eb461544 EBP: f6409f08 ESP: f6409eec
->   DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> CR0: 8005003b CR2: 00100104 CR3: 359d4000 CR4: 000006b0
-> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> DR6: ffff0ff0 DR7: 00000400
-> Stack:
->   00000000 00200286 f6409f08 c0244bd8 eb636bc0 00100100 00000000 f6409f18
->   f8215687 f598ede8 c0804e00 f6409f28 f8211c99 f598ede8 f598ee50 f6409f5c
->   f8212e5e 00000003 00000000 00000000 00000004 eb461514 f598ede8 00000000
-> Call Trace:
->   [<c0244bd8>] ? del_timer+0x48/0x70
->   [<f8215687>] nf_ct_remove_expectations+0x47/0x60 [nf_conntrack]
->   [<f8211c99>] nf_ct_delete_from_lists+0x59/0x90 [nf_conntrack]
->   [<f8212e5e>] death_by_timeout+0x14e/0x1c0 [nf_conntrack]
->   [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
->   [<c024442d>] call_timer_fn+0x1d/0x80
->   [<c024461e>] run_timer_softirq+0x18e/0x1a0
->   [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
->   [<c023e6f3>] __do_softirq+0xa3/0x170
->   [<c023e650>] ? __local_bh_enable+0x70/0x70
->   <IRQ>
->   [<c023e587>] ? irq_exit+0x67/0xa0
->   [<c0202af6>] ? do_IRQ+0x46/0xb0
->   [<c027ad05>] ? clockevents_notify+0x35/0x110
->   [<c066ac6c>] ? common_interrupt+0x2c/0x40
->   [<c056e3c1>] ? cpuidle_enter_state+0x41/0xf0
->   [<c056e6fb>] ? cpuidle_idle_call+0x8b/0x100
->   [<c02085f8>] ? arch_cpu_idle+0x8/0x30
->   [<c027314b>] ? cpu_idle_loop+0x4b/0x140
->   [<c0273258>] ? cpu_startup_entry+0x18/0x20
->   [<c066056d>] ? rest_init+0x5d/0x70
->   [<c0813ac8>] ? start_kernel+0x2ec/0x2f2
->   [<c081364f>] ? repair_env_string+0x5b/0x5b
->   [<c0813269>] ? i386_start_kernel+0x33/0x35
-> Code: 8b 7b 0c 8b b6 98 00 00 00 85 c0 89 07 74 03 89 78 04 c7 43 0c 00
->   02 20 00 83 ae ec 05 00 00 01 8b 03 8b 7b 04 85 c0 89 07 74 03 <89> 78
->   04 8b 43 7c c7 03 00 01 10 00 c7 43 04 00 02 20 00 80 6c
-> EIP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]  
-> SS:ESP 0068:f6409eec
-> CR2: 0000000000100104
-> ---[ end trace 79fe2e6b81f54dee ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> Rebooting in 300 seconds..
-> ===================================================================================
-> 
-> 
-> Polycom Version: 3.1-44477
-> running on device: Apple iPad Mini
-> using operating system: iOS Version: 7.0.4
-> 
-> 
-> Attached also my kernel config. Hopefully someone could help...
-> 
-> BR, Toni
 
 
+On January 30, 2014 10:37:19 AM GMT+00:00, Peter Meerwald <pmeerw@pmeerw.net> wrote:
+>
+>> AS3935 chipset can detect lightning strikes and reports those
+>> back as events and the esimated distance to the storm.
+>
+>pretty cool :)
+Indeed!
+>
+>the distance thing should be documented in 
+>Documentation/ABI/testing/sysfs-bus-iio -- which unit (meters?) for 
+>example
+>
+>sysfs attributes such as boost should be documented as well; or better
+>use 
+>a writable scale attribute if possible
+>
+>nitpicking inline
+
+Couple of quick comments for now.
+
+The driver should not be doing the gpio irq setup. There is no reason it needs to be a gpio that I can see. DT should hence also have interrupt not gpio.
+
+Why all the pinctrl headers.
+
+Curious question... What controls max spi fre
+q? I would have thought that was fixed for the part hence not needed in device tree?
+
+Do make sure to add sysfs attr docs as Peter suggested.
+>
+>> ---
+>>  .../devicetree/bindings/iio/distance/as3935.txt    |  25 ++
+>>  drivers/iio/Kconfig                                |   1 +
+>>  drivers/iio/Makefile                               |   1 +
+>>  drivers/iio/distance/Kconfig                       |  19 +
+>>  drivers/iio/distance/Makefile                      |   6 +
+>>  drivers/iio/distance/as3935.c                      | 459
+>+++++++++++++++++++++
+>>  6 files changed, 511 insertions(+)
+>>  create mode 100644
+>Documentation/devicetree/bindings/iio/distance/as3935.txt
+>>  create mode 100644 drivers/iio/distance/Kconfig
+>>  create mode 100644 drivers/iio/distance/Makefile
+>>  create mode 100644 drivers/iio/distance/as3935.c
+>> 
+>> diff --git
+>a/Documentation/devicetree/bindings/iio/distance/as3935.txt
+>b/Documentation/devicetree/bindings/iio/distance/as3935.txt
+>> new file mode 100644
+>> index 0000000..af35827
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/iio/distance/as3935.txt
+>> @@ -0,0 +1,25 @@
+>> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
+>> +
+>> +Required properties:
+>> +	- compatible: must be "ams,as3935"
+>> +	- reg: SPI chip select number for the device
+>> +	- spi-max-frequency: Max SPI frequency to use
+>> +	- spi-cpha: SPI Mode 1
+>> +	- gpios: GPIO input of interrupt line from IRQ pin of AS3935 IC
+>> +
+>> +Optional properties:
+>> +	- ams,tune-cap: Calibration tuning capacitor stepping value 0 - 15.
+>> +	  Range of 0 to 120 pF, 8pF steps. This will require using the
+>calibration
+>> +	  data from the manufacturer.
+>> +
+>> +
+>> +Example:
+>> +
+>> +		as3935@0 {
+>> +			compatible = "ams,as3935";
+>> +			reg = <0>;
+>> +			spi-max-frequency = <100000>;
+>> +			spi-cpha;
+>> +			ams,tune-cap = /bits/ 8 <10>;
+>> +			gpios = <&gpio1 16 10>;
+>> +		};
+>> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+>> index 5dd0e12..5164a68 100644
+>> --- a/drivers/iio/Kconfig
+>> +++ b/drivers/iio/Kconfig
+>> @@ -63,6 +63,7 @@ source "drivers/iio/adc/Kconfig"
+>>  source "drivers/iio/amplifiers/Kconfig"
+>>  source "drivers/iio/common/Kconfig"
+>>  source "drivers/iio/dac/Kconfig"
+>> +source "drivers/iio/distance/Kconfig"
+>>  source "drivers/iio/frequency/Kconfig"
+>>  source "drivers/iio/gyro/Kconfig"
+>>  source "drivers/iio/humidity/Kconfig"
+>> diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
+>> index 887d390..1574731 100644
+>> --- a/drivers/iio/Makefile
+>> +++ b/drivers/iio/Makefile
+>> @@ -16,6 +16,7 @@ obj-y += adc/
+>>  obj-y += amplifiers/
+>>  obj-y += common/
+>>  obj-y += dac/
+>> +obj-y += distance/
+>>  obj-y += gyro/
+>>  obj-y += frequency/
+>>  obj-y += humidity/
+>> diff --git a/drivers/iio/distance/Kconfig
+>b/drivers/iio/distance/Kconfig
+>> new file mode 100644
+>> index 0000000..753352c
+>> --- /dev/null
+>> +++ b/drivers/iio/distance/Kconfig
+>> @@ -0,0 +1,19 @@
+>> +#
+>> +# Distance sensors
+>> +#
+>> +
+>> +menu "Lightning sensors"
+>> +
+>> +config AS3935
+>> +	tristate "AS3935 Franklin lightning sensor"
+>> +	select IIO_BUFFER
+>> +	select IIO_TRIGGERED_BUFFER
+>> +	depends on SPI
+>> +	help
+>> +	 If you say yes here you get support for the Austrian Microsystems
+>> +	 AS3935 lightning detection sensor.
+>> +
+>> +	 This driver can also be built as a module. If so, the module
+>> +	 will be called as3935
+>> +
+>> +endmenu
+>> diff --git a/drivers/iio/distance/Makefile
+>b/drivers/iio/distance/Makefile
+>> new file mode 100644
+>> index 0000000..f63b70d
+>> --- /dev/null
+>> +++ b/drivers/iio/distance/Makefile
+>> @@ -0,0 +1,6 @@
+>> +#
+>> +# Makefile for IIO distance sensors
+>> +#
+>> +
+>> +# When adding new entries keep the list in alphabetical order
+>> +obj-$(CONFIG_AS3935)		+= as3935.o
+>> diff --git a/drivers/iio/distance/as3935.c
+>b/drivers/iio/distance/as3935.c
+>> new file mode 100644
+>> index 0000000..1a8f48d
+>> --- /dev/null
+>> +++ b/drivers/iio/distance/as3935.c
+>> @@ -0,0 +1,459 @@
+>> +/*
+>> + * as3935.c - Support for AS3935 Franklin lightning sensor
+>> + *
+>> + * Copyright (C) 2014 Matt Ranostay <mranostay@gmail.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>modify
+>> + * it under the terms of the GNU General Public License as published
+>by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/workqueue.h>
+>> +#include <linux/err.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/gpio.h>
+>> +#include <linux/spi/spi.h>
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +#include <linux/iio/trigger.h>
+>> +#include <linux/iio/trigger_consumer.h>
+>> +#include <linux/iio/buffer.h>
+>> +#include <linux/iio/triggered_buffer.h>
+>> +#include <linux/pinctrl/pinctrl.h>
+>> +#include <linux/pinctrl/pinmux.h>
+>> +#include <linux/pinctrl/consumer.h>
+>> +#include <linux/pm_runtime.h>
+>> +#include <linux/of_gpio.h>
+>> +
+>> +
+>> +#define AS3935_AFE_GAIN		0x00
+>> +#define AS3935_AFE_MASK		0x3F
+>> +#define AS3935_AFE_GAIN_MAX	0x1F
+>> +
+>> +#define AS3935_INT		0x03
+>> +#define AS3935_INT_MASK		0x07
+>> +#define AS3935_DATA		0x07
+>> +#define AS3935_DATA_MASK	0x1F
+>> +
+>> +#define AS3935_TUNE_CAP		0x08
+>> +#define AS3935_CALIBRATE	0x3D
+>> +
+>> +#define AS3935_WRITE_DATA	(0x1 << 15)
+>> +#define AS3935_READ_DATA	(0x1 << 14)
+>> +#define AS3935_ADDRESS(x)	(x << 8)
+>> +
+>> +#define AS3935_EVENT_INT	(1<<3)
+>> +#define AS3935_NOISE_INT	(1<<0)
+>> +
+>> +struct as3935_state {
+>> +	struct spi_device *spi;
+>> +	struct mutex lock;
+>> +
+>> +	struct iio_trigger *trig;
+>> +	struct delayed_work work;
+>> +
+>> +	u8 tune_cap;
+>> +};
+>> +
+>> +static const struct iio_chan_spec as3935_channels[] = {
+>> +	{
+>> +		.type           = IIO_DISTANCE,
+>> +		.channel        = 0,
+>> +		.info_mask_separate =
+>> +			BIT(IIO_CHAN_INFO_RAW),
+>> +		.scan_index     = 0,
+>> +		.scan_type = {
+>> +			.sign           = 'u',
+>> +			.realbits       = 6,
+>> +			.storagebits    = 6,
+>> +		},
+>> +		.modified = 0,
+>
+>channel and modified are not needed
+>storagebits should be a multiple of 8
+>
+>> +	},
+>> +	IIO_CHAN_SOFT_TIMESTAMP(1),
+>> +};
+>> +
+>> +static const unsigned long as3935_available_scan_masks[] = { 0x01,
+>0x0 };
+>
+>is this needed? there is just one channel
+>
+>> +
+>> +static int as3935_read(struct as3935_state *st, unsigned int reg,
+>int *val)
+>> +{
+>> +	u8 tx, rx;
+>> +	int ret;
+>> +
+>> +	struct spi_transfer xfers[] = {
+>> +		{
+>> +			.tx_buf = &tx,
+>> +			.bits_per_word = 8,
+>> +			.len = 1,
+>> +		}, {
+>> +			.rx_buf = &rx,
+>> +			.bits_per_word = 8,
+>> +			.len = 1,
+>> +		},
+>> +	};
+>> +
+>> +	mutex_lock(&st->lock);
+>> +	tx = (AS3935_READ_DATA | AS3935_ADDRESS(reg)) >> 8;
+>> +
+>> +	ret = spi_sync_transfer(st->spi, xfers, ARRAY_SIZE(xfers));
+>> +	mutex_unlock(&st->lock);
+>> +
+>> +	*val = rx;
+>> +
+>> +	return ret;
+>> +};
+>> +
+>> +static int as3935_write(struct as3935_state *st,
+>> +				unsigned int reg,
+>> +				unsigned int val)
+>> +{
+>> +	u8 buf[2];
+>> +	int ret;
+>> +
+>> +	mutex_lock(&st->lock);
+>> +	buf[0] = AS3935_WRITE_DATA | AS3935_ADDRESS(reg) >> 8;
+>> +	buf[1] = val;
+>> +
+>> +	ret = spi_write(st->spi, (u8 *) &buf, 2);
+>> +	mutex_unlock(&st->lock);
+>> +
+>> +	return ret;
+>> +};
+>> +
+>> +static ssize_t gain_boost_show(struct device *dev,
+>
+>not prefixed with as3935_
+>
+>> +				struct device_attribute *attr,
+>> +				char *buf)
+>> +{
+>> +	struct as3935_state *st = iio_priv(dev_to_iio_dev(dev));
+>> +	int val, ret;
+>> +
+>> +	ret = as3935_read(st, AS3935_AFE_GAIN, &val);
+>> +	if (ret)
+>> +		return ret;
+>> +	val = (val & AS3935_AFE_MASK) >> 1;
+>> +
+>> +	return sprintf(buf, "%d\n", val);
+>> +};
+>> +
+>> +static ssize_t gain_boost_store(struct device *dev,
+>> +					struct device_attribute *attr,
+>> +					const char *buf, size_t len)
+>> +{
+>> +	struct as3935_state *st = iio_priv(dev_to_iio_dev(dev));
+>> +	unsigned long val;
+>> +	int ret;
+>> +
+>> +	ret = kstrtoul((const char *) buf, 10, &val);
+>> +	if (ret)
+>> +		return -EINVAL;
+>> +
+>> +	if (val > AS3935_AFE_GAIN_MAX)
+>> +		return -EINVAL;
+>> +
+>> +	as3935_write(st, AS3935_AFE_GAIN, val << 1);
+>> +
+>> +	return len;
+>> +};
+>> +
+>> +static IIO_DEVICE_ATTR(gain_boost, S_IRUGO | S_IWUSR,
+>> +	gain_boost_show, gain_boost_store, 0);
+>> +
+>> +
+>> +static struct attribute *as3935_attributes[] = {
+>> +	&iio_dev_attr_gain_boost.dev_attr.attr,
+>> +	NULL,
+>> +};
+>> +
+>> +static struct attribute_group as3935_attribute_group = {
+>> +	.attrs = as3935_attributes,
+>> +};
+>> +
+>> +static int as3935_read_raw(struct iio_dev *indio_dev,
+>> +			   struct iio_chan_spec const *chan,
+>> +			   int *val,
+>> +			   int *val2,
+>> +			   long m)
+>> +{
+>> +	struct as3935_state *st = iio_priv(indio_dev);
+>> +
+>> +	if (m == IIO_CHAN_INFO_RAW) {
+>> +		int ret;
+>> +		*val = 0;
+>> +		ret = as3935_read(st, AS3935_DATA, val2);
+>
+>huh, this always returns 0?
+>only val is return if IIO_VAL_INT
+>
+>> +		if (ret)
+>> +			return ret;
+>> +		return IIO_VAL_INT;
+>> +	}
+>> +
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static const struct iio_info as3935_info = {
+>> +	.driver_module = THIS_MODULE,
+>> +	.attrs = &as3935_attribute_group,
+>> +	.read_raw = &as3935_read_raw,
+>> +};
+>> +
+>> +static const struct iio_buffer_setup_ops
+>iio_triggered_buffer_setup_ops = {
+>> +	.postenable = &iio_triggered_buffer_postenable,
+>> +	.predisable = &iio_triggered_buffer_predisable,
+>> +};
+>> +
+>> +static irqreturn_t as3935_trigger_handler(int irq, void *private)
+>> +{
+>> +	struct iio_poll_func *pf = private;
+>> +	struct iio_dev *indio_dev = pf->indio_dev;
+>> +	struct as3935_state *st = iio_priv(indio_dev);
+>> +	int val, ret;
+>> +
+>> +	ret = as3935_read(st, AS3935_DATA, &val);
+>> +	if (ret)
+>> +		goto err_read;
+>> +	val &= AS3935_DATA_MASK;
+>> +	iio_push_to_buffers_with_timestamp(indio_dev, &val,
+>iio_get_time_ns());
+>> +
+>> +	iio_trigger_notify_done(indio_dev->trig);
+>
+>iio_trigger_notify_done() must always be called, most past err_read
+>
+>> +err_read:
+>> +
+>> +	return IRQ_HANDLED;
+>> +};
+>> +
+>> +static const struct iio_trigger_ops iio_interrupt_trigger_ops = {
+>> +	.owner = THIS_MODULE,
+>> +};
+>> +
+>> +static void as3935_event_work(struct work_struct *work)
+>> +{
+>> +	struct as3935_state *st;
+>> +	struct spi_device *spi;
+>> +	int val;
+>> +
+>> +	st = container_of(work, struct as3935_state, work.work);
+>> +	spi = st->spi;
+>> +
+>> +	as3935_read(st, AS3935_INT, &val);
+>> +	val &= AS3935_INT_MASK;
+>> +
+>> +	switch (val) {
+>> +	case AS3935_EVENT_INT:
+>> +		iio_trigger_poll(st->trig, 0);
+>> +		break;
+>> +	case AS3935_NOISE_INT:
+>> +		dev_warn(&spi->dev, "noise level is too high");
+>> +		break;
+>> +	}
+>> +};
+>> +
+>> +static irqreturn_t as3935_interrupt_handler(int irq, void *private)
+>> +{
+>> +	struct iio_dev *indio_dev = private;
+>> +	struct as3935_state *st = iio_priv(indio_dev);
+>> +
+>> +	cancel_delayed_work(&st->work);
+>> +	schedule_delayed_work(&st->work, jiffies_to_msecs(3));
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>> +static void calibrate_as3935(struct as3935_state *st)
+>> +{
+>> +	/* mask disturber interrupt bit */
+>> +	as3935_write(st, AS3935_INT, 1 << 5);
+>> +
+>> +	as3935_write(st, AS3935_CALIBRATE, 0x96);
+>> +	as3935_write(st, AS3935_TUNE_CAP, 1 << 5 | st->tune_cap);
+>> +
+>> +	mdelay(2);
+>> +	as3935_write(st, AS3935_TUNE_CAP, st->tune_cap);
+>> +}
+>> +
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int as3935_suspend(struct spi_device *spi, pm_message_t msg)
+>> +{
+>> +	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +	struct as3935_state *st = iio_priv(indio_dev);
+>> +	int val, ret;
+>> +
+>> +	ret = as3935_read(st, AS3935_AFE_GAIN, &val);
+>> +	if (ret)
+>> +		return ret;
+>> +	val |= 0x01;
+>> +
+>> +	return as3935_write(st, AS3935_AFE_GAIN, val);
+>> +}
+>> +
+>> +static int as3935_resume(struct spi_device *spi)
+>> +{
+>> +	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +	struct as3935_state *st = iio_priv(indio_dev);
+>> +	int val, ret;
+>> +
+>> +	ret = as3935_read(st, AS3935_AFE_GAIN, &val);
+>> +	if (ret)
+>> +		return ret;
+>> +	val &= ~1;
+>> +
+>> +	return as3935_write(st, AS3935_AFE_GAIN, val);
+>> +}
+>> +#else
+>> +#define as3935_suspend	NULL
+>> +#define as3935_resume	NULL
+>> +#endif
+>> +
+>> +static int as3935_probe(struct spi_device *spi)
+>> +{
+>> +	struct iio_dev *indio_dev;
+>> +	struct iio_trigger *trig;
+>> +	struct as3935_state *st;
+>> +	struct device_node *np = spi->dev.of_node;
+>> +	int gpio;
+>> +	int irq;
+>> +	int ret;
+>> +
+>> +	/* Grab the GPIO to use for lightning event interrupt */
+>> +	if (np)
+>> +		gpio = of_get_gpio(spi->dev.of_node, 0);
+>> +	else {
+>> +		dev_err(&spi->dev, "unable to get interrupt gpio\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	/* GPIO event setup */
+>> +	ret = devm_gpio_request(&spi->dev, gpio, "as3935");
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "failed to request GPIO %u\n", gpio);
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = gpio_direction_input(gpio);
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "failed to set pin direction\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	/* IRQ setup */
+>> +	irq = gpio_to_irq(gpio);
+>> +	if (irq < 0) {
+>> +		dev_err(&spi->dev, "failed to map GPIO to IRQ: %d\n", irq);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(st));
+>> +	if (!indio_dev)
+>> +		return -ENOMEM;
+>> +
+>> +	st = iio_priv(indio_dev);
+>> +	st->spi = spi;
+>> +	st->tune_cap = 0;
+>> +	spi_set_drvdata(spi, indio_dev);
+>> +	mutex_init(&st->lock);
+>> +	INIT_DELAYED_WORK(&st->work, as3935_event_work);
+>> +
+>> +	of_property_read_u8(np, "ams,tune-cap", &st->tune_cap);
+>> +	if (st->tune_cap > 15) {
+>> +		dev_err(&spi->dev,
+>> +			"wrong tune_cap setting of %d\n", st->tune_cap);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	indio_dev->dev.parent = &spi->dev;
+>> +	indio_dev->name = spi_get_device_id(spi)->name;
+>> +	indio_dev->channels = as3935_channels;
+>> +	indio_dev->num_channels = ARRAY_SIZE(as3935_channels);
+>> +	indio_dev->modes = INDIO_DIRECT_MODE;
+>> +	indio_dev->available_scan_masks = as3935_available_scan_masks;
+>> +	indio_dev->info = &as3935_info;
+>> +
+>> +	trig = devm_iio_trigger_alloc(&spi->dev, "%s-dev%d",
+>> +				      indio_dev->name, indio_dev->id);
+>> +
+>> +	if (!trig)
+>> +		return -ENOMEM;
+>> +
+>> +	st->trig = trig;
+>> +	trig->dev.parent = indio_dev->dev.parent;
+>> +	iio_trigger_set_drvdata(trig, indio_dev);
+>> +	trig->ops = &iio_interrupt_trigger_ops;
+>> +
+>> +	ret = iio_trigger_register(trig);
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "failed to register trigger\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = iio_triggered_buffer_setup(indio_dev, NULL,
+>> +					&as3935_trigger_handler,
+>> +					&iio_triggered_buffer_setup_ops);
+>> +
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "cannot setup iio trigger\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	calibrate_as3935(st);
+>> +
+>> +	ret = devm_request_irq(&spi->dev, irq,
+>> +				&as3935_interrupt_handler,
+>> +				IRQF_TRIGGER_RISING,
+>> +				dev_name(&spi->dev),
+>> +				indio_dev);
+>> +
+>> +	if (ret) {
+>> +		dev_err(&spi->dev, "unable to request irq\n");
+>> +		goto uninit_buffer;
+>> +	}
+>> +
+>> +	ret = iio_device_register(indio_dev);
+>> +	if (ret < 0) {
+>> +		dev_err(&spi->dev, "unable to register device\n");
+>> +		goto uninit_buffer;
+>> +	}
+>> +
+>> +	return 0;
+>> +
+>> +uninit_buffer:
+>> +	iio_triggered_buffer_cleanup(indio_dev);
+>
+>iio_trigger_unregister()?
+>
+>> +
+>> +	return ret;
+>> +};
+>> +
+>> +static int as3935_remove(struct spi_device *spi)
+>> +{
+>> +	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +
+>
+>iio_trigger_unregister()?
+>iio_triggered_buffer_cleanup()?
+>
+>> +	iio_device_unregister(indio_dev);
+>> +	return 0;
+>> +};
+>> +
+>> +static const struct spi_device_id as3935_id[] = {
+>> +	{"as3935", 0},
+>> +	{},
+>> +};
+>> +MODULE_DEVICE_TABLE(spi, as3935_id);
+>> +
+>> +static struct spi_driver as3935_driver = {
+>> +	.driver = {
+>> +		.name	= "as3935",
+>> +		.owner	= THIS_MODULE,
+>> +	},
+>> +	.probe		= as3935_probe,
+>> +	.remove		= as3935_remove,
+>> +	.id_table	= as3935_id,
+>> +	.suspend	= as3935_suspend,
+>> +	.resume		= as3935_resume,
+>> +};
+>> +module_spi_driver(as3935_driver);
+>> +
+>> +MODULE_AUTHOR("Matt Ranostay <mranostay@gmail.com>");
+>> +MODULE_DESCRIPTION("AS3935 lightning sensor");
+>> +MODULE_LICENSE("GPL");
+>> 
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
