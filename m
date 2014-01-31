@@ -1,106 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816AbaAaRcu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 12:32:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55189 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524AbaAaRco (ORCPT
+	id S932891AbaAaRdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 12:33:55 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:64272 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932616AbaAaRdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 12:32:44 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 12/14] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
-Date: Fri, 31 Jan 2014 09:32:15 -0800
-Message-Id: <1391189537-20777-13-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391189537-20777-1-git-send-email-kamal@canonical.com>
-References: <1391189537-20777-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 31 Jan 2014 12:33:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <26d172891694e4041e73b7dae85a1848adf38034.1391177880.git.michal.simek@xilinx.com>
+References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com>
+	<26d172891694e4041e73b7dae85a1848adf38034.1391177880.git.michal.simek@xilinx.com>
+Date: Fri, 31 Jan 2014 11:33:50 -0600
+Message-ID: <CAL_JsqJ+Dc9PFVYcxHvLiG9unKQX-kEc1fsYsieyTjf-AN3j=A@mail.gmail.com>
+Subject: Re: [PATCH 07/10] watchdog: xilinx: Fix OF binding
+From: Rob Herring <robherring2@gmail.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Simek <monstr@monstr.eu>, Wim Van Sebroeck <wim@iguana.be>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-watchdog@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.17 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jan 31, 2014 at 8:18 AM, Michal Simek <michal.simek@xilinx.com> wrote:
+> Use of_property_read_u32 functions to clean OF probing.
 
-------------------
+The subject is a bit misleading as this doesn't really fix anything.
 
-From: Ian Abbott <abbotti@mev.co.uk>
+>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>
+>  drivers/watchdog/of_xilinx_wdt.c | 25 ++++++++++---------------
+>  1 file changed, 10 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+> index c229cc4..475440a6 100644
+> --- a/drivers/watchdog/of_xilinx_wdt.c
+> +++ b/drivers/watchdog/of_xilinx_wdt.c
+> @@ -147,8 +147,7 @@ static u32 xwdt_selftest(struct xwdt_device *xdev)
+>  static int xwdt_probe(struct platform_device *pdev)
+>  {
+>         int rc;
+> -       u32 *tmptr;
+> -       u32 *pfreq;
+> +       u32 pfreq, enable_once;
+>         struct resource *res;
+>         struct xwdt_device *xdev;
+>         bool no_timeout = false;
+> @@ -168,28 +167,24 @@ static int xwdt_probe(struct platform_device *pdev)
+>         if (IS_ERR(xdev->base))
+>                 return PTR_ERR(xdev->base);
+>
+> -       pfreq = (u32 *)of_get_property(pdev->dev.of_node,
+> -                                       "clock-frequency", NULL);
+> -
+> -       if (pfreq == NULL) {
+> +       rc = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &pfreq);
+> +       if (rc) {
+>                 dev_warn(&pdev->dev,
+>                          "The watchdog clock frequency cannot be obtained\n");
+>                 no_timeout = true;
 
-based on
-commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
+You can kill this...
 
-At some point, Measurement Computing / ComputerBoards redesigned the
-PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
-This meant they had to put their hardware registers in the PCI BAR 2
-region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
-device ID for the new design.  This means the driver recognizes the
-newer cards, but doesn't work (and is likely to screw up the local
-configuration registers of the PLX chip) because it's using the wrong
-region.
+>         }
+>
+> -       tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+> -                                       "xlnx,wdt-interval", NULL);
+> -       if (tmptr == NULL) {
+> +       rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-interval",
+> +                                 &xdev->wdt_interval);
+> +       if (rc) {
+>                 dev_warn(&pdev->dev,
+>                          "Parameter \"xlnx,wdt-interval\" not found\n");
+>                 no_timeout = true;
 
-Since  the PCI subvendor and subdevice IDs were both zero on the old
-design, but are the same as the vendor and device on the new design, we
-can tell the old design and new design apart easily enough.  To avoid
-adding extra data to `pci_8255_boards[]`, treat the board as a special
-case in `pci_8255_auto_attach[]`.  It's safer to use the fact that the
-PCI BAR 2 region will have non-zero length only on the newer design, so
-use that fact to distinguish them.
+and this...
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Cc: kernel-team@lists.ubuntu.com
-[ ian: backport to 3.8 ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/staging/comedi/drivers/8255_pci.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+> -       } else {
+> -               xdev->wdt_interval = *tmptr;
+>         }
+>
+> -       tmptr = (u32 *)of_get_property(pdev->dev.of_node,
+> -                                       "xlnx,wdt-enable-once", NULL);
+> -       if (tmptr == NULL) {
+> +       rc = of_property_read_u32(pdev->dev.of_node, "xlnx,wdt-enable-once",
+> +                                 &enable_once);
+> +       if (!rc && enable_once) {
+>                 dev_warn(&pdev->dev,
+>                          "Parameter \"xlnx,wdt-enable-once\" not found\n");
+>                 watchdog_set_nowayout(xilinx_wdt_wdd, true);
+> @@ -201,7 +196,7 @@ static int xwdt_probe(struct platform_device *pdev)
+>   */
+>         if (!no_timeout)
 
-diff --git a/drivers/staging/comedi/drivers/8255_pci.c b/drivers/staging/comedi/drivers/8255_pci.c
-index e0a7952..92ee23e 100644
---- a/drivers/staging/comedi/drivers/8255_pci.c
-+++ b/drivers/staging/comedi/drivers/8255_pci.c
-@@ -122,7 +122,7 @@ static const struct pci_8255_boardinfo pci_8255_boards[] = {
- 		.name		= "cb_pci-dio48h",
- 		.vendor		= PCI_VENDOR_ID_CB,
- 		.device		= PCI_DEVICE_ID_CB_PCIDIO48H,
--		.dio_badr	= 1,
-+		.dio_badr	= 1,	/* only for older boards */
- 		.n_8255		= 2,
- 	}, {
- 		.name		= "cb_pci-dio96h",
-@@ -224,6 +224,7 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
- 	unsigned long len;
- 	int ret;
- 	int i;
-+	int dio_badr;
- 
- 	board = pci_8255_find_boardinfo(dev, pcidev);
- 	if (!board)
-@@ -239,8 +240,21 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
- 	ret = comedi_pci_enable(pcidev, dev->board_name);
- 	if (ret)
- 		return ret;
--	iobase = pci_resource_start(pcidev, board->dio_badr);
--	len = pci_resource_len(pcidev, board->dio_badr);
-+	dio_badr = board->dio_badr;
-+	/*
-+	 * For Measurement Computing / ComputerBoards PCI-DIO48H, use the
-+	 * PCI BAR 2 region, if non-zero length, else use the PCI BAR 1 region
-+	 * from the board entry.  This is because the board was redesigned to
-+	 * use a different PCI interface chip, with the user registers in a
-+	 * different PCI BAR region.
-+	 */
-+	if (pcidev->vendor == PCI_VENDOR_ID_CB &&
-+	    pcidev->device == PCI_DEVICE_ID_CB_PCIDIO48H &&
-+	    pci_resource_len(pcidev, 2))
-+		dio_badr = 2;
-+
-+	iobase = pci_resource_start(pcidev, dio_badr);
-+	len = pci_resource_len(pcidev, dio_badr);
- 
- 	if (board->is_mmio) {
- 		devpriv->mmio_base = ioremap(iobase, len);
--- 
-1.8.3.2
+and use "if (pfreq && xdev->wdt_interval)" if you initialize pfreq to 0.
 
+>                 xilinx_wdt_wdd->timeout = 2 * ((1 << xdev->wdt_interval) /
+> -                                         *pfreq);
+> +                                         pfreq);
+
+Is the wdog really usable if the timeout properties are missing? Seems
+like you should fail to probe rather than warn.
+
+Rob
