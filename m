@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024AbaAaVea (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 16:34:30 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:47111 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932629AbaAaVe2 (ORCPT
+	id S1754332AbaAaVns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 16:43:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51773 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033AbaAaVnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 16:34:28 -0500
-Date: Fri, 31 Jan 2014 16:34:27 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-pm@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        Tero Kristo <t-kristo@ti.com>
-Subject: Re: [RFC/PATCH] base: platform: add generic clock handling for
- platform-bus
-In-Reply-To: <1391191965-31102-1-git-send-email-balbi@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1401311614100.12368-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 31 Jan 2014 16:43:47 -0500
+Date: Fri, 31 Jan 2014 13:43:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Salman Qazi <sqazi@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Reverting warning for vmalloc and kmemcheck faults in NMI
+Message-Id: <20140131134345.0d63bce0fc19d5fe86541e13@linux-foundation.org>
+In-Reply-To: <CANN689FzOonHtEazR6KE+yZzohetwVQKaXHHnNYgC+615JszLw@mail.gmail.com>
+References: <CANN689FzOonHtEazR6KE+yZzohetwVQKaXHHnNYgC+615JszLw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 31 Jan 2014, Felipe Balbi wrote:
+On Thu, 30 Jan 2014 19:06:58 -0800 Michel Lespinasse <walken@google.com> wrote:
 
-> Still TODO a commit log. Not for merging!!!!!
+> Hi,
 > 
-> NYET-Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
+> Way back in 2010, Frederic added commit
+> ebc8827f75954fe315492883eee5cb3f355d547d to warn us about cases where
+> faults were incorrectly firing during NMI handling on x86, as the IRET
+> from such faults would possibly trigger nested NMIs.
 > 
-> This patch is an idea I've had recently in order to combine several different
-> PM implementations into the platform-bus.
+> Later (2012), Salman added commit
+> 28696f434fef0efa97534b59986ad33b9c4df7f8 to enable nested NMI
+> handling. See http://lwn.net/Articles/484932/
 > 
-> This patch is bare minimum for platforms which need to handle functional and
-> interface clocks but the whole thing is made optional.
+> So, I believe such faults nesting under NMI are not an issue anymore,
+> and we could revert ebc8827f75954fe315492883eee5cb3f355d547d ?
+
+Seems logical.
+
+> Background: I'm asking this because at Google we like to dump memory
+> regions pointed by registers in our arch_trigger_all_cpu_backtrace
+> handler, and this occasionally causes the vmalloc_fault in_nmi()
+> warning to fire.
 > 
-> Note that this patch makes sure that by the time a platform_driver's probe is
-> called, we already have clocks enabled and pm_runtime_set_active() has been
-> called, thus making sure that a device driver's pm_runtime_get_sync() will
-> solely increase the pm usage counter.
-> 
-> I have *NOT* tested this anywhere *YET*, but I suppose it shouldn't cause any
-> issues since the clock API has ref counting too.
-> 
-> Would really like to get some review from several folks involved with ARM SoC
-> PM so that's the reason for the wide audience. If I have missed anybody, please
-> add them to Cc.
-> 
-> As mentioned above, this is *NOT* meant for merging, but serves as a starting
-> point for discussing some convergence of several PM domain implementations on
-> different arch/arm/mach-* directories.
 
-You might want to copy the runtime-PM approach used by the PCI 
-subsystem.  It works like this:
-
-	The core invokes a driver's probe routine with runtime PM 
-	enabled, the device in the ACTIVE state, and the usage counter 
-	incremented by 1.
-
-	If the driver wants to support runtime PM, the probe routine
-	can call pm_runtime_put_noidle.
-
-	The core does pm_runtime_get_sync before invoking the driver's
-	remove routine.  At this point a runtime-PM-aware driver whould 
-	call pm_runtime_get_noresume, to balance the _put during probe.
-
-	After invoking the remove routine, the core does a put_noidle
-	(to balance the get_sync) and a final put_sync (to balance the
-	increment before probe and to leave the device at low power.)
-
-A nice consequence is that everything is transparent for drivers that 
-don't support runtime PM.  The usage counter remains > 0 the entire 
-time the driver is bound.
-
-Conversely, drivers that do support runtime PM merely have to add one 
-call during probe and one during remove.
-
-There is one tricky aspect to all this.  The driver core sets the
-dev->driver field before calling the subsystem core's probe routine.  
-As a result, the subsystem has to be very careful about performing
-runtime PM before invoking the driver's probe routine.  Otherwise you
-will end up calling the driver's runtime_resume callback before the
-driver's probe!  (And of course, the same problem exists in reverse
-during remove.)
-
-Alan Stern
+It seems odd that x86 arch_trigger_all_cpu_backtrace() uses NMI - why
+didn't it use the regular old IPI?  If a CPU is stuck with interrupts
+disable, the NMI watchdog will provide the diagnostic?
 
