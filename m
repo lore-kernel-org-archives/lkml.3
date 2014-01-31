@@ -1,200 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933136AbaAaSV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 13:21:29 -0500
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:43329 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564AbaAaSV2 (ORCPT
+	id S933146AbaAaSV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 13:21:57 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:44585 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932564AbaAaSVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 13:21:28 -0500
-Date: Fri, 31 Jan 2014 15:21:17 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 8/9] perf tools: Adjust kallsyms for relocated kernel
-Message-ID: <20140131182117.GB26494@ghostprotocols.net>
-References: <1391004884-10334-1-git-send-email-adrian.hunter@intel.com>
- <1391004884-10334-9-git-send-email-adrian.hunter@intel.com>
- <20140129190850.GF3998@ghostprotocols.net>
- <52EA090A.8090807@intel.com>
+	Fri, 31 Jan 2014 13:21:55 -0500
+Message-ID: <52EBF7DE.3080003@cogentembedded.com>
+Date: Fri, 31 Jan 2014 22:22:06 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EA090A.8090807@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>, Amir Vadai <amirv@mellanox.com>,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 18/34] mlx4: Use pci_enable_msix_range()
+References: <cover.1391172839.git.agordeev@redhat.com> <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
+In-Reply-To: <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Summary: I'm applying this patch as it is reported to fix problems, but
-answering anyway to outline my reasoning, that I eventually should put
-in place to simplify the reloc handling:
+Hello.
 
-Em Thu, Jan 30, 2014 at 10:10:50AM +0200, Adrian Hunter escreveu:
-> On 29/01/14 21:08, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Jan 29, 2014 at 04:14:43PM +0200, Adrian Hunter escreveu:
-> >> If the kernel is relocated at boot time, kallsyms
-> >> will not match data recorded previously.  That
-> >> does not matter for modules because they are
-> >> corrected anyway.  It also does not matter if
-> >> vmlinux is being used for symbols. But if perf
-> >> tools has only kallsyms then the symbols will not
-> >> match.  Fix by applying the delta gained by
-> >> comparing the old and current addresses of the
-> >> relocation reference symbol.
-> > 
-> > Don't we have map->reloc? Can't we use it here, i.e. be consistent and
-> > have the unrelocated address + the relocation, and then, when using
-> > map->{map,unmap} take that into account, as you did to the objdump
-> > variants, no?
-> 
-> map->reloc is calculated from vmlinux.  No vmlinux, no map->reloc.
+On 01/31/2014 06:08 PM, Alexander Gordeev wrote:
 
-I see that this is how it is being used now, yes.
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range() and pci_enable_msix_range()
+> interfaces.
 
-> e.g. we don't need to calculate objdump addresses if we have no
-> object code anyway.
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>   drivers/net/ethernet/mellanox/mlx4/main.c |   19 ++++---------------
+>   1 files changed, 4 insertions(+), 15 deletions(-)
 
-But map->reloc doesn't need to be used just for objdump purposes.
+> diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
+> index d711158..a9d1249 100644
+> --- a/drivers/net/ethernet/mellanox/mlx4/main.c
+> +++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+[...]
+> @@ -1990,22 +1989,12 @@ static void mlx4_enable_msi_x(struct mlx4_dev *dev)
+[...]
+> +		nreq = pci_enable_msix_range(dev->pdev, entries, 2, nreq);
+> +
+> +		if (nreq < 0) {
+>   			kfree(entries);
+>   			goto no_msi;
+> -		}
+> -
+> -		if (nreq <
+> +		} else if (nreq <
+>   		    MSIX_LEGACY_SZ + dev->caps.num_ports * MIN_MSIX_P_PORT) {
 
-> Also without vmlinux we do not know what the actual relocation was, we
-> just know the difference between where the kernel was located when the
-> data was recorded and where it is now.  That is the "delta".
+    Please realign this line to start right under 'nreq'.
 
-A relocation is a delta as well, no? I'm just trying to figure out why
-can't we avoid adding this 'delta' thing and instead use map->reloc for
-that.
- 
-> This is the case where all we have is kallsyms.  In that case
-> perf tools uses identity maps (identity__map_ip).  An alternative
-> would be to change to use map__[un]map_ip() and set map->pgoff to
-> match the current kallsyms. i.e. map->pgoff = map->start + delta
+WBR, Sergei
 
-Why not use map->reloc for that? When we don't find any delta, then it
-is zero and all is as today, when we find the delta, be it from vmlinux
-or from a difference in the ref_reloc_symbol, we set it up, no?
- 
-> So we need either to change the symbols to match the mapping or
-> change the mapping to match the symbols.  I went with the former
-> because we are already changing the module symbols so it seemed
-> consistent.
-
-Well, for modules what we do is apply a relocation in place, like you do
-with this delta, no? I.e. what I'm saying is that it should work both
-ways, but we should try to be consistent accross the board, i.e. fully
-use map->reloc and stop changing the address we get from the original
-symtab.
-
-Anyway, that can be done in a followup patch as your patch has been
-reported to fix real bugs, thanks.
-
-- Arnaldo
- 
-> > 
-> > I applied the others, testing now.
-> > 
-> > - Arnaldo
-> >  
-> >> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> >> ---
-> >>  tools/perf/util/symbol.c | 40 ++++++++++++++++++++++++++++++++++++++--
-> >>  1 file changed, 38 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> >> index 4ac1f87..a9d758a 100644
-> >> --- a/tools/perf/util/symbol.c
-> >> +++ b/tools/perf/util/symbol.c
-> >> @@ -627,7 +627,7 @@ static int dso__split_kallsyms_for_kcore(struct dso *dso, struct map *map,
-> >>   * kernel range is broken in several maps, named [kernel].N, as we don't have
-> >>   * the original ELF section names vmlinux have.
-> >>   */
-> >> -static int dso__split_kallsyms(struct dso *dso, struct map *map,
-> >> +static int dso__split_kallsyms(struct dso *dso, struct map *map, u64 delta,
-> >>  			       symbol_filter_t filter)
-> >>  {
-> >>  	struct map_groups *kmaps = map__kmap(map)->kmaps;
-> >> @@ -692,6 +692,12 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
-> >>  			char dso_name[PATH_MAX];
-> >>  			struct dso *ndso;
-> >>  
-> >> +			if (delta) {
-> >> +				/* Kernel was relocated at boot time */
-> >> +				pos->start -= delta;
-> >> +				pos->end -= delta;
-> >> +			}
-> >> +
-> >>  			if (count == 0) {
-> >>  				curr_map = map;
-> >>  				goto filter_symbol;
-> >> @@ -721,6 +727,10 @@ static int dso__split_kallsyms(struct dso *dso, struct map *map,
-> >>  			curr_map->map_ip = curr_map->unmap_ip = identity__map_ip;
-> >>  			map_groups__insert(kmaps, curr_map);
-> >>  			++kernel_range;
-> >> +		} else if (delta) {
-> >> +			/* Kernel was relocated at boot time */
-> >> +			pos->start -= delta;
-> >> +			pos->end -= delta;
-> >>  		}
-> >>  filter_symbol:
-> >>  		if (filter && filter(curr_map, pos)) {
-> >> @@ -1130,15 +1140,41 @@ out_err:
-> >>  	return -EINVAL;
-> >>  }
-> >>  
-> >> +/*
-> >> + * If the kernel is relocated at boot time, kallsyms won't match.  Compute the
-> >> + * delta based on the relocation reference symbol.
-> >> + */
-> >> +static int kallsyms__delta(struct map *map, const char *filename, u64 *delta)
-> >> +{
-> >> +	struct kmap *kmap = map__kmap(map);
-> >> +	u64 addr;
-> >> +
-> >> +	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->name)
-> >> +		return 0;
-> >> +
-> >> +	addr = kallsyms__get_function_start(filename,
-> >> +					    kmap->ref_reloc_sym->name);
-> >> +	if (!addr)
-> >> +		return -1;
-> >> +
-> >> +	*delta = addr - kmap->ref_reloc_sym->addr;
-> >> +	return 0;
-> >> +}
-> >> +
-> >>  int dso__load_kallsyms(struct dso *dso, const char *filename,
-> >>  		       struct map *map, symbol_filter_t filter)
-> >>  {
-> >> +	u64 delta = 0;
-> >> +
-> >>  	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
-> >>  		return -1;
-> >>  
-> >>  	if (dso__load_all_kallsyms(dso, filename, map) < 0)
-> >>  		return -1;
-> >>  
-> >> +	if (kallsyms__delta(map, filename, &delta))
-> >> +		return -1;
-> >> +
-> >>  	symbols__fixup_duplicate(&dso->symbols[map->type]);
-> >>  	symbols__fixup_end(&dso->symbols[map->type]);
-> >>  
-> >> @@ -1150,7 +1186,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
-> >>  	if (!dso__load_kcore(dso, map, filename))
-> >>  		return dso__split_kallsyms_for_kcore(dso, map, filter);
-> >>  	else
-> >> -		return dso__split_kallsyms(dso, map, filter);
-> >> +		return dso__split_kallsyms(dso, map, delta, filter);
-> >>  }
-> >>  
-> >>  static int dso__load_perf_map(struct dso *dso, struct map *map,
-> >> -- 
-> >> 1.7.11.7
-> > 
-> > 
