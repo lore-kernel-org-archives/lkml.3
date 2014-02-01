@@ -1,72 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaBCLOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:14:39 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:25425 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344AbaBCLOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:14:37 -0500
-X-IronPort-AV: E=Sophos;i="4.95,771,1384300800"; 
-   d="scan'208";a="99161880"
-Date: Mon, 3 Feb 2014 11:14:27 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Josh Boyer <jwboyer@fedoraproject.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xenproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: Xen build error on ARM with 3.14 merge window kernels
-In-Reply-To: <CA+5PVA4BGAN79T-k2_PBYgFeJYuJ5GB0z7+-2isAgpcbGjWN0Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1402031114080.4373@kaball.uk.xensource.com>
-References: <CA+5PVA4BGAN79T-k2_PBYgFeJYuJ5GB0z7+-2isAgpcbGjWN0Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752133AbaBCLTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:19:11 -0500
+Received: from mail.skyliner.eu ([193.93.173.182]:4026 "EHLO mail.skyliner.eu"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751204AbaBCLTJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:19:09 -0500
+X-Greylist: delayed 107460 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Feb 2014 06:19:09 EST
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Contact Me Please!!
+To: Recipients <sunzh@gmail.com>
+From: "Mr. SUN Zhijun" <sunzh@gmail.com>
+Date: Sat, 01 Feb 2014 20:17:03 +0100
+Reply-To: sun_zhijun@yahoo.com.hk
+Message-ID: <SRV-SBSY5Qc32om1joK00000687@mail.goedegebuure.nl>
+X-OriginalArrivalTime: 01 Feb 2014 19:17:10.0738 (UTC) FILETIME=[34B2DB20:01CF1F82]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Feb 2014, Josh Boyer wrote:
-> Hi All,
-> 
-> With v3.13-11147-gb399c46 I'm seeing the following build errors for
-> Xen on ARM.  I haven't been able to test Linus' recent tree yet, but I
-> was wondering if anyone had seen this yet.
-> 
-> josh
+Guten Tag,
 
-Thanks for the report, we'll fix as soon as possible.
+Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: sun_zhijun@yahoo.com.hk
 
+1. Vollständiger Name
+2.Private Telefonnummer
+3.Current Wohnadresse
 
-> drivers/xen/grant-table.c: In function '__gnttab_map_refs':
-> drivers/xen/grant-table.c:989:3: error: implicit declaration of
-> function 'FOREIGN_FRAME' [-Werror=implicit-function-declaration]
->    if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
->    ^
-> drivers/xen/grant-table.c: In function '__gnttab_unmap_refs':
-> drivers/xen/grant-table.c:1054:3: error: implicit declaration of
-> function 'get_phys_to_machine' [-Werror=implicit-function-declaration]
->    mfn = get_phys_to_machine(pfn);
->    ^
-> drivers/xen/grant-table.c:1055:43: error: 'FOREIGN_FRAME_BIT'
-> undeclared (first use in this function)
->    if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
->                                            ^
-> drivers/xen/grant-table.c:1055:43: note: each undeclared identifier is
-> reported only once for each function it appears in
-> drivers/xen/grant-table.c:1068:9: error: too many arguments to
-> function 'm2p_remove_override'
->          mfn);
->          ^
-> In file included from include/xen/page.h:4:0,
->                  from drivers/xen/grant-table.c:48:
-> /home/jwboyer/rpmbuild/BUILD/kernel-3.13.fc20/linux-3.14.0-0.rc0.git20.1.fc20.armv7hl/arch/arm/include/asm/xen/page.h:106:19:
-> note: declared here
->  static inline int m2p_remove_override(struct page *page, bool clear_pte)
->                    ^
-> cc1: some warnings being treated as errors
-> make[2]: *** [drivers/xen/grant-table.o] Error 1
-> 
+Mit freundlichen Grüßen,
+Mr.SUN Zhijun
+
