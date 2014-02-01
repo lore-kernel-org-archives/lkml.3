@@ -1,373 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371AbaBAPdA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 10:33:00 -0500
-Received: from www84.your-server.de ([213.133.104.84]:56880 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaBAPbz (ORCPT
+	id S933272AbaBAPkb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 10:40:31 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:55102 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944AbaBAPk3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 10:31:55 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
-Date: Sat,  1 Feb 2014 16:32:33 +0100
-Message-Id: <1391268756-10766-2-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391268756-10766-1-git-send-email-stefani@seibold.net>
-References: <1391268756-10766-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Sat, 1 Feb 2014 10:40:29 -0500
+Date: Sat, 1 Feb 2014 15:40:21 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: "Brown, Len" <len.brown@intel.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Preeti Murthy <preeti.lkml@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
+Message-ID: <20140201154021.GA7827@e102568-lin.cambridge.arm.com>
+References: <20140130163501.GG5002@laptop.programming.kicks-ass.net>
+ <52EA8B07.6020206@linaro.org>
+ <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
+ <20140131090230.GM5002@laptop.programming.kicks-ass.net>
+ <52EB6F65.8050008@linux.vnet.ibm.com>
+ <52EBBC23.8020603@linux.intel.com>
+ <52EBC33A.6080101@linaro.org>
+ <52EBC645.2040607@linux.intel.com>
+ <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
+ <1A7043D5F58CCB44A599DFD55ED4C948452D34DC@FMSMSX106.amr.corp.intel.com>
+MIME-Version: 1.0
+In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C948452D34DC@FMSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 01 Feb 2014 15:40:26.0025 (UTC) FILETIME=[ED492190:01CF1F63]
+X-MC-Unique: 114020115402601401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Sat, Feb 01, 2014 at 06:00:40AM +0000, Brown, Len wrote:
+> > Right now (on ARM at least but I imagine this is pretty universal), the
+> > biggest impact on information accuracy for a CPU depends on what the
+> > other CPUs are doing.  The most obvious example is cluster power down.
+> > For a cluster to be powered down, all the CPUs sharing this cluster must
+> > also be powered down.  And all those CPUs must have agreed to a possible
+> > cluster power down in advance as well.  But it is not because an idle
+> > CPU has agreed to the extra latency imposed by a cluster power down that
+> > the cluster has actually powered down since another CPU in that cluster
+> > might still be running, in which case the recorded latency information
+> > for that idle CPU would be higher than it would be in practice at that
+> > moment.
+> 
+> That will not work.
+> 
+> When a CPU goes idle, it uses the CURRENT criteria for entering that state.
+> If the criteria change after it has entered the state, are you going
+> to wake it up so it can re-evaluate?  No.
+> 
+> That is why the state must describe the worst case latency
+> that CPU may see when waking from the state on THAT entry.
+> 
+> That is why we use the package C-state numbers to describe
+> core C-states on IA.
 
-This patch move the vsyscall_gtod_data handling out of vsyscall_64.c
-into an additonal file vsyscall_gtod.c to make the functionality
-available for x86 32 bit kernel.
+That's what we do on ARM too for cluster states. But the state decision
+might turn out suboptimal in this case too for the same reasons you have
+just mentioned.
 
-It also adds a new vsyscall_32.c which setup the VVAR page.
+There are some use cases when it matters (and where monitoring the
+timers on all CPUs in a cluster shows that aborting cluster shutdown is
+required because some CPUs have a pending timer and the governor decision is
+stale), there are some use cases where it does not matter at all.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/Kconfig                   |  4 +--
- arch/x86/include/asm/clocksource.h |  4 ---
- arch/x86/include/asm/fixmap.h      |  2 ++
- arch/x86/include/asm/vvar.h        |  4 +++
- arch/x86/kernel/Makefile           |  3 +-
- arch/x86/kernel/hpet.c             |  4 ---
- arch/x86/kernel/setup.c            |  2 --
- arch/x86/kernel/tsc.c              |  2 --
- arch/x86/kernel/vmlinux.lds.S      |  3 --
- arch/x86/kernel/vsyscall_32.c      | 24 +++++++++++++++
- arch/x86/kernel/vsyscall_64.c      | 44 ----------------------------
- arch/x86/kernel/vsyscall_gtod.c    | 60 ++++++++++++++++++++++++++++++++++++++
- 12 files changed, 94 insertions(+), 62 deletions(-)
- create mode 100644 arch/x86/kernel/vsyscall_32.c
- create mode 100644 arch/x86/kernel/vsyscall_gtod.c
+We talked about this at LPC and I guess x86 FW/HW plays a role in
+package states demotion too, we can do it in FW on ARM.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 940e50e..b556f00 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -107,9 +107,9 @@ config X86
- 	select HAVE_ARCH_SOFT_DIRTY
- 	select CLOCKSOURCE_WATCHDOG
- 	select GENERIC_CLOCKEVENTS
--	select ARCH_CLOCKSOURCE_DATA if X86_64
-+	select ARCH_CLOCKSOURCE_DATA
- 	select GENERIC_CLOCKEVENTS_BROADCAST if X86_64 || (X86_32 && X86_LOCAL_APIC)
--	select GENERIC_TIME_VSYSCALL if X86_64
-+	select GENERIC_TIME_VSYSCALL
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
-index 16a57f4..eda81dc 100644
---- a/arch/x86/include/asm/clocksource.h
-+++ b/arch/x86/include/asm/clocksource.h
-@@ -3,8 +3,6 @@
- #ifndef _ASM_X86_CLOCKSOURCE_H
- #define _ASM_X86_CLOCKSOURCE_H
- 
--#ifdef CONFIG_X86_64
--
- #define VCLOCK_NONE 0  /* No vDSO clock available.	*/
- #define VCLOCK_TSC  1  /* vDSO should use vread_tsc.	*/
- #define VCLOCK_HPET 2  /* vDSO should use vread_hpet.	*/
-@@ -14,6 +12,4 @@ struct arch_clocksource_data {
- 	int vclock_mode;
- };
- 
--#endif /* CONFIG_X86_64 */
--
- #endif /* _ASM_X86_CLOCKSOURCE_H */
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 7252cd3..504c04a 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -74,6 +74,8 @@ extern unsigned long __FIXADDR_TOP;
- enum fixed_addresses {
- #ifdef CONFIG_X86_32
- 	FIX_HOLE,
-+	VSYSCALL_HPET,
-+	VVAR_PAGE,
- 	FIX_VDSO,
- #else
- 	VSYSCALL_LAST_PAGE,
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index d76ac40..c442782 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -17,7 +17,11 @@
-  */
- 
- /* Base address of vvars.  This is not ABI. */
-+#ifdef CONFIG_X86_64
- #define VVAR_ADDRESS (-10*1024*1024 - 4096)
-+#else
-+#define VVAR_ADDRESS 0xffffd000
-+#endif
- 
- #if defined(__VVAR_KERNEL_LDS)
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index cb648c8..3282eda 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -26,7 +26,8 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
- obj-y			+= probe_roms.o
- obj-$(CONFIG_X86_32)	+= i386_ksyms_32.o
- obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
--obj-y			+= syscall_$(BITS).o
-+obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
-+obj-$(CONFIG_X86_32)	+= vsyscall_32.o
- obj-$(CONFIG_X86_64)	+= vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
- obj-$(CONFIG_SYSFS)	+= ksysfs.o
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index da85a8e..54263f0 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -74,9 +74,7 @@ static inline void hpet_writel(unsigned int d, unsigned int a)
- static inline void hpet_set_mapping(void)
- {
- 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
--#ifdef CONFIG_X86_64
- 	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
--#endif
- }
- 
- static inline void hpet_clear_mapping(void)
-@@ -752,9 +750,7 @@ static struct clocksource clocksource_hpet = {
- 	.mask		= HPET_MASK,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- 	.resume		= hpet_resume_counter,
--#ifdef CONFIG_X86_64
- 	.archdata	= { .vclock_mode = VCLOCK_HPET },
--#endif
- };
- 
- static int hpet_clocksource_register(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 06853e6..56ff330 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1182,9 +1182,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	tboot_probe();
- 
--#ifdef CONFIG_X86_64
- 	map_vsyscall();
--#endif
- 
- 	generic_apic_probe();
- 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 19e5adb..f49d1a2 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -988,9 +988,7 @@ static struct clocksource clocksource_tsc = {
- 	.mask                   = CLOCKSOURCE_MASK(64),
- 	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
- 				  CLOCK_SOURCE_MUST_VERIFY,
--#ifdef CONFIG_X86_64
- 	.archdata               = { .vclock_mode = VCLOCK_TSC },
--#endif
- };
- 
- void mark_tsc_unstable(char *reason)
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index da6b35a..1d4897b 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -147,7 +147,6 @@ SECTIONS
- 		_edata = .;
- 	} :data
- 
--#ifdef CONFIG_X86_64
- 
- 	. = ALIGN(PAGE_SIZE);
- 	__vvar_page = .;
-@@ -169,8 +168,6 @@ SECTIONS
- 
-        . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
- 
--#endif /* CONFIG_X86_64 */
--
- 	/* Init code and data - will be freed after init */
- 	. = ALIGN(PAGE_SIZE);
- 	.init.begin : AT(ADDR(.init.begin) - LOAD_OFFSET) {
-diff --git a/arch/x86/kernel/vsyscall_32.c b/arch/x86/kernel/vsyscall_32.c
-new file mode 100644
-index 0000000..f541dfa
---- /dev/null
-+++ b/arch/x86/kernel/vsyscall_32.c
-@@ -0,0 +1,24 @@
-+/*
-+ *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ *
-+ *  Modified for x86 32 bit arch by Stefani Seibold <stefani@seibold.net>
-+ *
-+ *  Thanks to hpa@transmeta.com for some useful hint.
-+ *  Special thanks to Ingo Molnar for his early experience with
-+ *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ *
-+ */
-+
-+#include <asm/vsyscall.h>
-+#include <asm/pgtable.h>
-+#include <asm/fixmap.h>
-+
-+void __init map_vsyscall(void)
-+{
-+	extern char __vvar_page;
-+	unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
-+
-+	__set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
-+}
-+
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 1f96f93..50622ed 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -47,14 +47,12 @@
- #include <asm/segment.h>
- #include <asm/desc.h>
- #include <asm/topology.h>
--#include <asm/vgtod.h>
- #include <asm/traps.h>
- 
- #define CREATE_TRACE_POINTS
- #include "vsyscall_trace.h"
- 
- DEFINE_VVAR(int, vgetcpu_mode);
--DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
- 
- static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
- 
-@@ -77,48 +75,6 @@ static int __init vsyscall_setup(char *str)
- }
- early_param("vsyscall", vsyscall_setup);
- 
--void update_vsyscall_tz(void)
--{
--	vsyscall_gtod_data.sys_tz = sys_tz;
--}
--
--void update_vsyscall(struct timekeeper *tk)
--{
--	struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
--
--	write_seqcount_begin(&vdata->seq);
--
--	/* copy vsyscall data */
--	vdata->clock.vclock_mode	= tk->clock->archdata.vclock_mode;
--	vdata->clock.cycle_last		= tk->clock->cycle_last;
--	vdata->clock.mask		= tk->clock->mask;
--	vdata->clock.mult		= tk->mult;
--	vdata->clock.shift		= tk->shift;
--
--	vdata->wall_time_sec		= tk->xtime_sec;
--	vdata->wall_time_snsec		= tk->xtime_nsec;
--
--	vdata->monotonic_time_sec	= tk->xtime_sec
--					+ tk->wall_to_monotonic.tv_sec;
--	vdata->monotonic_time_snsec	= tk->xtime_nsec
--					+ (tk->wall_to_monotonic.tv_nsec
--						<< tk->shift);
--	while (vdata->monotonic_time_snsec >=
--					(((u64)NSEC_PER_SEC) << tk->shift)) {
--		vdata->monotonic_time_snsec -=
--					((u64)NSEC_PER_SEC) << tk->shift;
--		vdata->monotonic_time_sec++;
--	}
--
--	vdata->wall_time_coarse.tv_sec	= tk->xtime_sec;
--	vdata->wall_time_coarse.tv_nsec	= (long)(tk->xtime_nsec >> tk->shift);
--
--	vdata->monotonic_time_coarse	= timespec_add(vdata->wall_time_coarse,
--							tk->wall_to_monotonic);
--
--	write_seqcount_end(&vdata->seq);
--}
--
- static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 			      const char *message)
- {
-diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
-new file mode 100644
-index 0000000..91862a4
---- /dev/null
-+++ b/arch/x86/kernel/vsyscall_gtod.c
-@@ -0,0 +1,60 @@
-+/*
-+ *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ *
-+ *  Modified for x86 32 bit architecture by
-+ *  Stefani Seibold <stefani@seibold.net>
-+ *
-+ *  Thanks to hpa@transmeta.com for some useful hint.
-+ *  Special thanks to Ingo Molnar for his early experience with
-+ *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ *
-+ */
-+
-+#include <linux/timekeeper_internal.h>
-+#include <asm/vgtod.h>
-+
-+DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
-+
-+void update_vsyscall_tz(void)
-+{
-+	vsyscall_gtod_data.sys_tz = sys_tz;
-+}
-+
-+void update_vsyscall(struct timekeeper *tk)
-+{
-+	struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
-+
-+	write_seqcount_begin(&vdata->seq);
-+
-+	/* copy vsyscall data */
-+	vdata->clock.vclock_mode	= tk->clock->archdata.vclock_mode;
-+	vdata->clock.cycle_last		= tk->clock->cycle_last;
-+	vdata->clock.mask		= tk->clock->mask;
-+	vdata->clock.mult		= tk->mult;
-+	vdata->clock.shift		= tk->shift;
-+
-+	vdata->wall_time_sec		= tk->xtime_sec;
-+	vdata->wall_time_snsec		= tk->xtime_nsec;
-+
-+	vdata->monotonic_time_sec	= tk->xtime_sec
-+					+ tk->wall_to_monotonic.tv_sec;
-+	vdata->monotonic_time_snsec	= tk->xtime_nsec
-+					+ (tk->wall_to_monotonic.tv_nsec
-+						<< tk->shift);
-+	while (vdata->monotonic_time_snsec >=
-+					(((u64)NSEC_PER_SEC) << tk->shift)) {
-+		vdata->monotonic_time_snsec -=
-+					((u64)NSEC_PER_SEC) << tk->shift;
-+		vdata->monotonic_time_sec++;
-+	}
-+
-+	vdata->wall_time_coarse.tv_sec	= tk->xtime_sec;
-+	vdata->wall_time_coarse.tv_nsec	= (long)(tk->xtime_nsec >> tk->shift);
-+
-+	vdata->monotonic_time_coarse	= timespec_add(vdata->wall_time_coarse,
-+							tk->wall_to_monotonic);
-+
-+	write_seqcount_end(&vdata->seq);
-+}
-+
--- 
-1.8.5.3
+Overall we all know that whatever we do, it is impossible to know the
+precise C-state a CPU is in, even if we resort to HW probing, it is just
+a matter of deciding what level of abstraction is necessary for the
+scheduler to work properly.
+
+Thanks for bringing this topic up.
+
+Lorenzo
 
