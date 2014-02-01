@@ -1,231 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaBAX2k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 18:28:40 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48635 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaBAX2i (ORCPT
+	id S1752871AbaBAXkX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 18:40:23 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:44043 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaBAXkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 18:28:38 -0500
+	Sat, 1 Feb 2014 18:40:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <1391262057.2035.7.camel@antimon.intern.lynxeye.de>
-References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
-	<1391224618-3794-15-git-send-email-acourbot@nvidia.com>
-	<1391262057.2035.7.camel@antimon.intern.lynxeye.de>
-Date: Sat, 1 Feb 2014 18:28:38 -0500
-X-Google-Sender-Auth: MCYfkJhoDuHoS9d_G1y5uEOX17k
-Message-ID: <CAKb7UvhJWOtxzYMViuoV6fHU4UR_+j1QTKHw1PoQT_+ykenfYw@mail.gmail.com>
-Subject: Re: [RFC 14/16] drm/nouveau/fb: add GK20A support
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Lucas Stach <dev@lynxeye.de>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        gnurou@gmail.com, Eric Brower <ebrower@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
+In-Reply-To: <1391268756-10766-2-git-send-email-stefani@seibold.net>
+References: <1391268756-10766-1-git-send-email-stefani@seibold.net> <1391268756-10766-2-git-send-email-stefani@seibold.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 1 Feb 2014 15:40:00 -0800
+Message-ID: <CALCETrVJK8dUecgj6r33VO_o4+wZJ1atHmETxdChmQHk1wt1iA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, Terje Bergstrom <tbergstrom@nvidia.com>,
-        Ken Adams <KAdams@nvidia.com>
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 1, 2014 at 8:40 AM, Lucas Stach <dev@lynxeye.de> wrote:
-> Am Samstag, den 01.02.2014, 12:16 +0900 schrieb Alexandre Courbot:
->> Add a clumsy-but-working FB support for GK20A. This chip only uses system
->> memory, so we allocate a big chunk using CMA and let the existing memory
->> managers work on it.
->>
->> A better future design would be to allocate objects directly from system
->> memory without having to suffer from the limitations of a large,
->> contiguous pool.
->>
-> I don't know if Tegra124 is similar to 114 in this regard [hint: get the
-> TRM out :)], but if you go for a dedicated VRAM allocator, wouldn't it
-> make sense to take a chunk of the MMIO overlaid memory for this when
-> possible, rather than carving this out of CPU accessible mem?
-
-This is probably a stupid question... what do you need VRAM for
-anyways? In _theory_ it's an abstraction to talk about memory that's
-not accessible by the CPU. This is obviously not the case here, and
-presumably the GPU can access all the memory in the system, so it can
-be all treated as "GART" memory... AFAIK all accesses are behind the
-in-GPU MMU, so contiguous physical memory isn't an issue either. In
-practice, I suspect nouveau automatically sticks certain things into
-vram (gpuobj's), but it should be feasible to make them optionally use
-GART memory when VRAM is not available. I haven't really looked at the
-details though, perhaps that's a major undertaking.
-
-  -ilia
-
+On Sat, Feb 1, 2014 at 7:32 AM,  <stefani@seibold.net> wrote:
+> From: Stefani Seibold <stefani@seibold.net>
 >
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>  drivers/gpu/drm/nouveau/Makefile                 |  2 +
->>  drivers/gpu/drm/nouveau/core/include/subdev/fb.h |  1 +
->>  drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c    | 28 ++++++++++
->>  drivers/gpu/drm/nouveau/core/subdev/fb/priv.h    |  1 +
->>  drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c | 67 ++++++++++++++++++++++++
->>  5 files changed, 99 insertions(+)
->>  create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
->>  create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
->>
->> diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
->> index 3548fcd..d9fe3e6 100644
->> --- a/drivers/gpu/drm/nouveau/Makefile
->> +++ b/drivers/gpu/drm/nouveau/Makefile
->> @@ -100,6 +100,7 @@ nouveau-y += core/subdev/fb/nvaa.o
->>  nouveau-y += core/subdev/fb/nvaf.o
->>  nouveau-y += core/subdev/fb/nvc0.o
->>  nouveau-y += core/subdev/fb/nve0.o
->> +nouveau-y += core/subdev/fb/nvea.o
->>  nouveau-y += core/subdev/fb/ramnv04.o
->>  nouveau-y += core/subdev/fb/ramnv10.o
->>  nouveau-y += core/subdev/fb/ramnv1a.o
->> @@ -114,6 +115,7 @@ nouveau-y += core/subdev/fb/ramnva3.o
->>  nouveau-y += core/subdev/fb/ramnvaa.o
->>  nouveau-y += core/subdev/fb/ramnvc0.o
->>  nouveau-y += core/subdev/fb/ramnve0.o
->> +nouveau-y += core/subdev/fb/ramnvea.o
->>  nouveau-y += core/subdev/fb/sddr3.o
->>  nouveau-y += core/subdev/fb/gddr5.o
->>  nouveau-y += core/subdev/gpio/base.o
->> diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/fb.h b/drivers/gpu/drm/nouveau/core/include/subdev/fb.h
->> index d7ecafb..3905816 100644
->> --- a/drivers/gpu/drm/nouveau/core/include/subdev/fb.h
->> +++ b/drivers/gpu/drm/nouveau/core/include/subdev/fb.h
->> @@ -105,6 +105,7 @@ extern struct nouveau_oclass *nvaa_fb_oclass;
->>  extern struct nouveau_oclass *nvaf_fb_oclass;
->>  extern struct nouveau_oclass *nvc0_fb_oclass;
->>  extern struct nouveau_oclass *nve0_fb_oclass;
->> +extern struct nouveau_oclass *nvea_fb_oclass;
->>
->>  #include <subdev/bios/ramcfg.h>
->>
->> diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c b/drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
->> new file mode 100644
->> index 0000000..5ff6029
->> --- /dev/null
->> +++ b/drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
->> @@ -0,0 +1,28 @@
->> +/*
->> + * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms and conditions of the GNU General Public License,
->> + * version 2, as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope it will be useful, but WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->> + * more details.
->> + *
->> + */
->> +
->> +#include "nvc0.h"
->> +
->> +struct nouveau_oclass *
->> +nvea_fb_oclass = &(struct nouveau_fb_impl) {
->> +     .base.handle = NV_SUBDEV(FB, 0xea),
->> +     .base.ofuncs = &(struct nouveau_ofuncs) {
->> +             .ctor = nvc0_fb_ctor,
->> +             .dtor = nvc0_fb_dtor,
->> +             .init = nvc0_fb_init,
->> +             .fini = _nouveau_fb_fini,
->> +     },
->> +     .memtype = nvc0_fb_memtype_valid,
->> +     .ram = &nvea_ram_oclass,
->> +}.base;
->> diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h b/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h
->> index edaf95d..0b95a25 100644
->> --- a/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h
->> +++ b/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h
->> @@ -32,6 +32,7 @@ extern struct nouveau_oclass nva3_ram_oclass;
->>  extern struct nouveau_oclass nvaa_ram_oclass;
->>  extern struct nouveau_oclass nvc0_ram_oclass;
->>  extern struct nouveau_oclass nve0_ram_oclass;
->> +extern struct nouveau_oclass nvea_ram_oclass;
->>
->>  int nouveau_sddr3_calc(struct nouveau_ram *ram);
->>  int nouveau_gddr5_calc(struct nouveau_ram *ram, bool nuts);
->> diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c b/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
->> new file mode 100644
->> index 0000000..3038e08
->> --- /dev/null
->> +++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
->> @@ -0,0 +1,67 @@
->> +/*
->> + * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
->> + *
->> + * This program is free software; you can redistribute it and/or modify it
->> + * under the terms and conditions of the GNU General Public License,
->> + * version 2, as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope it will be useful, but WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->> + * more details.
->> + *
->> + */
->> +
->> +/*
->> + * TODO replace this CMA-requiring horror with a proper allocator for GPU
->> + * objects in main memory. But for the moment it does the job and can reuse some
->> + * of the nvc0 functions.
->> + */
->> +
->> +#include "nvc0.h"
->> +
->> +#include <linux/dma-mapping.h>
->> +
->> +static int
->> +nvea_ram_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
->> +           struct nouveau_oclass *oclass, void *data, u32 datasize,
->> +           struct nouveau_object **pobject)
->> +{
->> +     struct nouveau_fb *pfb = nouveau_fb(parent);
->> +     struct nouveau_ram *ram;
->> +     void *vram;
->> +     dma_addr_t dma_handle;
->> +     int ret;
->> +
->> +     ret = nouveau_ram_create(parent, engine, oclass, &ram);
->> +     *pobject = nv_object(ram);
->> +     if (ret)
->> +             return ret;
->> +
->> +     ram->type   = NV_MEM_TYPE_STOLEN;
->> +     /* Use a fixed size of 64MB for now */
->> +     ram->size = 0x4000000;
->> +     ram->stolen = (u64)0x00000000;
->> +     vram = dma_alloc_coherent(nv_device_base(nv_device(parent)), ram->size,
->> +                               &dma_handle, GFP_KERNEL);
->> +     if (!vram)
->> +             return -ENOMEM;
->> +
->> +     ret = nouveau_mm_init(&pfb->vram, dma_handle >> 12, ram->size >> 12, 1);
->> +     if (ret)
->> +             return ret;
->> +
->> +     ram->get = nvc0_ram_get;
->> +     ram->put = nvc0_ram_put;
->> +     return 0;
->> +}
->> +
->> +struct nouveau_oclass
->> +nvea_ram_oclass = {
->> +     .ofuncs = &(struct nouveau_ofuncs) {
->> +             .ctor = nvea_ram_ctor,
->> +             .dtor = _nouveau_ram_dtor,
->> +             .init = _nouveau_ram_init,
->> +             .fini = _nouveau_ram_fini,
->> +     },
->> +};
+> This patch move the vsyscall_gtod_data handling out of vsyscall_64.c
+> into an additonal file vsyscall_gtod.c to make the functionality
+> available for x86 32 bit kernel.
 >
+> It also adds a new vsyscall_32.c which setup the VVAR page.
 >
+> Signed-off-by: Stefani Seibold <stefani@seibold.net>
+
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+
+...with the caveat that it would be even better if you moved vgetcpu
+over and called this thing vvar.c instead of vsyscall_gtod.c.
+
+> ---
+>  arch/x86/Kconfig                   |  4 +--
+>  arch/x86/include/asm/clocksource.h |  4 ---
+>  arch/x86/include/asm/fixmap.h      |  2 ++
+>  arch/x86/include/asm/vvar.h        |  4 +++
+>  arch/x86/kernel/Makefile           |  3 +-
+>  arch/x86/kernel/hpet.c             |  4 ---
+>  arch/x86/kernel/setup.c            |  2 --
+>  arch/x86/kernel/tsc.c              |  2 --
+>  arch/x86/kernel/vmlinux.lds.S      |  3 --
+>  arch/x86/kernel/vsyscall_32.c      | 24 +++++++++++++++
+>  arch/x86/kernel/vsyscall_64.c      | 44 ----------------------------
+>  arch/x86/kernel/vsyscall_gtod.c    | 60 ++++++++++++++++++++++++++++++++++++++
+>  12 files changed, 94 insertions(+), 62 deletions(-)
+>  create mode 100644 arch/x86/kernel/vsyscall_32.c
+>  create mode 100644 arch/x86/kernel/vsyscall_gtod.c
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 940e50e..b556f00 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -107,9 +107,9 @@ config X86
+>         select HAVE_ARCH_SOFT_DIRTY
+>         select CLOCKSOURCE_WATCHDOG
+>         select GENERIC_CLOCKEVENTS
+> -       select ARCH_CLOCKSOURCE_DATA if X86_64
+> +       select ARCH_CLOCKSOURCE_DATA
+>         select GENERIC_CLOCKEVENTS_BROADCAST if X86_64 || (X86_32 && X86_LOCAL_APIC)
+> -       select GENERIC_TIME_VSYSCALL if X86_64
+> +       select GENERIC_TIME_VSYSCALL
+>         select KTIME_SCALAR if X86_32
+>         select GENERIC_STRNCPY_FROM_USER
+>         select GENERIC_STRNLEN_USER
+> diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
+> index 16a57f4..eda81dc 100644
+> --- a/arch/x86/include/asm/clocksource.h
+> +++ b/arch/x86/include/asm/clocksource.h
+> @@ -3,8 +3,6 @@
+>  #ifndef _ASM_X86_CLOCKSOURCE_H
+>  #define _ASM_X86_CLOCKSOURCE_H
+>
+> -#ifdef CONFIG_X86_64
+> -
+>  #define VCLOCK_NONE 0  /* No vDSO clock available.     */
+>  #define VCLOCK_TSC  1  /* vDSO should use vread_tsc.   */
+>  #define VCLOCK_HPET 2  /* vDSO should use vread_hpet.  */
+> @@ -14,6 +12,4 @@ struct arch_clocksource_data {
+>         int vclock_mode;
+>  };
+>
+> -#endif /* CONFIG_X86_64 */
+> -
+>  #endif /* _ASM_X86_CLOCKSOURCE_H */
+> diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+> index 7252cd3..504c04a 100644
+> --- a/arch/x86/include/asm/fixmap.h
+> +++ b/arch/x86/include/asm/fixmap.h
+> @@ -74,6 +74,8 @@ extern unsigned long __FIXADDR_TOP;
+>  enum fixed_addresses {
+>  #ifdef CONFIG_X86_32
+>         FIX_HOLE,
+> +       VSYSCALL_HPET,
+> +       VVAR_PAGE,
+>         FIX_VDSO,
+>  #else
+>         VSYSCALL_LAST_PAGE,
+> diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
+> index d76ac40..c442782 100644
+> --- a/arch/x86/include/asm/vvar.h
+> +++ b/arch/x86/include/asm/vvar.h
+> @@ -17,7 +17,11 @@
+>   */
+>
+>  /* Base address of vvars.  This is not ABI. */
+> +#ifdef CONFIG_X86_64
+>  #define VVAR_ADDRESS (-10*1024*1024 - 4096)
+> +#else
+> +#define VVAR_ADDRESS 0xffffd000
+> +#endif
+>
+>  #if defined(__VVAR_KERNEL_LDS)
+>
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index cb648c8..3282eda 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -26,7 +26,8 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
+>  obj-y                  += probe_roms.o
+>  obj-$(CONFIG_X86_32)   += i386_ksyms_32.o
+>  obj-$(CONFIG_X86_64)   += sys_x86_64.o x8664_ksyms_64.o
+> -obj-y                  += syscall_$(BITS).o
+> +obj-y                  += syscall_$(BITS).o vsyscall_gtod.o
+> +obj-$(CONFIG_X86_32)   += vsyscall_32.o
+>  obj-$(CONFIG_X86_64)   += vsyscall_64.o
+>  obj-$(CONFIG_X86_64)   += vsyscall_emu_64.o
+>  obj-$(CONFIG_SYSFS)    += ksysfs.o
+> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+> index da85a8e..54263f0 100644
+> --- a/arch/x86/kernel/hpet.c
+> +++ b/arch/x86/kernel/hpet.c
+> @@ -74,9 +74,7 @@ static inline void hpet_writel(unsigned int d, unsigned int a)
+>  static inline void hpet_set_mapping(void)
+>  {
+>         hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
+> -#ifdef CONFIG_X86_64
+>         __set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
+> -#endif
+>  }
+>
+>  static inline void hpet_clear_mapping(void)
+> @@ -752,9 +750,7 @@ static struct clocksource clocksource_hpet = {
+>         .mask           = HPET_MASK,
+>         .flags          = CLOCK_SOURCE_IS_CONTINUOUS,
+>         .resume         = hpet_resume_counter,
+> -#ifdef CONFIG_X86_64
+>         .archdata       = { .vclock_mode = VCLOCK_HPET },
+> -#endif
+>  };
+>
+>  static int hpet_clocksource_register(void)
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 06853e6..56ff330 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1182,9 +1182,7 @@ void __init setup_arch(char **cmdline_p)
+>
+>         tboot_probe();
+>
+> -#ifdef CONFIG_X86_64
+>         map_vsyscall();
+> -#endif
+>
+>         generic_apic_probe();
+>
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index 19e5adb..f49d1a2 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -988,9 +988,7 @@ static struct clocksource clocksource_tsc = {
+>         .mask                   = CLOCKSOURCE_MASK(64),
+>         .flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
+>                                   CLOCK_SOURCE_MUST_VERIFY,
+> -#ifdef CONFIG_X86_64
+>         .archdata               = { .vclock_mode = VCLOCK_TSC },
+> -#endif
+>  };
+>
+>  void mark_tsc_unstable(char *reason)
+> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+> index da6b35a..1d4897b 100644
+> --- a/arch/x86/kernel/vmlinux.lds.S
+> +++ b/arch/x86/kernel/vmlinux.lds.S
+> @@ -147,7 +147,6 @@ SECTIONS
+>                 _edata = .;
+>         } :data
+>
+> -#ifdef CONFIG_X86_64
+>
+>         . = ALIGN(PAGE_SIZE);
+>         __vvar_page = .;
+> @@ -169,8 +168,6 @@ SECTIONS
+>
+>         . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
+>
+> -#endif /* CONFIG_X86_64 */
+> -
+>         /* Init code and data - will be freed after init */
+>         . = ALIGN(PAGE_SIZE);
+>         .init.begin : AT(ADDR(.init.begin) - LOAD_OFFSET) {
+> diff --git a/arch/x86/kernel/vsyscall_32.c b/arch/x86/kernel/vsyscall_32.c
+> new file mode 100644
+> index 0000000..f541dfa
+> --- /dev/null
+> +++ b/arch/x86/kernel/vsyscall_32.c
+> @@ -0,0 +1,24 @@
+> +/*
+> + *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
+> + *  Copyright 2003 Andi Kleen, SuSE Labs.
+> + *
+> + *  Modified for x86 32 bit arch by Stefani Seibold <stefani@seibold.net>
+> + *
+> + *  Thanks to hpa@transmeta.com for some useful hint.
+> + *  Special thanks to Ingo Molnar for his early experience with
+> + *  a different vsyscall implementation for Linux/IA32 and for the name.
+> + *
+> + */
+> +
+> +#include <asm/vsyscall.h>
+> +#include <asm/pgtable.h>
+> +#include <asm/fixmap.h>
+> +
+> +void __init map_vsyscall(void)
+> +{
+> +       extern char __vvar_page;
+> +       unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
+> +
+> +       __set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
+> +}
+> +
+> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+> index 1f96f93..50622ed 100644
+> --- a/arch/x86/kernel/vsyscall_64.c
+> +++ b/arch/x86/kernel/vsyscall_64.c
+> @@ -47,14 +47,12 @@
+>  #include <asm/segment.h>
+>  #include <asm/desc.h>
+>  #include <asm/topology.h>
+> -#include <asm/vgtod.h>
+>  #include <asm/traps.h>
+>
+>  #define CREATE_TRACE_POINTS
+>  #include "vsyscall_trace.h"
+>
+>  DEFINE_VVAR(int, vgetcpu_mode);
+> -DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
+>
+>  static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
+>
+> @@ -77,48 +75,6 @@ static int __init vsyscall_setup(char *str)
+>  }
+>  early_param("vsyscall", vsyscall_setup);
+>
+> -void update_vsyscall_tz(void)
+> -{
+> -       vsyscall_gtod_data.sys_tz = sys_tz;
+> -}
+> -
+> -void update_vsyscall(struct timekeeper *tk)
+> -{
+> -       struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
+> -
+> -       write_seqcount_begin(&vdata->seq);
+> -
+> -       /* copy vsyscall data */
+> -       vdata->clock.vclock_mode        = tk->clock->archdata.vclock_mode;
+> -       vdata->clock.cycle_last         = tk->clock->cycle_last;
+> -       vdata->clock.mask               = tk->clock->mask;
+> -       vdata->clock.mult               = tk->mult;
+> -       vdata->clock.shift              = tk->shift;
+> -
+> -       vdata->wall_time_sec            = tk->xtime_sec;
+> -       vdata->wall_time_snsec          = tk->xtime_nsec;
+> -
+> -       vdata->monotonic_time_sec       = tk->xtime_sec
+> -                                       + tk->wall_to_monotonic.tv_sec;
+> -       vdata->monotonic_time_snsec     = tk->xtime_nsec
+> -                                       + (tk->wall_to_monotonic.tv_nsec
+> -                                               << tk->shift);
+> -       while (vdata->monotonic_time_snsec >=
+> -                                       (((u64)NSEC_PER_SEC) << tk->shift)) {
+> -               vdata->monotonic_time_snsec -=
+> -                                       ((u64)NSEC_PER_SEC) << tk->shift;
+> -               vdata->monotonic_time_sec++;
+> -       }
+> -
+> -       vdata->wall_time_coarse.tv_sec  = tk->xtime_sec;
+> -       vdata->wall_time_coarse.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
+> -
+> -       vdata->monotonic_time_coarse    = timespec_add(vdata->wall_time_coarse,
+> -                                                       tk->wall_to_monotonic);
+> -
+> -       write_seqcount_end(&vdata->seq);
+> -}
+> -
+>  static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
+>                               const char *message)
+>  {
+> diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
+> new file mode 100644
+> index 0000000..91862a4
+> --- /dev/null
+> +++ b/arch/x86/kernel/vsyscall_gtod.c
+> @@ -0,0 +1,60 @@
+> +/*
+> + *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
+> + *  Copyright 2003 Andi Kleen, SuSE Labs.
+> + *
+> + *  Modified for x86 32 bit architecture by
+> + *  Stefani Seibold <stefani@seibold.net>
+> + *
+> + *  Thanks to hpa@transmeta.com for some useful hint.
+> + *  Special thanks to Ingo Molnar for his early experience with
+> + *  a different vsyscall implementation for Linux/IA32 and for the name.
+> + *
+> + */
+> +
+> +#include <linux/timekeeper_internal.h>
+> +#include <asm/vgtod.h>
+> +
+> +DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
+> +
+> +void update_vsyscall_tz(void)
+> +{
+> +       vsyscall_gtod_data.sys_tz = sys_tz;
+> +}
+> +
+> +void update_vsyscall(struct timekeeper *tk)
+> +{
+> +       struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
+> +
+> +       write_seqcount_begin(&vdata->seq);
+> +
+> +       /* copy vsyscall data */
+> +       vdata->clock.vclock_mode        = tk->clock->archdata.vclock_mode;
+> +       vdata->clock.cycle_last         = tk->clock->cycle_last;
+> +       vdata->clock.mask               = tk->clock->mask;
+> +       vdata->clock.mult               = tk->mult;
+> +       vdata->clock.shift              = tk->shift;
+> +
+> +       vdata->wall_time_sec            = tk->xtime_sec;
+> +       vdata->wall_time_snsec          = tk->xtime_nsec;
+> +
+> +       vdata->monotonic_time_sec       = tk->xtime_sec
+> +                                       + tk->wall_to_monotonic.tv_sec;
+> +       vdata->monotonic_time_snsec     = tk->xtime_nsec
+> +                                       + (tk->wall_to_monotonic.tv_nsec
+> +                                               << tk->shift);
+> +       while (vdata->monotonic_time_snsec >=
+> +                                       (((u64)NSEC_PER_SEC) << tk->shift)) {
+> +               vdata->monotonic_time_snsec -=
+> +                                       ((u64)NSEC_PER_SEC) << tk->shift;
+> +               vdata->monotonic_time_sec++;
+> +       }
+> +
+> +       vdata->wall_time_coarse.tv_sec  = tk->xtime_sec;
+> +       vdata->wall_time_coarse.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
+> +
+> +       vdata->monotonic_time_coarse    = timespec_add(vdata->wall_time_coarse,
+> +                                                       tk->wall_to_monotonic);
+> +
+> +       write_seqcount_end(&vdata->seq);
+> +}
+> +
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.8.5.3
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
