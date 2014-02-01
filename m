@@ -1,67 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593AbaBADND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 22:13:03 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:40875 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569AbaBADMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 22:12:30 -0500
-X-Auth-Info: RzkPH2A1CBcRuwjC8+0bNLxkenQP+5iyEqldawVXpKU=
-From: Marek Vasut <marex@denx.de>
-To: Matt Ranostay <mranostay@gmail.com>
-Subject: Re: [PATCH 1/2] iio: add IIO_DISTANCE type
-Date: Sat, 1 Feb 2014 04:01:47 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        matt.porter@linaro.org, koen@dominion.thruhere.net,
-        pantelis.antoniou@gmail.com
-References: <1391182703-2201-1-git-send-email-mranostay@gmail.com>
-In-Reply-To: <1391182703-2201-1-git-send-email-mranostay@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402010401.47894.marex@denx.de>
+	id S932524AbaBAD20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 22:28:26 -0500
+Received: from gnurou.org ([207.192.72.5]:51772 "EHLO mail.gnurou.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754452AbaBAD2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 22:28:23 -0500
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Fri, 31 Jan 2014 22:28:23 EST
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Cc: Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Eric Brower <ebrower@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [RFC 03/16] drm/nouveau: add platform device probing function
+Date: Sat,  1 Feb 2014 12:16:45 +0900
+Message-Id: <1391224618-3794-4-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 31, 2014 at 04:38:22 PM, Matt Ranostay wrote:
+Add a nouveau_drm_platform_probe() function that probes a Nouveau
+platform device and registers it using drm_platform_init().
 
-The commit message is completely missing, it's entirely unclear what the 
-intention of this patch is. Please write a commit message !
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpu/drm/nouveau/core/engine/device/base.c  | 34 ++++++++++++++++++++++
+ .../gpu/drm/nouveau/core/include/engine/device.h   | 10 +++++++
+ drivers/gpu/drm/nouveau/nouveau_drm.c              | 19 ++++++++++++
+ 3 files changed, 63 insertions(+)
 
-> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
-> ---
->  drivers/iio/industrialio-core.c | 1 +
->  include/linux/iio/types.h       | 1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/drivers/iio/industrialio-core.c
-> b/drivers/iio/industrialio-core.c index acc911a..ac999ab 100644
-> --- a/drivers/iio/industrialio-core.c
-> +++ b/drivers/iio/industrialio-core.c
-> @@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
->  	[IIO_CCT] = "cct",
->  	[IIO_PRESSURE] = "pressure",
->  	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
-> +	[IIO_DISTANCE] = "distance",
->  };
-> 
->  static const char * const iio_modifier_names[] = {
-> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-> index 084d882..675c2d8 100644
-> --- a/include/linux/iio/types.h
-> +++ b/include/linux/iio/types.h
-> @@ -30,6 +30,7 @@ enum iio_chan_type {
->  	IIO_CCT,
->  	IIO_PRESSURE,
->  	IIO_HUMIDITYRELATIVE,
-> +	IIO_DISTANCE,
->  };
-> 
->  enum iio_modifier {
+diff --git a/drivers/gpu/drm/nouveau/core/engine/device/base.c b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+index a6abb51..ba6c2f2 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/device/base.c
++++ b/drivers/gpu/drm/nouveau/core/engine/device/base.c
+@@ -543,3 +543,37 @@ done:
+ 	mutex_unlock(&nv_devices_mutex);
+ 	return ret;
+ }
++
++int
++nouveau_device_platform_create_(struct platform_device *pdev, u64 name,
++				const char *sname, const char *cfg,
++				const char *dbg, int length, void **pobject)
++{
++	struct nouveau_device *device;
++	int ret = -EEXIST;
++
++	mutex_lock(&nv_devices_mutex);
++	list_for_each_entry(device, &nv_devices, head) {
++		if (device->handle == name)
++			goto done;
++	}
++
++	ret = nouveau_engine_create_(NULL, NULL, &nouveau_device_oclass, true,
++				     "DEVICE", "device", length, pobject);
++	device = *pobject;
++	if (ret)
++		goto done;
++
++	device->platformdev = pdev;
++	device->handle = name;
++	device->cfgopt = cfg;
++	device->dbgopt = dbg;
++	device->name = sname;
++
++	nv_subdev(device)->debug = nouveau_dbgopt(device->dbgopt, "DEVICE");
++	nv_engine(device)->sclass = nouveau_device_sclass;
++	list_add(&device->head, &nv_devices);
++done:
++	mutex_unlock(&nv_devices_mutex);
++	return ret;
++}
+diff --git a/drivers/gpu/drm/nouveau/core/include/engine/device.h b/drivers/gpu/drm/nouveau/core/include/engine/device.h
+index b3dd2c4..90056190 100644
+--- a/drivers/gpu/drm/nouveau/core/include/engine/device.h
++++ b/drivers/gpu/drm/nouveau/core/include/engine/device.h
+@@ -3,12 +3,22 @@
+ 
+ #include <core/device.h>
+ 
++struct platform_device;
++
+ #define nouveau_device_create(p,n,s,c,d,u)                                     \
+ 	nouveau_device_create_((p), (n), (s), (c), (d), sizeof(**u), (void **)u)
+ 
+ int  nouveau_device_create_(struct pci_dev *, u64 name, const char *sname,
+ 			    const char *cfg, const char *dbg, int, void **);
+ 
++#define nouveau_device_platform_create(p,n,s,c,d,u)                            \
++	nouveau_device_platform_create_((p), (n), (s), (c), (d), sizeof(**u),  \
++					(void **)u)
++
++int nouveau_device_platform_create_(struct platform_device *pdev, u64 name,
++			       const char *sname, const char *cfg,
++			       const char *dbg, int, void **);
++
+ int nv04_identify(struct nouveau_device *);
+ int nv10_identify(struct nouveau_device *);
+ int nv20_identify(struct nouveau_device *);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+index 4cba4d8..8d55a50 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+@@ -986,6 +986,25 @@ nouveau_drm_pci_driver = {
+ 	.driver.pm = &nouveau_pm_ops,
+ };
+ 
++
++int nouveau_drm_platform_probe(struct platform_device *pdev)
++{
++	struct nouveau_device *device;
++	int ret;
++
++	ret = nouveau_device_platform_create(pdev, nouveau_platform_name(pdev),
++					   dev_name(&pdev->dev), nouveau_config,
++					   nouveau_debug, &device);
++
++	ret = drm_platform_init(&driver, pdev);
++	if (ret) {
++		nouveau_object_ref(NULL, (struct nouveau_object **)&device);
++		return ret;
++	}
++
++	return ret;
++}
++
+ static int __init
+ nouveau_drm_init(void)
+ {
+-- 
+1.8.5.3
 
-Best regards,
-Marek Vasut
