@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321AbaBAD3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 22:29:15 -0500
-Received: from gnurou.org ([207.192.72.5]:51795 "EHLO mail.gnurou.org"
+	id S933305AbaBAD3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 22:29:14 -0500
+Received: from gnurou.org ([207.192.72.5]:51793 "EHLO mail.gnurou.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562AbaBAD2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754554AbaBAD2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 22:28:25 -0500
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
@@ -15,9 +15,9 @@ Cc: Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>,
         Eric Brower <ebrower@nvidia.com>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, gnurou@gmail.com,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 14/16] drm/nouveau/fb: add GK20A support
-Date: Sat,  1 Feb 2014 12:16:56 +0900
-Message-Id: <1391224618-3794-15-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 06/16] drm/nouveau/bar: only ioremap BAR3 if it exists
+Date: Sat,  1 Feb 2014 12:16:48 +0900
+Message-Id: <1391224618-3794-7-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
 References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
@@ -25,176 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a clumsy-but-working FB support for GK20A. This chip only uses system
-memory, so we allocate a big chunk using CMA and let the existing memory
-managers work on it.
-
-A better future design would be to allocate objects directly from system
-memory without having to suffer from the limitations of a large,
-contiguous pool.
+Some chips that use system memory exclusively (e.g. GK20A) do not
+expose 2 BAR regions. For them only BAR1 exists, and it should be used
+for USERD mapping. Do not map BAR3 if its resource does not exist.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/nouveau/Makefile                 |  2 +
- drivers/gpu/drm/nouveau/core/include/subdev/fb.h |  1 +
- drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c    | 28 ++++++++++
- drivers/gpu/drm/nouveau/core/subdev/fb/priv.h    |  1 +
- drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c | 67 ++++++++++++++++++++++++
- 5 files changed, 99 insertions(+)
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
+ drivers/gpu/drm/nouveau/core/subdev/bar/base.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
-index 3548fcd..d9fe3e6 100644
---- a/drivers/gpu/drm/nouveau/Makefile
-+++ b/drivers/gpu/drm/nouveau/Makefile
-@@ -100,6 +100,7 @@ nouveau-y += core/subdev/fb/nvaa.o
- nouveau-y += core/subdev/fb/nvaf.o
- nouveau-y += core/subdev/fb/nvc0.o
- nouveau-y += core/subdev/fb/nve0.o
-+nouveau-y += core/subdev/fb/nvea.o
- nouveau-y += core/subdev/fb/ramnv04.o
- nouveau-y += core/subdev/fb/ramnv10.o
- nouveau-y += core/subdev/fb/ramnv1a.o
-@@ -114,6 +115,7 @@ nouveau-y += core/subdev/fb/ramnva3.o
- nouveau-y += core/subdev/fb/ramnvaa.o
- nouveau-y += core/subdev/fb/ramnvc0.o
- nouveau-y += core/subdev/fb/ramnve0.o
-+nouveau-y += core/subdev/fb/ramnvea.o
- nouveau-y += core/subdev/fb/sddr3.o
- nouveau-y += core/subdev/fb/gddr5.o
- nouveau-y += core/subdev/gpio/base.o
-diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/fb.h b/drivers/gpu/drm/nouveau/core/include/subdev/fb.h
-index d7ecafb..3905816 100644
---- a/drivers/gpu/drm/nouveau/core/include/subdev/fb.h
-+++ b/drivers/gpu/drm/nouveau/core/include/subdev/fb.h
-@@ -105,6 +105,7 @@ extern struct nouveau_oclass *nvaa_fb_oclass;
- extern struct nouveau_oclass *nvaf_fb_oclass;
- extern struct nouveau_oclass *nvc0_fb_oclass;
- extern struct nouveau_oclass *nve0_fb_oclass;
-+extern struct nouveau_oclass *nvea_fb_oclass;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
+index bdf5941..d713eeb 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
+@@ -110,6 +110,7 @@ nouveau_bar_create_(struct nouveau_object *parent,
+ {
+ 	struct nouveau_device *device = nv_device(parent);
+ 	struct nouveau_bar *bar;
++	bool has_bar3 = nv_device_resource_len(device, 3) != 0;
+ 	int ret;
  
- #include <subdev/bios/ramcfg.h>
+ 	ret = nouveau_subdev_create_(parent, engine, oclass, 0, "BARCTL",
+@@ -118,8 +119,10 @@ nouveau_bar_create_(struct nouveau_object *parent,
+ 	if (ret)
+ 		return ret;
  
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c b/drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
-new file mode 100644
-index 0000000..5ff6029
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
+-	bar->iomem = ioremap(nv_device_resource_start(device, 3),
+-			     nv_device_resource_len(device, 3));
++	if (has_bar3)
++		bar->iomem = ioremap(nv_device_resource_start(device, 3),
++				     nv_device_resource_len(device, 3));
 +
-+#include "nvc0.h"
-+
-+struct nouveau_oclass *
-+nvea_fb_oclass = &(struct nouveau_fb_impl) {
-+	.base.handle = NV_SUBDEV(FB, 0xea),
-+	.base.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = nvc0_fb_ctor,
-+		.dtor = nvc0_fb_dtor,
-+		.init = nvc0_fb_init,
-+		.fini = _nouveau_fb_fini,
-+	},
-+	.memtype = nvc0_fb_memtype_valid,
-+	.ram = &nvea_ram_oclass,
-+}.base;
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h b/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h
-index edaf95d..0b95a25 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h
-+++ b/drivers/gpu/drm/nouveau/core/subdev/fb/priv.h
-@@ -32,6 +32,7 @@ extern struct nouveau_oclass nva3_ram_oclass;
- extern struct nouveau_oclass nvaa_ram_oclass;
- extern struct nouveau_oclass nvc0_ram_oclass;
- extern struct nouveau_oclass nve0_ram_oclass;
-+extern struct nouveau_oclass nvea_ram_oclass;
+ 	return 0;
+ }
  
- int nouveau_sddr3_calc(struct nouveau_ram *ram);
- int nouveau_gddr5_calc(struct nouveau_ram *ram, bool nuts);
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c b/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
-new file mode 100644
-index 0000000..3038e08
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+/*
-+ * TODO replace this CMA-requiring horror with a proper allocator for GPU
-+ * objects in main memory. But for the moment it does the job and can reuse some
-+ * of the nvc0 functions.
-+ */
-+
-+#include "nvc0.h"
-+
-+#include <linux/dma-mapping.h>
-+
-+static int
-+nvea_ram_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
-+	      struct nouveau_oclass *oclass, void *data, u32 datasize,
-+	      struct nouveau_object **pobject)
-+{
-+	struct nouveau_fb *pfb = nouveau_fb(parent);
-+	struct nouveau_ram *ram;
-+	void *vram;
-+	dma_addr_t dma_handle;
-+	int ret;
-+
-+	ret = nouveau_ram_create(parent, engine, oclass, &ram);
-+	*pobject = nv_object(ram);
-+	if (ret)
-+		return ret;
-+
-+	ram->type   = NV_MEM_TYPE_STOLEN;
-+	/* Use a fixed size of 64MB for now */
-+	ram->size = 0x4000000;
-+	ram->stolen = (u64)0x00000000;
-+	vram = dma_alloc_coherent(nv_device_base(nv_device(parent)), ram->size,
-+				  &dma_handle, GFP_KERNEL);
-+	if (!vram)
-+		return -ENOMEM;
-+
-+	ret = nouveau_mm_init(&pfb->vram, dma_handle >> 12, ram->size >> 12, 1);
-+	if (ret)
-+		return ret;
-+
-+	ram->get = nvc0_ram_get;
-+	ram->put = nvc0_ram_put;
-+	return 0;
-+}
-+
-+struct nouveau_oclass
-+nvea_ram_oclass = {
-+	.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = nvea_ram_ctor,
-+		.dtor = _nouveau_ram_dtor,
-+		.init = _nouveau_ram_init,
-+		.fini = _nouveau_ram_fini,
-+	},
-+};
 -- 
 1.8.5.3
 
