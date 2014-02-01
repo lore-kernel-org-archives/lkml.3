@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862AbaBATH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 14:07:59 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:38159 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795AbaBATH6 (ORCPT
+	id S1754640AbaBATIz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 14:08:55 -0500
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:52985 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754036AbaBATIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 14:07:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <52EC259F.4080206@linux.intel.com>
-References: <20140131025453.B594B660CA3@gitolite.kernel.org>
-	<20140131175009.GA27231@redhat.com>
-	<52EBE62E.70102@linux.intel.com>
-	<CA+55aFwcgGPb=5cTnkKpP4vH2kqCCvxGteZT58efHhg3aJjcfQ@mail.gmail.com>
-	<52EC259F.4080206@linux.intel.com>
-Date: Sat, 1 Feb 2014 11:07:57 -0800
-X-Google-Sender-Auth: M76yZobiiHKVBftqysvFt1YTPCA
-Message-ID: <CA+55aFyKS_C3Pd8aXuJaOiZR=xigesOoyBfmAhS+y5n68X3JfA@mail.gmail.com>
-Subject: Re: x86, x32: Correct invalid use of user timespec in the kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 1 Feb 2014 14:08:54 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuMUAChF7VJbsmYT/2dsb2JhbABZKIJkgkOBDrsbAgKBBxd0glMTHCMYgQI3iAkBzRiOJWQdhCIBA4lHjmIBik+HUoM6L4Es
+Date: Sat, 1 Feb 2014 19:10:07 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+Subject: [PATCH 1/1] ext4: Add __init macro to init_inodecache
+Message-Id: <20140201191007.59012c84446860984e6c4a76@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 2:37 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> Here is a patch for comments/review/opinions... it has only been
-> compile-tested.
+init_inodecache is only called by __init init_ext4_fs.
 
-Looks sane to me from a superficial quick read-through.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ext4/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-             Linus
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 1f7784d..9a387b8 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -940,7 +940,7 @@ static void init_once(void *foo)
+ 	inode_init_once(&ei->vfs_inode);
+ }
+ 
+-static int init_inodecache(void)
++static int __init init_inodecache(void)
+ {
+ 	ext4_inode_cachep = kmem_cache_create("ext4_inode_cache",
+ 					     sizeof(struct ext4_inode_info),
+-- 
+1.8.1.4
