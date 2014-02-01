@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248AbaBAOto (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 09:49:44 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:55827 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910AbaBAOtn (ORCPT
+	id S933266AbaBAOu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 09:50:56 -0500
+Received: from www84.your-server.de ([213.133.104.84]:55496 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaBAOuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 09:49:43 -0500
-Date: Sat, 1 Feb 2014 15:49:39 +0100
-From: Johannes Thumshirn <morbidrsa@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: adc: viperboard: Call platform_set_drvdata before
- devm_iio_device_register
-Message-ID: <20140201144939.GA14121@sauron.localdomain>
-References: <1391265593-13986-1-git-send-email-morbidrsa@gmail.com>
- <52ED08AD.9060403@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52ED08AD.9060403@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 1 Feb 2014 09:50:55 -0500
+Message-ID: <1391266284.964.1.camel@wall-e.seibold.net>
+Subject: Re: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
+From: Stefani Seibold <stefani@seibold.net>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Sat, 01 Feb 2014 15:51:24 +0100
+In-Reply-To: <20140131001034.GB2350@tassilo.jf.intel.com>
+References: <1391078953-1575-1-git-send-email-stefani@seibold.net>
+	 <1391078953-1575-2-git-send-email-stefani@seibold.net>
+	 <20140131001034.GB2350@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 01, 2014 at 03:46:05PM +0100, Lars-Peter Clausen wrote:
-> On 02/01/2014 03:39 PM, Johannes Thumshirn wrote:
-> > Call platform_set_drvdata before devm_iio_device_register to avoid possible
-> > race condition when accessing driver data.
->
-> I don't think the driver data is accessed from within any of the IIO device
-> callbacks. In fact I don't think it is accessed at all with the latest
-> conversion to devm_iio_device_register(). So I think the call to
-> platform_set_drvdata can just be removed.
->
-> >
-> > Signed-off-by: Johannes Thumshirn <morbidrsa@gmail.com>
-> > ---
-> >  drivers/iio/adc/viperboard_adc.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/iio/adc/viperboard_adc.c b/drivers/iio/adc/viperboard_adc.c
-> > index d0add8f..7d9bd05 100644
-> > --- a/drivers/iio/adc/viperboard_adc.c
-> > +++ b/drivers/iio/adc/viperboard_adc.c
-> > @@ -133,14 +133,14 @@ static int vprbrd_adc_probe(struct platform_device *pdev)
-> >  	indio_dev->channels = vprbrd_adc_iio_channels;
-> >  	indio_dev->num_channels = ARRAY_SIZE(vprbrd_adc_iio_channels);
-> >
-> > +	platform_set_drvdata(pdev, indio_dev);
-> > +
-> >  	ret = devm_iio_device_register(&pdev->dev, indio_dev);
-> >  	if (ret) {
-> >  		dev_err(&pdev->dev, "could not register iio (adc)");
-> >  		return ret;
-> >  	}
-> >
-> > -	platform_set_drvdata(pdev, indio_dev);
-> > -
-> >  	return 0;
-> >  }
-> >
-> >
->
+Am Donnerstag, den 30.01.2014, 16:10 -0800 schrieb Andi Kleen:
+> > @@ -1335,7 +1335,6 @@ config ARCH_SPARSEMEM_ENABLE
+> >  
+> >  config ARCH_SPARSEMEM_DEFAULT
+> >  	def_bool y
+> > -	depends on X86_64
+> 
+> Is that really needed? Why does the vdso need sparsemem?
+> 
 
-Looks like you're right. So we can drop this patch and I'll make a remove version.
+No, it is from the previous patch. I will fix it.
+
+> >  
+> >  static inline void __user *arch_compat_alloc_user_space(long len)
+> >  {
+> > +#ifdef CONFIG_X86_32
+> > +	struct pt_regs *regs = task_pt_regs(current);
+> > +	return (void __user *)regs->sp - len;
+> > +#else
+> >  	compat_uptr_t sp;
+> 
+> and that? why does a vdso need to allocate things on the user page?
+> 
+
+Will also fixed, compat.h will not longer include by vsyscall_gtod.c.
+
+
