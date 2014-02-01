@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaBAMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 07:30:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59346 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717AbaBAMaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 07:30:25 -0500
-Date: Sat, 1 Feb 2014 13:30:19 +0100
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: Jiang Liu <liuj97@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] x86: fix the initialization of physnode_map
-Message-ID: <20140201133019.32e56f86@hananiah.suse.cz>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754593AbaBAMfz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 07:35:55 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60715 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbaBAMfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 07:35:54 -0500
+Message-ID: <52ECEA2A.8070307@gmail.com>
+Date: Sat, 01 Feb 2014 20:35:54 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: hskinnemoen@gmail.com, egtvedt@samfundet.no
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch: avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7
+ using.
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With DISCONTIGMEM, the mapping between a pfn and its owning node is
-initialized using data provided by the BIOS. However, the initialization
-may fail if the extents are not aligned to section boundary (64M).
+For avr32 cross compiler, do not define '__linux__' internally, so it
+will cause issue with allmodconfig.
 
-The symptom of this bug is an early boot failure in pfn_to_page(),
-as it tries to access NODE_DATA(__nid) using index from an unitialized
-element of the physnode_map[] array.
+The related error:
 
-While the bug is always present, it is more likely to be hit in kdump
-kernels on large machines, because:
+    CC [M]  fs/coda/psdev.o
+  In file included from include/linux/coda.h:64,
+                   from fs/coda/psdev.c:45:
+  include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
 
-1. The memory map for a kdump kernel is specified as exactmap, and
-   exactmap is more likely to be unaligned.
+The related toolchain version (which only download, not re-compile):
 
-2. Large reservations are more likely to span across a 64M boundary.
+  [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
+  Using built-in specs.
+  Target: avr32
+  Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://www
+.atmel.com/avr
+  Thread model: single
+  gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435) 
 
-Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 ---
- arch/x86/mm/numa_32.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/avr32/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 0342d27..8c62ec6 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -52,6 +52,8 @@ void memory_present(int nid, unsigned long start, unsigned long end)
- 			nid, start, end);
- 	printk(KERN_DEBUG "  Setting physnode_map array to node %d for pfns:\n", nid);
- 	printk(KERN_DEBUG "  ");
-+	pfn = round_down(pfn, PAGES_PER_SECTION);
-+	end = round_up(end, PAGES_PER_SECTION);
- 	for (pfn = start; pfn < end; pfn += PAGES_PER_SECTION) {
- 		physnode_map[pfn / PAGES_PER_SECTION] = nid;
- 		printk(KERN_CONT "%lx ", pfn);
+diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
+index 22fb665..dba48a5 100644
+--- a/arch/avr32/Makefile
++++ b/arch/avr32/Makefile
+@@ -11,7 +11,7 @@ all: uImage vmlinux.elf
+ 
+ KBUILD_DEFCONFIG	:= atstk1002_defconfig
+ 
+-KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic
++KBUILD_CFLAGS	+= -pipe -fno-builtin -mno-pic -D__linux__
+ KBUILD_AFLAGS	+= -mrelax -mno-pic
+ KBUILD_CFLAGS_MODULE += -mno-relax
+ LDFLAGS_vmlinux	+= --relax
 -- 
-1.8.4.5
+1.7.11.7
