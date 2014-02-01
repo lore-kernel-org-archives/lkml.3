@@ -1,193 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377AbaBARcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 12:32:39 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:59391 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933102AbaBARcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 12:32:19 -0500
-X-Mailbox-Line: From 387a65107f2f2e6ff484768d0424396357067b86 Mon Sep 17 00:00:00 2001
-Message-Id: <387a65107f2f2e6ff484768d0424396357067b86.1391274628.git.moinejf@free.fr>
-In-Reply-To: <cover.1391274627.git.moinejf@free.fr>
-References: <cover.1391274627.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Sun, 26 Jan 2014 19:02:37 +0100
-Subject: [PATCH v3 1/5] drm/i2c: tda998x: add a function for dynamic audio
- input switch
-To: alsa-devel@alsa-project.org
-Cc: broonie@kernel.org, Dave Airlie <airlied@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+	id S933389AbaBARi5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 12:38:57 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33892 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933167AbaBARiz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 12:38:55 -0500
+Date: Sat, 1 Feb 2014 17:38:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20140201173841.GU22609@sirena.org.uk>
+References: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140131121215.GB22609@sirena.org.uk>
+ <20140131133111.GF2950@lukather>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KSdtjhIkTRrb1Xsv"
+Content-Disposition: inline
+In-Reply-To: <20140131133111.GF2950@lukather>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 0/3] spi: core: Introduce devm_spi_alloc_master
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When both I2S and S/PDIF are wired from the audio device to the
-TDA998x, the user or some internal mechanism may choose to do audio
-streaming via either inputs.
 
-This patch adds an exported function in the TDA998x driver which
-initializes the audio input parameters according to the audio
-subsystem.
+--KSdtjhIkTRrb1Xsv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The audio format values in the encoder configuration interface  are
-changed to non null values so that the value 0 is used in the audio
-function to indicate that audio streaming is stopped.
+On Fri, Jan 31, 2014 at 02:31:11PM +0100, Maxime Ripard wrote:
+> On Fri, Jan 31, 2014 at 12:12:15PM +0000, Mark Brown wrote:
 
-As the audio clock depends on the input type, it is set so.
-Then, the configuration value audio_clk_cfg is now ignored.
+> > This seems confusing - the idea here is that if we've handed the device
+> > off to the managed function then the managed function deals with
+> > destroying it.  Note that spi_alloc_master() says that the put is only
+> > required after errors adding the device (which would be the expected
+> > behaviour if you look at other APIs).  Looking at the code I think there
+> > is an issue here but I'm not at all clear that this is the best fix.
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 48 ++++++++++++++++++++++++++++++++++++---
- include/drm/i2c/tda998x.h         |  7 ++++--
- 2 files changed, 50 insertions(+), 5 deletions(-)
+> Ah, right, spi_master_put doesn't free the memory either...
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index 2f97290..2643be4 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -35,6 +35,7 @@ struct tda998x_priv {
- 	struct i2c_client *hdmi;
- 	uint16_t rev;
- 	uint8_t current_page;
-+	u8 audio_active;
- 	int dpms;
- 	bool is_hdmi_sink;
- 	u8 vip_cntrl_0;
-@@ -640,12 +641,11 @@ static void
- tda998x_configure_audio(struct tda998x_priv *priv,
- 		struct drm_display_mode *mode, struct tda998x_encoder_params *p)
- {
--	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv;
-+	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv, aclk;
- 	uint32_t n;
- 
- 	/* Enable audio ports */
- 	reg_write(priv, REG_ENA_AP, p->audio_cfg);
--	reg_write(priv, REG_ENA_ACLK, p->audio_clk_cfg);
- 
- 	/* Set audio input source */
- 	switch (p->audio_format) {
-@@ -654,6 +654,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 		clksel_aip = AIP_CLKSEL_AIP_SPDIF;
- 		clksel_fs = AIP_CLKSEL_FS_FS64SPDIF;
- 		cts_n = CTS_N_M(3) | CTS_N_K(3);
-+		aclk = 0;				/* no clock */
- 		break;
- 
- 	case AFMT_I2S:
-@@ -661,6 +662,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 		clksel_aip = AIP_CLKSEL_AIP_I2S;
- 		clksel_fs = AIP_CLKSEL_FS_ACLK;
- 		cts_n = CTS_N_M(3) | CTS_N_K(3);
-+		aclk = 1;				/* clock enable */
- 		break;
- 
- 	default:
-@@ -672,6 +674,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT |
- 					AIP_CNTRL_0_ACR_MAN);	/* auto CTS */
- 	reg_write(priv, REG_CTS_N, cts_n);
-+	reg_write(priv, REG_ENA_ACLK, aclk);
- 
- 	/*
- 	 * Audio input somehow depends on HDMI line rate which is
-@@ -728,6 +731,37 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	tda998x_write_aif(priv, p);
- }
- 
-+/* tda998x codec interface */
-+void tda998x_audio_update(struct i2c_client *client,
-+			int format,
-+			int port)
-+{
-+	struct tda998x_priv *priv = i2c_get_clientdata(client);
-+	struct tda998x_encoder_params *p = &priv->params;
-+
-+	/* if the audio output is active, it may be a second start or a stop */
-+	if (format == 0 || priv->audio_active) {
-+		if (format == 0) {
-+			priv->audio_active = 0;
-+			reg_write(priv, REG_ENA_AP, 0);
-+		}
-+		return;
-+	}
-+	priv->audio_active = 1;
-+
-+	p->audio_cfg = port;
-+
-+	/* don't restart audio if same input format */
-+	if (format == p->audio_format) {
-+		reg_write(priv, REG_ENA_AP, p->audio_cfg);
-+		return;
-+	}
-+	p->audio_format = format;
-+
-+	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
-+}
-+EXPORT_SYMBOL_GPL(tda998x_audio_update);
-+
- /* DRM encoder functions */
- 
- static void
-@@ -750,6 +784,9 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
- 			    (p->mirr_f ? VIP_CNTRL_2_MIRR_F : 0);
- 
- 	priv->params = *p;
-+
-+	if (p->audio_cfg)
-+		priv->audio_active = 1;
- }
- 
- static void
-@@ -999,7 +1036,7 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
- 
- 		tda998x_write_avi(priv, adjusted_mode);
- 
--		if (priv->params.audio_cfg)
-+		if (priv->audio_active)
- 			tda998x_configure_audio(priv, adjusted_mode,
- 						&priv->params);
- 	}
-@@ -1239,10 +1276,15 @@ tda998x_encoder_init(struct i2c_client *client,
- 	if (!priv)
- 		return -ENOMEM;
- 
-+	i2c_set_clientdata(client, priv);
-+
- 	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
- 	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
- 	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
- 
-+	priv->params.audio_frame[1] = 1;		/* channels - 1 */
-+	priv->params.audio_sample_rate = 48000;		/* 48kHz */
-+
- 	priv->current_page = 0xff;
- 	priv->hdmi = client;
- 	priv->cec = i2c_new_dummy(client->adapter, 0x34);
-diff --git a/include/drm/i2c/tda998x.h b/include/drm/i2c/tda998x.h
-index 3e419d9..7e4806d 100644
---- a/include/drm/i2c/tda998x.h
-+++ b/include/drm/i2c/tda998x.h
-@@ -20,11 +20,14 @@ struct tda998x_encoder_params {
- 	u8 audio_frame[6];
- 
- 	enum {
--		AFMT_SPDIF,
--		AFMT_I2S
-+		AFMT_I2S = 1,
-+		AFMT_SPDIF
- 	} audio_format;
- 
- 	unsigned audio_sample_rate;
- };
- 
-+void tda998x_audio_update(struct i2c_client *client,
-+			int format,
-+			int port);
- #endif
--- 
-1.9.rc1
+The memory is freed by the driver core calling the spi_master_release()
+callback when it's safe to do so (after the last reference to the device
+has gone away).
 
+> I guess we have a few choices here, either:
+>   - Add a devm_kzalloc to spi_alloc_master, since most of the drivers
+>     I've been looking at fail to free the memory, this would be the
+>     least intrusive solution. We'd still have to remove all the kfree
+>     calls in the driver that rightfully free the memory.
+>   - Make devm_unregister_master also call kfree on the master
+>   - Add a kfree to my devm_put_master so that the memory is reclaimed,
+>     which isn't the case for now.
+
+> I don't have a strong preference here, maybe for the third one, since
+> it makes obvious that it's managed and you don't have to do anything
+> about it, while the other do not.
+
+None of the above, definitely nothing to do with calling kfree() once
+the device is registered.  We already have that free, it's not the
+issue.  The issue is making sure that we hold references when we need
+them and drop them when we don't.  I (or someone) needs to sit down and
+think it through since things are a bit confused in the code.
+
+--KSdtjhIkTRrb1Xsv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS7TEdAAoJELSic+t+oim9QtsP/A8w/rEqIDTUPKxY0crkW3Rj
+UjyrafsfxV9OULkJR1G+Ikz+G6WauiKrYcy8YNOo5pQ2WMZPG/aXpk3jBHzMxtvW
+4G4TEwIdyA7YUUCYzc6K5YVsJHU44MBBnQRyp6yBOD6ydoLlncUN7xrRiAWgOA5p
+54tGY2r4mZSmVn0YBI3N95R8GSyaPR2ddST1dDDRdat23PkjpsQE4FKfvlOXqAXM
+is8Any/3A3gj5S782S0raY1d8ae4Dr7EnH3NkM0kxJp798A4f/ZFcMkHDjLoLKcl
+UOHEnmG/qVRJecN8wYOnbpEjmfBQZDUzXzlHIVl5T1O7by+ORP2DWdpJTv0NAwQy
+LeRm/ANpY2icLSmvEs0YPkUlpYXh2KATPVEjYm3Sr2YedD7ij11g02SCt/ClmzAE
+MKNKmJv3UhIx2rCnXbVyOdxzHxmHKOWjjeSk93Vya0YS7oEGRxZjIU+iHsw/EOnO
+933R5hzAj8THfgJSngjweoDdRD6jLGzI358oXfPKaFVIF6/ZXECmcF66CK9zopSw
+Zr05pNQ68I+rVhINnUqX8XCa/5UgxudOEwt0tstL9lieV9NS0GY3gi6Kt8hhoneE
+rPdJiijBpNf1/PCTJDg1HNcbCtodJdGLs/QAM0OKuGh/1UcSUE3Qm+aIVsYrPhW5
+7JZYNI8SLfA3G0GHzqrU
+=IAOw
+-----END PGP SIGNATURE-----
+
+--KSdtjhIkTRrb1Xsv--
