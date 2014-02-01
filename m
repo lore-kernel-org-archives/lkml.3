@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaBASl0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 13:41:26 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51269 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674AbaBASlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 13:41:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,760,1384329600"; 
-   d="scan'208";a="474398805"
-Date: Sat, 1 Feb 2014 20:48:22 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "PCI: Remove from bus_list and release resources
- in pci_release_dev()"
-Message-ID: <20140201184822.GO18029@intel.com>
-References: <20140130131236.GW18029@intel.com>
- <1676758.QjUXk2223P@vostro.rjw.lan>
- <CAE9FiQX_AuSPq159AwDHP+n0k6FK3pS2CNttPFAJP2K-84ho1w@mail.gmail.com>
- <14676899.LOmsodapl3@vostro.rjw.lan>
+	id S1754043AbaBASnN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 13:43:13 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:47402 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804AbaBASnM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 13:43:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <14676899.LOmsodapl3@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140131143203.GA6560@kroah.com>
+References: <20140131143203.GA6560@kroah.com>
+Date: Sat, 1 Feb 2014 10:43:11 -0800
+X-Google-Sender-Auth: rvVO4Il-uXqpVIgRA6TPZgCHlB8
+Message-ID: <CA+55aFx2WsAzo8pNDs1B4RUnsAhhWE3-YNO38x4y-dW05g=yTQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Staging wireless driver for 3.14-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Driver Project <devel@linuxdriverproject.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 01, 2014 at 03:38:29PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: Revert "PCI: Remove from bus_list and release resources in pci_release_dev()"
-> 
-> Revert commit ef83b0781a73 "PCI: Remove from bus_list and release
-> resources in pci_release_dev()" that made some nasty race conditions
-> become possible.  For example, if a Thunderbolt link is unplugged
-> and then replugged immediately, the pci_release_dev() resulting from
-> the hot-remove code path may be racing with the hot-add code path
-> which after that commit causes various kinds of breakage to happen
-> (up to and including a hard crash of the whole system).
-> 
-> Moreover, the problem that commit ef83b0781a73 attempted to address
-> cannot happen any more after commit 8a4c5c329de7 "PCI: Check parent
-> kobject in pci_destroy_dev()", because pci_destroy_dev() will now
-> return immediately if it has already been executed for the given
-> device.
-> 
-> Note, however, that the invocation of msi_remove_pci_irq_vectors()
-> removed by commit ef83b0781a73 from pci_free_resources() along with
-> the other changes made by it is not added back because of subsequent
-> code changes depending on that modification.
-> 
-> Fixes: ef83b0781a73 (PCI: Remove from bus_list and release resources in pci_release_dev())
-> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, Jan 31, 2014 at 6:32 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> Here's a single staging driver for a wireless chipset that has shown up
+> in the SteamBox hardware.  It is merged separately from the "main"
+> staging pull request to sync up with the wireless api changes that came
+> in from the networking tree.
 
-Thanks, that fixes the problem I'm seeing.
+It causes an interesting warning for me:
+
+drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function
+‘rtl8821ae_dm_clear_txpower_tracking_state’:
+drivers/staging/rtl8821ae/rtl8821ae/dm.c:487:31: warning: iteration 2u
+invokes undefined behavior [-Waggressive-loop-optimizations]
+   rtldm->bb_swing_idx_ofdm[p] = rtldm->default_ofdm_index;
+                               ^
+drivers/staging/rtl8821ae/rtl8821ae/dm.c:485:2: note: containing loop
+  for (p = RF90_PATH_A; p < MAX_RF_PATH; ++p) {
+  ^
+
+and gcc is entirely correct: that loop iterates from 0 to 3, and does this:
+
+                rtldm->bb_swing_idx_ofdm[p] = rtldm->default_ofdm_index;
+
+but the bb_swing_idx_ofdm[] array only has two members. So the last
+two iterations will overwrite bb_swing_idx_ofdm_current and the first
+entry in bb_swing_idx_ofdm_base[].
+
+Now, the bug does seem to be benign: bb_swing_idx_ofdm_current isn't
+actually ever *used* as far as I can tell, and the first entry of
+bb_swing_idx_ofdm_base[] will have been written with that same
+"rtldm->default_ofdm_index" value.
+
+But gcc is absolutely correct, and that driver needs fixing.
+
+I've pulled it and will let it be because it doesn't seem to be an
+issue in practice, but please fix it. The obvious fix would seem to
+change the size of "2" to be "MAX_RF_PATH", but I'll abstain from
+doing those kinds of changes in the merge when it doesn't seem to
+affect the build or functionality).
+
+               Linus
