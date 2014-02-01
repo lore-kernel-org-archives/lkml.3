@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbaBAS3s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 13:29:48 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:50817 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaBAS3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 13:29:46 -0500
-Message-ID: <52ED3D28.7020709@cogentembedded.com>
-Date: Sat, 01 Feb 2014 22:30:00 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753605AbaBASl0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 13:41:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51269 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674AbaBASlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 13:41:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,760,1384329600"; 
+   d="scan'208";a="474398805"
+Date: Sat, 1 Feb 2014 20:48:22 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert "PCI: Remove from bus_list and release resources
+ in pci_release_dev()"
+Message-ID: <20140201184822.GO18029@intel.com>
+References: <20140130131236.GW18029@intel.com>
+ <1676758.QjUXk2223P@vostro.rjw.lan>
+ <CAE9FiQX_AuSPq159AwDHP+n0k6FK3pS2CNttPFAJP2K-84ho1w@mail.gmail.com>
+ <14676899.LOmsodapl3@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Rob Clark <robdclark@gmail.com>, broonie@kernel.org,
-        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/5] ASoC: tda998x: add DT documentation of the tda998x
- CODEC
-References: <cover.1391274627.git.moinejf@free.fr> <8e4231b7a55802f58a14dd07ac5cd8b0babb1dce.1391274628.git.moinejf@free.fr>
-In-Reply-To: <8e4231b7a55802f58a14dd07ac5cd8b0babb1dce.1391274628.git.moinejf@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <14676899.LOmsodapl3@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, Feb 01, 2014 at 03:38:29PM +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: Revert "PCI: Remove from bus_list and release resources in pci_release_dev()"
+> 
+> Revert commit ef83b0781a73 "PCI: Remove from bus_list and release
+> resources in pci_release_dev()" that made some nasty race conditions
+> become possible.  For example, if a Thunderbolt link is unplugged
+> and then replugged immediately, the pci_release_dev() resulting from
+> the hot-remove code path may be racing with the hot-add code path
+> which after that commit causes various kinds of breakage to happen
+> (up to and including a hard crash of the whole system).
+> 
+> Moreover, the problem that commit ef83b0781a73 attempted to address
+> cannot happen any more after commit 8a4c5c329de7 "PCI: Check parent
+> kobject in pci_destroy_dev()", because pci_destroy_dev() will now
+> return immediately if it has already been executed for the given
+> device.
+> 
+> Note, however, that the invocation of msi_remove_pci_irq_vectors()
+> removed by commit ef83b0781a73 from pci_free_resources() along with
+> the other changes made by it is not added back because of subsequent
+> code changes depending on that modification.
+> 
+> Fixes: ef83b0781a73 (PCI: Remove from bus_list and release resources in pci_release_dev())
+> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On 01-02-2014 20:48, Jean-Francois Moine wrote:
-
-> This patch adds the DT documentation of the NXP TDA998x CODEC.
-
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
->   Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 17 +++++++++++++++++
->   1 file changed, 17 insertions(+)
-
-> diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> index d7df01c..aa0d81b 100644
-> --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-[...]
-> @@ -24,4 +35,10 @@ Example:
->   		interrupts = <27 2>;		/* falling edge */
->   		pinctrl-0 = <&pmx_camera>;
->   		pinctrl-names = "default";
-> +			hdmi_codec: codec {
-
-    This line is indented too far to the right.
-
-> +			compatible = "nxp,tda998x-codec";
-> +			audio-ports = <0x03>, <0x04>;
-> +			audio-port-names = "i2s", "spdif";
-> +			#sound-dai-cells = <1>;
-> +		};
->   	};
-
-WBR, Sergei
-
+Thanks, that fixes the problem I'm seeing.
