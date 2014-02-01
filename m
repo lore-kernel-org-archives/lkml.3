@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296AbaBAGAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 01:00:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36269 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933270AbaBAGAm convert rfc822-to-8bit (ORCPT
+	id S933316AbaBAGBu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 01:01:50 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:35079 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933270AbaBAGBs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 01:00:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,760,1384329600"; 
-   d="scan'208";a="448010231"
-From: "Brown, Len" <len.brown@intel.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Preeti Murthy" <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: RE: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-Thread-Topic: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-Thread-Index: AQHPHmj1HuPlkSKnskqavB1n6ZD3b5qfdYqAgAAIdACAAAOggIAAKZ4AgAA834A=
-Date: Sat, 1 Feb 2014 06:00:40 +0000
-Message-ID: <1A7043D5F58CCB44A599DFD55ED4C948452D34DC@FMSMSX106.amr.corp.intel.com>
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org>
- <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org>
- <20140130153150.GD5002@laptop.programming.kicks-ass.net>
- <52EA7D8A.6080604@linaro.org>
- <20140130163501.GG5002@laptop.programming.kicks-ass.net>
- <52EA8B07.6020206@linaro.org>
- <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
- <20140131090230.GM5002@laptop.programming.kicks-ass.net>
- <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com>
- <52EBC33A.6080101@linaro.org> <52EBC645.2040607@linux.intel.com>
- <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 1 Feb 2014 01:01:48 -0500
 MIME-Version: 1.0
+In-Reply-To: <57c43634-23a6-4dcf-8aff-f49961d7f4d6@TX2EHSMHS005.ehs.local>
+References: <1390420117-25930-1-git-send-email-soren.brinkmann@xilinx.com> <57c43634-23a6-4dcf-8aff-f49961d7f4d6@TX2EHSMHS005.ehs.local>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Fri, 31 Jan 2014 22:01:27 -0800
+Message-ID: <CAPtuhTj7QmB-xFU40x_MCvbvo07M2_2sDfiOQNkf4oEGFPKiOg@mail.gmail.com>
+Subject: Re: [PATCH] clk: Fix notifier documentation
+To: =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Right now (on ARM at least but I imagine this is pretty universal), the
-> biggest impact on information accuracy for a CPU depends on what the
-> other CPUs are doing.  The most obvious example is cluster power down.
-> For a cluster to be powered down, all the CPUs sharing this cluster must
-> also be powered down.  And all those CPUs must have agreed to a possible
-> cluster power down in advance as well.  But it is not because an idle
-> CPU has agreed to the extra latency imposed by a cluster power down that
-> the cluster has actually powered down since another CPU in that cluster
-> might still be running, in which case the recorded latency information
-> for that idle CPU would be higher than it would be in practice at that
-> moment.
+On Fri, Jan 31, 2014 at 5:49 PM, Sören Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+> ping?
 
-That will not work.
+Hi Soren,
 
-When a CPU goes idle, it uses the CURRENT criteria for entering that state.
-If the criteria change after it has entered the state, are you going
-to wake it up so it can re-evaluate?  No.
+I'm a bit slow to review patches during the merge window. Thanks for
+the doc update. I'll take it in after -rc1 drops.
 
-That is why the state must describe the worst case latency
-that CPU may see when waking from the state on THAT entry.
+Regards,
+Mik
 
-That is why we use the package C-state numbers to describe
-core C-states on IA.
-
--Len
-
+>
+> On Wed, Jan 22, 2014 at 11:48:37AM -0800, Soren Brinkmann wrote:
+>> Contradicting to documenation, the notifier callbacks do receive
+>> the original clock rate in struct clk_notifier_data.old_rate and the new
+>> frequency struct clk_notifier_data.new_rate, independent of the
+>> notification reason.
+>>
+>> This behavior also seems to make more sense, since callbacks can use the
+>> same code to deterimine whether clocks are scaled up or down. Something
+>> which would not even possible in the post-rate-change case if the
+>> behavior was as documented.
+>>
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> ---
+>> Hi Mike,
+>>
+>> I am working with some clock notifiers and if my results are correct the
+>> notifiers behave differently from how they are documented.
+>> I think the actual behavior makes more sense than the documented and my original
+>> plan was to change the behavior, but it seems I might get away with a
+>> doc-update.
+>>
+>>       Thanks,
+>>       Sören
+>>
+>>  drivers/clk/clk.c | 15 +++------------
+>>  1 file changed, 3 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 2cf2ea6b77a1..26825db03e64 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -1983,20 +1983,11 @@ EXPORT_SYMBOL_GPL(devm_clk_unregister);
+>>   * re-enter into the clk framework by calling any top-level clk APIs;
+>>   * this will cause a nested prepare_lock mutex.
+>>   *
+>> - * Pre-change notifier callbacks will be passed the current, pre-change
+>> - * rate of the clk via struct clk_notifier_data.old_rate.  The new,
+>> - * post-change rate of the clk is passed via struct
+>> + * In all notification cases cases (pre, post and abort rate change) the
+>> + * original clock rate is passed to the callback via struct
+>> + * clk_notifier_data.old_rate and the new frequency is passed via struct
+>>   * clk_notifier_data.new_rate.
+>>   *
+>> - * Post-change notifiers will pass the now-current, post-change rate of
+>> - * the clk in both struct clk_notifier_data.old_rate and struct
+>> - * clk_notifier_data.new_rate.
+>> - *
+>> - * Abort-change notifiers are effectively the opposite of pre-change
+>> - * notifiers: the original pre-change clk rate is passed in via struct
+>> - * clk_notifier_data.new_rate and the failed post-change rate is passed
+>> - * in via struct clk_notifier_data.old_rate.
+>> - *
+>>   * clk_notifier_register() must be called from non-atomic context.
+>>   * Returns -EINVAL if called with null arguments, -ENOMEM upon
+>>   * allocation failure; otherwise, passes along the return value of
+>> --
+>> 1.8.5.3
+>>
+>>
+>
