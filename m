@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055AbaBAD27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 22:28:59 -0500
-Received: from gnurou.org ([207.192.72.5]:51780 "EHLO mail.gnurou.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512AbaBAD2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 22:28:23 -0500
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Cc: Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Eric Brower <ebrower@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 01/16] drm/nouveau: handle -EACCES runtime PM return code
-Date: Sat,  1 Feb 2014 12:16:43 +0900
-Message-Id: <1391224618-3794-2-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
-References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
+	id S932991AbaBAEV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 23:21:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56323 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932368AbaBAEVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 23:21:55 -0500
+Message-ID: <1391228495.5348.82.camel@marge.simpson.net>
+Subject: Re: [PATCH RT 4/8] rtmutex: use a trylock for waiter lock in trylock
+From: Mike Galbraith <bitbucket@online.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Sat, 01 Feb 2014 05:21:35 +0100
+In-Reply-To: <20140131220737.GF21238@linutronix.de>
+References: <20140116015824.201732155@goodmis.org>
+	 <20140116020324.637491369@goodmis.org>
+	 <1389841737.5418.14.camel@marge.simpson.net>
+	 <20140116232228.0f3cfb89@gandalf.local.home>
+	 <1389935832.5449.23.camel@marge.simpson.net>
+	 <20140131220737.GF21238@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:lbx0DHmqP/xrwp4BCmJ5Kq+4dnAaz5/4koBIInCNXBH
+ P87XGfGJOmMz2VtsxnyHXuPGx2E2/sSbthB078CItMVjogVNDC
+ Hr/xOevmk/fwFn/aG5oM158cLLuCgIHH2vV26gEYyeb4xtECyU
+ 99qA3tNOC8EB9Fel17R/WQQAYPS38E3QpmG6aN6YsLaKtTd5W/
+ XxJ20Lb1NGRroRH5gF8nzpa6CYEnS3sncxQ3Mn3xuU5ZW6Zqit
+ uFtm7IG6iTMDifdHYoBXxx4LsB3y1Kc0hybZ3W1WbyRyGp0t/0
+ 6Y/m+cVbaKj5yB7MOD2QajSuNNMSIz0qxSz2tvrf4Qcs8V9Oy9
+ UZ9nsyL9zA7GyIiK+77nPKI7ivdIxt3NXPn2w4z3k/cdIAZTeY
+ w6/papMhxtqnQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm_runtime_get*() may return -EACCESS to indicate a device does not have
-runtime PM enabled. This is the case when the nouveau.runpm parameter is
-set to 0, and is not an error in that context. Handle this case without
-failure.
+On Fri, 2014-01-31 at 23:07 +0100, Sebastian Andrzej Siewior wrote: 
+> * Mike Galbraith | 2014-01-17 06:17:12 [+0100]:
+> 
+> >On Thu, 2014-01-16 at 23:22 -0500, Steven Rostedt wrote: 
+> >> On Thu, 16 Jan 2014 04:08:57 +0100
+> >> Mike Galbraith <bitbucket@online.de> wrote:
+> >> 
+> >> > On Wed, 2014-01-15 at 20:58 -0500, Steven Rostedt wrote:
+> >> > 
+> >> > 
+> >> > > 3.2.53-rt76-rc1 stable review patch.
+> >> > > If anyone has any objections, please let me know.
+> >> > 
+> >> > Not sure this is needed without the tglx don't unconditionally raise
+> >> > timer softirq patch, and with that patch applied in the form it exists
+> >> > in 3.12-rt9, as well as this one, you'll still eventually deadlock.
+> >> 
+> >> Hmm, I'll have to take a look. This sounds to be missing from all the
+> >> stable -rt kernels. I'll be pulling in the latest updates from 3.12-rt
+> >> soon.
+> >
+> >Below are the two deadlocks I encountered with 3.12-rt9, which has both
+> >$subject and timers-do-not-raise-softirq-unconditionally.patch applied.
+> 
+> This patch was introduced because we had a deadlock in
+> run_local_timers() which took a sleeping lock in hardirq context. This
+> seem not to be the case in v3.2 therefore I would suggest not to take
+> this patch here because it does not fix anything.
+> 
+> Mike, do you see these deadlocks with 3.12.*-rt11 as well?
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpu/drm/nouveau/dispnv04/crtc.c     | 2 +-
- drivers/gpu/drm/nouveau/nouveau_connector.c | 2 +-
- drivers/gpu/drm/nouveau/nouveau_drm.c       | 4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+No.  I beat 64 core box hard configured both nohz_idle and nohz_full,
+the only thing that fell out was the nohz_full irqs enabled warning.
 
-diff --git a/drivers/gpu/drm/nouveau/dispnv04/crtc.c b/drivers/gpu/drm/nouveau/dispnv04/crtc.c
-index 0e3270c..1caef1f 100644
---- a/drivers/gpu/drm/nouveau/dispnv04/crtc.c
-+++ b/drivers/gpu/drm/nouveau/dispnv04/crtc.c
-@@ -1048,7 +1048,7 @@ nouveau_crtc_set_config(struct drm_mode_set *set)
- 
- 	/* get a pm reference here */
- 	ret = pm_runtime_get_sync(dev->dev);
--	if (ret < 0)
-+	if (ret < 0 && ret != -EACCES)
- 		return ret;
- 
- 	ret = drm_crtc_helper_set_config(set);
-diff --git a/drivers/gpu/drm/nouveau/nouveau_connector.c b/drivers/gpu/drm/nouveau/nouveau_connector.c
-index 1674882..cddef54 100644
---- a/drivers/gpu/drm/nouveau/nouveau_connector.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_connector.c
-@@ -255,7 +255,7 @@ nouveau_connector_detect(struct drm_connector *connector, bool force)
- 	}
- 
- 	ret = pm_runtime_get_sync(connector->dev->dev);
--	if (ret < 0)
-+	if (ret < 0 && ret != -EACCES)
- 		return conn_status;
- 
- 	i2c = nouveau_connector_ddc_detect(connector, &nv_encoder);
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-index 98a22e6..23299ca 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -670,7 +670,7 @@ nouveau_drm_open(struct drm_device *dev, struct drm_file *fpriv)
- 
- 	/* need to bring up power immediately if opening device */
- 	ret = pm_runtime_get_sync(dev->dev);
--	if (ret < 0)
-+	if (ret < 0 && ret != -EACCES)
- 		return ret;
- 
- 	get_task_comm(tmpname, current);
-@@ -753,7 +753,7 @@ long nouveau_drm_ioctl(struct file *filp,
- 	dev = file_priv->minor->dev;
- 
- 	ret = pm_runtime_get_sync(dev->dev);
--	if (ret < 0)
-+	if (ret < 0 && ret != -EACCES)
- 		return ret;
- 
- 	ret = drm_ioctl(filp, cmd, arg);
--- 
-1.8.5.3
+If Stevens patch didn't fix them, it did make them hide very well.
+
+-Mike
 
