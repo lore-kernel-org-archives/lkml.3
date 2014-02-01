@@ -1,99 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348AbaBAQuZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 11:50:25 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:43079 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320AbaBAQuW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 11:50:22 -0500
-Date: Sat, 1 Feb 2014 17:50:17 +0100
-From: Henrik Austad <henrik@austad.us>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rob Landley <rob@landley.net>, LKML doc <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mark Brown <broonie@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Gleb Natapov <gleb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] Documentation cleanup, update 00-INDEX files in
- Documentation/
-Message-ID: <20140201165017.GA7901@medea.cisco.com>
-References: <1391041675-31683-1-git-send-email-henrik@austad.us>
- <52E9D3EB.1060209@landley.net>
- <20140131142442.8030cf06d1d729c8e3a4541c@linux-foundation.org>
+	id S933365AbaBAQvN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 11:51:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932320AbaBAQvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 11:51:12 -0500
+Date: Sat, 1 Feb 2014 17:51:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Do we really need curr_target in signal_struct ?
+Message-ID: <20140201165122.GA7478@redhat.com>
+References: <1390895840.8373.2.camel@beeld> <20140128164320.GB7596@redhat.com> <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com> <20140129145535.GA12562@redhat.com> <CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com> <20140129183204.GA22808@redhat.com> <CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com> <CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140131142442.8030cf06d1d729c8e3a4541c@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/01, Rakib Mullick wrote:
+>
+> On Thu, Jan 30, 2014 at 1:02 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> > On Thu, Jan 30, 2014 at 12:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> On 01/29, Rakib Mullick wrote:
+> >
+> >>> Are you thinking that , since things are not broken, then we shouldn't
+> >>> try to do anything?
+> >>
+> >> Hmm. No.
+> >>
+> >> I am thinking that, since you misunderstood the purpose of ->curr_target,
+> >> I should probably try to argue with your patch which blindly removes this
+> >> optimization ?
+> >>
+> > Since the optimization (usages of ->curr_target) isn't perfect, so there's
+> > chance of being misunderstood. This optimization is misleading too (I think),
+> > cause curr_target don't have anything to do with wants_signal()
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+can't understand... curr_target is obviously connected to wants_signal() ?
+As I already said it caches the last wants_signal(t) thread?
 
-On Fri, Jan 31, 2014 at 02:24:42PM -0800, Andrew Morton wrote:
-> On Wed, 29 Jan 2014 22:24:11 -0600 Rob Landley <rob@landley.net> wrote:
->=20
-> > On 01/29/14 18:27, Henrik Austad wrote:
-> > > Some of the 00-INDEX files are somewhat outdated and some folders doe=
-s not
-> > > contain 00-INDEX at all. Only outdated (with the notably exception of
-> > > spi) indexes are touched here, the 169 folders without 00-INDEX has n=
-ot
-> > > been touched.
-> > >
-> > > This applies to Linus' tip (0e47c969).
-> >=20
-> > Looks like an improvement.
-> >=20
-> > Acked-by: Rob Landley <rob@landley.net>
->=20
-> Are these 00-INDEX files actually useful?  I've never opened one of
-> them in my life.
+> > and
+> >  ->curr_target is used only for this optimization and to get this optimization
+> > needs to maintain it properly, and this maintenance does have cost and if
+> > we don't get benefited too much, then it doesn't worth it (my pov).
 
-That depends. They serve as a very nice starting point when you start to=20
-dig into a particular part of the kernel. Once you're up and running=20
-however, you probably won't need the index-files all that much.
+but you need to prove this somehow.
 
-So, I'd say they serve a purpose, but not a major one. For that reason, I=
-=20
-didn't start adding index-files to those directories that don't have them.=
-=20
-So, should we start an epic bikeshedding-context and ask "should we scrap=
-=20
-all 00-INDEX files in Documentation?" ;)
+> I took a look and found that using while_each_thread()
+> can make things better than current.
 
-Either way, outdated index-files are pretty stupid, which was my motivation=
-=20
-for at least keeping them current.
+Why?
 
---=20
-Henrik Austad
+> What do you think?
 
+The patch is technically wrong, a group-wide signal doesn't check all
+threads after this change. And I do not understand why complete_signal()
+still updates ->curr_target. Plus thread_group_empty() doesn't buy too
+much if we use while_each_thread(). But this doesn't really matter, easy
+to fix.
 
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Rakib. It is not that I like ->curr_target very much. But let me repeat,
+if you want to remove this optimization you need to explain why it doesn't
+make sense. You claim that this "can make things better" without any
+argument.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+As for me - I simply do not know. This logic is very old, I am not even
+sure that the current usage of ->curr_signal matches the original intent.
+But it can obviously help in some cases, and you need to explain why we
+do not care.
 
-iEYEARECAAYFAlLtJckACgkQ6k5VT6v45ln9xgCg6GS9mw9gDI8N8tr32vsrLcCL
-m2MAoLbOOAb6pSBekaLyoXZ9v4a7JkRz
-=zIIu
------END PGP SIGNATURE-----
+So I won't argue if you submit the technically correct patch, but you
+need to convince Andrew or Ingo to take it. I think the right change in
+complete_signal() is something like below. It can be even simpler and use
+the single do/while loop, but then we need to check "group" inside that
+loop. With the change below ->curr_target can be simply removed.
 
---SLDf9lqlvOQaIe6s--
+Oleg.
+
+--- x/kernel/signal.c
++++ x/kernel/signal.c
+@@ -944,7 +944,7 @@ static inline int wants_signal(int sig, 
+ static void complete_signal(int sig, struct task_struct *p, int group)
+ {
+ 	struct signal_struct *signal = p->signal;
+-	struct task_struct *t;
++	struct task_struct *t = p;
+ 
+ 	/*
+ 	 * Now find a thread we can wake up to take the signal off the queue.
+@@ -952,32 +952,16 @@ static void complete_signal(int sig, str
+ 	 * If the main thread wants the signal, it gets first crack.
+ 	 * Probably the least surprising to the average bear.
+ 	 */
+-	if (wants_signal(sig, p))
+-		t = p;
+-	else if (!group || thread_group_empty(p))
+-		/*
+-		 * There is just one thread and it does not need to be woken.
+-		 * It will dequeue unblocked signals before it runs again.
+-		 */
+-		return;
+-	else {
+-		/*
+-		 * Otherwise try to find a suitable thread.
+-		 */
+-		t = signal->curr_target;
+-		while (!wants_signal(sig, t)) {
+-			t = next_thread(t);
+-			if (t == signal->curr_target)
+-				/*
+-				 * No thread needs to be woken.
+-				 * Any eligible threads will see
+-				 * the signal in the queue soon.
+-				 */
+-				return;
++	if (!wants_signal(sig, t)) {
++		if (group) {
++			while_each_thread(p, t) {
++				if (wants_signal(sig, t))
++					goto notify;
++			}
+ 		}
+-		signal->curr_target = t;
++		return;
+ 	}
+-
++ notify:
+ 	/*
+ 	 * Found a killable thread.  If the signal will be fatal,
+ 	 * then start taking the whole group down immediately.
+
