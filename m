@@ -1,95 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363AbaBARu4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 12:50:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60810 "EHLO
+	id S933404AbaBARvh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 12:51:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:60811 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933188AbaBARuz (ORCPT
+	with ESMTP id S933167AbaBARuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Feb 2014 12:50:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: lwn@lwn.net
-Subject: [3.8.y.z extended stable] Linux 3.8.13.17
-Date: Sat,  1 Feb 2014 09:50:49 -0800
-Message-Id: <1391277050-5977-1-git-send-email-kamal@canonical.com>
+Subject: Re: [3.8.y.z extended stable] Linux 3.8.13.17
+Date: Sat,  1 Feb 2014 09:50:50 -0800
+Message-Id: <1391277050-5977-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391277050-5977-1-git-send-email-kamal@canonical.com>
+References: <1391277050-5977-1-git-send-email-kamal@canonical.com>
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the Linux 3.8.13.17 kernel.
-
-The updated 3.8.y tree can be found at: 
-  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.8.y
-and can be browsed at:
-  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.8.y;a=shortlog
-
-The diff from v3.8.13.16 is posted as a follow-up to this email.
-
-The 3.8.y extended stable tree is maintained by the Ubuntu Kernel Team.
-For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
- -Kamal
-
--- 
- Makefile                                        |  2 +-
- arch/x86/kernel/cpu/perf_event_amd_ibs.c        | 53 +++++++++++++++++++++----
- arch/x86/kernel/entry_32.S                      |  4 +-
- arch/x86/kernel/entry_64.S                      |  2 +-
- drivers/gpu/drm/i915/intel_ddi.c                |  8 +++-
- drivers/hwmon/coretemp.c                        |  2 +-
- drivers/md/raid10.c                             | 12 +++---
- drivers/md/raid5.c                              |  4 +-
- drivers/staging/comedi/drivers/8255_pci.c       | 20 ++++++++--
- drivers/staging/comedi/drivers/addi_apci_1032.c |  4 +-
- fs/dcache.c                                     |  7 +++-
- fs/fs-writeback.c                               | 15 ++++---
- fs/nilfs2/segment.c                             | 10 +++--
- net/compat.c                                    |  9 +----
- net/rds/ib_recv.c                               |  7 ++--
- 15 files changed, 110 insertions(+), 49 deletions(-)
-
-Andreas Rohner (1):
-      nilfs2: fix segctor bug that causes file system corruption
-
-Eric W. Biederman (1):
-      vfs: In d_path don't call d_dname on a mount point
-
-Gerald Schaefer (1):
-      net: rds: fix per-cpu helper usage
-
-H Hartley Sweeten (1):
-      staging: comedi: addi_apci_1032: fix subdevice type/flags bug
-
-Ian Abbott (1):
-      staging: comedi: 8255_pci: fix for newer PCI-DIO48H
-
-Jan Kara (1):
-      writeback: Fix data corruption on NFS
-
-Jean Delvare (1):
-      hwmon: (coretemp) Fix truncated name of alarm attributes
-
-Kamal Mostafa (1):
-      Linux 3.8.13.17
-
-NeilBrown (3):
-      md/raid5: Fix possible confusion when multiple write errors occur.
-      md/raid10: fix two bugs in handling of known-bad-blocks.
-      md/raid10: fix bug when raid10 recovery fails to recover a block.
-
-PaX Team (1):
-      x86, x32: Correct invalid use of user timespec in the kernel
-
-Paulo Zanoni (1):
-      drm/i915: fix DDI PLLs HW state readout code
-
-Robert Richter (1):
-      perf/x86/amd/ibs: Fix waking up from S3 for AMD family 10h
-
-Steven Rostedt (1):
-      ftrace/x86: Load ftrace_ops in parameter not the variable holding it
-
+diff --git a/Makefile b/Makefile
+index 7d89342..54a09a9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 3
+ PATCHLEVEL = 8
+ SUBLEVEL = 13
+-EXTRAVERSION = .16
++EXTRAVERSION = .17
+ NAME = Remoralised Urchins Update
+ 
+ # *DOCUMENTATION*
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index 6336bcb..0798e5f 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/ptrace.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <asm/apic.h>
+ 
+@@ -816,6 +817,18 @@ out:
+ 	return ret;
+ }
+ 
++static void ibs_eilvt_setup(void)
++{
++	/*
++	 * Force LVT offset assignment for family 10h: The offsets are
++	 * not assigned by the BIOS for this family, so the OS is
++	 * responsible for doing it. If the OS assignment fails, fall
++	 * back to BIOS settings and try to setup this.
++	 */
++	if (boot_cpu_data.x86 == 0x10)
++		force_ibs_eilvt_setup();
++}
++
+ static inline int get_ibs_lvt_offset(void)
+ {
+ 	u64 val;
+@@ -851,6 +864,36 @@ static void clear_APIC_ibs(void *dummy)
+ 		setup_APIC_eilvt(offset, 0, APIC_EILVT_MSG_FIX, 1);
+ }
+ 
++#ifdef CONFIG_PM
++
++static int perf_ibs_suspend(void)
++{
++	clear_APIC_ibs(NULL);
++	return 0;
++}
++
++static void perf_ibs_resume(void)
++{
++	ibs_eilvt_setup();
++	setup_APIC_ibs(NULL);
++}
++
++static struct syscore_ops perf_ibs_syscore_ops = {
++	.resume		= perf_ibs_resume,
++	.suspend	= perf_ibs_suspend,
++};
++
++static void perf_ibs_pm_init(void)
++{
++	register_syscore_ops(&perf_ibs_syscore_ops);
++}
++
++#else
++
++static inline void perf_ibs_pm_init(void) { }
++
++#endif
++
+ static int __cpuinit
+ perf_ibs_cpu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+@@ -877,18 +920,12 @@ static __init int amd_ibs_init(void)
+ 	if (!caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	/*
+-	 * Force LVT offset assignment for family 10h: The offsets are
+-	 * not assigned by the BIOS for this family, so the OS is
+-	 * responsible for doing it. If the OS assignment fails, fall
+-	 * back to BIOS settings and try to setup this.
+-	 */
+-	if (boot_cpu_data.x86 == 0x10)
+-		force_ibs_eilvt_setup();
++	ibs_eilvt_setup();
+ 
+ 	if (!ibs_eilvt_valid())
+ 		goto out;
+ 
++	perf_ibs_pm_init();
+ 	get_online_cpus();
+ 	ibs_caps = caps;
+ 	/* make ibs_caps visible to other cpus: */
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 6ed91d9..1d7fdbe 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1113,7 +1113,7 @@ ENTRY(ftrace_caller)
+ 	pushl $0	/* Pass NULL as regs pointer */
+ 	movl 4*4(%esp), %eax
+ 	movl 0x4(%ebp), %edx
+-	leal function_trace_op, %ecx
++	movl function_trace_op, %ecx
+ 	subl $MCOUNT_INSN_SIZE, %eax
+ 
+ .globl ftrace_call
+@@ -1171,7 +1171,7 @@ ENTRY(ftrace_regs_caller)
+ 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
+ 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
+ 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
+-	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
++	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+ 	pushl %esp		/* Save pt_regs as 4th parameter */
+ 
+ GLOBAL(ftrace_regs_call)
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index cb3c591..310b270 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -88,7 +88,7 @@ END(function_hook)
+ 	MCOUNT_SAVE_FRAME \skip
+ 
+ 	/* Load the ftrace_ops into the 3rd parameter */
+-	leaq function_trace_op, %rdx
++	movq function_trace_op(%rip), %rdx
+ 
+ 	/* Load ip into the first parameter */
+ 	movq RIP(%rsp), %rdi
+diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
+index b8e53d9..6f09de3 100644
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -1178,12 +1178,18 @@ void intel_ddi_setup_hw_pll_state(struct drm_device *dev)
+ 	enum pipe pipe;
+ 	struct intel_crtc *intel_crtc;
+ 
++	dev_priv->ddi_plls.spll_refcount = 0;
++	dev_priv->ddi_plls.wrpll1_refcount = 0;
++	dev_priv->ddi_plls.wrpll2_refcount = 0;
++
+ 	for_each_pipe(pipe) {
+ 		intel_crtc =
+ 			to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
+ 
+-		if (!intel_crtc->active)
++		if (!intel_crtc->active) {
++			intel_crtc->ddi_pll_sel = PORT_CLK_SEL_NONE;
+ 			continue;
++		}
+ 
+ 		intel_crtc->ddi_pll_sel = intel_ddi_get_crtc_pll(dev_priv,
+ 								 pipe);
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index d64923d..67c05db 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -52,7 +52,7 @@ MODULE_PARM_DESC(tjmax, "TjMax value in degrees Celsius");
+ 
+ #define BASE_SYSFS_ATTR_NO	2	/* Sysfs Base attr no for coretemp */
+ #define NUM_REAL_CORES		32	/* Number of Real cores per cpu */
+-#define CORETEMP_NAME_LENGTH	17	/* String Length of attrs */
++#define CORETEMP_NAME_LENGTH	19	/* String Length of attrs */
+ #define MAX_CORE_ATTRS		4	/* Maximum no of basic attrs */
+ #define TOTAL_ATTRS		(MAX_CORE_ATTRS + 1)
+ #define MAX_CORE_DATA		(NUM_REAL_CORES + BASE_SYSFS_ATTR_NO)
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index b8f5688..dfd6eba 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1276,7 +1276,7 @@ read_again:
+ 			/* Could not read all from this device, so we will
+ 			 * need another r10_bio.
+ 			 */
+-			sectors_handled = (r10_bio->sectors + max_sectors
++			sectors_handled = (r10_bio->sector + max_sectors
+ 					   - bio->bi_sector);
+ 			r10_bio->sectors = max_sectors;
+ 			spin_lock_irq(&conf->device_lock);
+@@ -1284,7 +1284,7 @@ read_again:
+ 				bio->bi_phys_segments = 2;
+ 			else
+ 				bio->bi_phys_segments++;
+-			spin_unlock(&conf->device_lock);
++			spin_unlock_irq(&conf->device_lock);
+ 			/* Cannot call generic_make_request directly
+ 			 * as that will be queued in __generic_make_request
+ 			 * and subsequent mempool_alloc might block
+@@ -3153,10 +3153,6 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 			if (j == conf->copies) {
+ 				/* Cannot recover, so abort the recovery or
+ 				 * record a bad block */
+-				put_buf(r10_bio);
+-				if (rb2)
+-					atomic_dec(&rb2->remaining);
+-				r10_bio = rb2;
+ 				if (any_working) {
+ 					/* problem is that there are bad blocks
+ 					 * on other device(s)
+@@ -3188,6 +3184,10 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 					mirror->recovery_disabled
+ 						= mddev->recovery_disabled;
+ 				}
++				put_buf(r10_bio);
++				if (rb2)
++					atomic_dec(&rb2->remaining);
++				r10_bio = rb2;
+ 				break;
+ 			}
+ 		}
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 51887b3..2ffa02c 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3420,7 +3420,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+ 			 */
+ 			set_bit(R5_Insync, &dev->flags);
+ 
+-		if (rdev && test_bit(R5_WriteError, &dev->flags)) {
++		if (test_bit(R5_WriteError, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+@@ -3433,7 +3433,7 @@ static void analyse_stripe(struct stripe_head *sh, struct stripe_head_state *s)
+ 			} else
+ 				clear_bit(R5_WriteError, &dev->flags);
+ 		}
+-		if (rdev && test_bit(R5_MadeGood, &dev->flags)) {
++		if (test_bit(R5_MadeGood, &dev->flags)) {
+ 			/* This flag does not apply to '.replacement'
+ 			 * only to .rdev, so make sure to check that*/
+ 			struct md_rdev *rdev2 = rcu_dereference(
+diff --git a/drivers/staging/comedi/drivers/8255_pci.c b/drivers/staging/comedi/drivers/8255_pci.c
+index e0a7952..92ee23e 100644
+--- a/drivers/staging/comedi/drivers/8255_pci.c
++++ b/drivers/staging/comedi/drivers/8255_pci.c
+@@ -122,7 +122,7 @@ static const struct pci_8255_boardinfo pci_8255_boards[] = {
+ 		.name		= "cb_pci-dio48h",
+ 		.vendor		= PCI_VENDOR_ID_CB,
+ 		.device		= PCI_DEVICE_ID_CB_PCIDIO48H,
+-		.dio_badr	= 1,
++		.dio_badr	= 1,	/* only for older boards */
+ 		.n_8255		= 2,
+ 	}, {
+ 		.name		= "cb_pci-dio96h",
+@@ -224,6 +224,7 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
+ 	unsigned long len;
+ 	int ret;
+ 	int i;
++	int dio_badr;
+ 
+ 	board = pci_8255_find_boardinfo(dev, pcidev);
+ 	if (!board)
+@@ -239,8 +240,21 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
+ 	ret = comedi_pci_enable(pcidev, dev->board_name);
+ 	if (ret)
+ 		return ret;
+-	iobase = pci_resource_start(pcidev, board->dio_badr);
+-	len = pci_resource_len(pcidev, board->dio_badr);
++	dio_badr = board->dio_badr;
++	/*
++	 * For Measurement Computing / ComputerBoards PCI-DIO48H, use the
++	 * PCI BAR 2 region, if non-zero length, else use the PCI BAR 1 region
++	 * from the board entry.  This is because the board was redesigned to
++	 * use a different PCI interface chip, with the user registers in a
++	 * different PCI BAR region.
++	 */
++	if (pcidev->vendor == PCI_VENDOR_ID_CB &&
++	    pcidev->device == PCI_DEVICE_ID_CB_PCIDIO48H &&
++	    pci_resource_len(pcidev, 2))
++		dio_badr = 2;
++
++	iobase = pci_resource_start(pcidev, dio_badr);
++	len = pci_resource_len(pcidev, dio_badr);
+ 
+ 	if (board->is_mmio) {
+ 		devpriv->mmio_base = ioremap(iobase, len);
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1032.c b/drivers/staging/comedi/drivers/addi_apci_1032.c
+index 7f94242..97de74e 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1032.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1032.c
+@@ -331,8 +331,8 @@ static int apci1032_auto_attach(struct comedi_device *dev,
+ 	s = &dev->subdevices[1];
+ 	if (dev->irq) {
+ 		dev->read_subdev = s;
+-		s->type		= COMEDI_SUBD_DI | SDF_CMD_READ;
+-		s->subdev_flags	= SDF_READABLE;
++		s->type		= COMEDI_SUBD_DI;
++		s->subdev_flags	= SDF_READABLE | SDF_CMD_READ;
+ 		s->n_chan	= 1;
+ 		s->maxdata	= 1;
+ 		s->range_table	= &range_digital;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index de73da2..675e5d3 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2710,8 +2710,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 	 * thus don't need to be hashed.  They also don't need a name until a
+ 	 * user wants to identify the object in /proc/pid/fd/.  The little hack
+ 	 * below allows us to generate a name for these objects on demand:
++	 *
++	 * Some pseudo inodes are mountable.  When they are mounted
++	 * path->dentry == path->mnt->mnt_root.  In that case don't call d_dname
++	 * and instead have d_path return the mounted path.
+ 	 */
+-	if (path->dentry->d_op && path->dentry->d_op->d_dname)
++	if (path->dentry->d_op && path->dentry->d_op->d_dname &&
++	    (!IS_ROOT(path->dentry) || path->dentry != path->mnt->mnt_root))
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 310972b..17eaad5 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -517,13 +517,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+ 	}
+ 	WARN_ON(inode->i_state & I_SYNC);
+ 	/*
+-	 * Skip inode if it is clean. We don't want to mess with writeback
+-	 * lists in this function since flusher thread may be doing for example
+-	 * sync in parallel and if we move the inode, it could get skipped. So
+-	 * here we make sure inode is on some writeback list and leave it there
+-	 * unless we have completely cleaned the inode.
++	 * Skip inode if it is clean and we have no outstanding writeback in
++	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
++	 * function since flusher thread may be doing for example sync in
++	 * parallel and if we move the inode, it could get skipped. So here we
++	 * make sure inode is on some writeback list and leave it there unless
++	 * we have completely cleaned the inode.
+ 	 */
+-	if (!(inode->i_state & I_DIRTY))
++	if (!(inode->i_state & I_DIRTY) &&
++	    (wbc->sync_mode != WB_SYNC_ALL ||
++	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
+ 		goto out;
+ 	inode->i_state |= I_SYNC;
+ 	spin_unlock(&inode->i_lock);
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index cbd6618..958a5b5 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -1440,17 +1440,19 @@ static int nilfs_segctor_collect(struct nilfs_sc_info *sci,
+ 
+ 		nilfs_clear_logs(&sci->sc_segbufs);
+ 
+-		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
+-		if (unlikely(err))
+-			return err;
+-
+ 		if (sci->sc_stage.flags & NILFS_CF_SUFREED) {
+ 			err = nilfs_sufile_cancel_freev(nilfs->ns_sufile,
+ 							sci->sc_freesegs,
+ 							sci->sc_nfreesegs,
+ 							NULL);
+ 			WARN_ON(err); /* do not happen */
++			sci->sc_stage.flags &= ~NILFS_CF_SUFREED;
+ 		}
++
++		err = nilfs_segctor_extend_segments(sci, nilfs, nadd);
++		if (unlikely(err))
++			return err;
++
+ 		nadd = min_t(int, nadd << 1, SC_MAX_SEGDELTA);
+ 		sci->sc_stage = prev_stage;
+ 	}
+diff --git a/net/compat.c b/net/compat.c
+index dd32e34..f50161f 100644
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -780,21 +780,16 @@ asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
+ 	if (flags & MSG_CMSG_COMPAT)
+ 		return -EINVAL;
+ 
+-	if (COMPAT_USE_64BIT_TIME)
+-		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+-				      flags | MSG_CMSG_COMPAT,
+-				      (struct timespec *) timeout);
+-
+ 	if (timeout == NULL)
+ 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				      flags | MSG_CMSG_COMPAT, NULL);
+ 
+-	if (get_compat_timespec(&ktspec, timeout))
++	if (compat_get_timespec(&ktspec, timeout))
+ 		return -EFAULT;
+ 
+ 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
+ 				   flags | MSG_CMSG_COMPAT, &ktspec);
+-	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
++	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
+ 		datagrams = -EFAULT;
+ 
+ 	return datagrams;
+diff --git a/net/rds/ib_recv.c b/net/rds/ib_recv.c
+index 8eb9501..b7ebe23 100644
+--- a/net/rds/ib_recv.c
++++ b/net/rds/ib_recv.c
+@@ -421,8 +421,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 				 struct rds_ib_refill_cache *cache)
+ {
+ 	unsigned long flags;
+-	struct list_head *old;
+-	struct list_head __percpu *chpfirst;
++	struct list_head *old, *chpfirst;
+ 
+ 	local_irq_save(flags);
+ 
+@@ -432,7 +431,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 	else /* put on front */
+ 		list_add_tail(new_item, chpfirst);
+ 
+-	__this_cpu_write(chpfirst, new_item);
++	__this_cpu_write(cache->percpu->first, new_item);
+ 	__this_cpu_inc(cache->percpu->count);
+ 
+ 	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
+@@ -452,7 +451,7 @@ static void rds_ib_recv_cache_put(struct list_head *new_item,
+ 	} while (old);
+ 
+ 
+-	__this_cpu_write(chpfirst, NULL);
++	__this_cpu_write(cache->percpu->first, NULL);
+ 	__this_cpu_write(cache->percpu->count, 0);
+ end:
+ 	local_irq_restore(flags);
