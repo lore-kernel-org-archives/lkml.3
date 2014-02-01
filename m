@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaBAUOF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 15:14:05 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:59731 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaBAUOC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 15:14:02 -0500
-Date: Sat, 1 Feb 2014 15:13:59 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: "Brown, Len" <len.brown@intel.com>
-cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Preeti Murthy <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: RE: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C948452D3706@FMSMSX106.amr.corp.intel.com>
-Message-ID: <alpine.LFD.2.11.1402011502070.2312@knanqh.ubzr>
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net>
- <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com> <52EBC33A.6080101@linaro.org>
- <52EBC645.2040607@linux.intel.com> <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr> <1A7043D5F58CCB44A599DFD55ED4C948452D34DC@FMSMSX106.amr.corp.intel.com> <alpine.LFD.2.11.1402011028400.2312@knanqh.ubzr>
- <1A7043D5F58CCB44A599DFD55ED4C948452D3706@FMSMSX106.amr.corp.intel.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S933205AbaBAUP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 15:15:28 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59059 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932074AbaBAUP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 15:15:27 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] ARM: mm: Fix the memblock allocation for LPAE machines
+Date: Sat, 1 Feb 2014 15:14:47 -0500
+Message-ID: <1391285687-20534-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 1 Feb 2014, Brown, Len wrote:
+Commit ad6492b8 added much needed memblock_virt_alloc_low() and further
+commit 07bacb3 {memblock, bootmem: restore goal for alloc_low} fixed the
+issue with low memory limit thansk to Yinghai. But even after all these fixes,
+there is still one case where the limit check done with ARCH_LOW_ADDRESS_LIMIT
+for low memory fails. Russell pointed out the issue with 32 bit LPAE machines
+in below thread.
+	https://lkml.org/lkml/2014/1/28/364
 
-> > And your point is?
-> 
-> It is a bad idea for an individual CPU to track the C-state
-> of another CPU, which can change the cycle after it was checked.
+Since on some LPAE machines where memory start address is beyond 4GB,
+the low memory marker in memblock will be set to default
+ARCH_LOW_ADDRESS_LIMIT which is wrong. We can fix this by letting
+architectures set the ARCH_LOW_ADDRESS_LIMIT using another export
+similar to memblock_set_current_limit() but am not sure whether
+its worth the trouble. Tell me if you think otherwise.
 
-Absolutely.  And I'm far from advocating we do this either.
+Rather am just trying to fix that one broken case using memblock_virt_alloc()
+in setup code since the memblock.current_limit is updated appropriately
+makes it work on all ARM 32 bit machines.
 
-> We know it is a bad idea because we used to do it,
-> until we realized code here can easily impact the
-> performance critical path.
-> 
-> In general, it is the OS's job to communicate constraints
-> to the HW, and the HW to act on them.  Not all HW is smart,
-> so sometimes the OS has to do more hand-holding -- but
-> less is more.
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Strashko, Grygorii <grygorii.strashko@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ arch/arm/kernel/setup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Less is more indeed.  I'm certainly a big fan of that principle.
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index b0df976..1e8b030 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -731,7 +731,7 @@ static void __init request_standard_resources(const struct machine_desc *mdesc)
+ 	kernel_data.end     = virt_to_phys(_end - 1);
+ 
+ 	for_each_memblock(memory, region) {
+-		res = memblock_virt_alloc_low(sizeof(*res), 0);
++		res = memblock_virt_alloc(sizeof(*res), 0);
+ 		res->name  = "System RAM";
+ 		res->start = __pfn_to_phys(memblock_region_memory_base_pfn(region));
+ 		res->end = __pfn_to_phys(memblock_region_memory_end_pfn(region)) - 1;
+-- 
+1.7.9.5
 
-Just so you understand more about the context we need to care for on 
-ARM, I'd invite you to have a look at 
-Documentation/arm/cluster-pm-race-avoidance.txt.
-
-I'm advocating we do _not_ track everything at the scheduler domain 
-simply because some cluster states are possible only if all the CPUs in 
-a cluster are idle, and that idleness is already tracked by the 
-scheduler at the scheduling domain level.  So the information we don't 
-update can already be inferred indirectly and cheaply with the 
-information in place today.
-
-
-Nicolas
