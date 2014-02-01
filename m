@@ -1,391 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaBAXkX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 18:40:23 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:44043 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaBAXkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 18:40:22 -0500
+	id S1753697AbaBAXk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 18:40:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36695 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753205AbaBAXkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 18:40:51 -0500
+Message-ID: <52ED85DD.6020402@zytor.com>
+Date: Sat, 01 Feb 2014 15:40:13 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1391268756-10766-2-git-send-email-stefani@seibold.net>
-References: <1391268756-10766-1-git-send-email-stefani@seibold.net> <1391268756-10766-2-git-send-email-stefani@seibold.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 1 Feb 2014 15:40:00 -0800
-Message-ID: <CALCETrVJK8dUecgj6r33VO_o4+wZJ1atHmETxdChmQHk1wt1iA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Make vsyscall_gtod_data handling x86 generic
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
+To: George Spelvin <linux@horizon.com>, torvalds@linux-foundation.org
+CC: jack@suse.cz, linux-kernel@vger.kernel.org, maarten-baert@hotmail.com,
+        mingo@kernel.org, nate@thatsmathematics.com, priikone@iki.fi,
+        sbsiddha@gmail.com, stable@vger.kernel.org, tglx@linutronix.de,
+        x86@kernel.org
+Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt
+ flag
+References: <20140201211710.20281.qmail@science.horizon.com>
+In-Reply-To: <20140201211710.20281.qmail@science.horizon.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 1, 2014 at 7:32 AM,  <stefani@seibold.net> wrote:
-> From: Stefani Seibold <stefani@seibold.net>
->
-> This patch move the vsyscall_gtod_data handling out of vsyscall_64.c
-> into an additonal file vsyscall_gtod.c to make the functionality
-> available for x86 32 bit kernel.
->
-> It also adds a new vsyscall_32.c which setup the VVAR page.
->
-> Signed-off-by: Stefani Seibold <stefani@seibold.net>
+On 02/01/2014 01:17 PM, George Spelvin wrote:
+>> .. which *does* actually bring up something that might work, and might
+>> be a good idea: remove the "restore math state or set TS" from the
+>> normal kernel paths *entirely*, and move it to the "return to user
+>> space" phase.
+> 
+> This definitely seems much more sensible.  For processors without
+> optimized context save/restore, the decision whether to restore eagerly
+> is best made once the kernel has decided what it's returning *to*.
+> 
+> From an interrupt handler, there are now three cases:
+> 1) FPU not in use, available for immediate use.
+> 2) FPU in use by user-space; save to <location> before using.
+> 3) FPU in use by kernel code; may not be used (unless we want
+>    to add nested FPU state save hair).
+> 
 
-Acked-by: Andy Lutomirski <luto@amacapital.net>
+OK, let's circle back for a bit.  We have an active bug, and we clearly
+have a lot of restructuring that could/should be done.  We need to fix
+the bug first; if we're going to a bunch of restructuring then that
+ought to be separate.  The first bit is how we fix the immediate bug.
 
-...with the caveat that it would be even better if you moved vgetcpu
-over and called this thing vvar.c instead of vsyscall_gtod.c.
+	-hpa
 
-> ---
->  arch/x86/Kconfig                   |  4 +--
->  arch/x86/include/asm/clocksource.h |  4 ---
->  arch/x86/include/asm/fixmap.h      |  2 ++
->  arch/x86/include/asm/vvar.h        |  4 +++
->  arch/x86/kernel/Makefile           |  3 +-
->  arch/x86/kernel/hpet.c             |  4 ---
->  arch/x86/kernel/setup.c            |  2 --
->  arch/x86/kernel/tsc.c              |  2 --
->  arch/x86/kernel/vmlinux.lds.S      |  3 --
->  arch/x86/kernel/vsyscall_32.c      | 24 +++++++++++++++
->  arch/x86/kernel/vsyscall_64.c      | 44 ----------------------------
->  arch/x86/kernel/vsyscall_gtod.c    | 60 ++++++++++++++++++++++++++++++++++++++
->  12 files changed, 94 insertions(+), 62 deletions(-)
->  create mode 100644 arch/x86/kernel/vsyscall_32.c
->  create mode 100644 arch/x86/kernel/vsyscall_gtod.c
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 940e50e..b556f00 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -107,9 +107,9 @@ config X86
->         select HAVE_ARCH_SOFT_DIRTY
->         select CLOCKSOURCE_WATCHDOG
->         select GENERIC_CLOCKEVENTS
-> -       select ARCH_CLOCKSOURCE_DATA if X86_64
-> +       select ARCH_CLOCKSOURCE_DATA
->         select GENERIC_CLOCKEVENTS_BROADCAST if X86_64 || (X86_32 && X86_LOCAL_APIC)
-> -       select GENERIC_TIME_VSYSCALL if X86_64
-> +       select GENERIC_TIME_VSYSCALL
->         select KTIME_SCALAR if X86_32
->         select GENERIC_STRNCPY_FROM_USER
->         select GENERIC_STRNLEN_USER
-> diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
-> index 16a57f4..eda81dc 100644
-> --- a/arch/x86/include/asm/clocksource.h
-> +++ b/arch/x86/include/asm/clocksource.h
-> @@ -3,8 +3,6 @@
->  #ifndef _ASM_X86_CLOCKSOURCE_H
->  #define _ASM_X86_CLOCKSOURCE_H
->
-> -#ifdef CONFIG_X86_64
-> -
->  #define VCLOCK_NONE 0  /* No vDSO clock available.     */
->  #define VCLOCK_TSC  1  /* vDSO should use vread_tsc.   */
->  #define VCLOCK_HPET 2  /* vDSO should use vread_hpet.  */
-> @@ -14,6 +12,4 @@ struct arch_clocksource_data {
->         int vclock_mode;
->  };
->
-> -#endif /* CONFIG_X86_64 */
-> -
->  #endif /* _ASM_X86_CLOCKSOURCE_H */
-> diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-> index 7252cd3..504c04a 100644
-> --- a/arch/x86/include/asm/fixmap.h
-> +++ b/arch/x86/include/asm/fixmap.h
-> @@ -74,6 +74,8 @@ extern unsigned long __FIXADDR_TOP;
->  enum fixed_addresses {
->  #ifdef CONFIG_X86_32
->         FIX_HOLE,
-> +       VSYSCALL_HPET,
-> +       VVAR_PAGE,
->         FIX_VDSO,
->  #else
->         VSYSCALL_LAST_PAGE,
-> diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-> index d76ac40..c442782 100644
-> --- a/arch/x86/include/asm/vvar.h
-> +++ b/arch/x86/include/asm/vvar.h
-> @@ -17,7 +17,11 @@
->   */
->
->  /* Base address of vvars.  This is not ABI. */
-> +#ifdef CONFIG_X86_64
->  #define VVAR_ADDRESS (-10*1024*1024 - 4096)
-> +#else
-> +#define VVAR_ADDRESS 0xffffd000
-> +#endif
->
->  #if defined(__VVAR_KERNEL_LDS)
->
-> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-> index cb648c8..3282eda 100644
-> --- a/arch/x86/kernel/Makefile
-> +++ b/arch/x86/kernel/Makefile
-> @@ -26,7 +26,8 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
->  obj-y                  += probe_roms.o
->  obj-$(CONFIG_X86_32)   += i386_ksyms_32.o
->  obj-$(CONFIG_X86_64)   += sys_x86_64.o x8664_ksyms_64.o
-> -obj-y                  += syscall_$(BITS).o
-> +obj-y                  += syscall_$(BITS).o vsyscall_gtod.o
-> +obj-$(CONFIG_X86_32)   += vsyscall_32.o
->  obj-$(CONFIG_X86_64)   += vsyscall_64.o
->  obj-$(CONFIG_X86_64)   += vsyscall_emu_64.o
->  obj-$(CONFIG_SYSFS)    += ksysfs.o
-> diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-> index da85a8e..54263f0 100644
-> --- a/arch/x86/kernel/hpet.c
-> +++ b/arch/x86/kernel/hpet.c
-> @@ -74,9 +74,7 @@ static inline void hpet_writel(unsigned int d, unsigned int a)
->  static inline void hpet_set_mapping(void)
->  {
->         hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
-> -#ifdef CONFIG_X86_64
->         __set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
-> -#endif
->  }
->
->  static inline void hpet_clear_mapping(void)
-> @@ -752,9 +750,7 @@ static struct clocksource clocksource_hpet = {
->         .mask           = HPET_MASK,
->         .flags          = CLOCK_SOURCE_IS_CONTINUOUS,
->         .resume         = hpet_resume_counter,
-> -#ifdef CONFIG_X86_64
->         .archdata       = { .vclock_mode = VCLOCK_HPET },
-> -#endif
->  };
->
->  static int hpet_clocksource_register(void)
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 06853e6..56ff330 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1182,9 +1182,7 @@ void __init setup_arch(char **cmdline_p)
->
->         tboot_probe();
->
-> -#ifdef CONFIG_X86_64
->         map_vsyscall();
-> -#endif
->
->         generic_apic_probe();
->
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index 19e5adb..f49d1a2 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -988,9 +988,7 @@ static struct clocksource clocksource_tsc = {
->         .mask                   = CLOCKSOURCE_MASK(64),
->         .flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
->                                   CLOCK_SOURCE_MUST_VERIFY,
-> -#ifdef CONFIG_X86_64
->         .archdata               = { .vclock_mode = VCLOCK_TSC },
-> -#endif
->  };
->
->  void mark_tsc_unstable(char *reason)
-> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-> index da6b35a..1d4897b 100644
-> --- a/arch/x86/kernel/vmlinux.lds.S
-> +++ b/arch/x86/kernel/vmlinux.lds.S
-> @@ -147,7 +147,6 @@ SECTIONS
->                 _edata = .;
->         } :data
->
-> -#ifdef CONFIG_X86_64
->
->         . = ALIGN(PAGE_SIZE);
->         __vvar_page = .;
-> @@ -169,8 +168,6 @@ SECTIONS
->
->         . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
->
-> -#endif /* CONFIG_X86_64 */
-> -
->         /* Init code and data - will be freed after init */
->         . = ALIGN(PAGE_SIZE);
->         .init.begin : AT(ADDR(.init.begin) - LOAD_OFFSET) {
-> diff --git a/arch/x86/kernel/vsyscall_32.c b/arch/x86/kernel/vsyscall_32.c
-> new file mode 100644
-> index 0000000..f541dfa
-> --- /dev/null
-> +++ b/arch/x86/kernel/vsyscall_32.c
-> @@ -0,0 +1,24 @@
-> +/*
-> + *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-> + *  Copyright 2003 Andi Kleen, SuSE Labs.
-> + *
-> + *  Modified for x86 32 bit arch by Stefani Seibold <stefani@seibold.net>
-> + *
-> + *  Thanks to hpa@transmeta.com for some useful hint.
-> + *  Special thanks to Ingo Molnar for his early experience with
-> + *  a different vsyscall implementation for Linux/IA32 and for the name.
-> + *
-> + */
-> +
-> +#include <asm/vsyscall.h>
-> +#include <asm/pgtable.h>
-> +#include <asm/fixmap.h>
-> +
-> +void __init map_vsyscall(void)
-> +{
-> +       extern char __vvar_page;
-> +       unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
-> +
-> +       __set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
-> +}
-> +
-> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-> index 1f96f93..50622ed 100644
-> --- a/arch/x86/kernel/vsyscall_64.c
-> +++ b/arch/x86/kernel/vsyscall_64.c
-> @@ -47,14 +47,12 @@
->  #include <asm/segment.h>
->  #include <asm/desc.h>
->  #include <asm/topology.h>
-> -#include <asm/vgtod.h>
->  #include <asm/traps.h>
->
->  #define CREATE_TRACE_POINTS
->  #include "vsyscall_trace.h"
->
->  DEFINE_VVAR(int, vgetcpu_mode);
-> -DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
->
->  static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
->
-> @@ -77,48 +75,6 @@ static int __init vsyscall_setup(char *str)
->  }
->  early_param("vsyscall", vsyscall_setup);
->
-> -void update_vsyscall_tz(void)
-> -{
-> -       vsyscall_gtod_data.sys_tz = sys_tz;
-> -}
-> -
-> -void update_vsyscall(struct timekeeper *tk)
-> -{
-> -       struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
-> -
-> -       write_seqcount_begin(&vdata->seq);
-> -
-> -       /* copy vsyscall data */
-> -       vdata->clock.vclock_mode        = tk->clock->archdata.vclock_mode;
-> -       vdata->clock.cycle_last         = tk->clock->cycle_last;
-> -       vdata->clock.mask               = tk->clock->mask;
-> -       vdata->clock.mult               = tk->mult;
-> -       vdata->clock.shift              = tk->shift;
-> -
-> -       vdata->wall_time_sec            = tk->xtime_sec;
-> -       vdata->wall_time_snsec          = tk->xtime_nsec;
-> -
-> -       vdata->monotonic_time_sec       = tk->xtime_sec
-> -                                       + tk->wall_to_monotonic.tv_sec;
-> -       vdata->monotonic_time_snsec     = tk->xtime_nsec
-> -                                       + (tk->wall_to_monotonic.tv_nsec
-> -                                               << tk->shift);
-> -       while (vdata->monotonic_time_snsec >=
-> -                                       (((u64)NSEC_PER_SEC) << tk->shift)) {
-> -               vdata->monotonic_time_snsec -=
-> -                                       ((u64)NSEC_PER_SEC) << tk->shift;
-> -               vdata->monotonic_time_sec++;
-> -       }
-> -
-> -       vdata->wall_time_coarse.tv_sec  = tk->xtime_sec;
-> -       vdata->wall_time_coarse.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
-> -
-> -       vdata->monotonic_time_coarse    = timespec_add(vdata->wall_time_coarse,
-> -                                                       tk->wall_to_monotonic);
-> -
-> -       write_seqcount_end(&vdata->seq);
-> -}
-> -
->  static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
->                               const char *message)
->  {
-> diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
-> new file mode 100644
-> index 0000000..91862a4
-> --- /dev/null
-> +++ b/arch/x86/kernel/vsyscall_gtod.c
-> @@ -0,0 +1,60 @@
-> +/*
-> + *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-> + *  Copyright 2003 Andi Kleen, SuSE Labs.
-> + *
-> + *  Modified for x86 32 bit architecture by
-> + *  Stefani Seibold <stefani@seibold.net>
-> + *
-> + *  Thanks to hpa@transmeta.com for some useful hint.
-> + *  Special thanks to Ingo Molnar for his early experience with
-> + *  a different vsyscall implementation for Linux/IA32 and for the name.
-> + *
-> + */
-> +
-> +#include <linux/timekeeper_internal.h>
-> +#include <asm/vgtod.h>
-> +
-> +DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
-> +
-> +void update_vsyscall_tz(void)
-> +{
-> +       vsyscall_gtod_data.sys_tz = sys_tz;
-> +}
-> +
-> +void update_vsyscall(struct timekeeper *tk)
-> +{
-> +       struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
-> +
-> +       write_seqcount_begin(&vdata->seq);
-> +
-> +       /* copy vsyscall data */
-> +       vdata->clock.vclock_mode        = tk->clock->archdata.vclock_mode;
-> +       vdata->clock.cycle_last         = tk->clock->cycle_last;
-> +       vdata->clock.mask               = tk->clock->mask;
-> +       vdata->clock.mult               = tk->mult;
-> +       vdata->clock.shift              = tk->shift;
-> +
-> +       vdata->wall_time_sec            = tk->xtime_sec;
-> +       vdata->wall_time_snsec          = tk->xtime_nsec;
-> +
-> +       vdata->monotonic_time_sec       = tk->xtime_sec
-> +                                       + tk->wall_to_monotonic.tv_sec;
-> +       vdata->monotonic_time_snsec     = tk->xtime_nsec
-> +                                       + (tk->wall_to_monotonic.tv_nsec
-> +                                               << tk->shift);
-> +       while (vdata->monotonic_time_snsec >=
-> +                                       (((u64)NSEC_PER_SEC) << tk->shift)) {
-> +               vdata->monotonic_time_snsec -=
-> +                                       ((u64)NSEC_PER_SEC) << tk->shift;
-> +               vdata->monotonic_time_sec++;
-> +       }
-> +
-> +       vdata->wall_time_coarse.tv_sec  = tk->xtime_sec;
-> +       vdata->wall_time_coarse.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
-> +
-> +       vdata->monotonic_time_coarse    = timespec_add(vdata->wall_time_coarse,
-> +                                                       tk->wall_to_monotonic);
-> +
-> +       write_seqcount_end(&vdata->seq);
-> +}
-> +
-> --
-> 1.8.5.3
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
