@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933375AbaBASKk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 13:10:40 -0500
-Received: from mail-we0-f193.google.com ([74.125.82.193]:46243 "EHLO
-	mail-we0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933242AbaBASKj (ORCPT
+	id S933400AbaBASS1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 13:18:27 -0500
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:39539 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933256AbaBASS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 13:10:39 -0500
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-To: Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: [PATCH] mtd: nand: fix erronous read_buf call in nand_write_page_raw_syndrome
-Date: Sat,  1 Feb 2014 19:10:28 +0100
-Message-Id: <1391278228-12701-1-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 1 Feb 2014 13:18:26 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au4UAF857VJbsmYT/2dsb2JhbABZKIJkgkOBDrsVAQUCAoEHF3SCJQEBBAE6HCMFCwgDGC45HgYTh30MAc0AF48JB4Q4AQOJR45iAYpPh1KDOi+BLAc
+Date: Sat, 1 Feb 2014 18:19:39 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/1] ext2: Add __init macro to init_inodecache
+Message-Id: <20140201181939.c38e6f99592e08bd46e30c5c@skynet.be>
+In-Reply-To: <20140201175334.GJ20939@parisc-linux.org>
+References: <20140201160202.a3ac96c613754013300b462d@skynet.be>
+	<20140201175334.GJ20939@parisc-linux.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read_buf is called in place of write_buf in the
-nand_write_page_raw_syndrome function.
+On Sat, 1 Feb 2014 10:53:34 -0700
+Matthew Wilcox <matthew@wil.cx> wrote:
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
- drivers/mtd/nand/nand_base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On Sat, Feb 01, 2014 at 04:02:02PM +0800, Fabian Frederick wrote:
+> > init_inodecache is only called by __init init_ext2_fs.
+> 
+> Looks like this is true for the majority of filesystems.  Would you care
+> to submit more patches?  :-)
+No problem ! Is it better to send separate patches like this one or one patch for all filesystems ?
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 15069ec..f59a465 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -1902,7 +1902,7 @@ static int nand_write_page_raw_syndrome(struct mtd_info *mtd,
- 			oob += chip->ecc.prepad;
- 		}
- 
--		chip->read_buf(mtd, oob, eccbytes);
-+		chip->write_buf(mtd, oob, eccbytes);
- 		oob += eccbytes;
- 
- 		if (chip->ecc.postpad) {
--- 
-1.7.9.5
-
+> 
+> -- 
+> Matthew Wilcox				Intel Open Source Technology Centre
+> "Bill, look, we understand that you're interested in selling us this
+> operating system, but compare it to ours.  We can't possibly take such
+> a retrograde step."
