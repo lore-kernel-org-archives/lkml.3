@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368AbaBAD3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 22:29:21 -0500
-Received: from gnurou.org ([207.192.72.5]:51798 "EHLO mail.gnurou.org"
+	id S933353AbaBAD3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 22:29:19 -0500
+Received: from gnurou.org ([207.192.72.5]:51796 "EHLO mail.gnurou.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754574AbaBAD2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754567AbaBAD2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 22:28:25 -0500
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
@@ -15,9 +15,9 @@ Cc: Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>,
         Eric Brower <ebrower@nvidia.com>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, gnurou@gmail.com,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 10/16] drm/nouveau/timer: skip calibration on GK20A
-Date: Sat,  1 Feb 2014 12:16:52 +0900
-Message-Id: <1391224618-3794-11-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 13/16] drm/nouveau/ibus: add GK20A support
+Date: Sat,  1 Feb 2014 12:16:55 +0900
+Message-Id: <1391224618-3794-14-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
 References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
@@ -25,60 +25,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GK20A's timer is directly attached to the system timer and cannot be
-calibrated. Skip the calibration phase on that chip since the
-corresponding registers do not exist.
+Add support for initializing the priv ring of GK20A. This is done by the
+BIOS on desktop GPUs, but needs to be done by hand on Tegra.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/nouveau/Makefile                   |   1 +
+ drivers/gpu/drm/nouveau/core/include/subdev/ibus.h |   1 +
+ drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c    | 108 +++++++++++++++++++++
+ 3 files changed, 110 insertions(+)
+ create mode 100644 drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
 
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-index c0bdd10..822fe0d 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-@@ -185,6 +185,10 @@ nv04_timer_init(struct nouveau_object *object)
- 	if (ret)
- 		return ret;
+diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
+index 6c4b76d..3548fcd 100644
+--- a/drivers/gpu/drm/nouveau/Makefile
++++ b/drivers/gpu/drm/nouveau/Makefile
+@@ -132,6 +132,7 @@ nouveau-y += core/subdev/i2c/nv94.o
+ nouveau-y += core/subdev/i2c/nvd0.o
+ nouveau-y += core/subdev/ibus/nvc0.o
+ nouveau-y += core/subdev/ibus/nve0.o
++nouveau-y += core/subdev/ibus/nvea.o
+ nouveau-y += core/subdev/instmem/base.o
+ nouveau-y += core/subdev/instmem/nv04.o
+ nouveau-y += core/subdev/instmem/nv40.o
+diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h b/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
+index 88814f1..056a42f 100644
+--- a/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
++++ b/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
+@@ -30,5 +30,6 @@ nouveau_ibus(void *obj)
  
-+	/* gk20a does not have the calibration registers */
-+	if (device->chipset == 0xea)
-+		goto skip_clk_init;
-+
- 	/* aim for 31.25MHz, which gives us nanosecond timestamps */
- 	d = 1000000 / 32;
+ extern struct nouveau_oclass nvc0_ibus_oclass;
+ extern struct nouveau_oclass nve0_ibus_oclass;
++extern struct nouveau_oclass nvea_ibus_oclass;
  
-@@ -235,20 +239,23 @@ nv04_timer_init(struct nouveau_object *object)
- 		d >>= 1;
- 	}
- 
--	/* restore the time before suspend */
--	lo = priv->suspend_time;
--	hi = (priv->suspend_time >> 32);
--
- 	nv_debug(priv, "input frequency : %dHz\n", f);
- 	nv_debug(priv, "input multiplier: %d\n", m);
- 	nv_debug(priv, "numerator       : 0x%08x\n", n);
- 	nv_debug(priv, "denominator     : 0x%08x\n", d);
- 	nv_debug(priv, "timer frequency : %dHz\n", (f * m) * d / n);
--	nv_debug(priv, "time low        : 0x%08x\n", lo);
--	nv_debug(priv, "time high       : 0x%08x\n", hi);
- 
- 	nv_wr32(priv, NV04_PTIMER_NUMERATOR, n);
- 	nv_wr32(priv, NV04_PTIMER_DENOMINATOR, d);
+ #endif
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c b/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
+new file mode 100644
+index 0000000..0bcd281
+--- /dev/null
++++ b/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
+@@ -0,0 +1,108 @@
++/*
++ * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
 +
-+skip_clk_init:
-+	/* restore the time before suspend */
-+	lo = priv->suspend_time;
-+	hi = (priv->suspend_time >> 32);
++#include <subdev/ibus.h>
 +
-+	nv_debug(priv, "time low        : 0x%08x\n", lo);
-+	nv_debug(priv, "time high       : 0x%08x\n", hi);
++struct nvea_ibus_priv {
++	struct nouveau_ibus base;
++};
 +
- 	nv_wr32(priv, NV04_PTIMER_INTR_0, 0xffffffff);
- 	nv_wr32(priv, NV04_PTIMER_INTR_EN_0, 0x00000000);
- 	nv_wr32(priv, NV04_PTIMER_TIME_1, hi);
++static void
++nvea_ibus_init_priv_ring(struct nvea_ibus_priv *priv)
++{
++	u32 data;
++
++	data = nv_rd32(priv, 0x137250);
++	data &= (~0x3f);
++	nv_wr32(priv, 0x137250, data);
++
++	nv_mask(priv, 0x000200, 0x20, 0);
++	udelay(20);
++	nv_mask(priv, 0x000200, 0x20, 0x20);
++
++	nv_wr32(priv, 0x12004c, 0x4);
++	nv_wr32(priv, 0x122204, 0x2);
++	nv_rd32(priv, 0x122204);
++}
++
++static void
++nvea_ibus_intr(struct nouveau_subdev *subdev)
++{
++	struct nvea_ibus_priv *priv = (void *)subdev;
++	u32 status0 = nv_rd32(priv, 0x120058);
++	s32 retry = 100;
++	u32 command;
++
++	if (status0 & 0x7) {
++		nv_debug(priv, "resetting priv ring\n");
++		nvea_ibus_init_priv_ring(priv);
++	}
++
++	/* Acknowledge interrupt */
++	command = nv_rd32(priv, 0x0012004c);
++	command |= 0x2;
++	nv_wr32(priv, 0x0012004c, command);
++
++	while (--retry >= 0) {
++		command = nv_rd32(priv, 0x12004c) & 0x3f;
++		if (command == 0)
++			break;
++	}
++
++	if (retry < 0)
++		nv_debug(priv, "timeout waiting for ringmaster ack\n");
++}
++
++static int
++nvea_ibus_init(struct nouveau_object *object)
++{
++	struct nvea_ibus_priv *priv = (void *)object;
++	int ret;
++
++	ret = _nouveau_ibus_init(object);
++	if (ret)
++		return ret;
++
++	nvea_ibus_init_priv_ring(priv);
++
++	return 0;
++}
++
++static int
++nvea_ibus_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
++	       struct nouveau_oclass *oclass, void *data, u32 size,
++	       struct nouveau_object **pobject)
++{
++	struct nvea_ibus_priv *priv;
++	int ret;
++
++	ret = nouveau_ibus_create(parent, engine, oclass, &priv);
++	*pobject = nv_object(priv);
++	if (ret)
++		return ret;
++
++	nv_subdev(priv)->intr = nvea_ibus_intr;
++	return 0;
++}
++
++struct nouveau_oclass
++nvea_ibus_oclass = {
++	.handle = NV_SUBDEV(IBUS, 0xea),
++	.ofuncs = &(struct nouveau_ofuncs) {
++		.ctor = nvea_ibus_ctor,
++		.dtor = _nouveau_ibus_dtor,
++		.init = nvea_ibus_init,
++		.fini = _nouveau_ibus_fini,
++	},
++};
 -- 
 1.8.5.3
 
