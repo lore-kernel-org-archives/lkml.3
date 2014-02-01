@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaBAXk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 18:40:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36695 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753205AbaBAXkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 18:40:51 -0500
-Message-ID: <52ED85DD.6020402@zytor.com>
-Date: Sat, 01 Feb 2014 15:40:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753090AbaBAXqW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 18:46:22 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43713 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaBAXqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 18:46:21 -0500
+Date: Sat, 1 Feb 2014 15:46:18 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Petr Tesarik <ptesarik@suse.cz>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jiang Liu <liuj97@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Dave Hansen <dave@sr71.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] x86: fix the initialization of physnode_map
+In-Reply-To: <20140201133019.32e56f86@hananiah.suse.cz>
+Message-ID: <alpine.DEB.2.02.1402011546040.4865@chino.kir.corp.google.com>
+References: <20140201133019.32e56f86@hananiah.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>, torvalds@linux-foundation.org
-CC: jack@suse.cz, linux-kernel@vger.kernel.org, maarten-baert@hotmail.com,
-        mingo@kernel.org, nate@thatsmathematics.com, priikone@iki.fi,
-        sbsiddha@gmail.com, stable@vger.kernel.org, tglx@linutronix.de,
-        x86@kernel.org
-Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt
- flag
-References: <20140201211710.20281.qmail@science.horizon.com>
-In-Reply-To: <20140201211710.20281.qmail@science.horizon.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2014 01:17 PM, George Spelvin wrote:
->> .. which *does* actually bring up something that might work, and might
->> be a good idea: remove the "restore math state or set TS" from the
->> normal kernel paths *entirely*, and move it to the "return to user
->> space" phase.
-> 
-> This definitely seems much more sensible.  For processors without
-> optimized context save/restore, the decision whether to restore eagerly
-> is best made once the kernel has decided what it's returning *to*.
-> 
-> From an interrupt handler, there are now three cases:
-> 1) FPU not in use, available for immediate use.
-> 2) FPU in use by user-space; save to <location> before using.
-> 3) FPU in use by kernel code; may not be used (unless we want
->    to add nested FPU state save hair).
-> 
+On Sat, 1 Feb 2014, Petr Tesarik wrote:
 
-OK, let's circle back for a bit.  We have an active bug, and we clearly
-have a lot of restructuring that could/should be done.  We need to fix
-the bug first; if we're going to a bunch of restructuring then that
-ought to be separate.  The first bit is how we fix the immediate bug.
+> With DISCONTIGMEM, the mapping between a pfn and its owning node is
+> initialized using data provided by the BIOS. However, the initialization
+> may fail if the extents are not aligned to section boundary (64M).
+> 
+> The symptom of this bug is an early boot failure in pfn_to_page(),
+> as it tries to access NODE_DATA(__nid) using index from an unitialized
+> element of the physnode_map[] array.
+> 
+> While the bug is always present, it is more likely to be hit in kdump
+> kernels on large machines, because:
+> 
+> 1. The memory map for a kdump kernel is specified as exactmap, and
+>    exactmap is more likely to be unaligned.
+> 
+> 2. Large reservations are more likely to span across a 64M boundary.
+> 
+> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
 
-	-hpa
-
+Acked-by: David Rientjes <rientjes@google.com>
