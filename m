@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaBAIny (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 03:43:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57751 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbaBAInx (ORCPT
+	id S1752485AbaBAKiZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 05:38:25 -0500
+Received: from science.horizon.com ([71.41.210.146]:37296 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751733AbaBAKiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 03:43:53 -0500
-Date: Sat, 1 Feb 2014 09:45:14 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: removing usb debug cable triggers lockdep warning.
-Message-ID: <20140201084514.GC4973@kroah.com>
-References: <20140131211118.GA23873@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140131211118.GA23873@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 1 Feb 2014 05:38:22 -0500
+Date: 1 Feb 2014 05:38:20 -0500
+Message-ID: <20140201103820.32043.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: peterz@infradead.org, waiman.long@hp.com
+Subject: Re: [PATCH v11 0/4] Introducing a queue read/write lock implementation
+Cc: akpm@linux-foundation.org, andi@firstfloor.org, arnd@arndb.de,
+        aswin@hp.com, hpa@zytor.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@horizon.com, mingo@redhat.com,
+        paulmck@linux.vnet.ibm.com, raghavendra.kt@linux.vnet.ibm.com,
+        riel@redhat.com, rostedt@goodmis.org, scott.norton@hp.com,
+        tglx@linutronix.de, tim.c.chen@linux.intel.com,
+        torvalds@linux-foundation.org, walken@google.com, x86@kernel.org
+In-Reply-To: <20140131194718.GO5002@laptop.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 04:11:18PM -0500, Dave Jones wrote:
-> usb 3-3: USB disconnect, device number 2
-> console [ttyUSB0] disabled
-> debug ttyUSB0: debug converter now disconnected from ttyUSB0
-> usb_debug 3-3:1.0: device disconnected
-> INFO: trying to register non-static key.
-> the code is fine but needs lockdep annotation.
-> turning off the locking correctness validator.
-> CPU: 3 PID: 66 Comm: khubd Not tainted 3.13.0+ #104 
->  ffffffffbb28cf50 000000000f74f0eb ffff880242eb3a08 ffffffffba73a377
->  ffff880243741740 ffff880242eb3a18 ffffffffba7368b9 ffff880242eb3a90
->  ffffffffba0c1560 0000000000000003 ffff880242eb2000 ffff880242eb3aa8
-> Call Trace:
->  [<ffffffffba73a377>] dump_stack+0x4e/0x7a
->  [<ffffffffba7368b9>] register_lock_class.part.21+0x38/0x3c
->  [<ffffffffba0c1560>] __lock_acquire.isra.28+0xa10/0xa50
->  [<ffffffffba0c1cfd>] lock_acquire+0x8d/0x120
->  [<ffffffffba24ba88>] ? kernfs_addrm_finish+0x38/0x60
->  [<ffffffffba24acde>] kernfs_deactivate+0x10e/0x150
->  [<ffffffffba24ba88>] ? kernfs_addrm_finish+0x38/0x60
->  [<ffffffffba24ba88>] kernfs_addrm_finish+0x38/0x60
->  [<ffffffffba24bd00>] kernfs_remove_by_name_ns+0x60/0xc0
->  [<ffffffffba2498d1>] remove_files.isra.1+0x41/0x80
->  [<ffffffffba249bc7>] sysfs_remove_group+0x47/0xa0
->  [<ffffffffba249cf3>] sysfs_remove_groups+0x33/0x50
->  [<ffffffffba4ded6d>] device_remove_attrs+0x4d/0x80
->  [<ffffffffba4df9ae>] device_del+0x12e/0x1d0
->  [<ffffffffba53ce08>] usb_disconnect+0x138/0x1d0
->  [<ffffffffba540153>] hub_thread+0x723/0x1700
->  [<ffffffffba09d7c4>] ? finish_task_switch+0x44/0x190
->  [<ffffffffba0ba030>] ? wake_up_atomic_t+0x30/0x30
->  [<ffffffffba53fa30>] ? usb_reset_device+0x1d0/0x1d0
->  [<ffffffffba093dcc>] kthread+0xfc/0x120
->  [<ffffffffba093cd0>] ? kthread_create_on_node+0x230/0x230
->  [<ffffffffba74d96c>] ret_from_fork+0x7c/0xb0
->  [<ffffffffba093cd0>] ? kthread_create_on_node+0x230/0x230
+Peter Zijlstra wrote:
+> On Fri, Jan 31, 2014 at 01:59:02PM -0500, Waiman Long wrote:
+>> Using a ticket lock instead will have the same scalability problem as the
+>> ticket spinlock as all the waiting threads will spin on the lock cacheline
+>> causing a lot of cache bouncing traffic. That is the reason why I want to
+>> replace ticket spinlock with queue spinlock.
 
-Yeah, I have a patch from Tejun to queue up after 3.14-rc1 is out to fix
-this issue, sorry for the noise.
+> But but but, just fix such heavily contended locks. Don't make sensible
+> code that is lightly contended run slower because of it.
 
-greg k-h
+While I agree that zero slowdown for "good" code is the goal, it is
+impossible for the kernel to consist of only "good" code.
+
+In particular, obscure error conditions causing locked regions to take
+much longer than expected will never be completely expurgated; there's
+a point where you just say "I'm not working for a week to save 10 people
+per year a 2-minute stall."
+
+What Waiman noted is that ticket locks take O(n^2) cache line transfers
+to clear n waiters from the queue.  (Each write must be broadcast to
+each spinning reader.)  So if you *do* get most of a large multiprocessor
+piled up on a ticket lock, the performance can be disastrous.
+
+It can conceivably send a large system into a "congestion collapse"
+where the queue never clears.  And it can affect processors (such as
+other partitions of a large machine) that aren't even contending for
+the lock.
+
+The MCS lock is O(1) per release and O(n) to clear n waiters.  This is
+a noticeable improvement on 4- or 8-way contention, and (Waiman reports)
+a huge improvement on 50-way and up.
+
+Yes, if such contention occurs with any frequency at all, it should be
+fixed, but it does seem worth mitigating problems in the meantime.
+
+(As an aside, I have in the past heard people criticize the Linux kernel
+for being optimized for the average case at the expense of worst-case
+corner cases.)
+
+Are we agreed that *not* improving highly-contended performance on the
+grounds that it would discourage other optimization is as stupid as not
+wearing a seat-belt because that would discourage more careful driving?
+
+
+While I do think *some* benchmarking on smaller SMP systems is wanted,
+given that Waiman has mananged to make the *uncontended* case faster,
+and *that* is by far the most common case, it's quite plausible that it
+will turn out to be a net performance improvement on 4- and 8-way systems.
