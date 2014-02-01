@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398AbaBAD3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 22:29:25 -0500
-Received: from gnurou.org ([207.192.72.5]:51787 "EHLO mail.gnurou.org"
+	id S933384AbaBAD3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 22:29:23 -0500
+Received: from gnurou.org ([207.192.72.5]:51788 "EHLO mail.gnurou.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754534AbaBAD2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754523AbaBAD2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 31 Jan 2014 22:28:24 -0500
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
@@ -15,139 +15,123 @@ Cc: Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>,
         Eric Brower <ebrower@nvidia.com>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, gnurou@gmail.com,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 00/16] drm/nouveau: initial support for GK20A (Tegra K1)
-Date: Sat,  1 Feb 2014 12:16:42 +0900
-Message-Id: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
+Subject: [RFC 05/16] drm/nouveau/bar: support platform devices
+Date: Sat,  1 Feb 2014 12:16:47 +0900
+Message-Id: <1391224618-3794-6-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.8.5.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+Remove PCI-dependent code so the BAR core can also handle platform
+devices.
 
-GK20A is the Kepler-based GPU used in the upcoming Tegra K1 chips. The following
-patches perform architectural changes to Nouveau that are necessary to support
-non-PCI GPUs and add initial support for GK20A. Although the support is still
-very basic and more user-space changes will be needed to make the full graphics
-stack run on top of it, we were able to successfully open channels and run
-simple pushbuffers with libdrm (more testing including rendering is in progress
-as we get more familiar with Nouveau's user-space interface).
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpu/drm/nouveau/core/subdev/bar/base.c |  4 ++--
+ drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c |  4 ++--
+ drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c | 15 +++++++--------
+ 3 files changed, 11 insertions(+), 12 deletions(-)
 
-This work should be considered as a RFC and a proof-of-concept for driving
-future Tegra GPUs with Nouveau. Some design choices need to be discussed and
-quite a few inelegant shortcuts were purposely taken to minimize the size of
-this first set. Or said otherwise, apart from the changes that add support for
-non-PCI GPUs, remarkably little code needs to be added to get GK20A to a point
-where it is actually running. This is very encouraging, and it will be
-interesting to keep improving this support and see where this gets us.
-
-The first part of this series (patches 01/09) adds support for platform devices
-to Nouveau. Nouveau currently only supports PCI devices, and GK20A uses the
-platform bus and Device Tree. So the first step towards GK20A support is to
-abstract the PCI functions used by Nouveau (mainly resources range querying and
-page mapping functions) and add platform device probing functions. For most of
-the existing chips, platform device support does not make any sense, so only the
-subdev and engine drivers actually used by GK20A were updated to use these
-abstractions. If, for consistency reasons, it is deemed preferable to use them
-everywhere in the driver, we will do it in the next revision of this series.
-
-This part can be considered independently from the actual GK20A support, and I
-believe it would make sense to discuss what needs to be improved and drive it to
-merge separately, as the remainder of the series will likely require more work.
-
-The second part (10/14) updates existing subdev/engine drivers to support GK20A,
-and adds a very simple memory driver that simulates dedicated video memory by
-allocating a large system memory chunk at boot time. This is clearly sub-optimal
-and should not be merged, but allowed us to quickly bring GK20A up with Nouveau.
-Other drivers changes are fairly small, and are here to handle the difference in
-number of engines and units compared to desktop Kepler as well as to perform a
-few things usually done by the video BIOS (which Tegra does not feature).
-
-Finally, support for probing GK20A is added in the last 2 patches. It should be
-noted that contrary to what Nouveau currently expects, GK20A does not embed any
-display hardware (that part being handled by tegradrm). So this driver should
-really be only used through DRM render-nodes and collaborate with the display
-driver using PRIME. I have not yet figured out how to turn GK20A’s instantiation
-of Nouveau into a render-node only driver without breaking support for existing
-desktop GPUs, and consequently the driver spawns a /dev/dri/cardX node which we
-should try to get rid of.
-
-I guess my email address might surprise some of you, so let me anticipate some
-questions you might have. :P Yes, this work is endorsed by NVIDIA. Several other
-NVIDIAns (CC'd), including core GPU experts, have provided significant technical
-guidance and will continue their involvement. Special thanks go to Terje
-Bergstrom and Ken Adams for their invaluable GPU expertise, and Thierry Reding
-(at FOSDEM this weekend) for help with debugging and user-space testing.
-
-Let me also stress that although very exciting, this effort is still
-experimental, so I would like to make sure that nobody makes excessive
-expectations based on these few patches. The scope of this work is strictly
-limited to Tegra (although given the similarities desktop GPU support will
-certainly benefit from it indirectly), and we do not have any plan to work on
-user-space support. So do not uninstall that proprietary driver just yet. ;)
-
-With this being clarified, we are looking forward to getting your feedback and
-working with you guys to bring and improve Tegra K1 support into Nouveau! :)
-
-Alexandre Courbot (16):
-  drm/nouveau: handle -EACCES runtime PM return code
-  drm/nouveau: basic support for platform devices
-  drm/nouveau: add platform device probing function
-  drm/nouveau/fifo: support platform devices
-  drm/nouveau/bar: support platform devices
-  drm/nouveau/bar: only ioremap BAR3 if it exists
-  drm/nouveau/bar/nvc0: support chips without BAR3
-  drm/nouveau/mc: support platform devices
-  drm/nouveau/fb: support platform devices
-  drm/nouveau/timer: skip calibration on GK20A
-  drm/nouveau/fifo: allocate usermem as needed
-  drm/nouveau/fifo: add GK20A support
-  drm/nouveau/ibus: add GK20A support
-  drm/nouveau/fb: add GK20A support
-  drm/nouveau: support GK20A in nouveau_accel_init()
-  drm/nouveau: support for probing GK20A
-
- drivers/gpu/drm/nouveau/Makefile                   |   4 +
- drivers/gpu/drm/nouveau/core/engine/device/base.c  |  92 +++++++++++++++-
- drivers/gpu/drm/nouveau/core/engine/device/nve0.c  |  20 ++++
- drivers/gpu/drm/nouveau/core/engine/fifo/base.c    |   2 +-
- drivers/gpu/drm/nouveau/core/engine/fifo/nve0.c    |   4 +-
- drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h    |   1 +
- drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c    |  27 +++++
- drivers/gpu/drm/nouveau/core/include/core/device.h |  27 +++++
- .../gpu/drm/nouveau/core/include/engine/device.h   |  10 ++
- drivers/gpu/drm/nouveau/core/include/engine/fifo.h |   1 +
- drivers/gpu/drm/nouveau/core/include/subdev/fb.h   |   1 +
- drivers/gpu/drm/nouveau/core/include/subdev/ibus.h |   1 +
- drivers/gpu/drm/nouveau/core/include/subdev/mc.h   |   1 +
- drivers/gpu/drm/nouveau/core/os.h                  |   1 +
- drivers/gpu/drm/nouveau/core/subdev/bar/base.c     |   7 +-
- drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c     |   4 +-
- drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c     | 116 +++++++++++----------
- drivers/gpu/drm/nouveau/core/subdev/fb/nvc0.c      |   9 +-
- drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c      |  28 +++++
- drivers/gpu/drm/nouveau/core/subdev/fb/priv.h      |   1 +
- drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c   |  67 ++++++++++++
- drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c    | 108 +++++++++++++++++++
- drivers/gpu/drm/nouveau/core/subdev/mc/base.c      |  43 +++++---
- drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c   |  19 ++--
- drivers/gpu/drm/nouveau/dispnv04/crtc.c            |   2 +-
- drivers/gpu/drm/nouveau/nouveau_abi16.c            |  13 ++-
- drivers/gpu/drm/nouveau/nouveau_bo.c               |  22 ++--
- drivers/gpu/drm/nouveau/nouveau_connector.c        |   2 +-
- drivers/gpu/drm/nouveau/nouveau_display.c          |   3 +-
- drivers/gpu/drm/nouveau/nouveau_drm.c              |  86 ++++++++++++---
- drivers/gpu/drm/nouveau/nouveau_sysfs.c            |   8 +-
- drivers/gpu/drm/nouveau/nouveau_ttm.c              |  31 +++---
- 32 files changed, 622 insertions(+), 139 deletions(-)
- create mode 100644 drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
-
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
+index 7098ddd..bdf5941 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
+@@ -118,8 +118,8 @@ nouveau_bar_create_(struct nouveau_object *parent,
+ 	if (ret)
+ 		return ret;
+ 
+-	bar->iomem = ioremap(pci_resource_start(device->pdev, 3),
+-			     pci_resource_len(device->pdev, 3));
++	bar->iomem = ioremap(nv_device_resource_start(device, 3),
++			     nv_device_resource_len(device, 3));
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c b/drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c
+index 090d594..baa2b62 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nv50.c
+@@ -139,7 +139,7 @@ nv50_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 
+ 	/* BAR3 */
+ 	start = 0x0100000000ULL;
+-	limit = start + pci_resource_len(device->pdev, 3);
++	limit = start + nv_device_resource_len(device, 3);
+ 
+ 	ret = nouveau_vm_new(device, start, limit, start, &vm);
+ 	if (ret)
+@@ -173,7 +173,7 @@ nv50_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 
+ 	/* BAR1 */
+ 	start = 0x0000000000ULL;
+-	limit = start + pci_resource_len(device->pdev, 1);
++	limit = start + nv_device_resource_len(device, 1);
+ 
+ 	ret = nouveau_vm_new(device, start, limit--, start, &vm);
+ 	if (ret)
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+index bac5e75..3f30db6 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+@@ -84,7 +84,6 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 	      struct nouveau_object **pobject)
+ {
+ 	struct nouveau_device *device = nv_device(parent);
+-	struct pci_dev *pdev = device->pdev;
+ 	struct nvc0_bar_priv *priv;
+ 	struct nouveau_gpuobj *mem;
+ 	struct nouveau_vm *vm;
+@@ -107,14 +106,14 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = nouveau_vm_new(device, 0, pci_resource_len(pdev, 3), 0, &vm);
++	ret = nouveau_vm_new(device, 0, nv_device_resource_len(device, 3), 0, &vm);
+ 	if (ret)
+ 		return ret;
+ 
+ 	atomic_inc(&vm->engref[NVDEV_SUBDEV_BAR]);
+ 
+ 	ret = nouveau_gpuobj_new(nv_object(priv), NULL,
+-				 (pci_resource_len(pdev, 3) >> 12) * 8,
++				 (nv_device_resource_len(device, 3) >> 12) * 8,
+ 				 0x1000, NVOBJ_FLAG_ZERO_ALLOC,
+ 				 &vm->pgt[0].obj[0]);
+ 	vm->pgt[0].refcount[0] = 1;
+@@ -128,8 +127,8 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 
+ 	nv_wo32(mem, 0x0200, lower_32_bits(priv->bar[0].pgd->addr));
+ 	nv_wo32(mem, 0x0204, upper_32_bits(priv->bar[0].pgd->addr));
+-	nv_wo32(mem, 0x0208, lower_32_bits(pci_resource_len(pdev, 3) - 1));
+-	nv_wo32(mem, 0x020c, upper_32_bits(pci_resource_len(pdev, 3) - 1));
++	nv_wo32(mem, 0x0208, lower_32_bits(nv_device_resource_len(device, 3) - 1));
++	nv_wo32(mem, 0x020c, upper_32_bits(nv_device_resource_len(device, 3) - 1));
+ 
+ 	/* BAR1 */
+ 	ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x1000, 0, 0,
+@@ -143,7 +142,7 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = nouveau_vm_new(device, 0, pci_resource_len(pdev, 1), 0, &vm);
++	ret = nouveau_vm_new(device, 0, nv_device_resource_len(device, 1), 0, &vm);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -156,8 +155,8 @@ nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 
+ 	nv_wo32(mem, 0x0200, lower_32_bits(priv->bar[1].pgd->addr));
+ 	nv_wo32(mem, 0x0204, upper_32_bits(priv->bar[1].pgd->addr));
+-	nv_wo32(mem, 0x0208, lower_32_bits(pci_resource_len(pdev, 1) - 1));
+-	nv_wo32(mem, 0x020c, upper_32_bits(pci_resource_len(pdev, 1) - 1));
++	nv_wo32(mem, 0x0208, lower_32_bits(nv_device_resource_len(device, 1) - 1));
++	nv_wo32(mem, 0x020c, upper_32_bits(nv_device_resource_len(device, 1) - 1));
+ 
+ 	priv->base.alloc = nouveau_bar_alloc;
+ 	priv->base.kmap = nvc0_bar_kmap;
 -- 
 1.8.5.3
 
