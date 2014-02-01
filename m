@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaBAAkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 19:40:49 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:53344 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbaBAAkr convert rfc822-to-8bit (ORCPT
+	id S932609AbaBAAzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 19:55:05 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:57169 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120AbaBAAzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 19:40:47 -0500
+	Fri, 31 Jan 2014 19:55:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAMo8BfKkZOhsXBXWXS5scc5zN6qQnvk51HOCxAJmDWW19wFM-Q@mail.gmail.com>
+In-Reply-To: <CAGVrzcaN=noWOoMj0w720H5TUBypOv2HAFPPzJRAfA=R4RLUmw@mail.gmail.com>
 References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
  <1390975218-13863-3-git-send-email-jcmvbkbc@gmail.com> <52E8A407.1020809@gmail.com>
  <CAMo8BfJ_nce_H_8HJ7iw9ME=8C+sjF_Q43RaDG+1eVrpxWRvdQ@mail.gmail.com>
  <CAGVrzcboHp8-qHZseGOVm14u1-cTcOjRZGExFxNu_nbK__XCSA@mail.gmail.com>
- <CAMo8BfK-3-B-n7gxLaSO3JXSNNT_HwF0yTAMd+L5pp6odJKFTg@mail.gmail.com> <CAMo8BfKkZOhsXBXWXS5scc5zN6qQnvk51HOCxAJmDWW19wFM-Q@mail.gmail.com>
+ <CAMo8BfK-3-B-n7gxLaSO3JXSNNT_HwF0yTAMd+L5pp6odJKFTg@mail.gmail.com>
+ <CAMo8BfKkZOhsXBXWXS5scc5zN6qQnvk51HOCxAJmDWW19wFM-Q@mail.gmail.com> <CAGVrzcaN=noWOoMj0w720H5TUBypOv2HAFPPzJRAfA=R4RLUmw@mail.gmail.com>
 From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 31 Jan 2014 16:40:06 -0800
-Message-ID: <CAGVrzcaN=noWOoMj0w720H5TUBypOv2HAFPPzJRAfA=R4RLUmw@mail.gmail.com>
+Date: Fri, 31 Jan 2014 16:54:21 -0800
+Message-ID: <CAGVrzcY00GS8n0POtUpSNEAiTSCZLKVB_6AUFAuB0B3Ax4wbXA@mail.gmail.com>
 Subject: Re: [PATCH v2 2/4] net: ethoc: don't advertise gigabit speed on
  attached PHY
 To: Max Filippov <jcmvbkbc@gmail.com>
@@ -27,119 +28,89 @@ Cc: Marc Gauthier <marc@cadence.com>, Ben Hutchings <ben@decadent.org.uk>,
         "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
         netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-30 Max Filippov <jcmvbkbc@gmail.com>:
-> On Wed, Jan 29, 2014 at 10:32 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
->> On Wed, Jan 29, 2014 at 9:12 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
->>> On Jan 28, 2014 11:01 PM, "Max Filippov" <jcmvbkbc@gmail.com> wrote:
+2014-01-31 Florian Fainelli <f.fainelli@gmail.com>:
+>>> Maybe they boot up with gigabit advertisement disabled in their PHY
+>>> and thus they don't see the problem?
+>>>
+>>>> Other drivers do the following:
 >>>>
->>>> On Wed, Jan 29, 2014 at 10:47 AM, Florian Fainelli <f.fainelli@gmail.com>
->>>> wrote:
->>>> > Hi Max,
->>>> >
->>>> > Le 28/01/2014 22:00, Max Filippov a écrit :
->>>> >
->>>> >> OpenCores 10/100 Mbps MAC does not support speeds above 100 Mbps, but
->>>> >> does
->>>> >> not disable advertisement when PHY supports them. This results in
->>>> >> non-functioning network when the MAC is connected to a gigabit PHY
->>>> >> connected
->>>> >> to a gigabit switch.
->>>> >>
->>>> >> The fix is to disable gigabit speed advertisement on attached PHY
->>>> >> unconditionally.
->>>> >>
->>>> >> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
->>>> >> ---
->>>> >> Changes v1->v2:
->>>> >> - disable both gigabit advertisement and support.
->>>> >>
->>>> >>   drivers/net/ethernet/ethoc.c | 8 ++++++++
->>>> >>   1 file changed, 8 insertions(+)
->>>> >>
->>>> >> diff --git a/drivers/net/ethernet/ethoc.c
->>>> >> b/drivers/net/ethernet/ethoc.c
->>>> >> index 4de8cfd..5643b2d 100644
->>>> >> --- a/drivers/net/ethernet/ethoc.c
->>>> >> +++ b/drivers/net/ethernet/ethoc.c
->>>> >> @@ -688,6 +688,14 @@ static int ethoc_mdio_probe(struct net_device
->>>> >> *dev)
->>>> >>         }
->>>> >>
->>>> >>         priv->phy = phy;
->>>> >> +       phy_update_advert(phy,
->>>> >> +                         ADVERTISED_1000baseT_Full |
->>>> >> +                         ADVERTISED_1000baseT_Half, 0);
->>>> >> +       phy_start_aneg(phy);
->>>> >
->>>> >
->>>> > This does not look necessary, you should not have to call
->>>> > phy_start_aneg()
->>>> > because the PHY state machine is not yet started, at best this calls
->>>> > does
->>>> > nothing.
+>>>> - connect to the PHY
+>>>> - phydev->supported = PHY_BASIC_FEATURES
+>>>> - phydev->advertising &= phydev->supported
+>>>> - start the PHY state machine
 >>>>
->>>> This call actually makes the whole thing work, because otherwise once
->>>> gigabit
->>>> support is cleared from the supported mask genphy_config_advert does not
->>>> update gigabit advertisement register, leaving it enabled.
+>>>> And they work just fine. Is the PHY driver you are bound to the "Generic
+>>>> PHY" or something else which does something funky in config_aneg()?
 >>>
->>> OK, then we need to figure out what is wrong with ethoc since this is
->>> unusual.
+>>> It's marvell 88E1111 from the KC-705 board, but the behaviour doesn't
+>>> change if I disable it and the generic phy is used.
 >>
->> Maybe they boot up with gigabit advertisement disabled in their PHY
->> and thus they don't see the problem?
+>> Florian,
 >>
->>> Other drivers do the following:
->>>
->>> - connect to the PHY
->>> - phydev->supported = PHY_BASIC_FEATURES
->>> - phydev->advertising &= phydev->supported
->>> - start the PHY state machine
->>>
->>> And they work just fine. Is the PHY driver you are bound to the "Generic
->>> PHY" or something else which does something funky in config_aneg()?
->>
->> It's marvell 88E1111 from the KC-705 board, but the behaviour doesn't
->> change if I disable it and the generic phy is used.
+>> I don't see how the generic genphy_config_advert can ever change
+>> gigabit advertisement if phydev->supported has gigabit speeds masked
+>> off.
 >
-> Florian,
+> It does not, but it makes sure that phydev->advertising gets masked
+> with phydev->supported. So, prior to starting your PHY state machine,
+> if you do:
 >
-> I don't see how the generic genphy_config_advert can ever change
-> gigabit advertisement if phydev->supported has gigabit speeds masked
-> off.
+> phydev->supported &= PHY_BASIC_FEATURES;
+> phydev->advertising = phydev->supported;
 
-It does not, but it makes sure that phydev->advertising gets masked
-with phydev->supported. So, prior to starting your PHY state machine,
-if you do:
+It looks like there might be one problem however, if we have the following:
 
-phydev->supported &= PHY_BASIC_FEATURES;
-phydev->advertising = phydev->supported;
+- phydev->supported masks off the Gigabit features
+- PHY device comes out of reset/default with Gigabit features set in
+MII_CTRL1000
 
-you should get the expected results. Just make sure that
-phydev->autoneg is not set to AUTONEG_DISABLE, otherwise
-phy_start_aneg() will not call phy_sanitize_settings(), and this might
-be the problem.
+Could you try the following patch:
 
-> So I'm pretty sure that other 10/100 cards would exhibit the same
-> issue if their PHY started with gigabit advertisement enabled.
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 78bf1a4..b607f4a 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -749,25 +749,24 @@ static int genphy_config_advert(struct phy_device *phydev)
+        }
 
-If the speed is not restricted, yes that will be the case, but most
-drivers seem to correctly set both phydev->supported and
-phydev->advertising.
+        /* Configure gigabit if it's supported */
++       adv = phy_read(phydev, MII_CTRL1000);
++       if (adv < 0)
++               return adv;
++
++       oldadv = adv;
++       adv &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
++
+        if (phydev->supported & (SUPPORTED_1000baseT_Half |
+                                 SUPPORTED_1000baseT_Full)) {
+-               adv = phy_read(phydev, MII_CTRL1000);
+-               if (adv < 0)
+-                       return adv;
+-
+-               oldadv = adv;
+-               adv &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+                adv |= ethtool_adv_to_mii_ctrl1000_t(advertise);
+-
+-               if (adv != oldadv) {
+-                       err = phy_write(phydev, MII_CTRL1000, adv);
+-
+-                       if (err < 0)
+-                               return err;
++               if (adv != oldadv)
+                        changed = 1;
+-               }
+        }
 
-> Maybe
-> we need to fix those other drivers? Or maybe we need to track what
-> PHY really supports vs. what we report it supports, so that gigabit
-> advertisement could be changed even when the PHY no longer
-> appears to support gigabit?
++       err = phy_write(phydev, MII_CTRL1000, adv);
++       if (err < 0)
++               return err;
++
+        return changed;
+ }
 
-This is supposedly already taken care of provided that you correctly
-restrict the PHY supported/advertising bits with respect to what the
-HW really supports.
 -- 
 Florian
