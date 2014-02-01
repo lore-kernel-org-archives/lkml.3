@@ -1,97 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142AbaBANqO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 08:46:14 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55983 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaBANqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 08:46:13 -0500
-Message-ID: <52ECFAA7.60109@gmail.com>
-Date: Sat, 01 Feb 2014 21:46:15 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933157AbaBAN50 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 08:57:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45710 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751874AbaBAN5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 08:57:23 -0500
+Date: Sat, 1 Feb 2014 08:57:10 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: Re: [PATCH v7 1/7] VFS: Introduce new O_DENY* open flags
+Message-ID: <20140201085710.4ac69808@tlielax.poochiereds.net>
+In-Reply-To: <20140117181847.6c1f3831@alan.etchedpixels.co.uk>
+References: <1389953232-9428-1-git-send-email-piastry@etersoft.ru>
+	<1389953232-9428-2-git-send-email-piastry@etersoft.ru>
+	<20140117181847.6c1f3831@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: hskinnemoen@gmail.com, egtvedt@samfundet.no,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7
- using.
-References: <52ECEA2A.8070307@gmail.com> <CAFLxGvyEx4NJ-pT4EXT_e6NaFxAwpfpAGL=CPm0o_SM96twaLg@mail.gmail.com>
-In-Reply-To: <CAFLxGvyEx4NJ-pT4EXT_e6NaFxAwpfpAGL=CPm0o_SM96twaLg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2014 08:56 PM, Richard Weinberger wrote:
-> On Sat, Feb 1, 2014 at 1:35 PM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
->> For avr32 cross compiler, do not define '__linux__' internally, so it
->> will cause issue with allmodconfig.
-> 
-> Isn't this a toolchain bug?
+On Fri, 17 Jan 2014 18:18:47 +0000
+One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
 
-Hmm... for me, it is not toolchain's bug, it is a feature issue in gcc
-old version, and in newer version it is OK (in my memory, after gcc-4.7,
-it is OK).
+> > +#define ESHAREDENIED	258	/* File is locked with a sharelock */
+> 
+> Have you prepared C library patches to match this ?
+> 
+> (and why not just use EPERM, it has the meaning you want already)
+> 
 
-In our "arch/*", really contents some another architectures which
-already use "-D__linux__" in their "Makefile". :-)
+Tough call...
 
-Thanks.
+On the one hand, ESHAREDENIED is a distinct error code so an
+application has the ability to determine what happened when an open or
+unlink fails.
+
+OTOH, a lot of applications won't understand ESHAREDENIED and may barf
+on it. Those apps might handle EPERM better.
+
+I'm not sure what the right approach is there...
 
 > 
->> The related error:
->>
->>     CC [M]  fs/coda/psdev.o
->>   In file included from include/linux/coda.h:64,
->>                    from fs/coda/psdev.c:45:
->>   include/uapi/linux/coda.h:221: error: expected specifier-qualifier-list before 'u_quad_t'
->>
->> The related toolchain version (which only download, not re-compile):
->>
->>   [root@gchen linux-next]# /upstream/toolchain/download/avr32-gnu-toolchain-linux_x86/bin/avr32-gcc -v
->>   Using built-in specs.
->>   Target: avr32
->>   Configured with: /data2/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/src/gcc/configure --target=avr32 --host=i686-pc-linux-gnu --build=x86_64-pc-linux-gnu --prefix=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-languages=c,c++ --disable-nls --disable-libssp --disable-libstdcxx-pch --with-dwarf2 --enable-version-specific-runtime-libs --disable-shared --enable-doc --with-mpfr-lib=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/lib --with-mpfr-include=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86/include --with-gmp=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --with-mpc=/home/toolsbuild/jenkins-knuth/workspace/avr32-gnu-toolchain/avr32-gnu-toolchain-linux_x86 --enable-__cxa_atexit --disable-shared --with-newlib --with-pkgversion=AVR_32_bit_GNU_Toolchain_3.4.2_435 --with-bugurl=http://
-www
->> .atmel.com/avr
->>   Thread model: single
->>   gcc version 4.4.7 (AVR_32_bit_GNU_Toolchain_3.4.2_435)
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  arch/avr32/Makefile | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/avr32/Makefile b/arch/avr32/Makefile
->> index 22fb665..dba48a5 100644
->> --- a/arch/avr32/Makefile
->> +++ b/arch/avr32/Makefile
->> @@ -11,7 +11,7 @@ all: uImage vmlinux.elf
->>
->>  KBUILD_DEFCONFIG       := atstk1002_defconfig
->>
->> -KBUILD_CFLAGS  += -pipe -fno-builtin -mno-pic
->> +KBUILD_CFLAGS  += -pipe -fno-builtin -mno-pic -D__linux__
->>  KBUILD_AFLAGS  += -mrelax -mno-pic
->>  KBUILD_CFLAGS_MODULE += -mno-relax
->>  LDFLAGS_vmlinux        += --relax
->> --
->> 1.7.11.7
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> > + * Check to see if there's a share_reservation conflict. LOCK_READ/LOCK_WRITE
+> > + * tell us whether the reservation allows other readers and writers.
+> > + */
+> > +static int
+> > +locks_mand_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
+> > +{
+> 
+> Shouldn't this also check for CAP_SYS_DAC or some similar permission so
+> that root can override such a mess (eg to fix full disks in an
+> emergency) ?
 > 
 > 
+
+Agreed. This needs a mechanism that allows you to override it, IMO.
+
+CAP_DAC_OVERRIDE doesn't seem quite like the right thing since this
+isn't dealing with permissions, per-se. A new capability bit may even be
+warranted.
+
+> > +
+> > +	/*
+> > +	 * For sharelock mounts if a file was created but not opened, we need
+> > +	 * to keep parent i_mutex until we finish the open to prevent races when
+> > +	 * somebody opens newly created by us file and locks it with a sharelock
+> > +	 * before we open it.
+> > +	 */
+> > +	if (IS_SHARELOCK(dir->d_inode) && error > 0 && *opened & FILE_CREATED) {
+> > +		/* Don't check for write permission, don't truncate */
+> > +		open_flag &= ~O_TRUNC;
+> > +		will_truncate = false;
+> > +		acc_mode = MAY_OPEN;
+> > +		path_to_nameidata(path, nd);
+> > +
+> > +		error = may_open(&nd->path, acc_mode, open_flag);
+> > +		if (error) {
+> > +			mutex_unlock(&dir->d_inode->i_mutex);
+> > +			goto out;
+> > +		}
+> > +		file->f_path.mnt = nd->path.mnt;
+> > +		error = finish_open(file, nd->path.dentry, NULL, opened);
+> > +		if (error) {
+> > +			mutex_unlock(&dir->d_inode->i_mutex);
+> > +			if (error == -EOPENSTALE)
+> > +				goto stale_open;
+> > +			goto out;
+> > +		}
+> > +		error = sharelock_lock_file(file);
+> > +		mutex_unlock(&dir->d_inode->i_mutex);
+> > +		if (error)
+> > +			goto exit_fput;
+> > +		goto opened;
+> > +	}
+> > +
+> >  	mutex_unlock(&dir->d_inode->i_mutex);
 > 
+> What stops the file system changing mount flags via a remount between
+> these two ?
+> 
+> >  
+> >  	if (error <= 0) {
+> > @@ -3034,6 +3073,18 @@ finish_open_created:
+> >  			goto stale_open;
+> >  		goto out;
+> >  	}
+> > +
+> > +	if (IS_SHARELOCK(dir->d_inode)) {
+> > +		/*
+> > +		 * Lock parent i_mutex to prevent races with sharelocks on
+> > +		 * newly created files.
+> > +		 */
+> > +		mutex_lock(&dir->d_inode->i_mutex);
+> > +		error = sharelock_lock_file(file);
+> > +		mutex_unlock(&dir->d_inode->i_mutex);
+> > +		if (error)
+> > +			goto exit_fput;
+> > +	}
+> >  opened:
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
 -- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Jeff Layton <jlayton@redhat.com>
