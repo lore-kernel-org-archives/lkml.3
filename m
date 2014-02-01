@@ -1,274 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933175AbaBAGFw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 01:05:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:51065 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932552AbaBAGFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 01:05:50 -0500
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: rob@landley.net
-Cc: linux-doc@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        daniel.vetter@ffwll.ch
-Subject: [PATCH] Documentation: Add Daniel Vetter's excellent "Botching up ioctls"
-Date: Sat,  1 Feb 2014 17:05:40 +1100
-Message-Id: <1391234740-30191-1-git-send-email-mpe@ellerman.id.au>
-X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751375AbaBAGLV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 01:11:21 -0500
+Received: from qproxy1-pub.mail.unifiedlayer.com ([173.254.64.10]:54858 "HELO
+	qproxy1.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1751034AbaBAGLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 01:11:19 -0500
+From: Olivier Langlois <olivier@trillion01.com>
+To: Larry.Finger@lwfinger.net, linville@tuxdriver.com,
+        chaoming_li@realsil.com.cn
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Olivier Langlois <olivier@trillion01.com>,
+        Stable <stable@vger.kernel.org>
+Subject: [PATCH 2/2] rtlwifi: Fix incorrect return from rtl_ps_enable_nic()
+Date: Sat,  1 Feb 2014 01:11:10 -0500
+Message-Id: <1391235070-23180-2-git-send-email-olivier@trillion01.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391235070-23180-1-git-send-email-olivier@trillion01.com>
+References: <1391235070-23180-1-git-send-email-olivier@trillion01.com>
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.179.63.169 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I pointed some folks at this and they wondered why it wasn't in the
-kernel Documentation directory. So now it is.
+rtl_ps_enable_nic() is called from loops that will loop until this function returns true or a
+maximum number of retries is performed.
 
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+hw_init() returns non-zero on error. In that situation return false to
+restore the original design intent to retry hw init when it fails.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Cc: Stable <stable@vger.kernel.org>
 ---
- Documentation/ioctl/00-INDEX               |   2 +
- Documentation/ioctl/botching-up-ioctls.txt | 219 +++++++++++++++++++++++++++++
- 2 files changed, 221 insertions(+)
- create mode 100644 Documentation/ioctl/botching-up-ioctls.txt
+ drivers/net/wireless/rtlwifi/ps.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/ioctl/00-INDEX b/Documentation/ioctl/00-INDEX
-index d2fe4d4..c1a9257 100644
---- a/Documentation/ioctl/00-INDEX
-+++ b/Documentation/ioctl/00-INDEX
-@@ -1,5 +1,7 @@
- 00-INDEX
- 	- this file
-+botching-up-ioctls.txt
-+	- how to avoid botching up ioctls
- cdrom.txt
- 	- summary of CDROM ioctl calls
- hdio.txt
-diff --git a/Documentation/ioctl/botching-up-ioctls.txt b/Documentation/ioctl/botching-up-ioctls.txt
-new file mode 100644
-index 0000000..50be7e4
---- /dev/null
-+++ b/Documentation/ioctl/botching-up-ioctls.txt
-@@ -0,0 +1,219 @@
-+(How to avoid) Botching up ioctls
-+=================================
-+
-+From: http://blog.ffwll.ch/2013/11/botching-up-ioctls.html
-+
-+By: Daniel Vetter, Copyright © 2013 Intel Corporation
-+
-+One clear insight kernel graphics hackers gained in the past few years is that
-+trying to come up with a unified interface to manage the execution units and
-+memory on completely different GPUs is a futile effort. So nowadays every
-+driver has its own set of ioctls to allocate memory and submit work to the GPU.
-+Which is nice, since there's no more insanity in the form of fake-generic, but
-+actually only used once interfaces. But the clear downside is that there's much
-+more potential to screw things up.
-+
-+To avoid repeating all the same mistakes again I've written up some of the
-+lessons learned while botching the job for the drm/i915 driver. Most of these
-+only cover technicalities and not the big-picture issues like what the command
-+submission ioctl exactly should look like. Learning these lessons is probably
-+something every GPU driver has to do on its own.
-+
-+
-+Prerequisites
-+-------------
-+
-+First the basic - without these the fail already starts with the need for a
-+32bit compat layer:
-+
-+ * Only use fix sized integers. To avoid conflicts with typedefs in userspace
-+   the kernel has special types like __u32, __s64. Use them.
-+
-+ * Align everything to the natural size and use explicit padding. 32bit
-+   platforms don't necessarily align 64bit values to 64bit boundaries, but
-+   64bit platforms do. So we always need padding to the natural size to get
-+   this right.
-+
-+ * Pad the entire struct to a multiple of 64bits - the structure size will
-+   otherwise differ on 32bit versus 64bit. Which hurts when passing arrays of
-+   structures to the kernel. Or with the ioctl structure size checking that
-+   e.g. the drm core does.
-+
-+ * Pointers are __u64, cast from/to a uintprt_t on the userspace side and
-+   from/to a void __user * in the kernel. Try really hard not to delay this
-+   conversion or worse, fiddle the raw __u64 through your code since that
-+   diminishes the checking tools like sparse can provide.
-+
-+
-+Basics
-+------
-+
-+With the joys of writing a compat layer avoided we can take a look at the basic
-+fumbles. Neglecting these will make backward and forward compatibility a real
-+pain. And since getting things wrong on the first attempt is guaranteed you
-+will have a second iteration or at least an extension for any given interface.
-+
-+ * Have a clear way for userspace to figure out whether your new ioctl or ioctl
-+   extension is supported on a given kernel. If you can't rely on old kernels
-+   rejecting the new flags/modes or ioctls (since doing that was botched in the
-+   past) then you need a driver feature flag or revision number somewhere.
-+
-+ * Have a plan for extending ioctls with new flags or new fields at the end of
-+   the structure. The drm core checks the passed-in size for each ioctl call
-+   and zero-extends any mismatches between kernel and userspace. That helps,
-+   but isn't a complete solution since newer userspace on older kernels won't
-+   notice that the newly added fields at the end get ignored. So this still
-+   needs a new driver feature flags.
-+
-+ * Check all unused fields and flags and all the padding for whether it's 0,
-+   and reject the ioctl if that's not the case. Otherwise your nice plan for
-+   future extensions is going right down the gutters since someone will submit
-+   an ioctl struct with random stack garbage in the yet unused parts. Which
-+   then bakes in the ABI that those fields can never be used for anything else
-+   but garbage.
-+
-+ * Have simple testcases for all of the above.
-+
-+
-+Fun with Error Paths
-+--------------------
-+
-+Nowadays we don't have any excuse left any more for drm drivers being neat
-+little root exploits. Which means we both need full input validation and solid
-+error handling paths - GPUs will die eventually in the oddmost cornercases
-+anyway:
-+
-+ * The ioctl must check for array overflows. Also it needs to check for
-+   over/underflows and clamping issues of integer values in general. The usual
-+   example is sprite positioning values fed directly into the hardware with the
-+   hardware just having 12 bits or so. Works nicely until some odd display
-+   server doesn't bother with clamping itself and the cursor wraps around the
-+   screen.
-+
-+ * Have simple testcases for every input validation failure case in your ioctl.
-+   Check that the error code matches your expectations. And finally make sure
-+   that you only test for one single error path in each subtest by submitting
-+   otherwise perfectly valid data. Without this an earlier check might reject
-+   the ioctl already and shadow the codepath you actually want to test, hiding
-+   bugs and regressions.
-+
-+ * Make all your ioctls restartable. First X really loves signals and second
-+   this will allow you to test 90% of all error handling paths by just
-+   interrupting your main test suite constantly with signals. Thanks to X's
-+   love for signal you'll get an excellent base coverage of all your error
-+   paths pretty much for free for graphics drivers. Also, be consistent with
-+   how you handle ioctl restarting - e.g. drm has a tiny drmIoctl helper in its
-+   userspace library. The i915 driver botched this with the set_tiling ioctl,
-+   now we're stuck forever with some arcane semantics in both the kernel and
-+   userspace.
-+
-+ * If you can't make a given codepath restartable make a stuck task at least
-+   killable. GPUs just die and your users won't like you more if you hang their
-+   entire box (by means of an unkillable X process). If the state recovery is
-+   still too tricky have a timeout or hangcheck safety net as a last-ditch
-+   effort in case the hw has gone bananas.
-+
-+ * Have testcases for the really tricky cornercases in your error recovery code
-+   - it's way too easy to create a deadlock between your hangcheck code and
-+   waiters.
-+
-+
-+Time, Waiting and Missing it
-+----------------------------
-+
-+GPUs do most everything asynchronous, so we have a need to time operations and
-+wait for oustanding ones. This is really tricky business, at the moment none of
-+the ioctls supported by the drm/i915 get this fully right. Which means there's
-+still a tons more lessons to learn here.
-+
-+ * Use CLOCK_MONOTONIC as your reference time, always. It's what alsa, drm and
-+   v4l use by default nowadays. But let userspace know which timestamps are
-+   derived from different clock domains like your main system clock (provided
-+   by the kernel) or some independent hardware counter somewhere else. Clocks
-+   will mismatch if you look close enough, but if performance measuring tools
-+   have this information they can at least compensate. If your userspace can
-+   get at the raw values of some clocks (e.g. through in-command-stream
-+   performance counter sampling instructions) consider exposing also those.
-+
-+ * Use __s64 seconds plus __u64 nanoseconds to specify time. It's not the most
-+   convenient time specification, but it's mostly the standard.
-+
-+ * Check that input time values are normalized and reject them if not. Note
-+   that the kernel native struct ktime has a signed integer for both seconds
-+   and nanoseconds, so beware here.
-+
-+ * For timeouts, use absolute times. If you're a good fellow and made your
-+   ioctl restartable relative timeouts tend to be too coarse and can
-+   indefinitely extend your wait time due to rounding on each restart.
-+   Especially if your reference clock is something really slow like the display
-+   frame counter. With a spec laywer hat on this isn't a bug since timeouts can
-+   always be extended - but users will surely hate you if their neat animations
-+   starts to stutter due to this.
-+
-+ * Consider ditching any synchronous wait ioctls with timeouts and just deliver
-+   an asynchronous event on a pollable file descriptor. It fits much better
-+   into event driven applications' main loop.
-+
-+ * Have testcases for corner-cases, especially whether the return values for
-+   already-completed events, successful waits and timed-out waits are all sane
-+   and suiting to your needs.
-+
-+
-+Leaking Resources, Not
-+----------------------
-+
-+A full-blown drm driver essentially implements a little OS, but specialized to
-+the given GPU platforms. Which means a driver needs to expose tons of handles
-+for different objects and other resources to userspace. Doing that right
-+entails its own little set of pitfalls:
-+
-+ * Always attach the lifetime of your dynamically created resources to the
-+   lifetime of a file descriptor. Consider using a 1:1 mapping if your resource
-+   needs to be shared across processes -  fd-passing over unix domain sockets
-+   also simplifies lifetime management for userspace.
-+
-+ * Always have O_CLOEXEC support.
-+
-+ * Ensure that you have sufficient insulation between different clients. By
-+   default pick a private per-fd namespace which forces any sharing to be done
-+   explictly. Only go with a more global per-device namespace if the objects
-+   are truly device-unique. One counterexample in the drm modeset interfaces is
-+   that the per-device modeset objects like connectors share a namespace with
-+   framebuffer objects, which mostly are not shared at all. A separate
-+   namespace, private by default, for framebuffers would have been more
-+   suitable.
-+
-+ * Think about uniqueness requirements for userspace handles. E.g. for most drm
-+   drivers it's a userspace bug to submit the same object twice in the same
-+   command submission ioctl. But then if objects are shareable userspace needs
-+   to know whether it has seen an imported object from a different process
-+   already or not. I haven't tried this myself yet due to lack of a new class
-+   of objects, but consider using inode numbers on your shared file descriptors
-+   as unique identifiers - it's how real files are told apart, too.
-+   Unfortunately this requires a full-blown virtual filesystem in the kernel.
-+
-+
-+Last, but not Least
-+-------------------
-+
-+Not every problem needs a new ioctl:
-+
-+ * Think hard whether you really want a driver-private interface. Of course
-+   it's much quicker to push a driver-private interface than engaging in
-+   lengthy discussions for a more generic solution. And occasionally doing a
-+   private interface to spearhead a new concept is what's required. But in the
-+   end, once the generic interface comes around you'll end up maintainer two
-+   interfaces. Indefinitely.
-+
-+ * Consider other interfaces than ioctls. A sysfs attribute is much better for
-+   per-device settings, or for child objects with fairly static lifetimes (like
-+   output connectors in drm with all the detection override attributes). Or
-+   maybe only your testsuite needs this interface, and then debugfs with it's
-+   disclaimer of not having a stable ABI would be better.
-+
-+Finally, the name of the game is to get it right on the first attempt. Since if
-+your driver proves popular and your hardware platforms long-lived then you'll
-+be stuck with a given ioctl essentially forever. You can try to deprecate
-+horrible ioctls on newer iterations of your hardware, but generally it takes
-+years to accomplish this. And then again years until the last user able to
-+complain about regressions disappears, too.
+diff --git a/drivers/net/wireless/rtlwifi/ps.c b/drivers/net/wireless/rtlwifi/ps.c
+index 0d81f76..a56e9b3 100644
+--- a/drivers/net/wireless/rtlwifi/ps.c
++++ b/drivers/net/wireless/rtlwifi/ps.c
+@@ -48,7 +48,7 @@ bool rtl_ps_enable_nic(struct ieee80211_hw *hw)
+ 
+ 	/*<2> Enable Adapter */
+ 	if (rtlpriv->cfg->ops->hw_init(hw))
+-		return 1;
++		return false;
+ 	RT_CLEAR_PS_LEVEL(ppsc, RT_RF_OFF_LEVL_HALT_NIC);
+ 
+ 	/*<3> Enable Interrupt */
 -- 
-1.8.3.2
+1.8.5.2
 
