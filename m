@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaBABhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 20:37:12 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:59674 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145AbaBABhK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 20:37:10 -0500
+	id S1754474AbaBABtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 20:49:39 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:21064 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754300AbaBABti convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 20:49:38 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h906i1155h)
+Date: Fri, 31 Jan 2014 17:49:25 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: Fix notifier documentation
+References: <1390420117-25930-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMo8BfJZsBdBVnfTLoD-jUiZ59wT-rUBRvT97haMGSPtD9eK0g@mail.gmail.com>
-References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
- <1390975218-13863-3-git-send-email-jcmvbkbc@gmail.com> <52E8A407.1020809@gmail.com>
- <CAMo8BfJ_nce_H_8HJ7iw9ME=8C+sjF_Q43RaDG+1eVrpxWRvdQ@mail.gmail.com>
- <CAGVrzcboHp8-qHZseGOVm14u1-cTcOjRZGExFxNu_nbK__XCSA@mail.gmail.com>
- <CAMo8BfK-3-B-n7gxLaSO3JXSNNT_HwF0yTAMd+L5pp6odJKFTg@mail.gmail.com>
- <CAMo8BfKkZOhsXBXWXS5scc5zN6qQnvk51HOCxAJmDWW19wFM-Q@mail.gmail.com>
- <CAGVrzcaN=noWOoMj0w720H5TUBypOv2HAFPPzJRAfA=R4RLUmw@mail.gmail.com>
- <CAGVrzcY00GS8n0POtUpSNEAiTSCZLKVB_6AUFAuB0B3Ax4wbXA@mail.gmail.com> <CAMo8BfJZsBdBVnfTLoD-jUiZ59wT-rUBRvT97haMGSPtD9eK0g@mail.gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 31 Jan 2014 17:36:29 -0800
-Message-ID: <CAGVrzcYULudTcuparnH4m1kDb9KUYUhXD1Ve5aJV2_VjROqHCg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] net: ethoc: don't advertise gigabit speed on
- attached PHY
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Marc Gauthier <marc@cadence.com>, Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1390420117-25930-1-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <57c43634-23a6-4dcf-8aff-f49961d7f4d6@TX2EHSMHS005.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-31 Max Filippov <jcmvbkbc@gmail.com>:
-> On Sat, Feb 1, 2014 at 4:54 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
->> 2014-01-31 Florian Fainelli <f.fainelli@gmail.com>:
->>>>> Maybe they boot up with gigabit advertisement disabled in their PHY
->>>>> and thus they don't see the problem?
->>>>>
->>>>>> Other drivers do the following:
->>>>>>
->>>>>> - connect to the PHY
->>>>>> - phydev->supported = PHY_BASIC_FEATURES
->>>>>> - phydev->advertising &= phydev->supported
->>>>>> - start the PHY state machine
->>>>>>
->>>>>> And they work just fine. Is the PHY driver you are bound to the "Generic
->>>>>> PHY" or something else which does something funky in config_aneg()?
->>>>>
->>>>> It's marvell 88E1111 from the KC-705 board, but the behaviour doesn't
->>>>> change if I disable it and the generic phy is used.
->>>>
->>>> Florian,
->>>>
->>>> I don't see how the generic genphy_config_advert can ever change
->>>> gigabit advertisement if phydev->supported has gigabit speeds masked
->>>> off.
->>>
->>> It does not, but it makes sure that phydev->advertising gets masked
->>> with phydev->supported. So, prior to starting your PHY state machine,
->>> if you do:
->>>
->>> phydev->supported &= PHY_BASIC_FEATURES;
->>> phydev->advertising = phydev->supported;
->>
->> It looks like there might be one problem however, if we have the following:
->>
->> - phydev->supported masks off the Gigabit features
->> - PHY device comes out of reset/default with Gigabit features set in
->> MII_CTRL1000
->
-> That's exactly my case.
->
->> Could you try the following patch:
->>
->> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
->> index 78bf1a4..b607f4a 100644
->> --- a/drivers/net/phy/phy_device.c
->> +++ b/drivers/net/phy/phy_device.c
->> @@ -749,25 +749,24 @@ static int genphy_config_advert(struct phy_device *phydev)
->>         }
->>
->>         /* Configure gigabit if it's supported */
->> +       adv = phy_read(phydev, MII_CTRL1000);
->> +       if (adv < 0)
->> +               return adv;
->> +
->> +       oldadv = adv;
->> +       adv &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
->> +
->>         if (phydev->supported & (SUPPORTED_1000baseT_Half |
->>                                  SUPPORTED_1000baseT_Full)) {
->> -               adv = phy_read(phydev, MII_CTRL1000);
->> -               if (adv < 0)
->> -                       return adv;
->> -
->> -               oldadv = adv;
->> -               adv &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
->>                 adv |= ethtool_adv_to_mii_ctrl1000_t(advertise);
->> -
->> -               if (adv != oldadv) {
->> -                       err = phy_write(phydev, MII_CTRL1000, adv);
->> -
->> -                       if (err < 0)
->> -                               return err;
->> +               if (adv != oldadv)
->>                         changed = 1;
->> -               }
->>         }
->>
->> +       err = phy_write(phydev, MII_CTRL1000, adv);
->
->
-> I don't think this is correct: MII_CTRL1000 is reserved for 10/100 PHYs,
-> we probably need to read/write it conditionally, depending on MII_BMSR
-> BMSR_ESTATEN bit.
-> Otherwise yes, it works for me too.
+ping?
 
-You are right, that needs to be made conditional. I will give this
-patch some more proper testing on a truly non-gigabit PHY. Thanks!
--- 
-Florian
+On Wed, Jan 22, 2014 at 11:48:37AM -0800, Soren Brinkmann wrote:
+> Contradicting to documenation, the notifier callbacks do receive
+> the original clock rate in struct clk_notifier_data.old_rate and the new
+> frequency struct clk_notifier_data.new_rate, independent of the
+> notification reason.
+> 
+> This behavior also seems to make more sense, since callbacks can use the
+> same code to deterimine whether clocks are scaled up or down. Something
+> which would not even possible in the post-rate-change case if the
+> behavior was as documented.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> Hi Mike,
+> 
+> I am working with some clock notifiers and if my results are correct the
+> notifiers behave differently from how they are documented.
+> I think the actual behavior makes more sense than the documented and my original
+> plan was to change the behavior, but it seems I might get away with a
+> doc-update.
+> 
+> 	Thanks,
+> 	Sören
+> 
+>  drivers/clk/clk.c | 15 +++------------
+>  1 file changed, 3 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 2cf2ea6b77a1..26825db03e64 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1983,20 +1983,11 @@ EXPORT_SYMBOL_GPL(devm_clk_unregister);
+>   * re-enter into the clk framework by calling any top-level clk APIs;
+>   * this will cause a nested prepare_lock mutex.
+>   *
+> - * Pre-change notifier callbacks will be passed the current, pre-change
+> - * rate of the clk via struct clk_notifier_data.old_rate.  The new,
+> - * post-change rate of the clk is passed via struct
+> + * In all notification cases cases (pre, post and abort rate change) the
+> + * original clock rate is passed to the callback via struct
+> + * clk_notifier_data.old_rate and the new frequency is passed via struct
+>   * clk_notifier_data.new_rate.
+>   *
+> - * Post-change notifiers will pass the now-current, post-change rate of
+> - * the clk in both struct clk_notifier_data.old_rate and struct
+> - * clk_notifier_data.new_rate.
+> - *
+> - * Abort-change notifiers are effectively the opposite of pre-change
+> - * notifiers: the original pre-change clk rate is passed in via struct
+> - * clk_notifier_data.new_rate and the failed post-change rate is passed
+> - * in via struct clk_notifier_data.old_rate.
+> - *
+>   * clk_notifier_register() must be called from non-atomic context.
+>   * Returns -EINVAL if called with null arguments, -ENOMEM upon
+>   * allocation failure; otherwise, passes along the return value of
+> -- 
+> 1.8.5.3
+> 
+> 
+
