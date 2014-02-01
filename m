@@ -1,133 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552AbaBAB4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 20:56:33 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:39685 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220AbaBAB4b (ORCPT
+	id S932857AbaBACH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 21:07:59 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:58653 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932450AbaBACH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 20:56:31 -0500
+	Fri, 31 Jan 2014 21:07:57 -0500
+Date: Fri, 31 Jan 2014 18:07:16 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Weijie Yang <weijie.yang@samsung.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        Minchan Kim <minchan@kernel.org>, shli@fusionio.com,
+        Bob Liu <bob.liu@oracle.com>, k.kozlowski@samsung.com,
+        weijie.yang.kh@gmail.com
+Subject: Re: [PATCH] mm/swap: fix race on swap_info reuse between swapoff
+ and swapon
+In-Reply-To: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
+Message-ID: <alpine.LSU.2.11.1401311729250.4217@eggly.anvils>
+References: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1676758.QjUXk2223P@vostro.rjw.lan>
-References: <20140130131236.GW18029@intel.com>
-	<1676758.QjUXk2223P@vostro.rjw.lan>
-Date: Fri, 31 Jan 2014 17:56:30 -0800
-X-Google-Sender-Auth: 0p3GJm1qUT5jYXEZOjMWwm2pLfY
-Message-ID: <CAE9FiQX_AuSPq159AwDHP+n0k6FK3pS2CNttPFAJP2K-84ho1w@mail.gmail.com>
-Subject: Re: [PATCH] Revert "PCI: Remove from bus_list and release resources
- in pci_release_dev()"
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 3:34 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Revert commit ef83b0781a73 "PCI: Remove from bus_list and release
-> resources in pci_release_dev()" that made some nasty race conditions
-> become possible.  For example, if a Thunderbolt link is unplugged
-> and then replugged immediately, the pci_release_dev() resulting from
-> the hot-remove code path may be racing with the hot-add code path
-> which after that commit causes various kinds of breakage to happen
-> (up to and including a hard crash of the whole system).
->
-> Moreover, the problem that commit ef83b0781a73 attempted to address
-> cannot happen any more after commit 8a4c5c329de7 "PCI: Check parent
-> kobject in pci_destroy_dev()", because pci_destroy_dev() will now
-> return immediately if it has already been executed for the given
-> device.
->
-> Fixes: ef83b0781a73 (PCI: Remove from bus_list and release resources in pci_release_dev())
-> Reported-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 04796c056d12..6e34498ec9f0 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1208,18 +1208,6 @@ static void pci_release_capabilities(struct pci_dev *dev)
->         pci_free_cap_save_buffers(dev);
->  }
->
-> -static void pci_free_resources(struct pci_dev *dev)
-> -{
-> -       int i;
-> -
-> -       pci_cleanup_rom(dev);
-> -       for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-> -               struct resource *res = dev->resource + i;
-> -               if (res->parent)
-> -                       release_resource(res);
-> -       }
-> -}
-> -
->  /**
->   * pci_release_dev - free a pci device structure when all users of it are finished.
->   * @dev: device that's been disconnected
-> @@ -1229,14 +1217,9 @@ static void pci_free_resources(struct pci_dev *dev)
->   */
->  static void pci_release_dev(struct device *dev)
->  {
-> -       struct pci_dev *pci_dev = to_pci_dev(dev);
-> -
-> -       down_write(&pci_bus_sem);
-> -       list_del(&pci_dev->bus_list);
-> -       up_write(&pci_bus_sem);
-> -
-> -       pci_free_resources(pci_dev);
-> +       struct pci_dev *pci_dev;
->
-> +       pci_dev = to_pci_dev(dev);
->         pci_release_capabilities(pci_dev);
->         pci_release_of_node(pci_dev);
->         pcibios_release_device(pci_dev);
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 4ff36bfa785e..b8c93c90daf5 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -3,6 +3,20 @@
->  #include <linux/pci-aspm.h>
->  #include "pci.h"
->
-> +static void pci_free_resources(struct pci_dev *dev)
-> +{
-> +       int i;
-> +
-> +       msi_remove_pci_irq_vectors(dev);
+On Thu, 9 Jan 2014, Weijie Yang wrote:
 
-looks like you are in a rush. Why do you put back msi_remove_pci_irq_vectors?
+> swapoff clear swap_info's SWP_USED flag prematurely and free its resources
+> after that. A concurrent swapon will reuse this swap_info while its previous
+> resources are not cleared completely.
+> 
+> These late freed resources are:
+> - p->percpu_cluster
+> - swap_cgroup_ctrl[type]
+> - block_device setting
+> - inode->i_flags &= ~S_SWAPFILE
+> 
+> This patch clear SWP_USED flag after all its resources freed, so that swapon
+> can reuse this swap_info by alloc_swap_info() safely.
+> 
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
+
+I've now read through the thread at last, and think this (or akpm's
+mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
+more clearly commented version) is the best of the patches on offer.
+
+I agree that it fixes Krzysztof's set_blocksize issue among others,
+and I prefer this one to his.  Largely because I dislike swapon_mutex:
+it has always felt like one lock too many, so, contrary to akpm, I'm
+usually (perhaps irrationally) resistant to extending its use.
+
+swapon_mutex came into existence (as swapon_sem in 2.6.6) to handle a
+very specific might_sleep issue where /proc/swaps was using swap_lock.
+I may have abused it myself since in swapoff, not sure offhand: but
+think of it as proc_swaps_mutex, that's what it's really about.
+
+I'm sorry for derailing the previous discussion with my set_blocksize
+doubts: I still don't understand what that's all about, but we didn't
+get any clarification, and I now accept that it's safer to go on
+doing what we've always done there - plus these fixes.
+
+I think the use of swap_lock below is actually unnecessary, isn't it?
+This is the only piece of code that might be writing to p->flags at
+this point, and if another piece of code catches the before state
+or the after state, so what?
+
+But let's go ahead with
+mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
+as is: no need to remove every redundancy (there is more near here!),
+and I may be playing too trickily.
+
+Thanks for the patch: I'll explain in a separate response
+why I prefer this to your later 2/8 version.
+
+Hugh
+
+> ---
+>  mm/swapfile.c |   11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 612a7c9..89071c3
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+>  	p->swap_map = NULL;
+>  	cluster_info = p->cluster_info;
+>  	p->cluster_info = NULL;
+> -	p->flags = 0;
+>  	frontswap_map = frontswap_map_get(p);
+>  	spin_unlock(&p->lock);
+>  	spin_unlock(&swap_lock);
+> @@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+>  		mutex_unlock(&inode->i_mutex);
+>  	}
+>  	filp_close(swap_file, NULL);
 > +
-> +       pci_cleanup_rom(dev);
-> +       for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-> +               struct resource *res = dev->resource + i;
-> +               if (res->parent)
-> +                       release_resource(res);
-> +       }
-> +}
+> +	/*
+> +	* clear SWP_USED flag after all resources freed
+> +	* so that swapon can reuse this swap_info in alloc_swap_info() safely
+> +	* it is ok to not hold p->lock after we cleared its SWP_WRITEOK
+> +	*/
+> +	spin_lock(&swap_lock);
+> +	p->flags = 0;
+> +	spin_unlock(&swap_lock);
 > +
->  static void pci_stop_dev(struct pci_dev *dev)
->  {
->         pci_pme_active(dev, false);
-> @@ -25,6 +39,11 @@ static void pci_destroy_dev(struct pci_dev *dev)
->
->         device_del(&dev->dev);
->
-> +       down_write(&pci_bus_sem);
-> +       list_del(&dev->bus_list);
-> +       up_write(&pci_bus_sem);
-> +
-> +       pci_free_resources(dev);
->         put_device(&dev->dev);
->  }
->
->
+>  	err = 0;
+>  	atomic_inc(&proc_poll_event);
+>  	wake_up_interruptible(&proc_poll_wait);
+> -- 
+> 1.7.10.4
