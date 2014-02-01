@@ -1,148 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933438AbaBASVM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 13:21:12 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33801 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933256AbaBASVK (ORCPT
+	id S933444AbaBASXx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 13:23:53 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:64844 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933256AbaBASXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 13:21:10 -0500
-Message-ID: <52ED3BA5.2060907@metafoo.de>
-Date: Sat, 01 Feb 2014 19:23:33 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Sat, 1 Feb 2014 13:23:51 -0500
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>
-CC: Srikanth Thokala <sthokal@xilinx.com>, dan.j.williams@intel.com,
-        vinod.koul@intel.com, michal.simek@xilinx.com,
-        Grant Likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access Engine
- driver support
-References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com> <1390409565-4200-2-git-send-email-sthokal@xilinx.com> <52E0FC22.8060903@metafoo.de> <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com> <52E2698B.6070001@metafoo.de> <20140131174451.GA20512@qualcomm.com>
-In-Reply-To: <20140131174451.GA20512@qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <14676899.LOmsodapl3@vostro.rjw.lan>
+References: <20140130131236.GW18029@intel.com>
+	<1676758.QjUXk2223P@vostro.rjw.lan>
+	<CAE9FiQX_AuSPq159AwDHP+n0k6FK3pS2CNttPFAJP2K-84ho1w@mail.gmail.com>
+	<14676899.LOmsodapl3@vostro.rjw.lan>
+Date: Sat, 1 Feb 2014 10:23:51 -0800
+X-Google-Sender-Auth: y_szoNdlcf-8Vf7CVN-fLfsnWHw
+Message-ID: <CA+55aFyG+nFz-CZmaci7-uinnK8a5QhyJ5Yq+Q+tSA8oR3nW5g@mail.gmail.com>
+Subject: Re: [PATCH] Revert "PCI: Remove from bus_list and release resources
+ in pci_release_dev()"
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 06:44 PM, Andy Gross wrote:
-> On Fri, Jan 24, 2014 at 02:24:27PM +0100, Lars-Peter Clausen wrote:
->> On 01/24/2014 12:16 PM, Srikanth Thokala wrote:
->>> Hi Lars,
->>>
->>> On Thu, Jan 23, 2014 at 4:55 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>> On 01/22/2014 05:52 PM, Srikanth Thokala wrote:
->>>> [...]
->>>>> +/**
->>>>> + * xilinx_vdma_device_control - Configure DMA channel of the device
->>>>> + * @dchan: DMA Channel pointer
->>>>> + * @cmd: DMA control command
->>>>> + * @arg: Channel configuration
->>>>> + *
->>>>> + * Return: '0' on success and failure value on error
->>>>> + */
->>>>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
->>>>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
->>>>> +{
->>>>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->>>>> +
->>>>> +     switch (cmd) {
->>>>> +     case DMA_TERMINATE_ALL:
->>>>> +             xilinx_vdma_terminate_all(chan);
->>>>> +             return 0;
->>>>> +     case DMA_SLAVE_CONFIG:
->>>>> +             return xilinx_vdma_slave_config(chan,
->>>>> +                                     (struct xilinx_vdma_config *)arg);
->>>>
->>>> You really shouldn't be overloading the generic API with your own semantics.
->>>> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
->>>
->>> Ok.  The driver needs few additional configuration from the slave
->>> device like Vertical
->>> Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
->>> suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
->>> defined for Freescale drivers?
->>
->> In my opinion it is not a good idea to have driver implement a generic API,
->> but at the same time let the driver have custom semantics for those API
->> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
->> values passed to gpio_set_value instead of 0 and 1. It completely defeats
->> the purpose of a generic API, namely that you are able to write generic code
->> that makes use of the API without having to know about which implementation
->> API it is talking to. The dmaengine framework provides the
->> dmaengine_prep_interleaved_dma() function to setup two dimensional
->> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
->>
+On Sat, Feb 1, 2014 at 6:38 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 >
-> The comments in the include/linux/dmaengine.h state that if you have
-> non-generic, non-fixed configuration then you can just create your own
-> structure and embed the dma_slave_config.  Using the container_of you can get
-> back your structure.
+> Updated revert follows.
 
-We should probably revise that, since it is not going to work that well.
+I'm taking this directly, since I'll cut rc1 tomorrow (or maybe later today).
 
->
-> I agree that we should always use the generic structure if possible, but
-> sometimes there are some non-standard things that you have to do for your
-> hardware.  I am currently in a bind for adding some quirky features that are
-> required by peripherals who want to use the QCOM DMA devices.
-
-Well there are two types of extensions to the API. The first type changes the 
-semantics of the API so it is no longer possible to use the API without knowing 
-about the extension. This is in my opinion a complete no-go since goes against 
-the very idea of a common API. If you implement the common API with custom 
-semantics you have a custom API. It's just better hidden since you use the same 
-function names. My opinion on this is if you want/need a custom API make it a 
-custom API with custom function names. This on one hand avoids confusion about 
-the behavior and on the other hand reduces the maintenance burden for the 
-common API (e.g. if somebody makes changes to the common API they don't have to 
-bother to update your driver and don't have to try to understand the custom 
-semantics). The other kind of extensions are those that add additional 
-functionality on top of the common API, while keeping the normal semantics for 
-the common API. Which means a user that does not know about the extensions is 
-still able to function. A user that knows about the extension can make use of 
-the additional features.
-
-That said, everybody always thinks their hardware is special and requires 
-special extensions. Usually this is not the case, there will always sooner or 
-later somebody else who needs the same extensions. The dmaengine API is not set 
-in stone, so if you think something is missing to properly to support your 
-hardware it is worth investigating if it makes sense to add the missing parts 
-to the common API. As I said before the whole point of the exercise of having a 
-common API is that we want to abstract away (hardware) implementation specific 
-details. This allows the upper layers to have platform independent common code 
-to take care of setting up the DMA transfers. E.g. in ALSA subsystem we went 
-from 10+ custom implementations of a PCM driver build on top of dmaengine to 1 
-generic implementation that is shared between platforms. All those custom PCM 
-drivers had hardcoded assumptions about the behavior and features of the 
-underlying dmaengine driver. To be able to have one generic PCM driver it was 
-necessarily to extend the dmaengine API to be able to expose these differences 
-in features and behavior. So as I said the API is not set in stone if it is 
-necessary to extend or modify it to support something properly do it. Other 
-subsystems also want to go the direction of having more shared code that makes 
-use of the dmaengine API at the subsytem level rather than having every driver 
-basically implement the same stuff (with slight variations) over and over 
-again. Having custom extensions in your dmaengine will not make it possible to 
-write a generic user.
-
->
-> If the context field in prep_slave_sg and prep_dma_cyclic was exposed to
-> everyone, that would allow an easy way to pass in hardware specific
-> configuration without bastardizing the slave_config.  I noticed that rapidio is
-> the only consumer of that field and that they have their own prep function.
->
-> If we are not going to allow people to do their own slave_config when they need
-> to, then we need to remove the comments from the include file and expose the
-> context to the dmaengine_prep_slave_sg and dmaengine_prep_dma_cyclic.
-
-I don't think the way the rapidio stuff is handled is good for the reasons 
-stated above. It uses the same names, but has different semantics. A user of 
-the dmaengine interface that does not know that the underlying dmaengine driver 
-expects rapidio semantics does not work.
-
-- Lars
-
+           Linus
