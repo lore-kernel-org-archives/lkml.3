@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaBABJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 20:09:32 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:30429 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120AbaBABJb convert rfc822-to-8bit (ORCPT
+	id S932750AbaBABKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 20:10:25 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:44713 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534AbaBABKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 20:09:31 -0500
-From: "Pearson, Greg" <greg.pearson@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] vmcore: prevent PT_NOTE p_memsz overflow during header
- update
-Thread-Topic: [PATCH] vmcore: prevent PT_NOTE p_memsz overflow during header
- update
-Thread-Index: AQHPHtqFuSja1fPh8UeGdozh9BV3pJqflj4A
-Date: Sat, 1 Feb 2014 01:07:29 +0000
-Message-ID: <52EC48D0.4000503@hp.com>
-References: <1391209566-4734-1-git-send-email-greg.pearson@hp.com>
- <20140131151651.26ff54cd7bd06fc5feb6fcc6@linux-foundation.org>
-In-Reply-To: <20140131151651.26ff54cd7bd06fc5feb6fcc6@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
- Thunderbird/17.0.5
-x-originating-ip: [16.216.198.110]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <31DC996F2A49D9469A2F951B236978A7@Compaq.com>
-Content-Transfer-Encoding: 7BIT
+	Fri, 31 Jan 2014 20:10:23 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAGVrzcY00GS8n0POtUpSNEAiTSCZLKVB_6AUFAuB0B3Ax4wbXA@mail.gmail.com>
+References: <1390975218-13863-1-git-send-email-jcmvbkbc@gmail.com>
+	<1390975218-13863-3-git-send-email-jcmvbkbc@gmail.com>
+	<52E8A407.1020809@gmail.com>
+	<CAMo8BfJ_nce_H_8HJ7iw9ME=8C+sjF_Q43RaDG+1eVrpxWRvdQ@mail.gmail.com>
+	<CAGVrzcboHp8-qHZseGOVm14u1-cTcOjRZGExFxNu_nbK__XCSA@mail.gmail.com>
+	<CAMo8BfK-3-B-n7gxLaSO3JXSNNT_HwF0yTAMd+L5pp6odJKFTg@mail.gmail.com>
+	<CAMo8BfKkZOhsXBXWXS5scc5zN6qQnvk51HOCxAJmDWW19wFM-Q@mail.gmail.com>
+	<CAGVrzcaN=noWOoMj0w720H5TUBypOv2HAFPPzJRAfA=R4RLUmw@mail.gmail.com>
+	<CAGVrzcY00GS8n0POtUpSNEAiTSCZLKVB_6AUFAuB0B3Ax4wbXA@mail.gmail.com>
+Date: Sat, 1 Feb 2014 05:10:22 +0400
+Message-ID: <CAMo8BfJZsBdBVnfTLoD-jUiZ59wT-rUBRvT97haMGSPtD9eK0g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] net: ethoc: don't advertise gigabit speed on
+ attached PHY
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Marc Gauthier <marc@cadence.com>, Ben Hutchings <ben@decadent.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Zankel <chris@zankel.net>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 04:16 PM, Andrew Morton wrote:
-> On Fri, 31 Jan 2014 16:06:06 -0700 Greg Pearson <greg.pearson@hp.com> wrote:
->
->> Currently, update_note_header_size_elf64() and
->> update_note_header_size_elf32() will add the size
->> of a PT_NOTE entry to real_sz even if that causes real_sz
->> to exceeds max_sz. This patch corrects the while loop logic
->> in those routines to ensure that does not happen.
+On Sat, Feb 1, 2014 at 4:54 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-01-31 Florian Fainelli <f.fainelli@gmail.com>:
+>>>> Maybe they boot up with gigabit advertisement disabled in their PHY
+>>>> and thus they don't see the problem?
+>>>>
+>>>>> Other drivers do the following:
+>>>>>
+>>>>> - connect to the PHY
+>>>>> - phydev->supported = PHY_BASIC_FEATURES
+>>>>> - phydev->advertising &= phydev->supported
+>>>>> - start the PHY state machine
+>>>>>
+>>>>> And they work just fine. Is the PHY driver you are bound to the "Generic
+>>>>> PHY" or something else which does something funky in config_aneg()?
+>>>>
+>>>> It's marvell 88E1111 from the KC-705 board, but the behaviour doesn't
+>>>> change if I disable it and the generic phy is used.
+>>>
+>>> Florian,
+>>>
+>>> I don't see how the generic genphy_config_advert can ever change
+>>> gigabit advertisement if phydev->supported has gigabit speeds masked
+>>> off.
 >>
->> ...
+>> It does not, but it makes sure that phydev->advertising gets masked
+>> with phydev->supported. So, prior to starting your PHY state machine,
+>> if you do:
 >>
->> Occasionally, a second entry is encountered with very
->> large n_namesz and n_descsz sizes:
->>
->>    n_namesz = 0x80000008
->>    n_descsz = 0x510ae163
->>    n_type   = 0x80000008
-> Hang on.
+>> phydev->supported &= PHY_BASIC_FEATURES;
+>> phydev->advertising = phydev->supported;
 >
->> --- a/fs/proc/vmcore.c
->> +++ b/fs/proc/vmcore.c
->> @@ -468,12 +468,13 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
->>   			return rc;
->>   		}
->>   		nhdr_ptr = notes_section;
->> -		while (real_sz < max_sz) {
->> -			if (nhdr_ptr->n_namesz == 0)
->> -				break;
->> +		while (nhdr_ptr->n_namesz != 0) {
->>   			sz = sizeof(Elf64_Nhdr) +
->>   				((nhdr_ptr->n_namesz + 3) & ~3) +
->>   				((nhdr_ptr->n_descsz + 3) & ~3);
->> +			/* Silently drop further PT_NOTE entries */
->> +			if ((real_sz + sz) > max_sz)
->> +				break;
-> If we are encountering notes with these crazy sizes then what is
-> preventing (real_sx + sz) from wrapping through zero, which would
-> defeat this check?
+> It looks like there might be one problem however, if we have the following:
 >
+> - phydev->supported masks off the Gigabit features
+> - PHY device comes out of reset/default with Gigabit features set in
+> MII_CTRL1000
+
+That's exactly my case.
+
+> Could you try the following patch:
 >
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index 78bf1a4..b607f4a 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -749,25 +749,24 @@ static int genphy_config_advert(struct phy_device *phydev)
+>         }
+>
+>         /* Configure gigabit if it's supported */
+> +       adv = phy_read(phydev, MII_CTRL1000);
+> +       if (adv < 0)
+> +               return adv;
+> +
+> +       oldadv = adv;
+> +       adv &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+> +
+>         if (phydev->supported & (SUPPORTED_1000baseT_Half |
+>                                  SUPPORTED_1000baseT_Full)) {
+> -               adv = phy_read(phydev, MII_CTRL1000);
+> -               if (adv < 0)
+> -                       return adv;
+> -
+> -               oldadv = adv;
+> -               adv &= ~(ADVERTISE_1000FULL | ADVERTISE_1000HALF);
+>                 adv |= ethtool_adv_to_mii_ctrl1000_t(advertise);
+> -
+> -               if (adv != oldadv) {
+> -                       err = phy_write(phydev, MII_CTRL1000, adv);
+> -
+> -                       if (err < 0)
+> -                               return err;
+> +               if (adv != oldadv)
+>                         changed = 1;
+> -               }
+>         }
+>
+> +       err = phy_write(phydev, MII_CTRL1000, adv);
 
-As far as I know the only consequence of dropping a PT_NOTE entry is 
-that it would not be available in the crash dump for use in debugging. 
-I'm not sure how important this data might be for triage. I'm guessing 
-that in cases where one of these strange PT_NOTE entries shows up with a 
-size that causes an overflow it probably isn't even a real PT_NOTE entry 
-so dropping it won't matter, but that's a guess at this point since I'm 
-still trying to figure out how the bogus entries were created.
 
-I think the wrap case is handled ok by the current code since "real_sz" 
-and "sz" are both declared as u64, while the "n_namesz" and "n_descsz" 
-fields are declared as u32. This is true for both the elf32 and elf64 case.
+I don't think this is correct: MII_CTRL1000 is reserved for 10/100 PHYs,
+we probably need to read/write it conditionally, depending on MII_BMSR
+BMSR_ESTATEN bit.
+Otherwise yes, it works for me too.
 
-Adding a pr_warn() is probably a good idea, then I can remove the comment.
+> +       if (err < 0)
+> +               return err;
+> +
+>         return changed;
+>  }
 
---
-Greg
-
-
-
-
+-- 
+Thanks.
+-- Max
