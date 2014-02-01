@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670AbaBABB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Jan 2014 20:01:57 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:49593 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754343AbaBABB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Jan 2014 20:01:56 -0500
-Date: Fri, 31 Jan 2014 18:01:50 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] of_mdio: Allow the DT to specify the phy ID and
- avoid autoprobing
-Message-ID: <20140201010150.GB2519@obsidianresearch.com>
-References: <1391205045-1751-1-git-send-email-jgunthorpe@obsidianresearch.com>
- <1391205045-1751-2-git-send-email-jgunthorpe@obsidianresearch.com>
- <CAGVrzcbVo-Zzm9kLhiptf-qWgPH9XSs29mW8g2=g=Bq=PCb0_w@mail.gmail.com>
- <20140131225513.GA2519@obsidianresearch.com>
- <CAGVrzcZwkHSLJxpVsVY_6-VnsuODs0vGKcrcvSBzMEq3GWxqLA@mail.gmail.com>
+	id S932949AbaBABDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 31 Jan 2014 20:03:43 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54392 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932750AbaBABDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 31 Jan 2014 20:03:42 -0500
+Date: Sat, 1 Feb 2014 01:03:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: NFS client broken in Linus' tip
+Message-ID: <20140201010328.GI15937@n2100.arm.linux.org.uk>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk> <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGVrzcZwkHSLJxpVsVY_6-VnsuODs0vGKcrcvSBzMEq3GWxqLA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <1391201970.6978.1.camel@leira.trondhjem.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 03:28:10PM -0800, Florian Fainelli wrote:
-> - you tell of_mdiobus_register() to look for a reset phandle and have
-> a reset controller release the PHY from reset before it tries to probe
-> for it, because doing that could avoid doing the PHY out of reset
-> sequence in a few dozen Ethernet drivers
+On Fri, Jan 31, 2014 at 03:59:30PM -0500, Trond Myklebust wrote:
+> On Thu, 2014-01-30 at 15:38 +0000, Russell King - ARM Linux wrote:
+> > On Thu, Jan 30, 2014 at 06:32:08AM -0800, Christoph Hellwig wrote:
+> > > On Thu, Jan 30, 2014 at 02:27:52PM +0000, Russell King - ARM Linux wrote:
+> > > > Yes and no.  I still end up with an empty /etc/mtab, but the file now
+> > > > exists.  However, I can create and echo data into /etc/mtab, but it seems
+> > > > that can't happen at boot time.
+> > > 
+> > > Odd.  Can you disable CONFIG_NFSD_V3_ACL for now to isolate the issue?
+> > 
+> > Unfortunately, that results in some problem at boot time, which
+> > ultimately ends up with the other three CPUs being stopped, and
+> > hence the original reason scrolls off the screen before it can be
+> > read... even at 1920p.
+> > 
+> Hi Russell,
+> 
+> The following patch fixes the issue for me.
 
-I think this would be interesting, but difficult. Ideally you'd want
-to keep the phy in reset until an ethernet driver attaches to it, and
-reset it again once it detaches, so Linux would have to defer probing
-the phy driver until an attach. Not sure what this would do for power
-consumption, but reset might be lower power on phy's that don't have
-an internal power down.
+It doesn't entirely fix the issue for me, instead we've got even weirder
+behaviour:
 
-> The auto-probing bypass logic looks simple enough, and it does not
-> require burying the reset logic behind a reset controller, which
-> uses
+root@cubox-i4:~# ls -al test
+ls: cannot access test: No such file or directory
+root@cubox-i4:~# touch test
+root@cubox-i4:~# ls -al test
+-rw-r--r-- 1 root root 0 Feb  1 01:01 test
+root@cubox-i4:~# echo foo > test
+root@cubox-i4:~# ls -al test
+-rw-r--r-- 1 root root 4 Feb  1 01:01 test
+root@cubox-i4:~# cat test
+foo
+root@cubox-i4:~# rm test
+root@cubox-i4:~# echo foo > test
+-bash: test: Operation not supported
+root@cubox-i4:~# ls -al test
+-rw-r--r-- 1 root root 0 Feb  1 01:01 test
 
-Right, it closely matches what was happening in board files. FWIW,
-this system was designed in 2005 for Linux 2.16 and this patch set fell
-out of porting forward to 3.13 w/ DT.
-
-Jason
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
