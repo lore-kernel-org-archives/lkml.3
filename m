@@ -1,215 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaBBXa6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 18:30:58 -0500
-Received: from mail.us.es ([193.147.175.20]:46488 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521AbaBBXaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 18:30:55 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus4 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.1/18429. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-99.8/7.5):. 
- Processed in 4.444397 secs); 02 Feb 2014 23:30:52 -0000
-X-Spam-ASN: AS3209 94.216.0.0/13
-X-Envelope-From: pneira@us.es
-Date: Mon, 3 Feb 2014 00:30:46 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Florian Westphal <fw@strlen.de>
-Cc: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
-        netfilter-devel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        netfilter@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Vasiliy Averin <vvs@parallels.com>
-Subject: Re: [PATCH] [RFC] netfilter: nf_conntrack: don't relase a conntrack
- with non-zero refcnt
-Message-ID: <20140202233046.GA4137@localhost>
-References: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
- <1389720948-7883-1-git-send-email-avagin@openvz.org>
- <20140114185329.GB28205@breakpoint.cc>
- <20140115180844.GA3605@paralelels.com>
- <20140116092301.GF28205@breakpoint.cc>
+	id S1752590AbaBBXmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 18:42:46 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:24803 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752522AbaBBXmo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 18:42:44 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswOAF/X7lJ5LGaB/2dsb2JhbABagwypS5AIhVKBABd0gkocHCMYJDQFJQM0iATMShaOc4Q/BJRCg2eSIoNBKA
+Date: Mon, 3 Feb 2014 10:42:39 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
+Subject: [livelock, 3.13.0] livelock when run out of swap space
+Message-ID: <20140202234239.GX2212@dastard>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="IS0zKkzwUGydFO0o"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140116092301.GF28205@breakpoint.cc>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi folks,
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I just had a test machine livelock when running a concurrent rm -rf
+workload on an XFS filesystem with 64k directory block sizes. The
+buffer allocation code started reporting this 5 times a second:
 
-On Thu, Jan 16, 2014 at 10:23:01AM +0100, Florian Westphal wrote:
-> Andrew Vagin <avagin@parallels.com> wrote:
-> > > I think it would be nice if we could keep it that way.
-> > > If everything fails we could proably intoduce a 'larval' dummy list
-> > > similar to the one used by template conntracks?
-> > 
-> > I'm not sure, that this is required. Could you elaborate when this can
-> > be useful?
-> 
-> You can dump the lists via ctnetlink.  Its meant as a debugging aid in
-> case one suspects refcnt leaks.
-> 
-> Granted, in this situation there should be no leak since we put the newly
-> allocated entry in the error case.
-> 
-> > Now I see only overhead, because we need to take the nf_conntrack_lock
-> > lock to add conntrack in a list.
-> 
-> True. I don't have any preference, I guess I'd just do the insertion into the
-> unconfirmed list when we know we cannot track to keep the "unhashed"
-> bug trap in the destroy function.
-> 
-> Pablo, any preference?
+XFS: possible memory allocation deadlock in kmem_alloc (mode:0x8250)
 
-I think we can initially set to zero the refcount and bump it once it
-gets into any of the lists, so Eric's golden rule also stands for
-conntracks that are released without being inserted in any list via
-nf_conntrack_free().
+Which is in GFP_NOFS|GFP_ZERO context. It is likely to have been a
+high order allocation (up to 64k), but there was still lenty of free
+memory available (2.8GB of 16GB):
 
-My idea was to use dying list to detect possible runtime leaks (ie.
-missing nf_ct_put somewhere), not simple leaks the initialization
-path, as you said, it would add too much overhead to catch them with
-the dying list, so we can skip those.
+$ free
+             total       used       free     shared    buffers     cached
+Mem:      16424296   13593732    2830564          0        136       3184
+-/+ buffers/cache:   13590412    2833884
+Swap:       497976     497976          0
+$
 
-Please, let me know if you find any issue with this approach.
+But clearly there was no page cache being used. All of the memory in
+use was in the inode/dentry caches:
 
---IS0zKkzwUGydFO0o
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="x.patch"
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+  9486678 9483271  99%    1.19K 364874       26  11675968K xfs_inode
+  4820508 4820508 100%    0.21K 130284       37   1042272K dentry
+  4820224 4820224 100%    0.06K  75316       64    301264K kmalloc-64
 
-diff --git a/include/net/netfilter/nf_conntrack.h b/include/net/netfilter/nf_conntrack.h
-index 01ea6ee..b2ac624 100644
---- a/include/net/netfilter/nf_conntrack.h
-+++ b/include/net/netfilter/nf_conntrack.h
-@@ -284,6 +284,8 @@ extern unsigned int nf_conntrack_max;
- extern unsigned int nf_conntrack_hash_rnd;
- void init_nf_conntrack_hash_rnd(void);
- 
-+void nf_conntrack_tmpl_insert(struct net *net, struct nf_conn *tmpl);
-+
- #define NF_CT_STAT_INC(net, count)	  __this_cpu_inc((net)->ct.stat->count)
- #define NF_CT_STAT_INC_ATOMIC(net, count) this_cpu_inc((net)->ct.stat->count)
- 
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index 4d1fb5d..bd5ec5a 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -448,7 +448,8 @@ nf_conntrack_hash_check_insert(struct nf_conn *ct)
- 			goto out;
- 
- 	add_timer(&ct->timeout);
--	nf_conntrack_get(&ct->ct_general);
-+	/* The caller holds a reference to this object */
-+	atomic_set(&ct->ct_general.use, 2);
- 	__nf_conntrack_hash_insert(ct, hash, repl_hash);
- 	NF_CT_STAT_INC(net, insert);
- 	spin_unlock_bh(&nf_conntrack_lock);
-@@ -462,6 +463,21 @@ out:
- }
- EXPORT_SYMBOL_GPL(nf_conntrack_hash_check_insert);
- 
-+/* deletion from this larval template list happens via nf_ct_put() */
-+void nf_conntrack_tmpl_insert(struct net *net, struct nf_conn *tmpl)
-+{
-+	__set_bit(IPS_TEMPLATE_BIT, &tmpl->status);
-+	__set_bit(IPS_CONFIRMED_BIT, &tmpl->status);
-+	nf_conntrack_get(&tmpl->ct_general);
-+
-+	spin_lock_bh(&nf_conntrack_lock);
-+	/* Overload tuple linked list to put us in template list. */
-+	hlist_nulls_add_head_rcu(&tmpl->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
-+				 &net->ct.tmpl);
-+	spin_unlock_bh(&nf_conntrack_lock);
-+}
-+EXPORT_SYMBOL_GPL(nf_conntrack_tmpl_insert);
-+
- /* Confirm a connection given skb; places it in hash table */
- int
- __nf_conntrack_confirm(struct sk_buff *skb)
-@@ -733,11 +749,11 @@ __nf_conntrack_alloc(struct net *net, u16 zone,
- 		nf_ct_zone->id = zone;
- 	}
- #endif
--	/*
--	 * changes to lookup keys must be done before setting refcnt to 1
-+	/* Because we use RCU lookups, we set ct_general.use to zero before
-+	 * this is inserted in any list.
- 	 */
- 	smp_wmb();
--	atomic_set(&ct->ct_general.use, 1);
-+	atomic_set(&ct->ct_general.use, 0);
- 	return ct;
- 
- #ifdef CONFIG_NF_CONNTRACK_ZONES
-@@ -761,6 +777,11 @@ void nf_conntrack_free(struct nf_conn *ct)
- {
- 	struct net *net = nf_ct_net(ct);
- 
-+	/* A freed object has refcnt == 0, thats
-+	 * the golden rule for SLAB_DESTROY_BY_RCU
-+	 */
-+	NF_CT_ASSERT(atomic_read(&ct->ct_general.use) == 0);
-+
- 	nf_ct_ext_destroy(ct);
- 	nf_ct_ext_free(ct);
- 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
-@@ -856,6 +877,9 @@ init_conntrack(struct net *net, struct nf_conn *tmpl,
- 		NF_CT_STAT_INC(net, new);
- 	}
- 
-+	/* Now it is inserted into the hashes, bump refcount */
-+	nf_conntrack_get(&ct->ct_general);
-+
- 	/* Overload tuple linked list to put us in unconfirmed list. */
- 	hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
- 		       &net->ct.unconfirmed);
-diff --git a/net/netfilter/nf_synproxy_core.c b/net/netfilter/nf_synproxy_core.c
-index 9858e3e..52e20c9 100644
---- a/net/netfilter/nf_synproxy_core.c
-+++ b/net/netfilter/nf_synproxy_core.c
-@@ -363,9 +363,8 @@ static int __net_init synproxy_net_init(struct net *net)
- 		goto err2;
- 	if (!nfct_synproxy_ext_add(ct))
- 		goto err2;
--	__set_bit(IPS_TEMPLATE_BIT, &ct->status);
--	__set_bit(IPS_CONFIRMED_BIT, &ct->status);
- 
-+	nf_conntrack_tmpl_insert(net, ct);
- 	snet->tmpl = ct;
- 
- 	snet->stats = alloc_percpu(struct synproxy_stats);
-@@ -390,7 +389,7 @@ static void __net_exit synproxy_net_exit(struct net *net)
- {
- 	struct synproxy_net *snet = synproxy_pernet(net);
- 
--	nf_conntrack_free(snet->tmpl);
-+	nf_ct_put(snet->tmpl);
- 	synproxy_proc_exit(net);
- 	free_percpu(snet->stats);
- }
-diff --git a/net/netfilter/xt_CT.c b/net/netfilter/xt_CT.c
-index 5929be6..75747ae 100644
---- a/net/netfilter/xt_CT.c
-+++ b/net/netfilter/xt_CT.c
-@@ -228,12 +228,7 @@ static int xt_ct_tg_check(const struct xt_tgchk_param *par,
- 			goto err3;
- 	}
- 
--	__set_bit(IPS_TEMPLATE_BIT, &ct->status);
--	__set_bit(IPS_CONFIRMED_BIT, &ct->status);
--
--	/* Overload tuple linked list to put us in template list. */
--	hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
--				 &par->net->ct.tmpl);
-+	nf_conntrack_tmpl_insert(par->net, ct);
- out:
- 	info->ct = ct;
- 	return 0;
+The issue is that memory allocation was not making progress - the
+shrinkers we not doing anything because they were under GFP_NOFS
+allocation context, and kswapd was never woken to take over. The
+system was compeltely out of swap space, and all the CPU was being
+burnt in this function:
 
---IS0zKkzwUGydFO0o--
+   44.91%  [kernel]  [k] scan_swap_map
+
+The typical stack trace of a looping memory allocation is this:
+
+[211699.924006] CPU: 2 PID: 21939 Comm: rm Not tainted 3.13.0-dgc+ #172
+[211699.924006] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[211699.924006] task: ffff88041a7dde40 ti: ffff8803bbeec000 task.ti: ffff8803bbeec000
+[211699.924006] RIP: 0010:[<ffffffff81187dd8>]  [<ffffffff81187dd8>] scan_swap_map+0x118/0x520
+[211699.924006] RSP: 0018:ffff8803bbeed508  EFLAGS: 00000297
+[211699.924006] RAX: 000000000000a1ba RBX: 0000000000000032 RCX: 0000000000000000
+[211699.924006] RDX: 0000000000000001 RSI: 000000000001e64e RDI: 0000000000019def
+[211699.924006] RBP: ffff8803bbeed558 R08: 00000000002c6ba0 R09: 0000000000000000
+[211699.924006] R10: 57ffb90ace3d4f80 R11: 0000000000019def R12: ffff88041a682900
+[211699.924006] R13: 01ffffffffffffff R14: 0000000000000040 R15: ffff88041a6829a0
+[211699.924006] FS:  00007fae682c8700(0000) GS:ffff88031bc00000(0000) knlGS:0000000000000000
+[211699.924006] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[211699.924006] CR2: 00000000004353b0 CR3: 00000002ea498000 CR4: 00000000000006e0
+[211699.924006] Stack:
+[211699.924006]  ffff8803bbeed538 ffff88031a9dc720 000000000000a1ba 0000000000004893
+[211699.924006]  0000000000000000 ffff88041a682900 0000000000000000 0000000000000001
+[211699.924006]  0000000000000000 ffff88041a6829a0 ffff8803bbeed598 ffffffff8118837f
+[211699.924006] Call Trace:
+[211699.924006]  [<ffffffff8118837f>] get_swap_page+0xef/0x1e0
+[211699.924006]  [<ffffffff81184e34>] add_to_swap+0x24/0x70
+[211699.924006]  [<ffffffff8115f110>] shrink_page_list+0x300/0xa20
+[211699.924006]  [<ffffffff81169089>] ? __mod_zone_page_state+0x49/0x50
+[211699.924006]  [<ffffffff8116a3b9>] ? wait_iff_congested+0xa9/0x150
+[211699.924006]  [<ffffffff8115fe03>] shrink_inactive_list+0x243/0x480
+[211699.924006]  [<ffffffff811606f1>] shrink_lruvec+0x371/0x670
+[211699.924006]  [<ffffffff81cdb4ce>] ? _raw_spin_unlock+0xe/0x10
+[211699.924006]  [<ffffffff81160dea>] do_try_to_free_pages+0x11a/0x360
+[211699.924006]  [<ffffffff81161220>] try_to_free_pages+0x110/0x190
+[211699.924006]  [<ffffffff81156422>] __alloc_pages_nodemask+0x5a2/0x8a0
+[211699.924006]  [<ffffffff8118fac2>] alloc_pages_current+0xb2/0x170
+[211699.924006]  [<ffffffff81151bde>] __get_free_pages+0xe/0x50
+[211699.924006]  [<ffffffff8116d199>] kmalloc_order_trace+0x39/0xb0
+[211699.924006]  [<ffffffff810cf4c3>] ? finish_wait+0x63/0x80
+[211699.924006]  [<ffffffff81197156>] __kmalloc+0x176/0x180
+[211699.924006]  [<ffffffff810cf520>] ? __init_waitqueue_head+0x40/0x40
+[211699.924006]  [<ffffffff814a74f7>] kmem_alloc+0x77/0xf0
+[211699.924006]  [<ffffffff814feb54>] xfs_log_commit_cil+0x3c4/0x5a0
+[211699.924006]  [<ffffffff814a6be3>] xfs_trans_commit+0xc3/0x2d0
+[211699.924006]  [<ffffffff814e913e>] xfs_remove+0x3be/0x440
+[211699.924006]  [<ffffffff811b7d8d>] ? __d_lookup+0x11d/0x170
+[211699.924006]  [<ffffffff8149b842>] xfs_vn_unlink+0x52/0xa0
+[211699.924006]  [<ffffffff811acc22>] vfs_unlink+0xf2/0x160
+[211699.924006]  [<ffffffff811acef0>] do_unlinkat+0x260/0x2a0
+[211699.924006]  [<ffffffff811b003b>] SyS_unlinkat+0x1b/0x40
+[211699.924006]  [<ffffffff81ce3ea9>] system_call_fastpath+0x16/0x1b
+
+i.e. trying to do memory allocation during a transaction commit in
+XFS, and that is looping in kmem_alloc().
+
+THe problem in this case is that kswapd was not being started to
+free slab cache memory (i.e. to handle the defered GFP_NOFS slab
+reclaim).  It stayed in the livelock state for over an hour before I
+broke it by running "echo 2 > /proc/sys/vm/drop_caches" manually.
+That immediately freed up the slab cache as reclaim was not under
+GFP_NOFS constraints and the livelock went away and the system
+started to make progress again.
+
+I haven't seen this problem before, so this may be a regression...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
