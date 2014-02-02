@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaBBB2L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 20:28:11 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:46633 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaBBB2J (ORCPT
+	id S1751091AbaBBBfS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 20:35:18 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47461 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBBBfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 20:28:09 -0500
+	Sat, 1 Feb 2014 20:35:15 -0500
 MIME-Version: 1.0
-Reply-To: fdmanana@gmail.com
-In-Reply-To: <alpine.DEB.2.02.1402011611400.5908@chino.kir.corp.google.com>
-References: <52EAC9B6.7090603@fb.com>
-	<alpine.DEB.2.02.1402011611400.5908@chino.kir.corp.google.com>
-Date: Sun, 2 Feb 2014 01:28:07 +0000
-Message-ID: <CAL3q7H5OW8GXUYB3rDMVf0Z7b-xPEbePWCg34wK8Y6HYXkn0zg@mail.gmail.com>
-Subject: Re: [GIT PULL] Btrfs
-From: Filipe David Manana <fdmanana@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Chris Mason <clm@fb.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+In-Reply-To: <52ED9EA9.7080009@zytor.com>
+References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+	<CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
+	<CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>
+	<CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
+	<CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>
+	<52ED9EA9.7080009@zytor.com>
+Date: Sat, 1 Feb 2014 17:35:13 -0800
+Message-ID: <CALmL7E_ijZStgyxj4Gnn69sEF-kv+eBE64+J7OBfn-K4cbBmJg@mail.gmail.com>
+Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt flag
+From: Suresh Siddha <sbsiddha@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nate Eldredge <nate@thatsmathematics.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
+        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 2, 2014 at 12:15 AM, David Rientjes <rientjes@google.com> wrote:
-> On Thu, 30 Jan 2014, Chris Mason wrote:
->
->>
->> Hi Linus
->>
->> Please pull my for-linus branch:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
->>
->> There are two conflicts right now, one with the ACL code (pick your
->> version) and one with Kent's changes in the block layer pull.  That one
->> is pretty obvious too, just do both our cleanup and Kent's rework.
->>
->> This is a pretty big pull, and most of these changes have been floating
->> in btrfs-next for a long time.  Filipe's properties work is a cool
->> building block for inheriting attributes like compression down on a
->> per inode basis.
->>
->> Jeff Mahoney kicked in code to export filesystem info into sysfs.
->>
->> Otherwise, lots of performance improvements, cleanups and bug fixes.
->>
->> Looks like there are still a few other small pending incrementals, but I
->> wanted to get the bulk of this in first.
->>
->> Filipe David Borba Manana (29) commits (+1856/-301):
->>     Btrfs: fix deadlock when iterating inode refs and running delayed inodes (+12/-7)
->>     Btrfs: fix send file hole detection leading to data corruption (+15/-0)
->>     Btrfs: remove field tree_mod_seq_elem from btrfs_fs_info struct (+0/-1)
->>     Btrfs: make send's file extent item search more efficient (+17/-10)
->>     Btrfs: fix infinite path build loops in incremental send (+518/-21)
->>     Btrfs: reduce btree node locking duration on item update (+14/-10)
->>     Btrfs: return immediately if tree log mod is not necessary (+1/-1)
->>     Btrfs: fix pass of transid with wrong endianness in send.c (+3/-3)
->>     Btrfs: fix btrfs_search_slot_for_read backwards iteration (+3/-1)
->>     Btrfs: fix send to not send non-aligned clone operations (+2/-1)
->>     Btrfs: faster and more efficient extent map insertion (+41/-31)
->>     Btrfs: fix extent boundary check in bio_readpage_error (+1/-1)
->>     Btrfs: faster file extent item search in clone ioctl (+14/-9)
->>     Btrfs: unlock inodes in correct order in clone ioctl (+11/-3)
->>     Btrfs: faster file extent item replace operations (+114/-46)
->>     Btrfs: avoid unnecessary ordered extent cache resets (+2/-1)
->>     Btrfs: fix very slow inode eviction and fs unmount (+84/-14)
->>     Btrfs: fix snprintf usage by send's gen_unique_name (+1/-1)
->>     Btrfs: fix ordered extent check in btrfs_punch_hole (+1/-1)
->>     Btrfs: fix btrfs boot when compiled as built-in (+73/-9)
->
-> This one, 14a958e678cd ("Btrfs: fix btrfs boot when compiled as
-> built-in"), breaks the build if CONFIG_LIBCRC32C=m:
->
-> fs/built-in.o: In function `btrfs_check_super_csum':
-> disk-io.c:(.text+0x1a1c8b): undefined reference to `crc32c'
-> fs/built-in.o: In function `write_dev_supers.isra.120':
-> disk-io.c:(.text+0x1a2054): undefined reference to `crc32c'
-> fs/built-in.o: In function `csum_tree_block.isra.122':
-> disk-io.c:(.text+0x1a22c4): undefined reference to `crc32c'
-> fs/built-in.o: In function `btrfs_csum_data':
-> (.text+0x1a2a46): undefined reference to `crc32c'
-> fs/built-in.o: In function `send_cmd':
-> send.c:(.text+0x20fe4c): undefined reference to `crc32c'
+On Sat, Feb 1, 2014 at 5:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Even "b" does that, no?
 
-One of the kbuild test robots reported this a few days ago too.
-The following patch, sent shortly after the robot's warning, fixes it:
+oh right. It needs an else. only for non-eager fpu case we should do stts()
 
-https://patchwork.kernel.org/patch/3554671/
+  void __kernel_fpu_end(void)
+  {
+          if (use_eager_fpu()) {
+                  struct task_struct *me = current;
 
-thanks
+                  if (tsk_used_math(me) && likely(!restore_fpu_checking(
+me)))
+                          return;
+          } else
+                  stts();
+  }
 
+thanks,
+suresh
 
-
--- 
-Filipe David Manana,
-
-"Reasonable men adapt themselves to the world.
- Unreasonable men adapt the world to themselves.
- That's why all progress depends on unreasonable men."
+> "a" should be fine as long as we don't ever use
+> those features in the kernel, even under kernel_fpu_begin/end().
