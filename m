@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466AbaBBEX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 23:23:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48344 "EHLO mx1.redhat.com"
+	id S1751387AbaBBEun (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 23:50:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21434 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356AbaBBEXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 23:23:15 -0500
+	id S1751035AbaBBEul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 23:50:41 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: fix buffer allocations
-Date: Sat,  1 Feb 2014 23:23:10 -0500
-Message-Id: <1391314990-29046-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 01/11] HID: uHID: implement .raw_request
+Date: Sat,  1 Feb 2014 23:50:20 -0500
+Message-Id: <1391316630-29541-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using hid_output_report(), the buffer should be allocated by hid_alloc_report_buf(),
-not a custom malloc.
+It was missing, so adding it.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-input.c       | 2 +-
- drivers/hid/i2c-hid/i2c-hid.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/hid/uhid.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index d50e731..a713e62 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -1178,7 +1178,7 @@ static void hidinput_led_worker(struct work_struct *work)
+diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
+index f5a2b19..438c9f1 100644
+--- a/drivers/hid/uhid.c
++++ b/drivers/hid/uhid.c
+@@ -270,6 +270,22 @@ static int uhid_hid_output_report(struct hid_device *hid, __u8 *buf,
+ 	return count;
+ }
  
- 	/* fall back to generic raw-output-report */
- 	len = ((report->size - 1) >> 3) + 1 + (report->id > 0);
--	buf = kmalloc(len, GFP_KERNEL);
-+	buf = hid_alloc_report_buf(report, GFP_KERNEL);
- 	if (!buf)
- 		return;
++static int uhid_raw_request(struct hid_device *hid, unsigned char reportnum,
++			    __u8 *buf, size_t len, unsigned char rtype,
++			    int reqtype)
++{
++	switch (reqtype) {
++	case HID_REQ_GET_REPORT:
++		return uhid_hid_get_raw(hid, reportnum, buf, len, rtype);
++	case HID_REQ_SET_REPORT:
++		if (buf[0] != reportnum)
++			return -EINVAL;
++		return uhid_hid_output_raw(hid, buf, len, rtype);
++	default:
++		return -EIO;
++	}
++}
++
+ static struct hid_ll_driver uhid_hid_driver = {
+ 	.start = uhid_hid_start,
+ 	.stop = uhid_hid_stop,
+@@ -277,6 +293,7 @@ static struct hid_ll_driver uhid_hid_driver = {
+ 	.close = uhid_hid_close,
+ 	.parse = uhid_hid_parse,
+ 	.output_report = uhid_hid_output_report,
++	.raw_request = uhid_raw_request,
+ };
  
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index e914f27..ce68a12 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -582,7 +582,7 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
- 	int ret;
- 	int len = i2c_hid_get_report_length(rep) - 2;
- 
--	buf = kzalloc(len, GFP_KERNEL);
-+	buf = hid_alloc_report_buf(rep, GFP_KERNEL);
- 	if (!buf)
- 		return;
- 
+ #ifdef CONFIG_COMPAT
 -- 
 1.8.3.1
 
