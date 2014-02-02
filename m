@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaBBVji (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 16:39:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63661 "EHLO mx1.redhat.com"
+	id S1752651AbaBBVjr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 16:39:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61351 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590AbaBBVjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 16:39:37 -0500
+	id S1752474AbaBBVjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 16:39:45 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,29 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 03/22] perf tools: Add idx sort entry
-Date: Sun,  2 Feb 2014 22:38:51 +0100
-Message-Id: <1391377150-23920-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 04/22] perf tools: Add --list report option
+Date: Sun,  2 Feb 2014 22:38:52 +0100
+Message-Id: <1391377150-23920-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
 References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding idx sort entry to have a way sort entries
-the way they are stored in the data file.
+Adding --list report option to display entries sequentialy:
+
+  $ perf report --list --stdio
+  ...
+       0.00%       13151.543527 +000000.000000       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.00%       13151.543530 +000000.000003       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.00%       13151.543532 +000000.000005       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.00%       13151.543534 +000000.000007       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.05%       13151.543536 +000000.000009       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.92%       13151.543538 +000000.000011       ls  [kernel.kallsyms]  [k] perf_event_comm
+      14.52%       13151.543560 +000000.000033       ls  [kernel.kallsyms]  [k] uprobe_mmap
+      30.10%       13151.543878 +000000.000351       ls  ld-2.17.so         [.] _dl_setup_hash
+      29.30%       13151.544531 +000000.001004       ls  ls                 [.] gobble_file.constprop.49
+      25.09%       13151.545613 +000000.002086       ls  [kernel.kallsyms]  [k] _cond_resched
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -36,105 +48,125 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/hist.c |  2 ++
- tools/perf/util/hist.h |  1 +
- tools/perf/util/sort.c | 23 +++++++++++++++++++++++
- tools/perf/util/sort.h |  2 ++
- 4 files changed, 28 insertions(+)
+ tools/perf/builtin-report.c |  6 +++++-
+ tools/perf/util/hist.c      |  3 +++
+ tools/perf/util/sort.c      | 26 ++++++++++++++++++++++++++
+ tools/perf/util/sort.h      |  1 +
+ tools/perf/util/symbol.h    |  3 ++-
+ 5 files changed, 37 insertions(+), 2 deletions(-)
 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3dbf2b8..a752687 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -731,7 +731,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN(0, "asm-raw", &symbol_conf.annotate_asm_raw,
+-		    "Display raw encoding of assembly instructions (default)"),
++		    "display raw encoding of assembly instructions (default)"),
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
+@@ -749,6 +749,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
+ 		     "how to display percentage of filtered entries", parse_percentage),
++	OPT_BOOLEAN(0, "list", &symbol_conf.show_list, "Show events list"),
+ 	OPT_END()
+ 	};
+ 	struct perf_data_file file = {
+@@ -891,6 +892,9 @@ repeat:
+ 
+ 	sort__setup_elide(stdout);
+ 
++	if (symbol_conf.show_list)
++		sort__setup_list();
++
+ 	ret = __cmd_report(&report);
+ 	if (ret == K_SWITCH_INPUT_DATA) {
+ 		perf_session__delete(session);
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index cf7d7e0..2ecb976 100644
+index 2ecb976..43241ea 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -438,6 +438,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      u64 period, u64 weight, u64 transaction,
- 				      u64 t, bool sample_self)
- {
-+	static u64 idx;
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
- 		.comm = thread__comm(al->thread),
-@@ -460,6 +461,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 		.mem_info = mi,
- 		.transaction = transaction,
- 		.time = t,
-+		.idx  = idx++,
- 	};
+@@ -1073,6 +1073,9 @@ static int hist_entry__sort_on_period(struct hist_entry *a,
+ 	struct hist_entry *pair;
+ 	u64 *periods_a, *periods_b;
  
- 	return add_hist_entry(hists, &entry, al, sample_self);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 851beef..ae403a6 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -70,6 +70,7 @@ enum hist_column {
- 	HISTC_MEM_SNOOP,
- 	HISTC_TRANSACTION,
- 	HISTC_TIME,
-+	HISTC_IDX,
- 	HISTC_NR_COLS, /* Last entry */
- };
- 
++	if (symbol_conf.show_list)
++		return b->idx - a->idx;
++
+ 	if (symbol_conf.cumulate_callchain) {
+ 		/*
+ 		 * Put caller above callee when they have equal period.
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 9438617..5607edb 100644
+index 5607edb..4ddf934 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -55,6 +55,28 @@ static int64_t cmp_null(const void *l, const void *r)
- 		return 1;
- }
- 
-+/* --sort idx */
-+
-+static int64_t
-+sort__idx_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return right->idx - left->idx;
-+}
-+
-+static int hist_entry__idx_snprintf(struct hist_entry *he, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	return repsep_snprintf(bf, size, "%*lu", width, he->idx);
-+}
-+
-+struct sort_entry sort_idx = {
-+	.se_header	= "Idx",
-+	.se_cmp		= sort__idx_cmp,
-+	.se_snprintf	= hist_entry__idx_snprintf,
-+	.se_width_idx	= HISTC_IDX,
-+};
-+
-+
- /* --sort time */
- 
- static int64_t
-@@ -1048,6 +1070,7 @@ static struct sort_dimension common_sort_dimensions[] = {
- 	DIM(SORT_GLOBAL_WEIGHT, "weight", sort_global_weight),
- 	DIM(SORT_TRANSACTION, "transaction", sort_transaction),
- 	DIM(SORT_TIME, "time", sort_time),
-+	DIM(SORT_IDX, "idx", sort_idx),
- };
+@@ -1102,6 +1102,21 @@ static struct sort_dimension memory_sort_dimensions[] = {
  
  #undef DIM
+ 
++static void __sort_dimension__prep(struct sort_dimension *sd,
++				   enum sort_type idx)
++{
++	if (sd->taken)
++		return;
++
++	if (sd->entry->se_collapse)
++		sort__need_collapse = 1;
++
++	sort__first_dimension = idx;
++
++	list_add(&sd->entry->list, &hist_entry__sort_list);
++	sd->taken = 1;
++}
++
+ static void __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
+ {
+ 	if (sd->taken)
+@@ -1271,3 +1286,14 @@ void sort__setup_elide(FILE *output)
+ 	list_for_each_entry(se, &hist_entry__sort_list, list)
+ 		se->elide = false;
+ }
++
++void sort__setup_list(void)
++{
++	struct sort_dimension *sd_idx  = &common_sort_dimensions[SORT_IDX];
++	struct sort_dimension *sd_time = &common_sort_dimensions[SORT_TIME];
++
++	__sort_dimension__prep(sd_time, SORT_TIME);
++	__sort_dimension__prep(sd_idx, SORT_IDX);
++
++	sd_idx->entry->elide = true;
++}
 diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 4eb684e..666bf0b 100644
+index 666bf0b..c2fa361 100644
 --- a/tools/perf/util/sort.h
 +++ b/tools/perf/util/sort.h
-@@ -89,6 +89,7 @@ struct hist_entry {
- 	u64			transaction;
- 	s32			cpu;
- 	u64			time;
-+	u64			idx;
+@@ -211,6 +211,7 @@ extern struct list_head hist_entry__sort_list;
+ int setup_sorting(void);
+ extern int sort_dimension__add(const char *);
+ void sort__setup_elide(FILE *fp);
++void sort__setup_list(void);
  
- 	struct hist_entry_diff	diff;
+ int report_parse_ignore_callees_opt(const struct option *opt, const char *arg, int unset);
  
-@@ -165,6 +166,7 @@ enum sort_type {
- 	SORT_GLOBAL_WEIGHT,
- 	SORT_TRANSACTION,
- 	SORT_TIME,
-+	SORT_IDX,
- 
- 	/* branch stack specific sort keys */
- 	__SORT_BRANCH_STACK,
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 0657e72..423e55c 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -106,7 +106,8 @@ struct symbol_conf {
+ 			annotate_src,
+ 			event_group,
+ 			demangle,
+-			filter_relative;
++			filter_relative,
++			show_list;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
 -- 
 1.8.3.1
 
