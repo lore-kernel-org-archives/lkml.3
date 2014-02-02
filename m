@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaBBI4b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 03:56:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41398 "EHLO
+	id S1752168AbaBBI4j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 03:56:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41413 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaBBI40 (ORCPT
+	with ESMTP id S1751451AbaBBI4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 03:56:26 -0500
-Date: Sun, 2 Feb 2014 00:56:05 -0800
+	Sun, 2 Feb 2014 03:56:37 -0500
+Date: Sun, 2 Feb 2014 00:56:16 -0800
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-a00d28cb72d3629c6481fe21ba6c6b4f96caed49@git.kernel.org>
+Message-ID: <tip-c080f72753def150993144d755379941f8b14683@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
@@ -20,12 +20,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1391004884-10334-7-git-send-email-adrian.hunter@intel.com>
-References: <1391004884-10334-7-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1391004884-10334-8-git-send-email-adrian.hunter@intel.com>
+References: <1391004884-10334-8-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols:
-  Prevent the use of kcore if the kernel has moved
-Git-Commit-ID: a00d28cb72d3629c6481fe21ba6c6b4f96caed49
+Subject: [tip:perf/urgent] perf tests: No need to set up ref_reloc_sym
+Git-Commit-ID: c080f72753def150993144d755379941f8b14683
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,27 +33,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:56:11 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:56:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a00d28cb72d3629c6481fe21ba6c6b4f96caed49
-Gitweb:     http://git.kernel.org/tip/a00d28cb72d3629c6481fe21ba6c6b4f96caed49
+Commit-ID:  c080f72753def150993144d755379941f8b14683
+Gitweb:     http://git.kernel.org/tip/c080f72753def150993144d755379941f8b14683
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 29 Jan 2014 16:14:41 +0200
+AuthorDate: Wed, 29 Jan 2014 16:14:42 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 31 Jan 2014 17:21:51 -0300
+CommitDate: Fri, 31 Jan 2014 17:21:52 -0300
 
-perf symbols: Prevent the use of kcore if the kernel has moved
+perf tests: No need to set up ref_reloc_sym
 
-Use of kcore is predicated upon it matching the recorded data.  If the
-kernel has been relocated at boot time (i.e. since the data was
-recorded) then do not use kcore.
-
-Note that it is possible to make a copy of kcore at the time the data is
-recorded using 'perf buildid-cache'.  Then the perf tools will use the
-copy because it does match the data.
+Now that ref_reloc_sym is set up by machine__create_kernel_maps(), the
+"vmlinux symtab matches kallsyms" test does have to do it.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Tested-by: Jiri Olsa <jolsa@redhat.com>
@@ -67,66 +61,44 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-7-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1391004884-10334-8-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ tools/perf/tests/vmlinux-kallsyms.c | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 39ce9ad..4ac1f87 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -976,6 +976,23 @@ static int validate_kcore_modules(const char *kallsyms_filename,
- 	return 0;
- }
+diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
+index 2bd13ed..3d90880 100644
+--- a/tools/perf/tests/vmlinux-kallsyms.c
++++ b/tools/perf/tests/vmlinux-kallsyms.c
+@@ -26,7 +26,6 @@ int test__vmlinux_matches_kallsyms(void)
+ 	struct map *kallsyms_map, *vmlinux_map;
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
+-	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
+ 	u64 mem_start, mem_end;
  
-+static int validate_kcore_addresses(const char *kallsyms_filename,
-+				    struct map *map)
-+{
-+	struct kmap *kmap = map__kmap(map);
-+
-+	if (kmap->ref_reloc_sym && kmap->ref_reloc_sym->name) {
-+		u64 start;
-+
-+		start = kallsyms__get_function_start(kallsyms_filename,
-+						     kmap->ref_reloc_sym->name);
-+		if (start != kmap->ref_reloc_sym->addr)
-+			return -EINVAL;
-+	}
-+
-+	return validate_kcore_modules(kallsyms_filename, map);
-+}
-+
- struct kcore_mapfn_data {
- 	struct dso *dso;
- 	enum map_type type;
-@@ -1019,8 +1036,8 @@ static int dso__load_kcore(struct dso *dso, struct map *map,
- 					     kallsyms_filename))
- 		return -EINVAL;
+ 	/*
+@@ -70,14 +69,6 @@ int test__vmlinux_matches_kallsyms(void)
+ 	 */
+ 	kallsyms_map = machine__kernel_map(&kallsyms, type);
  
--	/* All modules must be present at their original addresses */
--	if (validate_kcore_modules(kallsyms_filename, map))
-+	/* Modules and kernel must be present at their original addresses */
-+	if (validate_kcore_addresses(kallsyms_filename, map))
- 		return -EINVAL;
+-	sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
+-	if (sym == NULL) {
+-		pr_debug("dso__find_symbol_by_name ");
+-		goto out;
+-	}
+-
+-	ref_reloc_sym.addr = UM(sym->start);
+-
+ 	/*
+ 	 * Step 5:
+ 	 *
+@@ -89,7 +80,6 @@ int test__vmlinux_matches_kallsyms(void)
+ 	}
  
- 	md.dso = dso;
-@@ -1424,7 +1441,7 @@ static int find_matching_kcore(struct map *map, char *dir, size_t dir_sz)
- 			continue;
- 		scnprintf(kallsyms_filename, sizeof(kallsyms_filename),
- 			  "%s/%s/kallsyms", dir, dent->d_name);
--		if (!validate_kcore_modules(kallsyms_filename, map)) {
-+		if (!validate_kcore_addresses(kallsyms_filename, map)) {
- 			strlcpy(dir, kallsyms_filename, dir_sz);
- 			ret = 0;
- 			break;
-@@ -1479,7 +1496,7 @@ static char *dso__find_kallsyms(struct dso *dso, struct map *map)
- 		if (fd != -1) {
- 			close(fd);
- 			/* If module maps match go with /proc/kallsyms */
--			if (!validate_kcore_modules("/proc/kallsyms", map))
-+			if (!validate_kcore_addresses("/proc/kallsyms", map))
- 				goto proc_kallsyms;
- 		}
+ 	vmlinux_map = machine__kernel_map(&vmlinux, type);
+-	map__kmap(vmlinux_map)->ref_reloc_sym = &ref_reloc_sym;
  
+ 	/*
+ 	 * Step 6:
