@@ -1,176 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaBBEv2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 23:51:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18709 "EHLO mx1.redhat.com"
+	id S1751522AbaBBEv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 23:51:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427AbaBBEuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 23:50:44 -0500
+	id S1751049AbaBBEul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 23:50:41 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
         Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/11] HID: logitech-dj: remove hidinput_input_event
-Date: Sat,  1 Feb 2014 23:50:23 -0500
-Message-Id: <1391316630-29541-5-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 00/11] HID: spring cleaning
+Date: Sat,  1 Feb 2014 23:50:19 -0500
+Message-Id: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hid-logitech-dj uses its own ->hidinput_input_event() instead of
-the generic binding in hid-input.
-Moving the handling of LEDs towards logi_dj_output_hidraw_report()
-allows two things:
-- remove hidinput_input_event in struct hid_device
-- hidraw user space programs can also set the LEDs
+Hi guys,
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-logitech-dj.c | 99 +++++++++++++++----------------------------
- 1 file changed, 35 insertions(+), 64 deletions(-)
+This is an attempt to complete the branch for-3.15/ll-driver-new-callbacks:
+- try to implement as much as possible ll_driver callbacks (some are still
+  missing, but I did not had the time to complete it)
+- add inliners hid_hw_* for all the ll_driver callbacks
+- remove transport dependant callbacks in struct hid_device
+- remove the so called "obsolete" hidinput_input_event handler which was used
+  in 2/4 transport drivers
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index f45279c..61d2bbf 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -44,14 +44,6 @@ static const char kbd_descriptor[] = {
- 	0x19, 0xE0,		/*   USAGE_MINIMUM (Left Control)   */
- 	0x29, 0xE7,		/*   USAGE_MAXIMUM (Right GUI)      */
- 	0x81, 0x02,		/*   INPUT (Data,Var,Abs)       */
--	0x95, 0x05,		/*   REPORT COUNT (5)           */
--	0x05, 0x08,		/*   USAGE PAGE (LED page)      */
--	0x19, 0x01,		/*   USAGE MINIMUM (1)          */
--	0x29, 0x05,		/*   USAGE MAXIMUM (5)          */
--	0x91, 0x02,		/*   OUTPUT (Data, Variable, Absolute)  */
--	0x95, 0x01,		/*   REPORT COUNT (1)           */
--	0x75, 0x03,		/*   REPORT SIZE (3)            */
--	0x91, 0x01,		/*   OUTPUT (Constant)          */
- 	0x95, 0x06,		/*   REPORT_COUNT (6)           */
- 	0x75, 0x08,		/*   REPORT_SIZE (8)            */
- 	0x15, 0x00,		/*   LOGICAL_MINIMUM (0)        */
-@@ -60,6 +52,18 @@ static const char kbd_descriptor[] = {
- 	0x19, 0x00,		/*   USAGE_MINIMUM (no event)       */
- 	0x2A, 0xFF, 0x00,	/*   USAGE_MAXIMUM (reserved)       */
- 	0x81, 0x00,		/*   INPUT (Data,Ary,Abs)       */
-+	0x85, 0x0e,		/* REPORT_ID (14)               */
-+	0x05, 0x08,		/*   USAGE PAGE (LED page)      */
-+	0x95, 0x05,		/*   REPORT COUNT (5)           */
-+	0x75, 0x01,		/*   REPORT SIZE (1)            */
-+	0x15, 0x00,		/*   LOGICAL_MINIMUM (0)        */
-+	0x25, 0x01,		/*   LOGICAL_MAXIMUM (1)        */
-+	0x19, 0x01,		/*   USAGE MINIMUM (1)          */
-+	0x29, 0x05,		/*   USAGE MAXIMUM (5)          */
-+	0x91, 0x02,		/*   OUTPUT (Data, Variable, Absolute)  */
-+	0x95, 0x01,		/*   REPORT COUNT (1)           */
-+	0x75, 0x03,		/*   REPORT SIZE (3)            */
-+	0x91, 0x01,		/*   OUTPUT (Constant)          */
- 	0xC0
- };
- 
-@@ -544,10 +548,30 @@ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
- 					size_t count,
- 					unsigned char report_type)
- {
--	/* Called by hid raw to send data */
--	dbg_hid("%s\n", __func__);
-+	struct dj_device *djdev = hid->driver_data;
-+	struct dj_receiver_dev *djrcv_dev = djdev->dj_receiver_dev;
-+	u8 *out_buf;
-+	int ret;
- 
--	return 0;
-+	if (buf[0] != REPORT_TYPE_LEDS)
-+		return -EINVAL;
-+
-+	out_buf = kzalloc(DJREPORT_SHORT_LENGTH, GFP_ATOMIC);
-+	if (!out_buf)
-+		return -ENOMEM;
-+
-+	if (count < DJREPORT_SHORT_LENGTH - 2)
-+		count = DJREPORT_SHORT_LENGTH - 2;
-+
-+	out_buf[0] = REPORT_ID_DJ_SHORT;
-+	out_buf[1] = djdev->device_index;
-+	memcpy(out_buf + 2, buf, count);
-+
-+	ret = djrcv_dev->hdev->hid_output_raw_report(djrcv_dev->hdev, out_buf,
-+		DJREPORT_SHORT_LENGTH, report_type);
-+
-+	kfree(out_buf);
-+	return ret;
- }
- 
- static void rdcat(char *rdesc, unsigned int *rsize, const char *data, unsigned int size)
-@@ -613,58 +637,6 @@ static int logi_dj_ll_parse(struct hid_device *hid)
- 	return retval;
- }
- 
--static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
--				  unsigned int code, int value)
--{
--	/* Sent by the input layer to handle leds and Force Feedback */
--	struct hid_device *dj_hiddev = input_get_drvdata(dev);
--	struct dj_device *dj_dev = dj_hiddev->driver_data;
--
--	struct dj_receiver_dev *djrcv_dev =
--	    dev_get_drvdata(dj_hiddev->dev.parent);
--	struct hid_device *dj_rcv_hiddev = djrcv_dev->hdev;
--	struct hid_report_enum *output_report_enum;
--
--	struct hid_field *field;
--	struct hid_report *report;
--	unsigned char *data;
--	int offset;
--
--	dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
--		__func__, dev->phys, type, code, value);
--
--	if (type != EV_LED)
--		return -1;
--
--	offset = hidinput_find_field(dj_hiddev, type, code, &field);
--
--	if (offset == -1) {
--		dev_warn(&dev->dev, "event field not found\n");
--		return -1;
--	}
--	hid_set_field(field, offset, value);
--
--	data = hid_alloc_report_buf(field->report, GFP_ATOMIC);
--	if (!data) {
--		dev_warn(&dev->dev, "failed to allocate report buf memory\n");
--		return -1;
--	}
--
--	hid_output_report(field->report, &data[0]);
--
--	output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
--	report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
--	hid_set_field(report->field[0], 0, dj_dev->device_index);
--	hid_set_field(report->field[0], 1, REPORT_TYPE_LEDS);
--	hid_set_field(report->field[0], 2, data[1]);
--
--	hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
--
--	kfree(data);
--
--	return 0;
--}
--
- static int logi_dj_ll_start(struct hid_device *hid)
- {
- 	dbg_hid("%s\n", __func__);
-@@ -683,7 +655,6 @@ static struct hid_ll_driver logi_dj_ll_driver = {
- 	.stop = logi_dj_ll_stop,
- 	.open = logi_dj_ll_open,
- 	.close = logi_dj_ll_close,
--	.hidinput_input_event = logi_dj_ll_input_event,
- };
- 
- 
+Bonus point: 14 files changed, 213 insertions(+), 272 deletions(-)
+Yay!
+
+I made sure I kept the PS3 controller working and the LEDs (on logitech-dj and
+on bluetooth keyboard) working. The rest do not mostly need further testing,
+the code path did not changed. But still, a review (and some tests) would be a
+good idea :)
+
+Cheers,
+Benjamin
+
+PS: obviously, this goes on top on the branch for-3.15/ll-driver-new-callbacks
+
+Benjamin Tissoires (11):
+  HID: uHID: implement .raw_request
+  HID: i2c-hid: implement ll_driver transport-layer callbacks
+  HID: add inliners for ll_driver transport-layer callbacks
+  HID: logitech-dj: remove hidinput_input_event
+  HID: HIDp: remove hidp_hidinput_event
+  HID: remove hidinput_input_event handler
+  HID: HIDp: remove duplicated coded
+  HID: usbhid: remove duplicated code
+  HID: remove hid_get_raw_report in struct hid_device
+  HID: introduce helper to access hid_output_raw_report()
+  HID: move hid_output_raw_report to hid_ll_driver
+
+ drivers/hid/hid-input.c        |  12 ++---
+ drivers/hid/hid-lg.c           |   6 ++-
+ drivers/hid/hid-logitech-dj.c  | 101 +++++++++++++---------------------
+ drivers/hid/hid-magicmouse.c   |   2 +-
+ drivers/hid/hid-sony.c         |  19 +++++--
+ drivers/hid/hid-thingm.c       |   4 +-
+ drivers/hid/hid-wacom.c        |  16 +++---
+ drivers/hid/hid-wiimote-core.c |   4 +-
+ drivers/hid/hidraw.c           |  11 ++--
+ drivers/hid/i2c-hid/i2c-hid.c  |  27 +++++++++-
+ drivers/hid/uhid.c             |  20 ++++++-
+ drivers/hid/usbhid/hid-core.c  |  67 +++++------------------
+ include/linux/hid.h            |  77 ++++++++++++++++++++++----
+ net/bluetooth/hidp/core.c      | 119 +++++------------------------------------
+ 14 files changed, 213 insertions(+), 272 deletions(-)
+
 -- 
 1.8.3.1
 
