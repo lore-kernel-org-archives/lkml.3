@@ -1,79 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaBBWDw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 17:03:52 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56220 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752462AbaBBWDv (ORCPT
+	id S1752660AbaBBWEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 17:04:42 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:61369 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560AbaBBWEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 17:03:51 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao8JALS/7lJ5LGaB/2dsb2JhbABagwy5T4VSgQAXdIIlAQEFJxMcIxAIAxgJJQ8FJQMhE4gEzC8XFo5zB4Q4BJgpilCHUoFvgVIo
-Date: Mon, 3 Feb 2014 09:03:46 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk, bpm@sgi.com,
-        tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz,
-        mtk.manpages@gmail.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH RESEND 0/10] fs: Introduce new
- flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-Message-ID: <20140202220346.GU2212@dastard>
-References: <1391319694-3089-1-git-send-email-linkinjeon@gmail.com>
- <20140202151624.GK20939@parisc-linux.org>
- <20140202152106.GL20939@parisc-linux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140202152106.GL20939@parisc-linux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Feb 2014 17:04:40 -0500
+Message-ID: <1391378678.8123.5.camel@leira.trondhjem.org>
+Subject: Re: NFS client broken in Linus' tip
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        linux-arm-kernel@lists.infradead.org
+Date: Sun, 02 Feb 2014 17:04:38 -0500
+In-Reply-To: <20140202122757.GC26684@n2100.arm.linux.org.uk>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
+	 <20140130141405.GA23985@infradead.org>
+	 <20140130142752.GX15937@n2100.arm.linux.org.uk>
+	 <20140130143208.GB9573@infradead.org>
+	 <20140130153812.GA15937@n2100.arm.linux.org.uk>
+	 <1391201970.6978.1.camel@leira.trondhjem.org>
+	 <20140201010328.GI15937@n2100.arm.linux.org.uk>
+	 <20140202122757.GC26684@n2100.arm.linux.org.uk>
+Organization: Primary Data
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 08:21:06AM -0700, Matthew Wilcox wrote:
-> On Sun, Feb 02, 2014 at 08:16:24AM -0700, Matthew Wilcox wrote:
-> > On Sun, Feb 02, 2014 at 02:41:34PM +0900, Namjae Jeon wrote:
-> > > The semantics of this flag are following:
-> > > 1) It collapses the range lying between offset and length by removing any data
-> > >    blocks which are present in this range and than updates all the logical
-> > >    offsets of extents beyond "offset + len" to nullify the hole created by
-> > >    removing blocks. In short, it does not leave a hole.
-> > > 2) It should be used exclusively. No other fallocate flag in combination.
-> > > 3) Offset and length supplied to fallocate should be fs block size aligned
-> > >    in case of xfs and ext4.
-> > > 4) Collaspe range does not work beyond i_size.
+On Sun, 2014-02-02 at 12:27 +0000, Russell King - ARM Linux wrote:
+> On Sat, Feb 01, 2014 at 01:03:28AM +0000, Russell King - ARM Linux wrote:
+> > On Fri, Jan 31, 2014 at 03:59:30PM -0500, Trond Myklebust wrote:
+> > > On Thu, 2014-01-30 at 15:38 +0000, Russell King - ARM Linux wrote:
+> > > > On Thu, Jan 30, 2014 at 06:32:08AM -0800, Christoph Hellwig wrote:
+> > > > > On Thu, Jan 30, 2014 at 02:27:52PM +0000, Russell King - ARM Linux wrote:
+> > > > > > Yes and no.  I still end up with an empty /etc/mtab, but the file now
+> > > > > > exists.  However, I can create and echo data into /etc/mtab, but it seems
+> > > > > > that can't happen at boot time.
+> > > > > 
+> > > > > Odd.  Can you disable CONFIG_NFSD_V3_ACL for now to isolate the issue?
+> > > > 
+> > > > Unfortunately, that results in some problem at boot time, which
+> > > > ultimately ends up with the other three CPUs being stopped, and
+> > > > hence the original reason scrolls off the screen before it can be
+> > > > read... even at 1920p.
+> > > > 
+> > > Hi Russell,
+> > > 
+> > > The following patch fixes the issue for me.
 > > 
-> > What if the file is mmaped at the time somebody issues this command?
-> > Seems to me we should drop pagecache pages that overlap with the
-> > removed blocks.  If the removed range is not a multiple of PAGE_SIZE,
-> > then we should also drop any pagecache pages after the removed range.
+> > It doesn't entirely fix the issue for me, instead we've got even weirder
+> > behaviour:
+> > 
+> > root@cubox-i4:~# ls -al test
+> > ls: cannot access test: No such file or directory
+> > root@cubox-i4:~# touch test
+> > root@cubox-i4:~# ls -al test
+> > -rw-r--r-- 1 root root 0 Feb  1 01:01 test
+> > root@cubox-i4:~# echo foo > test
+> > root@cubox-i4:~# ls -al test
+> > -rw-r--r-- 1 root root 4 Feb  1 01:01 test
+> > root@cubox-i4:~# cat test
+> > foo
+> > root@cubox-i4:~# rm test
+> > root@cubox-i4:~# echo foo > test
+> > -bash: test: Operation not supported
+> > root@cubox-i4:~# ls -al test
+> > -rw-r--r-- 1 root root 0 Feb  1 01:01 test
 > 
-> Oops, forgot to add "and if it is a multiple of page size, then we need
-> to update the offsets of any pages after the removed page". 
+> FYI, I just tested Linus' tip, and NFS is still broken.
+> 
+Hi Russell,
 
-Yup, that's what the XFS implementation does when it punches the
-hole out of the file before shifting the extents down. Check
-xfs_free_file_space():
-
-1275         /* wait for the completion of any pending DIOs */
-1276         inode_dio_wait(VFS_I(ip));
-1277
-1278         rounding = max_t(xfs_off_t, 1 << mp->m_sb.sb_blocklog, PAGE_CACHE_SIZE);
-1279         ioffset = offset & ~(rounding - 1);
-1280         error = -filemap_write_and_wait_range(VFS_I(ip)->i_mapping,
-1281                                               ioffset, -1);
-1282         if (error)
-1283                 goto out;
-1284         truncate_pagecache_range(VFS_I(ip), ioffset, -1);
-
-Bonus points for working out why the XFS code doesn't just use
-PAGE_CACHE_SIZE for rounding here....
+The following patch should fix the above problem. It needs to be applied
+on top of the one I sent you previously. In addition, you will want to
+apply Noah Massey's patch from
+http://lkml.kernel.org/r/1391135472-9639-1-git-send-email-Noah.Massey@gmail.com 
 
 Cheers,
+  Trond
 
-Dave.
+8<------------------------------------------------------------------------------
+>From f9ad7a7b43554bc36eccf03d33617c05b8a2c77d Mon Sep 17 00:00:00 2001
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+Date: Sun, 2 Feb 2014 14:36:42 -0500
+Subject: [PATCH] NFSv3: Fix return value of nfs3_proc_setacls
+
+nfs3_proc_setacls is used internally by the NFSv3 create operations
+to set the acl after the file has been created. If the operation
+fails because the server doesn't support acls, then it must return '0',
+not -EOPNOTSUPP.
+
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+---
+ fs/nfs/nfs3acl.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+index 9271a6bb9a41..871d6eda8dba 100644
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -113,7 +113,7 @@ getout:
+ 	return ERR_PTR(status);
+ }
+ 
+-int nfs3_proc_setacls(struct inode *inode, struct posix_acl *acl,
++static int __nfs3_proc_setacls(struct inode *inode, struct posix_acl *acl,
+ 		struct posix_acl *dfacl)
+ {
+ 	struct nfs_server *server = NFS_SERVER(inode);
+@@ -198,6 +198,15 @@ out:
+ 	return status;
+ }
+ 
++int nfs3_proc_setacls(struct inode *inode, struct posix_acl *acl,
++		struct posix_acl *dfacl)
++{
++	int ret;
++	ret = __nfs3_proc_setacls(inode, acl, dfacl);
++	return (ret == -EOPNOTSUPP) ? 0 : ret;
++
++}
++
+ int nfs3_set_acl(struct inode *inode, struct posix_acl *acl, int type)
+ {
+ 	struct posix_acl *alloc = NULL, *dfacl = NULL;
+@@ -225,7 +234,7 @@ int nfs3_set_acl(struct inode *inode, struct posix_acl *acl, int type)
+ 		if (IS_ERR(alloc))
+ 			goto fail;
+ 	}
+-	status = nfs3_proc_setacls(inode, acl, dfacl);
++	status = __nfs3_proc_setacls(inode, acl, dfacl);
+ 	posix_acl_release(alloc);
+ 	return status;
+ 
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.5.3
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
