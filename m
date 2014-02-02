@@ -1,144 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaBBThS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 14:37:18 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:52873 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaBBThQ (ORCPT
+	id S1752422AbaBBUCt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 15:02:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60712 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386AbaBBUCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 14:37:16 -0500
-Message-ID: <1391369816.2750.19.camel@canaries32-MCP7A>
-Subject: Re: rtl8821ae.
-From: Malcolm Priestley <tvboxspy@gmail.com>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: Dave Jones <davej@redhat.com>, gregkh@linuxfoundation.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        Andrea Merello <andrea.merello@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Date: Sun, 02 Feb 2014 19:36:56 +0000
-In-Reply-To: <201402021807.37772.s.L-H@gmx.de>
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail>
-	 <20140202160512.GA4946@redhat.com> <201402021807.37772.s.L-H@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Feb 2014 15:02:48 -0500
+Date: Sun, 2 Feb 2014 21:02:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
+ spin_on_owner if need_resched() triggered while queued
+Message-ID: <20140202200223.GD5126@laptop.programming.kicks-ass.net>
+References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
+ <1390936396-3962-6-git-send-email-jason.low2@hp.com>
+ <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
+ <1390949495.2807.52.camel@j-VirtualBox>
+ <20140129115142.GE9636@twins.programming.kicks-ass.net>
+ <1391138977.6284.82.camel@j-VirtualBox>
+ <20140131140941.GF4941@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140131140941.GF4941@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-02 at 18:07 +0000, Stefan Lippers-Hollmann wrote:
-> Hi
-> 
-> [ CC'ing the relevant parties ]
-> 
-> On Sunday 02 February 2014, Dave Jones wrote:
-> > On Sun, Feb 02, 2014 at 03:41:27AM -0800, scan-admin@coverity.com wrote:
-> >  > 
-> >  > Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
-> >  > 
-> >  > Defect(s) Reported-by: Coverity Scan
-> >  > Showing 20 of 83 defect(s)
-> > 
-> > Ugh, this is even worse than the usual realtek drivers. (With the exception of rtl8188eu)
-> > All 83 of those new defects came from this new driver, and while there's
-> > a bunch of "who cares" type things in there, there's a load of stuff that
-> > needs fixing a lot more urgently than CodingStyle issues or anything else in the TODO
-> > for that driver.
-> > 
-> > A bigger problem though, is what is the plan for these realtek drivers ?
-> > They've been in staging forever. rtl8187se has been there for _five_ years with
-> > no indication it's ever getting promoted to first class status.
-> 
-> Actually rtl8187se (aka rtl8185b) seems to have gotten some attention 
-> recently:
-> 
-> http://lkml.kernel.org/r/CAN8YU5PGkx9s9deWpFTO_ZtDr-+wDD5cX2JRv1zd1m1Q0BpkCw@mail.gmail.com
-> 
-> > The git logs are littered mostly with CodingStyle cleanups, sparse cleanups and such,
-> > meanwhile for five years they've had out of bounds reads, overflows, and such 
-> > for this whole time.  Even worse, when one of the drivers gets fixes for actual
-> > problems like this, they never make it back to Realtek, who clone the same
-> > old shitty driver they shipped last time, and reintroduce new variants of the
-> > same damn bugs, and then we import the new turd into staging and start all over again.
-> > 
-> > I get the whole "a shit driver is better than no driver", but there's no discernable
-> > effort to ever improve this pile, just to keep adding to it.
-> > 
-> > 	Dave
-> 
-> I think there are mostly two major problems with these drivers, besides 
-> RealTek still working on a non-mac80211 codebase for USB based devices.
-> 
-> The sheer number of slightly different RealTek drivers for similar
-> chipsets, for which RealTek as forked off a dedicated driver each, 
-> rather than extending the existing ones. With the other, probably even 
-> larger, problem being that it isn't possible to port wireless drivers
-> from non-mac80111 to mac80211 in a gradual fashion, it's always a 
-> parallel re-implementation. Just look at the recent history of staging
-> wireless drivers:
-> 
-> the successful ones:
-> - csr --> /dev/null
-> - otus --> ar9170 --> carl9170
-> - ( rt2870 && rt3070 ) --> rt2800usb
-> - rt2870 --> rt2800pci
-> - [ at76c503a --> ] at76_usb --> at76c50x-usb   [*] not in staging
-> 
-> the pending ones
-> - rtl8187se [ --> rtl8180 ]   [*] hopefully soon
-> - rtl8188eu --> ?
-> - [ rtl8192du --> ? ]   [*] not in staging, [1]
-> - rtl8192e --> ?
-> - rtl8192u --> ?
-> - rtl8192su --> rtl8712 --> ? [ r92su[2] would add cfg80211 support, 
->                                 but it being a fullmac like
->                                 re-implementation doesn't get it 
->                                 anywhere ]
-> - rtl8821ae [ --> mac80211 port planned for 3.15[3]? ]
-> 
-> these devices are, besides rtl8187se (802.11g) and rtl8821ae 
-> (802.11ac), all 802.11n compatible, but were quickly EOLed by the 
-> vendor, probably making it hard to get enough traction for a proper 
-> mac80211 port. Coincidentally these chipsets are also very popular, 
-> rtl8187se being the chipset of the early netbook craze, rtl8188eu 
-> pretty ubiquitous on embedded platforms, the others making the bulk 
-> of aftermarket USB devices.
-> 
-> ancient hardware, probably not going anywhere:
-The below devices are still been sold new
-> - vt6655 --> ?
-> - vt6656 --> ?
-to mac80211
+On Fri, Jan 31, 2014 at 03:09:41PM +0100, Peter Zijlstra wrote:
+> +struct m_spinlock {
+> +	struct m_spinlock *next, *prev;
+> +	int locked; /* 1 if lock acquired */
+> +};
+> +
+> +/*
+> + * Using a single mcs node per CPU is safe because mutex_lock() should not be
+> + * called from interrupt context and we have preemption disabled over the mcs
+> + * lock usage.
+> + */
+> +static DEFINE_PER_CPU(struct m_spinlock, m_node);
+> +
+> +static bool m_spin_lock(struct m_spinlock **lock)
+> +{
+> +	struct m_spinlock *node = this_cpu_ptr(&m_node);
+> +	struct m_spinlock *prev, *next;
+> +
+> +	node->locked = 0;
+> +	node->next = NULL;
+> +
+> +	node->prev = prev = xchg(lock, node);
+> +	if (likely(prev == NULL))
+> +		return true;
+> +
+> +	ACCESS_ONCE(prev->next) = node;
+> +
+> +	/*
+> +	 * Normally @prev is untouchable after the above store; because at that
+> +	 * moment unlock can proceed and wipe the node element from stack.
+> +	 *
+> +	 * However, since our nodes are static per-cpu storage, we're
+> +	 * guaranteed their existence -- this allows us to apply
+> +	 * cmpxchg in an attempt to undo our queueing.
+> +	 */
+> +
+> +	while (!smp_load_acquire(&node->locked)) {
+> +		if (need_resched())
+> +			goto unqueue;
+> +		arch_mutex_cpu_relax();
+> +	}
+> +	return true;
+> +
+> +unqueue:
+> +	/*
+> +	 * Step - A  -- stabilize @prev
+> +	 *
+> +	 * Undo our @prev->next assignment; this will make @prev's
+> +	 * unlock()/cancel() wait for a next pointer since @lock points to us
+> +	 * (or later).
+> +	 */
+> +
+> +	for (;;) {
+> +		next = cmpxchg(&prev->next, node, NULL); /* A -> B,C */
+> +
+> +		/*
+> +		 * Because the unlock() path retains @prev->next (for
+> +		 * performance) we must check @node->locked after clearing
+> +		 * @prev->next to see if we raced.
+> +		 *
+> +		 * Ordered by the cmpxchg() above and the conditional-store in
+> +		 * unlock().
+> +		 */
+> +		if (smp_load_acquire(&node->locked)) {
+> +			/*
+> +			 * OOPS, we were too late, we already got the lock. No
+> +			 * harm done though; @prev is now unused an nobody
+> +			 * cares we frobbed it.
+> +			 */
+> +			return true;
+> +		}
+> +
+> +		if (next == node)
+> +			break;
+> +
+> +		/*
+> +		 * @prev->next didn't point to us anymore, we didn't own the
+> +		 * lock, so reload and try again.
+> +		 *
+> +		 * Because we observed the new @prev->next, the smp_wmb() at
+> +		 * (C) ensures that we must now observe the new @node->prev.
+> +		 */
+> +		prev = ACCESS_ONCE(node->prev);
+> +	}
+> +
+> +	/*
+> +	 * Step - B -- stabilize @next
+> +	 *
+> +	 * Similar to unlock(), wait for @node->next or move @lock from @node
+> +	 * back to @prev.
+> +	 */
+> +
+> +	for (;;) {
+> +		if (*lock == node && cmpxchg(lock, node, prev) == node) {
+> +			/*
+> +			 * We were the last queued, we moved @lock back. @prev
+> +			 * will now observe @lock and will complete its
+> +			 * unlock()/cancel().
+> +			 */
+> +			return false;
+> +		}
+> +
+> +		/*
+> +		 * We must xchg() the @node->next value, because if we were to
+> +		 * leave it in, a concurrent cancel() from @node->next might
+> +		 * complete Step-A and think its @prev is still valid.
+> +		 *
+> +		 * If the concurrent cancel() wins the race, we'll wait for
+> +		 * either @lock to point to us, through its Step-B, or wait for
+> +		 * a new @node->next from its Step-C.
+> +		 */
+> +		next = xchg(&node->next, NULL); /* B -> A */
+> +		if (next)
+> +			break;
+> +
+> +		arch_mutex_cpu_relax();
+> +	}
+> +
+> +	/*
+> +	 * Step - C -- unlink
+> +	 *
+> +	 * @prev is stable because its still waiting for a new @prev->next
+> +	 * pointer, @next is stable because our @node->next pointer is NULL and
+> +	 * it will wait in Step-A.
+> +	 */
+> +
+> +	ACCESS_ONCE(next->prev) = prev;
+> +
+> +	/*
+> +	 * Ensure that @next->prev is written before we write @prev->next,
+> +	 * this guarantees that when the cmpxchg at (A) fails we must
+> +	 * observe the new prev value.
+> +	 */
+> +	smp_wmb(); /* C -> A */
 
-I have already done the conversion, just some minor things todo
-LED/ host implementation
+OK, I've definitely stared at this code for too long :/
 
-Should be ready to merge next + 3-4.
+I don't think the above barrier is right -- or even required for that
+matter. At this point I can't see anything wrong with the order of
+either of these stores.
 
-I will update the TODO file shortly.
+If the latter store hits first an unlock can can happen and release the
+@next entry, which is fine as the Step-A loop can deal with that, if the
+unlock doesn't happen, we'll simply wait for the first store to become
+visible before trying to undo later again.
 
-> - wlags49_h2 --> ?
-> - wlags49_h25 --> ?
-> - wlan-ng --> ?
-> 
-> This likely leaves staging wireless drivers to small corrections and 
-> bugfixes. In the hope that the devices will get enough traction that 
-> someone takes up the effort of doing a parallel re-implementation of a
-> proper mac80211 based driver, using the staging source only as 
-> reference.
-> 
-For my part, it is an educational exercise.
+If the former store hits first, we'll simply wait for the later store to
+appear and we'll try to undo it.
 
-However, I do wonder why I don't simply submit a new driver. There
-is very little of the staging code left.
+This obviously doesn't explain lockups, but it does reduce the code to
+stare at ever so slightly.
 
-Regards
-
-
-Malcolm
-
-
+> +	/*
+> +	 * And point @prev to our next, and we're unlinked.
+> +	 */
+> +	ACCESS_ONCE(prev->next) = next;
+> +
+> +	return false;
+> +}
+> +
+> +static void m_spin_unlock(struct m_spinlock **lock)
+> +{
+> +	struct m_spinlock *node = this_cpu_ptr(&m_node);
+> +	struct m_spinlock *next;
+> +
+> +	for (;;) {
+> +		if (likely(cmpxchg(lock, node, NULL) == node))
+> +			return;
+> +
+> +		next = ACCESS_ONCE(node->next);
+> +		if (unlikely(next))
+> +			break;
+> +
+> +		arch_mutex_cpu_relax();
+> +	}
+> +	smp_store_release(&next->locked, 1);
+> +}
