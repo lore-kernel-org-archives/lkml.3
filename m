@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaBAX7o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 18:59:44 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:48916 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaBAX7n (ORCPT
+	id S1753473AbaBBAP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 19:15:28 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:60595 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaBBAP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 18:59:43 -0500
+	Sat, 1 Feb 2014 19:15:26 -0500
+Date: Sat, 1 Feb 2014 16:15:24 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Chris Mason <clm@fb.com>, Filipe David Borba Manana <fdmanana@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs
+In-Reply-To: <52EAC9B6.7090603@fb.com>
+Message-ID: <alpine.DEB.2.02.1402011611400.5908@chino.kir.corp.google.com>
+References: <52EAC9B6.7090603@fb.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1391268756-10766-4-git-send-email-stefani@seibold.net>
-References: <1391268756-10766-1-git-send-email-stefani@seibold.net> <1391268756-10766-4-git-send-email-stefani@seibold.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 1 Feb 2014 15:59:20 -0800
-Message-ID: <CALCETrVp+aTm_mT4bg6kcaX3QOnqyjVdfM9vdhHZPsKG276X0A@mail.gmail.com>
-Subject: Re: [PATCH 3/4] Add 32 bit VDSO time support for 32 bit kernel
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 1, 2014 at 7:32 AM,  <stefani@seibold.net> wrote:
-> From: Stefani Seibold <stefani@seibold.net>
->
-> This patch add the time support for 32 bit a VDSO to a 32 bit kernel.
->
-> For 32 bit programs running on a 32 bit kernel, the same mechanism is
-> used as for 64 bit programs running on a 64 bit kernel.
->
-> Signed-off-by: Stefani Seibold <stefani@seibold.net>
+On Thu, 30 Jan 2014, Chris Mason wrote:
 
-I have multiple issues with this patch.
+> 
+> Hi Linus
+> 
+> Please pull my for-linus branch:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+> 
+> There are two conflicts right now, one with the ACL code (pick your
+> version) and one with Kent's changes in the block layer pull.  That one
+> is pretty obvious too, just do both our cleanup and Kent's rework.
+> 
+> This is a pretty big pull, and most of these changes have been floating
+> in btrfs-next for a long time.  Filipe's properties work is a cool
+> building block for inheriting attributes like compression down on a 
+> per inode basis.
+> 
+> Jeff Mahoney kicked in code to export filesystem info into sysfs.
+> 
+> Otherwise, lots of performance improvements, cleanups and bug fixes.
+> 
+> Looks like there are still a few other small pending incrementals, but I
+> wanted to get the bulk of this in first.
+> 
+> Filipe David Borba Manana (29) commits (+1856/-301):
+>     Btrfs: fix deadlock when iterating inode refs and running delayed inodes (+12/-7)
+>     Btrfs: fix send file hole detection leading to data corruption (+15/-0)
+>     Btrfs: remove field tree_mod_seq_elem from btrfs_fs_info struct (+0/-1)
+>     Btrfs: make send's file extent item search more efficient (+17/-10)
+>     Btrfs: fix infinite path build loops in incremental send (+518/-21)
+>     Btrfs: reduce btree node locking duration on item update (+14/-10)
+>     Btrfs: return immediately if tree log mod is not necessary (+1/-1)
+>     Btrfs: fix pass of transid with wrong endianness in send.c (+3/-3)
+>     Btrfs: fix btrfs_search_slot_for_read backwards iteration (+3/-1)
+>     Btrfs: fix send to not send non-aligned clone operations (+2/-1)
+>     Btrfs: faster and more efficient extent map insertion (+41/-31)
+>     Btrfs: fix extent boundary check in bio_readpage_error (+1/-1)
+>     Btrfs: faster file extent item search in clone ioctl (+14/-9)
+>     Btrfs: unlock inodes in correct order in clone ioctl (+11/-3)
+>     Btrfs: faster file extent item replace operations (+114/-46)
+>     Btrfs: avoid unnecessary ordered extent cache resets (+2/-1)
+>     Btrfs: fix very slow inode eviction and fs unmount (+84/-14)
+>     Btrfs: fix snprintf usage by send's gen_unique_name (+1/-1)
+>     Btrfs: fix ordered extent check in btrfs_punch_hole (+1/-1)
+>     Btrfs: fix btrfs boot when compiled as built-in (+73/-9)
 
- - It's very hard to review the vclock_gettime.c changes.  You're
-doing at least three things in there: reworking the return types of
-all the helpers, moving code, and adding 32-bit code.  Can you split
-the patch so that the resulting diff is readable?  (e.g. one patch
-that purely reorders things, one patch that reworks the return types,
-and a third patch with the meat?  if splitting into just two results
-in a comprehensible diff, that's fine, too.)
+This one, 14a958e678cd ("Btrfs: fix btrfs boot when compiled as 
+built-in"), breaks the build if CONFIG_LIBCRC32C=m:
 
- - There are multiple vvar mappings.  I still don't understand why.
-You've stuck the vvar page into the fixmap *and* into a special
-mapping.  The former works on native 32 bit only, but you don't seem
-to *use* the mapping, which confuses me.  The latter may or may not
-confuse things (criu?) that try to parse /proc/self/maps.
-
-  If it is, indeed, okay to use non-fixed maps on 32-bit, it might
-also be okay on 64-bit.  If so, it could be useful to implement that,
-which would remove a bit of a wart and allow PR_SET_TSC to work
-usefully for 64-bit userspace.  (This would remove the need for the
-VVAR macro and would allow shorter rip-relative address modes.)
-
- (Note that those fixmaps are a security problem on native 32-bit if
-NX is not available.  We may not care.)
-
- - The VVAR macro is all screwed up now.  Please either continue to
-use it (and fix the definition) or stop using it everywhere and figure
-out a different way.  The current approach is just going to fester if
-anyone ports the rest of the vdso to work in 32-bit environments.
-
- - You've hardcoded the address of the counter in the HPET page into
-the linker script.  Please don't.  If you really need to have the HPET
-mapping in the linker script, please just reference the base address
-and add the offset in C code using the appropriate macro.
-
-> ---
->  arch/x86/include/asm/elf.h            |   2 +-
->  arch/x86/include/asm/vdso.h           |   3 +
->  arch/x86/include/asm/vdso32.h         |  10 +++
->  arch/x86/vdso/Makefile                |   7 ++
->  arch/x86/vdso/vclock_gettime.c        | 165 ++++++++++++++++++++++------------
->  arch/x86/vdso/vdso-layout.lds.S       |  25 ++++++
->  arch/x86/vdso/vdso32-setup.c          |  47 ++++++++--
->  arch/x86/vdso/vdso32/vclock_gettime.c |  16 ++++
->  arch/x86/vdso/vdso32/vdso32.lds.S     |  11 ++-
->  9 files changed, 218 insertions(+), 68 deletions(-)
->  create mode 100644 arch/x86/include/asm/vdso32.h
->  create mode 100644 arch/x86/vdso/vdso32/vclock_gettime.c
->
-> diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
-> index 9c999c1..21bae90 100644
-> --- a/arch/x86/include/asm/elf.h
-> +++ b/arch/x86/include/asm/elf.h
-> @@ -289,7 +289,7 @@ do {                                                                        \
->
->  #else /* CONFIG_X86_32 */
->
-> -#define VDSO_HIGH_BASE         0xffffe000U /* CONFIG_COMPAT_VDSO address */
-> +#define VDSO_HIGH_BASE         0xffffc000U /* CONFIG_COMPAT_VDSO address */
-
-This is odd.  Can you explain it?
-
-
---Andy
+fs/built-in.o: In function `btrfs_check_super_csum':
+disk-io.c:(.text+0x1a1c8b): undefined reference to `crc32c'
+fs/built-in.o: In function `write_dev_supers.isra.120':
+disk-io.c:(.text+0x1a2054): undefined reference to `crc32c'
+fs/built-in.o: In function `csum_tree_block.isra.122':
+disk-io.c:(.text+0x1a22c4): undefined reference to `crc32c'
+fs/built-in.o: In function `btrfs_csum_data':
+(.text+0x1a2a46): undefined reference to `crc32c'
+fs/built-in.o: In function `send_cmd':
+send.c:(.text+0x20fe4c): undefined reference to `crc32c'
