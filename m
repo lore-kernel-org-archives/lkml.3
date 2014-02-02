@@ -1,144 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaBBQuf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 11:50:35 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:65252 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaBBQue (ORCPT
+	id S1752150AbaBBRGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 12:06:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60829 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751863AbaBBRGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 11:50:34 -0500
+	Sun, 2 Feb 2014 12:06:22 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Robert Moore <robert.moore@intel.com>
+Subject: [PATCH v3 7/7] ACPI / hotplug / PCI: Hotplug notifications from acpi_bus_notify()
+Date: Sun, 02 Feb 2014 18:20:19 +0100
+Message-ID: <6725460.6y7VbCtSUH@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <5157096.hCmU2aoKCT@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <1519631.YS65c9Af2C@vostro.rjw.lan> <5157096.hCmU2aoKCT@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20140201165122.GA7478@redhat.com>
-References: <1390895840.8373.2.camel@beeld>
-	<20140128164320.GB7596@redhat.com>
-	<CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com>
-	<20140129145535.GA12562@redhat.com>
-	<CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com>
-	<20140129183204.GA22808@redhat.com>
-	<CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com>
-	<CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com>
-	<20140201165122.GA7478@redhat.com>
-Date: Sun, 2 Feb 2014 22:50:32 +0600
-Message-ID: <CADZ9YHg-8XrQ0p+uQNRNBhvnHE83xVxLKais0DrT9vfoQvm=uA@mail.gmail.com>
-Subject: Re: Do we really need curr_target in signal_struct ?
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 1, 2014 at 10:51 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/01, Rakib Mullick wrote:
->>
->> On Thu, Jan 30, 2014 at 1:02 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
->> > On Thu, Jan 30, 2014 at 12:32 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> >> On 01/29, Rakib Mullick wrote:
->> >
->> >>> Are you thinking that , since things are not broken, then we shouldn't
->> >>> try to do anything?
->> >>
->> >> Hmm. No.
->> >>
->> >> I am thinking that, since you misunderstood the purpose of ->curr_target,
->> >> I should probably try to argue with your patch which blindly removes this
->> >> optimization ?
->> >>
->> > Since the optimization (usages of ->curr_target) isn't perfect, so there's
->> > chance of being misunderstood. This optimization is misleading too (I think),
->> > cause curr_target don't have anything to do with wants_signal()
->
-> can't understand... curr_target is obviously connected to wants_signal() ?
-No. I meant, curr_target doesn't makes sure that it really wants the
-signal, it's likely
-choice.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> As I already said it caches the last wants_signal(t) thread?
-Yes, you said. But, gets messed up at exit path, not useful everytime.
-If fails, p gets checked twice.
+Since acpi_bus_notify() is executed on all notifications for all
+devices anyway, make it execute acpi_device_hotplug() for all
+hotplug events instead of installing notify handlers pointing to
+the same function for all hotplug devices.
 
->> > and
->> >  ->curr_target is used only for this optimization and to get this optimization
->> > needs to maintain it properly, and this maintenance does have cost and if
->> > we don't get benefited too much, then it doesn't worth it (my pov).
->
-> but you need to prove this somehow.
->
-Right, I'll try, I'll do it as per my understanding and everyone might
-not agree.
+This change reduces both the size and complexity of ACPI-based device
+hotplug code.  Moreover, since acpi_device_hotplug() only does
+significant things for devices that have either an ACPI scan handler,
+or a hotplug context with .eject() defined, and those devices
+had notify handlers pointing to acpi_hotplug_notify_cb() installed
+before anyway, this modification shouldn't change functionality.
 
->> I took a look and found that using while_each_thread()
->> can make things better than current.
->
-> Why?
->
-using while_each_thread() we can start thread traversing from p, which
-is a likely
-pick and also gets away from redundant checking of p.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/bus.c                 |   60 +++++++++++++---------
+ drivers/acpi/internal.h            |    1 
+ drivers/acpi/scan.c                |  100 -------------------------------------
+ drivers/pci/hotplug/acpiphp.h      |    1 
+ drivers/pci/hotplug/acpiphp_glue.c |   16 ++---
+ include/acpi/acpi_bus.h            |    2 
+ 6 files changed, 46 insertions(+), 134 deletions(-)
 
->> What do you think?
->
-> The patch is technically wrong, a group-wide signal doesn't check all
-> threads after this change.
-If group is empty, we don't need to check other than t.
+Index: linux-pm/drivers/acpi/bus.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/bus.c
++++ linux-pm/drivers/acpi/bus.c
+@@ -340,62 +340,76 @@ static void acpi_bus_osc_support(void)
+  */
+ static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
+ {
+-	struct acpi_device *device = NULL;
++	struct acpi_device *adev;
+ 	struct acpi_driver *driver;
+-
+-	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Notification %#02x to handle %p\n",
+-			  type, handle));
++	acpi_status status;
++	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+ 
+ 	switch (type) {
+-
+ 	case ACPI_NOTIFY_BUS_CHECK:
+-		/* TBD */
++		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
+ 		break;
+ 
+ 	case ACPI_NOTIFY_DEVICE_CHECK:
+-		/* TBD */
++		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
+ 		break;
+ 
+ 	case ACPI_NOTIFY_DEVICE_WAKE:
+-		/* TBD */
++		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_WAKE event\n");
+ 		break;
+ 
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+-		/* TBD */
++		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
+ 		break;
+ 
+ 	case ACPI_NOTIFY_DEVICE_CHECK_LIGHT:
++		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK_LIGHT event\n");
+ 		/* TBD: Exactly what does 'light' mean? */
+ 		break;
+ 
+ 	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
+-		/* TBD */
++		acpi_handle_err(handle, "Device cannot be configured due "
++				"to a frequency mismatch\n");
+ 		break;
+ 
+ 	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
+-		/* TBD */
++		acpi_handle_err(handle, "Device cannot be configured due "
++				"to a bus mode mismatch\n");
+ 		break;
+ 
+ 	case ACPI_NOTIFY_POWER_FAULT:
+-		/* TBD */
++		acpi_handle_err(handle, "Device has suffered a power fault\n");
+ 		break;
+ 
+ 	default:
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "Received unknown/unsupported notification [%08x]\n",
+-				  type));
+-		break;
++		acpi_handle_warn(handle, "Unsupported event type 0x%x\n", type);
++		ost_code = ACPI_OST_SC_UNRECOGNIZED_NOTIFY;
++		goto err;
+ 	}
+ 
+-	acpi_bus_get_acpi_device(handle, &device);
+-	if (device) {
+-		driver = device->driver;
+-		if (driver && driver->ops.notify &&
+-		    (driver->flags & ACPI_DRIVER_ALL_NOTIFY_EVENTS))
+-			driver->ops.notify(device, type);
++	if (acpi_bus_get_acpi_device(handle, &adev))
++		goto err;
+ 
+-		acpi_bus_put_acpi_device(device);
++	driver = adev->driver;
++	if (driver && driver->ops.notify &&
++	    (driver->flags & ACPI_DRIVER_ALL_NOTIFY_EVENTS))
++		driver->ops.notify(adev, type);
++
++	switch (type) {
++	case ACPI_NOTIFY_BUS_CHECK:
++	case ACPI_NOTIFY_DEVICE_CHECK:
++	case ACPI_NOTIFY_EJECT_REQUEST:
++		status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
++		if (ACPI_SUCCESS(status))
++			return;
++	default:
++		break;
+ 	}
++	acpi_bus_put_acpi_device(adev);
++	return;
++
++ err:
++	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+ }
+ 
+ /* --------------------------------------------------------------------------
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -73,6 +73,7 @@ static inline void acpi_lpss_init(void)
+ #endif
+ 
+ bool acpi_queue_hotplug_work(struct work_struct *work);
++void acpi_device_hotplug(void *data, u32 src);
+ bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
+ 
+ /* --------------------------------------------------------------------------
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -470,7 +470,7 @@ static int acpi_generic_hotplug_event(st
+ 	return -EINVAL;
+ }
+ 
+-static void acpi_device_hotplug(void *data, u32 src)
++void acpi_device_hotplug(void *data, u32 src)
+ {
+ 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+ 	struct acpi_device *adev = data;
+@@ -520,74 +520,6 @@ static void acpi_device_hotplug(void *da
+ 	unlock_device_hotplug();
+ }
+ 
+-static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+-{
+-	u32 ost_code = ACPI_OST_SC_SUCCESS;
+-	struct acpi_device *adev;
+-	acpi_status status;
+-
+-	switch (type) {
+-	case ACPI_NOTIFY_BUS_CHECK:
+-		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
+-		break;
+-
+-	case ACPI_NOTIFY_DEVICE_CHECK:
+-		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
+-		break;
+-
+-	case ACPI_NOTIFY_EJECT_REQUEST:
+-		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
+-		break;
+-
+-	case ACPI_NOTIFY_DEVICE_WAKE:
+-		return;
+-
+-	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
+-		acpi_handle_err(handle, "Device cannot be configured due "
+-				"to a frequency mismatch\n");
+-		goto out;
+-
+-	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
+-		acpi_handle_err(handle, "Device cannot be configured due "
+-				"to a bus mode mismatch\n");
+-		goto out;
+-
+-	case ACPI_NOTIFY_POWER_FAULT:
+-		acpi_handle_err(handle, "Device has suffered a power fault\n");
+-		goto out;
+-
+-	default:
+-		acpi_handle_warn(handle, "Unsupported event type 0x%x\n", type);
+-		ost_code = ACPI_OST_SC_UNRECOGNIZED_NOTIFY;
+-		goto out;
+-	}
+-
+-	ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+-	if (acpi_bus_get_acpi_device(handle, &adev))
+-		goto out;
+-
+-	status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
+-	if (ACPI_SUCCESS(status))
+-		return;
+-
+-	acpi_bus_put_acpi_device(adev);
+-
+- out:
+-	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+-}
+-
+-void acpi_install_hotplug_notify_handler(acpi_handle handle)
+-{
+-	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-				    acpi_hotplug_notify_cb, NULL);
+-}
+-
+-void acpi_remove_hotplug_notify_handler(acpi_handle handle)
+-{
+-	acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-				   acpi_hotplug_notify_cb);
+-}
+-
+ static ssize_t real_power_state_show(struct device *dev,
+ 				     struct device_attribute *attr, char *buf)
+ {
+@@ -2025,34 +1957,6 @@ void acpi_scan_hotplug_enabled(struct ac
+ 	mutex_unlock(&acpi_scan_lock);
+ }
+ 
+-static void acpi_scan_init_hotplug(acpi_handle handle, int type)
+-{
+-	struct acpi_device_pnp pnp = {};
+-	struct acpi_hardware_id *hwid;
+-	struct acpi_scan_handler *handler;
+-
+-	INIT_LIST_HEAD(&pnp.ids);
+-	acpi_set_pnp_ids(handle, &pnp, type);
+-
+-	if (!pnp.type.hardware_id)
+-		goto out;
+-
+-	/*
+-	 * This relies on the fact that acpi_install_notify_handler() will not
+-	 * install the same notify handler routine twice for the same handle.
+-	 */
+-	list_for_each_entry(hwid, &pnp.ids, list) {
+-		handler = acpi_scan_match_handler(hwid->id, NULL);
+-		if (handler) {
+-			acpi_install_hotplug_notify_handler(handle);
+-			break;
+-		}
+-	}
+-
+-out:
+-	acpi_free_pnp_ids(&pnp);
+-}
+-
+ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+ 				      void *not_used, void **return_value)
+ {
+@@ -2074,8 +1978,6 @@ static acpi_status acpi_bus_check_add(ac
+ 		return AE_OK;
+ 	}
+ 
+-	acpi_scan_init_hotplug(handle, type);
+-
+ 	acpi_add_single_object(&device, handle, type, sta);
+ 	if (!device)
+ 		return AE_CTRL_DEPTH;
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -283,7 +283,6 @@ static acpi_status register_slot(acpi_ha
+ 	newfunc = &context->func;
+ 	newfunc->function = function;
+ 	newfunc->parent = bridge;
+-	acpi_unlock_hp_context();
+ 
+ 	if (acpi_has_method(handle, "_EJ0"))
+ 		newfunc->flags = FUNC_HAS_EJ0;
+@@ -291,8 +290,14 @@ static acpi_status register_slot(acpi_ha
+ 	if (acpi_has_method(handle, "_STA"))
+ 		newfunc->flags |= FUNC_HAS_STA;
+ 
++	/*
++	 * Dock stations' notify handler should be used for dock devices instead
++	 * of the common one, so clear hp.event in their contexts.
++	 */
+ 	if (acpi_has_method(handle, "_DCK"))
+-		newfunc->flags |= FUNC_HAS_DCK;
++		context->hp.event = NULL;
++
++	acpi_unlock_hp_context();
+ 
+ 	/* search for objects that share the same slot */
+ 	list_for_each_entry(slot, &bridge->slots, node)
+@@ -360,10 +365,6 @@ static acpi_status register_slot(acpi_ha
+ 			pr_debug("failed to register dock device\n");
+ 	}
+ 
+-	/* install notify handler */
+-	if (!(newfunc->flags & FUNC_HAS_DCK))
+-		acpi_install_hotplug_notify_handler(handle);
+-
+ 	return AE_OK;
+ }
+ 
+@@ -400,9 +401,6 @@ static void cleanup_bridge(struct acpiph
+ 
+ 			if (is_dock_device(handle))
+ 				unregister_hotplug_dock_device(handle);
+-
+-			if (!(func->flags & FUNC_HAS_DCK))
+-				acpi_remove_hotplug_notify_handler(handle);
+ 		}
+ 		slot->flags |= SLOT_IS_GOING_AWAY;
+ 		if (slot->slot)
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -443,8 +443,6 @@ static inline bool acpi_device_enumerate
+ typedef void (*acpi_hp_callback)(void *data, u32 src);
+ 
+ acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
+-void acpi_install_hotplug_notify_handler(acpi_handle handle);
+-void acpi_remove_hotplug_notify_handler(acpi_handle handle);
+ 
+ /**
+  * module_acpi_driver(acpi_driver) - Helper macro for registering an ACPI driver
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -167,7 +167,6 @@ struct acpiphp_attention_info
+ 
+ #define FUNC_HAS_STA		(0x00000001)
+ #define FUNC_HAS_EJ0		(0x00000002)
+-#define FUNC_HAS_DCK            (0x00000004)
+ 
+ /* function prototypes */
+ 
 
-> And I do not understand why complete_signal()
-> still updates ->curr_target.
-Didn't want to remove it blindly :-/
-
-> Plus thread_group_empty() doesn't buy too
-> much if we use while_each_thread(). But this doesn't really matter, easy
-> to fix.
->
-> Rakib. It is not that I like ->curr_target very much. But let me repeat,
-> if you want to remove this optimization you need to explain why it doesn't
-> make sense. You claim that this "can make things better" without any
-> argument.
->
-Well, I had other way of looking at it and didn't find any real usages
-of ->curr_target and got confused though the code comment in curr_target.
-
-> As for me - I simply do not know. This logic is very old, I am not even
-> sure that the current usage of ->curr_signal matches the original intent.
-> But it can obviously help in some cases, and you need to explain why we
-> do not care.
->
-Actually, this is exactly what i wanted to know. What is the purpose
-of ->curr_signal, *do we really need it?* If I knew or seen any reason
-I'd have never asked this question. You guys knows this domain better than
-me, that's why I asked. Git log didn't help much, neither it's documentation
-. As a result, I asked and thought about cleaning it up, (as i rarely do if
-it meets my capability of course), so appended a sort of rough patch.
-
-> So I won't argue if you submit the technically correct patch, but you
-> need to convince Andrew or Ingo to take it. I think the right change in
-> complete_signal() is something like below. It can be even simpler and use
-> the single do/while loop, but then we need to check "group" inside that
-> loop. With the change below ->curr_target can be simply removed.
->
-I'll try to make points to convince Andrew or Ingo, I'll try to show
-up my points,
-and the rest will be upon them.
-
-And here's what i think about ->curr_target removal (as per my understanding):
-
- a) ->curr_target is only might be useful in group wide case.
- b) Usually signals are sent particularly to a thread so ->curr_signal
- doesn't makes sense.
- c) If ->curr_signal pointed thread is killed, curr_signal points to
-the next thread,
-but nothing can make sure that it's a right pick.
- d) also current in implementation p is checked twice.
- e) One use case of ->curr_signal is, it always points to the lastly
-created thread,
-as it's a better candidate for want_signal cause newly created thread don't
-usually have any signal pending. We can acheive the same without ->curr_signal
-by traversing thread group from the lastly created thread.
-
-So, this is what I think. Let me know if these reason's looks reasonable to you,
-cause before Ingo or Andrew taking it, it requires your ack.
-
-Thanks,
-Rakib.
