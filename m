@@ -1,95 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaBBRHL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 12:07:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60827 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751882AbaBBRGW (ORCPT
+	id S1752117AbaBBRLe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 12:11:34 -0500
+Received: from relay.parallels.com ([195.214.232.42]:50542 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaBBRLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 12:06:22 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Robert Moore <robert.moore@intel.com>
-Subject: [PATCH v3 6/7] ACPI / hotplug / PCI: Simplify acpi_install_hotplug_notify_handler()
-Date: Sun, 02 Feb 2014 18:19:30 +0100
-Message-ID: <1565480.8q752YNKSl@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <5157096.hCmU2aoKCT@vostro.rjw.lan>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <1519631.YS65c9Af2C@vostro.rjw.lan> <5157096.hCmU2aoKCT@vostro.rjw.lan>
+	Sun, 2 Feb 2014 12:11:32 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <rientjes@google.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH TRIVIAL] mm: vmscan: shrink_slab: rename max_pass -> freeable
+Date: Sun, 2 Feb 2014 21:11:30 +0400
+Message-ID: <1391361090-526-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.206]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The name `max_pass' is misleading, because this variable actually keeps
+the estimate number of freeable objects, not the maximal number of
+objects we can scan in this pass, which can be twice that. Rename it to
+reflect its actual meaning.
 
-Since acpi_hotplug_notify_cb() does not use its data argument any
-more, the second argument of acpi_install_hotplug_notify_handler()
-can be dropped, so do that and update its callers accordingly.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- drivers/acpi/scan.c                |    6 +++---
- drivers/pci/hotplug/acpiphp_glue.c |    2 +-
- include/acpi/acpi_bus.h            |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ mm/vmscan.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -576,10 +576,10 @@ static void acpi_hotplug_notify_cb(acpi_
- 	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
- }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a9c74b409681..fa3385865fc6 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -224,15 +224,15 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 	unsigned long freed = 0;
+ 	unsigned long long delta;
+ 	long total_scan;
+-	long max_pass;
++	long freeable;
+ 	long nr;
+ 	long new_nr;
+ 	int nid = shrinkctl->nid;
+ 	long batch_size = shrinker->batch ? shrinker->batch
+ 					  : SHRINK_BATCH;
  
--void acpi_install_hotplug_notify_handler(acpi_handle handle, void *data)
-+void acpi_install_hotplug_notify_handler(acpi_handle handle)
- {
- 	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				    acpi_hotplug_notify_cb, data);
-+				    acpi_hotplug_notify_cb, NULL);
- }
+-	max_pass = shrinker->count_objects(shrinker, shrinkctl);
+-	if (max_pass == 0)
++	freeable = shrinker->count_objects(shrinker, shrinkctl);
++	if (freeable == 0)
+ 		return 0;
  
- void acpi_remove_hotplug_notify_handler(acpi_handle handle)
-@@ -2044,7 +2044,7 @@ static void acpi_scan_init_hotplug(acpi_
- 	list_for_each_entry(hwid, &pnp.ids, list) {
- 		handler = acpi_scan_match_handler(hwid->id, NULL);
- 		if (handler) {
--			acpi_install_hotplug_notify_handler(handle, handler);
-+			acpi_install_hotplug_notify_handler(handle);
- 			break;
- 		}
+ 	/*
+@@ -244,14 +244,14 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 
+ 	total_scan = nr;
+ 	delta = (4 * nr_pages_scanned) / shrinker->seeks;
+-	delta *= max_pass;
++	delta *= freeable;
+ 	do_div(delta, lru_pages + 1);
+ 	total_scan += delta;
+ 	if (total_scan < 0) {
+ 		printk(KERN_ERR
+ 		"shrink_slab: %pF negative objects to delete nr=%ld\n",
+ 		       shrinker->scan_objects, total_scan);
+-		total_scan = max_pass;
++		total_scan = freeable;
  	}
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -362,7 +362,7 @@ static acpi_status register_slot(acpi_ha
  
- 	/* install notify handler */
- 	if (!(newfunc->flags & FUNC_HAS_DCK))
--		acpi_install_hotplug_notify_handler(handle, NULL);
-+		acpi_install_hotplug_notify_handler(handle);
+ 	/*
+@@ -260,26 +260,26 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 	 * shrinkers to return -1 all the time. This results in a large
+ 	 * nr being built up so when a shrink that can do some work
+ 	 * comes along it empties the entire cache due to nr >>>
+-	 * max_pass.  This is bad for sustaining a working set in
++	 * freeable. This is bad for sustaining a working set in
+ 	 * memory.
+ 	 *
+ 	 * Hence only allow the shrinker to scan the entire cache when
+ 	 * a large delta change is calculated directly.
+ 	 */
+-	if (delta < max_pass / 4)
+-		total_scan = min(total_scan, max_pass / 2);
++	if (delta < freeable / 4)
++		total_scan = min(total_scan, freeable / 2);
  
- 	return AE_OK;
- }
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -443,7 +443,7 @@ static inline bool acpi_device_enumerate
- typedef void (*acpi_hp_callback)(void *data, u32 src);
+ 	/*
+ 	 * Avoid risking looping forever due to too large nr value:
+ 	 * never try to free more than twice the estimate number of
+ 	 * freeable entries.
+ 	 */
+-	if (total_scan > max_pass * 2)
+-		total_scan = max_pass * 2;
++	if (total_scan > freeable * 2)
++		total_scan = freeable * 2;
  
- acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
--void acpi_install_hotplug_notify_handler(acpi_handle handle, void *data);
-+void acpi_install_hotplug_notify_handler(acpi_handle handle);
- void acpi_remove_hotplug_notify_handler(acpi_handle handle);
+ 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
+ 				nr_pages_scanned, lru_pages,
+-				max_pass, delta, total_scan);
++				freeable, delta, total_scan);
  
- /**
+ 	/*
+ 	 * Normally, we should not scan less than batch_size objects in one
+@@ -292,12 +292,12 @@ shrink_slab_node(struct shrink_control *shrinkctl, struct shrinker *shrinker,
+ 	 *
+ 	 * We detect the "tight on memory" situations by looking at the total
+ 	 * number of objects we want to scan (total_scan). If it is greater
+-	 * than the total number of objects on slab (max_pass), we must be
++	 * than the total number of objects on slab (freeable), we must be
+ 	 * scanning at high prio and therefore should try to reclaim as much as
+ 	 * possible.
+ 	 */
+ 	while (total_scan >= batch_size ||
+-	       total_scan >= max_pass) {
++	       total_scan >= freeable) {
+ 		unsigned long ret;
+ 		unsigned long nr_to_scan = min(batch_size, total_scan);
+ 
+-- 
+1.7.10.4
 
