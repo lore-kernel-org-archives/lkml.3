@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbaBBTPT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 14:15:19 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55333 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751940AbaBBTPP (ORCPT
+	id S1752183AbaBBT2Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 14:28:25 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:33723 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940AbaBBT2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 14:15:15 -0500
-Date: Sun, 2 Feb 2014 19:15:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v5 00/23]
-Message-ID: <20140202191505.GK26684@n2100.arm.linux.org.uk>
-References: <cover.1390986082.git.moinejf@free.fr> <20140202124358.GD26684@n2100.arm.linux.org.uk> <20140202190606.6fa193ce@armhf> <20140202182349.GJ26684@n2100.arm.linux.org.uk> <20140202195400.073f4eb4@armhf>
+	Sun, 2 Feb 2014 14:28:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140202195400.073f4eb4@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140202111552.GA2221@ls3530.box>
+References: <20140201202320.GA1313@p100.box>
+	<CAFLxGvy7vbKmQzyNvTbk35DX5cFGS99CE=nYE_Q0c=LVuD1x9A@mail.gmail.com>
+	<20140202111552.GA2221@ls3530.box>
+Date: Sun, 2 Feb 2014 11:28:22 -0800
+X-Google-Sender-Auth: -Yu4jEkWZtKVT2RLV_FIMvWvVIo
+Message-ID: <CA+55aFyoR0DHsbJ8qaE5mEmveZwnxDpxapXZdxHZ-BJnE0CDLQ@mail.gmail.com>
+Subject: Re: [GIT PULL] parisc updates for v3.14
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Helge Deller <deller@gmx.de>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 07:54:00PM +0100, Jean-Francois Moine wrote:
-> I explained how to use the tda998x in a DT context in a message to Jyri
-> Sarha:
-> 
-> http://lists.freedesktop.org/archives/dri-devel/2014-January/052936.html
+On Sun, Feb 2, 2014 at 3:15 AM, Helge Deller <deller@gmx.de> wrote:
+>
+> Anyway, the suggested & untested patch below should fix the metag arch
+> to cope which my changes to fs/exec.c
+> ...
+> -#define STACK_RND_MASK (0)
+> +#define STACK_RND_MASK (-1)
 
-Okay, so there's a bunch of changes required to the DRM slave support
-which aren't in place yet.
+I don't think that works. That completely breaks randomize_stack_top().
 
-In which case, it may be better to reorder the remaining patches such
-that the DT changes are at the very end - which means we can still
-benefit from the rest of the patches if the DT solution remains an
-open question.
+So I'm not going to pull the parisc tree, this needs to be resolved sanely.
 
-We do have another option now that my generic component support is in
-mainline (merged during this window), which should result in a much
-cleaner solution.  If we convert TDA998x to a component, armada DRM
-to a component master (and same for other tda998x users) then we don't
-need the drm_encoder_slave stuff - all that goes away since it's no
-longer necessary.
+In fact, I think that change to fs/exec.c is just completely broken:
 
-We also solve this problem as well - because we're then not messing
-around with working out if there's a DT node present: the TDA998x
-device must pre-exist.  For non-DT setups, this can be done when
-the I2C bus is created - devices on it would be created using the
-standard mechanisms already present via the i2c_board_data array.
-For DT setups, the devices are created by parsing the I2C bus node
-in DT.
++       /* add some more stack size for stack randomization */
++       stack_base += STACK_RND_MASK + 1;
 
-Both cases result in a component being registered upon invocation of
-tda998x_probe(), and removal of the component when tda998x_remove()
-is called.  The tda998x driver becomes a standard I2C driver.
+and that "+1" just doesn't make sense, and fundamentally breaks STACK_RND_MASK.
 
-This is something I've been intending to look at now that the component
-stuff is in place - as I said previously when the questions around DT
-and Armada DRM were first posed, we need to solve these issues in a
-generic way first, rather than hacking around them.
+It also seems to be entirely pointless, since the PAGE_ALIGN() that
+comes right afterwards will effectively do it anyway.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+So NAK on that whole fs/exec.c change. Afaik it's just wrong, and it's stupid.
+
+                  Linus
