@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaBBAU4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 19:20:56 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56967 "HELO
+	id S1755230AbaBBAUz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 19:20:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62737 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754656AbaBBAST (ORCPT
+	with SMTP id S1754758AbaBBASU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 19:18:19 -0500
+	Sat, 1 Feb 2014 19:18:20 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 8/13] ACPI / hotplug / PCI: Store acpi_device pointer in acpiphp_context
-Date: Sun, 02 Feb 2014 01:27:42 +0100
-Message-ID: <5896084.GRnf5R2ttZ@vostro.rjw.lan>
+Subject: [PATCH v2 7/13] ACPI / hotplug / PCI: Rework acpiphp_no_hotplug()
+Date: Sun, 02 Feb 2014 01:27:01 +0100
+Message-ID: <2034807.s7QjzIy0FK@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
 In-Reply-To: <1935791.liE9ZlzmO9@vostro.rjw.lan>
 References: <2217793.001RY6hKlo@vostro.rjw.lan> <1935791.liE9ZlzmO9@vostro.rjw.lan>
@@ -28,202 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-After recent modifications of the ACPI core making it create a struct
-acpi_device object for every namespace node representing a device
-regardless of the current status of that device the ACPIPHP code
-can store a struct acpi_device pointer instead of an ACPI handle
-in struct acpiphp_context.  This immediately makes it possible to
-avoid making potentially costly calls to acpi_bus_get_device() in
-two places and allows some more simplifications to be made going
-forward.
+If a struct acpi_device pointer is passed to acpiphp_no_hotplug()
+instead of an ACPI handle, the function won't need to call
+acpi_bus_get_device(), which may be costly, any more.  Then,
+trim_stale_devices() can call acpiphp_no_hotplug() passing
+the struct acpi_device object it already has directly to that
+function.
 
-The reason why that is correct is because ACPIPHP only installs
-hotify handlers for namespace nodes that exist when
-acpiphp_enumerate_slots() is called for their parent bridge.
-That only happens if the parent bridge has an ACPI companion
-associated with it, which means that the ACPI namespace scope
-in question has been scanned already at that point.  That, in
-turn, means that struct acpi_device objects have been created
-for all namespace nodes in that scope and pointers to those
-objects can be stored directly instead of their ACPI handles.
+Make those changes and update slot_no_hotplug() accordingly.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp.h      |    9 +++++--
- drivers/pci/hotplug/acpiphp_glue.c |   44 +++++++++++++++++--------------------
- 2 files changed, 28 insertions(+), 25 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -117,8 +117,8 @@ struct acpiphp_func {
- };
- 
- struct acpiphp_context {
--	acpi_handle handle;
- 	struct acpiphp_func func;
-+	struct acpi_device *adev;
- 	struct acpiphp_bridge *bridge;
- 	unsigned int refcount;
- };
-@@ -128,9 +128,14 @@ static inline struct acpiphp_context *fu
- 	return container_of(func, struct acpiphp_context, func);
- }
- 
-+static inline struct acpi_device *func_to_acpi_device(struct acpiphp_func *func)
-+{
-+	return func_to_context(func)->adev;
-+}
-+
- static inline acpi_handle func_to_handle(struct acpiphp_func *func)
- {
--	return func_to_context(func)->handle;
-+	return func_to_acpi_device(func)->handle;
- }
- 
- /*
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -73,11 +73,11 @@ static void acpiphp_context_handler(acpi
- 
- /**
-  * acpiphp_init_context - Create hotplug context and grab a reference to it.
-- * @handle: ACPI object handle to create the context for.
-+ * @adev: ACPI device object to create the context for.
-  *
-  * Call under acpiphp_context_lock.
-  */
--static struct acpiphp_context *acpiphp_init_context(acpi_handle handle)
-+static struct acpiphp_context *acpiphp_init_context(struct acpi_device *adev)
- {
- 	struct acpiphp_context *context;
- 	acpi_status status;
-@@ -86,9 +86,9 @@ static struct acpiphp_context *acpiphp_i
- 	if (!context)
- 		return NULL;
- 
--	context->handle = handle;
-+	context->adev = adev;
- 	context->refcount = 1;
--	status = acpi_attach_data(handle, acpiphp_context_handler, context);
-+	status = acpi_attach_data(adev->handle, acpiphp_context_handler, context);
- 	if (ACPI_FAILURE(status)) {
- 		kfree(context);
- 		return NULL;
-@@ -118,7 +118,7 @@ static struct acpiphp_context *acpiphp_g
- 
- /**
-  * acpiphp_put_context - Drop a reference to ACPI hotplug context.
-- * @handle: ACPI object handle to put the context for.
-+ * @context: ACPI hotplug context to drop a reference to.
-  *
-  * The context object is removed if there are no more references to it.
-  *
-@@ -130,7 +130,7 @@ static void acpiphp_put_context(struct a
- 		return;
- 
- 	WARN_ON(context->bridge);
--	acpi_detach_data(context->handle, acpiphp_context_handler);
-+	acpi_detach_data(context->adev->handle, acpiphp_context_handler);
- 	kfree(context);
- }
- 
-@@ -265,6 +265,7 @@ static acpi_status register_slot(acpi_ha
- {
- 	struct acpiphp_bridge *bridge = data;
- 	struct acpiphp_context *context;
-+	struct acpi_device *adev;
- 	struct acpiphp_slot *slot;
- 	struct acpiphp_func *newfunc;
- 	acpi_status status = AE_OK;
-@@ -284,12 +285,14 @@ static acpi_status register_slot(acpi_ha
- 				"can't evaluate _ADR (%#x)\n", status);
- 		return AE_OK;
- 	}
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
- 
- 	device = (adr >> 16) & 0xffff;
- 	function = adr & 0xffff;
- 
- 	mutex_lock(&acpiphp_context_lock);
--	context = acpiphp_init_context(handle);
-+	context = acpiphp_init_context(adev);
- 	if (!context) {
- 		mutex_unlock(&acpiphp_context_lock);
- 		acpi_handle_err(handle, "No hotplug context\n");
-@@ -607,12 +610,8 @@ static void disable_slot(struct acpiphp_
- 		if (PCI_SLOT(dev->devfn) == slot->device)
- 			pci_stop_and_remove_bus_device(dev);
- 
--	list_for_each_entry(func, &slot->funcs, sibling) {
--		struct acpi_device *adev;
--
--		if (!acpi_bus_get_device(func_to_handle(func), &adev))
--			acpi_bus_trim(adev);
--	}
-+	list_for_each_entry(func, &slot->funcs, sibling)
-+		acpi_bus_trim(func_to_acpi_device(func));
- 
+@@ -617,11 +617,8 @@ static void disable_slot(struct acpiphp_
  	slot->flags &= (~SLOT_ENABLED);
  }
-@@ -626,13 +625,10 @@ static bool slot_no_hotplug(struct acpip
+ 
+-static bool acpiphp_no_hotplug(acpi_handle handle)
++static bool acpiphp_no_hotplug(struct acpi_device *adev)
+ {
+-	struct acpi_device *adev = NULL;
+-
+-	acpi_bus_get_device(handle, &adev);
+ 	return adev && adev->flags.no_hotplug;
+ }
+ 
+@@ -629,10 +626,13 @@ static bool slot_no_hotplug(struct acpip
  {
  	struct acpiphp_func *func;
  
--	list_for_each_entry(func, &slot->funcs, sibling) {
--		struct acpi_device *adev = NULL;
--
--		acpi_bus_get_device(func_to_handle(func), &adev);
--		if (acpiphp_no_hotplug(adev))
-+	list_for_each_entry(func, &slot->funcs, sibling)
-+		if (acpiphp_no_hotplug(func_to_acpi_device(func)))
- 			return true;
--	}
-+
+-	list_for_each_entry(func, &slot->funcs, sibling)
+-		if (acpiphp_no_hotplug(func_to_handle(func)))
+-			return true;
++	list_for_each_entry(func, &slot->funcs, sibling) {
++		struct acpi_device *adev = NULL;
+ 
++		acpi_bus_get_device(func_to_handle(func), &adev);
++		if (acpiphp_no_hotplug(adev))
++			return true;
++	}
  	return false;
  }
  
-@@ -883,7 +879,7 @@ static void hotplug_event(acpi_handle ha
- static void hotplug_event_work(void *data, u32 type)
- {
- 	struct acpiphp_context *context = data;
--	acpi_handle handle = context->handle;
-+	acpi_handle handle = context->adev->handle;
+@@ -689,13 +689,12 @@ static void trim_stale_devices(struct pc
+ 	bool alive = false;
  
- 	acpi_scan_lock_acquire();
+ 	if (adev) {
+-		acpi_handle handle = adev->handle;
+ 		acpi_status status;
+ 		unsigned long long sta;
  
-@@ -941,7 +937,7 @@ static void handle_hotplug_event(acpi_ha
- 
- 	mutex_lock(&acpiphp_context_lock);
- 	context = acpiphp_get_context(handle);
--	if (context && !WARN_ON(context->handle != handle)) {
-+	if (context && !WARN_ON(context->adev->handle != handle)) {
- 		get_bridge(context->func.parent);
- 		acpiphp_put_context(context);
- 		acpi_hotplug_execute(hotplug_event_work, context, type);
-@@ -965,16 +961,18 @@ static void handle_hotplug_event(acpi_ha
- void acpiphp_enumerate_slots(struct pci_bus *bus)
- {
- 	struct acpiphp_bridge *bridge;
-+	struct acpi_device *adev;
- 	acpi_handle handle;
- 	acpi_status status;
- 
- 	if (acpiphp_disabled)
- 		return;
- 
--	handle = ACPI_HANDLE(bus->bridge);
--	if (!handle)
-+	adev = ACPI_COMPANION(bus->bridge);
-+	if (!adev)
- 		return;
- 
-+	handle = adev->handle;
- 	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
- 	if (!bridge) {
- 		acpi_handle_err(handle, "No memory for bridge object\n");
+-		status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
++		status = acpi_evaluate_integer(adev->handle, "_STA", NULL, &sta);
+ 		alive = (ACPI_SUCCESS(status) && sta == ACPI_STA_ALL)
+-			|| acpiphp_no_hotplug(handle);
++			|| acpiphp_no_hotplug(adev);
+ 	}
+ 	if (!alive) {
+ 		u32 v;
 
