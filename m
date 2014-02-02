@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaBBJnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 04:43:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573AbaBBJnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 04:43:39 -0500
-Date: Sun, 2 Feb 2014 11:43:34 +0200
-From: Amir Vadai <avadai@redhat.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: mlx4: Use pci_enable_msix_range()
-Message-ID: <20140202094334.GE24400@mtl-eit-vdi-22.mtl.labs.mlnx>
-References: <cover.1391172839.git.agordeev@redhat.com>
- <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2f6674dabb90d4cbca3ef4039c3b893f2e5e9ec4.1391172839.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751854AbaBBJuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 04:50:20 -0500
+Received: from science.horizon.com ([71.41.210.146]:45384 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751537AbaBBJuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 04:50:18 -0500
+Date: 2 Feb 2014 04:50:17 -0500
+Message-ID: <20140202095017.32007.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dave@sr71.net
+Subject: Re: [PATCH 3/3] Kconfig: organize memory-related config options
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/01/14 16:08 +0100, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  drivers/net/ethernet/mellanox/mlx4/main.c |   19 ++++---------------
->  1 files changed, 4 insertions(+), 15 deletions(-)
-> 
+> +config MMAP_ALLOW_UNINITIALIZED
+> +	bool "Allow mmapped anonymous memory to be uninitialized"
+> +	depends on EXPERT && !MMU
+> +	default n
+> +	help
+> +	  Normally, and according to the Linux spec, anonymous memory obtained
+> +	  from mmap() has it's contents cleared before it is passed to
+                          ^^^^
 
-Acked By: Amir Vadai <amirv@mellanox.com>
+"its", please.
 
+If you really want to make me happy, clarify the CONFIG_SLOB help to
+explain what a large system is.  More than 4 CPUs?  More tha 32 GB
+of RAM?  E-ATX motherboard?
