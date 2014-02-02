@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaBBI4A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 03:56:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41362 "EHLO
+	id S1752009AbaBBI4L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 03:56:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41376 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaBBIz6 (ORCPT
+	with ESMTP id S1751673AbaBBI4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 03:55:58 -0500
-Date: Sun, 2 Feb 2014 00:55:31 -0800
+	Sun, 2 Feb 2014 03:56:07 -0500
+Date: Sun, 2 Feb 2014 00:55:43 -0800
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921@git.kernel.org>
+Message-ID: <tip-5512cf24bed2de56f1ef44b6cc9a0a9b15499cea@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1391004884-10334-4-git-send-email-adrian.hunter@intel.com>
-References: <1391004884-10334-4-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1391004884-10334-5-git-send-email-adrian.hunter@intel.com>
+References: <1391004884-10334-5-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/urgent] perf machine:
-  Add machine__get_kallsyms_filename()
-Git-Commit-ID: 15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921
+  Set up ref_reloc_sym in machine__create_kernel_maps()
+Git-Commit-ID: 5512cf24bed2de56f1ef44b6cc9a0a9b15499cea
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,22 +34,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:55:37 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:55:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921
-Gitweb:     http://git.kernel.org/tip/15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921
+Commit-ID:  5512cf24bed2de56f1ef44b6cc9a0a9b15499cea
+Gitweb:     http://git.kernel.org/tip/5512cf24bed2de56f1ef44b6cc9a0a9b15499cea
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 29 Jan 2014 16:14:38 +0200
+AuthorDate: Wed, 29 Jan 2014 16:14:39 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 31 Jan 2014 17:21:48 -0300
+CommitDate: Fri, 31 Jan 2014 17:21:49 -0300
 
-perf machine: Add machine__get_kallsyms_filename()
+perf machine: Set up ref_reloc_sym in machine__create_kernel_maps()
 
-Separate out the logic used to make the kallsyms full path name for a
-machine.  It will be reused in a subsequent patch.
+The ref_reloc_sym is always needed for the kernel map in order to check
+for relocation.  Consequently set it up when the kernel map is created.
+Otherwise it was only being set up by 'perf record'.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Tested-by: Jiri Olsa <jolsa@redhat.com>
@@ -62,44 +63,67 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-4-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1391004884-10334-5-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/machine.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ tools/perf/util/machine.c | 23 +++++++++++++++++++++++
+ tools/perf/util/machine.h |  2 ++
+ 2 files changed, 25 insertions(+)
 
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index ded7459..290c2e6 100644
+index 290c2e6..c872991 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -496,19 +496,22 @@ static int symbol__in_kernel(void *arg, const char *name,
- 	return 1;
+@@ -832,9 +832,25 @@ static int machine__create_modules(struct machine *machine)
+ 	return 0;
  }
  
-+static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
-+					   size_t bufsz)
-+{
-+	if (machine__is_default_guest(machine))
-+		scnprintf(buf, bufsz, "%s", symbol_conf.default_guest_kallsyms);
-+	else
-+		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
-+}
++const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
 +
- /* Figure out the start address of kernel map from /proc/kallsyms */
- static u64 machine__get_kernel_start_addr(struct machine *machine)
+ int machine__create_kernel_maps(struct machine *machine)
  {
--	const char *filename;
--	char path[PATH_MAX];
+ 	struct dso *kernel = machine__get_kernel(machine);
 +	char filename[PATH_MAX];
- 	struct process_args args;
- 
--	if (machine__is_default_guest(machine))
--		filename = (char *)symbol_conf.default_guest_kallsyms;
--	else {
--		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
--		filename = path;
--	}
++	const char *name;
++	u64 addr = 0;
++	int i;
++
 +	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
++
++	for (i = 0; (name = ref_reloc_sym_names[i]) != NULL; i++) {
++		addr = kallsyms__get_function_start(filename, name);
++		if (addr)
++			break;
++	}
++	if (!addr)
++		return -1;
  
- 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
- 		return 0;
+ 	if (kernel == NULL ||
+ 	    __machine__create_kernel_maps(machine, kernel) < 0)
+@@ -853,6 +869,13 @@ int machine__create_kernel_maps(struct machine *machine)
+ 	 * Now that we have all the maps created, just set the ->end of them:
+ 	 */
+ 	map_groups__fixup_end(&machine->kmaps);
++
++	if (maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps, name,
++					     addr)) {
++		machine__destroy_kernel_maps(machine);
++		return -1;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 4771330..f77e91e 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -18,6 +18,8 @@ union perf_event;
+ #define	HOST_KERNEL_ID			(-1)
+ #define	DEFAULT_GUEST_KERNEL_ID		(0)
+ 
++extern const char *ref_reloc_sym_names[];
++
+ struct machine {
+ 	struct rb_node	  rb_node;
+ 	pid_t		  pid;
