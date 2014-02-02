@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324AbaBBHFO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 02:05:14 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:43061 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900AbaBBHFL (ORCPT
+	id S1751478AbaBBHJu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 02:09:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35293 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaBBHJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 02:05:11 -0500
-Message-ID: <52EDEE17.4010205@landley.net>
-Date: Sun, 02 Feb 2014 01:04:55 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 2 Feb 2014 02:09:49 -0500
+Date: Sun, 2 Feb 2014 08:11:14 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Driver Project <devel@linuxdriverproject.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Staging wireless driver for 3.14-rc1
+Message-ID: <20140202071114.GA2195@kroah.com>
+References: <20140131143203.GA6560@kroah.com>
+ <CA+55aFx2WsAzo8pNDs1B4RUnsAhhWE3-YNO38x4y-dW05g=yTQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Henrik Austad <henrik@austad.us>, LKML doc <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mark Brown <broonie@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Gleb Natapov <gleb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] Documentation cleanup, update 00-INDEX files in Documentation/
-References: <1391041675-31683-1-git-send-email-henrik@austad.us>	<52E9D3EB.1060209@landley.net> <20140131142442.8030cf06d1d729c8e3a4541c@linux-foundation.org>
-In-Reply-To: <20140131142442.8030cf06d1d729c8e3a4541c@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFx2WsAzo8pNDs1B4RUnsAhhWE3-YNO38x4y-dW05g=yTQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/14 16:24, Andrew Morton wrote:
-> On Wed, 29 Jan 2014 22:24:11 -0600 Rob Landley <rob@landley.net> wrote:
->
->> On 01/29/14 18:27, Henrik Austad wrote:
->>> Some of the 00-INDEX files are somewhat outdated and some folders does not
->>> contain 00-INDEX at all. Only outdated (with the notably exception of
->>> spi) indexes are touched here, the 169 folders without 00-INDEX has not
->>> been touched.
->>>
->>> This applies to Linus' tip (0e47c969).
->>
->> Looks like an improvement.
->>
->> Acked-by: Rob Landley <rob@landley.net>
->
-> Are these 00-INDEX files actually useful?  I've never opened one of
-> them in my life.
+On Sat, Feb 01, 2014 at 10:43:11AM -0800, Linus Torvalds wrote:
+> On Fri, Jan 31, 2014 at 6:32 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >
+> > Here's a single staging driver for a wireless chipset that has shown up
+> > in the SteamBox hardware.  It is merged separately from the "main"
+> > staging pull request to sync up with the wireless api changes that came
+> > in from the networking tree.
+> 
+> It causes an interesting warning for me:
+> 
+> drivers/staging/rtl8821ae/rtl8821ae/dm.c: In function
+> ‘rtl8821ae_dm_clear_txpower_tracking_state’:
+> drivers/staging/rtl8821ae/rtl8821ae/dm.c:487:31: warning: iteration 2u
+> invokes undefined behavior [-Waggressive-loop-optimizations]
+>    rtldm->bb_swing_idx_ofdm[p] = rtldm->default_ofdm_index;
+>                                ^
+> drivers/staging/rtl8821ae/rtl8821ae/dm.c:485:2: note: containing loop
+>   for (p = RF90_PATH_A; p < MAX_RF_PATH; ++p) {
+>   ^
+> 
+> and gcc is entirely correct: that loop iterates from 0 to 3, and does this:
+> 
+>                 rtldm->bb_swing_idx_ofdm[p] = rtldm->default_ofdm_index;
+> 
+> but the bb_swing_idx_ofdm[] array only has two members. So the last
+> two iterations will overwrite bb_swing_idx_ofdm_current and the first
+> entry in bb_swing_idx_ofdm_base[].
+> 
+> Now, the bug does seem to be benign: bb_swing_idx_ofdm_current isn't
+> actually ever *used* as far as I can tell, and the first entry of
+> bb_swing_idx_ofdm_base[] will have been written with that same
+> "rtldm->default_ofdm_index" value.
+> 
+> But gcc is absolutely correct, and that driver needs fixing.
+> 
+> I've pulled it and will let it be because it doesn't seem to be an
+> issue in practice, but please fix it. The obvious fix would seem to
+> change the size of "2" to be "MAX_RF_PATH", but I'll abstain from
+> doing those kinds of changes in the merge when it doesn't seem to
+> affect the build or functionality).
 
-Back before kernel.org did its epic barn door locking after the horses 
-escaped, I used to use them to generate HTML indexes for 
-kernel.org/doc/Documentation, but sometime after they took away my 
-ability to rsync updates to that they replaced that directory with a raw 
-git checkout. I'm still waiting for them to replace the HTML versions of 
-the menuconfig help text and the htmldocs output with raw git checkouts too.
+Ok, thanks, someone's already sent me that patch to fix this up, I'll
+queue it up for the post-rc1 set of staging tree fixes.
 
-I periodically poke them about it, ala 
-https://bugzilla.kernel.org/show_bug.cgi?id=52721#c7 but the answer is 
-always crickets chirping or "you should upload web pages with git just 
-like you browse the web with git, watch video with git, play skyrim with 
-git, edit code with git, compile code with git... there is no other 
-software tool." At which point I wander off for another 6 months.
-
-So I used to have a use for it, but since kernel.org got all paranoid I 
-can't use it that way anymore. (That's why I haven't been updating these 
-files when the patches themselves don't. It's on my todo list, but it's 
-really hard to _care_ when they so obviously don't.)
-
-Insufficiently gruntled,
-
-Rob
+greg k-h
