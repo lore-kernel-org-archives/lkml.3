@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaBBVkU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 16:40:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4688 "EHLO mx1.redhat.com"
+	id S1752911AbaBBVkh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 16:40:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752806AbaBBVkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 16:40:15 -0500
+	id S1752619AbaBBVkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 16:40:32 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
@@ -14,17 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 14/22] perf tools tui: Display columns header text on 'H' press
-Date: Sun,  2 Feb 2014 22:39:02 +0100
-Message-Id: <1391377150-23920-15-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 20/22] perf tools: Make hists col_len dynamicaly alocated
+Date: Sun,  2 Feb 2014 22:39:08 +0100
+Message-Id: <1391377150-23920-21-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
 References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Displaing columns header text whenever 'H' is pressed,
-and hiding it on on another press.
+Making hists col_len dynamicaly allocated as a support
+for dynamic sort entries.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -36,196 +36,178 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/ui/browser.c        | 12 ++++++-
- tools/perf/ui/browser.h        |  2 +-
- tools/perf/ui/browsers/hists.c | 78 ++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 84 insertions(+), 8 deletions(-)
+ tools/perf/util/evsel.c  | 23 ++++++++++++++++-------
+ tools/perf/util/evsel.h  |  6 +++---
+ tools/perf/util/hist.c   | 15 +++++++++++++++
+ tools/perf/util/hist.h   |  4 +++-
+ tools/perf/util/python.c |  3 +--
+ 5 files changed, 38 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index 3f8a758..7a8cd15 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -243,6 +243,13 @@ void __ui_browser__show_title(struct ui_browser *browser, const char *title)
- 	slsmg_write_nstring(title, browser->width + 1);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 5baf13b..2661870 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -115,7 +115,7 @@ void perf_evsel__calc_id_pos(struct perf_evsel *evsel)
+ 	evsel->is_pos = __perf_evsel__calc_is_pos(evsel->attr.sample_type);
  }
  
-+static void __ui_browser__show_header(struct ui_browser *browser, char *header)
-+{
-+	SLsmg_gotorc(1, 0);
-+	ui_browser__set_color(browser, HE_COLORSET_ROOT);
-+	slsmg_write_nstring(header, browser->width + 1);
+-void hists__init(struct hists *hists)
++int hists__init(struct hists *hists)
+ {
+ 	memset(hists, 0, sizeof(*hists));
+ 	hists->entries_in_array[0] = hists->entries_in_array[1] = RB_ROOT;
+@@ -124,6 +124,12 @@ void hists__init(struct hists *hists)
+ 	hists->entries = RB_ROOT;
+ 	INIT_LIST_HEAD(&hists->sort_list);
+ 	pthread_mutex_init(&hists->lock, NULL);
++	return hists__alloc_col_len(hists, HISTC_NR_COLS);
 +}
 +
- void ui_browser__show_title(struct ui_browser *browser, const char *title)
- {
- 	pthread_mutex_lock(&ui__lock);
-@@ -268,7 +275,7 @@ static int ui_browser__show_va(struct ui_browser *browser, const char *title,
- }
- 
- int __ui_browser__show(struct ui_browser *browser, const char *title,
--		       const char *helpline, ...)
-+		       char *header, const char *helpline, ...)
- {
- 	va_list args;
- 	int err;
-@@ -277,6 +284,9 @@ int __ui_browser__show(struct ui_browser *browser, const char *title,
- 	err = ui_browser__show_va(browser, title, helpline, args);
- 	va_end(args);
- 
-+	if (header)
-+		__ui_browser__show_header(browser, header);
-+
- 	return err ? 0 : -1;
- }
- 
-diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
-index 7231f39..348e761 100644
---- a/tools/perf/ui/browser.h
-+++ b/tools/perf/ui/browser.h
-@@ -51,7 +51,7 @@ void __ui_browser__line_arrow(struct ui_browser *browser, unsigned int column,
- void __ui_browser__show_title(struct ui_browser *browser, const char *title);
- void ui_browser__show_title(struct ui_browser *browser, const char *title);
- int __ui_browser__show(struct ui_browser *browser, const char *title,
--		       const char *helpline, ...);
-+		       char *header, const char *helpline, ...);
- int ui_browser__show(struct ui_browser *browser, const char *title,
- 		     const char *helpline, ...);
- void ui_browser__hide(struct ui_browser *browser);
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 3dd71d6..1d519e9 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -25,6 +25,7 @@ struct hist_browser {
- 	struct map_symbol   *selection;
- 	int		     print_seq;
- 	bool		     show_dso;
-+	bool		     show_col_headers;
- 	float		     min_pcnt;
- 	u64		     nr_pcnt_entries;
- 	u64		     time_base;
-@@ -36,9 +37,12 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size);
- 
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
--	/* 3 == +/- toggle symbol before actual hist_entry rendering */
--	browser->b.width = 3 + (hists__sort_list_width(browser->hists) +
--			     sizeof("[k]"));
-+	u16 header = browser->show_col_headers ? 1 : 0;
-+
-+	browser->b.width = SLtt_Screen_Cols - 1;
-+	browser->b.height = SLtt_Screen_Rows - 2 - header;
-+	browser->b.y = 1 + header;
-+	browser->b.x = 0;
- }
- 
- static void hist_browser__reset(struct hist_browser *browser)
-@@ -310,6 +314,61 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
- 		"Or reduce the sampling frequency.");
- }
- 
-+static size_t scnprintf_header_fmt(char *buf, size_t size)
++static void hists__exit(struct hists *hists)
 +{
-+	struct perf_hpp_fmt *fmt;
-+	bool first = true;
-+	size_t ret = 0;
++	free(hists->col_len);
+ }
+ 
+ void __perf_evsel__set_sample_bit(struct perf_evsel *evsel,
+@@ -158,8 +164,8 @@ void perf_evsel__set_sample_id(struct perf_evsel *evsel,
+ 	evsel->attr.read_format |= PERF_FORMAT_ID;
+ }
+ 
+-void perf_evsel__init(struct perf_evsel *evsel,
+-		      struct perf_event_attr *attr, int idx)
++int perf_evsel__init(struct perf_evsel *evsel,
++		     struct perf_event_attr *attr, int idx)
+ {
+ 	evsel->idx	   = idx;
+ 	evsel->attr	   = *attr;
+@@ -167,19 +173,20 @@ void perf_evsel__init(struct perf_evsel *evsel,
+ 	evsel->unit	   = "";
+ 	evsel->scale	   = 1.0;
+ 	INIT_LIST_HEAD(&evsel->node);
+-	hists__init(&evsel->hists);
+ 	evsel->sample_size = __perf_evsel__sample_size(attr->sample_type);
+ 	perf_evsel__calc_id_pos(evsel);
++	return hists__init(&evsel->hists);
+ }
+ 
+ struct perf_evsel *perf_evsel__new_idx(struct perf_event_attr *attr, int idx)
+ {
+ 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
++	int err = -ENOMEM;
+ 
+ 	if (evsel != NULL)
+-		perf_evsel__init(evsel, attr, idx);
++		err = perf_evsel__init(evsel, attr, idx);
+ 
+-	return evsel;
++	return err ? NULL : evsel;
+ }
+ 
+ struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int idx)
+@@ -203,7 +210,8 @@ struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int
+ 		event_attr_init(&attr);
+ 		attr.config = evsel->tp_format->id;
+ 		attr.sample_period = 1;
+-		perf_evsel__init(evsel, &attr, idx);
++		if (perf_evsel__init(evsel, &attr, idx))
++			goto out_free;
+ 	}
+ 
+ 	return evsel;
+@@ -776,6 +784,7 @@ void perf_evsel__exit(struct perf_evsel *evsel)
+ 	assert(list_empty(&evsel->node));
+ 	perf_evsel__free_fd(evsel);
+ 	perf_evsel__free_id(evsel);
++	hists__exit(&evsel->hists);
+ }
+ 
+ void perf_evsel__delete(struct perf_evsel *evsel)
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index f1b3256..cdc2681 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -114,8 +114,8 @@ static inline struct perf_evsel *perf_evsel__newtp(const char *sys, const char *
+ 
+ struct event_format *event_format__new(const char *sys, const char *name);
+ 
+-void perf_evsel__init(struct perf_evsel *evsel,
+-		      struct perf_event_attr *attr, int idx);
++int perf_evsel__init(struct perf_evsel *evsel,
++		     struct perf_event_attr *attr, int idx);
+ void perf_evsel__exit(struct perf_evsel *evsel);
+ void perf_evsel__delete(struct perf_evsel *evsel);
+ 
+@@ -272,7 +272,7 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
+ 	return __perf_evsel__read(evsel, ncpus, nthreads, true);
+ }
+ 
+-void hists__init(struct hists *hists);
++int hists__init(struct hists *hists);
+ 
+ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *sample);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 92c3d76..794d0cb 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -21,6 +21,21 @@ struct callchain_param	callchain_param = {
+ 	.key	= CCKEY_FUNCTION
+ };
+ 
++int hists__alloc_col_len(struct hists *hists, int n)
++{
++	u16 *col_len = hists->col_len;
++	int old_n = hists->col_n;
 +
-+	perf_hpp__for_each_format(fmt) {
-+		struct perf_hpp hpp = { .ptr = NULL, };
-+
-+		if (!first)
-+			ret += scnprintf(buf + ret, size, "  ");
-+
-+		hpp.buf	 = buf + ret,
-+		hpp.size = size - ret,
-+
-+		first = false;
-+
-+		ret += fmt->header(fmt, &hpp);
++	col_len = realloc(col_len, n * sizeof(u16));
++	if (col_len) {
++		memset(col_len + old_n, 0, n - old_n);
++		hists->col_len = col_len;
++		hists->col_n   = n;
 +	}
-+	return ret;
++
++	return col_len ? 0 : -ENOMEM;
 +}
 +
-+static size_t scnprintf_header_se(struct hists *hists, char *buf, size_t size)
-+{
-+	struct sort_entry *se;
-+	unsigned int width;
-+	int ret = 0;
-+
-+	list_for_each_entry(se, &hist_entry__sort_list, list) {
-+		if (se->elide)
-+			continue;
-+
-+		width = strlen(se->se_header);
-+		if (!hists__new_col_len(hists, se->se_width_idx, width))
-+			width = hists__col_len(hists, se->se_width_idx);
-+
-+		ret += scnprintf(buf + ret, size - ret, "  %*s", width,
-+				 se->se_header);
-+	}
-+	return ret;
-+}
-+
-+static int hists__scnprintf_header(char *buf, size_t size, struct hists *hists)
-+{
-+	size_t ret = 0;
-+
-+	if (symbol_conf.use_callchain)
-+		ret += scnprintf(buf, size, "  ");
-+
-+	ret += scnprintf_header_fmt(buf + ret, size - ret);
-+	ret += scnprintf_header_se(hists, buf + ret, size - ret);
-+
-+	return ret;
-+}
-+
- static void hist_browser__update_pcnt_entries(struct hist_browser *hb);
- 
- static int hist_browser__run(struct hist_browser *browser,
-@@ -373,6 +432,9 @@ static int hist_browser__run(struct hist_browser *browser,
- 			/* Expand the whole world. */
- 			hist_browser__set_folding(browser, true);
- 			break;
-+		case 'H':
-+			browser->show_col_headers = !browser->show_col_headers;
-+			continue;
- 		case K_ENTER:
- 			if (hist_browser__toggle_fold(browser))
- 				break;
-@@ -596,6 +658,7 @@ static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	double percent = 0.0;
- 	struct hists *hists = he->hists;
- 	struct hpp_arg *arg = hpp->ptr;
-+	const char *fmt = arg->hb->show_col_headers ? " %6.2f%%" : "%6.2f%%";
- 
- 	if (hists->stats.total_period)
- 		percent = 100.0 * get_field(he) / hists->stats.total_period;
-@@ -605,7 +668,7 @@ static int __hpp__color_fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	if (callchain_cb)
- 		ret += callchain_cb(arg);
- 
--	ret += scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
-+	ret += scnprintf(hpp->buf, hpp->size, fmt, percent);
- 	slsmg_printf("%s", hpp->buf);
- 
- 	if (symbol_conf.event_group) {
-@@ -1205,12 +1268,15 @@ static unsigned int hist_browser__header(struct ui_browser *b)
+ u16 hists__col_len(struct hists *hists, enum hist_column col)
  {
- 	struct hist_browser *browser;
- 	char title[160];
-+	char header[500];
-+	size_t size = min(b->width, (u16) sizeof(header));
+ 	return hists->col_len[col];
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index ff52c3bf..c2f4bd1 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -91,7 +91,8 @@ struct hists {
+ 	struct events_stats	stats;
+ 	u64			time_base;
+ 	u64			event_stream;
+-	u16			col_len[HISTC_NR_COLS];
++	u16			*col_len;
++	int			col_n;
+ 	struct list_head	sort_list;
+ };
  
- 	browser = container_of(b, struct hist_browser, b);
--	ui_browser__refresh_dimensions(b);
-+	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title));
-+	hists__scnprintf_header(header, size, browser->hists);
+@@ -168,6 +169,7 @@ void hists__filter_by_dso(struct hists *hists);
+ void hists__filter_by_thread(struct hists *hists);
+ void hists__filter_by_symbol(struct hists *hists);
  
--	if (__ui_browser__show(b, title,
-+	if (__ui_browser__show(b, title, header,
- 		"Press '?' for help on key bindings") < 0)
- 		return -1;
++int hists__alloc_col_len(struct hists *hists, int n);
+ u16 hists__col_len(struct hists *hists, enum hist_column col);
+ void hists__set_col_len(struct hists *hists, enum hist_column col, u16 len);
+ bool hists__new_col_len(struct hists *hists, enum hist_column col, u16 len);
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 122669c..b5824d2 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -605,8 +605,7 @@ static int pyrf_evsel__init(struct pyrf_evsel *pevsel,
+ 	attr.mmap_data	    = mmap_data;
+ 	attr.sample_id_all  = sample_id_all;
  
+-	perf_evsel__init(&pevsel->evsel, &attr, idx);
+-	return 0;
++	return perf_evsel__init(&pevsel->evsel, &attr, idx);
+ }
+ 
+ static void pyrf_evsel__delete(struct pyrf_evsel *pevsel)
 -- 
 1.8.3.1
 
