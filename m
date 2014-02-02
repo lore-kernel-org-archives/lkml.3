@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaBBQeu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 11:34:50 -0500
-Received: from relay.parallels.com ([195.214.232.42]:46398 "EHLO
+	id S1752268AbaBBQes (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 11:34:48 -0500
+Received: from relay.parallels.com ([195.214.232.42]:46402 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaBBQd7 (ORCPT
+	with ESMTP id S1751711AbaBBQd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Feb 2014 11:33:59 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
@@ -12,9 +12,9 @@ To: <akpm@linux-foundation.org>
 CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
         <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH 2/8] memcg, slab: remove cgroup name from memcg cache names
-Date: Sun, 2 Feb 2014 20:33:47 +0400
-Message-ID: <90b34882d51b18a9dd557d24f6a377df1ba13945.1391356789.git.vdavydov@parallels.com>
+Subject: [PATCH 1/8] memcg: export kmemcg cache id via cgroup fs
+Date: Sun, 2 Feb 2014 20:33:46 +0400
+Message-ID: <570a97e4dfaded0939a9ddbea49055019dcc5803.1391356789.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1391356789.git.vdavydov@parallels.com>
 References: <cover.1391356789.git.vdavydov@parallels.com>
@@ -25,128 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cgroup name is not informative at all in case the cgroup hierarchy
-is not flat. Besides, we can always find the memcg a particular cache
-belongs to by its kmemcg id, which is now exported via "memory.kmem.id"
-cgroup fs file for each memcg.
+Per-memcg kmem caches are named as follows:
 
-So let's remove the cgroup name part from kmem caches names - it will
-greatly simplify the call paths and make the code look clearer.
+  <global-cache-name>(<cgroup-kmem-id>:<cgroup-name>)
+
+where <cgroup-kmem-id> is the unique id of the memcg the cache belongs
+to, <cgroup-name> is the relative name of the memcg on the cgroup fs.
+Cache names are exposed to userspace for debugging purposes (e.g. via
+sysfs in case of slub or via dmesg).
+
+Using relative names makes it impossible in general (in case the cgroup
+hierarchy is not flat) to find out which memcg a particular cache
+belongs to, because <cgroup-kmem-id> is not known to the user. Since
+using absolute cgroup names would be an overkill, let's fix this by
+exporting the id of kmem-active memcg via cgroup fs file
+"memory.kmem.id".
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/memcontrol.c  |   63 +++++++++++++-----------------------------------------
- mm/slab_common.c |    6 +++++-
- 2 files changed, 20 insertions(+), 49 deletions(-)
+ mm/memcontrol.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 91d242707404..3351c5b5486d 100644
+index 53385cd4e6f0..91d242707404 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3405,44 +3405,6 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
- 	schedule_work(&cachep->memcg_params->destroy);
+@@ -3113,6 +3113,14 @@ int memcg_cache_id(struct mem_cgroup *memcg)
+ 	return memcg ? memcg->kmemcg_id : -1;
  }
  
--static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
--						  struct kmem_cache *s)
--{
--	struct kmem_cache *new = NULL;
--	static char *tmp_name = NULL;
--	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
--
--	BUG_ON(!memcg_can_account_kmem(memcg));
--
--	mutex_lock(&mutex);
--	/*
--	 * kmem_cache_create_memcg duplicates the given name and
--	 * cgroup_name for this name requires RCU context.
--	 * This static temporary buffer is used to prevent from
--	 * pointless shortliving allocation.
--	 */
--	if (!tmp_name) {
--		tmp_name = kmalloc(PATH_MAX, GFP_KERNEL);
--		if (!tmp_name)
--			goto out;
--	}
--
--	rcu_read_lock();
--	snprintf(tmp_name, PATH_MAX, "%s(%d:%s)", s->name,
--			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
--	rcu_read_unlock();
--
--	new = kmem_cache_create_memcg(memcg, tmp_name, s->object_size, s->align,
--				      (s->flags & ~SLAB_PANIC), s->ctor, s);
--	if (new)
--		new->allocflags |= __GFP_KMEMCG;
--	else
--		new = s;
--out:
--	mutex_unlock(&mutex);
--	return new;
--}
--
- void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
-@@ -3489,12 +3451,6 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 	mutex_unlock(&activate_kmem_mutex);
- }
- 
--struct create_work {
--	struct mem_cgroup *memcg;
--	struct kmem_cache *cachep;
--	struct work_struct work;
--};
--
- static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- {
- 	struct kmem_cache *cachep;
-@@ -3512,13 +3468,24 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- 	mutex_unlock(&memcg->slab_caches_mutex);
- }
- 
-+struct create_work {
-+	struct mem_cgroup *memcg;
-+	struct kmem_cache *cachep;
-+	struct work_struct work;
-+};
++static s64 mem_cgroup_cache_id_read(struct cgroup_subsys_state *css,
++				    struct cftype *cft)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
 +
- static void memcg_create_cache_work_func(struct work_struct *w)
++	return memcg_can_account_kmem(memcg) ? memcg_cache_id(memcg) : -1;
++}
++
+ static size_t memcg_caches_array_size(int num_groups)
  {
--	struct create_work *cw;
-+	struct create_work *cw = container_of(w, struct create_work, work);
-+	struct mem_cgroup *memcg = cw->memcg;
-+	struct kmem_cache *s = cw->cachep;
-+	struct kmem_cache *new;
- 
--	cw = container_of(w, struct create_work, work);
--	memcg_create_kmem_cache(cw->memcg, cw->cachep);
--	css_put(&cw->memcg->css);
-+	new = kmem_cache_create_memcg(memcg, s->name, s->object_size, s->align,
-+				      (s->flags & ~SLAB_PANIC), s->ctor, s);
-+	if (new)
-+		new->allocflags |= __GFP_KMEMCG;
-+	css_put(&memcg->css);
- 	kfree(cw);
- }
- 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 1ec3c619ba04..152d9b118b7a 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -213,7 +213,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
- 	s->align = calculate_alignment(flags, align, size);
- 	s->ctor = ctor;
- 
--	s->name = kstrdup(name, GFP_KERNEL);
-+	if (!memcg)
-+		s->name = kstrdup(name, GFP_KERNEL);
-+	else
-+		s->name = kasprintf(GFP_KERNEL, "%s:%d",
-+				    name, memcg_cache_id(memcg));
- 	if (!s->name)
- 		goto out_free_cache;
- 
+ 	ssize_t size;
+@@ -6301,6 +6309,10 @@ static struct cftype mem_cgroup_files[] = {
+ #endif
+ #ifdef CONFIG_MEMCG_KMEM
+ 	{
++		.name = "kmem.id",
++		.read_s64 = mem_cgroup_cache_id_read,
++	},
++	{
+ 		.name = "kmem.limit_in_bytes",
+ 		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
+ 		.write_string = mem_cgroup_write,
 -- 
 1.7.10.4
 
