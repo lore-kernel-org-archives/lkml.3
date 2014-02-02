@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaBBR5m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 12:57:42 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55295 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751882AbaBBR5l (ORCPT
+	id S1752160AbaBBR7i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 12:59:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37742 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882AbaBBR7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 12:57:41 -0500
-Date: Sun, 2 Feb 2014 17:57:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 09/23] drm/i2c: tda998x: don't read write-only
-	registers
-Message-ID: <20140202175736.GH26684@n2100.arm.linux.org.uk>
-References: <cover.1390986082.git.moinejf@free.fr> <5269e596e16dfe40253dce38ceb0dc4a617384c1.1390986083.git.moinejf@free.fr> <20140202162309.GF26684@n2100.arm.linux.org.uk> <20140202184512.7fa2e3cf@armhf>
+	Sun, 2 Feb 2014 12:59:37 -0500
+Date: Sun, 2 Feb 2014 19:01:04 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: rtl8821ae.
+Message-ID: <20140202180104.GA15395@kroah.com>
+References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail>
+ <20140202160512.GA4946@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140202184512.7fa2e3cf@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140202160512.GA4946@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 06:45:12PM +0100, Jean-Francois Moine wrote:
-> On Sun, 2 Feb 2014 16:23:09 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On Sun, Feb 02, 2014 at 11:05:12AM -0500, Dave Jones wrote:
+> On Sun, Feb 02, 2014 at 03:41:27AM -0800, scan-admin@coverity.com wrote:
+>  > 
+>  > Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
+>  > 
+>  > Defect(s) Reported-by: Coverity Scan
+>  > Showing 20 of 83 defect(s)
 > 
-> > On Sat, Jan 25, 2014 at 06:14:42PM +0100, Jean-Francois Moine wrote:  
-> > > This patch takes care of the write-only registers of the tda998x.
-> > > 
-> > > The registers SOFTRESET, TBG_CNTRL_0 and TBG_CNTRL_1 have all bits
-> > > cleared after reset, so, they may be fully re-written.
-> > > 
-> > > The register MAT_CONTRL is set to
-> > > 	MAT_CONTRL_MAT_BP | MAT_CONTRL_MAT_SC(1)
-> > > after reset, so, it may be fully set again to this value.  
-> > 
-> > I said in v3 of this patch, which seems to remain unaddressed:
-> >   
-> > >       /* must be last register set: */
-> > > -     reg_clear(priv, REG_TBG_CNTRL_0, TBG_CNTRL_0_SYNC_ONCE);
-> > > +     reg_write(priv, REG_TBG_CNTRL_0, 0);  
-> > 
-> > Register changes which have a potential effect shouldn't be part of a
-> > patch which is really only trying to avoid reading from write only
-> > registers.
-> > 
-> > This could be a potential functional change - and it's probably one
-> > which Rob Clark should at least be made aware of.  As I commented last
-> > time, when you're changing register values in an otherwise innocuous
-> > patch, you should comment about them in the patch description.  
+> Ugh, this is even worse than the usual realtek drivers. (With the exception of rtl8188eu)
+> All 83 of those new defects came from this new driver, and while there's
+> a bunch of "who cares" type things in there, there's a load of stuff that
+> needs fixing a lot more urgently than CodingStyle issues or anything else in the TODO
+> for that driver.
 > 
-> According to the tda9983b documentation, the register TBG_CNTRL_0 is
-> set to 0 at reset time. I think that it is the same for all the tda998x
-> family. In the other hand, this register is supposed to be write only,
-> so reading it may return any value, and the reg_clear() function may
-> set any other bits. Then, clearing one bit is less secure than clearing
-> the full register.
+> A bigger problem though, is what is the plan for these realtek drivers ?
+> They've been in staging forever. rtl8187se has been there for _five_ years with
+> no indication it's ever getting promoted to first class status.
 
-Okay, in that case I'm happy with this patch.
+This new driver will be moved to drivers/net/wireless for 3.15, Larry
+has a real port of it to the proper apis and the like, cleaning up these
+types of issues already.  It didn't make 3.14, which is why I added the
+staging version for now (i.e. I want the hardware I have to work...)
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+> The git logs are littered mostly with CodingStyle cleanups, sparse cleanups and such,
+> meanwhile for five years they've had out of bounds reads, overflows, and such 
+> for this whole time.  Even worse, when one of the drivers gets fixes for actual
+> problems like this, they never make it back to Realtek, who clone the same
+> old shitty driver they shipped last time, and reintroduce new variants of the
+> same damn bugs, and then we import the new turd into staging and start all over again.
+> 
+> I get the whole "a shit driver is better than no driver", but there's no discernable
+> effort to ever improve this pile, just to keep adding to it.
+
+Larry is the one who could answer for the remaining realtek drivers, and
+the "changes don't flow back" issues.
+
+thanks,
+
+greg k-h
