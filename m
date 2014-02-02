@@ -1,272 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaBBEvo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 23:51:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32596 "EHLO mx1.redhat.com"
+	id S1752064AbaBBEvp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 23:51:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaBBEut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 23:50:49 -0500
+	id S1751472AbaBBEuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 23:50:51 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, David Herrmann <dh.herrmann@gmail.com>,
         Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/11] HID: introduce helper to access hid_output_raw_report()
-Date: Sat,  1 Feb 2014 23:50:29 -0500
-Message-Id: <1391316630-29541-11-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 11/11] HID: move hid_output_raw_report to hid_ll_driver
+Date: Sat,  1 Feb 2014 23:50:30 -0500
+Message-Id: <1391316630-29541-12-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a helper to access hdev->hid_output_raw_report().
-
-To convert the drivers, use the following snippets:
-
-for i in drivers/hid/*.c
-do
-  sed -i.bak "s/[^ \t]*->hid_output_raw_report(/hid_output_raw_report(/g" $i
-done
-
-Then manually fix for checkpatch.pl
+struct hid_ll_driver is responsible for the transport communication.
+Move hid_output_raw_report from hid_device to the transport layer then.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
  drivers/hid/hid-input.c        |  2 +-
- drivers/hid/hid-lg.c           |  6 ++++--
  drivers/hid/hid-logitech-dj.c  |  2 +-
- drivers/hid/hid-magicmouse.c   |  2 +-
- drivers/hid/hid-sony.c         |  5 +++--
- drivers/hid/hid-thingm.c       |  4 ++--
- drivers/hid/hid-wacom.c        | 16 +++++++---------
+ drivers/hid/hid-sony.c         | 11 ++++++++++-
  drivers/hid/hid-wiimote-core.c |  2 +-
  drivers/hid/hidraw.c           |  2 +-
- include/linux/hid.h            | 16 ++++++++++++++++
- 10 files changed, 37 insertions(+), 20 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c  |  2 +-
+ drivers/hid/uhid.c             |  2 +-
+ drivers/hid/usbhid/hid-core.c  |  2 +-
+ include/linux/hid.h            | 11 +++++++----
+ net/bluetooth/hidp/core.c      |  4 ++--
+ 10 files changed, 26 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 1de5997..78293c3 100644
+index 78293c3..3125155 100644
 --- a/drivers/hid/hid-input.c
 +++ b/drivers/hid/hid-input.c
-@@ -1184,7 +1184,7 @@ static void hidinput_led_worker(struct work_struct *work)
- 
- 	hid_output_report(report, buf);
- 	/* synchronous output report */
--	hid->hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
-+	hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
- 	kfree(buf);
- }
- 
-diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
-index 9fe9d4a..76ed7e5 100644
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -692,7 +692,8 @@ static int lg_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	if (hdev->product == USB_DEVICE_ID_LOGITECH_WII_WHEEL) {
- 		unsigned char buf[] = { 0x00, 0xAF,  0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
- 
--		ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
-+		ret = hid_output_raw_report(hdev, buf, sizeof(buf),
-+					    HID_FEATURE_REPORT);
- 
- 		if (ret >= 0) {
- 			/* insert a little delay of 10 jiffies ~ 40ms */
-@@ -704,7 +705,8 @@ static int lg_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 			buf[1] = 0xB2;
- 			get_random_bytes(&buf[2], 2);
- 
--			ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
-+			ret = hid_output_raw_report(hdev, buf, sizeof(buf),
-+						    HID_FEATURE_REPORT);
- 		}
+@@ -1263,7 +1263,7 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
  	}
  
+ 	input_set_drvdata(input_dev, hid);
+-	if (hid->ll_driver->request || hid->hid_output_raw_report)
++	if (hid->ll_driver->request || hid->ll_driver->hid_output_raw_report)
+ 		input_dev->event = hidinput_input_event;
+ 	input_dev->open = hidinput_open;
+ 	input_dev->close = hidinput_close;
 diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 61d2bbf..9347625 100644
+index 9347625..bdfa1db 100644
 --- a/drivers/hid/hid-logitech-dj.c
 +++ b/drivers/hid/hid-logitech-dj.c
-@@ -567,7 +567,7 @@ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
- 	out_buf[1] = djdev->device_index;
- 	memcpy(out_buf + 2, buf, count);
+@@ -262,7 +262,6 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 	}
  
--	ret = djrcv_dev->hdev->hid_output_raw_report(djrcv_dev->hdev, out_buf,
-+	ret = hid_output_raw_report(djrcv_dev->hdev, out_buf,
- 		DJREPORT_SHORT_LENGTH, report_type);
+ 	dj_hiddev->ll_driver = &logi_dj_ll_driver;
+-	dj_hiddev->hid_output_raw_report = logi_dj_output_hidraw_report;
  
- 	kfree(out_buf);
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 3b43d1c..cb5db3a 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -538,7 +538,7 @@ static int magicmouse_probe(struct hid_device *hdev,
- 	 * but there seems to be no other way of switching the mode.
- 	 * Thus the super-ugly hacky success check below.
- 	 */
--	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
-+	ret = hid_output_raw_report(hdev, feature, sizeof(feature),
- 			HID_FEATURE_REPORT);
- 	if (ret != -EIO && ret != sizeof(feature)) {
- 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
+ 	dj_hiddev->dev.parent = &djrcv_hdev->dev;
+ 	dj_hiddev->bus = BUS_USB;
+@@ -655,6 +654,7 @@ static struct hid_ll_driver logi_dj_ll_driver = {
+ 	.stop = logi_dj_ll_stop,
+ 	.open = logi_dj_ll_open,
+ 	.close = logi_dj_ll_close,
++	.hid_output_raw_report = logi_dj_output_hidraw_report,
+ };
+ 
+ 
 diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 3930acb..8494b8c 100644
+index 8494b8c..9dd37ff 100644
 --- a/drivers/hid/hid-sony.c
 +++ b/drivers/hid/hid-sony.c
-@@ -720,7 +720,8 @@ static int sixaxis_set_operational_usb(struct hid_device *hdev)
- static int sixaxis_set_operational_bt(struct hid_device *hdev)
- {
- 	unsigned char buf[] = { 0xf4,  0x42, 0x03, 0x00, 0x00 };
--	return hdev->hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
-+	return hid_output_raw_report(hdev, buf, sizeof(buf),
-+				     HID_FEATURE_REPORT);
- }
+@@ -494,6 +494,8 @@ struct sony_sc {
+ 	unsigned long quirks;
+ 	struct work_struct state_worker;
  
- static void buzz_set_leds(struct hid_device *hdev, const __u8 *leds)
-@@ -942,7 +943,7 @@ static void sixaxis_state_worker(struct work_struct *work)
- 	buf[10] |= sc->led_state[2] << 3;
- 	buf[10] |= sc->led_state[3] << 4;
- 
--	sc->hdev->hid_output_raw_report(sc->hdev, buf, sizeof(buf),
-+	hid_output_raw_report(sc->hdev, buf, sizeof(buf),
- 					HID_OUTPUT_REPORT);
- }
- 
-diff --git a/drivers/hid/hid-thingm.c b/drivers/hid/hid-thingm.c
-index 99342cf..7dd3197 100644
---- a/drivers/hid/hid-thingm.c
-+++ b/drivers/hid/hid-thingm.c
-@@ -48,8 +48,8 @@ static int blink1_send_command(struct blink1_data *data,
- 			buf[0], buf[1], buf[2], buf[3], buf[4],
- 			buf[5], buf[6], buf[7], buf[8]);
- 
--	ret = data->hdev->hid_output_raw_report(data->hdev, buf,
--			BLINK1_CMD_SIZE, HID_FEATURE_REPORT);
-+	ret = hid_output_raw_report(data->hdev, buf, BLINK1_CMD_SIZE,
-+				    HID_FEATURE_REPORT);
- 
- 	return ret < 0 ? ret : 0;
- }
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index 60c75dc..c720db9 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -128,8 +128,7 @@ static void wacom_set_image(struct hid_device *hdev, const char *image,
- 
- 	rep_data[0] = WAC_CMD_ICON_START_STOP;
- 	rep_data[1] = 0;
--	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
--				HID_FEATURE_REPORT);
-+	ret = hid_output_raw_report(hdev, rep_data, 2, HID_FEATURE_REPORT);
- 	if (ret < 0)
- 		goto err;
- 
-@@ -143,15 +142,14 @@ static void wacom_set_image(struct hid_device *hdev, const char *image,
- 			rep_data[j + 3] = p[(i << 6) + j];
- 
- 		rep_data[2] = i;
--		ret = hdev->hid_output_raw_report(hdev, rep_data, 67,
-+		ret = hid_output_raw_report(hdev, rep_data, 67,
- 					HID_FEATURE_REPORT);
++	struct hid_ll_driver *ll_driver;
++
+ #ifdef CONFIG_SONY_FF
+ 	__u8 left;
+ 	__u8 right;
+@@ -1077,7 +1079,14 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
  	}
  
- 	rep_data[0] = WAC_CMD_ICON_START_STOP;
- 	rep_data[1] = 0;
- 
--	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
--				HID_FEATURE_REPORT);
-+	ret = hid_output_raw_report(hdev, rep_data, 2, HID_FEATURE_REPORT);
- 
- err:
- 	return;
-@@ -183,7 +181,7 @@ static void wacom_leds_set_brightness(struct led_classdev *led_dev,
- 		buf[3] = value;
- 		/* use fixed brightness for OLEDs */
- 		buf[4] = 0x08;
--		hdev->hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
-+		hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
- 		kfree(buf);
+ 	if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
+-		hdev->hid_output_raw_report = sixaxis_usb_output_raw_report;
++		sc->ll_driver = devm_kzalloc(&hdev->dev, sizeof(*sc->ll_driver),
++					     GFP_KERNEL);
++		if (sc->ll_driver == NULL)
++			return -ENOMEM;
++		*sc->ll_driver = *hdev->ll_driver;
++		hdev->ll_driver = sc->ll_driver;
++		sc->ll_driver->hid_output_raw_report =
++						sixaxis_usb_output_raw_report;
+ 		ret = sixaxis_set_operational_usb(hdev);
+ 		INIT_WORK(&sc->state_worker, sixaxis_state_worker);
  	}
- 
-@@ -339,7 +337,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
- 		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
- 		limit = 3;
- 		do {
--			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-+			ret = hid_output_raw_report(hdev, rep_data, 2,
- 					HID_FEATURE_REPORT);
- 		} while (ret < 0 && limit-- > 0);
- 
-@@ -352,7 +350,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
- 			rep_data[1] = 0x00;
- 			limit = 3;
- 			do {
--				ret = hdev->hid_output_raw_report(hdev,
-+				ret = hid_output_raw_report(hdev,
- 					rep_data, 2, HID_FEATURE_REPORT);
- 			} while (ret < 0 && limit-- > 0);
- 
-@@ -378,7 +376,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
- 		rep_data[0] = 0x03;
- 		rep_data[1] = wdata->features;
- 
--		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
-+		ret = hid_output_raw_report(hdev, rep_data, 2,
- 					HID_FEATURE_REPORT);
- 		if (ret >= 0)
- 			wdata->high_speed = speed;
 diff --git a/drivers/hid/hid-wiimote-core.c b/drivers/hid/hid-wiimote-core.c
-index abb20db..d7dc6c5b 100644
+index d7dc6c5b..715a3ab 100644
 --- a/drivers/hid/hid-wiimote-core.c
 +++ b/drivers/hid/hid-wiimote-core.c
-@@ -35,7 +35,7 @@ static int wiimote_hid_send(struct hid_device *hdev, __u8 *buffer,
- 	if (!buf)
- 		return -ENOMEM;
+@@ -28,7 +28,7 @@ static int wiimote_hid_send(struct hid_device *hdev, __u8 *buffer,
+ 	__u8 *buf;
+ 	int ret;
  
--	ret = hdev->hid_output_raw_report(hdev, buf, count, HID_OUTPUT_REPORT);
-+	ret = hid_output_raw_report(hdev, buf, count, HID_OUTPUT_REPORT);
+-	if (!hdev->hid_output_raw_report)
++	if (!hdev->ll_driver->hid_output_raw_report)
+ 		return -ENODEV;
  
- 	kfree(buf);
- 	return ret;
+ 	buf = kmemdup(buffer, count, GFP_KERNEL);
 diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 4b2dc95..f8708c9 100644
+index f8708c9..c60c530 100644
 --- a/drivers/hid/hidraw.c
 +++ b/drivers/hid/hidraw.c
-@@ -153,7 +153,7 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
- 		goto out_free;
- 	}
+@@ -123,7 +123,7 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
  
--	ret = dev->hid_output_raw_report(dev, buf, count, report_type);
-+	ret = hid_output_raw_report(dev, buf, count, report_type);
- out_free:
- 	kfree(buf);
- out:
+ 	dev = hidraw_table[minor]->hid;
+ 
+-	if (!dev->hid_output_raw_report) {
++	if (!dev->ll_driver->hid_output_raw_report) {
+ 		ret = -ENODEV;
+ 		goto out;
+ 	}
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index fe3b392..fabb388 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -785,6 +785,7 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
+ 	.request = i2c_hid_request,
+ 	.output_report = i2c_hid_output_report,
+ 	.raw_request = i2c_hid_raw_request,
++	.hid_output_raw_report = i2c_hid_output_raw_report,
+ };
+ 
+ static int i2c_hid_init_irq(struct i2c_client *client)
+@@ -1029,7 +1030,6 @@ static int i2c_hid_probe(struct i2c_client *client,
+ 
+ 	hid->driver_data = client;
+ 	hid->ll_driver = &i2c_hid_ll_driver;
+-	hid->hid_output_raw_report = i2c_hid_output_raw_report;
+ 	hid->dev.parent = &client->dev;
+ 	ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
+ 	hid->bus = BUS_I2C;
+diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
+index 7358346..8e99a5a 100644
+--- a/drivers/hid/uhid.c
++++ b/drivers/hid/uhid.c
+@@ -294,6 +294,7 @@ static struct hid_ll_driver uhid_hid_driver = {
+ 	.parse = uhid_hid_parse,
+ 	.output_report = uhid_hid_output_report,
+ 	.raw_request = uhid_raw_request,
++	.hid_output_raw_report = uhid_hid_output_raw,
+ };
+ 
+ #ifdef CONFIG_COMPAT
+@@ -421,7 +422,6 @@ static int uhid_dev_create(struct uhid_device *uhid,
+ 	hid->uniq[63] = 0;
+ 
+ 	hid->ll_driver = &uhid_hid_driver;
+-	hid->hid_output_raw_report = uhid_hid_output_raw;
+ 	hid->bus = ev->u.create.bus;
+ 	hid->vendor = ev->u.create.vendor;
+ 	hid->product = ev->u.create.product;
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index b9a770f..9c3c244 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -1260,6 +1260,7 @@ static struct hid_ll_driver usb_hid_driver = {
+ 	.raw_request = usbhid_raw_request,
+ 	.output_report = usbhid_output_report,
+ 	.idle = usbhid_idle,
++	.hid_output_raw_report = usbhid_output_raw_report,
+ };
+ 
+ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *id)
+@@ -1289,7 +1290,6 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
+ 
+ 	usb_set_intfdata(intf, hid);
+ 	hid->ll_driver = &usb_hid_driver;
+-	hid->hid_output_raw_report = usbhid_output_raw_report;
+ 	hid->ff_init = hid_pidff_init;
+ #ifdef CONFIG_USB_HIDDEV
+ 	hid->hiddev_connect = hiddev_connect;
 diff --git a/include/linux/hid.h b/include/linux/hid.h
-index c56681a..a837ede 100644
+index a837ede..eb588e9 100644
 --- a/include/linux/hid.h
 +++ b/include/linux/hid.h
-@@ -1012,6 +1012,22 @@ static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
+@@ -508,9 +508,6 @@ struct hid_device {							/* device report descriptor */
+ 				  struct hid_usage *, __s32);
+ 	void (*hiddev_report_event) (struct hid_device *, struct hid_report *);
+ 
+-	/* handler for raw output data, used by hidraw */
+-	int (*hid_output_raw_report) (struct hid_device *, __u8 *, size_t, unsigned char);
+-
+ 	/* debugging support via debugfs */
+ 	unsigned short debug;
+ 	struct dentry *debug_dir;
+@@ -678,6 +675,7 @@ struct hid_driver {
+  * @wait: wait for buffered io to complete (send/recv reports)
+  * @raw_request: send raw report request to device (e.g. feature report)
+  * @output_report: send output report to device
++ * @hid_output_raw_report: send report to device (e.g. feature report)
+  * @idle: send idle request to device
+  */
+ struct hid_ll_driver {
+@@ -702,6 +700,10 @@ struct hid_ll_driver {
+ 
+ 	int (*output_report) (struct hid_device *hdev, __u8 *buf, size_t len);
+ 
++	/* handler for raw output data, used by hidraw */
++	int (*hid_output_raw_report) (struct hid_device *, __u8 *, size_t,
++				      unsigned char);
++
+ 	int (*idle)(struct hid_device *hdev, int report, int idle, int reqtype);
+ };
+ 
+@@ -1024,7 +1026,8 @@ static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
+ static inline int hid_output_raw_report(struct hid_device *hdev, __u8 *buf,
+ 					size_t len, unsigned char report_type)
+ {
+-	return hdev->hid_output_raw_report(hdev, buf, len, report_type);
++	return hdev->ll_driver->hid_output_raw_report(hdev, buf, len,
++						      report_type);
  }
  
  /**
-+ * hid_output_raw_report - send an output or a feature report to the device
-+ *
-+ * @hdev: hid device
-+ * @buf: raw data to transfer
-+ * @len: length of buf
-+ * @report_type: HID_FEATURE_REPORT or HID_OUTPUT_REPORT
-+ *
-+ * @return: count of data transfered, negative if error
-+ */
-+static inline int hid_output_raw_report(struct hid_device *hdev, __u8 *buf,
-+					size_t len, unsigned char report_type)
-+{
-+	return hdev->hid_output_raw_report(hdev, buf, len, report_type);
-+}
+diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+index 77c4bad..6189b54 100644
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -726,6 +726,8 @@ static struct hid_ll_driver hidp_hid_driver = {
+ 	.close = hidp_close,
+ 	.raw_request = hidp_raw_request,
+ 	.output_report = hidp_output_report,
++	.hid_output_raw_report = hidp_output_raw_report,
 +
-+/**
-  * hid_hw_idle - send idle request to device
-  *
-  * @hdev: hid device
+ };
+ 
+ /* This function sets up the hid device. It does not add it
+@@ -773,8 +775,6 @@ static int hidp_setup_hid(struct hidp_session *session,
+ 	hid->dev.parent = &session->conn->hcon->dev;
+ 	hid->ll_driver = &hidp_hid_driver;
+ 
+-	hid->hid_output_raw_report = hidp_output_raw_report;
+-
+ 	/* True if device is blacklisted in drivers/hid/hid-core.c */
+ 	if (hid_ignore(hid)) {
+ 		hid_destroy_device(session->hid);
 -- 
 1.8.3.1
 
