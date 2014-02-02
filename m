@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaBBRGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 12:06:25 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60829 "HELO
+	id S1752409AbaBBRHV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 12:07:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60450 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751863AbaBBRGW (ORCPT
+	with SMTP id S1752139AbaBBRG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 12:06:22 -0500
+	Sun, 2 Feb 2014 12:06:26 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
@@ -14,12 +14,12 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux PCI <linux-pci@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Robert Moore <robert.moore@intel.com>
-Subject: [PATCH v3 7/7] ACPI / hotplug / PCI: Hotplug notifications from acpi_bus_notify()
-Date: Sun, 02 Feb 2014 18:20:19 +0100
-Message-ID: <6725460.6y7VbCtSUH@vostro.rjw.lan>
+Subject: [PATCH v3 0/7] ACPI / hotplug / PCI: Consolidation of ACPIPHP with ACPI core device hotplug
+Date: Sun, 02 Feb 2014 18:11:19 +0100
+Message-ID: <5157096.hCmU2aoKCT@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <5157096.hCmU2aoKCT@vostro.rjw.lan>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <1519631.YS65c9Af2C@vostro.rjw.lan> <5157096.hCmU2aoKCT@vostro.rjw.lan>
+In-Reply-To: <1519631.YS65c9Af2C@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <1693151.2qrLZHyp0o@vostro.rjw.lan> <1519631.YS65c9Af2C@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,350 +27,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sunday, February 02, 2014 01:52:26 AM Rafael J. Wysocki wrote:
+> On Wednesday, January 29, 2014 12:57:06 AM Rafael J. Wysocki wrote:
+> > On Tuesday, January 28, 2014 11:10:30 PM Rafael J. Wysocki wrote:
+> > > Hi All,
+> > > 
+> > > It looks like there's time for more adventurous stuff. :-)
+> > > 
+> > > The following series is on top of the one I sent on Sunday:
+> > > 
+> > > https://lkml.org/lkml/2014/1/26/191
+> > > 
+> > > The final outcome of the patches below is that all ACPI hotplug notifications
+> > > for PCI devices and for core system things like CPU, memory, PCI roots etc.,
+> > > will be dispatched from acpi_bus_notify() and it is not necessary to install a
+> > > separate hotplug notify handler for each device any more.
+> > > 
+> > > [1/5] Attach ACPIPHP hotplug contexts to struct acpi_device objects.
+> > > [2/5] Introduce wrappers for installing and removing hotplug notify handlers
+> > >       (those wrappers go away later on, but they are useful for separating
+> > >        changes).
+> > > [3/5] Consolidate ACPI hotplug signaling for PCI and ACPI core.
+> > > [4/5] Simplify notify handle registration wrapper.
+> > > [5/5] Dispatch ACPI hotplug notifications for "core" devices and PCI from acpi_bus_notify().
+> > 
+> > Unfortunately, I realized that patches [3-5/5] were buggy.  The bugs were
+> > kind of subtle and might not be easy to reproduce, but they were bugs anyway. :-)
+> > 
+> > A respin of the whole series follows.
+> 
+> After the Mika's testing it turned out that they were more buggy than I had
+> though.  Oh well.
+> 
+> The following patchset is a reworked version of the previous one.  Functionality-wise
+> the final result should be very similar, but not exactly the same.
+> 
+> [1/6] Fix a theoretical race condition in acpi_hotplug_notify_cb().
+> [2/6] Move the hotplug context lock definition to the ACPI core (from ACPIPHP).
+> [3/6] Consolidate ACPI hotplug signaling for PCI and ACPI core (this is a combination
+>       of patches [1-3/5] from the previous series).
+> [4/6] Rework the handling of eject requests in the ACPI core.
+> [5/6] Simplify a routine for installing hotplug notify handlers.
+> [6/6] Dispatch ACPI hotplug notifications for "core" devices and PCI from acpi_bus_notify().
+> 
+> This is on top of https://lkml.org/lkml/2014/2/1/123 which in turn is on top of
+> the current mainline.
+> 
+> For the adventurous all this stuff is on the test-next branch of linux-pm.git.
 
-Since acpi_bus_notify() is executed on all notifications for all
-devices anyway, make it execute acpi_device_hotplug() for all
-hotplug events instead of installing notify handlers pointing to
-the same function for all hotplug devices.
+As stated in the message at http://marc.info/?l=linux-acpi&m=139135963030012&w=4 ,
+patch [1/6] was actaully wrong and the whole patchset had to be reworked for that
+reason.  What follows is an entirely new version:
 
-This change reduces both the size and complexity of ACPI-based device
-hotplug code.  Moreover, since acpi_device_hotplug() only does
-significant things for devices that have either an ACPI scan handler,
-or a hotplug context with .eject() defined, and those devices
-had notify handlers pointing to acpi_hotplug_notify_cb() installed
-before anyway, this modification shouldn't change functionality.
+[1/7] Add a new function to ACPICA allowing a callback to be executed under the
+      namespace mutex after calling acpi_ns_get_attached_data().
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/bus.c                 |   60 +++++++++++++---------
- drivers/acpi/internal.h            |    1 
- drivers/acpi/scan.c                |  100 -------------------------------------
- drivers/pci/hotplug/acpiphp.h      |    1 
- drivers/pci/hotplug/acpiphp_glue.c |   16 ++---
- include/acpi/acpi_bus.h            |    2 
- 6 files changed, 46 insertions(+), 134 deletions(-)
+[2/7] Use the new ACPICA's function to fix a couple of potential races related
+      to ACPI notifies.
 
-Index: linux-pm/drivers/acpi/bus.c
-===================================================================
---- linux-pm.orig/drivers/acpi/bus.c
-+++ linux-pm/drivers/acpi/bus.c
-@@ -340,62 +340,76 @@ static void acpi_bus_osc_support(void)
-  */
- static void acpi_bus_notify(acpi_handle handle, u32 type, void *data)
- {
--	struct acpi_device *device = NULL;
-+	struct acpi_device *adev;
- 	struct acpi_driver *driver;
--
--	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Notification %#02x to handle %p\n",
--			  type, handle));
-+	acpi_status status;
-+	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
- 
- 	switch (type) {
--
- 	case ACPI_NOTIFY_BUS_CHECK:
--		/* TBD */
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
- 		break;
- 
- 	case ACPI_NOTIFY_DEVICE_CHECK:
--		/* TBD */
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
- 		break;
- 
- 	case ACPI_NOTIFY_DEVICE_WAKE:
--		/* TBD */
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_WAKE event\n");
- 		break;
- 
- 	case ACPI_NOTIFY_EJECT_REQUEST:
--		/* TBD */
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
- 		break;
- 
- 	case ACPI_NOTIFY_DEVICE_CHECK_LIGHT:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK_LIGHT event\n");
- 		/* TBD: Exactly what does 'light' mean? */
- 		break;
- 
- 	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
--		/* TBD */
-+		acpi_handle_err(handle, "Device cannot be configured due "
-+				"to a frequency mismatch\n");
- 		break;
- 
- 	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
--		/* TBD */
-+		acpi_handle_err(handle, "Device cannot be configured due "
-+				"to a bus mode mismatch\n");
- 		break;
- 
- 	case ACPI_NOTIFY_POWER_FAULT:
--		/* TBD */
-+		acpi_handle_err(handle, "Device has suffered a power fault\n");
- 		break;
- 
- 	default:
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--				  "Received unknown/unsupported notification [%08x]\n",
--				  type));
--		break;
-+		acpi_handle_warn(handle, "Unsupported event type 0x%x\n", type);
-+		ost_code = ACPI_OST_SC_UNRECOGNIZED_NOTIFY;
-+		goto err;
- 	}
- 
--	acpi_bus_get_acpi_device(handle, &device);
--	if (device) {
--		driver = device->driver;
--		if (driver && driver->ops.notify &&
--		    (driver->flags & ACPI_DRIVER_ALL_NOTIFY_EVENTS))
--			driver->ops.notify(device, type);
-+	if (acpi_bus_get_acpi_device(handle, &adev))
-+		goto err;
- 
--		acpi_bus_put_acpi_device(device);
-+	driver = adev->driver;
-+	if (driver && driver->ops.notify &&
-+	    (driver->flags & ACPI_DRIVER_ALL_NOTIFY_EVENTS))
-+		driver->ops.notify(adev, type);
-+
-+	switch (type) {
-+	case ACPI_NOTIFY_BUS_CHECK:
-+	case ACPI_NOTIFY_DEVICE_CHECK:
-+	case ACPI_NOTIFY_EJECT_REQUEST:
-+		status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
-+		if (ACPI_SUCCESS(status))
-+			return;
-+	default:
-+		break;
- 	}
-+	acpi_bus_put_acpi_device(adev);
-+	return;
-+
-+ err:
-+	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
- }
- 
- /* --------------------------------------------------------------------------
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -73,6 +73,7 @@ static inline void acpi_lpss_init(void)
- #endif
- 
- bool acpi_queue_hotplug_work(struct work_struct *work);
-+void acpi_device_hotplug(void *data, u32 src);
- bool acpi_scan_is_offline(struct acpi_device *adev, bool uevent);
- 
- /* --------------------------------------------------------------------------
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -470,7 +470,7 @@ static int acpi_generic_hotplug_event(st
- 	return -EINVAL;
- }
- 
--static void acpi_device_hotplug(void *data, u32 src)
-+void acpi_device_hotplug(void *data, u32 src)
- {
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
- 	struct acpi_device *adev = data;
-@@ -520,74 +520,6 @@ static void acpi_device_hotplug(void *da
- 	unlock_device_hotplug();
- }
- 
--static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
--{
--	u32 ost_code = ACPI_OST_SC_SUCCESS;
--	struct acpi_device *adev;
--	acpi_status status;
--
--	switch (type) {
--	case ACPI_NOTIFY_BUS_CHECK:
--		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
--		break;
--
--	case ACPI_NOTIFY_DEVICE_CHECK:
--		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
--		break;
--
--	case ACPI_NOTIFY_EJECT_REQUEST:
--		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
--		break;
--
--	case ACPI_NOTIFY_DEVICE_WAKE:
--		return;
--
--	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
--		acpi_handle_err(handle, "Device cannot be configured due "
--				"to a frequency mismatch\n");
--		goto out;
--
--	case ACPI_NOTIFY_BUS_MODE_MISMATCH:
--		acpi_handle_err(handle, "Device cannot be configured due "
--				"to a bus mode mismatch\n");
--		goto out;
--
--	case ACPI_NOTIFY_POWER_FAULT:
--		acpi_handle_err(handle, "Device has suffered a power fault\n");
--		goto out;
--
--	default:
--		acpi_handle_warn(handle, "Unsupported event type 0x%x\n", type);
--		ost_code = ACPI_OST_SC_UNRECOGNIZED_NOTIFY;
--		goto out;
--	}
--
--	ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
--	if (acpi_bus_get_acpi_device(handle, &adev))
--		goto out;
--
--	status = acpi_hotplug_execute(acpi_device_hotplug, adev, type);
--	if (ACPI_SUCCESS(status))
--		return;
--
--	acpi_bus_put_acpi_device(adev);
--
-- out:
--	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
--}
--
--void acpi_install_hotplug_notify_handler(acpi_handle handle)
--{
--	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				    acpi_hotplug_notify_cb, NULL);
--}
--
--void acpi_remove_hotplug_notify_handler(acpi_handle handle)
--{
--	acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				   acpi_hotplug_notify_cb);
--}
--
- static ssize_t real_power_state_show(struct device *dev,
- 				     struct device_attribute *attr, char *buf)
- {
-@@ -2025,34 +1957,6 @@ void acpi_scan_hotplug_enabled(struct ac
- 	mutex_unlock(&acpi_scan_lock);
- }
- 
--static void acpi_scan_init_hotplug(acpi_handle handle, int type)
--{
--	struct acpi_device_pnp pnp = {};
--	struct acpi_hardware_id *hwid;
--	struct acpi_scan_handler *handler;
--
--	INIT_LIST_HEAD(&pnp.ids);
--	acpi_set_pnp_ids(handle, &pnp, type);
--
--	if (!pnp.type.hardware_id)
--		goto out;
--
--	/*
--	 * This relies on the fact that acpi_install_notify_handler() will not
--	 * install the same notify handler routine twice for the same handle.
--	 */
--	list_for_each_entry(hwid, &pnp.ids, list) {
--		handler = acpi_scan_match_handler(hwid->id, NULL);
--		if (handler) {
--			acpi_install_hotplug_notify_handler(handle);
--			break;
--		}
--	}
--
--out:
--	acpi_free_pnp_ids(&pnp);
--}
--
- static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 				      void *not_used, void **return_value)
- {
-@@ -2074,8 +1978,6 @@ static acpi_status acpi_bus_check_add(ac
- 		return AE_OK;
- 	}
- 
--	acpi_scan_init_hotplug(handle, type);
--
- 	acpi_add_single_object(&device, handle, type, sta);
- 	if (!device)
- 		return AE_CTRL_DEPTH;
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -283,7 +283,6 @@ static acpi_status register_slot(acpi_ha
- 	newfunc = &context->func;
- 	newfunc->function = function;
- 	newfunc->parent = bridge;
--	acpi_unlock_hp_context();
- 
- 	if (acpi_has_method(handle, "_EJ0"))
- 		newfunc->flags = FUNC_HAS_EJ0;
-@@ -291,8 +290,14 @@ static acpi_status register_slot(acpi_ha
- 	if (acpi_has_method(handle, "_STA"))
- 		newfunc->flags |= FUNC_HAS_STA;
- 
-+	/*
-+	 * Dock stations' notify handler should be used for dock devices instead
-+	 * of the common one, so clear hp.event in their contexts.
-+	 */
- 	if (acpi_has_method(handle, "_DCK"))
--		newfunc->flags |= FUNC_HAS_DCK;
-+		context->hp.event = NULL;
-+
-+	acpi_unlock_hp_context();
- 
- 	/* search for objects that share the same slot */
- 	list_for_each_entry(slot, &bridge->slots, node)
-@@ -360,10 +365,6 @@ static acpi_status register_slot(acpi_ha
- 			pr_debug("failed to register dock device\n");
- 	}
- 
--	/* install notify handler */
--	if (!(newfunc->flags & FUNC_HAS_DCK))
--		acpi_install_hotplug_notify_handler(handle);
--
- 	return AE_OK;
- }
- 
-@@ -400,9 +401,6 @@ static void cleanup_bridge(struct acpiph
- 
- 			if (is_dock_device(handle))
- 				unregister_hotplug_dock_device(handle);
--
--			if (!(func->flags & FUNC_HAS_DCK))
--				acpi_remove_hotplug_notify_handler(handle);
- 		}
- 		slot->flags |= SLOT_IS_GOING_AWAY;
- 		if (slot->slot)
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -443,8 +443,6 @@ static inline bool acpi_device_enumerate
- typedef void (*acpi_hp_callback)(void *data, u32 src);
- 
- acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
--void acpi_install_hotplug_notify_handler(acpi_handle handle);
--void acpi_remove_hotplug_notify_handler(acpi_handle handle);
- 
- /**
-  * module_acpi_driver(acpi_driver) - Helper macro for registering an ACPI driver
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -167,7 +167,6 @@ struct acpiphp_attention_info
- 
- #define FUNC_HAS_STA		(0x00000001)
- #define FUNC_HAS_EJ0		(0x00000002)
--#define FUNC_HAS_DCK            (0x00000004)
- 
- /* function prototypes */
- 
+[3/7] Same as [2/6] above.
+[4/7] Same as [3/6] above, rebased.
+[5/7] Same as [4/6] above.
+[6/7] Same as [5/6] above.
+[7/7] Dispatch ACPI hotplug notifications for "core" devices and PCI from
+      acpi_bus_notify().  This actually is different from [6/6] above, although
+      it serves the same purpose.
 
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
