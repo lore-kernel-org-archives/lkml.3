@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaBBItq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 03:49:46 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:46014 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259AbaBBItp (ORCPT
+	id S1751583AbaBBIy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 03:54:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41294 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306AbaBBIy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 03:49:45 -0500
-Date: Sun, 2 Feb 2014 09:49:39 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Avi Kivity <avi@cloudius-systems.com>, David Ahern <dsahern@gmail.com>,
-        Francesco Fusco <ffusco@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/12] perf/urgent fixes
-Message-ID: <20140202084939.GA750@gmail.com>
-References: <1391200055-18250-1-git-send-email-acme@infradead.org>
+	Sun, 2 Feb 2014 03:54:57 -0500
+Date: Sun, 2 Feb 2014 00:54:31 -0800
+From: tip-bot for Avi Kivity <tipbot@zytor.com>
+Message-ID: <tip-950b8354716eb1f9c0b39777d379efa5f4125c04@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        avi@cloudius-systems.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        avi@cloudius-systems.com, tglx@linutronix.de
+In-Reply-To: <26f71bf5bf7ee1408e3f1a803556d5df18223ef1.1390420726.git.avi@cloudius-systems.com>
+References: <26f71bf5bf7ee1408e3f1a803556d5df18223ef1.1390420726.git.avi@cloudius-systems.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Demangle kernel and kernel module symbols too
+Git-Commit-ID: 950b8354716eb1f9c0b39777d379efa5f4125c04
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1391200055-18250-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:54:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  950b8354716eb1f9c0b39777d379efa5f4125c04
+Gitweb:     http://git.kernel.org/tip/950b8354716eb1f9c0b39777d379efa5f4125c04
+Author:     Avi Kivity <avi@cloudius-systems.com>
+AuthorDate: Wed, 22 Jan 2014 21:58:46 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 27 Jan 2014 11:47:27 -0300
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+perf tools: Demangle kernel and kernel module symbols too
 
-> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 0d4dd797564cddc1f71ab0b239e9ea50ddd40b2a:
-> 
->   perf/doc: Remove mention of non-existent set_perf_event_pending() from design.txt (2014-01-26 09:37:48 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to d3b70220292c40d3b499797fd2f33f608fc35edb:
-> 
->   perf buildid-cache: Check relocation when checking for existing kcore (2014-01-31 17:21:54 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent fixes:
-> 
-> . Fix annotation for relocated kernel (Adrian Hunter)
-> 
-> . Fix demangling of symbols in kernel and kernel modules (Avi Kivity)
-> 
-> . Fix include for non x86 architectures (Francesco Fusco)
-> 
-> . Fix ARM64 memory barriers (Peter Zijlstra)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (9):
->       perf symbols: Fix symbol annotation for relocated kernel
->       perf tools: Add kallsyms__get_function_start()
->       perf machine: Add machine__get_kallsyms_filename()
->       perf machine: Set up ref_reloc_sym in machine__create_kernel_maps()
->       perf record: Get ref_reloc_sym from kernel map
->       perf symbols: Prevent the use of kcore if the kernel has moved
->       perf tests: No need to set up ref_reloc_sym
->       perf tools: Adjust kallsyms for relocated kernel
->       perf buildid-cache: Check relocation when checking for existing kcore
-> 
-> Avi Kivity (1):
->       perf tools: Demangle kernel and kernel module symbols too
-> 
-> Francesco Fusco (1):
->       perf tools: Fix include for non x86 architectures
-> 
-> Peter Zijlstra (1):
->       perf tools: Fix AAAAARGH64 memory barriers
-> 
->  tools/perf/builtin-buildid-cache.c  | 33 ++++++++++++++++---
->  tools/perf/builtin-record.c         | 10 ++----
->  tools/perf/perf.h                   |  4 +--
->  tools/perf/tests/vmlinux-kallsyms.c | 10 ------
->  tools/perf/util/event.c             | 36 ++++++++++----------
->  tools/perf/util/event.h             |  6 ++--
->  tools/perf/util/include/asm/hash.h  |  6 ++++
->  tools/perf/util/machine.c           | 42 +++++++++++++++++++-----
->  tools/perf/util/machine.h           |  2 ++
->  tools/perf/util/map.c               |  5 +--
->  tools/perf/util/map.h               |  1 +
->  tools/perf/util/symbol-elf.c        |  4 ++-
->  tools/perf/util/symbol.c            | 65 +++++++++++++++++++++++++++++++++----
->  13 files changed, 162 insertions(+), 62 deletions(-)
->  create mode 100644 tools/perf/util/include/asm/hash.h
+Some kernels contain C++ code, and thus their symbols need to be
+demangled.  This allows 'perf kvm top' to generate readable output.
 
-Pulled, thanks a lot Arnaldo!
+Signed-off-by: Avi Kivity <avi@cloudius-systems.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/26f71bf5bf7ee1408e3f1a803556d5df18223ef1.1390420726.git.avi@cloudius-systems.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol-elf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	Ingo
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 7594567..8f12f0f 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -922,6 +922,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 				  (u64)shdr.sh_offset);
+ 			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+ 		}
++new_symbol:
+ 		/*
+ 		 * We need to figure out if the object was created from C++ sources
+ 		 * DWARF DW_compile_unit has this, but we don't always have access
+@@ -933,7 +934,6 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 			if (demangled != NULL)
+ 				elf_name = demangled;
+ 		}
+-new_symbol:
+ 		f = symbol__new(sym.st_value, sym.st_size,
+ 				GELF_ST_BIND(sym.st_info), elf_name);
+ 		free(demangled);
