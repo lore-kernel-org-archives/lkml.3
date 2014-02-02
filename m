@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771AbaBBAq3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 19:46:29 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63524 "HELO
+	id S1754864AbaBBAqz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 19:46:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52602 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751573AbaBBAqZ (ORCPT
+	with SMTP id S1754644AbaBBAq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 19:46:25 -0500
+	Sat, 1 Feb 2014 19:46:28 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 5/6] ACPI / hotplug / PCI: Simplify acpi_install_hotplug_notify_handler()
-Date: Sun, 02 Feb 2014 01:58:04 +0100
-Message-ID: <2548915.5LSBQHCSHC@vostro.rjw.lan>
+Subject: [PATCH v2 0/6] ACPI / hotplug / PCI: Consolidation of ACPIPHP with ACPI core device hotplug
+Date: Sun, 02 Feb 2014 01:52:26 +0100
+Message-ID: <1519631.YS65c9Af2C@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1519631.YS65c9Af2C@vostro.rjw.lan>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <1693151.2qrLZHyp0o@vostro.rjw.lan> <1519631.YS65c9Af2C@vostro.rjw.lan>
+In-Reply-To: <1693151.2qrLZHyp0o@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <1508034.JFmpIOzjVZ@vostro.rjw.lan> <1693151.2qrLZHyp0o@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,69 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Wednesday, January 29, 2014 12:57:06 AM Rafael J. Wysocki wrote:
+> On Tuesday, January 28, 2014 11:10:30 PM Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > It looks like there's time for more adventurous stuff. :-)
+> > 
+> > The following series is on top of the one I sent on Sunday:
+> > 
+> > https://lkml.org/lkml/2014/1/26/191
+> > 
+> > The final outcome of the patches below is that all ACPI hotplug notifications
+> > for PCI devices and for core system things like CPU, memory, PCI roots etc.,
+> > will be dispatched from acpi_bus_notify() and it is not necessary to install a
+> > separate hotplug notify handler for each device any more.
+> > 
+> > [1/5] Attach ACPIPHP hotplug contexts to struct acpi_device objects.
+> > [2/5] Introduce wrappers for installing and removing hotplug notify handlers
+> >       (those wrappers go away later on, but they are useful for separating
+> >        changes).
+> > [3/5] Consolidate ACPI hotplug signaling for PCI and ACPI core.
+> > [4/5] Simplify notify handle registration wrapper.
+> > [5/5] Dispatch ACPI hotplug notifications for "core" devices and PCI from acpi_bus_notify().
+> 
+> Unfortunately, I realized that patches [3-5/5] were buggy.  The bugs were
+> kind of subtle and might not be easy to reproduce, but they were bugs anyway. :-)
+> 
+> A respin of the whole series follows.
 
-Since acpi_hotplug_notify_cb() does not use its data argument any
-more, the second argument of acpi_install_hotplug_notify_handler()
-can be dropped, so do that and update its callers accordingly.
+After the Mika's testing it turned out that they were more buggy than I had
+though.  Oh well.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c                |    6 +++---
- drivers/pci/hotplug/acpiphp_glue.c |    2 +-
- include/acpi/acpi_bus.h            |    2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+The following patchset is a reworked version of the previous one.  Functionality-wise
+the final result should be very similar, but not exactly the same.
 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -582,10 +582,10 @@ static void acpi_hotplug_notify_cb(acpi_
- 	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
- }
- 
--void acpi_install_hotplug_notify_handler(acpi_handle handle, void *data)
-+void acpi_install_hotplug_notify_handler(acpi_handle handle)
- {
- 	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				    acpi_hotplug_notify_cb, data);
-+				    acpi_hotplug_notify_cb, NULL);
- }
- 
- void acpi_remove_hotplug_notify_handler(acpi_handle handle)
-@@ -2024,7 +2024,7 @@ static void acpi_scan_init_hotplug(acpi_
- 	list_for_each_entry(hwid, &pnp.ids, list) {
- 		handler = acpi_scan_match_handler(hwid->id, NULL);
- 		if (handler) {
--			acpi_install_hotplug_notify_handler(handle, handler);
-+			acpi_install_hotplug_notify_handler(handle);
- 			break;
- 		}
- 	}
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -362,7 +362,7 @@ static acpi_status register_slot(acpi_ha
- 
- 	/* install notify handler */
- 	if (!(newfunc->flags & FUNC_HAS_DCK))
--		acpi_install_hotplug_notify_handler(handle, NULL);
-+		acpi_install_hotplug_notify_handler(handle);
- 
- 	return AE_OK;
- }
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -443,7 +443,7 @@ static inline bool acpi_device_enumerate
- typedef void (*acpi_hp_callback)(void *data, u32 src);
- 
- acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
--void acpi_install_hotplug_notify_handler(acpi_handle handle, void *data);
-+void acpi_install_hotplug_notify_handler(acpi_handle handle);
- void acpi_remove_hotplug_notify_handler(acpi_handle handle);
- 
- /**
+[1/6] Fix a theoretical race condition in acpi_hotplug_notify_cb().
+[2/6] Move the hotplug context lock definition to the ACPI core (from ACPIPHP).
+[3/6] Consolidate ACPI hotplug signaling for PCI and ACPI core (this is a combination
+      of patches [1-3/5] from the previous series).
+[4/6] Rework the handling of eject requests in the ACPI core.
+[5/6] Simplify a routine for installing hotplug notify handlers.
+[6/6] Dispatch ACPI hotplug notifications for "core" devices and PCI from acpi_bus_notify().
 
+This is on top of https://lkml.org/lkml/2014/2/1/123 which in turn is on top of
+the current mainline.
+
+For the adventurous all this stuff is on the test-next branch of linux-pm.git.
+
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
