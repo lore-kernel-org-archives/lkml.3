@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaBBATW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 19:19:22 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58459 "HELO
+	id S1754845AbaBBASV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 19:18:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54475 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754861AbaBBASX (ORCPT
+	with SMTP id S1754524AbaBBASR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 19:18:23 -0500
+	Sat, 1 Feb 2014 19:18:17 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 1/13] ACPI / hotplug / PCI: Remove entries from bus->devices in reverse order
-Date: Sun, 02 Feb 2014 01:21:17 +0100
-Message-ID: <2191766.e0OEb5Pek7@vostro.rjw.lan>
+Subject: [PATCH v2 12/13] ACPI / hotplug / PCI: Use acpi_handle_debug() in hotplug_event()
+Date: Sun, 02 Feb 2014 01:31:04 +0100
+Message-ID: <6471909.WrxDdSLtfn@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
 In-Reply-To: <1935791.liE9ZlzmO9@vostro.rjw.lan>
 References: <2217793.001RY6hKlo@vostro.rjw.lan> <1935791.liE9ZlzmO9@vostro.rjw.lan>
@@ -28,52 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-According to the changelog of commit 29ed1f29b68a (PCI: pciehp: Fix null
-pointer deref when hot-removing SR-IOV device) it is unsafe to walk the
-bus->devices list of a PCI bus and remove devices from it in direct order,
-because that may lead to NULL pointer dereferences related to virtual
-functions.
-
-For this reason, change all of the bus->devices list walks in
-acpiphp_glue.c during which devices may be removed to be carried out in
-reverse order.
+Make hotplug_event() use acpi_handle_debug() instead of an open-coded
+debug message printing and clean up the messages printed by it.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -742,7 +742,7 @@ static void trim_stale_devices(struct pc
+@@ -794,9 +794,6 @@ static void hotplug_event(acpi_handle ha
+ 	struct acpiphp_func *func = &context->func;
+ 	struct acpiphp_slot *slot = func->slot;
+ 	struct acpiphp_bridge *bridge;
+-	char objname[64];
+-	struct acpi_buffer buffer = { .length = sizeof(objname),
+-				      .pointer = objname };
  
- 		/* The device is a bridge. so check the bus below it. */
- 		pm_runtime_get_sync(&dev->dev);
--		list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
-+		list_for_each_entry_safe_reverse(child, tmp, &bus->devices, bus_list)
- 			trim_stale_devices(child);
+ 	mutex_lock(&acpiphp_context_lock);
+ 	bridge = context->bridge;
+@@ -806,14 +803,11 @@ static void hotplug_event(acpi_handle ha
+ 	mutex_unlock(&acpiphp_context_lock);
  
- 		pm_runtime_put(&dev->dev);
-@@ -773,8 +773,8 @@ static void acpiphp_check_bridge(struct
- 			; /* do nothing */
- 		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
- 			/* remove stale devices if any */
--			list_for_each_entry_safe(dev, tmp, &bus->devices,
--						 bus_list)
-+			list_for_each_entry_safe_reverse(dev, tmp,
-+							 &bus->devices, bus_list)
- 				if (PCI_SLOT(dev->devfn) == slot->device)
- 					trim_stale_devices(dev);
+ 	pci_lock_rescan_remove();
+-	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
  
-@@ -805,7 +805,7 @@ static void acpiphp_sanitize_bus(struct
- 	int i;
- 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM;
+ 	switch (type) {
+ 	case ACPI_NOTIFY_BUS_CHECK:
+ 		/* bus re-enumerate */
+-		pr_debug("%s: Bus check notify on %s\n", __func__, objname);
+-		pr_debug("%s: re-enumerating slots under %s\n",
+-			 __func__, objname);
++		acpi_handle_debug(handle, "Bus check in %s()\n", __func__);
+ 		if (bridge)
+ 			acpiphp_check_bridge(bridge);
+ 		else if (!(slot->flags & SLOT_IS_GOING_AWAY))
+@@ -823,7 +817,7 @@ static void hotplug_event(acpi_handle ha
  
--	list_for_each_entry_safe(dev, tmp, &bus->devices, bus_list) {
-+	list_for_each_entry_safe_reverse(dev, tmp, &bus->devices, bus_list) {
- 		for (i=0; i<PCI_BRIDGE_RESOURCES; i++) {
- 			struct resource *res = &dev->resource[i];
- 			if ((res->flags & type_mask) && !res->start &&
+ 	case ACPI_NOTIFY_DEVICE_CHECK:
+ 		/* device check */
+-		pr_debug("%s: Device check notify on %s\n", __func__, objname);
++		acpi_handle_debug(handle, "Device check in %s()\n", __func__);
+ 		if (bridge) {
+ 			acpiphp_check_bridge(bridge);
+ 		} else if (!(slot->flags & SLOT_IS_GOING_AWAY)) {
+@@ -838,7 +832,7 @@ static void hotplug_event(acpi_handle ha
+ 
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 		/* request device eject */
+-		pr_debug("%s: Device eject notify on %s\n", __func__, objname);
++		acpi_handle_debug(handle, "Eject request in %s()\n", __func__);
+ 		acpiphp_disable_and_eject_slot(slot);
+ 		break;
+ 	}
 
