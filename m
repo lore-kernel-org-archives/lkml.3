@@ -1,161 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaBBVqL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 16:46:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24627 "EHLO mx1.redhat.com"
+	id S1752739AbaBBVj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 16:39:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12703 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532AbaBBVqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 16:46:09 -0500
-Date: Sun, 2 Feb 2014 22:45:50 +0100
+	id S1752669AbaBBVj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 16:39:56 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [RFC 00/22] perf tools: Display tracepoint enahncements
-Message-ID: <20140202214550.GA2694@krava.redhat.com>
-References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 09/22] perf tools: Factor ui_browser ops out of ui_browser struct
+Date: Sun,  2 Feb 2014 22:38:57 +0100
+Message-Id: <1391377150-23920-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 10:38:48PM +0100, Jiri Olsa wrote:
-> hi,
-> sending out tracepoint (mostly) events display enahncements.
+Separating ops out of 'struct ui_browser' into
+'struct ui_browser_ops'.
 
-forgot to mention.. the branch is in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_tp
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/ui/browser.c           | 37 ++++++++++++++++++++++---------------
+ tools/perf/ui/browser.h           | 28 +++++++++++++++++-----------
+ tools/perf/ui/browsers/annotate.c | 19 +++++++++++--------
+ tools/perf/ui/browsers/header.c   |  8 +++++---
+ tools/perf/ui/browsers/hists.c    | 14 ++++++++------
+ tools/perf/ui/browsers/map.c      |  8 +++++---
+ tools/perf/ui/browsers/scripts.c  |  2 +-
+ tools/perf/ui/tui/util.c          |  8 +++++---
+ 8 files changed, 74 insertions(+), 50 deletions(-)
 
-and it's based on namhyuung's perf/cumulate-v7 branch
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index d11541d..b0b651d 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -46,12 +46,18 @@ void ui_browser__gotorc(struct ui_browser *browser, int y, int x)
+ 	SLsmg_gotorc(browser->y + y, browser->x + x);
+ }
+ 
++static bool ui_browser__filter(struct ui_browser *browser, void *entry)
++{
++	return browser->ops.filter ? browser->ops.filter(browser, entry) :
++				     false;
++}
++
+ static struct list_head *
+ ui_browser__list_head_filter_entries(struct ui_browser *browser,
+ 				     struct list_head *pos)
+ {
+ 	do {
+-		if (!browser->filter || !browser->filter(browser, pos))
++		if (!ui_browser__filter(browser, pos))
+ 			return pos;
+ 		pos = pos->next;
+ 	} while (pos != browser->entries);
+@@ -64,7 +70,7 @@ ui_browser__list_head_filter_prev_entries(struct ui_browser *browser,
+ 					  struct list_head *pos)
+ {
+ 	do {
+-		if (!browser->filter || !browser->filter(browser, pos))
++		if (!ui_browser__filter(browser, pos))
+ 			return pos;
+ 		pos = pos->prev;
+ 	} while (pos != browser->entries);
+@@ -149,7 +155,7 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *browser)
+ 
+ 	while (nd != NULL) {
+ 		ui_browser__gotorc(browser, row, 0);
+-		browser->write(browser, nd, row);
++		browser->ops.write(browser, nd, row);
+ 		if (++row == browser->height)
+ 			break;
+ 		nd = rb_next(nd);
+@@ -227,7 +233,7 @@ bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text)
+ void ui_browser__reset_index(struct ui_browser *browser)
+ {
+ 	browser->index = browser->top_idx = 0;
+-	browser->seek(browser, 0, SEEK_SET);
++	browser->ops.seek(browser, 0, SEEK_SET);
+ }
+ 
+ void __ui_browser__show_title(struct ui_browser *browser, const char *title)
+@@ -302,7 +308,7 @@ static int __ui_browser__refresh(struct ui_browser *browser)
+ 	int row;
+ 	int width = browser->width;
+ 
+-	row = browser->refresh(browser);
++	row = browser->ops.refresh(browser);
+ 	ui_browser__set_color(browser, HE_COLORSET_NORMAL);
+ 
+ 	if (!browser->use_navkeypressed || browser->navkeypressed)
+@@ -346,11 +352,12 @@ void ui_browser__update_nr_entries(struct ui_browser *browser, u32 nr_entries)
+ 	}
+ 
+ 	browser->top = NULL;
+-	browser->seek(browser, browser->top_idx, SEEK_SET);
++	browser->ops.seek(browser, browser->top_idx, SEEK_SET);
+ }
+ 
+ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ {
++	struct ui_browser_ops *ops = &browser->ops;
+ 	int err, key;
+ 
+ 	while (1) {
+@@ -391,7 +398,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ 			++browser->index;
+ 			if (browser->index == browser->top_idx + browser->height) {
+ 				++browser->top_idx;
+-				browser->seek(browser, +1, SEEK_CUR);
++				ops->seek(browser, +1, SEEK_CUR);
+ 			}
+ 			break;
+ 		case K_UP:
+@@ -400,7 +407,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ 			--browser->index;
+ 			if (browser->index < browser->top_idx) {
+ 				--browser->top_idx;
+-				browser->seek(browser, -1, SEEK_CUR);
++				ops->seek(browser, -1, SEEK_CUR);
+ 			}
+ 			break;
+ 		case K_PGDN:
+@@ -413,7 +420,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ 				offset = browser->nr_entries - 1 - browser->index;
+ 			browser->index += offset;
+ 			browser->top_idx += offset;
+-			browser->seek(browser, +offset, SEEK_CUR);
++			ops->seek(browser, +offset, SEEK_CUR);
+ 			break;
+ 		case K_PGUP:
+ 			if (browser->top_idx == 0)
+@@ -426,7 +433,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ 
+ 			browser->index -= offset;
+ 			browser->top_idx -= offset;
+-			browser->seek(browser, -offset, SEEK_CUR);
++			ops->seek(browser, -offset, SEEK_CUR);
+ 			break;
+ 		case K_HOME:
+ 			ui_browser__reset_index(browser);
+@@ -438,7 +445,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ 
+ 			browser->index = browser->nr_entries - 1;
+ 			browser->top_idx = browser->index - offset;
+-			browser->seek(browser, -offset, SEEK_END);
++			ops->seek(browser, -offset, SEEK_END);
+ 			break;
+ 		default:
+ 			return key;
+@@ -459,9 +466,9 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *browser)
+ 	pos = browser->top;
+ 
+ 	list_for_each_from(pos, head) {
+-		if (!browser->filter || !browser->filter(browser, pos)) {
++		if (!ui_browser__filter(browser, pos)) {
+ 			ui_browser__gotorc(browser, row, 0);
+-			browser->write(browser, pos, row);
++			browser->ops.write(browser, pos, row);
+ 			if (++row == browser->height)
+ 				break;
+ 		}
+@@ -584,9 +591,9 @@ unsigned int ui_browser__argv_refresh(struct ui_browser *browser)
+ 
+ 	pos = (char **)browser->top;
+ 	while (idx < browser->nr_entries) {
+-		if (!browser->filter || !browser->filter(browser, *pos)) {
++		if (!ui_browser__filter(browser, *pos)) {
+ 			ui_browser__gotorc(browser, row, 0);
+-			browser->write(browser, pos, row);
++			browser->ops.write(browser, pos, row);
+ 			if (++row == browser->height)
+ 				break;
+ 		}
+diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
+index 118cca2..5610176 100644
+--- a/tools/perf/ui/browser.h
++++ b/tools/perf/ui/browser.h
+@@ -13,21 +13,27 @@
+ #define HE_COLORSET_ADDR	55
+ #define HE_COLORSET_ROOT	56
+ 
+-struct ui_browser {
+-	u64	      index, top_idx;
+-	void	      *top, *entries;
+-	u16	      y, x, width, height;
+-	int	      current_color;
+-	void	      *priv;
+-	const char    *title;
+-	char	      *helpline;
++struct ui_browser;
++
++struct ui_browser_ops {
+ 	unsigned int  (*refresh)(struct ui_browser *browser);
+ 	void	      (*write)(struct ui_browser *browser, void *entry, int row);
+ 	void	      (*seek)(struct ui_browser *browser, off_t offset, int whence);
+ 	bool	      (*filter)(struct ui_browser *browser, void *entry);
+-	u32	      nr_entries;
+-	bool	      navkeypressed;
+-	bool	      use_navkeypressed;
++};
++
++struct ui_browser {
++	u64			index, top_idx;
++	void			*top, *entries;
++	u16			y, x, width, height;
++	int			current_color;
++	void			*priv;
++	const char		*title;
++	char			*helpline;
++	u32			nr_entries;
++	bool			navkeypressed;
++	bool			use_navkeypressed;
++	struct ui_browser_ops	ops;
+ };
+ 
+ int  ui_browser__set_color(struct ui_browser *browser, int color);
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index f0697a3..bc4bcfa 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -388,8 +388,9 @@ static bool annotate_browser__toggle_source(struct annotate_browser *browser)
+ 	struct disasm_line *dl;
+ 	struct browser_disasm_line *bdl;
+ 	off_t offset = browser->b.index - browser->b.top_idx;
++	struct ui_browser_ops *ops = &browser->b.ops;
+ 
+-	browser->b.seek(&browser->b, offset, SEEK_CUR);
++	ops->seek(&browser->b, offset, SEEK_CUR);
+ 	dl = list_entry(browser->b.top, struct disasm_line, node);
+ 	bdl = disasm_line__browser(dl);
+ 
+@@ -399,13 +400,13 @@ static bool annotate_browser__toggle_source(struct annotate_browser *browser)
+ 
+ 		browser->b.nr_entries = browser->nr_entries;
+ 		annotate_browser__opts.hide_src_code = false;
+-		browser->b.seek(&browser->b, -offset, SEEK_CUR);
++		ops->seek(&browser->b, -offset, SEEK_CUR);
+ 		browser->b.top_idx = bdl->idx - offset;
+ 		browser->b.index = bdl->idx;
+ 	} else {
+ 		if (bdl->idx_asm < 0) {
+ 			ui_helpline__puts("Only available for assembly lines.");
+-			browser->b.seek(&browser->b, -offset, SEEK_CUR);
++			ops->seek(&browser->b, -offset, SEEK_CUR);
+ 			return false;
+ 		}
+ 
+@@ -414,7 +415,7 @@ static bool annotate_browser__toggle_source(struct annotate_browser *browser)
+ 
+ 		browser->b.nr_entries = browser->nr_asm_entries;
+ 		annotate_browser__opts.hide_src_code = true;
+-		browser->b.seek(&browser->b, -offset, SEEK_CUR);
++		ops->seek(&browser->b, -offset, SEEK_CUR);
+ 		browser->b.top_idx = bdl->idx_asm - offset;
+ 		browser->b.index = bdl->idx_asm;
+ 	}
+@@ -882,10 +883,12 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map,
+ 	};
+ 	struct annotate_browser browser = {
+ 		.b = {
+-			.refresh = annotate_browser__refresh,
+-			.seek	 = ui_browser__list_head_seek,
+-			.write	 = annotate_browser__write,
+-			.filter  = disasm_line__filter,
++			.ops = {
++				.refresh = annotate_browser__refresh,
++				.seek	 = ui_browser__list_head_seek,
++				.write	 = annotate_browser__write,
++				.filter  = disasm_line__filter,
++			},
+ 			.priv	 = &ms,
+ 			.use_navkeypressed = true,
+ 		},
+diff --git a/tools/perf/ui/browsers/header.c b/tools/perf/ui/browsers/header.c
+index 89c16b9..69f1929 100644
+--- a/tools/perf/ui/browsers/header.c
++++ b/tools/perf/ui/browsers/header.c
+@@ -81,10 +81,12 @@ static int ui__list_menu(int argc, char * const argv[])
+ {
+ 	struct ui_browser menu = {
+ 		.entries    = (void *)argv,
+-		.refresh    = ui_browser__argv_refresh,
+-		.seek	    = ui_browser__argv_seek,
+-		.write	    = ui_browser__argv_write,
+ 		.nr_entries = argc,
++		.ops = {
++			.refresh    = ui_browser__argv_refresh,
++			.seek	    = ui_browser__argv_seek,
++			.write	    = ui_browser__argv_write,
++		},
+ 	};
+ 
+ 	return list_menu__run(&menu);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index e26afea..b4e476c 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1216,8 +1216,8 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 
+ 	if (browser) {
+ 		browser->hists = hists;
+-		browser->b.refresh = hist_browser__refresh;
+-		browser->b.seek = ui_browser__hists_seek;
++		browser->b.ops.refresh = hist_browser__refresh;
++		browser->b.ops.seek = ui_browser__hists_seek;
+ 		browser->b.use_navkeypressed = true;
+ 	}
+ 
+@@ -1944,11 +1944,13 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
+ 	struct perf_evsel *pos;
+ 	struct perf_evsel_menu menu = {
+ 		.b = {
++			.ops = {
++				.refresh    = ui_browser__list_head_refresh,
++				.seek	    = ui_browser__list_head_seek,
++				.write	    = perf_evsel_menu__write,
++				.filter	    = filter_group_entries,
++			},
+ 			.entries    = &evlist->entries,
+-			.refresh    = ui_browser__list_head_refresh,
+-			.seek	    = ui_browser__list_head_seek,
+-			.write	    = perf_evsel_menu__write,
+-			.filter	    = filter_group_entries,
+ 			.nr_entries = nr_entries,
+ 			.priv	    = evlist,
+ 		},
+diff --git a/tools/perf/ui/browsers/map.c b/tools/perf/ui/browsers/map.c
+index b11639f..6b09cd6 100644
+--- a/tools/perf/ui/browsers/map.c
++++ b/tools/perf/ui/browsers/map.c
+@@ -103,9 +103,11 @@ int map__browse(struct map *map)
+ 	struct map_browser mb = {
+ 		.b = {
+ 			.entries = &map->dso->symbols[map->type],
+-			.refresh = ui_browser__rb_tree_refresh,
+-			.seek	 = ui_browser__rb_tree_seek,
+-			.write	 = map_browser__write,
++			.ops = {
++				.refresh = ui_browser__rb_tree_refresh,
++				.seek	 = ui_browser__rb_tree_seek,
++				.write	 = map_browser__write,
++			},
+ 		},
+ 		.map = map,
+ 	};
+diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
+index 402d2bd..bbbc442 100644
+--- a/tools/perf/ui/browsers/scripts.c
++++ b/tools/perf/ui/browsers/scripts.c
+@@ -116,7 +116,7 @@ int script_browse(const char *script_opt)
+ 	struct script_line *sline;
+ 
+ 	struct perf_script_browser script = {
+-		.b = {
++		.b.ops = {
+ 			.refresh    = ui_browser__list_head_refresh,
+ 			.seek	    = ui_browser__list_head_seek,
+ 			.write	    = script_browser__write,
+diff --git a/tools/perf/ui/tui/util.c b/tools/perf/ui/tui/util.c
+index bf890f7..8ac0465 100644
+--- a/tools/perf/ui/tui/util.c
++++ b/tools/perf/ui/tui/util.c
+@@ -60,10 +60,12 @@ int ui__popup_menu(int argc, char * const argv[])
+ {
+ 	struct ui_browser menu = {
+ 		.entries    = (void *)argv,
+-		.refresh    = ui_browser__argv_refresh,
+-		.seek	    = ui_browser__argv_seek,
+-		.write	    = ui_browser__argv_write,
+ 		.nr_entries = argc,
++		.ops        = {
++			.refresh    = ui_browser__argv_refresh,
++			.seek	    = ui_browser__argv_seek,
++			.write	    = ui_browser__argv_write,
++		},
+ 	};
+ 
+ 	return popup_menu__run(&menu);
+-- 
+1.8.3.1
 
-jirka
-> 
-> * adding the '--tp' option for report command to show
->   tracepoint related info. Use can specify following switches:
->     fields: shows separated tracepoint fields
->     format: shows tracepoints 'print fmt' in single column
->              (This is default if no switch is given.)
-> 
->   $ perf report --tp --no-children
->   Samples: 4K of event 'sched:sched_switch', Event count (approx.): 4788
->    Overhead          Command      Shared Object          Symbol  Print fmt
->   +  26.27%          swapper  [kernel.kallsyms]  [k] __schedule  swapper/2:0 [120] R ==> offlineimap:22134 [120]
->   +  26.27%      offlineimap  [kernel.kallsyms]  [k] __schedule  offlineimap:22134 [120] S ==> swapper/2:0 [120]
->   -   8.15%          swapper  [kernel.kallsyms]  [k] __schedule  swapper/3:0 [120] R ==> offlineimap:22134 [120]
->        __schedule
->        schedule_preempt_disabled
->        cpu_startup_entry
->        start_secondary
->   +   8.15%      offlineimap  [kernel.kallsyms]  [k] __schedule  offlineimap:22134 [120] S ==> swapper/3:0 [120]
-> 
->   $ perf report --tp=fields --no-children
->   Samples: 4K of event 'sched:sched_switch', Event count (approx.): 4788
->     Overhead          Command      Shared Object          Symbol                       prev_comm    prev_pid   prev_prio          prev_state                       next_comm    next_pid   next_prio
->   +   26.27%          swapper  [kernel.kallsyms]  [k] __schedule                       swapper/2           0         120                   0                     offlineimap       22134         120
->   +   26.27%      offlineimap  [kernel.kallsyms]  [k] __schedule                     offlineimap       22134         120                   1                       swapper/2           0         120
->   -    8.15%          swapper  [kernel.kallsyms]  [k] __schedule                       swapper/3           0         120                   0                     offlineimap       22134         120
->        __schedule
->        schedule_preempt_disabled
->        cpu_startup_entry
->        start_secondary
->   +    8.15%      offlineimap  [kernel.kallsyms]  [k] __schedule                     offlineimap       22134         120                   1                       swapper/3           0         120
-> 
-> 
-> * adding '--list' report option to display entries sequentialy:
-> 
->   Samples: 2K of event 'sched:sched_switch', Event count (approx.): 2450
->         Self  Children                              Time          Command                Shared Object                                                       Symbol  Print fmt
->   +    0.04%     0.04%        9582.431783 +000000.000000          swapper  [kernel.kallsyms]            [k] __schedule                                               swapper/1:0 [120] R ==> perf:11168 [120]
->   -    0.00%     0.04%        9582.431783 +000000.000000          swapper  [kernel.kallsyms]            [k] __schedule                                               swapper/1:0 [120] R ==> perf:11168 [120]
->        __schedule
->        schedule
->        cpu_idle
->        start_secondary
->   +    0.00%     0.04%        9582.431783 +000000.000000          swapper  [kernel.kallsyms]            [k] schedule                                                 swapper/1:0 [120] R ==> perf:11168 [120]
->   +    0.00%     0.04%        9582.431783 +000000.000000          swapper  [kernel.kallsyms]            [k] cpu_idle                                                 swapper/1:0 [120] R ==> perf:11168 [120]
-> 
-> * adding 'H' key handler to togle header columns
-> 
-> 
-> thanks for comments,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
-> Jiri Olsa (22):
->       perf tools: Fix memory leak in event_format__print function
->       perf tools: Add time sort entry
->       perf tools: Add idx sort entry
->       perf tools: Add --list report option
->       perf tools: Add sort_entry struct into sort entries callbacks
->       perf tools: Add selected bool into se_snprintf sort entries callback
->       perf tools: Implement selected bool se_snprintf callback logic
->       perf tools: Implement selected logic for time sort entry
->       perf tools: Factor ui_browser ops out of ui_browser struct
->       perf tools: Add header callback into ui_browser_ops struct
->       perf tools: Remove ev_name argument from perf_evsel__hists_browse
->       perf tools: Add header callback to hist browser
->       perf tools: Factor hpp_arg struct to carry hist_browser
->       perf tools tui: Display columns header text on 'H' press
->       tools lib traceevent: Factor print_event_fields function
->       tools lib traceevent: Make the name output optional in pevent_field_info
->       tools lib traceevent: Add pevent_field_cmp function
->       perf tools: Factor sort entries loops
->       perf tools: Add local hists sort entry list
->       perf tools: Make hists col_len dynamicaly alocated
->       perf tools: Add raw info into hist entry
->       perf tools: Add support for tracepoint fields
-> 
->  tools/lib/traceevent/event-parse.c       | 181 +++++++++++++++++++++----------
->  tools/lib/traceevent/event-parse.h       |  10 ++
->  tools/perf/Documentation/perf-report.txt |   6 ++
->  tools/perf/Makefile.perf                 |   1 +
->  tools/perf/builtin-annotate.c            |   4 +-
->  tools/perf/builtin-diff.c                |   4 +-
->  tools/perf/builtin-report.c              |  52 ++++++++-
->  tools/perf/tests/hists_link.c            |   6 +-
->  tools/perf/ui/browser.c                  | 101 ++++++++++++-----
->  tools/perf/ui/browser.h                  |  31 ++++--
->  tools/perf/ui/browsers/annotate.c        |  19 ++--
->  tools/perf/ui/browsers/header.c          |   8 +-
->  tools/perf/ui/browsers/hists.c           | 168 ++++++++++++++++++++++-------
->  tools/perf/ui/browsers/map.c             |   8 +-
->  tools/perf/ui/browsers/scripts.c         |   2 +-
->  tools/perf/ui/gtk/hists.c                |   8 +-
->  tools/perf/ui/hist.c                     |  10 +-
->  tools/perf/ui/stdio/hist.c               |   6 +-
->  tools/perf/ui/tui/util.c                 |   8 +-
->  tools/perf/util/evsel.c                  |  24 +++--
->  tools/perf/util/evsel.h                  |   6 +-
->  tools/perf/util/hist.c                   |  65 ++++++++---
->  tools/perf/util/hist.h                   |  20 +++-
->  tools/perf/util/python.c                 |   3 +-
->  tools/perf/util/report-tp.c              | 244 +++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/report-tp.h              |  18 ++++
->  tools/perf/util/sort.c                   | 370 +++++++++++++++++++++++++++++++++++++++++++++++++--------------
->  tools/perf/util/sort.h                   |  29 ++++-
->  tools/perf/util/symbol.h                 |   3 +-
->  tools/perf/util/trace-event-parse.c      |   1 +
->  tools/perf/util/util.h                   |  17 +++
->  31 files changed, 1144 insertions(+), 289 deletions(-)
->  create mode 100644 tools/perf/util/report-tp.c
->  create mode 100644 tools/perf/util/report-tp.h
