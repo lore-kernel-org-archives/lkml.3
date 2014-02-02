@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505AbaBBM2L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 07:28:11 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55220 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751204AbaBBM2J (ORCPT
+	id S1751642AbaBBMdc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 07:33:32 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:37573 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaBBMda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 07:28:09 -0500
-Date: Sun, 2 Feb 2014 12:27:58 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: NFS client broken in Linus' tip
-Message-ID: <20140202122757.GC26684@n2100.arm.linux.org.uk>
-References: <20140130140834.GW15937@n2100.arm.linux.org.uk> <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org> <20140201010328.GI15937@n2100.arm.linux.org.uk>
+	Sun, 2 Feb 2014 07:33:30 -0500
+X-Auth-Info: OIaB90Fy5GNON/wCs717yAT0lTc/p/zLT4dmf6EM27I=
+Date: Sun, 2 Feb 2014 13:33:27 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] spi: switch to devm_spi_alloc_master
+Message-ID: <20140202123327.GR20094@book.gsilab.sittig.org>
+References: <1391163792-21819-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1391163792-21819-4-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140201010328.GI15937@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1391163792-21819-4-git-send-email-maxime.ripard@free-electrons.com>
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 01, 2014 at 01:03:28AM +0000, Russell King - ARM Linux wrote:
-> On Fri, Jan 31, 2014 at 03:59:30PM -0500, Trond Myklebust wrote:
-> > On Thu, 2014-01-30 at 15:38 +0000, Russell King - ARM Linux wrote:
-> > > On Thu, Jan 30, 2014 at 06:32:08AM -0800, Christoph Hellwig wrote:
-> > > > On Thu, Jan 30, 2014 at 02:27:52PM +0000, Russell King - ARM Linux wrote:
-> > > > > Yes and no.  I still end up with an empty /etc/mtab, but the file now
-> > > > > exists.  However, I can create and echo data into /etc/mtab, but it seems
-> > > > > that can't happen at boot time.
-> > > > 
-> > > > Odd.  Can you disable CONFIG_NFSD_V3_ACL for now to isolate the issue?
-> > > 
-> > > Unfortunately, that results in some problem at boot time, which
-> > > ultimately ends up with the other three CPUs being stopped, and
-> > > hence the original reason scrolls off the screen before it can be
-> > > read... even at 1920p.
-> > > 
-> > Hi Russell,
-> > 
-> > The following patch fixes the issue for me.
+On Fri, Jan 31, 2014 at 11:23 +0100, Maxime Ripard wrote:
 > 
-> It doesn't entirely fix the issue for me, instead we've got even weirder
-> behaviour:
+> Make the existing users of devm_spi_register_master use the
+> devm_spi_alloc_master function to avoid leaking memory.
 > 
-> root@cubox-i4:~# ls -al test
-> ls: cannot access test: No such file or directory
-> root@cubox-i4:~# touch test
-> root@cubox-i4:~# ls -al test
-> -rw-r--r-- 1 root root 0 Feb  1 01:01 test
-> root@cubox-i4:~# echo foo > test
-> root@cubox-i4:~# ls -al test
-> -rw-r--r-- 1 root root 4 Feb  1 01:01 test
-> root@cubox-i4:~# cat test
-> foo
-> root@cubox-i4:~# rm test
-> root@cubox-i4:~# echo foo > test
-> -bash: test: Operation not supported
-> root@cubox-i4:~# ls -al test
-> -rw-r--r-- 1 root root 0 Feb  1 01:01 test
+> [ ... ]
+>  drivers/spi/spi-mpc512x-psc.c    | 19 ++++++++-----------
 
-FYI, I just tested Linus' tip, and NFS is still broken.
+Note that the context for the MPC512x SPI driver will change in
+3.14-rc1, so you will have to rebase after the merge window.
 
+> diff --git a/drivers/spi/spi-mpc512x-psc.c b/drivers/spi/spi-mpc512x-psc.c
+> index 46d2313..f376595 100644
+> --- a/drivers/spi/spi-mpc512x-psc.c
+> +++ b/drivers/spi/spi-mpc512x-psc.c
+> @@ -479,7 +479,7 @@ static int mpc512x_psc_spi_do_probe(struct device *dev, u32 regaddr,
+>  	char clk_name[16];
+>  	struct clk *clk;
+>  
+> -	master = spi_alloc_master(dev, sizeof *mps);
+> +	master = devm_spi_alloc_master(dev, sizeof *mps);
+>  	if (master == NULL)
+>  		return -ENOMEM;
+>  
+> @@ -507,8 +507,7 @@ static int mpc512x_psc_spi_do_probe(struct device *dev, u32 regaddr,
+>  	tempp = devm_ioremap(dev, regaddr, size);
+>  	if (!tempp) {
+>  		dev_err(dev, "could not ioremap I/O port range\n");
+> -		ret = -EFAULT;
+> -		goto free_master;
+> +		return -EFAULT;
+>  	}
+>  	mps->psc = tempp;
+>  	mps->fifo =
+> @@ -516,19 +515,19 @@ static int mpc512x_psc_spi_do_probe(struct device *dev, u32 regaddr,
+>  	ret = devm_request_irq(dev, mps->irq, mpc512x_psc_spi_isr, IRQF_SHARED,
+>  				"mpc512x-psc-spi", mps);
+>  	if (ret)
+> -		goto free_master;
+> +		return ret;
+>  	init_completion(&mps->txisrdone);
+>  
+>  	psc_num = master->bus_num;
+>  	snprintf(clk_name, sizeof(clk_name), "psc%d_mclk", psc_num);
+>  	clk = devm_clk_get(dev, clk_name);
+> -	if (IS_ERR(clk)) {
+> -		ret = PTR_ERR(clk);
+> -		goto free_master;
+> -	}
+> +	if (IS_ERR(clk))
+> +		return PTR_ERR(clk);
+> +
+>  	ret = clk_prepare_enable(clk);
+>  	if (ret)
+> -		goto free_master;
+> +		return ret;
+> +
+>  	mps->clk_mclk = clk;
+>  	mps->mclk_rate = clk_get_rate(clk);
+>  
+> @@ -544,8 +543,6 @@ static int mpc512x_psc_spi_do_probe(struct device *dev, u32 regaddr,
+>  
+>  free_clock:
+>  	clk_disable_unprepare(mps->clk_mclk);
+> -free_master:
+> -	spi_master_put(master);
+>  
+>  	return ret;
+>  }
+
+Reading the diff in the SPI master driver, the change appears to
+be balanced, and replacing 'goto free_master' with immediate
+return looks appropriate.
+
+Can't comment on the correctness of removing the spi_master_put()
+call when switching from spi_alloc_master() to
+devm_spi_alloc_master().  This gets discussed in the other
+subthread, dealing with the generic subsystem approach.
+
+
+virtually yours
+Gerhard Sittig
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
