@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168AbaBBAR3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 19:17:29 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:45685 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862AbaBBAR1 (ORCPT
+	id S1754917AbaBBASZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 19:18:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59500 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754850AbaBBASW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 19:17:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <52ED85DD.6020402@zytor.com>
-References: <20140201211710.20281.qmail@science.horizon.com>
-	<52ED85DD.6020402@zytor.com>
-Date: Sat, 1 Feb 2014 16:17:26 -0800
-X-Google-Sender-Auth: TWK9up_AwuJrnv8KTxltbxwIIvA
-Message-ID: <CA+55aFyk=M2XeZd2rBR0hM3NQ5h8r26TgoEOtw4syaOjm3q75A@mail.gmail.com>
-Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt flag
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: George Spelvin <linux@horizon.com>, Jan Kara <jack@suse.cz>,
+	Sat, 1 Feb 2014 19:18:22 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maarten Baert <maarten-baert@hotmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Nate Eldredge <nate@thatsmathematics.com>,
-        Pekka Riikonen <priikone@iki.fi>, Suresh Siddha <sbsiddha@gmail.com>,
-        stable <stable@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 3/13] ACPI / hotplug / PCI: Simplify disable_slot()
+Date: Sun, 02 Feb 2014 01:23:30 +0100
+Message-ID: <1662988.VQzBl3dffR@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1935791.liE9ZlzmO9@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <1935791.liE9ZlzmO9@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 1, 2014 at 3:40 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> OK, let's circle back for a bit.  We have an active bug, and we clearly
-> have a lot of restructuring that could/should be done.  We need to fix
-> the bug first; if we're going to a bunch of restructuring then that
-> ought to be separate.  The first bit is how we fix the immediate bug.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-So either of my suggested changes to __kernel_fpu_end() _should_ fix
-the bug, with the caveat that if we do take the "check tsk-used-math"
-version, we had better verify that yes, we allocate the save storage
-before we set that flag. One of the reasons I tended to prefer simpler
-the "just do stts()" version is that it seemed safer. I am a bit
-worried about the whole interaction with synchronous task state and
-interrupts.
+After recent PCI core changes related to the rescan/remove locking,
+the ACPIPHP's disable_slot() function is only called under the
+general PCI rescan/remove lock, so it doesn't have to use
+dev_in_slot() any more to avoid race conditions.  Make it simply
+walk the devices on the bus and drop the ones in the slot being
+disabled and drop dev_in_slot() which has no more users.
 
-Suresh's notion of just always allocating the FP state save area at
-process creation would fix it too.
+Moreover, to avoid problems described in the changelog of commit
+29ed1f29b68a (PCI: pciehp: Fix null pointer deref when hot-removing
+SR-IOV device), make disable_slot() carry out the list walk in
+reverse order.
 
-So many ways to fix it, so little knowledge about the actual usage
-patterns and performance issues..
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/hotplug/acpiphp_glue.c |   28 +++++-----------------------
+ 1 file changed, 5 insertions(+), 23 deletions(-)
 
-              Linus
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -604,32 +604,15 @@ static void __ref enable_slot(struct acp
+ 	}
+ }
+ 
+-/* return first device in slot, acquiring a reference on it */
+-static struct pci_dev *dev_in_slot(struct acpiphp_slot *slot)
+-{
+-	struct pci_bus *bus = slot->bus;
+-	struct pci_dev *dev;
+-	struct pci_dev *ret = NULL;
+-
+-	down_read(&pci_bus_sem);
+-	list_for_each_entry(dev, &bus->devices, bus_list)
+-		if (PCI_SLOT(dev->devfn) == slot->device) {
+-			ret = pci_dev_get(dev);
+-			break;
+-		}
+-	up_read(&pci_bus_sem);
+-
+-	return ret;
+-}
+-
+ /**
+  * disable_slot - disable a slot
+  * @slot: ACPI PHP slot
+  */
+ static void disable_slot(struct acpiphp_slot *slot)
+ {
++	struct pci_bus *bus = slot->bus;
++	struct pci_dev *dev, *prev;
+ 	struct acpiphp_func *func;
+-	struct pci_dev *pdev;
+ 
+ 	/*
+ 	 * enable_slot() enumerates all functions in this device via
+@@ -637,10 +620,9 @@ static void disable_slot(struct acpiphp_
+ 	 * methods (_EJ0, etc.) or not.  Therefore, we remove all functions
+ 	 * here.
+ 	 */
+-	while ((pdev = dev_in_slot(slot))) {
+-		pci_stop_and_remove_bus_device(pdev);
+-		pci_dev_put(pdev);
+-	}
++	list_for_each_entry_safe_reverse(dev, prev, &bus->devices, bus_list)
++		if (PCI_SLOT(dev->devfn) == slot->device)
++			pci_stop_and_remove_bus_device(dev);
+ 
+ 	list_for_each_entry(func, &slot->funcs, sibling)
+ 		acpiphp_bus_trim(func_to_handle(func));
+
