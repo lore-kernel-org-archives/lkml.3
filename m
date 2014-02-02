@@ -1,57 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaBBQXQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 11:23:16 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55270 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751751AbaBBQXO (ORCPT
+	id S1751940AbaBBQeB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 11:34:01 -0500
+Received: from relay.parallels.com ([195.214.232.42]:46397 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaBBQd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 11:23:14 -0500
-Date: Sun, 2 Feb 2014 16:23:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v5 09/23] drm/i2c: tda998x: don't read write-only
-	registers
-Message-ID: <20140202162309.GF26684@n2100.arm.linux.org.uk>
-References: <cover.1390986082.git.moinejf@free.fr> <5269e596e16dfe40253dce38ceb0dc4a617384c1.1390986083.git.moinejf@free.fr>
+	Sun, 2 Feb 2014 11:33:59 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
+        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: [PATCH 3/8] memcg, slab: never try to merge memcg caches
+Date: Sun, 2 Feb 2014 20:33:48 +0400
+Message-ID: <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1391356789.git.vdavydov@parallels.com>
+References: <cover.1391356789.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5269e596e16dfe40253dce38ceb0dc4a617384c1.1390986083.git.moinejf@free.fr>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.195]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 25, 2014 at 06:14:42PM +0100, Jean-Francois Moine wrote:
-> This patch takes care of the write-only registers of the tda998x.
-> 
-> The registers SOFTRESET, TBG_CNTRL_0 and TBG_CNTRL_1 have all bits
-> cleared after reset, so, they may be fully re-written.
-> 
-> The register MAT_CONTRL is set to
-> 	MAT_CONTRL_MAT_BP | MAT_CONTRL_MAT_SC(1)
-> after reset, so, it may be fully set again to this value.
+Suppose we are creating memcg cache A that could be merged with cache B
+of the same memcg. Since any memcg cache has the same parameters as its
+parent cache, parent caches PA and PB of memcg caches A and B must be
+mergeable too. That means PA was merged with PB on creation or vice
+versa, i.e. PA = PB. From that it follows that A = B, and we couldn't
+even try to create cache B, because it already exists - a contradiction.
 
-I said in v3 of this patch, which seems to remain unaddressed:
+So let's remove unused code responsible for merging memcg caches.
 
->       /* must be last register set: */
-> -     reg_clear(priv, REG_TBG_CNTRL_0, TBG_CNTRL_0_SYNC_ONCE);
-> +     reg_write(priv, REG_TBG_CNTRL_0, 0);
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/slab.h        |   21 ++++-----------------
+ mm/slab_common.c |    8 +++++---
+ mm/slub.c        |   19 +++++++++----------
+ 3 files changed, 18 insertions(+), 30 deletions(-)
 
-Register changes which have a potential effect shouldn't be part of a
-patch which is really only trying to avoid reading from write only
-registers.
-
-This could be a potential functional change - and it's probably one
-which Rob Clark should at least be made aware of.  As I commented last
-time, when you're changing register values in an otherwise innocuous
-patch, you should comment about them in the patch description.
-
+diff --git a/mm/slab.h b/mm/slab.h
+index 8184a7cde272..3045316b7c9d 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
+ struct mem_cgroup;
+ #ifdef CONFIG_SLUB
+ struct kmem_cache *
+-__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+-		   size_t align, unsigned long flags, void (*ctor)(void *));
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *));
+ #else
+ static inline struct kmem_cache *
+-__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+-		   size_t align, unsigned long flags, void (*ctor)(void *))
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *))
+ { return NULL; }
+ #endif
+ 
+@@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return !s->memcg_params || s->memcg_params->is_root_cache;
+ }
+ 
+-static inline bool cache_match_memcg(struct kmem_cache *cachep,
+-				     struct mem_cgroup *memcg)
+-{
+-	return (is_root_cache(cachep) && !memcg) ||
+-				(cachep->memcg_params->memcg == memcg);
+-}
+-
+ static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ {
+ 	if (!is_root_cache(s))
+@@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return true;
+ }
+ 
+-static inline bool cache_match_memcg(struct kmem_cache *cachep,
+-				     struct mem_cgroup *memcg)
+-{
+-	return true;
+-}
+-
+ static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ {
+ }
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 152d9b118b7a..a75834bb966d 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 	 */
+ 	flags &= CACHE_CREATE_MASK;
+ 
+-	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+-	if (s)
+-		goto out_unlock;
++	if (!memcg) {
++		s = __kmem_cache_alias(name, size, align, flags, ctor);
++		if (s)
++			goto out_unlock;
++	}
+ 
+ 	err = -ENOMEM;
+ 	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+diff --git a/mm/slub.c b/mm/slub.c
+index 2b1a6970e46f..962abfdfde06 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3686,9 +3686,8 @@ static int slab_unmergeable(struct kmem_cache *s)
+ 	return 0;
+ }
+ 
+-static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+-		size_t align, unsigned long flags, const char *name,
+-		void (*ctor)(void *))
++static struct kmem_cache *find_mergeable(size_t size, size_t align,
++		unsigned long flags, const char *name, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+ 
+@@ -3707,11 +3706,14 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+ 		if (slab_unmergeable(s))
+ 			continue;
+ 
++		if (!is_root_cache(s))
++			continue;
++
+ 		if (size > s->size)
+ 			continue;
+ 
+ 		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
+-				continue;
++			continue;
+ 		/*
+ 		 * Check if alignment is compatible.
+ 		 * Courtesy of Adrian Drzewiecki
+@@ -3722,21 +3724,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+ 		if (s->size - size >= sizeof(void *))
+ 			continue;
+ 
+-		if (!cache_match_memcg(s, memcg))
+-			continue;
+-
+ 		return s;
+ 	}
+ 	return NULL;
+ }
+ 
+ struct kmem_cache *
+-__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+-		   size_t align, unsigned long flags, void (*ctor)(void *))
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *))
+ {
+ 	struct kmem_cache *s;
+ 
+-	s = find_mergeable(memcg, size, align, flags, name, ctor);
++	s = find_mergeable(size, align, flags, name, ctor);
+ 	if (s) {
+ 		s->refcount++;
+ 		/*
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.7.10.4
+
