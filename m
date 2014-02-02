@@ -1,69 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaBBUHi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 15:07:38 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:46337 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413AbaBBUHh convert rfc822-to-8bit (ORCPT
+	id S1752490AbaBBUJn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 15:09:43 -0500
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:47528 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbaBBUJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 15:07:37 -0500
-Date: Sun, 2 Feb 2014 21:07:54 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v5 00/23]
-Message-ID: <20140202210754.307b41e8@armhf>
-In-Reply-To: <20140202191505.GK26684@n2100.arm.linux.org.uk>
-References: <cover.1390986082.git.moinejf@free.fr>
-	<20140202124358.GD26684@n2100.arm.linux.org.uk>
-	<20140202190606.6fa193ce@armhf>
-	<20140202182349.GJ26684@n2100.arm.linux.org.uk>
-	<20140202195400.073f4eb4@armhf>
-	<20140202191505.GK26684@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 2 Feb 2014 15:09:41 -0500
+Subject: Re: OMAP: clock DT conversion issues with omap36xx
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, pali.rohar@gmail.com, pavel@ucw.cz
+In-Reply-To: <20140201185216.GA7125@mars>
+References: <52E697C0.6000202@gmail.com> <1390848104.4936.62.camel@mars>
+	 <52E772A3.4090401@ti.com> <1390901735.2963.8.camel@lovely>
+	 <52E77D03.8090001@ti.com> <52E7B361.2030601@ti.com>
+	 <1390928565.4904.88.camel@mars> <1390994505.5023.32.camel@mars>
+	 <52E95098.4060809@ti.com>  <20140201185216.GA7125@mars>
+Content-Type: multipart/mixed; boundary="=-Ze6Cl1DbQUoLJ5LNVAsS"
+Date: Sun, 02 Feb 2014 21:09:37 +0100
+Message-ID: <1391371777.5453.6.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Feb 2014 19:15:05 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-> In which case, it may be better to reorder the remaining patches such
-> that the DT changes are at the very end - which means we can still
-> benefit from the rest of the patches if the DT solution remains an
-> open question.
-> 
-> We do have another option now that my generic component support is in
-> mainline (merged during this window), which should result in a much
-> cleaner solution.  If we convert TDA998x to a component, armada DRM
-> to a component master (and same for other tda998x users) then we don't
-> need the drm_encoder_slave stuff - all that goes away since it's no
-> longer necessary.
-> 
-> We also solve this problem as well - because we're then not messing
-> around with working out if there's a DT node present: the TDA998x
-> device must pre-exist.  For non-DT setups, this can be done when
-> the I2C bus is created - devices on it would be created using the
-> standard mechanisms already present via the i2c_board_data array.
-> For DT setups, the devices are created by parsing the I2C bus node
-> in DT.
-> 
-> Both cases result in a component being registered upon invocation of
-> tda998x_probe(), and removal of the component when tda998x_remove()
-> is called.  The tda998x driver becomes a standard I2C driver.
-> 
-> This is something I've been intending to look at now that the component
-> stuff is in place - as I said previously when the questions around DT
-> and Armada DRM were first posed, we need to solve these issues in a
-> generic way first, rather than hacking around them.
+--=-Ze6Cl1DbQUoLJ5LNVAsS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-Agree. I was looking in the same direction...
+On Sat, 2014-02-01 at 19:52 +0100, Christoph Fritz wrote:
+> On Wed, Jan 29, 2014 at 01:03:52PM -0600, Nishanth Menon wrote:
+> > To help us debug similar problems, I wrote a tool today:
+> > https://github.com/nmenon/ctt-dump - it is a simple memory read utility,
+> > Input file is CTT dump-out
+> > For example: 3630 CTT is here:
+> > http://www.ti.com/pdfs/wtbu/CTT-OMAP3630ES1.x-v1.6.0.4.zip
+> > 
+> > to give an idea - i posted a screen shot here:
+> > https://plus.google.com/112464029509057661457/posts/hNdee4gNfob
+> > 
+> > After generating the the rd1 file from CTT,
+> > we pick up the registers using ctt-dump -> any tool which can do
+> > register reads could do, but it might be handy having this.
+> > Example output on beagle-xm: http://slexy.org/view/s2YWmM1ium
+> > importing it back into CTT and after setting up the correct sysclk, we
+> > can compare clock frequencies Vs debugfs output - example:
+> > http://slexy.org/view/s21iQyDTct
+> > 
+> > 
+> > I mean, it is awesome having to debugfs data, but with nascent
+> > systems, it is always good to compare to what the hardware is really
+> > configured to - and CTT is the easy way to deal with it.
+> 
+> Oscilloscope on pin sysclkout2 measures 24 Mhz with next_20140115 on
+> this hardware here (omap3-lil-a83x). Its corresponding rd1 file,
+> generated by ctt-dump, shows in CTT incorrectly 100 Mhz. The hardware
+> has a 26 Mhz crystal.
+> 
+> The error in CTT is that MUX_sys_clkout2 doesn't configure CLKOUT2SOURCE
+> right. 0x2 is CM_96M_FCLK not CORE_CLK for example.
+> 
+> 
+> This is the diff of clk registers before and after DT clock
+> conversion patches:
+> 
+> --- ctt_dump_lil_a83x_next_20140115__works_as_expected.rd1
+> +++ ctt_dump_lil_a83x_next_20140124__breaks.rd1 2014-02-01
+> @@ -22,23 +22,23 @@
+>  0x48004c10 0x0000002f
+>  0x48004c30 0x0000023f
+>  0x48004c40 0x00000014
+> -0x48004d00 0x10370037
+> +0x48004d00 0xf0371037
+>  0x48004d04 0x00000017
+>  0x48004d40 0x09900c00
+>  0x48004d44 0x0483600c
+>  0x48004d48 0x00000009
+>  0x48004d4c 0x0000780c
+>  0x48004d50 0x00000001
+> -0x48004d70 0x00000092
+> -0x48004e00 0x00000001
+> +0x48004d70 0x0000009a
+> +0x48004e00 0x00000000
+>  0x48004e10 0x00000001
+>  0x48004e30 0x00000001
+> -0x48004e40 0x0000100f
+> +0x48004e40 0x00001009
+>  0x48004f00 0x00000000
+>  0x48004f10 0x00000000
+>  0x48004f30 0x00000001
+>  0x48004f40 0x00000004
+> -0x48005000 0x00040800
+> +0x48005000 0x00000800
+>  0x48005010 0x00078fff
+>  0x48005030 0x0007ffff
+>  0x48005040 0x000000ff
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Origin files of this diff added as attachment to this mail.
+
+
+--=-Ze6Cl1DbQUoLJ5LNVAsS
+Content-Disposition: attachment; filename="ctt_dump_lil_a83x_next_20140124__breaks.rd1"
+Content-Type: text/plain; name="ctt_dump_lil_a83x_next_20140124__breaks.rd1"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+DeviceName OMAP3630_ES1.x
+0x48002274 0x05000000
+0x480022d8 0x00000000
+0x48004000 0x00000000
+0x48004004 0x00000017
+0x48004040 0x00081400
+0x48004044 0x00000001
+0x48004904 0x00000037
+0x48004940 0x0012580c
+0x48004944 0x00000001
+0x48004a00 0x00006000
+0x48004a08 0x00000004
+0x48004a10 0x5b3ffe42
+0x48004a18 0x00000004
+0x48004a30 0x7ffffed9
+0x48004a38 0x0000000c
+0x48004a40 0x0000130a
+0x48004b00 0x00000000
+0x48004b10 0x00000000
+0x48004b40 0x00000005
+0x48004c00 0x00000001
+0x48004c10 0x0000002f
+0x48004c30 0x0000023f
+0x48004c40 0x00000014
+0x48004d00 0xf0371037
+0x48004d04 0x00000017
+0x48004d40 0x09900c00
+0x48004d44 0x0483600c
+0x48004d48 0x00000009
+0x48004d4c 0x0000780c
+0x48004d50 0x00000001
+0x48004d70 0x0000009a
+0x48004e00 0x00000000
+0x48004e10 0x00000001
+0x48004e30 0x00000001
+0x48004e40 0x00001009
+0x48004f00 0x00000000
+0x48004f10 0x00000000
+0x48004f30 0x00000001
+0x48004f40 0x00000004
+0x48005000 0x00000800
+0x48005010 0x00078fff
+0x48005030 0x0007ffff
+0x48005040 0x000000ff
+0x48005140 0x03020a50
+0x48005400 0x00000003
+0x48005410 0x00000001
+0x48005430 0x00000001
+0x48306ae0 0x000f0317
+0x48306d70 0x00000000
+0x48307270 0x00000088
+0x483074e0 0x00030105
+
+--=-Ze6Cl1DbQUoLJ5LNVAsS
+Content-Disposition: attachment; filename="ctt_dump_lil_a83x_next_20140115__works_as_expected.rd1"
+Content-Type: text/plain; name="ctt_dump_lil_a83x_next_20140115__works_as_expected.rd1"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+DeviceName OMAP3630_ES1.x
+0x48002274 0x05000000
+0x480022d8 0x00000000
+0x48004000 0x00000000
+0x48004004 0x00000017
+0x48004040 0x00081400
+0x48004044 0x00000001
+0x48004904 0x00000037
+0x48004940 0x0012580c
+0x48004944 0x00000001
+0x48004a00 0x00006000
+0x48004a08 0x00000004
+0x48004a10 0x5b3ffe42
+0x48004a18 0x00000004
+0x48004a30 0x7ffffed9
+0x48004a38 0x0000000c
+0x48004a40 0x0000130a
+0x48004b00 0x00000000
+0x48004b10 0x00000000
+0x48004b40 0x00000005
+0x48004c00 0x00000001
+0x48004c10 0x0000002f
+0x48004c30 0x0000023f
+0x48004c40 0x00000014
+0x48004d00 0x10370037
+0x48004d04 0x00000017
+0x48004d40 0x09900c00
+0x48004d44 0x0483600c
+0x48004d48 0x00000009
+0x48004d4c 0x0000780c
+0x48004d50 0x00000001
+0x48004d70 0x00000092
+0x48004e00 0x00000001
+0x48004e10 0x00000001
+0x48004e30 0x00000001
+0x48004e40 0x0000100f
+0x48004f00 0x00000000
+0x48004f10 0x00000000
+0x48004f30 0x00000001
+0x48004f40 0x00000004
+0x48005000 0x00040800
+0x48005010 0x00078fff
+0x48005030 0x0007ffff
+0x48005040 0x000000ff
+0x48005140 0x03020a50
+0x48005400 0x00000003
+0x48005410 0x00000001
+0x48005430 0x00000001
+0x48306ae0 0x000f0317
+0x48306d70 0x00000000
+0x48307270 0x00000088
+0x483074e0 0x00030105
+
+--=-Ze6Cl1DbQUoLJ5LNVAsS--
+
