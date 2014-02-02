@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaBBPVK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 10:21:10 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:51494 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaBBPVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 10:21:08 -0500
-Date: Sun, 2 Feb 2014 08:21:06 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH RESEND 0/10] fs: Introduce new
-	flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
-Message-ID: <20140202152106.GL20939@parisc-linux.org>
-References: <1391319694-3089-1-git-send-email-linkinjeon@gmail.com> <20140202151624.GK20939@parisc-linux.org>
+	id S1751801AbaBBP10 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 10:27:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44890 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaBBP1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 10:27:25 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1391340025.10379.1.camel@wall-e.seibold.net>
+References: <1391268756-10766-1-git-send-email-stefani@seibold.net> <1391268756-10766-4-git-send-email-stefani@seibold.net> <CALCETrVp+aTm_mT4bg6kcaX3QOnqyjVdfM9vdhHZPsKG276X0A@mail.gmail.com> <52ED90A3.9080802@zytor.com> <1391340025.10379.1.camel@wall-e.seibold.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140202151624.GK20939@parisc-linux.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 3/4] Add 32 bit VDSO time support for 32 bit kernel
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 02 Feb 2014 07:25:45 -0800
+To: Stefani Seibold <stefani@seibold.net>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Message-ID: <ba6a0d87-e6aa-4cb6-bf3c-c14aa3ea9379@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 08:16:24AM -0700, Matthew Wilcox wrote:
-> On Sun, Feb 02, 2014 at 02:41:34PM +0900, Namjae Jeon wrote:
-> > The semantics of this flag are following:
-> > 1) It collapses the range lying between offset and length by removing any data
-> >    blocks which are present in this range and than updates all the logical
-> >    offsets of extents beyond "offset + len" to nullify the hole created by
-> >    removing blocks. In short, it does not leave a hole.
-> > 2) It should be used exclusively. No other fallocate flag in combination.
-> > 3) Offset and length supplied to fallocate should be fs block size aligned
-> >    in case of xfs and ext4.
-> > 4) Collaspe range does not work beyond i_size.
-> 
-> What if the file is mmaped at the time somebody issues this command?
-> Seems to me we should drop pagecache pages that overlap with the
-> removed blocks.  If the removed range is not a multiple of PAGE_SIZE,
-> then we should also drop any pagecache pages after the removed range.
+Sorry, I did not know/realize, and unfortunately  "he" is the grammatical default in English, although the singular they is fortunately making a comeback.
 
-Oops, forgot to add "and if it is a multiple of page size, then we need
-to update the offsets of any pages after the removed page".  We should
-probably start easy though; just drop all pages that overlap the beginning
-of the affected range to the end of the file.  At some later point,
-if there's demand, we can add the optimisation to adjust the offsets of
-pages still in the cache.
+I stand corrected, through.  Please acer my apologies.
+
+  -hpa
+
+On February 2, 2014 3:20:25 AM PST, Stefani Seibold <stefani@seibold.net> wrote:
+>
+>> >>
+>> >> -#define VDSO_HIGH_BASE         0xffffe000U /* CONFIG_COMPAT_VDSO
+>address */
+>> >> +#define VDSO_HIGH_BASE         0xffffc000U /* CONFIG_COMPAT_VDSO
+>address */
+>> > 
+>> > This is odd.  Can you explain it?
+>> > 
+>> 
+>> He needs 3 pages instead of 1 after his changes.
+>> 
+>
+>Not every kernel hackers a male. By definition i am femal, so please
+>replace he and his with she and her.
+>
+>- Stefani
 
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
