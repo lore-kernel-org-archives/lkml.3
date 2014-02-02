@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaBBTK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 14:10:58 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:59416 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaBBTK4 (ORCPT
+	id S1752153AbaBBTPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 14:15:09 -0500
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:59132 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940AbaBBTPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 14:10:56 -0500
+	Sun, 2 Feb 2014 14:15:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
-References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
-Date: Sun, 2 Feb 2014 14:10:56 -0500
-X-Google-Sender-Auth: tOsng54NU5iRg7O1HNiDHSzbR8Q
-Message-ID: <CAKb7Uvg4Bqy1tHetVZBe=aekFDbgrGygc-evnSXxsoGqgoTA8A@mail.gmail.com>
-Subject: Re: [RFC 00/16] drm/nouveau: initial support for GK20A (Tegra K1)
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Eric Brower <ebrower@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, Terje Bergstrom <tbergstrom@nvidia.com>,
-        Ken Adams <KAdams@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1391325599.6481.5.camel@europa>
+References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+	<CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
+	<CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>
+	<CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
+	<CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>
+	<1391325599.6481.5.camel@europa>
+Date: Sun, 2 Feb 2014 11:15:05 -0800
+X-Google-Sender-Auth: xqr4GQzQgCDdx6a4MzUJ2wPMw2U
+Message-ID: <CA+55aFzz8a7K+KSB_TkGb1ih1hAg09-0TQusQgE5vwMJGegHDw@mail.gmail.com>
+Subject: Re: [PATCH] Make math_state_restore() save and restore the interrupt flag
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Suresh Siddha <sbsiddha@gmail.com>
+Cc: Nate Eldredge <nate@thatsmathematics.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
+        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
-
-On Fri, Jan 31, 2014 at 10:16 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> I guess my email address might surprise some of you, so let me anticipate some
-> questions you might have. :P Yes, this work is endorsed by NVIDIA. Several other
-> NVIDIAns (CC'd), including core GPU experts, have provided significant technical
-> guidance and will continue their involvement. Special thanks go to Terje
-> Bergstrom and Ken Adams for their invaluable GPU expertise, and Thierry Reding
-> (at FOSDEM this weekend) for help with debugging and user-space testing.
+On Sat, Feb 1, 2014 at 11:19 PM, Suresh Siddha <sbsiddha@gmail.com> wrote:
 >
-> Let me also stress that although very exciting, this effort is still
-> experimental, so I would like to make sure that nobody makes excessive
-> expectations based on these few patches. The scope of this work is strictly
-> limited to Tegra (although given the similarities desktop GPU support will
-> certainly benefit from it indirectly), and we do not have any plan to work on
-> user-space support. So do not uninstall that proprietary driver just yet. ;)
->
-> With this being clarified, we are looking forward to getting your feedback and
-> working with you guys to bring and improve Tegra K1 support into Nouveau! :)
+> The real fix for Nate's problem will be coming from Linus, with a
+> slightly modified option-b that Linus proposed. Linus, please let me
+> know if you want me to spin it. I can do it sunday night.
 
-I've sent a couple of fairly trivial comments, as you saw, and I
-suspect that others with a better understanding of the guts will have
-more substantial architectural feedback, esp after the weekend/FOSDEM.
-However, since no one's said it already -- welcome to Nouveau!
+Please do it, since clearly I wasn't aware enough about the whole
+non-TS-checking FPU state details.
 
->From the looks of it, you could bring up a full open-source stack with
-your patches (i.e. Xorg + nouveau DDX + mesa) and use PRIME to render
-stuff (assuming the actual display hw has an X ddx). Although I
-suspect that you're going to want to use your own drivers. Still a
-little curious if you've tried the open-source stack and whether it
-worked. [Not sure what the status is of render-node support is in
-mesa, but perhaps it's enough to try running piglit tests, if you
-can't get X going with the display HW.]
+Also, since this issue doesn't seem to be a recent regression, I'm not
+going to take this patch directly (even though I'm planning on doing
+-rc1 in a few hours), and expect that I'll get it through the normal
+channels (presumably together with the __kernel_fpu_end cleanups). Ok
+with everybody?
 
-  -ilia
+              Linus
