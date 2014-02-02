@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaBBIzx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 03:55:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41348 "EHLO
+	id S1751946AbaBBI4A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 03:56:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41362 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaBBIzo (ORCPT
+	with ESMTP id S1751673AbaBBIz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 03:55:44 -0500
-Date: Sun, 2 Feb 2014 00:55:21 -0800
+	Sun, 2 Feb 2014 03:55:58 -0500
+Date: Sun, 2 Feb 2014 00:55:31 -0800
 From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-29b596b57426831fce92cd0ebb01c77627616fdf@git.kernel.org>
+Message-ID: <tip-15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
@@ -20,11 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, namhyung@gmail.com,
         jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
         adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1391004884-10334-3-git-send-email-adrian.hunter@intel.com>
-References: <1391004884-10334-3-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1391004884-10334-4-git-send-email-adrian.hunter@intel.com>
+References: <1391004884-10334-4-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Add kallsyms__get_function_start()
-Git-Commit-ID: 29b596b57426831fce92cd0ebb01c77627616fdf
+Subject: [tip:perf/urgent] perf machine:
+  Add machine__get_kallsyms_filename()
+Git-Commit-ID: 15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,23 +34,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:55:27 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:55:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29b596b57426831fce92cd0ebb01c77627616fdf
-Gitweb:     http://git.kernel.org/tip/29b596b57426831fce92cd0ebb01c77627616fdf
+Commit-ID:  15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921
+Gitweb:     http://git.kernel.org/tip/15a0a8706c32bd38bff9ebf7c6ef24f32d1ea921
 Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 29 Jan 2014 16:14:37 +0200
+AuthorDate: Wed, 29 Jan 2014 16:14:38 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 31 Jan 2014 17:21:47 -0300
+CommitDate: Fri, 31 Jan 2014 17:21:48 -0300
 
-perf tools: Add kallsyms__get_function_start()
+perf machine: Add machine__get_kallsyms_filename()
 
-Separate out the logic used to find the start address of the reference
-symbol used to track kernel relocation.  kallsyms__get_function_start()
-is used in subsequent patches.
+Separate out the logic used to make the kallsyms full path name for a
+machine.  It will be reused in a subsequent patch.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Tested-by: Jiri Olsa <jolsa@redhat.com>
@@ -62,78 +62,44 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-3-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1391004884-10334-4-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/event.c | 18 +++++++++++++++---
- tools/perf/util/event.h |  3 +++
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ tools/perf/util/machine.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 1fc1c2f..17476df 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -470,6 +470,17 @@ static int find_symbol_cb(void *arg, const char *name, char type,
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index ded7459..290c2e6 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -496,19 +496,22 @@ static int symbol__in_kernel(void *arg, const char *name,
  	return 1;
  }
  
-+u64 kallsyms__get_function_start(const char *kallsyms_filename,
-+				 const char *symbol_name)
++static void machine__get_kallsyms_filename(struct machine *machine, char *buf,
++					   size_t bufsz)
 +{
-+	struct process_symbol_args args = { .name = symbol_name, };
-+
-+	if (kallsyms__parse(kallsyms_filename, &args, find_symbol_cb) <= 0)
-+		return 0;
-+
-+	return args.start;
++	if (machine__is_default_guest(machine))
++		scnprintf(buf, bufsz, "%s", symbol_conf.default_guest_kallsyms);
++	else
++		scnprintf(buf, bufsz, "%s/proc/kallsyms", machine->root_dir);
 +}
 +
- int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 				       perf_event__handler_t process,
- 				       struct machine *machine,
-@@ -480,13 +491,13 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 	char path[PATH_MAX];
- 	char name_buff[PATH_MAX];
- 	struct map *map;
-+	u64 start;
- 	int err;
- 	/*
- 	 * We should get this from /sys/kernel/sections/.text, but till that is
- 	 * available use this, and after it is use this as a fallback for older
- 	 * kernels.
- 	 */
--	struct process_symbol_args args = { .name = symbol_name, };
- 	union perf_event *event = zalloc((sizeof(event->mmap) +
- 					  machine->id_hdr_size));
- 	if (event == NULL) {
-@@ -513,7 +524,8 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 		}
- 	}
+ /* Figure out the start address of kernel map from /proc/kallsyms */
+ static u64 machine__get_kernel_start_addr(struct machine *machine)
+ {
+-	const char *filename;
+-	char path[PATH_MAX];
++	char filename[PATH_MAX];
+ 	struct process_args args;
  
--	if (kallsyms__parse(filename, &args, find_symbol_cb) <= 0) {
-+	start = kallsyms__get_function_start(filename, symbol_name);
-+	if (!start) {
- 		free(event);
- 		return -ENOENT;
- 	}
-@@ -525,7 +537,7 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
- 	event->mmap.header.type = PERF_RECORD_MMAP;
- 	event->mmap.header.size = (sizeof(event->mmap) -
- 			(sizeof(event->mmap.filename) - size) + machine->id_hdr_size);
--	event->mmap.pgoff = args.start;
-+	event->mmap.pgoff = start;
- 	event->mmap.start = map->start;
- 	event->mmap.len   = map->end - event->mmap.start;
- 	event->mmap.pid   = machine->pid;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index faf6e21..66a0c03 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -279,4 +279,7 @@ size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf_task(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf(union perf_event *event, FILE *fp);
+-	if (machine__is_default_guest(machine))
+-		filename = (char *)symbol_conf.default_guest_kallsyms;
+-	else {
+-		sprintf(path, "%s/proc/kallsyms", machine->root_dir);
+-		filename = path;
+-	}
++	machine__get_kallsyms_filename(machine, filename, PATH_MAX);
  
-+u64 kallsyms__get_function_start(const char *kallsyms_filename,
-+				 const char *symbol_name);
-+
- #endif /* __PERF_RECORD_H */
+ 	if (symbol__restricted_filename(filename, "/proc/kallsyms"))
+ 		return 0;
