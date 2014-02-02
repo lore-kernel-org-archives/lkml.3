@@ -1,33 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbaBBIzv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 03:55:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41340 "EHLO
+	id S1751776AbaBBIzt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 03:55:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41331 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659AbaBBIzi (ORCPT
+	with ESMTP id S1751655AbaBBIzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 03:55:38 -0500
-Date: Sun, 2 Feb 2014 00:55:09 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-9176753d1ed56951a6ee2a0f0a3f367904e35567@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, efault@gmx.de,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@gmail.com,
-        adrian.hunter@intel.com
-Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
-        acme@redhat.com, torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@gmail.com,
-        adrian.hunter@intel.com
-In-Reply-To: <1391004884-10334-2-git-send-email-adrian.hunter@intel.com>
-References: <1391004884-10334-2-git-send-email-adrian.hunter@intel.com>
+	Sun, 2 Feb 2014 03:55:32 -0500
+Date: Sun, 2 Feb 2014 00:54:43 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-f428ebd184c82a7914b2aa7e9f868918aaf7ea78@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, will.deacon@arm.com, peterz@infradead.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, will.deacon@arm.com, peterz@infradead.org,
+        tglx@linutronix.de
+In-Reply-To: <20140124154002.GF31570@twins.programming.kicks-ass.net>
+References: <20140124154002.GF31570@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols:
-  Fix symbol annotation for relocated kernel
-Git-Commit-ID: 9176753d1ed56951a6ee2a0f0a3f367904e35567
+Subject: [tip:perf/urgent] perf tools: Fix AAAAARGH64 memory barriers
+Git-Commit-ID: f428ebd184c82a7914b2aa7e9f868918aaf7ea78
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,102 +29,46 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:55:16 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 02 Feb 2014 00:54:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9176753d1ed56951a6ee2a0f0a3f367904e35567
-Gitweb:     http://git.kernel.org/tip/9176753d1ed56951a6ee2a0f0a3f367904e35567
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 29 Jan 2014 16:14:36 +0200
+Commit-ID:  f428ebd184c82a7914b2aa7e9f868918aaf7ea78
+Gitweb:     http://git.kernel.org/tip/f428ebd184c82a7914b2aa7e9f868918aaf7ea78
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 24 Jan 2014 16:40:02 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 31 Jan 2014 17:21:47 -0300
+CommitDate: Wed, 29 Jan 2014 15:50:57 -0300
 
-perf symbols: Fix symbol annotation for relocated kernel
+perf tools: Fix AAAAARGH64 memory barriers
 
-Kernel maps map memory addresses to file offsets.
+Someone got the load and store barriers mixed up for AAAAARGH64.  Turn
+them the right side up.
 
-For symbol annotation, objdump needs the object VMA addresses.  For an
-unrelocated kernel, that is the same as the memory address.
-
-The addresses passed to objdump for symbol annotation did not take into
-account kernel relocation.
-
-This patch fixes that.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1391004884-10334-2-git-send-email-adrian.hunter@intel.com
+Reported-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Fixes: a94d342b9cb0 ("tools/perf: Add required memory barriers")
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/r/20140124154002.GF31570@twins.programming.kicks-ass.net
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/map.c        | 5 +++--
- tools/perf/util/map.h        | 1 +
- tools/perf/util/symbol-elf.c | 2 ++
- 3 files changed, 6 insertions(+), 2 deletions(-)
+ tools/perf/perf.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 3b97513..39cd2d0 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -39,6 +39,7 @@ void map__init(struct map *map, enum map_type type,
- 	map->start    = start;
- 	map->end      = end;
- 	map->pgoff    = pgoff;
-+	map->reloc    = 0;
- 	map->dso      = dso;
- 	map->map_ip   = map__map_ip;
- 	map->unmap_ip = map__unmap_ip;
-@@ -288,7 +289,7 @@ u64 map__rip_2objdump(struct map *map, u64 rip)
- 	if (map->dso->rel)
- 		return rip - map->pgoff;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 7daa806..e84fa26 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -100,8 +100,8 @@
  
--	return map->unmap_ip(map, rip);
-+	return map->unmap_ip(map, rip) - map->reloc;
- }
+ #ifdef __aarch64__
+ #define mb()		asm volatile("dmb ish" ::: "memory")
+-#define wmb()		asm volatile("dmb ishld" ::: "memory")
+-#define rmb()		asm volatile("dmb ishst" ::: "memory")
++#define wmb()		asm volatile("dmb ishst" ::: "memory")
++#define rmb()		asm volatile("dmb ishld" ::: "memory")
+ #define cpu_relax()	asm volatile("yield" ::: "memory")
+ #endif
  
- /**
-@@ -311,7 +312,7 @@ u64 map__objdump_2mem(struct map *map, u64 ip)
- 	if (map->dso->rel)
- 		return map->unmap_ip(map, ip + map->pgoff);
- 
--	return ip;
-+	return ip + map->reloc;
- }
- 
- void map_groups__init(struct map_groups *mg)
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 18068c6..257e513 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -36,6 +36,7 @@ struct map {
- 	bool			erange_warned;
- 	u32			priv;
- 	u64			pgoff;
-+	u64			reloc;
- 	u32			maj, min; /* only valid for MMAP2 record */
- 	u64			ino;      /* only valid for MMAP2 record */
- 	u64			ino_generation;/* only valid for MMAP2 record */
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 8f12f0f..3e9f336 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -751,6 +751,8 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 			if (strcmp(elf_name, kmap->ref_reloc_sym->name))
- 				continue;
- 			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
-+			map->reloc = kmap->ref_reloc_sym->addr -
-+				     kmap->ref_reloc_sym->unrelocated_addr;
- 			break;
- 		}
- 	}
