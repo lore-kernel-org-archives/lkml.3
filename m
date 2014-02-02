@@ -1,120 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaBBVMz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 16:12:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32998 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbaBBVMy (ORCPT
+	id S1752498AbaBBVe1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 16:34:27 -0500
+Received: from mail.eperm.de ([89.247.134.16]:41683 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752445AbaBBVe0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 16:12:54 -0500
-Date: Sun, 2 Feb 2014 22:12:30 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Message-ID: <20140202211230.GX5002@laptop.programming.kicks-ass.net>
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-6-git-send-email-jason.low2@hp.com>
- <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
- <1390949495.2807.52.camel@j-VirtualBox>
- <20140129115142.GE9636@twins.programming.kicks-ass.net>
- <1391138977.6284.82.camel@j-VirtualBox>
- <20140131140941.GF4941@twins.programming.kicks-ass.net>
- <CAGQ1y=72+N4=yjVpjsTKjr-8xSQRS2xw4gcOGOipLgwPwgnA7A@mail.gmail.com>
- <20140131200825.GS5002@laptop.programming.kicks-ass.net>
- <1391374883.3164.8.camel@j-VirtualBox>
+	Sun, 2 Feb 2014 16:34:26 -0500
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Feb 2014 16:34:25 EST
+From: Stephan Mueller <smueller@chronox.de>
+To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
+        blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
+        tg@mirbsd.de
+Subject: Re: [PATCH,RFC] random: collect cpu randomness
+Date: Sun, 02 Feb 2014 22:25:31 +0100
+Message-ID: <16782692.5vMS7Bhbvf@myon.chronox.de>
+User-Agent: KMail/4.11.5 (Linux/3.12.8-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140202203617.GA9499@logfs.org>
+References: <20140202203617.GA9499@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391374883.3164.8.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 01:01:23PM -0800, Jason Low wrote:
-> On Fri, 2014-01-31 at 21:08 +0100, Peter Zijlstra wrote:
-> > On Fri, Jan 31, 2014 at 12:01:37PM -0800, Jason Low wrote:
-> > > Currently still getting soft lockups with the updated version.
-> > 
-> > Bugger.. ok clearly I need to think harder still. I'm fairly sure this
-> > cancelation can work though, just seems tricky to get right :-)
+Am Sonntag, 2. Februar 2014, 15:36:17 schrieb Jörn Engel:
+
+Hi Jörn,
+
+> Collects entropy from random behaviour all modern cpus exhibit.  The
+> scheduler and slab allocator are instrumented for this purpose.  How
+> much randomness can be gathered is clearly hardware-dependent and hard
+> to estimate.  Therefore the entropy estimate is zero, but random bits
+> still get mixed into the pools.
+
+May I ask what the purpose of the patches is when no entropy is implied? I see 
+that the pool is stirred more. But is that really a problem that needs 
+addressing?
+
+Please, do not get me wrong with the presented critisism here -- the approach 
+in general looks interesting.
+
+However, the following patches makes me wonder big time.
+
+>  extern void get_random_bytes(void *buf, int nbytes);
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index a88f4a485c5e..7af6389f9b9e 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2511,6 +2511,7 @@ need_resched:
+>  	rq = cpu_rq(cpu);
+>  	rcu_note_context_switch(cpu);
+>  	prev = rq->curr;
+> +	__add_cpu_randomness(__builtin_return_address(1), prev);
 > 
-> Ok, I believe I have found a race condition between m_spin_lock() and
-> m_spin_unlock().
+>  	schedule_debug(prev);
 > 
-> In m_spin_unlock(), we do "next = ACCESS_ONCE(node->next)". Then, if
-> next is not NULL, we proceed to set next->locked to 1.
+> diff --git a/mm/slab.c b/mm/slab.c
+> index eb043bf05f4c..ea5a30d44ad1 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3587,6 +3587,7 @@ static __always_inline void *__do_kmalloc(size_t size,
+> gfp_t flags, trace_kmalloc(caller, ret,
+>  		      size, cachep->size, flags);
 > 
-> A thread in m_spin_lock() in the unqueue path could execute
-> "next = cmpxchg(&prev->next, node, NULL)" after the thread in
-> m_spin_unlock() accesses its node->next and finds that it is not NULL.
-> Then, the thread in m_spin_lock() could check !node->locked before
-> the thread in m_spin_unlock() sets next->locked to 1.
+> +	add_cpu_randomness(__builtin_return_address(2), ret);
+>  	return ret;
+>  }
 
-Yes indeed. How silly of me to not spot that!
+First, the noise source you add is constantly triggered throughout the 
+execution of the kernel. Entropy is very important, we (who are interested in 
+crypto) know that. But how often is entropy needed? Other folks wonder about 
+the speed of the kernel. And with these two patches, every kmalloc and every 
+scheduling invocation now dives into the random.c code to do something. I 
+would think this is a bit expensive, especially to stir the pool without 
+increasing the entropy estimator. I think entropy collection should be 
+performed when it is needed and not throughout the lifetime of the system.
 
-> The following addition change was able to solve the initial lockups that were
-> occurring when running fserver on a 2 socket box.
-> 
-> ---
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index 9eb4dbe..e71a84a 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -513,8 +513,13 @@ static void m_spin_unlock(struct m_spinlock **lock)
->  			return;
->  
->  		next = ACCESS_ONCE(node->next);
-> -		if (unlikely(next))
-> -			break;
-> +
-> +		if (unlikely(next)) {
-> +			next = cmpxchg(&node->next, next, NULL);
-> +
-> +			if (next)
+Second, when I offered my initial patch which independently collects some 
+entropy on the CPU execution timing, I got shot down with one concern raised 
+by Ted, and that was about whether a user can influence the entropy collection 
+process. When I am trying to measure CPU execution timing in the RNG, the 
+concern was raised that the measured timing variations was due to CPU states 
+that were influenced by users. Your patch here clearly hooks into code paths 
+which are definitely affected by user actions. So, this patch therefore would 
+be subject to the same concerns. I personally think that this is not so much 
+an issue, yet it was raised previously.
 
-The cmpxchg could fail and next still be !NULL I suppose.
+It seems I have a bad timing, because just two days ago I released a new 
+attempt on the CPU jitter RNG [1] with a new noise source, and I was just 
+about to prepare a release email. With that attempt, both issues raised above 
+are addressed, including a theoretical foundation of the noise source.
 
-> +				break;
-> +		}
+[1] http://www.chronox.de/
 
-
-The way I wrote that same loop in step-B, is:
-
-
-	for (;;) {
-		if (*lock == node && cmpxchg(lock, node, prev) == node)
-			return
-
-		next = xchg(&node->next, NULL); /* B -> A */
-		if (next)
-			break;
-
-		arch_mutex_cpu_relax();
-	}
-
-I suppose we can make that something like:
-
-
-	if (node->next) {
-		next = xchg(&node->next, NULL);
-		if (next)
-			break
-	}
-
-To avoid the xchg on every loop.
-
-I had wanted to avoid the additional locked op in the unlock path, but
-yes that does make things easier.
+Ciao
+Stephan
+-- 
+| Cui bono? |
