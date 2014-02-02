@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939AbaBBL2m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 06:28:42 -0500
-Received: from www84.your-server.de ([213.133.104.84]:37459 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaBBL03 (ORCPT
+	id S1751505AbaBBM2L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 07:28:11 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55220 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751204AbaBBM2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 06:26:29 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 2/8] Add new func _install_special_mapping() to mmap.c
-Date: Sun,  2 Feb 2014 12:27:09 +0100
-Message-Id: <1391340435-5130-3-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391340435-5130-1-git-send-email-stefani@seibold.net>
-References: <1391340435-5130-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 2 Feb 2014 07:28:09 -0500
+Date: Sun, 2 Feb 2014 12:27:58 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: NFS client broken in Linus' tip
+Message-ID: <20140202122757.GC26684@n2100.arm.linux.org.uk>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk> <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org> <20140201010328.GI15937@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140201010328.GI15937@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Sat, Feb 01, 2014 at 01:03:28AM +0000, Russell King - ARM Linux wrote:
+> On Fri, Jan 31, 2014 at 03:59:30PM -0500, Trond Myklebust wrote:
+> > On Thu, 2014-01-30 at 15:38 +0000, Russell King - ARM Linux wrote:
+> > > On Thu, Jan 30, 2014 at 06:32:08AM -0800, Christoph Hellwig wrote:
+> > > > On Thu, Jan 30, 2014 at 02:27:52PM +0000, Russell King - ARM Linux wrote:
+> > > > > Yes and no.  I still end up with an empty /etc/mtab, but the file now
+> > > > > exists.  However, I can create and echo data into /etc/mtab, but it seems
+> > > > > that can't happen at boot time.
+> > > > 
+> > > > Odd.  Can you disable CONFIG_NFSD_V3_ACL for now to isolate the issue?
+> > > 
+> > > Unfortunately, that results in some problem at boot time, which
+> > > ultimately ends up with the other three CPUs being stopped, and
+> > > hence the original reason scrolls off the screen before it can be
+> > > read... even at 1920p.
+> > > 
+> > Hi Russell,
+> > 
+> > The following patch fixes the issue for me.
+> 
+> It doesn't entirely fix the issue for me, instead we've got even weirder
+> behaviour:
+> 
+> root@cubox-i4:~# ls -al test
+> ls: cannot access test: No such file or directory
+> root@cubox-i4:~# touch test
+> root@cubox-i4:~# ls -al test
+> -rw-r--r-- 1 root root 0 Feb  1 01:01 test
+> root@cubox-i4:~# echo foo > test
+> root@cubox-i4:~# ls -al test
+> -rw-r--r-- 1 root root 4 Feb  1 01:01 test
+> root@cubox-i4:~# cat test
+> foo
+> root@cubox-i4:~# rm test
+> root@cubox-i4:~# echo foo > test
+> -bash: test: Operation not supported
+> root@cubox-i4:~# ls -al test
+> -rw-r--r-- 1 root root 0 Feb  1 01:01 test
 
-The _install_special_mapping() is the new base function for
-install_special_mapping(). This function will return a pointer of the
-created VMA or a error code in an ERR_PTR()
+FYI, I just tested Linus' tip, and NFS is still broken.
 
-This new function will be needed by the for the vdso 32 bit support to map the
-additonal vvar and hpet pages into the 32 bit address space. This will be done
-with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- include/linux/mm.h |  3 +++
- mm/mmap.c          | 20 ++++++++++++++++----
- 2 files changed, 19 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f28f46e..55342aa 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1740,6 +1740,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
- extern struct file *get_mm_exe_file(struct mm_struct *mm);
- 
- extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
-+extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
-+				   unsigned long addr, unsigned long len,
-+				   unsigned long flags, struct page **pages);
- extern int install_special_mapping(struct mm_struct *mm,
- 				   unsigned long addr, unsigned long len,
- 				   unsigned long flags, struct page **pages);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 20ff0c3..81ba54f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
-  * The array pointer and the pages it points to are assumed to stay alive
-  * for as long as this mapping might exist.
-  */
--int install_special_mapping(struct mm_struct *mm,
-+struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
- 			    unsigned long addr, unsigned long len,
- 			    unsigned long vm_flags, struct page **pages)
- {
-@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
- 	if (unlikely(vma == NULL))
--		return -ENOMEM;
-+		return ERR_PTR(-ENOMEM);
- 
- 	INIT_LIST_HEAD(&vma->anon_vma_chain);
- 	vma->vm_mm = mm;
-@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
- 
- 	perf_event_mmap(vma);
- 
--	return 0;
-+	return vma;
- 
- out:
- 	kmem_cache_free(vm_area_cachep, vma);
--	return ret;
-+	return ERR_PTR(ret);
-+}
-+
-+int install_special_mapping(struct mm_struct *mm,
-+			    unsigned long addr, unsigned long len,
-+			    unsigned long vm_flags, struct page **pages)
-+{
-+	struct vm_area_struct *vma = _install_special_mapping(mm,
-+			    addr, len, vm_flags, pages);
-+
-+	if (IS_ERR(vma))
-+		return PTR_ERR(vma);
-+	return 0;
- }
- 
- static DEFINE_MUTEX(mm_all_locks_mutex);
 -- 
-1.8.5.3
-
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
