@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBBWDI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 17:03:08 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46891 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaBBWDF (ORCPT
+	id S1752628AbaBBWDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 17:03:52 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56220 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752462AbaBBWDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 17:03:05 -0500
-Date: Sun, 2 Feb 2014 14:02:58 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@redhat.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to
- spin_on_owner if need_resched() triggered while queued
-Message-ID: <20140202220258.GF4333@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com>
- <1390936396-3962-6-git-send-email-jason.low2@hp.com>
- <20140128210753.GJ11314@laptop.programming.kicks-ass.net>
- <1390949495.2807.52.camel@j-VirtualBox>
- <20140129115142.GE9636@twins.programming.kicks-ass.net>
- <1391138977.6284.82.camel@j-VirtualBox>
- <20140131140941.GF4941@twins.programming.kicks-ass.net>
- <CAGQ1y=72+N4=yjVpjsTKjr-8xSQRS2xw4gcOGOipLgwPwgnA7A@mail.gmail.com>
- <20140131200825.GS5002@laptop.programming.kicks-ass.net>
+	Sun, 2 Feb 2014 17:03:51 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao8JALS/7lJ5LGaB/2dsb2JhbABagwy5T4VSgQAXdIIlAQEFJxMcIxAIAxgJJQ8FJQMhE4gEzC8XFo5zB4Q4BJgpilCHUoFvgVIo
+Date: Mon, 3 Feb 2014 09:03:46 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, viro@zeniv.linux.org.uk, bpm@sgi.com,
+        tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz,
+        mtk.manpages@gmail.com, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH RESEND 0/10] fs: Introduce new
+ flag(FALLOC_FL_COLLAPSE_RANGE) for fallocate
+Message-ID: <20140202220346.GU2212@dastard>
+References: <1391319694-3089-1-git-send-email-linkinjeon@gmail.com>
+ <20140202151624.GK20939@parisc-linux.org>
+ <20140202152106.GL20939@parisc-linux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140131200825.GS5002@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140202152106.GL20939@parisc-linux.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020222-0928-0000-0000-000005ED9269
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 09:08:25PM +0100, Peter Zijlstra wrote:
-> On Fri, Jan 31, 2014 at 12:01:37PM -0800, Jason Low wrote:
-> > On Fri, Jan 31, 2014 at 6:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+On Sun, Feb 02, 2014 at 08:21:06AM -0700, Matthew Wilcox wrote:
+> On Sun, Feb 02, 2014 at 08:16:24AM -0700, Matthew Wilcox wrote:
+> > On Sun, Feb 02, 2014 at 02:41:34PM +0900, Namjae Jeon wrote:
+> > > The semantics of this flag are following:
+> > > 1) It collapses the range lying between offset and length by removing any data
+> > >    blocks which are present in this range and than updates all the logical
+> > >    offsets of extents beyond "offset + len" to nullify the hole created by
+> > >    removing blocks. In short, it does not leave a hole.
+> > > 2) It should be used exclusively. No other fallocate flag in combination.
+> > > 3) Offset and length supplied to fallocate should be fs block size aligned
+> > >    in case of xfs and ext4.
+> > > 4) Collaspe range does not work beyond i_size.
 > > 
-> > > I've downloaded AIM7 from sf.net and I hope I'm running it with 100+
-> > > loads but I'm not entirely sure I got this thing right, its not really
-> > > making progress with or without patch :/
-> > 
-> > Ingo's program http://lkml.org/lkml/2006/1/8/50 using the V option may
-> > be able to generate similar mutex contention.
-> > 
-> > Currently still getting soft lockups with the updated version.
+> > What if the file is mmaped at the time somebody issues this command?
+> > Seems to me we should drop pagecache pages that overlap with the
+> > removed blocks.  If the removed range is not a multiple of PAGE_SIZE,
+> > then we should also drop any pagecache pages after the removed range.
 > 
-> Bugger.. ok clearly I need to think harder still. I'm fairly sure this
-> cancelation can work though, just seems tricky to get right :-)
+> Oops, forgot to add "and if it is a multiple of page size, then we need
+> to update the offsets of any pages after the removed page". 
 
-We used to do something similar to avoid passing locks off to tasks that
-had been interrupted while spinning, and it was a bit tricky.  But we
-had it a bit easier, because we didn't actually have to remove the element
-from the queue, just bypass it at lock-grant time.
+Yup, that's what the XFS implementation does when it punches the
+hole out of the file before shifting the extents down. Check
+xfs_free_file_space():
 
-							Thanx, Paul
+1275         /* wait for the completion of any pending DIOs */
+1276         inode_dio_wait(VFS_I(ip));
+1277
+1278         rounding = max_t(xfs_off_t, 1 << mp->m_sb.sb_blocklog, PAGE_CACHE_SIZE);
+1279         ioffset = offset & ~(rounding - 1);
+1280         error = -filemap_write_and_wait_range(VFS_I(ip)->i_mapping,
+1281                                               ioffset, -1);
+1282         if (error)
+1283                 goto out;
+1284         truncate_pagecache_range(VFS_I(ip), ioffset, -1);
 
-> I'll give that proglet from Ingo a go, although that might be Monday ere
-> I get to it.
-> 
+Bonus points for working out why the XFS code doesn't just use
+PAGE_CACHE_SIZE for rounding here....
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
