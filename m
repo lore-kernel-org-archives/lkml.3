@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaBBSyo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 13:54:44 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:35867 "EHLO SMTP.CITRIX.COM"
+	id S1752208AbaBBTAX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 14:00:23 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:46102 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751974AbaBBSyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 13:54:43 -0500
-X-IronPort-AV: E=Sophos;i="4.95,767,1384300800"; 
-   d="scan'208";a="99040643"
-Message-ID: <52EE93F0.1020508@citrix.com>
-Date: Sun, 2 Feb 2014 19:52:32 +0100
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751974AbaBBTAW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 14:00:22 -0500
+Date: Sun, 2 Feb 2014 20:00:40 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 00/23]
+Message-ID: <20140202200040.555414b3@armhf>
+In-Reply-To: <20140202180433.GI26684@n2100.arm.linux.org.uk>
+References: <cover.1390986082.git.moinejf@free.fr>
+	<20140202124358.GD26684@n2100.arm.linux.org.uk>
+	<20140202180433.GI26684@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-To: Julien Grall <julien.grall@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <jonathan.davies@citrix.com>, <wei.liu2@citrix.com>,
-        <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v6] xen/grant-table: Avoid m2p_override during
- mapping
-References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401232333280.15917@kaball.uk.xensource.com> <52EE1E26.2040308@linaro.org>
-In-Reply-To: <52EE1E26.2040308@linaro.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.68.14.36]
-X-DLP: MIA1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/14 11:29, Julien Grall wrote:
-> Hello,
->
-> This patch is breaking Linux compilation on ARM:
->
-> drivers/xen/grant-table.c: In function ë__gnttab_map_refsí:
-> drivers/xen/grant-table.c:989:3: error: implicit declaration of function ëFOREIGN_FRAMEí [-Werror=implicit-function-declaration]
->     if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
->     ^
-> drivers/xen/grant-table.c: In function ë__gnttab_unmap_refsí:
-> drivers/xen/grant-table.c:1054:3: error: implicit declaration of function ëget_phys_to_machineí [-Werror=implicit-function-declaration]
->     mfn = get_phys_to_machine(pfn);
->     ^
-> drivers/xen/grant-table.c:1055:43: error: ëFOREIGN_FRAME_BITí undeclared (first use in this function)
->     if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
->                                             ^
-> drivers/xen/grant-table.c:1055:43: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/xen/grant-table.c:1068:9: error: too many arguments to function ëm2p_remove_overrideí
->           mfn);
->           ^
-> In file included from include/xen/page.h:4:0,
->                   from drivers/xen/grant-table.c:48:
-> /local/home/julien/works/midway/linux/arch/arm/include/asm/xen/page.h:106:19: note: declared here
->   static inline int m2p_remove_override(struct page *page, bool clear_pte)
->                     ^
-> cc1: some warnings being treated as errors
+On Sun, 2 Feb 2014 18:04:34 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Hi,
+> So, in summary, I'm pretty happy with this again - and it's all been
+> tested here with no apparant detrimental effects.  All committed and
+> queued up here:
+> 
+> http://ftp.arm.linux.org.uk/cgit/linux-cubox.git/log/?h=tda998x-devel
+> 
+> If you want to pull it back to check:
+> 
+>   git://ftp.arm.linux.org.uk/~rmk/linux-cubox.git tda998x-devel
+> 
+> I'm proposing to send everything up to the tda998x-fixes tag next week
+> for 3.13-rc kernels.
 
-That's bad indeed. I think the best solution is to put those parts 
-behind an #ifdef x86. The ones moved from x86/p2m.c to grant-table.c. 
-David, Stefano, what do you think?
+Everything is OK. Thank you.
 
-Zoli
+-- 
+Ken ar c'henta√±	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
