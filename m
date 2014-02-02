@@ -1,201 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaBBGfZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 01:35:25 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:34662 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaBBGfX (ORCPT
+	id S1751324AbaBBHFO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 02:05:14 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:43061 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaBBHFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 01:35:23 -0500
+	Sun, 2 Feb 2014 02:05:11 -0500
+Message-ID: <52EDEE17.4010205@landley.net>
+Date: Sun, 02 Feb 2014 01:04:55 -0600
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1391224618-3794-14-git-send-email-acourbot@nvidia.com>
-References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
-	<1391224618-3794-14-git-send-email-acourbot@nvidia.com>
-Date: Sun, 2 Feb 2014 01:35:22 -0500
-X-Google-Sender-Auth: kfbo_XD5Y_kz4Yrb_FP__QxN_3E
-Message-ID: <CAKb7Uvh7QTn1m0N6ynVxVup9VdA9y7fKJ66nwUDMiy6aHz+_Uw@mail.gmail.com>
-Subject: Re: [RFC 13/16] drm/nouveau/ibus: add GK20A support
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Eric Brower <ebrower@nvidia.com>, linux-tegra@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gnurou@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Henrik Austad <henrik@austad.us>, LKML doc <linux-doc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Brown <broonie@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Gleb Natapov <gleb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH] Documentation cleanup, update 00-INDEX files in Documentation/
+References: <1391041675-31683-1-git-send-email-henrik@austad.us>	<52E9D3EB.1060209@landley.net> <20140131142442.8030cf06d1d729c8e3a4541c@linux-foundation.org>
+In-Reply-To: <20140131142442.8030cf06d1d729c8e3a4541c@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some very trivial comments below:
-
-On Fri, Jan 31, 2014 at 10:16 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Add support for initializing the priv ring of GK20A. This is done by the
-> BIOS on desktop GPUs, but needs to be done by hand on Tegra.
+On 01/31/14 16:24, Andrew Morton wrote:
+> On Wed, 29 Jan 2014 22:24:11 -0600 Rob Landley <rob@landley.net> wrote:
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/nouveau/Makefile                   |   1 +
->  drivers/gpu/drm/nouveau/core/include/subdev/ibus.h |   1 +
->  drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c    | 108 +++++++++++++++++++++
->  3 files changed, 110 insertions(+)
->  create mode 100644 drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
+>> On 01/29/14 18:27, Henrik Austad wrote:
+>>> Some of the 00-INDEX files are somewhat outdated and some folders does not
+>>> contain 00-INDEX at all. Only outdated (with the notably exception of
+>>> spi) indexes are touched here, the 169 folders without 00-INDEX has not
+>>> been touched.
+>>>
+>>> This applies to Linus' tip (0e47c969).
+>>
+>> Looks like an improvement.
+>>
+>> Acked-by: Rob Landley <rob@landley.net>
 >
-> diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
-> index 6c4b76d..3548fcd 100644
-> --- a/drivers/gpu/drm/nouveau/Makefile
-> +++ b/drivers/gpu/drm/nouveau/Makefile
-> @@ -132,6 +132,7 @@ nouveau-y += core/subdev/i2c/nv94.o
->  nouveau-y += core/subdev/i2c/nvd0.o
->  nouveau-y += core/subdev/ibus/nvc0.o
->  nouveau-y += core/subdev/ibus/nve0.o
-> +nouveau-y += core/subdev/ibus/nvea.o
->  nouveau-y += core/subdev/instmem/base.o
->  nouveau-y += core/subdev/instmem/nv04.o
->  nouveau-y += core/subdev/instmem/nv40.o
-> diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h b/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
-> index 88814f1..056a42f 100644
-> --- a/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
-> +++ b/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
-> @@ -30,5 +30,6 @@ nouveau_ibus(void *obj)
->
->  extern struct nouveau_oclass nvc0_ibus_oclass;
->  extern struct nouveau_oclass nve0_ibus_oclass;
-> +extern struct nouveau_oclass nvea_ibus_oclass;
->
->  #endif
-> diff --git a/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c b/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
-> new file mode 100644
-> index 0000000..0bcd281
-> --- /dev/null
-> +++ b/drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
-> @@ -0,0 +1,108 @@
-> +/*
-> + * Copyright (c) 2014, NVIDIA Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + */
-> +
-> +#include <subdev/ibus.h>
-> +
-> +struct nvea_ibus_priv {
-> +       struct nouveau_ibus base;
-> +};
-> +
-> +static void
-> +nvea_ibus_init_priv_ring(struct nvea_ibus_priv *priv)
-> +{
-> +       u32 data;
-> +
-> +       data = nv_rd32(priv, 0x137250);
-> +       data &= (~0x3f);
-> +       nv_wr32(priv, 0x137250, data);
+> Are these 00-INDEX files actually useful?  I've never opened one of
+> them in my life.
 
-nv_mask(priv, 0x137250, 0x3f, 0) should do this, right?
+Back before kernel.org did its epic barn door locking after the horses 
+escaped, I used to use them to generate HTML indexes for 
+kernel.org/doc/Documentation, but sometime after they took away my 
+ability to rsync updates to that they replaced that directory with a raw 
+git checkout. I'm still waiting for them to replace the HTML versions of 
+the menuconfig help text and the htmldocs output with raw git checkouts too.
 
-> +
-> +       nv_mask(priv, 0x000200, 0x20, 0);
-> +       udelay(20);
-> +       nv_mask(priv, 0x000200, 0x20, 0x20);
-> +
-> +       nv_wr32(priv, 0x12004c, 0x4);
-> +       nv_wr32(priv, 0x122204, 0x2);
-> +       nv_rd32(priv, 0x122204);
-> +}
-> +
-> +static void
-> +nvea_ibus_intr(struct nouveau_subdev *subdev)
-> +{
-> +       struct nvea_ibus_priv *priv = (void *)subdev;
-> +       u32 status0 = nv_rd32(priv, 0x120058);
-> +       s32 retry = 100;
-> +       u32 command;
-> +
-> +       if (status0 & 0x7) {
-> +               nv_debug(priv, "resetting priv ring\n");
-> +               nvea_ibus_init_priv_ring(priv);
-> +       }
-> +
-> +       /* Acknowledge interrupt */
-> +       command = nv_rd32(priv, 0x0012004c);
-> +       command |= 0x2;
-> +       nv_wr32(priv, 0x0012004c, command);
+I periodically poke them about it, ala 
+https://bugzilla.kernel.org/show_bug.cgi?id=52721#c7 but the answer is 
+always crickets chirping or "you should upload web pages with git just 
+like you browse the web with git, watch video with git, play skyrim with 
+git, edit code with git, compile code with git... there is no other 
+software tool." At which point I wander off for another 6 months.
 
-nv_mask(priv, 0x12004c, 0x2, 0x2)
+So I used to have a use for it, but since kernel.org got all paranoid I 
+can't use it that way anymore. (That's why I haven't been updating these 
+files when the patches themselves don't. It's on my todo list, but it's 
+really hard to _care_ when they so obviously don't.)
 
-> +
-> +       while (--retry >= 0) {
-> +               command = nv_rd32(priv, 0x12004c) & 0x3f;
-> +               if (command == 0)
-> +                       break;
-> +       }
-> +
-> +       if (retry < 0)
-> +               nv_debug(priv, "timeout waiting for ringmaster ack\n");
+Insufficiently gruntled,
 
-this sounds kinda bad, no? perhaps a nv_warn?
-
-> +}
-> +
-> +static int
-> +nvea_ibus_init(struct nouveau_object *object)
-> +{
-> +       struct nvea_ibus_priv *priv = (void *)object;
-> +       int ret;
-> +
-> +       ret = _nouveau_ibus_init(object);
-> +       if (ret)
-> +               return ret;
-> +
-> +       nvea_ibus_init_priv_ring(priv);
-> +
-> +       return 0;
-> +}
-> +
-> +static int
-> +nvea_ibus_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
-> +              struct nouveau_oclass *oclass, void *data, u32 size,
-> +              struct nouveau_object **pobject)
-> +{
-> +       struct nvea_ibus_priv *priv;
-> +       int ret;
-> +
-> +       ret = nouveau_ibus_create(parent, engine, oclass, &priv);
-> +       *pobject = nv_object(priv);
-> +       if (ret)
-> +               return ret;
-> +
-> +       nv_subdev(priv)->intr = nvea_ibus_intr;
-> +       return 0;
-> +}
-> +
-> +struct nouveau_oclass
-> +nvea_ibus_oclass = {
-> +       .handle = NV_SUBDEV(IBUS, 0xea),
-> +       .ofuncs = &(struct nouveau_ofuncs) {
-> +               .ctor = nvea_ibus_ctor,
-> +               .dtor = _nouveau_ibus_dtor,
-> +               .init = nvea_ibus_init,
-> +               .fini = _nouveau_ibus_fini,
-> +       },
-> +};
-> --
-> 1.8.5.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Rob
