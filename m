@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaBBAmh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 19:42:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37106 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752398AbaBBAmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 19:42:36 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrV-odpkNyFFSDRcrOdT1m11FTXgZJ+oASKKWa_wn8hUWw@mail.gmail.com>
-References: <1391268756-10766-1-git-send-email-stefani@seibold.net> <1391268756-10766-4-git-send-email-stefani@seibold.net> <CALCETrVp+aTm_mT4bg6kcaX3QOnqyjVdfM9vdhHZPsKG276X0A@mail.gmail.com> <52ED90A3.9080802@zytor.com> <CALCETrV-odpkNyFFSDRcrOdT1m11FTXgZJ+oASKKWa_wn8hUWw@mail.gmail.com>
+	id S1754832AbaBBAqa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 19:46:30 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50827 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753858AbaBBAqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Feb 2014 19:46:25 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 4/6] ACPI / hotplug / PCI: Rework the handling of eject requests
+Date: Sun, 02 Feb 2014 01:57:21 +0100
+Message-ID: <2124868.AvfyTGl0GF@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1519631.YS65c9Af2C@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <1693151.2qrLZHyp0o@vostro.rjw.lan> <1519631.YS65c9Af2C@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 3/4] Add 32 bit VDSO time support for 32 bit kernel
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 01 Feb 2014 16:41:46 -0800
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Stefani Seibold <stefani@seibold.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Message-ID: <384f3ba9-ce01-4779-8988-556cea724f07@email.android.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, that we can move, of course.  
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On February 1, 2014 4:30:17 PM PST, Andy Lutomirski <luto@amacapital.net> wrote:
->On Sat, Feb 1, 2014 at 4:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 02/01/2014 03:59 PM, Andy Lutomirski wrote:
->>>
->>>   If it is, indeed, okay to use non-fixed maps on 32-bit, it might
->>> also be okay on 64-bit.  If so, it could be useful to implement
->that,
->>> which would remove a bit of a wart and allow PR_SET_TSC to work
->>> usefully for 64-bit userspace.  (This would remove the need for the
->>> VVAR macro and would allow shorter rip-relative address modes.)
->>>
->>
->> We can't really move the 64-bit legacy vsyscall area, though, as it
->is
->> an ABI.  It can be disabled with vsyscall=none, but Linus has
->vehemently
->> vetoed removing them.
->
->VVAR != vsyscall.  They've been different pages since I wrote the
->vsyscall emulation stuff.  Any userspace code that relies on any of
->the contents of the VVAR page is totally screwed already, since the
->layout changes semi-regularly and depends on whether lockdep is
->enabled.
->
->>
->>>  (Note that those fixmaps are a security problem on native 32-bit if
->>> NX is not available.  We may not care.)
->>
->> Not only on native 32 bit... although the amount of 64-bit hardware
->> without NX is quite small, the same is true for anywhere near modern
->> 32-bit hardware.
->
-><irrelevant>It can't be a problem for 32-bit compat mode, though,
->since userspace can't address the fixmap anyway.</irrelevant>
->
->>
->>>>
->>>> -#define VDSO_HIGH_BASE         0xffffe000U /* CONFIG_COMPAT_VDSO
->address */
->>>> +#define VDSO_HIGH_BASE         0xffffc000U /* CONFIG_COMPAT_VDSO
->address */
->>>
->>> This is odd.  Can you explain it?
->>>
->>
->> He needs 3 pages instead of 1 after his changes.
->
->Right.  But there's some obscure ABI reason for CONFIG_COMPAT_VDSO,
->and if this breaks it, then it's no good.  From extremely vague
->memory, there's some version of SuSE that breaks if the 32-bit vdso
->moves.  I have no idea what the bug is, but moving a "compat" address
->seems suspect.
->
->--Andy
+To avoid the need to install a hotplug notify handler for each ACPI
+namespace node representing a device and having a matching scan
+handler, move the check whether or not the ejection of the given
+device is enabled through its scan handler from acpi_hotplug_notify_cb()
+to acpi_generic_hotplug_event().  Also, move the execution of
+ACPI_OST_SC_EJECT_IN_PROGRESS _OST to acpi_generic_hotplug_event(),
+because in acpi_hotplug_notify_cb() or in acpi_eject_store() we really
+don't know whether or not the eject is going to be in progress (for
+example, acpi_hotplug_execute() may still fail without queuing up the
+work item).
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -461,6 +461,12 @@ static int acpi_generic_hotplug_event(st
+ 		return acpi_scan_device_check(adev);
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 	case ACPI_OST_EC_OSPM_EJECT:
++		if (adev->handler && !adev->handler->hotplug.enabled) {
++			dev_info(&adev->dev, "Eject disabled\n");
++			return -EPERM;
++		}
++		acpi_evaluate_hotplug_ost(adev->handle, ACPI_NOTIFY_EJECT_REQUEST,
++					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+ 		return acpi_scan_hot_remove(adev);
+ 	}
+ 	return -EINVAL;
+@@ -485,6 +491,10 @@ static void acpi_device_hotplug(void *da
+ 
+ 	if (adev->handler) {
+ 		error = acpi_generic_hotplug_event(adev, src);
++		if (error == -EPERM) {
++			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
++			goto err_out;
++		}
+ 	} else {
+ 		int (*event)(struct acpi_device *, u32);
+ 
+@@ -514,7 +524,6 @@ static void acpi_device_hotplug(void *da
+ 
+ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+ {
+-	struct acpi_scan_handler *handler = data;
+ 	u32 ost_code = ACPI_OST_SC_SUCCESS;
+ 	struct acpi_device *adev;
+ 	acpi_status status;
+@@ -530,13 +539,6 @@ static void acpi_hotplug_notify_cb(acpi_
+ 
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
+-		if (handler && !handler->hotplug.enabled) {
+-			acpi_handle_err(handle, "Eject disabled\n");
+-			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+-			goto out;
+-		}
+-		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+-					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+ 		break;
+ 
+ 	case ACPI_NOTIFY_DEVICE_WAKE:
+@@ -637,8 +639,6 @@ acpi_eject_store(struct device *d, struc
+ 	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
+ 		return -ENODEV;
+ 
+-	acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
+-				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+ 	get_device(&acpi_device->dev);
+ 	status = acpi_hotplug_execute(acpi_device_hotplug, acpi_device,
+ 				      ACPI_OST_EC_OSPM_EJECT);
+
