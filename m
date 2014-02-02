@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212AbaBBCko (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Feb 2014 21:40:44 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58579 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaBBCkm (ORCPT
+	id S1751443AbaBBCkp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Feb 2014 21:40:45 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43749 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaBBCkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Feb 2014 21:40:42 -0500
-Date: Sat, 1 Feb 2014 18:40:40 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Filipe David Manana <fdmanana@gmail.com>
-cc: Chris Mason <clm@fb.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs
-In-Reply-To: <CAL3q7H5OW8GXUYB3rDMVf0Z7b-xPEbePWCg34wK8Y6HYXkn0zg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1402011839510.1121@chino.kir.corp.google.com>
-References: <52EAC9B6.7090603@fb.com> <alpine.DEB.2.02.1402011611400.5908@chino.kir.corp.google.com> <CAL3q7H5OW8GXUYB3rDMVf0Z7b-xPEbePWCg34wK8Y6HYXkn0zg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 1 Feb 2014 21:40:43 -0500
+Message-ID: <52EDB022.5070101@hitachi.com>
+Date: Sun, 02 Feb 2014 11:40:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, hskinnemoen@gmail.com,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        egtvedt@samfundet.no
+Subject: Re: [PATCH] kernel/kprobes.c: move cleanup_rp_inst() to where CONFIG_KRETPROBES
+ enabled
+References: <52ECE5D8.6090209@gmail.com>
+In-Reply-To: <52ECE5D8.6090209@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2 Feb 2014, Filipe David Manana wrote:
-
-> >>     Btrfs: fix btrfs boot when compiled as built-in (+73/-9)
-> >
-> > This one, 14a958e678cd ("Btrfs: fix btrfs boot when compiled as
-> > built-in"), breaks the build if CONFIG_LIBCRC32C=m:
-> >
-> > fs/built-in.o: In function `btrfs_check_super_csum':
-> > disk-io.c:(.text+0x1a1c8b): undefined reference to `crc32c'
-> > fs/built-in.o: In function `write_dev_supers.isra.120':
-> > disk-io.c:(.text+0x1a2054): undefined reference to `crc32c'
-> > fs/built-in.o: In function `csum_tree_block.isra.122':
-> > disk-io.c:(.text+0x1a22c4): undefined reference to `crc32c'
-> > fs/built-in.o: In function `btrfs_csum_data':
-> > (.text+0x1a2a46): undefined reference to `crc32c'
-> > fs/built-in.o: In function `send_cmd':
-> > send.c:(.text+0x20fe4c): undefined reference to `crc32c'
+(2014/02/01 21:17), Chen Gang wrote:
+> When CONFIG_KRETPROBES disabled, cleanup_rp_inst() is useless too. It
+> is only called by unregister_kretprobes() which is in CONFIG_KRETPROBES
+> enabled area.
 > 
-> One of the kbuild test robots reported this a few days ago too.
-> The following patch, sent shortly after the robot's warning, fixes it:
+> The related warning (allmodconfig under avr32):
 > 
-> https://patchwork.kernel.org/patch/3554671/
+>   kernel/kprobes.c:1181: warning: 'cleanup_rp_inst' defined but not used
+
+This patch itself looks good to me.
+And it seems that not only the cleanup_rp_inst, but also other
+kretprobe related functions should be moved (free_rp_inst,etc)
+
+Thank you,
+
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  kernel/kprobes.c | 40 ++++++++++++++++++++--------------------
+>  1 file changed, 20 insertions(+), 20 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index ceeadfc..18a520d 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1178,26 +1178,6 @@ static inline void free_rp_inst(struct kretprobe *rp)
+>  	}
+>  }
+>  
+> -static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
+> -{
+> -	unsigned long flags, hash;
+> -	struct kretprobe_instance *ri;
+> -	struct hlist_node *next;
+> -	struct hlist_head *head;
+> -
+> -	/* No race here */
+> -	for (hash = 0; hash < KPROBE_TABLE_SIZE; hash++) {
+> -		kretprobe_table_lock(hash, &flags);
+> -		head = &kretprobe_inst_table[hash];
+> -		hlist_for_each_entry_safe(ri, next, head, hlist) {
+> -			if (ri->rp == rp)
+> -				ri->rp = NULL;
+> -		}
+> -		kretprobe_table_unlock(hash, &flags);
+> -	}
+> -	free_rp_inst(rp);
+> -}
+> -
+>  /*
+>  * Add the new probe to ap->list. Fail if this is the
+>  * second jprobe at the address - two jprobes can't coexist
+> @@ -1885,6 +1865,26 @@ void __kprobes unregister_kretprobe(struct kretprobe *rp)
+>  }
+>  EXPORT_SYMBOL_GPL(unregister_kretprobe);
+>  
+> +static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
+> +{
+> +	unsigned long flags, hash;
+> +	struct kretprobe_instance *ri;
+> +	struct hlist_node *next;
+> +	struct hlist_head *head;
+> +
+> +	/* No race here */
+> +	for (hash = 0; hash < KPROBE_TABLE_SIZE; hash++) {
+> +		kretprobe_table_lock(hash, &flags);
+> +		head = &kretprobe_inst_table[hash];
+> +		hlist_for_each_entry_safe(ri, next, head, hlist) {
+> +			if (ri->rp == rp)
+> +				ri->rp = NULL;
+> +		}
+> +		kretprobe_table_unlock(hash, &flags);
+> +	}
+> +	free_rp_inst(rp);
+> +}
+> +
+>  void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
+>  {
+>  	int i;
 > 
 
-Acked-by: David Rientjes <rientjes@google.com>
 
-Fixes the build problem for me, thanks!  This needs to get into 3.14 since 
-the breakage is currently in Linus's tree.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
