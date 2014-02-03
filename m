@@ -1,155 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaBCXy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:54:26 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51351 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962AbaBCXyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:54:12 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: stable@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Anssi Hannula <anssi.hannula@iki.fi>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/2] ALSA: hda/hdmi - allow PIN_OUT to be dynamically enabled
-Date: Mon,  3 Feb 2014 16:54:04 -0700
-Message-Id: <1391471644-16256-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1391471644-16256-1-git-send-email-swarren@wwwdotorg.org>
-References: <1391471644-16256-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	id S1753733AbaBCXzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:55:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41567 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaBCXzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 18:55:51 -0500
+Date: Tue, 4 Feb 2014 00:55:47 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/1] ext3: Add __init macro to init_inodecache
+Message-ID: <20140203235547.GF2542@quack.suse.cz>
+References: <20140201191300.bf1332562e81082e8d7cfa53@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140201191300.bf1332562e81082e8d7cfa53@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Sat 01-02-14 19:13:00, Fabian Frederick wrote:
+> init_inodecache is only called by __init init_ext3_fs.
+  Thanks. Added to my tree.
 
-(This is upstream 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
-dynamically enabled", backported to stable 3.10 through 3.12. 3.13 and
-later can take the original patch.)
+							Honza
 
-Commit 384a48d71520 "ALSA: hda: HDMI: Support codecs with fewer cvts
-than pins" dynamically enabled each pin widget's PIN_OUT only when the
-pin was actively in use. This was required on certain NVIDIA CODECs for
-correct operation. Specifically, if multiple pin widgets each had their
-mux input select the same audio converter widget and each pin widget had
-PIN_OUT enabled, then only one of the pin widgets would actually receive
-the audio, and often not the one the user wanted!
-
-However, this apparently broke some Intel systems, and commit
-6169b673618b "ALSA: hda - Always turn on pins for HDMI/DP" reverted the
-dynamic setting of PIN_OUT. This in turn broke the afore-mentioned NVIDIA
-CODECs.
-
-This change supports either dynamic or static handling of PIN_OUT,
-selected by a flag set up during CODEC initialization. This flag is
-enabled for all recent NVIDIA GPUs.
-
-Reported-by: Uosis <uosisl@gmail.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- sound/pci/hda/patch_hdmi.c | 40 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
-
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index aad73a1fc2cd..417e0fc2d119 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -88,6 +88,9 @@ struct hdmi_spec {
- 	unsigned int channels_max; /* max over all cvts */
- 
- 	struct hdmi_eld temp_eld;
-+
-+	bool dyn_pin_out;
-+
- 	/*
- 	 * Non-generic ATI/NVIDIA specific
- 	 */
-@@ -452,15 +455,25 @@ static void hdmi_write_dip_byte(struct hda_codec *codec, hda_nid_t pin_nid,
- 
- static void hdmi_init_pin(struct hda_codec *codec, hda_nid_t pin_nid)
- {
-+	struct hdmi_spec *spec = codec->spec;
-+	int pin_out;
-+
- 	/* Unmute */
- 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
- 		snd_hda_codec_write(codec, pin_nid, 0,
- 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
--	/* Enable pin out: some machines with GM965 gets broken output when
--	 * the pin is disabled or changed while using with HDMI
--	 */
-+
-+	if (spec->dyn_pin_out)
-+		/* Disable pin out until stream is active */
-+		pin_out = 0;
-+	else
-+		/* Enable pin out: some machines with GM965 gets broken output
-+		 * when the pin is disabled or changed while using with HDMI
-+		 */
-+		pin_out = PIN_OUT;
-+
- 	snd_hda_codec_write(codec, pin_nid, 0,
--			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
-+			    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_out);
- }
- 
- static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
-@@ -1535,6 +1548,7 @@ static int generic_hdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- 	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
- 	hda_nid_t pin_nid = per_pin->pin_nid;
- 	bool non_pcm;
-+	int pinctl;
- 
- 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
- 	per_pin->channels = substream->runtime->channels;
-@@ -1544,6 +1558,14 @@ static int generic_hdmi_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
- 
- 	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
- 
-+	if (spec->dyn_pin_out) {
-+		pinctl = snd_hda_codec_read(codec, pin_nid, 0,
-+					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+		snd_hda_codec_write(codec, pin_nid, 0,
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+				    pinctl | PIN_OUT);
-+	}
-+
- 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
- }
- 
-@@ -1563,6 +1585,7 @@ static int hdmi_pcm_close(struct hda_pcm_stream *hinfo,
- 	int cvt_idx, pin_idx;
- 	struct hdmi_spec_per_cvt *per_cvt;
- 	struct hdmi_spec_per_pin *per_pin;
-+	int pinctl;
- 
- 	if (hinfo->nid) {
- 		cvt_idx = cvt_nid_to_cvt_index(spec, hinfo->nid);
-@@ -1579,6 +1602,14 @@ static int hdmi_pcm_close(struct hda_pcm_stream *hinfo,
- 			return -EINVAL;
- 		per_pin = get_pin(spec, pin_idx);
- 
-+		if (spec->dyn_pin_out) {
-+			pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
-+					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+			snd_hda_codec_write(codec, per_pin->pin_nid, 0,
-+					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+					    pinctl & ~PIN_OUT);
-+		}
-+
- 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
- 		per_pin->chmap_set = false;
- 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
-@@ -2570,6 +2601,7 @@ static int patch_nvhdmi(struct hda_codec *codec)
- 		return err;
- 
- 	spec = codec->spec;
-+	spec->dyn_pin_out = true;
- 
- 	return 0;
- }
+> 
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  fs/ext3/super.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> index 37fd31e..94608d4 100644
+> --- a/fs/ext3/super.c
+> +++ b/fs/ext3/super.c
+> @@ -527,7 +527,7 @@ static void init_once(void *foo)
+>  	inode_init_once(&ei->vfs_inode);
+>  }
+>  
+> -static int init_inodecache(void)
+> +static int __init init_inodecache(void)
+>  {
+>  	ext3_inode_cachep = kmem_cache_create("ext3_inode_cache",
+>  					     sizeof(struct ext3_inode_info),
+> -- 
+> 1.8.1.4
+> 
 -- 
-1.8.1.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
