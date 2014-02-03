@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951AbaBCHTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 02:19:49 -0500
-Received: from relay.parallels.com ([195.214.232.42]:48622 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaBCHTq (ORCPT
+	id S1752863AbaBCHYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 02:24:09 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.164]:30180 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751211AbaBCHYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 02:19:46 -0500
-Message-ID: <52EF4309.2040103@parallels.com>
-Date: Mon, 3 Feb 2014 11:19:37 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Mon, 3 Feb 2014 02:24:07 -0500
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Feb 2014 02:24:07 EST
+X-Env-Sender: michael.moese@men.de
+X-Msg-Ref: server-12.tower-38.messagelabs.com!1391411820!12479082!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Mon, 03 Feb 2014 08:17:01 +0100
+From: Michael Moese <michael.moese@men.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: Michael Moese <michael.moese@men.de>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] powerpc: add ioremap_wt
+Date: Mon, 3 Feb 2014 08:16:49 +0100
+Message-ID: <1391411809-1845-1-git-send-email-michael.moese@men.de>
+X-Mailer: git-send-email 1.8.5.3
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: David Rientjes <rientjes@google.com>, <akpm@linux-foundation.org>,
-        <mhocko@suse.cz>, <penberg@kernel.org>, <cl@linux.com>,
-        <glommer@gmail.com>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/8] memcg: export kmemcg cache id via cgroup fs
-References: <cover.1391356789.git.vdavydov@parallels.com> <570a97e4dfaded0939a9ddbea49055019dcc5803.1391356789.git.vdavydov@parallels.com> <alpine.DEB.2.02.1402022219101.10847@chino.kir.corp.google.com> <52EF3DBF.3000404@parallels.com>
-In-Reply-To: <52EF3DBF.3000404@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain
+X-Originating-IP: [192.168.6.61]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding Johannes Weiner and Hugh Dickins to cc in case they have
-something to object against this]
+Allow for IO memory to be mapped cacheable for performing
+PCI read bursts.
 
-On 02/03/2014 10:57 AM, Vladimir Davydov wrote:
-> On 02/03/2014 10:21 AM, David Rientjes wrote:
->> On Sun, 2 Feb 2014, Vladimir Davydov wrote:
->>
->>> Per-memcg kmem caches are named as follows:
->>>
->>>   <global-cache-name>(<cgroup-kmem-id>:<cgroup-name>)
->>>
->>> where <cgroup-kmem-id> is the unique id of the memcg the cache belongs
->>> to, <cgroup-name> is the relative name of the memcg on the cgroup fs.
->>> Cache names are exposed to userspace for debugging purposes (e.g. via
->>> sysfs in case of slub or via dmesg).
->>>
->>> Using relative names makes it impossible in general (in case the cgroup
->>> hierarchy is not flat) to find out which memcg a particular cache
->>> belongs to, because <cgroup-kmem-id> is not known to the user. Since
->>> using absolute cgroup names would be an overkill, let's fix this by
->>> exporting the id of kmem-active memcg via cgroup fs file
->>> "memory.kmem.id".
->>>
->> Hmm, I'm not sure exporting additional information is the best way to do 
->> it only for this purpose.  I do understand the problem in naming 
->> collisions if the hierarchy isn't flat and we typically work around that 
->> by ensuring child memcgs still have a unique memcg.  This isn't only a 
->> problem in slab cache naming, me also avoid printing the entire absolute 
->> names for things like the oom killer.
-> AFAIU, cgroup identifiers dumped on oom (cgroup paths, currently) and
-> memcg slab cache names serve for different purposes. The point is oom is
-> a perfectly normal situation for the kernel, and info dumped to dmesg is
-> for admin to find out the cause of the problem (a greedy user or
-> cgroup). On the other hand, slab cache names are dumped to dmesg only on
-> extraordinary situations - like bugs in slab implementation, or double
-> free, or detected memory leaks - where we usually do not need the name
-> of the memcg that triggered the problem, because the bug is likely to be
-> in the kernel subsys using the cache. Plus, the names are exported to
-> sysfs in case of slub, again for debugging purposes, AFAIK. So IMO the
-> use cases for oom vs slab names are completely different - information
-> vs debugging - and I want to export kmem.id only for the ability of
-> debugging kmemcg and slab subsystems.
->
->> So it would be nice to have 
->> consensus on how people are supposed to identify memcgs with a hierarchy: 
->> either by exporting information like the id like you do here (but leave 
->> the oom killer still problematic) or by insisting people name their memcgs 
->> with unique names if they care to differentiate them.
-> Anyway, I agree with you that this needs a consensus, because this is a
-> functional change.
->
-> Thanks.
+Signed-off-by: Michael Moese <michael.moese@men.de>
+---
+ arch/powerpc/include/asm/io.h | 3 +++
+ arch/powerpc/mm/pgtable_32.c  | 8 ++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/arch/powerpc/include/asm/io.h b/arch/powerpc/include/asm/io.h
+index 45698d5..9591fff 100644
+--- a/arch/powerpc/include/asm/io.h
++++ b/arch/powerpc/include/asm/io.h
+@@ -631,6 +631,8 @@ static inline void iosync(void)
+  *
+  * * ioremap_wc enables write combining
+  *
++ * * ioremap_wc enables write thru
++ *
+  * * iounmap undoes such a mapping and can be hooked
+  *
+  * * __ioremap_at (and the pending __iounmap_at) are low level functions to
+@@ -652,6 +654,7 @@ extern void __iomem *ioremap(phys_addr_t address, unsigned long size);
+ extern void __iomem *ioremap_prot(phys_addr_t address, unsigned long size,
+ 				  unsigned long flags);
+ extern void __iomem *ioremap_wc(phys_addr_t address, unsigned long size);
++extern void __iomem *ioremap_wt(phys_addr_t address, unsigned long size);
+ #define ioremap_nocache(addr, size)	ioremap((addr), (size))
+ 
+ extern void iounmap(volatile void __iomem *addr);
+diff --git a/arch/powerpc/mm/pgtable_32.c b/arch/powerpc/mm/pgtable_32.c
+index 51f8795..9ab0a54 100644
+--- a/arch/powerpc/mm/pgtable_32.c
++++ b/arch/powerpc/mm/pgtable_32.c
+@@ -141,6 +141,14 @@ ioremap_wc(phys_addr_t addr, unsigned long size)
+ EXPORT_SYMBOL(ioremap_wc);
+ 
+ void __iomem *
++ioremap_wt(phys_addr_t addr, unsigned long size)
++{
++	return __ioremap_caller(addr, size, _PAGE_WRITETHRU,
++				__builtin_return_address(0));
++}
++EXPORT_SYMBOL(ioremap_wt);
++
++void __iomem *
+ ioremap_prot(phys_addr_t addr, unsigned long size, unsigned long flags)
+ {
+ 	/* writeable implies dirty for kernel addresses */
+-- 
+1.8.5.3
 
