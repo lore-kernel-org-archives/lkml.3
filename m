@@ -1,202 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774AbaBCSTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:19:23 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:63237 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaBCSSp (ORCPT
+	id S1753431AbaBCSQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:16:46 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:42446 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407AbaBCSQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:18:45 -0500
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>
-Cc: Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, patches@linaro.org,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 1/3] ARM64: perf: add support for perf registers API
-Date: Mon,  3 Feb 2014 19:18:27 +0100
-Message-Id: <1391451509-31265-2-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1391451509-31265-1-git-send-email-jean.pihet@linaro.org>
-References: <1391451509-31265-1-git-send-email-jean.pihet@linaro.org>
+	Mon, 3 Feb 2014 13:16:44 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Todd Poynor <toddpoynor@google.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 08/16] staging: ashmem: Avoid deadlock between read and mmap calls
+Date: Mon,  3 Feb 2014 10:16:20 -0800
+Message-Id: <1391451388-23906-9-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
+References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the functions required for the perf registers API,
-allowing the perf tool to interface kernel register dumps with libunwind
-in order to provide userspace backtracing.
-Compat mode is also supported.
+From: Todd Poynor <toddpoynor@google.com>
 
-Only the general purpose user space registers are exported, i.e.:
- PERF_REG_ARM_X0,
- ...
- PERF_REG_ARM_X28,
- PERF_REG_ARM_FP,
- PERF_REG_ARM_LR,
- PERF_REG_ARM_SP,
- PERF_REG_ARM_PC
-and not the PERF_REG_ARM_V* registers.
+Avoid holding ashmem_mutex across code that can page fault.  Page faults
+grab the mmap_sem for the process, which are also held by mmap calls
+prior to calling ashmem_mmap, which locks ashmem_mutex.  The reversed
+order of locking between the two can deadlock.
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
+The calls that can page fault are read() and the ASHMEM_SET_NAME and
+ASHMEM_GET_NAME ioctls.  Move the code that accesses userspace pages
+outside the ashmem_mutex.
+
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Todd Poynor <toddpoynor@google.com>
+[jstultz: minor commit message tweaks]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- arch/arm64/Kconfig                      |  2 ++
- arch/arm64/include/asm/ptrace.h         |  1 +
- arch/arm64/include/uapi/asm/Kbuild      |  1 +
- arch/arm64/include/uapi/asm/perf_regs.h | 40 ++++++++++++++++++++++++++++++
- arch/arm64/kernel/Makefile              |  1 +
- arch/arm64/kernel/perf_regs.c           | 44 +++++++++++++++++++++++++++++++++
- 6 files changed, 89 insertions(+)
- create mode 100644 arch/arm64/include/uapi/asm/perf_regs.h
- create mode 100644 arch/arm64/kernel/perf_regs.c
+ drivers/staging/android/ashmem.c | 45 +++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index dd4327f..e9899bb 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -37,6 +37,8 @@ config ARM64
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
- 	select HAVE_MEMBLOCK
- 	select HAVE_PERF_EVENTS
-+	select HAVE_PERF_REGS
-+	select HAVE_PERF_USER_STACK_DUMP
- 	select IRQ_DOMAIN
- 	select MODULES_USE_ELF_RELA
- 	select NO_BOOTMEM
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index 0e7fa49..fbb0020 100644
---- a/arch/arm64/include/asm/ptrace.h
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -68,6 +68,7 @@
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index 23948f1..713a972 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -295,21 +295,29 @@ static ssize_t ashmem_read(struct file *file, char __user *buf,
  
- /* Architecturally defined mapping between AArch32 and AArch64 registers */
- #define compat_usr(x)	regs[(x)]
-+#define compat_fp	regs[11]
- #define compat_sp	regs[13]
- #define compat_lr	regs[14]
- #define compat_sp_hyp	regs[15]
-diff --git a/arch/arm64/include/uapi/asm/Kbuild b/arch/arm64/include/uapi/asm/Kbuild
-index e4b78bd..942376d 100644
---- a/arch/arm64/include/uapi/asm/Kbuild
-+++ b/arch/arm64/include/uapi/asm/Kbuild
-@@ -9,6 +9,7 @@ header-y += byteorder.h
- header-y += fcntl.h
- header-y += hwcap.h
- header-y += kvm_para.h
-+header-y += perf_regs.h
- header-y += param.h
- header-y += ptrace.h
- header-y += setup.h
-diff --git a/arch/arm64/include/uapi/asm/perf_regs.h b/arch/arm64/include/uapi/asm/perf_regs.h
-new file mode 100644
-index 0000000..172b831
---- /dev/null
-+++ b/arch/arm64/include/uapi/asm/perf_regs.h
-@@ -0,0 +1,40 @@
-+#ifndef _ASM_ARM64_PERF_REGS_H
-+#define _ASM_ARM64_PERF_REGS_H
-+
-+enum perf_event_arm_regs {
-+	PERF_REG_ARM64_X0,
-+	PERF_REG_ARM64_X1,
-+	PERF_REG_ARM64_X2,
-+	PERF_REG_ARM64_X3,
-+	PERF_REG_ARM64_X4,
-+	PERF_REG_ARM64_X5,
-+	PERF_REG_ARM64_X6,
-+	PERF_REG_ARM64_X7,
-+	PERF_REG_ARM64_X8,
-+	PERF_REG_ARM64_X9,
-+	PERF_REG_ARM64_X10,
-+	PERF_REG_ARM64_X11,
-+	PERF_REG_ARM64_X12,
-+	PERF_REG_ARM64_X13,
-+	PERF_REG_ARM64_X14,
-+	PERF_REG_ARM64_X15,
-+	PERF_REG_ARM64_X16,
-+	PERF_REG_ARM64_X17,
-+	PERF_REG_ARM64_X18,
-+	PERF_REG_ARM64_X19,
-+	PERF_REG_ARM64_X20,
-+	PERF_REG_ARM64_X21,
-+	PERF_REG_ARM64_X22,
-+	PERF_REG_ARM64_X23,
-+	PERF_REG_ARM64_X24,
-+	PERF_REG_ARM64_X25,
-+	PERF_REG_ARM64_X26,
-+	PERF_REG_ARM64_X27,
-+	PERF_REG_ARM64_X28,
-+	PERF_REG_ARM64_X29,
-+	PERF_REG_ARM64_LR,
-+	PERF_REG_ARM64_SP,
-+	PERF_REG_ARM64_PC,
-+	PERF_REG_ARM64_MAX,
-+};
-+#endif /* _ASM_ARM64_PERF_REGS_H */
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 2d4554b..9a5d592 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -15,6 +15,7 @@ arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
- 					   sys_compat.o
- arm64-obj-$(CONFIG_MODULES)		+= arm64ksyms.o module.o
- arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
-+arm64-obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
- arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
- arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-diff --git a/arch/arm64/kernel/perf_regs.c b/arch/arm64/kernel/perf_regs.c
-new file mode 100644
-index 0000000..f2d6f0a
---- /dev/null
-+++ b/arch/arm64/kernel/perf_regs.c
-@@ -0,0 +1,44 @@
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/perf_event.h>
-+#include <linux/bug.h>
-+#include <asm/perf_regs.h>
-+#include <asm/ptrace.h>
-+
-+u64 perf_reg_value(struct pt_regs *regs, int idx)
-+{
-+	if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM64_MAX))
-+		return 0;
-+
+ 	/* If size is not set, or set to 0, always return EOF. */
+ 	if (asma->size == 0)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (!asma->file) {
+ 		ret = -EBADF;
+-		goto out;
++		goto out_unlock;
+ 	}
+ 
+-	ret = asma->file->f_op->read(asma->file, buf, len, pos);
+-	if (ret < 0)
+-		goto out;
++	mutex_unlock(&ashmem_mutex);
+ 
+-	/** Update backing file pos, since f_ops->read() doesn't */
+-	asma->file->f_pos = *pos;
 +	/*
-+	 * Compat (i.e. 32 bit) mode:
-+	 * - PC has been set in the pt_regs struct in kernel_entry,
-+	 * - Handle SP and LR here.
++	 * asma and asma->file are used outside the lock here.  We assume
++	 * once asma->file is set it will never be changed, and will not
++	 * be destroyed until all references to the file are dropped and
++	 * ashmem_release is called.
 +	 */
-+	if (compat_user_mode(regs)) {
-+		if ((u32)idx == PERF_REG_ARM64_SP)
-+			return regs->compat_sp;
-+		if ((u32)idx == PERF_REG_ARM64_LR)
-+			return regs->compat_lr;
++	ret = asma->file->f_op->read(asma->file, buf, len, pos);
++	if (ret >= 0) {
++		/** Update backing file pos, since f_ops->read() doesn't */
++		asma->file->f_pos = *pos;
 +	}
-+
-+	return regs->regs[idx];
-+}
-+
-+#define REG_RESERVED (~((1ULL << PERF_REG_ARM64_MAX) - 1))
-+
-+int perf_reg_validate(u64 mask)
-+{
-+	if (!mask || mask & REG_RESERVED)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+u64 perf_reg_abi(struct task_struct *task)
-+{
-+	if (is_compat_thread(task_thread_info(task)))
-+		return PERF_SAMPLE_REGS_ABI_32;
++	return ret;
+ 
+-out:
++out_unlock:
+ 	mutex_unlock(&ashmem_mutex);
+ 	return ret;
+ }
+@@ -498,6 +506,7 @@ out:
+ 
+ static int set_name(struct ashmem_area *asma, void __user *name)
+ {
++	int len;
+ 	int ret = 0;
+ 	char local_name[ASHMEM_NAME_LEN];
+ 
+@@ -510,21 +519,19 @@ static int set_name(struct ashmem_area *asma, void __user *name)
+ 	 * variable that does not need protection and later copy the local
+ 	 * variable to the structure member with lock held.
+ 	 */
+-	if (copy_from_user(local_name, name, ASHMEM_NAME_LEN))
+-		return -EFAULT;
+-
++	len = strncpy_from_user(local_name, name, ASHMEM_NAME_LEN);
++	if (len < 0)
++		return len;
++	if (len == ASHMEM_NAME_LEN)
++		local_name[ASHMEM_NAME_LEN - 1] = '\0';
+ 	mutex_lock(&ashmem_mutex);
+ 	/* cannot change an existing mapping's name */
+-	if (unlikely(asma->file)) {
++	if (unlikely(asma->file))
+ 		ret = -EINVAL;
+-		goto out;
+-	}
+-	memcpy(asma->name + ASHMEM_NAME_PREFIX_LEN,
+-		local_name, ASHMEM_NAME_LEN);
+-	asma->name[ASHMEM_FULL_NAME_LEN-1] = '\0';
+-out:
+-	mutex_unlock(&ashmem_mutex);
 +	else
-+		return PERF_SAMPLE_REGS_ABI_64;
-+}
++		strcpy(asma->name + ASHMEM_NAME_PREFIX_LEN, local_name);
+ 
++	mutex_unlock(&ashmem_mutex);
+ 	return ret;
+ }
+ 
 -- 
-1.7.11.7
+1.8.3.2
 
