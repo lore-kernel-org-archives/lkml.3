@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaBCTFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:05:12 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:63878 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaBCTDV (ORCPT
+	id S1753560AbaBCTFl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:05:41 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:59843 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358AbaBCTDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:03:21 -0500
+	Mon, 3 Feb 2014 14:03:18 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/12] kernfs: remove KERNFS_ACTIVE_REF and add kernfs_lockdep()
-Date: Mon,  3 Feb 2014 14:02:59 -0500
-Message-Id: <1391454185-32143-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/12] kernfs: invoke kernfs_unmap_bin_file() directly from kernfs_deactivate()
+Date: Mon,  3 Feb 2014 14:02:57 -0500
+Message-Id: <1391454185-32143-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391454185-32143-1-git-send-email-tj@kernel.org>
 References: <1391454185-32143-1-git-send-email-tj@kernel.org>
@@ -23,108 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There currently are two mechanisms gating active ref lockdep
-annotations - KERNFS_LOCKDEP flag and KERNFS_ACTIVE_REF type mask.
-The former disables lockdep annotations in kernfs_get/put_active()
-while the latter disables all of kernfs_deactivate().
+kernfs_unmap_bin_file() is supposed to unmap all memory mappings of
+the target file before kernfs_remove() finishes; however, it currently
+is being called from kernfs_addrm_finish() and has the same race
+problem as the original implementation of deactivation when there are
+multiple removers - only the remover which snatches the node to its
+addrm_cxt->removed list is guaranteed to wait for its completion
+before returning.
 
-While KERNFS_ACTIVE_REF also behaves as an optimization to skip the
-deactivation step for non-file nodes, the benefit is marginal and it
-needlessly diverges code paths.  Let's drop KERNFS_ACTIVE_REF.
-
-While at it, add a test helper kernfs_lockdep() to test KERNFS_LOCKDEP
-flag so that it's more convenient and the related code can be compiled
-out when not enabled.
-
-v2: Refreshed on top of ("kernfs: make kernfs_deactivate() honor
-    KERNFS_LOCKDEP flag").  As the earlier patch already added
-    KERNFS_LOCKDEP tests to kernfs_deactivate(), those additions are
-    dropped from this patch and the existing ones are simply converted
-    to kernfs_lockdep().
+It can be easily fixed by moving kernfs_unmap_bin_file() invocation
+from kernfs_addrm_finish() to kernfs_deactivated().  The function may
+be called multiple times but that shouldn't do any harm.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c        | 20 +++++++++++++-------
- include/linux/kernfs.h |  1 -
- 2 files changed, 13 insertions(+), 8 deletions(-)
+ fs/kernfs/dir.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 948551d..5cf137b 100644
+index 3ac9373..9603c06 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -22,6 +22,15 @@ DEFINE_MUTEX(kernfs_mutex);
- 
- #define rb_to_kn(X) rb_entry((X), struct kernfs_node, rb)
- 
-+static bool kernfs_lockdep(struct kernfs_node *kn)
-+{
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+	return kn->flags & KERNFS_LOCKDEP;
-+#else
-+	return false;
-+#endif
-+}
-+
- /**
-  *	kernfs_name_hash
-  *	@name: Null terminated string to hash
-@@ -144,7 +153,7 @@ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn)
- 	if (!atomic_inc_unless_negative(&kn->active))
- 		return NULL;
- 
--	if (kn->flags & KERNFS_LOCKDEP)
-+	if (kernfs_lockdep(kn))
- 		rwsem_acquire_read(&kn->dep_map, 0, 1, _RET_IP_);
- 	return kn;
- }
-@@ -164,7 +173,7 @@ void kernfs_put_active(struct kernfs_node *kn)
- 	if (unlikely(!kn))
- 		return;
- 
--	if (kn->flags & KERNFS_LOCKDEP)
-+	if (kernfs_lockdep(kn))
- 		rwsem_release(&kn->dep_map, 1, _RET_IP_);
- 	v = atomic_dec_return(&kn->active);
- 	if (likely(v != KN_DEACTIVATED_BIAS))
-@@ -190,16 +199,13 @@ static void kernfs_deactivate(struct kernfs_node *kn)
- 	lockdep_assert_held(&kernfs_mutex);
- 	BUG_ON(!(kn->flags & KERNFS_REMOVED));
- 
--	if (!(kernfs_type(kn) & KERNFS_ACTIVE_REF))
--		return;
--
- 	/* only the first invocation on @kn should deactivate it */
- 	if (atomic_read(&kn->active) >= 0)
- 		atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
- 
- 	mutex_unlock(&kernfs_mutex);
- 
--	if (kn->flags & KERNFS_LOCKDEP) {
-+	if (kernfs_lockdep(kn)) {
- 		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
- 		if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
- 			lock_contended(&kn->dep_map, _RET_IP_);
-@@ -209,7 +215,7 @@ static void kernfs_deactivate(struct kernfs_node *kn)
- 	wait_event(root->deactivate_waitq,
- 		   atomic_read(&kn->active) == KN_DEACTIVATED_BIAS);
- 
--	if (kn->flags & KERNFS_LOCKDEP) {
-+	if (kernfs_lockdep(kn)) {
- 		lock_acquired(&kn->dep_map, _RET_IP_);
+@@ -177,9 +177,10 @@ void kernfs_put_active(struct kernfs_node *kn)
+  *	kernfs_deactivate - deactivate kernfs_node
+  *	@kn: kernfs_node to deactivate
+  *
+- *	Deny new active references and drain existing ones.  Mutiple
+- *	removers may invoke this function concurrently on @kn and all will
+- *	return after deactivation and draining are complete.
++ *	Deny new active references, drain existing ones and nuke all
++ *	existing mmaps.  Mutiple removers may invoke this function
++ *	concurrently on @kn and all will return after deactivation and
++ *	draining are complete.
+  */
+ static void kernfs_deactivate(struct kernfs_node *kn)
+ 	__releases(&kernfs_mutex) __acquires(&kernfs_mutex)
+@@ -213,6 +214,8 @@ static void kernfs_deactivate(struct kernfs_node *kn)
  		rwsem_release(&kn->dep_map, 1, _RET_IP_);
  	}
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 38646f6..dc4cd6c 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -35,7 +35,6 @@ enum kernfs_node_type {
- };
  
- #define KERNFS_TYPE_MASK	0x000f
--#define KERNFS_ACTIVE_REF	KERNFS_FILE
- #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
++	kernfs_unmap_bin_file(kn);
++
+ 	mutex_lock(&kernfs_mutex);
+ }
  
- enum kernfs_node_flag {
+@@ -493,7 +496,6 @@ void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
+ 
+ 		acxt->removed = kn->u.removed_list;
+ 
+-		kernfs_unmap_bin_file(kn);
+ 		kernfs_put(kn);
+ 	}
+ }
 -- 
 1.8.5.3
 
