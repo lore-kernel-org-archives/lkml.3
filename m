@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaBCJzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 04:55:11 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:35905 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaBCJzJ (ORCPT
+	id S1752088AbaBCJzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 04:55:48 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:38550 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaBCJzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 04:55:09 -0500
-Date: Mon, 3 Feb 2014 10:53:02 +0100
-From: Henrik Austad <henrik@austad.us>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/core: fix sched_rt_global_validate
-Message-ID: <20140203095302.GA13242@austad.us>
-References: <1391186607-11247-1-git-send-email-juri.lelli@gmail.com>
+	Mon, 3 Feb 2014 04:55:46 -0500
+Date: Mon, 3 Feb 2014 09:55:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 10/18] mfd: max14577: Add detection of device type
+Message-ID: <20140203095541.GK13529@lee--X1>
+References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
+ <1390911522-28209-11-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1391186607-11247-1-git-send-email-juri.lelli@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1390911522-28209-11-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 05:43:27PM +0100, Juri Lelli wrote:
-> Don't compare sysctl_sched_rt_runtime against sysctl_sched_rt_period if
-> the former is equal to RUNTIME_INF, otherwise disabling -rt bandwidth
-> management always fails.
+> This patch continues the preparation for adding support for max77836
+> device to existing max14577 driver.
 > 
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+> Add enum for types of devices supported by this driver. The device type
+> will be detected by matching of_device_id, or i2c_device_id as a
+> fallback.
+> 
+> The patch also moves to separate function the code related to displaying
+> DeviceID register values.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 > ---
->  kernel/sched/core.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  drivers/mfd/max14577.c               |   61 +++++++++++++++++++++++-----------
+>  include/linux/mfd/max14577-private.h |   12 ++++---
+>  2 files changed, 50 insertions(+), 23 deletions(-)
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 210a12a..5c0a304 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -7477,7 +7477,8 @@ static int sched_rt_global_validate(void)
->  	if (sysctl_sched_rt_period <= 0)
->  		return -EINVAL;
->  
-> -	if (sysctl_sched_rt_runtime > sysctl_sched_rt_period)
-> +	if ((sysctl_sched_rt_runtime != RUNTIME_INF) &&
-> +		(sysctl_sched_rt_runtime > sysctl_sched_rt_period))
->  		return -EINVAL;
+> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+> index 1d8104213b3e..224aba8c5b3f 100644
+> --- a/drivers/mfd/max14577.c
+> +++ b/drivers/mfd/max14577.c
+> @@ -20,6 +20,7 @@
 
-Won't this be caught by the test above?
+<snip>
 
-#define RUNTIME_INF ((u64)~0ULL)
+> +static void max14577_print_dev_type(struct maxim_core *maxim_core)
+> +{
+> +	u8 reg_data, vendor_id, device_id;
+> +	int ret = max14577_read_reg(maxim_core->regmap_muic,
+> +			MAXIM_MUIC_REG_DEVICEID, &reg_data);
 
-which means that if sysctl_sched_rt_runtime is set to RUNTIME_INF, it will 
-trigger on the previous test, and the first part of this test will always 
-be true.
+I'm not a big fan of declaring variables whilst feeding them with
+function return values. Can you separate the two please?
 
-Or have I suffered catastrophic monday-morning braindamage?
+> +	if (ret) {
+> +		dev_err(maxim_core->dev, "Failed to read DEVICEID
+> register: %d\n",
+
+I think this is too many chars.
+
+> +				ret);
+> +		return;
+> +	}
+> +
+
+<snip>
+
+> -	ret = max14577_read_reg(maxim_core->regmap_muic,
+> -			MAXIM_MUIC_REG_DEVICEID, &reg_data);
+> -	if (ret) {
+> -		dev_err(maxim_core->dev, "Device not found on this channel: %d\n",
+> -				ret);
+> -		return ret;
+> +	if (np) {
+> +		const struct of_device_id *of_id =
+> +			of_match_device(max14577_dt_match, &i2c->dev);
+
+Again this is a bit messy. Bring it down onto a separate line.
+
+> +		if (of_id)
+> +			maxim_core->dev_type = (unsigned int)of_id->data;
+> +	} else {
+> +		maxim_core->dev_type = id->driver_data;
+>  	}
+
+<snip>
 
 -- 
-Henrik Austad
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
