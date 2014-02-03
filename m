@@ -1,146 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808AbaBCTKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:10:48 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:41594 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaBCTJ2 (ORCPT
+	id S1753832AbaBCTK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:10:57 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:16059
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753790AbaBCTKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:09:28 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/10] kernfs: implement kernfs_ops->atomic_write_len
-Date: Mon,  3 Feb 2014 14:09:13 -0500
-Message-Id: <1391454557-32376-7-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391454557-32376-1-git-send-email-tj@kernel.org>
-References: <1391454557-32376-1-git-send-email-tj@kernel.org>
+	Mon, 3 Feb 2014 14:10:54 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h17326ah8275bh1de097h186068hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h1155h)
+X-WSS-ID: 0N0FP9Z-07-577-02
+X-M-MSG: 
+Message-ID: <52EFE9B2.9020104@amd.com>
+Date: Mon, 3 Feb 2014 13:10:42 -0600
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: <dougthompson@xmission.com>, <bp@alien8.de>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] AMD64_EDAC: Fix logic to determine channel for F15 M30h
+ processors
+References: <1390338216-3873-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+In-Reply-To: <1390338216-3873-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A write to a kernfs_node is buffered through a kernel buffer.  Writes
-<= PAGE_SIZE are performed atomically, while larger ones are executed
-in PAGE_SIZE chunks.  While this is enough for sysfs, cgroup which is
-scheduled to be converted to use kernfs needs a bit more control over
-it.
+On 1/21/2014 3:03 PM, Aravind Gopalakrishnan wrote:
+> The current logic that returns (sys_addr >> 8) & 0x7 when
+> num_dcts_intlv = 4 is incorrect. We should really be doing-
+> If intlv_addr = 0x4, then interleave on bits [9:8] and if
+> intlv_addr = 0x5, interleave on bits [10:9].
+>
+> Refer F15 M30h BKDG D18F2x110[7:6] (DRAM Controller Select Low)
+> (Link:http://support.amd.com/TechDocs/49125_15h_Models_30h-3Fh_BKDG.pdf)
+>
+> Tested on F15 M30h with mce_inj module and patch did not cause
+> any regressions.
+>
+> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> ---
+>
 
-This patch adds kernfs_ops->atomic_write_len.  If not set (zero), the
-behavior stays the same.  If set, writes upto the size are executed
-atomically and larger writes are rejected with -E2BIG.
+Ping..
 
-A different implementation strategy would be allowing configuring
-chunking size while making the original write size available to the
-write method; however, such strategy, while being more complicated,
-doesn't really buy anything.  If the write implementation has to
-handle chunking, the specific chunk size shouldn't matter all that
-much.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/kernfs/file.c       | 49 +++++++++++++++++++++++++++++++------------------
- include/linux/kernfs.h |  8 ++++++--
- 2 files changed, 37 insertions(+), 20 deletions(-)
-
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index 10a8c91..ddcb471 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -252,19 +252,9 @@ static ssize_t kernfs_fop_write(struct file *file, const char __user *user_buf,
- 				size_t count, loff_t *ppos)
- {
- 	struct kernfs_open_file *of = kernfs_of(file);
--	ssize_t len = min_t(size_t, count, PAGE_SIZE);
- 	const struct kernfs_ops *ops;
--	char *buf;
--
--	buf = kmalloc(len + 1, GFP_KERNEL);
--	if (!buf)
--		return -ENOMEM;
--
--	if (copy_from_user(buf, user_buf, len)) {
--		len = -EFAULT;
--		goto out_free;
--	}
--	buf[len] = '\0';	/* guarantee string termination */
-+	char *buf = NULL;
-+	ssize_t len;
- 
- 	/*
- 	 * @of->mutex nests outside active ref and is just to ensure that
-@@ -273,22 +263,45 @@ static ssize_t kernfs_fop_write(struct file *file, const char __user *user_buf,
- 	mutex_lock(&of->mutex);
- 	if (!kernfs_get_active(of->kn)) {
- 		mutex_unlock(&of->mutex);
--		len = -ENODEV;
--		goto out_free;
-+		return -ENODEV;
- 	}
- 
- 	ops = kernfs_ops(of->kn);
--	if (ops->write)
--		len = ops->write(of, buf, len, *ppos);
--	else
-+	if (!ops->write) {
- 		len = -EINVAL;
-+		goto out_unlock;
-+	}
-+
-+	if (ops->atomic_write_len) {
-+		len = count;
-+		if (len > ops->atomic_write_len) {
-+			len = -E2BIG;
-+			goto out_unlock;
-+		}
-+	} else {
-+		len = min_t(size_t, count, PAGE_SIZE);
-+	}
-+
-+	buf = kmalloc(len + 1, GFP_KERNEL);
-+	if (!buf) {
-+		len = -ENOMEM;
-+		goto out_unlock;
-+	}
- 
-+	if (copy_from_user(buf, user_buf, len)) {
-+		len = -EFAULT;
-+		goto out_unlock;
-+	}
-+	buf[len] = '\0';	/* guarantee string termination */
-+
-+	len = ops->write(of, buf, len, *ppos);
-+out_unlock:
- 	kernfs_put_active(of->kn);
- 	mutex_unlock(&of->mutex);
- 
- 	if (len > 0)
- 		*ppos += len;
--out_free:
-+
- 	kfree(buf);
- 	return len;
- }
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 4520c86..47f5235 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -178,9 +178,13 @@ struct kernfs_ops {
- 			loff_t off);
- 
- 	/*
--	 * write() is bounced through kernel buffer and a write larger than
--	 * PAGE_SIZE results in partial operation of PAGE_SIZE.
-+	 * write() is bounced through kernel buffer.  If atomic_write_len
-+	 * is not set, a write larger than PAGE_SIZE results in partial
-+	 * operations of PAGE_SIZE chunks.  If atomic_write_len is set,
-+	 * writes upto the specified size are executed atomically but
-+	 * larger ones are rejected with -E2BIG.
- 	 */
-+	size_t atomic_write_len;
- 	ssize_t (*write)(struct kernfs_open_file *of, char *buf, size_t bytes,
- 			 loff_t off);
- 
--- 
-1.8.5.3
+-Aravind.
 
