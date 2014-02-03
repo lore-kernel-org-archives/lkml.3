@@ -1,150 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaBCLDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:03:10 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:12692 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782AbaBCLDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:03:06 -0500
-Message-ID: <52EF7762.2060809@imgtec.com>
-Date: Mon, 3 Feb 2014 11:02:58 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752174AbaBCLEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:04:30 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:58413 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaBCLE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:04:28 -0500
+Date: Mon, 3 Feb 2014 03:04:26 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: akpm@linux-foundation.org, mhocko@suse.cz, penberg@kernel.org,
+        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 1/8] memcg: export kmemcg cache id via cgroup fs
+In-Reply-To: <52EF3DBF.3000404@parallels.com>
+Message-ID: <alpine.DEB.2.02.1402030250110.31061@chino.kir.corp.google.com>
+References: <cover.1391356789.git.vdavydov@parallels.com> <570a97e4dfaded0939a9ddbea49055019dcc5803.1391356789.git.vdavydov@parallels.com> <alpine.DEB.2.02.1402022219101.10847@chino.kir.corp.google.com> <52EF3DBF.3000404@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        "Greg KH" <gregkh@linuxfoundation.org>,
-        "bergwolf@gmail.com" <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "oleg.drokin@intel.com" <oleg.drokin@intel.com>,
-        "jacques-charles.lafoucriere@cea.fr" 
-	<jacques-charles.lafoucriere@cea.fr>,
-        "jinshan.xiong@intel.com" <jinshan.xiong@intel.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>
-Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
- for the related union
-References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com> <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda> <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda> <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com> <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com> <20140203085855.GA26722@mwanda> <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com> <52EF6DCC.6040807@imgtec.com> <063D6719AE5E284EB5DD2968C1650D6D0F6B777A@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B777A@AcuExch.aculab.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2014_02_03_11_03_00
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/14 10:35, David Laight wrote:
-> From: James Hogan 
->> On 03/02/14 10:05, David Laight wrote:
->>> Architectures that define such alignment rules are a right PITA.
->>> You either need to get the size to 2 without using 'packed', or
->>> just not define such structures.
->>> It is worth seeing if adding aligned(2) will change the size - I'm
->>> not sure.
->>
->> __aligned(2) alone doesn't seem to have any effect on sizeof() or
->> __alignof__() unless it is accompanied by __packed. x86_64 is similar in
->> that respect (it just packs sanely in the first place).
->>
->> Combining __packed with __aligned(2) does the trick though (__packed
->> alone sets __aligned(1) which is obviously going to be suboptimal).
+On Mon, 3 Feb 2014, Vladimir Davydov wrote:
+
+> AFAIU, cgroup identifiers dumped on oom (cgroup paths, currently) and
+> memcg slab cache names serve for different purposes.
+
+Sure, you may dump the name for a number of legitimate reasons, but the 
+problem still exists that it's difficult to determine what memcg is being 
+referenced without a flat hierarchy and unique memcg names for all 
+children.
+
+> The point is oom is
+> a perfectly normal situation for the kernel, and info dumped to dmesg is
+> for admin to find out the cause of the problem (a greedy user or
+> cgroup).
+
+Hmm, so if we hand out top-level memcgs to individual jobs or users, like 
+our userspace does, and they are able to configure their child memcgs as 
+they wish, and then they or the admin finds in the kernel log that a 
+memory hog was killed from the memcg with the perfectly anonymous memcg 
+name of "memcg", how do we determine what job or user triggered that kill?  
+User id is not going to be conclusive in a production environment with 
+shared user accounts.
+
+> On the other hand, slab cache names are dumped to dmesg only on
+> extraordinary situations - like bugs in slab implementation, or double
+> free, or detected memory leaks - where we usually do not need the name
+> of the memcg that triggered the problem, because the bug is likely to be
+> in the kernel subsys using the cache.
+
+There's certainly overlap here since slab leaks triggered by a particular 
+workload, perhaps by usage of a particular syscall, can occur and cause 
+oom killing but the problem remains that neither the memcg name nor the 
+slab cache name may be conclusive to determine what job or user triggered 
+the issue.  That's why we make strict demands that memcg names are always 
+unique and encode several key values to identify the user and job and we 
+don't rely on the parent.
+
+I can also see the huge maintenance burden it would be to keep around a 
+mapping of kmem ids to {user, job} pairs just in case we later identify a 
+problem and in 99% of the cases would be just wasted storage.
+
+> Plus, the names are exported to
+> sysfs in case of slub, again for debugging purposes, AFAIK. So IMO the
+> use cases for oom vs slab names are completely different - information
+> vs debugging - and I want to export kmem.id only for the ability of
+> debugging kmemcg and slab subsystems.
 > 
-> Compile some code for a cpu that doesn't support misaligned transfers
-> (probably one of sparc, arm, ppc) and see if the compiler generates a
-> single 16bit request or two 8 bits ones.
-> You don't want the compiler generating multiple byte-sized memory transfers.
 
-Meta is also one of those arches, and according to my quick tests,
-__packed alone does correctly make it fall back to byte loads/stores,
-but with __packed __aligned(2) it uses 16bit loads/stores. I've also
-confirmed that with an ARM toolchain (see below for example).
-
-Cheers
-James
-
-input:
-
-#define __aligned(x)			__attribute__((aligned(x)))
-#define __packed			__attribute__((packed))
-
-union a {
-	short x, y;
-} __aligned(2) __packed;
-
-struct b {
-	short x;
-} __aligned(2) __packed;
-
-unsigned int soa = sizeof(union a);
-unsigned int aoa = __alignof__(union a);
-unsigned int sob = sizeof(struct b);
-unsigned int aob = __alignof__(struct b);
-
-void t(struct b *x, union a *y)
-{
-	++x->x;
-	++y->x;
-}
-
-ARM output (-O2):
-
-	.cpu arm10tdmi
-	.fpu softvfp
-	.eabi_attribute 20, 1
-	.eabi_attribute 21, 1
-	.eabi_attribute 23, 3
-	.eabi_attribute 24, 1
-	.eabi_attribute 25, 1
-	.eabi_attribute 26, 2
-	.eabi_attribute 30, 2
-	.eabi_attribute 34, 0
-	.eabi_attribute 18, 4
-	.file	"alignment4.c"
-	.text
-	.align	2
-	.global	t
-	.type	t, %function
-t:
-	@ args = 0, pretend = 0, frame = 0
-	@ frame_needed = 0, uses_anonymous_args = 0
-	@ link register save eliminated.
-	ldrh	r3, [r0, #0]
-	add	r3, r3, #1
-	strh	r3, [r0, #0]	@ movhi
-	ldrh	r3, [r1, #0]
-	add	r3, r3, #1
-	strh	r3, [r1, #0]	@ movhi
-	bx	lr
-	.size	t, .-t
-	.global	aob
-	.global	sob
-	.global	aoa
-	.global	soa
-	.data
-	.align	2
-	.type	aob, %object
-	.size	aob, 4
-aob:
-	.word	2
-	.type	sob, %object
-	.size	sob, 4
-sob:
-	.word	2
-	.type	aoa, %object
-	.size	aoa, 4
-aoa:
-	.word	2
-	.type	soa, %object
-	.size	soa, 4
-soa:
-	.word	2
-	.ident	"GCC: (GNU) 4.7.1 20120606 (Red Hat 4.7.1-0.1.20120606)"
-	.section	.note.GNU-stack,"",%progbits
-
+Eeek, I'm not sure I agree.  I've often found that reproducing rare slab 
+issues is very difficult without knowledge of the workload so that I can 
+reproduce it.  Whereas X is a very large number of machines and we see 
+this issue on 0.0001% of X machines, I would be required to enable this 
+"debugging" aid unconditionally to ever be able to map the stored kmem id 
+back to a user and job, that mapping would be extremely costly to 
+maintain, and we've gained nothing if we had already demanded that 
+userspace identify their memcg names with unique identifiers regardless of 
+where they are in the hierarchy.
