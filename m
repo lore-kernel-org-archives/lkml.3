@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaBCPrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:47:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112AbaBCPrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:47:11 -0500
-Date: Mon, 3 Feb 2014 10:47:04 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Pearson, Greg" <greg.pearson@hp.com>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] vmcore: prevent PT_NOTE p_memsz overflow during header
- update
-Message-ID: <20140203154704.GA10795@redhat.com>
-References: <1391209566-4734-1-git-send-email-greg.pearson@hp.com>
- <20140131151651.26ff54cd7bd06fc5feb6fcc6@linux-foundation.org>
- <52EC48D0.4000503@hp.com>
- <20140131181254.da3f8e97.akpm@linux-foundation.org>
- <8738k1tane.fsf@xmission.com>
+	id S1753179AbaBCPsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:48:17 -0500
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:34913
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752603AbaBCPsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 10:48:15 -0500
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VPS4(zzbb2dI98dI9371I1432I4015I853kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h19b6n1155h)
+Date: Mon, 3 Feb 2014 16:47:55 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8738k1tane.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <monstr@monstr.eu>, Mark Rutland <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-doc@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH 09/10] watchdog: xilinx: Add missing binding
+References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <201402031606.11753.arnd@arndb.de> <24ecacca-2714-4834-921c-b827c0e592a3@VA3EHSMHS003.ehs.local> <3121595.GbLMuGPlvA@wuerfel>
+In-Reply-To: <3121595.GbLMuGPlvA@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <4c4539fe-e810-4c0a-9a01-c1e4c67ea661@AM1EHSMHS007.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 02, 2014 at 02:25:25PM -0800, Eric W. Biederman wrote:
-> Andrew Morton <akpm@linux-foundation.org> writes:
+On 02/03/2014 04:32 PM, Arnd Bergmann wrote:
+> On Monday 03 February 2014 16:13:47 Michal Simek wrote:
+>> Intention wasn't to fix binding but document current one
+>> which is in mainline for a long time.
 > 
-> > On Sat, 1 Feb 2014 01:07:29 +0000 "Pearson, Greg" <greg.pearson@hp.com> wrote:
-> >
-> >> As far as I know the only consequence of dropping a PT_NOTE entry is 
-> >> that it would not be available in the crash dump for use in debugging. 
-> >> I'm not sure how important this data might be for triage. I'm guessing 
-> >> that in cases where one of these strange PT_NOTE entries shows up with a 
-> >> size that causes an overflow it probably isn't even a real PT_NOTE entry 
-> >> so dropping it won't matter, but that's a guess at this point since I'm 
-> >> still trying to figure out how the bogus entries were created.
-> >
-> > Can we detect the crazy-huge notes, skip them and then proceed with
-> > the following sanely-sized ones?
+> Ok, I see.
 > 
-> The only way we can have following sanely-sized notes is if they are in
-> a separate note segment (one of our extensions for kdump and
-> /proc/vmcore merges them together).
+>> Apart of this - yes, wdt-enable-once is nowayout and wdt-interval should be timeout
+>> is seconds, and clock-frequency should go out and use CCF for getting clock.
+> 
+> Could we make a common binding then, and document that the xilinx
+> watchdog can optionally provide either one?
 
-This processing is happening before we have merged ELF notes. Previous
-kernel/kexec-tools prepared per cpu PT_NOTE type ELF note. One for
-each cpu. And by default it prepares only one ELF note per PT_NOTE. So
-there should not be more notes in the same PT_NOTE.
+Do you mean to have 2 DT bindings?
 
-Also even if there are, n_namesz and n_descsz values seem so high that
-after skipping these nothing valid should be after that.
+This binding is used from 2011-07.
+It means it was generated for all hw designs at least from this time.
+I would say from DT usage on Microblaze because it is not special case
+in our dt generator.
 
-So I will not be too worried about skipping seemingly corrupted ELf
-notes. I think giving a warning makes sense though. Is somebody
-overwriting the memory area in kenrel reserved for per cpu PT_NOTE.
+xlnx,XXX are XXX parameters which you have to setup in tools
+and get synthesized. This is valid for all xilinx IPs. We have full
+IP description by generating xlnx,XXX parameters directly from tools
+because we know all variants which can happen.
 
-Thanks
-Vivek
+Just back to your previous post:
+"I'm not sure about the enable-once flag, which seems to just map to the
+"nowayout" watchdog option that is not a hardware feature at all"
+this is hw feature which you can select in tools because this is fpga. :-)
+
+Thanks,
+Michal
+
+
