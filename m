@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaBCSQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:16:40 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64903 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290AbaBCSQh (ORCPT
+	id S1753453AbaBCSQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:16:49 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:44814 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407AbaBCSQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:16:37 -0500
+	Mon, 3 Feb 2014 13:16:47 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
+Cc: Laura Abbott <lauraa@codeaurora.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>,
         Android Kernel Team <kernel-team@android.com>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 03/16] staging: android: split uapi out of sync.h and sw_sync.h
-Date: Mon,  3 Feb 2014 10:16:15 -0800
-Message-Id: <1391451388-23906-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 10/16] staging: ion: Fix debugfs handling of multiple kernel clients
+Date: Mon,  3 Feb 2014 10:16:22 -0800
+Message-Id: <1391451388-23906-11-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
 References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
@@ -22,312 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+From: Laura Abbott <lauraa@codeaurora.org>
 
-Move the userspace interfaces of sync.h and sw_sync.h to
-drivers/staging/android/uapi/
+Currently, Ion registers all debugfs entries for clients
+via pid. If there are multiple kernel clients, this means
+the debugfs entry only gets created for the first one. Fix
+this by creating debugfs entries by name always. When
+creating user clients, specify the name via the pid.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: Fixed up some conflicts from upstream spelling fixes]
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+[jstultz: Minor commit subject tweaks]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/sw_sync.h      | 20 +------
- drivers/staging/android/sync.h         | 86 +-----------------------------
- drivers/staging/android/uapi/sw_sync.h | 32 +++++++++++
- drivers/staging/android/uapi/sync.h    | 97 ++++++++++++++++++++++++++++++++++
- 4 files changed, 133 insertions(+), 102 deletions(-)
- create mode 100644 drivers/staging/android/uapi/sw_sync.h
- create mode 100644 drivers/staging/android/uapi/sync.h
+ drivers/staging/android/ion/ion.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/android/sw_sync.h b/drivers/staging/android/sw_sync.h
-index 585040b..06aa0b3 100644
---- a/drivers/staging/android/sw_sync.h
-+++ b/drivers/staging/android/sw_sync.h
-@@ -18,10 +18,9 @@
- #define _LINUX_SW_SYNC_H
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index df1507c..684f240 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -718,7 +718,6 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+ 	struct ion_client *entry;
+-	char debug_name[64];
+ 	pid_t pid;
  
- #include <linux/types.h>
--
--#ifdef __KERNEL__
--
-+#include <linux/kconfig.h>
- #include "sync.h"
-+#include "uapi/sw_sync.h"
+ 	get_task_struct(current->group_leader);
+@@ -763,15 +762,14 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 	rb_link_node(&client->node, parent, p);
+ 	rb_insert_color(&client->node, &dev->clients);
  
- struct sw_sync_timeline {
- 	struct	sync_timeline	obj;
-@@ -40,19 +39,4 @@ void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc);
+-	snprintf(debug_name, 64, "%u", client->pid);
+-	client->debug_root = debugfs_create_file(debug_name, 0664,
++	client->debug_root = debugfs_create_file(name, 0664,
+ 						dev->clients_debug_root,
+ 						client, &debug_client_fops);
+ 	if (!client->debug_root) {
+ 		char buf[256], *path;
+ 		path = dentry_path(dev->clients_debug_root, buf, 256);
+ 		pr_err("Failed to create client debugfs at %s/%s\n",
+-			path, debug_name);
++			path, name);
+ 	}
  
- struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj, u32 value);
+ 	up_write(&dev->lock);
+@@ -1302,9 +1300,11 @@ static int ion_open(struct inode *inode, struct file *file)
+ 	struct miscdevice *miscdev = file->private_data;
+ 	struct ion_device *dev = container_of(miscdev, struct ion_device, dev);
+ 	struct ion_client *client;
++	char debug_name[64];
  
--#endif /* __KERNEL __ */
--
--struct sw_sync_create_fence_data {
--	__u32	value;
--	char	name[32];
--	__s32	fence; /* fd of new fence */
--};
--
--#define SW_SYNC_IOC_MAGIC	'W'
--
--#define SW_SYNC_IOC_CREATE_FENCE	_IOWR(SW_SYNC_IOC_MAGIC, 0,\
--		struct sw_sync_create_fence_data)
--#define SW_SYNC_IOC_INC			_IOW(SW_SYNC_IOC_MAGIC, 1, __u32)
--
--
- #endif /* _LINUX_SW_SYNC_H */
-diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
-index 62e2255b..e0701de 100644
---- a/drivers/staging/android/sync.h
-+++ b/drivers/staging/android/sync.h
-@@ -14,14 +14,14 @@
- #define _LINUX_SYNC_H
- 
- #include <linux/types.h>
--#ifdef __KERNEL__
--
- #include <linux/kref.h>
- #include <linux/ktime.h>
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/wait.h>
- 
-+#include "uapi/sync.h"
-+
- struct sync_timeline;
- struct sync_pt;
- struct sync_fence;
-@@ -341,86 +341,4 @@ int sync_fence_cancel_async(struct sync_fence *fence,
-  */
- int sync_fence_wait(struct sync_fence *fence, long timeout);
- 
--#endif /* __KERNEL__ */
--
--/**
-- * struct sync_merge_data - data passed to merge ioctl
-- * @fd2:	file descriptor of second fence
-- * @name:	name of new fence
-- * @fence:	returns the fd of the new fence to userspace
-- */
--struct sync_merge_data {
--	__s32	fd2; /* fd of second fence */
--	char	name[32]; /* name of new fence */
--	__s32	fence; /* fd on newly created fence */
--};
--
--/**
-- * struct sync_pt_info - detailed sync_pt information
-- * @len:		length of sync_pt_info including any driver_data
-- * @obj_name:		name of parent sync_timeline
-- * @driver_name:	name of driver implementing the parent
-- * @status:		status of the sync_pt 0:active 1:signaled <0:error
-- * @timestamp_ns:	timestamp of status change in nanoseconds
-- * @driver_data:	any driver dependent data
-- */
--struct sync_pt_info {
--	__u32	len;
--	char	obj_name[32];
--	char	driver_name[32];
--	__s32	status;
--	__u64	timestamp_ns;
--
--	__u8	driver_data[0];
--};
--
--/**
-- * struct sync_fence_info_data - data returned from fence info ioctl
-- * @len:	ioctl caller writes the size of the buffer its passing in.
-- *		ioctl returns length of sync_fence_data returned to userspace
-- *		including pt_info.
-- * @name:	name of fence
-- * @status:	status of fence. 1: signaled 0:active <0:error
-- * @pt_info:	a sync_pt_info struct for every sync_pt in the fence
-- */
--struct sync_fence_info_data {
--	__u32	len;
--	char	name[32];
--	__s32	status;
--
--	__u8	pt_info[0];
--};
--
--#define SYNC_IOC_MAGIC		'>'
--
--/**
-- * DOC: SYNC_IOC_WAIT - wait for a fence to signal
-- *
-- * pass timeout in milliseconds.  Waits indefinitely timeout < 0.
-- */
--#define SYNC_IOC_WAIT		_IOW(SYNC_IOC_MAGIC, 0, __s32)
--
--/**
-- * DOC: SYNC_IOC_MERGE - merge two fences
-- *
-- * Takes a struct sync_merge_data.  Creates a new fence containing copies of
-- * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
-- * new fence's fd in sync_merge_data.fence
-- */
--#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 1, struct sync_merge_data)
--
--/**
-- * DOC: SYNC_IOC_FENCE_INFO - get detailed information on a fence
-- *
-- * Takes a struct sync_fence_info_data with extra space allocated for pt_info.
-- * Caller should write the size of the buffer into len.  On return, len is
-- * updated to reflect the total size of the sync_fence_info_data including
-- * pt_info.
-- *
-- * pt_info is a buffer containing sync_pt_infos for every sync_pt in the fence.
-- * To iterate over the sync_pt_infos, use the sync_pt_info.len field.
-- */
--#define SYNC_IOC_FENCE_INFO	_IOWR(SYNC_IOC_MAGIC, 2,\
--	struct sync_fence_info_data)
--
- #endif /* _LINUX_SYNC_H */
-diff --git a/drivers/staging/android/uapi/sw_sync.h b/drivers/staging/android/uapi/sw_sync.h
-new file mode 100644
-index 0000000..9b5d486
---- /dev/null
-+++ b/drivers/staging/android/uapi/sw_sync.h
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright (C) 2012 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _UAPI_LINUX_SW_SYNC_H
-+#define _UAPI_LINUX_SW_SYNC_H
-+
-+#include <linux/types.h>
-+
-+struct sw_sync_create_fence_data {
-+	__u32	value;
-+	char	name[32];
-+	__s32	fence; /* fd of new fence */
-+};
-+
-+#define SW_SYNC_IOC_MAGIC	'W'
-+
-+#define SW_SYNC_IOC_CREATE_FENCE	_IOWR(SW_SYNC_IOC_MAGIC, 0,\
-+		struct sw_sync_create_fence_data)
-+#define SW_SYNC_IOC_INC			_IOW(SW_SYNC_IOC_MAGIC, 1, __u32)
-+
-+#endif /* _UAPI_LINUX_SW_SYNC_H */
-diff --git a/drivers/staging/android/uapi/sync.h b/drivers/staging/android/uapi/sync.h
-new file mode 100644
-index 0000000..e964c75
---- /dev/null
-+++ b/drivers/staging/android/uapi/sync.h
-@@ -0,0 +1,97 @@
-+/*
-+ * Copyright (C) 2012 Google, Inc.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _UAPI_LINUX_SYNC_H
-+#define _UAPI_LINUX_SYNC_H
-+
-+#include <linux/ioctl.h>
-+#include <linux/types.h>
-+
-+/**
-+ * struct sync_merge_data - data passed to merge ioctl
-+ * @fd2:	file descriptor of second fence
-+ * @name:	name of new fence
-+ * @fence:	returns the fd of the new fence to userspace
-+ */
-+struct sync_merge_data {
-+	__s32	fd2; /* fd of second fence */
-+	char	name[32]; /* name of new fence */
-+	__s32	fence; /* fd on newly created fence */
-+};
-+
-+/**
-+ * struct sync_pt_info - detailed sync_pt information
-+ * @len:		length of sync_pt_info including any driver_data
-+ * @obj_name:		name of parent sync_timeline
-+ * @driver_name:	name of driver implementing the parent
-+ * @status:		status of the sync_pt 0:active 1:signaled <0:error
-+ * @timestamp_ns:	timestamp of status change in nanoseconds
-+ * @driver_data:	any driver dependent data
-+ */
-+struct sync_pt_info {
-+	__u32	len;
-+	char	obj_name[32];
-+	char	driver_name[32];
-+	__s32	status;
-+	__u64	timestamp_ns;
-+
-+	__u8	driver_data[0];
-+};
-+
-+/**
-+ * struct sync_fence_info_data - data returned from fence info ioctl
-+ * @len:	ioctl caller writes the size of the buffer its passing in.
-+ *		ioctl returns length of sync_fence_data returned to userspace
-+ *		including pt_info.
-+ * @name:	name of fence
-+ * @status:	status of fence. 1: signaled 0:active <0:error
-+ * @pt_info:	a sync_pt_info struct for every sync_pt in the fence
-+ */
-+struct sync_fence_info_data {
-+	__u32	len;
-+	char	name[32];
-+	__s32	status;
-+
-+	__u8	pt_info[0];
-+};
-+
-+#define SYNC_IOC_MAGIC		'>'
-+
-+/**
-+ * DOC: SYNC_IOC_WAIT - wait for a fence to signal
-+ *
-+ * pass timeout in milliseconds.  Waits indefinitely timeout < 0.
-+ */
-+#define SYNC_IOC_WAIT		_IOW(SYNC_IOC_MAGIC, 0, __s32)
-+
-+/**
-+ * DOC: SYNC_IOC_MERGE - merge two fences
-+ *
-+ * Takes a struct sync_merge_data.  Creates a new fence containing copies of
-+ * the sync_pts in both the calling fd and sync_merge_data.fd2.  Returns the
-+ * new fence's fd in sync_merge_data.fence
-+ */
-+#define SYNC_IOC_MERGE		_IOWR(SYNC_IOC_MAGIC, 1, struct sync_merge_data)
-+
-+/**
-+ * DOC: SYNC_IOC_FENCE_INFO - get detailed information on a fence
-+ *
-+ * Takes a struct sync_fence_info_data with extra space allocated for pt_info.
-+ * Caller should write the size of the buffer into len.  On return, len is
-+ * updated to reflect the total size of the sync_fence_info_data including
-+ * pt_info.
-+ *
-+ * pt_info is a buffer containing sync_pt_infos for every sync_pt in the fence.
-+ * To iterate over the sync_pt_infos, use the sync_pt_info.len field.
-+ */
-+#define SYNC_IOC_FENCE_INFO	_IOWR(SYNC_IOC_MAGIC, 2,\
-+	struct sync_fence_info_data)
-+
-+#endif /* _UAPI_LINUX_SYNC_H */
+ 	pr_debug("%s: %d\n", __func__, __LINE__);
+-	client = ion_client_create(dev, "user");
++	snprintf(debug_name, 64, "%u", task_pid_nr(current->group_leader));
++	client = ion_client_create(dev, debug_name);
+ 	if (IS_ERR(client))
+ 		return PTR_ERR(client);
+ 	file->private_data = client;
 -- 
 1.8.3.2
 
