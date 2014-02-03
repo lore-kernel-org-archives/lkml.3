@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaBCThe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:37:34 -0500
-Received: from [213.199.154.207] ([213.199.154.207]:34837 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751686AbaBCThc (ORCPT
+	id S1753205AbaBCTkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:40:08 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:52636 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752559AbaBCTkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:37:32 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(z579ehzbb2dI98dI9371I1443I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh1de097h186068hz2dh839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h1155h)
-X-WSS-ID: 0N0FQI0-07-6X0-02
-X-M-MSG: 
-Message-ID: <52EFEFE7.2070805@amd.com>
-Date: Mon, 3 Feb 2014 13:37:11 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Feb 2014 14:40:05 -0500
+Date: Mon, 3 Feb 2014 20:38:02 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 8/8] ARM: dts: sun7i: Add ethernet alias for GMAC
+Message-ID: <20140203193802.GE25625@lukather>
+References: <1391398346-5094-1-git-send-email-wens@csie.org>
+ <1391398346-5094-9-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] AMD64_EDAC: Fix logic to determine channel for F15 M30h
- processors
-References: <1390338216-3873-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <52EFE9B2.9020104@amd.com> <20140203193203.GE4281@pd.tnic>
-In-Reply-To: <20140203193203.GE4281@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qFgkTsE6LiHkLPZw"
+Content-Disposition: inline
+In-Reply-To: <1391398346-5094-9-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/3/2014 1:32 PM, Borislav Petkov wrote:
-> On Mon, Feb 03, 2014 at 01:10:42PM -0600, Aravind Gopalakrishnan wrote:
->> On 1/21/2014 3:03 PM, Aravind Gopalakrishnan wrote:
->>> The current logic that returns (sys_addr >> 8) & 0x7 when
->>> num_dcts_intlv = 4 is incorrect. We should really be doing-
->>> If intlv_addr = 0x4, then interleave on bits [9:8] and if
->>> intlv_addr = 0x5, interleave on bits [10:9].
->>>
->>> Refer F15 M30h BKDG D18F2x110[7:6] (DRAM Controller Select Low)
->>> (Link:http://support.amd.com/TechDocs/49125_15h_Models_30h-3Fh_BKDG.pdf)
->>>
->>> Tested on F15 M30h with mce_inj module and patch did not cause
->>> any regressions.
->>>
->>> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
->>> ---
->>>
->> Ping..
-> I haven't forgotten you - it's just that I'm not taking any patches
-> during the merge window.
-yes, I realised :)
-Just noticed rc1 on kernel.org; hence the ping..
 
-Thanks in advance
--Aravind.
+--qFgkTsE6LiHkLPZw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Feb 03, 2014 at 11:32:26AM +0800, Chen-Yu Tsai wrote:
+> U-Boot will insert MAC address into the device tree image.
+> It looks up ethernet[0-5] aliases to find the ethernet nodes.
+> Alias GMAC as ethernet0, as it is the only ethernet controller used.
+>=20
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> ---
+>  arch/arm/boot/dts/sun7i-a20.dtsi | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
+20.dtsi
+> index 65fb8d0..c48fb11 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -17,7 +17,7 @@
+>  	interrupt-parent =3D <&gic>;
+> =20
+>  	aliases {
+> -		ethernet0 =3D &emac;
+> +		ethernet0 =3D &gmac;
+>  	};
+
+I'm not very fond of this patch.
+
+People might rely on the fact that ethernet0 is actually the emac, and
+are expecting u-boot to fill the ethaddr variable to the emac, and not
+the gmac.
+
+Since u-boot is totally able to deal with several ethernet addresses,
+please add it as ethernet1.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--qFgkTsE6LiHkLPZw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS7/AaAAoJEBx+YmzsjxAgHMUQAIXqo3N3GOgg00+H22oTt0F9
+2ZjCZhvbb9wdXzhl6NwzSeW9eDSfzQgECvaaw/AtPKR9dViI4Faw7QJ+JGrkYino
+X5oOK+iI3dNLUDgfPmpK8s1TXtxaNdNzlPs9i9ZG5cR2Hyy/e2prXlfk6j2Qcr1l
+u+NjPLG408A5aynGdr2TBSGuNfWobxkcZoNpZx4+IbSVGZ+O/QfIzjAQwYMM0qV/
+vvWt1CY7r8CYqMKrtPtO06hrif5Jq5Dd8N4y1FsB5+bMQJnzgkFUv1+4ZJpv58aN
+ktCjr5XeQspqr/KvGWuxFKXAalqBe8KCm2RAC7W2H2PDmSmBgo+/KLePYMxBBH2V
+beX2sCDXxMHQIDXZWcm6VGmilvik04kqGpRQUYF/QplumLg1cT6tfV+TbKQYo7qC
+KxO/wquXxByeBc2IRD8KpNVupUe7PUqweG/zhck1QPL/qiSl1KrxENUGUBMdDlEK
+RtnunTxG83LTLRU3uzgebvgzv3t7Pv1zS/bZqlp4dsfgzlHtEI+lptCaUXClnt8r
+IySR4DqKE8bWn4jrWNIaym+U3Qoat0EfpsMRUi2nqN2xlzle9Kod0lGRjtT+Wfkf
+oeZAYibIK+TqyxDrUUfVPc+2ENitbGaleKnl0wH4iISpvxRz6xl640kcf/E7Z1+s
+w6coxfN6mX0EeHKvupQy
+=PYqa
+-----END PGP SIGNATURE-----
+
+--qFgkTsE6LiHkLPZw--
