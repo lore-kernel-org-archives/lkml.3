@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaBCANH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 19:13:07 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:56723 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbaBCANF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 19:13:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391377190.9266.6.camel@wall-e.seibold.net>
-References: <1391340435-5130-1-git-send-email-stefani@seibold.net>
- <1391340435-5130-8-git-send-email-stefani@seibold.net> <CALCETrXNVoJBUncHbWWuQ7LAf2ZoWOY8uJBeg_VD1+MmwJ07Rg@mail.gmail.com>
- <1391377190.9266.6.camel@wall-e.seibold.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 2 Feb 2014 16:12:44 -0800
-Message-ID: <CALCETrX2K6DeGO7v+8Qed03xbKd0dcsoWVPg6fp6+KNGHnC+eA@mail.gmail.com>
-Subject: Re: [PATCH 7/8] Add 32 bit VDSO time support for 32 bit kernel
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752643AbaBCANo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 19:13:44 -0500
+Received: from ozlabs.org ([203.10.76.45]:40033 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514AbaBCANm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 19:13:42 -0500
+Date: Mon, 3 Feb 2014 11:13:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the btrfs tree with Linus' tree
+Message-Id: <20140203111334.784d919d9ccb9c3c702b40ee@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__3_Feb_2014_11_13_34_+1100_GhcK36JCqrVb4PvW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 2, 2014 at 1:39 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> Am Sonntag, den 02.02.2014, 08:46 -0800 schrieb Andy Lutomirski:
->> On Sun, Feb 2, 2014 at 3:27 AM,  <stefani@seibold.net> wrote:
->> > From: Stefani Seibold <stefani@seibold.net>
->> >
->> > This patch add the time support for 32 bit a VDSO to a 32 bit kernel.
->>
->> [...]
->>
->> Can you address the review comments from last time around?  For
->> example, this still seems to have redundant vvar and hpet mappings, it
->> doesn't use the VVAR macro, it moves the 32-bit compat vDSO, etc.
->>
->
-> I will address the compat VDSO issue.
->
-> But the VVAR macro will be not a part of this patch set. If you depend
-> on this, feel free to create one. From my point of view this is not
-> feasible without a macro hacking, because the address accessing the vvar
-> area differs in kernel and VDSO user mode.
+--Signature=_Mon__3_Feb_2014_11_13_34_+1100_GhcK36JCqrVb4PvW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, but "I will make the code messier for no apparent reason and I
-will not offer to fix it in the same series" gets my NAK.
+Hi all,
 
-Hint: I'm talking about two or three lines of code in vvar.h.
+Today's linux-next merge of the btrfs tree got conflicts in lost of files
+between commits from Linus' tree and commits from the btrfs tree.
 
->
-> I also see no redundant mapping. There are two modes, one is the map of
-> the kernel area the other maps the VDSO into the user space area. This
-> is exactly the behaviour of the origin VDSO implementation.
+Not only did you rebase/rewrite your tree before asking Linus to pull it,
+but you added a whole lot of commits beyond what had been in linux-next!
+I have dropped your (now redundant) tree from linux-next for today.
+Please clean it up and try a bit harder, thanks.
 
-No.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In your series there are *three* mappings.  There are:
+--Signature=_Mon__3_Feb_2014_11_13_34_+1100_GhcK36JCqrVb4PvW
+Content-Type: application/pgp-signature
 
- - The linear mapping that the kernel loader sets up (the writable
-mapping used in the kernel).  This is implicit and, of course, fine.
- - There's the fixmap page, which aliases the normal kernel mapping at
-a fixed address with the user, ro, and nx attributes.  The 64-bit vDSO
-uses that mapping.  See vdso.h -- it's all arranged pretty clearly.
-Your code, for no discernible reason, sets up a fixmap entry on
-*32-bit* kernels.
- - The vma that you're setting up adjacent to the actual vdso text.
-This is what you are using.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Please choose *one* user-readable mapping for the 32-bit vdso and
-stick with it.  If the 64-bit vdso can use it to and userspace doesn't
-break, even better.  But a pointless set of extra fixmap entries is
-not okay.
+iQIcBAEBCAAGBQJS7t8yAAoJEMDTa8Ir7ZwVN6AP/2eNfiSDwpb8HMQJFZ7vsFH6
+zrpE0cYgoc2wota4sOc0zAOEIMQ6BSDIgDx17cep+Mgxj+Be97tpKmkKAQk+mW30
+XhedDdBkIeX8cCfJeMpt7uj+quxD6UJEv2fM6HQvYa63+IM6J6e8BaUCWOb7Ul3r
+h9xVidEbPmhJlk1CHN9jrrZQkdlgDCfh6IVbqWy4GDR1w2KybmuSwCkXEdYTaWaF
+tJuIte6nKt2WKRPUajERXAicG+16GLBkEPYae51eL44Ibj/1/c/0uvWM5yBIAzGl
+rEGu3Eaxe0mV+47XXMil1blBTb2qGjXYGDyqzKEmUMPq5O0y8A36wy2q7XlXWiV6
+rp1ZDTTUDnQwfaHe7ZrSVJQSQwSIIl+da45QoZnxqo/MNeBW0mN3HWTUzgwlbvaV
+0ERffsSqzQ/fBbRMB490XTYNFjFRWNhrAHWlrvYyeNu+qnO/pjifVpmo9uHCOxJo
+Oi8P24WblC/0JtiBaKadjEAIr3he9ydXtx/7EiVra9GmHZQ0PbRaFEn7U49nYAOM
+u2o18xDeEt+iJ5akbcGTmpzBLgVHHXjwNp4nz29SWANK3ByrzVmYukWl8M9pBrIe
+bD2NzssTNTVWgOJ788DXmhjBzHikyPpajLosTpLPCfUDfkRhnRlijpha84Nhn5S9
+0EsubFTlj7wMH1xVa+Ae
+=MXqB
+-----END PGP SIGNATURE-----
 
-hpa's right about the symbol versions, BTW -- those are ABI and will
-probably break (at least) every new-enough Go binary.
-
---Andy
+--Signature=_Mon__3_Feb_2014_11_13_34_+1100_GhcK36JCqrVb4PvW--
