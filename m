@@ -1,76 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbaBCRLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 12:11:01 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58455 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751134AbaBCRK6 (ORCPT
+	id S1753142AbaBCRN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 12:13:27 -0500
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:36295 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751949AbaBCRN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 12:10:58 -0500
-Date: Mon, 3 Feb 2014 17:10:53 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Andrew Chew <achew@nvidia.com>
-Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "abrestic@chromium.org" <abrestic@chromium.org>,
-        "dgreid@chromium.org" <dgreid@chromium.org>,
-        "katierh@chromium.org" <katierh@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional
- property
-Message-ID: <20140203171053.GA28338@e106331-lin.cambridge.arm.com>
-References: <1391204811-6293-1-git-send-email-achew@nvidia.com>
+	Mon, 3 Feb 2014 12:13:26 -0500
+Message-ID: <52EFCE31.7010900@overkiz.com>
+Date: Mon, 03 Feb 2014 18:13:21 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391204811-6293-1-git-send-email-achew@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] at91: pmc: Fixed irq's name allocation for programmable
+ clocks
+References: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 14860471397466208345
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 09:46:51PM +0000, Andrew Chew wrote:
-> This optional property can be used to specify which timers are to be used
-> for hardware watchdog timeouts (via a tegra wdt driver).
+Hello JJ,
 
-Is there any reason that a particular timer should be used?
+On 03/02/2014 17:46, Jean-Jacques Hiblot wrote:
+> The name provided to request_irq() must be valid until the irq is
+> released.
+> This patch allocates and formats the string with kasprintf().
 
-This shouldn't even mention the driver, as the binding should describe
-the HW, not how it's used by Linux at the moment.
+Thanks for reporting this bug.
 
-> 
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
+>
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 > ---
->  Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> index b5082a1..e87fa70 100644
-> --- a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> +++ b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> @@ -13,6 +13,13 @@ Required properties:
->  - clocks : Must contain one entry, for the module clock.
->    See ../clocks/clock-bindings.txt for details.
->  
-> +Optional properties:
-> +
-> +- nvidia,wdt-timer-id: A list of timer IDs to be used for watchdogs.
-> +    Watchdog 0 will be assigned to the first timer listed, watchdog 1 will
-> +    be assigned to the second timer listed, etc. up to the number of watchdogs
-> +    available.
+>   drivers/clk/at91/clk-programmable.c | 5 +++--
+>   1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
+> index 8e242c7..0f8bf0f 100644
+> --- a/drivers/clk/at91/clk-programmable.c
+> +++ b/drivers/clk/at91/clk-programmable.c
+> @@ -19,6 +19,7 @@
+>   #include <linux/sched.h>
+>   #include <linux/interrupt.h>
+>   #include <linux/irq.h>
+> +#include <linux/string.h>
+>   
+>   #include "pmc.h"
+>   
+> @@ -247,7 +248,7 @@ at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
+>   	struct clk_programmable *prog;
+>   	struct clk *clk = NULL;
+>   	struct clk_init_data init;
+> -	char irq_name[11];
+> +	char *irq_name;
+>   
+>   	if (id > PROG_ID_MAX)
+>   		return ERR_PTR(-EINVAL);
+> @@ -269,7 +270,7 @@ at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
+>   	prog->irq = irq;
+>   	init_waitqueue_head(&prog->wait);
+>   	irq_set_status_flags(prog->irq, IRQ_NOAUTOEN);
+> -	snprintf(irq_name, sizeof(irq_name), "clk-prog%d", id);
+> +	irq_name = kasprintf(GFP_KERNEL, "clk-prog%d", id);
 
-This sounds like a description of what software should do. Is there any
-reason this order is important?
+Could you either use a static table with the prog clk names or store the 
+name in
+the clk_programmable struct ?
+This way we could avoid the additional dynamic allocation.
 
-Also, it feels odd for the proerty name to be singular given it's a
-list...
+static prog_clk_names = {
+   "clk-prog0",
+[...]
+   "clk-prog7",
+};
 
-Thanks,
-Mark.
+[...]
+     ret = request_irq(prog->irq, clk_programmable_irq_handler, 
+IRQF_TRIGGER_HIGH, prog_clk_names[id], prog);
+
+
+or
+
+struct clk_programmable {
+[...]
+     char irq_name[11];
+[...]
+};
+
+[...]
+
+snprintf(prog->irq_name, sizeof(prog->irq_name), "clk-prog%d", id);
+ret = request_irq(prog->irq, clk_programmable_irq_handler, 
+IRQF_TRIGGER_HIGH, prog->irq_name, prog);
+
+Best Regards,
+
+Boris
+>   	ret = request_irq(prog->irq, clk_programmable_irq_handler,
+>   			  IRQF_TRIGGER_HIGH, irq_name, prog);
+>   	if (ret)
+
