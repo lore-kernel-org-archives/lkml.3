@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaBCXIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:08:19 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:48186 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaBCXIR (ORCPT
+	id S1753780AbaBCXIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:08:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47176 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741AbaBCXIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:08:17 -0500
-Message-ID: <52F0215B.5040209@lwfinger.net>
-Date: Mon, 03 Feb 2014 17:08:11 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel WARNING splat in 3.14-rc1
-References: <52EFF658.2080001@lwfinger.net> <alpine.DEB.2.02.1402031236250.7898@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1402031236250.7898@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 3 Feb 2014 18:08:37 -0500
+Date: Mon, 3 Feb 2014 15:08:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Seth Jennings <sjennings@variantweb.net>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Shirish Pargaonkar <spargaonkar@suse.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v2] mm/zswap: add writethrough option
+Message-Id: <20140203150835.f55fd427d0ebb0c2943f266b@linux-foundation.org>
+In-Reply-To: <1390831279-5525-1-git-send-email-ddstreet@ieee.org>
+References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
+	<1390831279-5525-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 02:39 PM, David Rientjes wrote:
-> Commit c65c1877bd68 ("slub: use lockdep_assert_held") incorrectly required
-> that add_full() and remove_full() hold n->list_lock.  The lock is only
-> taken when kmem_cache_debug(s), since that's the only time it actually
-> does anything.
->
-> Require that the lock only be taken under such a condition.
->
-> Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+On Mon, 27 Jan 2014 09:01:19 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
 
-You may add a "Tested-by: Larry Finger <Larry.Finger@lwfinger.net>". The patch 
-cleans up the splat on my system. Thanks for the quick response.
+> Currently, zswap is writeback cache; stored pages are not sent
+> to swap disk, and when zswap wants to evict old pages it must
+> first write them back to swap cache/disk manually.  This avoids
+> swap out disk I/O up front, but only moves that disk I/O to
+> the writeback case (for pages that are evicted), and adds the
+> overhead of having to uncompress the evicted pages and the
+> need for an additional free page (to store the uncompressed page).
+> 
+> This optionally changes zswap to writethrough cache by enabling
+> frontswap_writethrough() before registering, so that any
+> successful page store will also be written to swap disk.  The
+> default remains writeback.  To enable writethrough, the param
+> zswap.writethrough=1 must be used at boot.
+> 
+> Whether writeback or writethrough will provide better performance
+> depends on many factors including disk I/O speed/throughput,
+> CPU speed(s), system load, etc.  In most cases it is likely
+> that writeback has better performance than writethrough before
+> zswap is full, but after zswap fills up writethrough has
+> better performance than writeback.
+> 
+> The reason to add this option now is, first to allow any zswap
+> user to be able to test using writethrough to determine if they
+> get better performance than using writeback, and second to allow
+> future updates to zswap, such as the possibility of dynamically
+> switching between writeback and writethrough.
+> 
+> ...
+>
+> Based on specjbb testing on my laptop, the results for both writeback
+> and writethrough are better than not using zswap at all, but writeback
+> does seem to be better than writethrough while zswap isn't full.  Once
+> it fills up, performance for writethrough is essentially close to not
+> using zswap, while writeback seems to be worse than not using zswap.
+> However, I think more testing on a wider span of systems and conditions
+> is needed.  Additionally, I'm not sure that specjbb is measuring true
+> performance under fully loaded cpu conditions, so additional cpu load
+> might need to be added or specjbb parameters modified (I took the
+> values from the 4 "warehouses" test run).
+> 
+> In any case though, I think having writethrough as an option is still
+> useful.  More changes could be made, such as changing from writeback
+> to writethrough based on the zswap % full.  And the patch doesn't
+> change default behavior - writethrough must be specifically enabled.
+> 
+> The %-ized numbers I got from specjbb on average, using the default
+> 20% max_pool_percent and varying the amount of heap used as shown:
+> 
+> ram | no zswap | writeback | writethrough
+> 75     93.08     100         96.90
+> 87     96.58     95.58       96.72
+> 100    92.29     89.73       86.75
+> 112    63.80     38.66       19.66
+> 125    4.79      29.90       15.75
+> 137    4.99      4.50        4.75
+> 150    4.28      4.62        5.01
+> 162    5.20      2.94        4.66
+> 175    5.71      2.11        4.84
 
-Larry
+Changelog is very useful, thanks for taking the time.
+
+It does sound like the feature is of marginal benefit.  Is "zswap
+filled up" an interesting or useful case to optimize?
+
+otoh the addition is pretty simple and we can later withdraw the whole
+thing without breaking anyone's systems.
+
+What do people think?
+
 
