@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013AbaBCQNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:13:44 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.166]:44391 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751686AbaBCQNn (ORCPT
+	id S1753139AbaBCQOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:14:43 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:63929 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114AbaBCQOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:13:43 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-8.tower-38.messagelabs.com!1391443891!14670583!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David Dajun Chen" <david.chen@diasemi.com>
-Subject: RE: [PATCH V1] fix da9052 volatile register definition ommissions
-Thread-Topic: [PATCH V1] fix da9052 volatile register definition ommissions
-Thread-Index: AQHPHE23tMPX7aURykWvLFze4y5OupqjXPuAgABedmA=
-Date: Mon, 3 Feb 2014 16:11:30 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB51AD22E658@NB-EX-MBX02.diasemi.com>
-References: <201401281723.s0SHNmLa041140@swsrvapps-02.lan>
- <20140203102919.GP13529@lee--X1>
-In-Reply-To: <20140203102919.GP13529@lee--X1>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.24.126]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 3 Feb 2014 11:14:41 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAKohpomT2Nu2B7-jMA=776N4L9pknsYxvT5QdiHkKk3Ubwivjg@mail.gmail.com>
+References: <1391295009-10844-1-git-send-email-robherring2@gmail.com>
+	<CAKohpomT2Nu2B7-jMA=776N4L9pknsYxvT5QdiHkKk3Ubwivjg@mail.gmail.com>
+Date: Mon, 3 Feb 2014 10:14:40 -0600
+Message-ID: <CAL_JsqLVABkE=FAefKthjn-oLitsDitJOktjqGwXM_Rqp3A5jQ@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: cpu0: make THERMAL_CPU support optional
+From: Rob Herring <robherring2@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s13GDmcN012206
 
-> -----Original Message-----
-> From: Lee Jones [mailto:lee.jones@linaro.org]
-> Sent: 03 February 2014 10:29
-> To: Opensource [Anthony Olech]
-> Cc: Mark Brown; Samuel Ortiz; linux-kernel@vger.kernel.org; David Dajun
-> Chen
-> Subject: Re: [PATCH V1] fix da9052 volatile register definition ommissions
-> > Three of the PMIC registers have some bits that are changed
-> > autonomously by the PMIC itself (some time) after being set by some
-> > component driver of the DA9052 PMIC and hence they need to be marked
-> > as volatile so that the regmap API will not cache their values.
-> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
-> These are not correct.
-> Who authored the patch?
+On Mon, Feb 3, 2014 at 12:05 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Cc'ing the guy who introduced this bug..
+>
+> On 2 February 2014 04:20, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <robh@kernel.org>
+>>
+>> The addition of THERMAL and THERMAL_CPU selections causes a kconfig
+>> warning on highbank platforms:
+>>
+>> warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
+>> unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK &&
+>>  REGULATOR && OF && THERMAL && CPU_THERMAL)
+>>
+>> The cpufreq-cpu0 driver does not require thermal zone support, and it
+>> should be selectable independently. Add a new kconfig option to enable
+>> this feature.
+>>
+>> Reported-by: Olof Johansson <olof@lixom.net>
+>> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+>> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+>> Cc: cpufreq@vger.kernel.org
+>> Signed-off-by: Rob Herring <robh@kernel.org>
+>> ---
+>>  drivers/cpufreq/Kconfig | 10 +++++++++-
+>>  1 file changed, 9 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+>> index 4b029c0..a197a04a 100644
+>> --- a/drivers/cpufreq/Kconfig
+>> +++ b/drivers/cpufreq/Kconfig
+>> @@ -185,7 +185,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
+>>
+>>  config GENERIC_CPUFREQ_CPU0
+>>         tristate "Generic CPU0 cpufreq driver"
+>> -       depends on HAVE_CLK && REGULATOR && OF && THERMAL && CPU_THERMAL
+>> +       depends on HAVE_CLK && REGULATOR && OF
+>
+> That's fine as code would still compile due to dummy routines..
+>
+>>         select PM_OPP
+>>         help
+>>           This adds a generic cpufreq driver for CPU0 frequency management.
+>> @@ -194,6 +194,14 @@ config GENERIC_CPUFREQ_CPU0
+>>
+>>           If in doubt, say N.
+>>
+>> +config GENERIC_CPUFREQ_CPU0_THERMAL
+>> +       bool "Thermal zone support for Generic CPU0 cpufreq"
+>> +       depends on GENERIC_CPUFREQ_CPU0
+>> +       select THERMAL
+>> +       select THERMAL_CPU
+>> +       help
+>> +         This adds thermal support to the generic cpufreq driver for CPU0.
+>
+> But do we really need this? Let the platform enable THERMAL
+> and THERMAL_CPU themselves, as this was the case currently.
 
-Hi Lee,
+That's certainly fine by me, but I don't know which platforms those are.
 
-I found the problem when running regression tests for another different problem.
-And according to my testing on a SMDK6410+DA9053EVB the patch is correct!!
+BTW, REGULATOR could probably be dropped as well. It certainly works
+w/o a regulator as highbank does not define one.
 
-Tony Olech
-
-> > ---
-> > This patch is relative to linux-next repository tag next-20140128
-> > The bug that this patch fixes affects two components of DA9052 namely:
-> > WATCHDOG - the first kick will work but sebsequent ones will not
-> >            thus the will timeout at 2 x interval.
-> > REGULATORS - the first change to any DA9052 BUCK voltage will be
-> >              actioned, but sebsequent ones will not.
-> Which patch caused the bug?
-
-I will find out when I start rebasing backwards to submit patches to linux-stable!
-
-> >  drivers/mfd/da9052-core.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> >
-> > diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-> > index 25838f1..e8af816 100644
-> > --- a/drivers/mfd/da9052-core.c
-> > +++ b/drivers/mfd/da9052-core.c
-> > @@ -279,6 +279,9 @@ static bool da9052_reg_volatile(struct device *dev,
-> unsigned int reg)
-> >  	case DA9052_EVENT_B_REG:
-> >  	case DA9052_EVENT_C_REG:
-> >  	case DA9052_EVENT_D_REG:
-> > +	case DA9052_CONTROL_B_REG:
-> > +	case DA9052_CONTROL_D_REG:
-> > +	case DA9052_SUPPLY_REG:
-> >  	case DA9052_FAULTLOG_REG:
-> >  	case DA9052_CHG_TIME_REG:
-> >  	case DA9052_ADC_RES_L_REG:
-> 
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead Linaro.org â”‚ Open source
-> software for ARM SoCs Follow Linaro: Facebook | Twitter | Blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Rob
