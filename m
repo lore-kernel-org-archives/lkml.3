@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaBCJxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 04:53:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55651 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764AbaBCJxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 04:53:33 -0500
-Date: Mon, 3 Feb 2014 09:53:29 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, compaction: avoid isolating pinned pages
-Message-ID: <20140203095329.GH6732@suse.de>
-References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com>
+	id S1751962AbaBCJzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 04:55:11 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:35905 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaBCJzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 04:55:09 -0500
+Date: Mon, 3 Feb 2014 10:53:02 +0100
+From: Henrik Austad <henrik@austad.us>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/core: fix sched_rt_global_validate
+Message-ID: <20140203095302.GA13242@austad.us>
+References: <1391186607-11247-1-git-send-email-juri.lelli@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com>
+In-Reply-To: <1391186607-11247-1-git-send-email-juri.lelli@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 01, 2014 at 09:46:26PM -0800, David Rientjes wrote:
-> Page migration will fail for memory that is pinned in memory with, for
-> example, get_user_pages().  In this case, it is unnecessary to take
-> zone->lru_lock or isolating the page and passing it to page migration
-> which will ultimately fail.
+On Fri, Jan 31, 2014 at 05:43:27PM +0100, Juri Lelli wrote:
+> Don't compare sysctl_sched_rt_runtime against sysctl_sched_rt_period if
+> the former is equal to RUNTIME_INF, otherwise disabling -rt bandwidth
+> management always fails.
 > 
-> This is a racy check, the page can still change from under us, but in
-> that case we'll just fail later when attempting to move the page.
-> 
-> This avoids very expensive memory compaction when faulting transparent
-> hugepages after pinning a lot of memory with a Mellanox driver.
-> 
-> On a 128GB machine and pinning ~120GB of memory, before this patch we
-> see the enormous disparity in the number of page migration failures
-> because of the pinning (from /proc/vmstat):
-> 
-> compact_blocks_moved 7609
-> compact_pages_moved 3431
-> compact_pagemigrate_failed 133219
-> compact_stall 13
-> 
-> After the patch, it is much more efficient:
-> 
-> compact_blocks_moved 7998
-> compact_pages_moved 6403
-> compact_pagemigrate_failed 3
-> compact_stall 15
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 > ---
->  mm/compaction.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+>  kernel/sched/core.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -578,6 +578,14 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			continue;
->  		}
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 210a12a..5c0a304 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -7477,7 +7477,8 @@ static int sched_rt_global_validate(void)
+>  	if (sysctl_sched_rt_period <= 0)
+>  		return -EINVAL;
 >  
-> +		/*
-> +		 * Migration will fail if an anonymous page is pinned in memory,
-> +		 * so avoid taking zone->lru_lock and isolating it unnecessarily
-> +		 * in an admittedly racy check.
-> +		 */
-> +		if (!page_mapping(page) && page_count(page))
-> +			continue;
-> +
+> -	if (sysctl_sched_rt_runtime > sysctl_sched_rt_period)
+> +	if ((sysctl_sched_rt_runtime != RUNTIME_INF) &&
+> +		(sysctl_sched_rt_runtime > sysctl_sched_rt_period))
+>  		return -EINVAL;
 
-Are you sure about this? The page_count check migration does is this
+Won't this be caught by the test above?
 
-        int expected_count = 1 + extra_count;
-        if (!mapping) {
-                if (page_count(page) != expected_count)
-                        return -EAGAIN;
-                return MIGRATEPAGE_SUCCESS;
-        }
+#define RUNTIME_INF ((u64)~0ULL)
 
-        spin_lock_irq(&mapping->tree_lock);
+which means that if sysctl_sched_rt_runtime is set to RUNTIME_INF, it will 
+trigger on the previous test, and the first part of this test will always 
+be true.
 
-        pslot = radix_tree_lookup_slot(&mapping->page_tree,
-                                        page_index(page));
-
-        expected_count += 1 + page_has_private(page);
-
-Migration expects and can migrate pages with no mapping and a page count
-but you are now skipping them. I think you may have intended to split
-migrations page count into a helper or copy the logic.
+Or have I suffered catastrophic monday-morning braindamage?
 
 -- 
-Mel Gorman
-SUSE Labs
+Henrik Austad
