@@ -1,128 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100AbaBCS7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:59:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54215 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaBCS7E (ORCPT
+	id S1753291AbaBCS7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:59:43 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:2906 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaBCS7k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:59:04 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+	Mon, 3 Feb 2014 13:59:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 10:58:16 -0800
+From: Andrew Chew <AChew@nvidia.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "abrestic@chromium.org" <abrestic@chromium.org>,
+        "dgreid@chromium.org" <dgreid@chromium.org>,
+        "katierh@chromium.org" <katierh@chromium.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH] arm64: Add architecture support for PCI
-Date: Mon, 03 Feb 2014 19:58:56 +0100
-Message-ID: <21596846.kVTqp7roW4@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1391453028-23191-2-git-send-email-Liviu.Dudau@arm.com>
-References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com> <1391453028-23191-2-git-send-email-Liviu.Dudau@arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 3 Feb 2014 10:59:38 -0800
+Subject: RE: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional property
+Thread-Topic: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional
+ property
+Thread-Index: Ac8hAuoiUK0kqejmRAOGd7y1YQMzDgADpbGQ
+Message-ID: <643E69AA4436674C8F39DCC2C05F763863199852CA@HQMAIL03.nvidia.com>
+References: <1391204811-6293-1-git-send-email-achew@nvidia.com>
+ <20140203171053.GA28338@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140203171053.GA28338@e106331-lin.cambridge.arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:mRgkDm+K50l9cgHC33qd56YOtPAgHC3InVArw6D6C8B
- 4UdP9nCYl+oLSBpDfGOKyoIiVHR7hojndUEeB3Mnge14EqABf0
- yYDJ6A9eYOjVypLbYYOsQROLkViPXwDehsRHAZIgnKqkDgLEW6
- ACLKl1up3SSNiuYkV8SHCAitAP1N3e1IsSye9KQ/pnKz/sqVTu
- depM5ObtAZFqZ3xydBGo/R/S3QtyJC1Qnjk/hvYz+s3+wQeRk5
- xHAy6XdpX6P3R7uwvojBboj3lH71hw/4W1u7w6g5ZQBqjLuqHc
- Hv9RXIyQ+riSIpr39s1NT8FPulh+XO2dKdSHpMSN5LmUZDpwWt
- uQpn/dEA8md25Wz/8FOY=
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 February 2014 18:43:48 Liviu Dudau wrote:
-> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-> index 4cc813e..ce5bad2 100644
-> --- a/arch/arm64/include/asm/io.h
-> +++ b/arch/arm64/include/asm/io.h
-> @@ -120,9 +120,13 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
->  /*
->   *  I/O port access primitives.
->   */
-> +#define arch_has_dev_port()	(0)
+> On Fri, Jan 31, 2014 at 09:46:51PM +0000, Andrew Chew wrote:
+> > This optional property can be used to specify which timers are to be
+> > used for hardware watchdog timeouts (via a tegra wdt driver).
+> 
+> Is there any reason that a particular timer should be used?
 
-Why not?
+I worry about colliding with other timer allocations, and wanted to be
+flexible in this regard.
 
->  #define IO_SPACE_LIMIT		0xffff
+> This shouldn't even mention the driver, as the binding should describe the
+> HW, not how it's used by Linux at the moment.
+> 
+> >
+> > Signed-off-by: Andrew Chew <achew@nvidia.com>
+> > ---
+> >  Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt | 8
+> > ++++++++
+> >  1 file changed, 8 insertions(+)
+> >
+> > diff --git
+> > a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
+> > b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
+> > index b5082a1..e87fa70 100644
+> > --- a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
+> > +++ b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
+> > @@ -13,6 +13,13 @@ Required properties:
+> >  - clocks : Must contain one entry, for the module clock.
+> >    See ../clocks/clock-bindings.txt for details.
+> >
+> > +Optional properties:
+> > +
+> > +- nvidia,wdt-timer-id: A list of timer IDs to be used for watchdogs.
+> > +    Watchdog 0 will be assigned to the first timer listed, watchdog 1 will
+> > +    be assigned to the second timer listed, etc. up to the number of
+> watchdogs
+> > +    available.
+> 
+> This sounds like a description of what software should do. Is there any
+> reason this order is important?
 
-You probably want to increase this a bit, to allow multiple host bridges
-to have their own I/O space.
+The order in regards to which watchdog (watchdog 0, watchdog 1, etc) is paired
+with which timer is unimportant for purposes of the watchdog driver that
+I will follow up with.  I can leave those details out of the bindings description
+if that resolves your concern.
 
->  #define PCI_IOBASE		((void __iomem *)(MODULES_VADDR - SZ_2M))
+> Also, it feels odd for the proerty name to be singular given it's a list...
 
-And modify this location: There is no particular reason to have the I/O space
-mapped exactly 2MB below the loadable modules, as virtual address space is
-essentially free.
+You're right.  Given what it is, it really should be nvidia,wdt-timer-ids.
 
-> +#define ioport_map(port, nr)	(PCI_IOBASE + ((port) & IO_SPACE_LIMIT))
-> +#define ioport_unmap(addr)
-
-inline functions?
-
->  static inline u8 inb(unsigned long addr)
->  {
->  	return readb(addr + PCI_IOBASE);
-> diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-> new file mode 100644
-> index 0000000..dd084a3
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/pci.h
-> @@ -0,0 +1,35 @@
-> +#ifndef __ASM_PCI_H
-> +#define __ASM_PCI_H
-> +#ifdef __KERNEL__
-> +
-> +#include <linux/types.h>
-> +#include <linux/slab.h>
-> +#include <linux/dma-mapping.h>
-> +
-> +#include <asm/io.h>
-> +#include <asm-generic/pci-bridge.h>
-> +#include <asm-generic/pci-dma-compat.h>
-> +
-> +#define PCIBIOS_MIN_IO		0
-> +#define PCIBIOS_MIN_MEM		0
-
-PCIBIOS_MIN_IO is normally set to 0x1000, to stay out of the ISA range.
-
-> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-> new file mode 100644
-> index 0000000..7b652cf
-> --- /dev/null
-> +++ b/arch/arm64/kernel/pci.c
-> @@ -0,0 +1,112 @@
-
-None of this looks really arm64 specific, nor should it be. I think
-we should try a little harder to move this as a default implementation
-into common code, even if we start out by having all architectures
-override it.
-
-> +int pci_ioremap_io(unsigned int offset, phys_addr_t phys_addr)
-> +{
-> +	BUG_ON(offset + SZ_64K - 1 > IO_SPACE_LIMIT);
-> +
-> +	return ioremap_page_range((unsigned long)PCI_IOBASE + offset,
-> +				(unsigned long)PCI_IOBASE + offset + SZ_64K,
-> +				phys_addr,
-> +				__pgprot(PROT_DEVICE_nGnRE));
-> +}
-
-Not sure if we want to treat this one as architecture specific though.
-It certainly won't be portable to x86, but it could be shared with
-a couple of others. We may also want to redesign the interface.
-I've been thinking we could make this function allocate space in the
-Linux virtual I/O space aperture, and pass two resources into it
-(physical I/O aperture and bus I/O range), and get the actual
-io_offset as the return value, or a negative error number.
-
-That way, you could have an arbitrary number of host bridges in the
-system and each one gets a share of the virtual aperture until
-it's full.
-
-	Arnd
