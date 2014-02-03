@@ -1,106 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaBCJzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 04:55:48 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:38550 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849AbaBCJzq (ORCPT
+	id S1751948AbaBCJ6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 04:58:48 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:33662 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaBCJ6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 04:55:46 -0500
-Date: Mon, 3 Feb 2014 09:55:41 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 10/18] mfd: max14577: Add detection of device type
-Message-ID: <20140203095541.GK13529@lee--X1>
-References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
- <1390911522-28209-11-git-send-email-k.kozlowski@samsung.com>
+	Mon, 3 Feb 2014 04:58:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1390911522-28209-11-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52ec195e.P8S/D298ZeaBLTvn%akpm@linux-foundation.org>
+References: <52ec195e.P8S/D298ZeaBLTvn%akpm@linux-foundation.org>
+Date: Mon, 3 Feb 2014 12:58:45 +0300
+Message-ID: <CACVxJT-HUXmBepz-GW3T1+ANkSxt80=1-kNFyHLdk+RRjHaWQQ@mail.gmail.com>
+Subject: Re: + mm-utilc-add-kstrimdup.patch added to -mm tree
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: mm-commits@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Joe Perches <joe@perches.com>, sebastian.capella@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch continues the preparation for adding support for max77836
-> device to existing max14577 driver.
-> 
-> Add enum for types of devices supported by this driver. The device type
-> will be detected by matching of_device_id, or i2c_device_id as a
-> fallback.
-> 
-> The patch also moves to separate function the code related to displaying
-> DeviceID register values.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  drivers/mfd/max14577.c               |   61 +++++++++++++++++++++++-----------
->  include/linux/mfd/max14577-private.h |   12 ++++---
->  2 files changed, 50 insertions(+), 23 deletions(-)
-> 
-> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-> index 1d8104213b3e..224aba8c5b3f 100644
-> --- a/drivers/mfd/max14577.c
-> +++ b/drivers/mfd/max14577.c
-> @@ -20,6 +20,7 @@
+On Sat, Feb 1, 2014 at 12:45 AM,  <akpm@linux-foundation.org> wrote:
+> kstrimdup() creates a whitespace-trimmed duplicate of the passed in
+> null-terminated string.  This is useful for strings coming from sysfs that
+> often include trailing whitespace due to user input.
 
-<snip>
+I think kernel should be strict in what it accepts, otherwise
+case-insensivity and
+what not will be added some day.
 
-> +static void max14577_print_dev_type(struct maxim_core *maxim_core)
-> +{
-> +	u8 reg_data, vendor_id, device_id;
-> +	int ret = max14577_read_reg(maxim_core->regmap_muic,
-> +			MAXIM_MUIC_REG_DEVICEID, &reg_data);
-
-I'm not a big fan of declaring variables whilst feeding them with
-function return values. Can you separate the two please?
-
-> +	if (ret) {
-> +		dev_err(maxim_core->dev, "Failed to read DEVICEID
-> register: %d\n",
-
-I think this is too many chars.
-
-> +				ret);
-> +		return;
-> +	}
-> +
-
-<snip>
-
-> -	ret = max14577_read_reg(maxim_core->regmap_muic,
-> -			MAXIM_MUIC_REG_DEVICEID, &reg_data);
-> -	if (ret) {
-> -		dev_err(maxim_core->dev, "Device not found on this channel: %d\n",
-> -				ret);
-> -		return ret;
-> +	if (np) {
-> +		const struct of_device_id *of_id =
-> +			of_match_device(max14577_dt_match, &i2c->dev);
-
-Again this is a bit messy. Bring it down onto a separate line.
-
-> +		if (of_id)
-> +			maxim_core->dev_type = (unsigned int)of_id->data;
-> +	} else {
-> +		maxim_core->dev_type = id->driver_data;
->  	}
-
-<snip>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Shell will trim whitespace for you.
