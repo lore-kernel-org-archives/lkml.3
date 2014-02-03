@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaBCTwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:52:51 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30585 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaBCTwt (ORCPT
+	id S1753353AbaBCT5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:57:13 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:36073 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910AbaBCT5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:52:49 -0500
-Date: Mon, 3 Feb 2014 14:52:40 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, roger.pau@citrix.com,
-        Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pvh: set cr4 flags for APs
-Message-ID: <20140203195240.GA10738@phenom.dumpdata.com>
-References: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
- <1391040918-11722-2-git-send-email-mukesh.rathor@oracle.com>
- <20140203114914.GA3350@phenom.dumpdata.com>
- <20140203113001.2433a77c@mantra.us.oracle.com>
+	Mon, 3 Feb 2014 14:57:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203113001.2433a77c@mantra.us.oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CAJ3m7Br60ph=Ja_ggJAp9cb5fNJy2O1rRHeJW_jjeTJbYmG3UA@mail.gmail.com>
+References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+ <52EFEF0A.9080101@amacapital.net> <CAJ3m7Br60ph=Ja_ggJAp9cb5fNJy2O1rRHeJW_jjeTJbYmG3UA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 3 Feb 2014 11:56:51 -0800
+Message-ID: <CALCETrXBRW=x9myjxzZB+ChtPiH9zjNOd=YLtCp61ib3bqEpKA@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
+To: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 11:30:01AM -0800, Mukesh Rathor wrote:
-> On Mon, 3 Feb 2014 06:49:14 -0500
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> 
-> > On Wed, Jan 29, 2014 at 04:15:18PM -0800, Mukesh Rathor wrote:
-> > > We need to set cr4 flags for APs that are already set for BSP.
-> > 
-> > The title is missing the 'xen' part.
-> 
-> The patch is for linux, not xen.
+On Mon, Feb 3, 2014 at 11:42 AM, Nathaniel Yazdani
+<n1ght.4nd.d4y@gmail.com> wrote:
+> On 2/3/14, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On 02/02/2014 06:17 PM, Nathaniel Yazdani wrote:
+>>> Hi everyone,
+>>>
+>>> This patch series adds support for read(), write(), and ioctl()
+>>> operations
+>>> on eventpolls as well as an associated userspace structure to format the
+>>> eventpoll entries delivered via read()/write() buffers. The new
+>>> structure,
+>>> struct epoll, differs from struct epoll_event mainly in that it also
+>>> holds
+>>> the associated file descriptor. Using the normal I/O interface to
+>>> manipulate
+>>> eventpolls is much neater than using epoll-specific syscalls while also
+>>> allowing for greater flexibility (theoretically, pipes could be used to
+>>> filter access). Specifically, write() creates, modifies, and/or removes
+>>> event
+>>> entries stored in the supplied buffer, using the userspace identifier to
+>>> check whether an entry exists and removing it if no events are set to
+>>> trigger
+>>> it, while read() simply waits for enough events to fill the provided
+>>> buffer.
+>>> As timeout control is essential for polling to be practical, ioctl() is
+>>> used
+>>> to configure an optional timeout, which is infinite by default.
+>>
+>> If major changes are made to the epoll API, I want a way to do a bunch
+>> of EPOLL_CTL_MODs and a wait, all in one syscall.  Even better: allow
+>> more flexible timeouts (CLOCK_MONOTONIC, CLOCK_REALTIME, etc) at the
+>> same time.
+>>
+>> Since this can't do that, I'm not terribly inspired.
+>>
+>> --Andy
+>
+> So are you saying that those features you mentioned are specifically sought
+> after for the kernel? If so I'd like to take a crack at some of them,
+> may as well
+> get some use out of my new knowledge of epoll internals :)
 
-Right. And hence you need to prefix the title with 'xen' in it
-otherwise it won't be obvious from the Linux log line for what
-component of the Linux tree it is.
+If by "sought after", you mean "is there at least one epoll user who
+wants them", then yes :)
 
-> 
-> > I rewrote it a bit and I think this should go in 3.14.
-> > 
-> > David, Boris: It is not the full fix as there are other parts to
-> > make an PVH guest use 2MB or 1GB pages- but this fixes an obvious
-> > bug.
-> > 
-> > 
-> > 
-> > From 797ea6812ff0a90cce966a4ff6bad57cbadc43b5 Mon Sep 17 00:00:00 2001
-> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > Date: Wed, 29 Jan 2014 16:15:18 -0800
-> > Subject: [PATCH] xen/pvh: set CR4 flags for APs
-> > 
-> > The Xen ABI sets said flags for the BSP, but it does
-> 
-> NO it does not. I said it few times, it's set by probe_page_size_mask
-> (which is in linux) for the BSP. The comment below also says it.
+I think that EPOLLET and EPOLLONESHOT are giant hacks, and that what
+everyone really wants is the ability to very efficiently toggle events
+on and off.  The ability to do it simultaneously and inexpensively
+with epoll_wait would make it happen.
 
-Where does it set it for APs? Can we piggyback on that?
+--Andy
+
+>
+> Thanks for your input,
+> Nate Yazdani
 
 
-> 
-> thanks
-> mukesh
-> 
-> > not do that for the CR4. As such fix it up to make
-> > sure we have that flag set.
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/enlighten.c | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> > 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index a4d7b64..201d09a 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1473,6 +1473,18 @@ static void xen_pvh_set_cr_flags(int cpu)
-> >  	 * X86_CR0_TS, X86_CR0_PE, X86_CR0_ET are set by Xen for HVM
-> > guests
-> >  	 * (which PVH shared codepaths), while X86_CR0_PG is for
-> > PVH. */ write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_NE | X86_CR0_WP |
-> > X86_CR0_AM); +
-> > +	if (!cpu)
-> > +		return;
-> > +	/*
-> > +	 * For BSP, PSE PGE are set in probe_page_size_mask(), for
-> > APs
-> > +	 * set them here. For all, OSFXSR OSXMMEXCPT are set in
-> > fpu_init.
-> > +	*/
-> > +	if (cpu_has_pse)
-> > +		set_in_cr4(X86_CR4_PSE);
-> > +
-> > +	if (cpu_has_pge)
-> > +		set_in_cr4(X86_CR4_PGE);
-> >  }
-> >  
-> >  /*
-> 
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
