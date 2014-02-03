@@ -1,167 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaBCTAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:00:04 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:40249 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaBCTAC (ORCPT
+	id S1753169AbaBCTDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:03:14 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:52102 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaBCTDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:00:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4S0WjuqW3coJDKqH9Gm5JWwb_W_CEU8Ety15m0CjhOqZQ@mail.gmail.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1391316630-29541-3-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4S0WjuqW3coJDKqH9Gm5JWwb_W_CEU8Ety15m0CjhOqZQ@mail.gmail.com>
-Date: Mon, 3 Feb 2014 14:00:00 -0500
-Message-ID: <CAN+gG=G7G4Twr6-6cftKXXdfgSRZ54ZmaYzLcOLiQhMhgCX5og@mail.gmail.com>
-Subject: Re: [PATCH 02/11] HID: i2c-hid: implement ll_driver transport-layer callbacks
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Andrew Duggan <aduggan@synaptics.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Feb 2014 14:03:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
+        JBottomley@parallels.com, bhelgaas@google.com
+Subject: [PATCHSET v5 driver-core-next] kernfs, sysfs, driver-core: implement synchronous self-removal
+Date: Mon,  3 Feb 2014 14:02:53 -0500
+Message-Id: <1391454185-32143-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 11:04 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> Add output_report and raw_request to i2c-hid.
->> Hopefully, we will manage to have the same transport level between
->> all the transport drivers.
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>  drivers/hid/i2c-hid/i2c-hid.c | 24 ++++++++++++++++++++++++
->>  1 file changed, 24 insertions(+)
->>
->> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
->> index ce68a12..5099f1f 100644
->> --- a/drivers/hid/i2c-hid/i2c-hid.c
->> +++ b/drivers/hid/i2c-hid/i2c-hid.c
->> @@ -574,6 +574,28 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
->>         return ret;
->>  }
->>
->> +static int i2c_hid_output_report(struct hid_device *hid, __u8 *buf,
->> +               size_t count)
->> +{
->> +       return i2c_hid_output_raw_report(hid, buf, count, HID_OUTPUT_REPORT);
->> +}
->> +
->> +static int i2c_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
->> +                              __u8 *buf, size_t len, unsigned char rtype,
->> +                              int reqtype)
->> +{
->> +       switch (reqtype) {
->> +       case HID_REQ_GET_REPORT:
->> +               return i2c_hid_get_raw_report(hid, reportnum, buf, len, rtype);
->> +       case HID_REQ_SET_REPORT:
->> +               if (buf[0] != reportnum)
->> +                       return -EINVAL;
->> +               return i2c_hid_output_raw_report(hid, buf, len, rtype);
->
-> I just skimmed the I2C-HID specs and it defines three methods for
-> input/output reports:
->
-> 1) Section 6.2:
-> raw async output-reports can be sent by writing the data at any time
-> to wOutputRegister.
-> This should be used as method for hid->output_report().
->
-> 2) Section 7.1:
-> SET_REPORT can be issued by writing the right OPCODE + report-ID into
-> wCommandRegister and the data into wDataRegister.
-> This should be used as method for hid->raw_request() + HID_REQ_SET_REPORT.
->
-> 3) Section 7.1:
-> GET_REPORT can be issued by writing the right OPCODE + report-ID into
-> wCommandRegister and then waiting for the device to write the data
-> into wDataRegister.
-> This should be used for hid->raw_request() + HID_REQ_GET_REPORT
->
->
-> The GET_REPORT implementation looks fine to me, but the
-> i2c_hid_set_report() seems to support both 1) and 2) depending on the
-> passed type and capabilities:
->  - it uses 2) for FEATURE_REPORT reports or if the max OUTPUT_LENGTH is 0
->  - it uses 1) otherwise
->
-> I'm not sure whether the i2c-hid-spec mandates this behavior, so I am
-> not saying it's wrong. I just wanna understand what we do here. So if
-> we use hid->output_report() with HID_FEATURE_REPORT, the current code
-> turns this into a SET_REPORT. Likewise, an hid->raw_request() with
-> HID_REQ_SET_REPORT but with HID_OUTPUT_REPORT turns into an
-> output-report.
+Hello,
 
-Ok, just for the record (I think that you already answered this in the
-4/11 review):
-this behavior has been added in commit
-811adb9622de310efbb661531c3ec0ae5d2b2bc0 for Synaptics so they can
-talk to their HID/I2C firmware.
-The use they are making is through hdev->hid_output_raw_report(), and
-at that time output_report() did not exist.
+(Please note that 0001 was posted separately before and should be
+routed through driver-core-linus)
 
-I guess that with the new API (output_report() and raw_request() ) we
-can revert this and it will not bother them given that rmi-hid.c is
-still not upstream.
+This is v5 of kernfs self-removal patchset.  The changes from v4[4]
+are
 
-I have no clue if anyone else is using hdev->hid_output_raw_report()
-for I2C devices, but we could still try to clean this right now given
-that those devices are not well spread (besides some hid-multitouch
-touchscreens which do not use OUTPUT reports).
+* Being rebased on v3.14-rc1.
 
-I am still a little bit concerned by hidraw not able to call
-set_report in this case, but this could be fixed also by adding an
-ioctl.
+* 0001-kernfs-make-kernfs_deactivate-honor-KERNFS_LOCKDEP-f.patch
+  separated out from later patches and put at the head of the series.
+  This change fixes a spurious lockdep warning and should be sent to
+  Linus through driver-core-linus as fix in this devel cycle.  The
+  rest are for the next merge window.
 
-How does that sound?
+Unfortunately, this series has a somewhat turbulent history upto v4.
+After sending out the first iteration[1], I realized that cgroup's use
+case would need more flexibility so I called it off and after a while
+posted the second version[2] which contained patches which were
+slightly stale by mistake, so soon after v3[3] was posted, which got
+applied to the driver-core-next for 3.14-rc1 inclusion; unfortunately,
+while working on it later, I realized that the new more flexible
+scheme was fundamentally broken and the first approach in v1 was
+actually the correct one.  So, the whole series got reverted and this
+is the fourth trial aiming for the 3.15-rc1 window.  This time, the
+whole cgroup conversion is completed on top and verified to work
+properly, so hopefully this take is the last for this series.
 
-Cheers,
-Benjamin
+As described above, the approach used in the first iteration was the
+correct one, so the current patchset is an updated version of v1.  The
+only necessary addition was exposing breaking out of s_active
+protection as a separate API.
 
->
-> I'd rather expect this behavior:
->
-> hid->output_report() should always do this:
->   args[index++] = outputRegister & 0xFF;
->   args[index++] = outputRegister >> 8;
->   hidcmd = &hid_no_cmd;
->
-> while hid->raw_request() should always do this:
->   args[index++] = dataRegister & 0xFF;
->   args[index++] = dataRegister >> 8;
->
-> The special case for maxOutputLength==0 seems fine to me, but the
-> "reportType == 0x03" looks weird.
->
->
-> Thanks
-> David
->
->> +       default:
->> +               return -EIO;
->> +       }
->> +}
->> +
->>  static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
->>                 int reqtype)
->>  {
->> @@ -761,6 +783,8 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
->>         .close = i2c_hid_close,
->>         .power = i2c_hid_power,
->>         .request = i2c_hid_request,
->> +       .output_report = i2c_hid_output_report,
->> +       .raw_request = i2c_hid_raw_request,
->>  };
->>
->>  static int i2c_hid_init_irq(struct i2c_client *client)
->> --
->> 1.8.3.1
->>
+* Incorporate fixes from v3 of the patchset.
+
+* kernfs_[un]break_active_protection() added.  "break" puts the active
+  reference while "unbreak" undoes it so that the refcnt is balanced;
+  however, unbreaking doesn't and can't restore active reference
+  protection itself.  Once broken, active ref protection is gone for
+  the full duration of the method invocation.  This allows more
+  complex implementation of self-removal where self-removal attempts
+  may be rejected by shifting the responsibility of ensuring object
+  accessbility to the kernfs user.
+
+  This API is a bit cumbersome to use but the simpler
+  kernfs_remove_self() is still provided and built on top of the above
+  API.
+
+Original patch description follows.
+
+kernfs / sysfs implement the "sever" semantic for userland accesses.
+When a node is removed, no further userland operations are allowed and
+the in-flight ones are drained before removal is finished.  This makes
+policing post-mortem userland accesses trivial for its users;
+unfortunately, this comes with a drawback - a node which tries to
+delete oneself through one of its userland operations deadlocks.
+Removal wants to drain the active access that the operation itself is
+running on top of.
+
+This currently is worked around in the sysfs layer using
+sysfs_schedule_callback() which punts the actual removal to a work
+item.  While making the operation asynchronous kinda works, it's a bit
+cumbersome to use and its behavior isn't quite correct as the caller
+has no way of telling when or even whether the operation is actually
+complete.  If such self-removal is followed by another operation which
+expects the removed name to be available, there's no way to make the
+second operation reliable - e.g. something like "echo 1 > asdf/delete;
+echo asdf > create_new_child" can't work properly.
+
+This patchset improves kernfs removal path and implements
+kernfs_remove_self() which is to be called from an on-going kernfs
+operation and removes the self node.  The function can be called
+concurrently and only one will return %true and all others will wait
+until the winner's file operation is complete (not the
+kernfs_remove_self() call itself but the enclosing file operation
+which invoked the function).  This ensures that if there are multiple
+concurrent "echo 1 > asdf/delete", all of them would finish only after
+the whole store_delete() method is complete.
+
+kernfs_remove_self() is exposed to upper layers through
+sysfs_remove_file_self() and device_remove_file_self().  The existing
+users of device_schedule_callback() are converted to use remove_self
+and the unused async mechanism is removed.
+
+This patchset contains the following twelve patches.
+
+ 0001-kernfs-make-kernfs_deactivate-honor-KERNFS_LOCKDEP-f.patch
+ 0002-kernfs-replace-kernfs_node-u.completion-with-kernfs_.patch
+ 0003-kernfs-restructure-removal-path-to-fix-possible-prem.patch
+ 0004-kernfs-invoke-kernfs_unmap_bin_file-directly-from-ke.patch
+ 0005-kernfs-remove-kernfs_addrm_cxt.patch
+ 0006-kernfs-remove-KERNFS_ACTIVE_REF-and-add-kernfs_lockd.patch
+ 0007-kernfs-remove-KERNFS_REMOVED.patch
+ 0008-kernfs-sysfs-driver-core-implement-kernfs_remove_sel.patch
+ 0009-pci-use-device_remove_file_self-instead-of-device_sc.patch
+ 0010-scsi-use-device_remove_file_self-instead-of-device_s.patch
+ 0011-s390-use-device_remove_file_self-instead-of-device_s.patch
+ 0012-sysfs-driver-core-remove-unused-sysfs-device-_schedu.patch
+
+0001 is a fix patch which should be applied through driver-core-linus.
+
+0002 replaces kernfs_node->u.completion with a hierarchy-wide
+wait_queue_head.  This will be used to fix concurrent removal
+behavior.
+
+0003 fixes premature completion of node removal when multiple removers
+are competing.  This shouldn't matter for the existing sysfs users.
+
+0004-0007 clean up removal path.  The size of kernfs_node is reduced
+by one pointer in the process.
+
+0008 implements kernfs_remove_self() and friends.
+
+0009-0012 convert the existing users of device_schedule_callback() to
+device_remove_file_self() and removes now unused async mechanism.
+
+After the changes, kernfs_node is shrunken by a pointer and LOC goes
+down a bit too.
+
+This patchset is on top of v3.14-rc1 38dbfb59d117.  and also available
+in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-suicide
+
+diffstat follows.
+
+ arch/s390/include/asm/ccwgroup.h |    1 
+ arch/s390/pci/pci_sysfs.c        |   18 -
+ drivers/base/core.c              |   50 +---
+ drivers/pci/pci-sysfs.c          |   17 -
+ drivers/s390/block/dcssblk.c     |   14 -
+ drivers/s390/cio/ccwgroup.c      |   26 +-
+ drivers/scsi/scsi_sysfs.c        |   15 -
+ fs/kernfs/dir.c                  |  447 +++++++++++++++++++++++----------------
+ fs/kernfs/file.c                 |    6 
+ fs/kernfs/kernfs-internal.h      |   14 -
+ fs/kernfs/symlink.c              |    6 
+ fs/sysfs/file.c                  |  115 ++--------
+ include/linux/device.h           |   13 -
+ include/linux/kernfs.h           |   18 -
+ include/linux/sysfs.h            |   16 -
+ 15 files changed, 373 insertions(+), 403 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://lkml.kernel.org/g/1389117590-25705-1-git-send-email-tj@kernel.org
+[2] http://lkml.kernel.org/g/1389361620-5086-1-git-send-email-tj@kernel.org
+[3] http://lkml.kernel.org/g/1389362251-8128-1-git-send-email-tj@kernel.org
+[4] http://lkml.kernel.org/g/1390951311-15325-1-git-send-email-tj@kernel.org
