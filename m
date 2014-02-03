@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaBCTK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:10:57 -0500
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:16059
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753790AbaBCTKy (ORCPT
+	id S1753599AbaBCTL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:11:28 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:45903 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaBCTLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:10:54 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehzbb2dI98dI9371I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h17326ah8275bh1de097h186068hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h1155h)
-X-WSS-ID: 0N0FP9Z-07-577-02
-X-M-MSG: 
-Message-ID: <52EFE9B2.9020104@amd.com>
-Date: Mon, 3 Feb 2014 13:10:42 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: <dougthompson@xmission.com>, <bp@alien8.de>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] AMD64_EDAC: Fix logic to determine channel for F15 M30h
- processors
-References: <1390338216-3873-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-In-Reply-To: <1390338216-3873-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Mon, 3 Feb 2014 14:11:25 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
+        JBottomley@parallels.com, bhelgaas@google.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/12] kernfs: make kernfs_deactivate() honor KERNFS_LOCKDEP flag
+Date: Mon,  3 Feb 2014 14:02:54 -0500
+Message-Id: <1391454185-32143-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391454185-32143-1-git-send-email-tj@kernel.org>
+References: <1391454185-32143-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/21/2014 3:03 PM, Aravind Gopalakrishnan wrote:
-> The current logic that returns (sys_addr >> 8) & 0x7 when
-> num_dcts_intlv = 4 is incorrect. We should really be doing-
-> If intlv_addr = 0x4, then interleave on bits [9:8] and if
-> intlv_addr = 0x5, interleave on bits [10:9].
->
-> Refer F15 M30h BKDG D18F2x110[7:6] (DRAM Controller Select Low)
-> (Link:http://support.amd.com/TechDocs/49125_15h_Models_30h-3Fh_BKDG.pdf)
->
-> Tested on F15 M30h with mce_inj module and patch did not cause
-> any regressions.
->
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> ---
->
+kernfs_deactivate() forgot to check whether KERNFS_LOCKDEP is set
+before performing lockdep annotations and ends up feeding
+uninitialized lockdep_map to lockdep triggering warning like the
+following on USB stick hotunplug.
 
-Ping..
+ usb 1-2: USB disconnect, device number 2
+ INFO: trying to register non-static key.
+ the code is fine but needs lockdep annotation.
+ turning off the locking correctness validator.
+ CPU: 1 PID: 62 Comm: khubd Not tainted 3.13.0-work+ #82
+ Hardware name: empty empty/S3992, BIOS 080011  10/26/2007
+  ffff880065ca7f60 ffff88013a4ffa08 ffffffff81cfb6bd 0000000000000002
+  ffff88013a4ffac8 ffffffff810f8530 ffff88013a4fc710 0000000000000002
+  ffff880100000000 ffffffff82a3db50 0000000000000001 ffff88013a4fc710
+ Call Trace:
+  [<ffffffff81cfb6bd>] dump_stack+0x4e/0x7a
+  [<ffffffff810f8530>] __lock_acquire+0x1910/0x1e70
+  [<ffffffff810f931a>] lock_acquire+0x9a/0x1d0
+  [<ffffffff8127c75e>] kernfs_deactivate+0xee/0x130
+  [<ffffffff8127d4c8>] kernfs_addrm_finish+0x38/0x60
+  [<ffffffff8127d701>] kernfs_remove_by_name_ns+0x51/0xa0
+  [<ffffffff8127b4f1>] remove_files.isra.1+0x41/0x80
+  [<ffffffff8127b7e7>] sysfs_remove_group+0x47/0xa0
+  [<ffffffff8127b873>] sysfs_remove_groups+0x33/0x50
+  [<ffffffff8177d66d>] device_remove_attrs+0x4d/0x80
+  [<ffffffff8177e25e>] device_del+0x12e/0x1d0
+  [<ffffffff819722c2>] usb_disconnect+0x122/0x1a0
+  [<ffffffff819749b5>] hub_thread+0x3c5/0x1290
+  [<ffffffff810c6a6d>] kthread+0xed/0x110
+  [<ffffffff81d0a56c>] ret_from_fork+0x7c/0xb0
 
--Aravind.
+Fix it by making kernfs_deactivate() perform lockdep annotations only
+if KERNFS_LOCKDEP is set.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fabio Estevam <festevam@gmail.com>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ fs/kernfs/dir.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 5104cf5..bd6e18b 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -187,19 +187,23 @@ static void kernfs_deactivate(struct kernfs_node *kn)
+ 
+ 	kn->u.completion = (void *)&wait;
+ 
+-	rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
++	if (kn->flags & KERNFS_LOCKDEP)
++		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
+ 	/* atomic_add_return() is a mb(), put_active() will always see
+ 	 * the updated kn->u.completion.
+ 	 */
+ 	v = atomic_add_return(KN_DEACTIVATED_BIAS, &kn->active);
+ 
+ 	if (v != KN_DEACTIVATED_BIAS) {
+-		lock_contended(&kn->dep_map, _RET_IP_);
++		if (kn->flags & KERNFS_LOCKDEP)
++			lock_contended(&kn->dep_map, _RET_IP_);
+ 		wait_for_completion(&wait);
+ 	}
+ 
+-	lock_acquired(&kn->dep_map, _RET_IP_);
+-	rwsem_release(&kn->dep_map, 1, _RET_IP_);
++	if (kn->flags & KERNFS_LOCKDEP) {
++		lock_acquired(&kn->dep_map, _RET_IP_);
++		rwsem_release(&kn->dep_map, 1, _RET_IP_);
++	}
+ }
+ 
+ /**
+-- 
+1.8.5.3
 
