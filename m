@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaBCQkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:40:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43232 "EHLO mx1.redhat.com"
+	id S1753195AbaBCQlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:41:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36177 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134AbaBCQka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:40:30 -0500
-Date: Mon, 3 Feb 2014 17:39:46 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 3/3] perf tools: Add readable output for callchain debug
-Message-ID: <20140203163946.GB1129@krava.brq.redhat.com>
-References: <1391427883-13443-1-git-send-email-jolsa@redhat.com>
- <1391427883-13443-3-git-send-email-jolsa@redhat.com>
- <20140203150915.GA2352@infradead.org>
+	id S1752816AbaBCQlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:41:49 -0500
+Date: Mon, 3 Feb 2014 17:41:47 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC 1/5] memcg: cleanup charge routines
+Message-ID: <20140203164147.GK2495@dhcp22.suse.cz>
+References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
+ <1387295130-19771-2-git-send-email-mhocko@suse.cz>
+ <20140130171837.GD6963@cmpxchg.org>
+ <20140203132001.GE2495@dhcp22.suse.cz>
+ <20140203155127.GI6963@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140203150915.GA2352@infradead.org>
+In-Reply-To: <20140203155127.GI6963@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 01:09:15PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Feb 03, 2014 at 12:44:43PM +0100, Jiri Olsa escreveu:
-> > Adding people readable output for callchain debug,
-> > to get following '-v' output:
+On Mon 03-02-14 10:51:27, Johannes Weiner wrote:
+> On Mon, Feb 03, 2014 at 02:20:01PM +0100, Michal Hocko wrote:
+> > On Thu 30-01-14 12:18:37, Johannes Weiner wrote:
+> > > On Tue, Dec 17, 2013 at 04:45:26PM +0100, Michal Hocko wrote:
+> > [...]
+> > > > -static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> > > > -				   gfp_t gfp_mask,
+> > > > +static int __mem_cgroup_try_charge_memcg(gfp_t gfp_mask,
+> > > >  				   unsigned int nr_pages,
+> > > > -				   struct mem_cgroup **ptr,
+> > > > +				   struct mem_cgroup *memcg,
+> > > >  				   bool oom)
+> > > 
+> > > Why not keep the __mem_cgroup_try_charge() name?  It's shorter and
+> > > just as descriptive.
 > > 
-> >   $ perf record -v -g ls
-> >   callchain: type DWARF
-> >   callchain: stack dump size 4096
-> >   ...
+> > I wanted to have 2 different names with clear reference to _what_ is
+> > going to be charged. But I am always open to naming suggestions.
+> >
+> > > > +/*
+> > > > + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
+> > > > + * if mm is NULL). Returns NULL if memcg is under OOM.
+> > > > + */
+> > > > +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
+> > > > +				   gfp_t gfp_mask,
+> > > > +				   unsigned int nr_pages,
+> > > > +				   bool oom)
+> > > 
+> > > We already have a try_get_mem_cgroup_from_mm().
+> > >
+> > > After this series, this function basically duplicates that and it
+> > > would be much cleaner if we only had one try_charge() function and let
+> > > all the callers use the appropriate try_get_mem_cgroup_from_wherever()
+> > > themselves.
+> > 
+> > try_get_mem_cgroup_from_mm doesn't charge memory itself. It just tries
+> > to get memcg from the given mm. It is called also from a context which
+> > doesn't charge any memory (task_in_mem_cgroup). Or have I misunderstood
+> > you?
 > 
-> Applied, but then I tried:
-> 
-> [acme@zoo linux]$ perf evlist -v
-> cycles: sample_freq=4000, size: 96, sample_type:
-> IP|TID|TIME|CALLCHAIN|PERIOD, disabled: 1, inherit: 1, mmap: 1, comm: 1,
-> freq: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-> [acme@zoo linux]$ 
-> 
-> 
-> I.e. using the tool that provides info about 'perf.data' files, and
-> there I couldn't figure it out which kind of callchains was used, can
-> you fix it there too?
+> Your mem_cgroup_try_charge_mm() looks up a memcg from mm and calls
+> try_charge().  But we have try_get_mem_cgroup_from_mm() to do the
+> first half, so why not have the current callers of
+> mem_cgroup_try_charge_mm() just use try_get_mem_cgroup_from_mm() and
+> try_charge()?  Why is charging through an mm - as opposed to through a
+> page or through the task - special?
 
-todo updated ;-)
+OK, I thought it would be easier to follow those two different ways of
+charging (known memcg vs. current mm - I needed that when tracking some
+issue and ended up quite despair from all the different combinations)
+but that is probably not that interesting and what you are proposing
+reduces even more code. OK I will play with this some more.
 
-jirka
+> Most callsites already do the lookups themselves:
+> 
+> try_charge_swapin:	uses try_get_mem_cgroup_from_page()
+> kmem_newpage_charge:	uses try_get_mem_cgroup_from_mm()
+> precharge:		uses mem_cgroup_from_task()
+> 
+> So just let these two do the same:
+> 
+> newpage_charge:		could use try_get_mem_cgroup_from_mm()
+> cache_charge:		could use try_get_mem_cgroup_from_mm()
+> 
+> And then provide one try_charge() that always takes a non-null memcg.
+
+Thanks!
+
+-- 
+Michal Hocko
+SUSE Labs
