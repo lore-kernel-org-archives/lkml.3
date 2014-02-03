@@ -1,98 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaBCKfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 05:35:48 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:44832 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750965AbaBCKfp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 05:35:45 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'James Hogan'" <james.hogan@imgtec.com>
-CC: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        "Greg KH" <gregkh@linuxfoundation.org>,
-        "bergwolf@gmail.com" <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "oleg.drokin@intel.com" <oleg.drokin@intel.com>,
-        "jacques-charles.lafoucriere@cea.fr" 
-	<jacques-charles.lafoucriere@cea.fr>,
-        "jinshan.xiong@intel.com" <jinshan.xiong@intel.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>
-Subject: RE: [PATCH] drivers: staging: lustre: lustre: include: add
- "__attribute__((packed))" for the related union
-Thread-Topic: [PATCH] drivers: staging: lustre: lustre: include: add
- "__attribute__((packed))" for the related union
-Thread-Index: AQHPH1WqrPdkB9hsu0CwpyENM0ZOOpqjPaqAgAARGPCAAAYjAIAAApBA
-Date: Mon, 3 Feb 2014 10:35:02 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6B777A@AcuExch.aculab.com>
-References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com>
- <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda>
- <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda>
- <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com>
- <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com>
- <20140203085855.GA26722@mwanda>
- <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com>
- <52EF6DCC.6040807@imgtec.com>
-In-Reply-To: <52EF6DCC.6040807@imgtec.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1752819AbaBCKga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 05:36:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51254 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752769AbaBCKg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 05:36:27 -0500
+Date: Mon, 3 Feb 2014 11:12:16 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Rientjes <rientjes@google.com>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        xen-devel@lists.xensource.com
+Subject: Re: [BUG?] Interrupts enabled after
+ xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+Message-ID: <20140203101215.GA1725@redhat.com>
+References: <20140128150848.GA1428@redhat.com>
+ <20140128160404.GA5732@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
+ <20140129082521.GA1362@redhat.com>
+ <20140131160140.GC23648@phenom.dumpdata.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140131160140.GC23648@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan 
-> On 03/02/14 10:05, David Laight wrote:
-> > From: Dan Carpenter
-> >> On Sat, Feb 01, 2014 at 09:57:39PM +0800, Chen Gang wrote:
-> >>> It seems, our kernel still stick to treate 'pack' region have effect
-> >>> with both 'align' and 'sizeof'.
-> >>
-> >> It's not about packed regions.  It's about unions.  It's saying the
-> >> sizeof() a union is a multiple of 4 unless it's packed.
-> >>
-> >> union foo {
-> >> 	short x;
-> >> 	short y;
-> >> };
-> >>
-> >> The author intended the sizeof(union foo) to be 2 but on metag arch then
-> >> it is 4.
-> >
-> > The same is probably be true of: struct foo { _u16 bar; };
-> 
-> Yes indeed.
-> 
-> > Architectures that define such alignment rules are a right PITA.
-> > You either need to get the size to 2 without using 'packed', or
-> > just not define such structures.
-> > It is worth seeing if adding aligned(2) will change the size - I'm
-> > not sure.
-> 
-> __aligned(2) alone doesn't seem to have any effect on sizeof() or
-> __alignof__() unless it is accompanied by __packed. x86_64 is similar in
-> that respect (it just packs sanely in the first place).
-> 
-> Combining __packed with __aligned(2) does the trick though (__packed
-> alone sets __aligned(1) which is obviously going to be suboptimal).
+On Fri, Jan 31, 2014 at 11:01:40AM -0500, Konrad Rzeszutek Wilk wrote:
+> Perhaps by using 'subsys_system_register' and stick it there?
 
-Compile some code for a cpu that doesn't support misaligned transfers
-(probably one of sparc, arm, ppc) and see if the compiler generates a
-single 16bit request or two 8 bits ones.
-You don't want the compiler generating multiple byte-sized memory transfers.
+This will not call ->resume callback as it is only called for
+devices, so additional dummy device is needed, for example:
 
-	David
+struct device xap_dev = {
+        .init_name = "xen-acpi-processor-dev",
+        .bus = &xap_bus,
+};
+...
+subsys_system_register(&xap_bus, NULL);
+device_register(&xap_dev);
 
+But I'm not sure if that is good solution. It crate some not necessery
+sysfs directories and files. Additionaly it can restore CPU C-states
+after some other drivers resume, which prehaps require proper C-states.
 
+Hence maybe adding direct notify from xen core resume will be better
+idea (proposed patch below). Plese let me know what you think, I'll
+provide solution which you choose to bug reporters for testing.
 
+Thanks
+Stanislaw
+
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 624e8dc..96e4173 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -13,6 +13,7 @@
+ #include <linux/freezer.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/export.h>
++#include <linux/notifier.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/xenbus.h>
+@@ -46,6 +47,20 @@ struct suspend_info {
+ 	void (*post)(int cancelled);
+ };
+ 
++static RAW_NOTIFIER_HEAD(xen_resume_notifier);
++
++void xen_resume_notifier_register(struct notifier_block *nb)
++{
++	raw_notifier_chain_register(&xen_resume_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(xen_resume_notifier_register);
++
++void xen_resume_notifier_unregister(struct notifier_block *nb)
++{
++	raw_notifier_chain_unregister(&xen_resume_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(xen_resume_notifier_unregister);
++
+ #ifdef CONFIG_HIBERNATE_CALLBACKS
+ static void xen_hvm_post_suspend(int cancelled)
+ {
+@@ -152,6 +167,8 @@ static void do_suspend(void)
+ 
+ 	err = stop_machine(xen_suspend, &si, cpumask_of(0));
+ 
++	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
++
+ 	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+ 
+ 	if (err) {
+diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+index 7231859..82358d1 100644
+--- a/drivers/xen/xen-acpi-processor.c
++++ b/drivers/xen/xen-acpi-processor.c
+@@ -27,10 +27,10 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+-#include <linux/syscore_ops.h>
+ #include <linux/acpi.h>
+ #include <acpi/processor.h>
+ #include <xen/xen.h>
++#include <xen/xen-ops.h>
+ #include <xen/interface/platform.h>
+ #include <asm/xen/hypercall.h>
+ 
+@@ -495,14 +495,15 @@ static int xen_upload_processor_pm_data(void)
+ 	return rc;
+ }
+ 
+-static void xen_acpi_processor_resume(void)
++static int xen_acpi_processor_resume(struct notifier_block *nb,
++				     unsigned long action, void *data)
+ {
+ 	bitmap_zero(acpi_ids_done, nr_acpi_bits);
+-	xen_upload_processor_pm_data();
++	return xen_upload_processor_pm_data();
+ }
+ 
+-static struct syscore_ops xap_syscore_ops = {
+-	.resume	= xen_acpi_processor_resume,
++struct notifier_block xen_acpi_processor_resume_nb = {
++	.notifier_call = xen_acpi_processor_resume,
+ };
+ 
+ static int __init xen_acpi_processor_init(void)
+@@ -555,7 +556,7 @@ static int __init xen_acpi_processor_init(void)
+ 	if (rc)
+ 		goto err_unregister;
+ 
+-	register_syscore_ops(&xap_syscore_ops);
++	xen_resume_notifier_register(&xen_acpi_processor_resume_nb);
+ 
+ 	return 0;
+ err_unregister:
+@@ -574,7 +575,7 @@ static void __exit xen_acpi_processor_exit(void)
+ {
+ 	int i;
+ 
+-	unregister_syscore_ops(&xap_syscore_ops);
++	xen_resume_notifier_unregister(&xen_acpi_processor_resume_nb);
+ 	kfree(acpi_ids_done);
+ 	kfree(acpi_id_present);
+ 	kfree(acpi_id_cst_present);
+diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+index fb2ea8f..6412358 100644
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@ -16,6 +16,9 @@ void xen_mm_unpin_all(void);
+ void xen_timer_resume(void);
+ void xen_arch_resume(void);
+ 
++void xen_resume_notifier_register(struct notifier_block *nb);
++void xen_resume_notifier_unregister(struct notifier_block *nb);
++
+ int xen_setup_shutdown_event(void);
+ 
+ extern unsigned long *xen_contiguous_bitmap;
