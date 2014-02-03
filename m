@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaBCW12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:27:28 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34774 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaBCW11 (ORCPT
+	id S1752859AbaBCWbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:31:37 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42742 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaBCWbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:27:27 -0500
-Date: Mon, 3 Feb 2014 14:27:26 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: Would devm_regulator_enable be useful ?
-Message-ID: <20140203222726.GA5053@roeck-us.net>
-References: <52ED901F.3010002@roeck-us.net>
- <20140203182152.GG22609@sirena.org.uk>
+	Mon, 3 Feb 2014 17:31:35 -0500
+Date: Mon, 3 Feb 2014 22:31:27 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140203223127.GE10323@ZenIV.linux.org.uk>
+References: <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+ <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+ <20140203211955.GY10323@ZenIV.linux.org.uk>
+ <CA+55aFyfPVgGXn_hSBnnVyzWn4AbZQ40MPk_AoKB_6uC6LJqPg@mail.gmail.com>
+ <20140203213926.GA10323@ZenIV.linux.org.uk>
+ <CA+55aFyKN47V56oksujoojdV_uhoFYJxURg3RNHXbLFSqqDnGA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140203182152.GG22609@sirena.org.uk>
+In-Reply-To: <CA+55aFyKN47V56oksujoojdV_uhoFYJxURg3RNHXbLFSqqDnGA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 06:21:52PM +0000, Mark Brown wrote:
-> On Sat, Feb 01, 2014 at 04:23:59PM -0800, Guenter Roeck wrote:
+On Mon, Feb 03, 2014 at 01:44:22PM -0800, Linus Torvalds wrote:
+> On Mon, Feb 3, 2014 at 1:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > If we really have hardlinks, the result of permission check would better
+> > be a function of inode itself - as in, "if it gives different results
+> > for two pathnames reachable for the same user, we have a bug".
+		      ^^^^^^^^^
+> No. You're wrong.
 > 
-> As previously mentioned please fix your mailer to word wrap at a
-> sensible limit.
+> EVEN ON A UNIX FILESYSTEM THE PATH IS MEANINGFUL.
 > 
-I thought I did ;-). I'll try to make sure I only send e-mail to you
-using mutt in the future ... but I notice that your line length is
-less than the one I configured, so maybe that is the problem here.
-
-> > Seems to me it would be useful to have it, but then devm_clk_enable()
-> > doesn't exist either, so I wonder if there is a reason for not having
-> > it.
+> Do this: create a hardlink in two different directories. Make the
+> *directory* permissions for one of the directories be something you
+> cannot traverse. Now try to check the permissions of the *same* inode
+> through those two paths. Notice how you get *different* results.
 > 
-> In both cases enabling and then leaving the resource enabled throughout
-> the runtime of the device isn't normally the best practice for using
-> them.  You usually want to enable and disable at runtime with mechanisms
-> like runtime PM when the device is idle rather than burning power all
-> the time and once you start doing that managed resources don't fit so
-> well.
+> Really.
 
-Ok, I accept that. I thought that was what devm_xxx_[disable,remove] etc
-was for, though.
+Yes.  In one case we won't get to looking at the permissions of that thing
+at all.
+ 
+> Now, imagine that you are doing the same thing over a network. On the
+> server, there may be a single inode for the file, but when the client
+> gives the server a pathname, the two pathnames to that single inode
+> ARE NOT EQUIVALENT.
 
-Thanks,
-Guenter
+Why do we pretend that those are links, in the first place?
+
+> And the fact is, filesystems with hardlinks and path-name-based
+> operations do exist. cifs with the unix extensions is one of them.
+
+Pox on Tridge...
+
+I really, really hate that change; I can buy "->getxattr() has inconvenient
+interface because of lousy protocol design", but spreading the same to
+->permission(), with everything that will fall out of that... <shudder>
