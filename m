@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037AbaBCIpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 03:45:20 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40529 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaBCIpR (ORCPT
+	id S1751501AbaBCIp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 03:45:56 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:50703 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaBCIpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 03:45:17 -0500
-Message-ID: <52EF588B.4050904@linux.vnet.ibm.com>
-Date: Mon, 03 Feb 2014 14:21:23 +0530
+	Mon, 3 Feb 2014 03:45:34 -0500
+Message-ID: <52EF589C.9030109@linux.vnet.ibm.com>
+Date: Mon, 03 Feb 2014 14:21:40 +0530
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 Organization: IBM
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Waiman Long <waiman.long@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
 CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
         linux-arch@vger.kernel.org, x86@kernel.org,
@@ -31,52 +31,36 @@ CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Aswin Chandramouleeswaran <aswin@hp.com>,
         Scott J Norton <scott.norton@hp.com>,
         Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Subject: Re: [PATCH v3 0/2] qspinlock: Introducing a 4-byte queue spinlock
-References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <52EA139C.8040106@linux.vnet.ibm.com> <52EA71F8.7070308@hp.com> <52EA9ECA.5040400@linux.vnet.ibm.com>
-In-Reply-To: <52EA9ECA.5040400@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v3 1/2] qspinlock: Introducing a 4-byte queue spinlock
+ implementation
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1390933151-1797-2-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020308-0260-0000-0000-0000044DA960
+x-cbid: 14020308-5140-0000-0000-00000480A13D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 12:19 AM, Raghavendra K T wrote:
-> On 01/30/2014 09:08 PM, Waiman Long wrote:
->> On 01/30/2014 03:55 AM, Raghavendra K T wrote:
->>> On 01/28/2014 11:49 PM, Waiman Long wrote:
-> [...]
->                    from kernel/bounds.c:9:
->>> include/linux/log2.h: In function ‘__ilog2_u32’:
->>> include/linux/log2.h:34:2: error: implicit declaration of function
->>> ‘fls’ [-Werror=implicit-function-declaration]
->>> include/linux/log2.h: In function ‘__ilog2_u64’:
->>> include/linux/log2.h:42:2: error: implicit declaration of function
->>> ‘fls64’ [-Werror=implicit-function-declaration]
->>> include/linux/log2.h: In function ‘__roundup_pow_of_two’:
->>> .
->>> .
->>> [trimmed]
->>>
->>
->> The code will need to be compiled in either the latest linux tree as the
->> patches have dependency on some new memory barrier that are in 3.14.
->> Alternatively, you can compile with the latest tip tree.
->>
->> If you have already done that, please send me your config file so that I
->> can reproduce the compilation error in my build environment.
->>
->
-> I did compile on latest linux tree which had barrier.txt. May be I 'll
-> recheck if I am missing something obvious.
->
-> Here is .config attached
+On 01/28/2014 11:49 PM, Waiman Long wrote:
+> +#endif /* __ASM_GENERIC_QSPINLOCK_H */
+> diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+> index d2b32ac..f185584 100644
+> --- a/kernel/Kconfig.locks
+> +++ b/kernel/Kconfig.locks
+> @@ -223,3 +223,10 @@ endif
+>   config MUTEX_SPIN_ON_OWNER
+>   	def_bool y
+>   	depends on SMP && !DEBUG_MUTEXES
+> +
+> +config ARCH_USE_QUEUE_SPINLOCK
+> +	bool
+> +
+> +config QUEUE_SPINLOCK
+> +	def_bool y if ARCH_USE_QUEUE_SPINLOCK
+> +	depends on SMP && !PARAVIRT_SPINLOCKS
 
-An Update:
-The reason for failure was that I was compiling for guest. and
-CONFIG_PARAVIRT was enabled.
-
-
+This should have been !CONFIG_PARAVIRT instead of !PARAVIRT_SPINLOCKS ?
 
