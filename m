@@ -1,116 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaBCRN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 12:13:27 -0500
-Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:36295 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751949AbaBCRN0 (ORCPT
+	id S1753260AbaBCRN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 12:13:57 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:48763 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173AbaBCRNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 12:13:26 -0500
-Message-ID: <52EFCE31.7010900@overkiz.com>
-Date: Mon, 03 Feb 2014 18:13:21 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Feb 2014 12:13:55 -0500
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] at91: pmc: Fixed irq's name allocation for programmable
- clocks
-References: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 14860471397466208345
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjeduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <1391014246-9715-3-git-send-email-ard.biesheuvel@linaro.org>
+References: <1391014246-9715-1-git-send-email-ard.biesheuvel@linaro.org>
+	<1391014246-9715-3-git-send-email-ard.biesheuvel@linaro.org>
+Date: Mon, 3 Feb 2014 18:13:52 +0100
+Message-ID: <CAKv+Gu-UuVvPMSypZKqNt8Dk9Ex4URsjRZYybMxGo=FksXtW8w@mail.gmail.com>
+Subject: Re: [PATCH 2/5] cpu: add generic support for CPU feature based module autoloading
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello JJ,
+Hello Greg,
 
-On 03/02/2014 17:46, Jean-Jacques Hiblot wrote:
-> The name provided to request_irq() must be valid until the irq is
-> released.
-> This patch allocates and formats the string with kasprintf().
+Would you care to comment on this patch?
 
-Thanks for reporting this bug.
+It adds some Kconfig clutter, but this is removed again in the next patch
+(http://marc.info/?l=linux-arm-kernel&m=139101443708663&w=2),
+which has already been acked by hpa here:
+http://marc.info/?l=linux-arm-kernel&m=139101589509168&w=2
 
+Example enabling it for arm64:
+http://marc.info/?l=linux-arm-kernel&m=139101486308822&w=2
+
+Example using it (optional AES instructions on arm64):
+http://marc.info/?l=linux-arm-kernel&m=139101446008665&w=2
+
+Best regards,
+Ard.
+
+
+
+On 29 January 2014 17:50, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+> This patch adds support for advertising optional CPU features over udev using
+> the modalias, and for declaring compatibility with/dependency upon such a
+> feature in a module.
 >
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> This feature can be enabled by setting CONFIG_GENERIC_CPU_AUTOPROBE for the
+> architecture, and supplying a file <asm/cpufeature.h> which defines how the
+> numbers used in the modalias string map to actual CPU features.
+>
+> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 > ---
->   drivers/clk/at91/clk-programmable.c | 5 +++--
->   1 file changed, 3 insertions(+), 2 deletions(-)
+>  drivers/base/Kconfig              |  8 ++++++
+>  drivers/base/cpu.c                | 39 +++++++++++++++++++++----
+>  include/linux/cpufeature.h        | 60 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/mod_devicetable.h   |  9 ++++++
+>  scripts/mod/devicetable-offsets.c |  3 ++
+>  scripts/mod/file2alias.c          | 10 +++++++
+>  6 files changed, 123 insertions(+), 6 deletions(-)
+>  create mode 100644 include/linux/cpufeature.h
 >
-> diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
-> index 8e242c7..0f8bf0f 100644
-> --- a/drivers/clk/at91/clk-programmable.c
-> +++ b/drivers/clk/at91/clk-programmable.c
-> @@ -19,6 +19,7 @@
->   #include <linux/sched.h>
->   #include <linux/interrupt.h>
->   #include <linux/irq.h>
-> +#include <linux/string.h>
->   
->   #include "pmc.h"
->   
-> @@ -247,7 +248,7 @@ at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
->   	struct clk_programmable *prog;
->   	struct clk *clk = NULL;
->   	struct clk_init_data init;
-> -	char irq_name[11];
-> +	char *irq_name;
->   
->   	if (id > PROG_ID_MAX)
->   		return ERR_PTR(-EINVAL);
-> @@ -269,7 +270,7 @@ at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
->   	prog->irq = irq;
->   	init_waitqueue_head(&prog->wait);
->   	irq_set_status_flags(prog->irq, IRQ_NOAUTOEN);
-> -	snprintf(irq_name, sizeof(irq_name), "clk-prog%d", id);
-> +	irq_name = kasprintf(GFP_KERNEL, "clk-prog%d", id);
-
-Could you either use a static table with the prog clk names or store the 
-name in
-the clk_programmable struct ?
-This way we could avoid the additional dynamic allocation.
-
-static prog_clk_names = {
-   "clk-prog0",
-[...]
-   "clk-prog7",
-};
-
-[...]
-     ret = request_irq(prog->irq, clk_programmable_irq_handler, 
-IRQF_TRIGGER_HIGH, prog_clk_names[id], prog);
-
-
-or
-
-struct clk_programmable {
-[...]
-     char irq_name[11];
-[...]
-};
-
-[...]
-
-snprintf(prog->irq_name, sizeof(prog->irq_name), "clk-prog%d", id);
-ret = request_irq(prog->irq, clk_programmable_irq_handler, 
-IRQF_TRIGGER_HIGH, prog->irq_name, prog);
-
-Best Regards,
-
-Boris
->   	ret = request_irq(prog->irq, clk_programmable_irq_handler,
->   			  IRQF_TRIGGER_HIGH, irq_name, prog);
->   	if (ret)
-
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index ec36e7772e57..3f0d3732df7f 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -185,6 +185,14 @@ config GENERIC_CPU_DEVICES
+>         bool
+>         default n
+>
+> +config HAVE_CPU_AUTOPROBE
+> +       def_bool ARCH_HAS_CPU_AUTOPROBE
+> +
+> +config GENERIC_CPU_AUTOPROBE
+> +       bool
+> +       depends on !ARCH_HAS_CPU_AUTOPROBE
+> +       select HAVE_CPU_AUTOPROBE
+> +
+>  config SOC_BUS
+>         bool
+>
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 270649012e64..8a38bf8c792f 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/percpu.h>
+>  #include <linux/acpi.h>
+>  #include <linux/of.h>
+> +#include <linux/cpufeature.h>
+>
+>  #include "base.h"
+>
+> @@ -286,12 +287,38 @@ static void cpu_device_release(struct device *dev)
+>          */
+>  }
+>
+> -#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+> +#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+> +static ssize_t print_cpu_modalias(struct device *dev,
+> +                                 struct device_attribute *attr,
+> +                                 char *buf)
+> +{
+> +       ssize_t n;
+> +       u32 i;
+> +
+> +       n = sprintf(buf, "cpu:type:" CPU_FEATURE_TYPEFMT ":feature:",
+> +                   CPU_FEATURE_TYPEVAL);
+> +
+> +       for (i = 0; i < MAX_CPU_FEATURES; i++)
+> +               if (cpu_have_feature(i)) {
+> +                       if (PAGE_SIZE < n + sizeof(",XXXX\n")) {
+> +                               WARN(1, "CPU features overflow page\n");
+> +                               break;
+> +                       }
+> +                       n += sprintf(&buf[n], ",%04X", i);
+> +               }
+> +       buf[n++] = '\n';
+> +       return n;
+> +}
+> +#else
+> +#define print_cpu_modalias     arch_print_cpu_modalias
+> +#endif
+> +
+>  static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  {
+>         char *buf = kzalloc(PAGE_SIZE, GFP_KERNEL);
+>         if (buf) {
+> -               arch_print_cpu_modalias(NULL, NULL, buf);
+> +               print_cpu_modalias(NULL, NULL, buf);
+>                 add_uevent_var(env, "MODALIAS=%s", buf);
+>                 kfree(buf);
+>         }
+> @@ -319,7 +346,7 @@ int register_cpu(struct cpu *cpu, int num)
+>         cpu->dev.offline_disabled = !cpu->hotpluggable;
+>         cpu->dev.offline = !cpu_online(num);
+>         cpu->dev.of_node = of_get_cpu_node(num, NULL);
+> -#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+>         cpu->dev.bus->uevent = cpu_uevent;
+>  #endif
+>         cpu->dev.groups = common_cpu_attr_groups;
+> @@ -343,8 +370,8 @@ struct device *get_cpu_device(unsigned cpu)
+>  }
+>  EXPORT_SYMBOL_GPL(get_cpu_device);
+>
+> -#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> -static DEVICE_ATTR(modalias, 0444, arch_print_cpu_modalias, NULL);
+> +#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+> +static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+>  #endif
+>
+>  static struct attribute *cpu_root_attrs[] = {
+> @@ -357,7 +384,7 @@ static struct attribute *cpu_root_attrs[] = {
+>         &cpu_attrs[2].attr.attr,
+>         &dev_attr_kernel_max.attr,
+>         &dev_attr_offline.attr,
+> -#ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+> +#ifdef CONFIG_HAVE_CPU_AUTOPROBE
+>         &dev_attr_modalias.attr,
+>  #endif
+>         NULL
+> diff --git a/include/linux/cpufeature.h b/include/linux/cpufeature.h
+> new file mode 100644
+> index 000000000000..c4d4eb8ac9fe
+> --- /dev/null
+> +++ b/include/linux/cpufeature.h
+> @@ -0,0 +1,60 @@
+> +/*
+> + * Copyright (C) 2014 Linaro Ltd. <ard.biesheuvel@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __LINUX_CPUFEATURE_H
+> +#define __LINUX_CPUFEATURE_H
+> +
+> +#ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+> +
+> +#include <linux/mod_devicetable.h>
+> +#include <asm/cpufeature.h>
+> +
+> +/*
+> + * Macros imported from <asm/cpufeature.h>:
+> + * - cpu_feature(x)            ordinal value of feature called 'x'
+> + * - cpu_have_feature(u32 n)   whether feature #n is available
+> + * - MAX_CPU_FEATURES          upper bound for feature ordinal values
+> + * Optional:
+> + * - CPU_FEATURE_TYPEFMT       format string fragment for printing the cpu type
+> + * - CPU_FEATURE_TYPEVAL       set of values matching the format string above
+> + */
+> +
+> +#ifndef CPU_FEATURE_TYPEFMT
+> +#define CPU_FEATURE_TYPEFMT    "%s"
+> +#endif
+> +
+> +#ifndef CPU_FEATURE_TYPEVAL
+> +#define CPU_FEATURE_TYPEVAL    ELF_PLATFORM
+> +#endif
+> +
+> +/*
+> + * Use module_cpu_feature_match(feature, module_init_function) to
+> + * declare that
+> + * a) the module shall be probed upon discovery of CPU feature 'feature'
+> + *    (typically at boot time using udev)
+> + * b) the module must not be loaded if CPU feature 'feature' is not present
+> + *    (not even by manual insmod).
+> + *
+> + * For a list of legal values for 'feature', please consult the file
+> + * 'asm/cpufeature.h' of your favorite architecture.
+> + */
+> +#define module_cpu_feature_match(x, __init)                    \
+> +static struct cpu_feature const cpu_feature_match_ ## x[] =    \
+> +       { { .feature = cpu_feature(x) }, { } };                 \
+> +MODULE_DEVICE_TABLE(cpu, cpu_feature_match_ ## x);             \
+> +                                                               \
+> +static int cpu_feature_match_ ## x ## _init(void)              \
+> +{                                                              \
+> +       if (!cpu_have_feature(cpu_feature(x)))                  \
+> +               return -ENODEV;                                 \
+> +       return __init();                                        \
+> +}                                                              \
+> +module_init(cpu_feature_match_ ## x ## _init)
+> +
+> +#endif
+> +#endif
+> diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+> index 45e921401b06..f2ac87c613a5 100644
+> --- a/include/linux/mod_devicetable.h
+> +++ b/include/linux/mod_devicetable.h
+> @@ -564,6 +564,15 @@ struct x86_cpu_id {
+>  #define X86_MODEL_ANY  0
+>  #define X86_FEATURE_ANY 0      /* Same as FPU, you can't test for that */
+>
+> +/*
+> + * Generic table type for matching CPU features.
+> + * @feature:   the bit number of the feature (0 - 65535)
+> + */
+> +
+> +struct cpu_feature {
+> +       __u16   feature;
+> +};
+> +
+>  #define IPACK_ANY_FORMAT 0xff
+>  #define IPACK_ANY_ID (~0)
+>  struct ipack_device_id {
+> diff --git a/scripts/mod/devicetable-offsets.c b/scripts/mod/devicetable-offsets.c
+> index bb5d115ca671..f282516acc7b 100644
+> --- a/scripts/mod/devicetable-offsets.c
+> +++ b/scripts/mod/devicetable-offsets.c
+> @@ -174,6 +174,9 @@ int main(void)
+>         DEVID_FIELD(x86_cpu_id, model);
+>         DEVID_FIELD(x86_cpu_id, vendor);
+>
+> +       DEVID(cpu_feature);
+> +       DEVID_FIELD(cpu_feature, feature);
+> +
+>         DEVID(mei_cl_device_id);
+>         DEVID_FIELD(mei_cl_device_id, name);
+>
+> diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+> index 23708636b05c..8a69005228d8 100644
+> --- a/scripts/mod/file2alias.c
+> +++ b/scripts/mod/file2alias.c
+> @@ -1135,6 +1135,16 @@ static int do_x86cpu_entry(const char *filename, void *symval,
+>  }
+>  ADD_TO_DEVTABLE("x86cpu", x86_cpu_id, do_x86cpu_entry);
+>
+> +/* LOOKS like cpu:type:*:feature:*FEAT* */
+> +static int do_cpu_entry(const char *filename, void *symval, char *alias)
+> +{
+> +       DEF_FIELD(symval, cpu_feature, feature);
+> +
+> +       sprintf(alias, "cpu:type:*:feature:*%04X*", feature);
+> +       return 1;
+> +}
+> +ADD_TO_DEVTABLE("cpu", cpu_feature, do_cpu_entry);
+> +
+>  /* Looks like: mei:S */
+>  static int do_mei_entry(const char *filename, void *symval,
+>                         char *alias)
+> --
+> 1.8.3.2
+>
