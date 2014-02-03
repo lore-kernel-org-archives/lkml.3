@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaBCDAO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 22:00:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:59209 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675AbaBCDAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 22:00:12 -0500
-Message-ID: <1391396405.30409.6.camel@concordia>
-Subject: Re: [git pull] Please pull powerpc.git next branch
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Alistair Popple <alistair@popple.id.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Olaf Hering <olaf@aepfle.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 03 Feb 2014 14:00:05 +1100
-In-Reply-To: <4555187.D5eRSF5r8x@mexican>
-References: <1390883744.3872.76.camel@pasglop>
-	 <20140128150309.GA7428@aepfle.de> <1390940395.8524.25.camel@pasglop>
-	 <4555187.D5eRSF5r8x@mexican>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752796AbaBCDC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 22:02:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36091 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675AbaBCDC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Feb 2014 22:02:26 -0500
+Message-ID: <52EF06C0.1050104@infradead.org>
+Date: Sun, 02 Feb 2014 19:02:24 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] pci: fix kernel-doc notation warning
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-29 at 13:29 +1100, Alistair Popple wrote:
-> Looks like I missed the dart iommu code when changing the iommu table
-> initialisation. The patch below should fix it, would you mind testing
-> it Ben? Thanks.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-Any reason not to add the following to save ourselves in future?
+Fix a "blank" kernel-doc line to have an asterisk instead of
+being totally empty.  This fixes the kernel-doc warning:
 
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index d773dd4..6ab7b53 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -657,6 +657,8 @@ struct iommu_table *iommu_init_table(struct iommu_table *tbl, int nid)
-        unsigned int i;
-        struct iommu_pool *p;
- 
-+       BUG_ON(!tbl->it_page_shift);
-+
-        /* number of bytes needed for the bitmap */
-        sz = BITS_TO_LONGS(tbl->it_size) * sizeof(unsigned long);
- 
+Warning(drivers/pci/msi.c:962): bad line: 
 
-cheers
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ drivers/pci/msi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-
+--- lnx-314-rc1.orig/drivers/pci/msi.c
++++ lnx-314-rc1/drivers/pci/msi.c
+@@ -959,7 +959,7 @@ EXPORT_SYMBOL(pci_disable_msi);
+ /**
+  * pci_msix_vec_count - return the number of device's MSI-X table entries
+  * @dev: pointer to the pci_dev data structure of MSI-X device function
+-
++ *
+  * This function returns the number of device's MSI-X table entries and
+  * therefore the number of MSI-X vectors device is capable of sending.
+  * It returns a negative errno if the device is not capable of sending MSI-X
