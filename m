@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640AbaBCSSg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:18:36 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:55557 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460AbaBCSQv (ORCPT
+	id S1753672AbaBCSSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:18:45 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:35016 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460AbaBCSSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:16:51 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 13/16] staging: ion: Fix overflow and list bugs in system heap
-Date: Mon,  3 Feb 2014 10:16:25 -0800
-Message-Id: <1391451388-23906-14-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
-References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
+	Mon, 3 Feb 2014 13:18:42 -0500
+From: Jean Pihet <jean.pihet@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>
+Cc: Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, patches@linaro.org,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH v6 0/3] perf: AARCH64 arch support
+Date: Mon,  3 Feb 2014 19:18:26 +0100
+Message-Id: <1391451509-31265-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+Add AARCH64 specific support. This includes the following:
+- AARCH64 perf registers definition and hooks,
+- compat mode registers use, i.e. profiling a 32-bit binary on
+   a 64-bit system,
+- unwinding using the dwarf information from the .debug_frame
+   section of the ELF binary,
+- unwinding using the frame pointer information; in 64-bit and
+   compat modes.
 
-Fix a few bugs in ion_system_heap:
+Notes:
+- the tools/perf change is submitted separately on LKML,
+- support for unwinding using the dwarf information in compat
+mode requires some changes to the libunwind code. Those changes
+have been submitted on the libunwind ML and are in discussion.
 
-Initialize the list node in the info block.
+Tested on ARMv7, ARMv8 and x86_64 platforms. The compat mode has been
+tested on ARMv8 using statically built 32-bit binaries.
 
-Don't store size_remaining in a signed long, allocating >2GB
-could overflow, resulting in a call to sg_alloc_table with
-nents=0 which panics.  alloc_largest_available will never
-return a block larger than size_remanining, so it can never
-go negative.
 
-Limit a single allocation to half of all memory.  Prevents a
-large allocation from taking down the whole system.
+Jean Pihet (3):
+  ARM64: perf: add support for perf registers API
+  ARM64: perf: add support for frame pointer unwinding in compat mode
+  ARM64: perf: support dwarf unwinding in compat mode
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: Minor commit subject tweak]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/ion/ion_system_heap.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/arm64/Kconfig                      |  2 +
+ arch/arm64/include/asm/compat.h         |  2 +-
+ arch/arm64/include/asm/ptrace.h         |  3 +-
+ arch/arm64/include/uapi/asm/Kbuild      |  1 +
+ arch/arm64/include/uapi/asm/perf_regs.h | 40 ++++++++++++++++++
+ arch/arm64/kernel/Makefile              |  1 +
+ arch/arm64/kernel/perf_event.c          | 75 +++++++++++++++++++++++++++++----
+ arch/arm64/kernel/perf_regs.c           | 44 +++++++++++++++++++
+ 8 files changed, 158 insertions(+), 10 deletions(-)
+ create mode 100644 arch/arm64/include/uapi/asm/perf_regs.h
+ create mode 100644 arch/arm64/kernel/perf_regs.c
 
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index 7f07291..9849f39 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -124,6 +124,7 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
- 
- 		info->page = page;
- 		info->order = orders[i];
-+		INIT_LIST_HEAD(&info->list);
- 		return info;
- 	}
- 	kfree(info);
-@@ -145,12 +146,15 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
- 	struct list_head pages;
- 	struct page_info *info, *tmp_info;
- 	int i = 0;
--	long size_remaining = PAGE_ALIGN(size);
-+	unsigned long size_remaining = PAGE_ALIGN(size);
- 	unsigned int max_order = orders[0];
- 
- 	if (align > PAGE_SIZE)
- 		return -EINVAL;
- 
-+	if (size / PAGE_SIZE > totalram_pages / 2)
-+		return -ENOMEM;
-+
- 	INIT_LIST_HEAD(&pages);
- 	while (size_remaining > 0) {
- 		info = alloc_largest_available(sys_heap, buffer, size_remaining,
 -- 
-1.8.3.2
+1.7.11.7
 
