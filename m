@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaBCWew (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:34:52 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:59846 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaBCWeu (ORCPT
+	id S1753517AbaBCWfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:35:00 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:61880 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393AbaBCWe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:34:50 -0500
+	Mon, 3 Feb 2014 17:34:58 -0500
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Michal Simek <michal.simek@xilinx.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: [PATCH v3 1/7] time: Serialize calls to 'clockevents_update_freq' in the timing core
-Date: Mon,  3 Feb 2014 14:34:31 -0800
-Message-Id: <1391466877-28908-2-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v3 4/7] clocksource/cadence_ttc: Overhaul clocksource frequency adjustment
+Date: Mon,  3 Feb 2014 14:34:34 -0800
+Message-Id: <1391466877-28908-5-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391466877-28908-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1391466877-28908-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -23,167 +23,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+The currently used method adjusting the clocksource to a changing input
+frequency does not work on kernels from 3.11 on.
+The new approach is to keep the timer frequency as constant as possible.
+I.e.
+ - due to the TTC's prescaler limitations, allow frequency changes
+   only if the frequency scales by a power of 2
+ - adjust the counter's divider on the fly when a frequency change
+   occurs
 
-We can identify the broadcast device in the core and serialize all
-callers including interrupts on a different CPU against the update.
-Also, disabling interrupts is moved into the core allowing callers to
-leave interrutps enabled when calling clockevents_update_freq().
+This limits cpufreq to scale by certain factors only.
+But we may keep the time base somewhat constant, so that sleep() & co
+keep working as expected, while supporting cpufreq.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- kernel/time/clockevents.c    | 29 ++++++++++++++++++++++-------
- kernel/time/tick-broadcast.c | 25 +++++++++++++++++++------
- kernel/time/tick-internal.h  |  4 ++++
- 3 files changed, 45 insertions(+), 13 deletions(-)
+v3:
+ - Clock notifier data does not behave as documented. Adjust code
+   accordingly (https://lkml.org/lkml/2014/1/22/412)
+v2:
+ - remove PM notifier and associated code
 
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 086ad6043bcb..641d91003a45 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -439,6 +439,16 @@ void clockevents_config_and_register(struct clock_event_device *dev,
- }
- EXPORT_SYMBOL_GPL(clockevents_config_and_register);
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ drivers/clocksource/cadence_ttc_timer.c | 104 ++++++++++++++++++++++++++------
+ 1 file changed, 84 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index f05b9fdc7425..49fbe2847c84 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -16,6 +16,7 @@
+  */
  
-+int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
-+{
-+	clockevents_config(dev, freq);
-+
-+	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
-+		return 0;
-+
-+	return clockevents_program_event(dev, dev->next_event, false);
-+}
+ #include <linux/clk.h>
++#include <linux/clk-provider.h>
+ #include <linux/interrupt.h>
+ #include <linux/clockchips.h>
+ #include <linux/of_address.h>
+@@ -52,6 +53,8 @@
+ #define TTC_CNT_CNTRL_DISABLE_MASK	0x1
+ 
+ #define TTC_CLK_CNTRL_CSRC_MASK		(1 << 5)	/* clock source */
++#define TTC_CLK_CNTRL_PSV_MASK		0x1e
++#define TTC_CLK_CNTRL_PSV_SHIFT		1
+ 
+ /*
+  * Setup the timers to use pre-scaling, using a fixed value for now that will
+@@ -63,6 +66,8 @@
+ #define CLK_CNTRL_PRESCALE_EN	1
+ #define CNT_CNTRL_RESET		(1 << 4)
+ 
++#define MAX_F_ERR 50
 +
  /**
-  * clockevents_update_freq - Update frequency and reprogram a clock event device.
-  * @dev:	device to modify
-@@ -446,17 +456,22 @@ EXPORT_SYMBOL_GPL(clockevents_config_and_register);
+  * struct ttc_timer - This definition defines local timer structure
   *
-  * Reconfigure and reprogram a clock event device in oneshot
-  * mode. Must be called on the cpu for which the device delivers per
-- * cpu timer events with interrupts disabled!  Returns 0 on success,
-- * -ETIME when the event is in the past.
-+ * cpu timer events. If called for the broadcast device the core takes
-+ * care of serialization.
-+ *
-+ * Returns 0 on success, -ETIME when the event is in the past.
-  */
- int clockevents_update_freq(struct clock_event_device *dev, u32 freq)
- {
--	clockevents_config(dev, freq);
--
--	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
--		return 0;
-+	unsigned long flags;
-+	int ret;
+@@ -82,6 +87,8 @@ struct ttc_timer {
+ 		container_of(x, struct ttc_timer, clk_rate_change_nb)
  
--	return clockevents_program_event(dev, dev->next_event, false);
-+	local_irq_save(flags);
-+	ret = tick_broadcast_update_freq(dev, freq);
-+	if (ret == -ENODEV)
-+		ret = __clockevents_update_freq(dev, freq);
-+	local_irq_restore(flags);
-+	return ret;
- }
+ struct ttc_timer_clocksource {
++	u32			scale_clk_ctrl_reg_old;
++	u32			scale_clk_ctrl_reg_new;
+ 	struct ttc_timer	ttc;
+ 	struct clocksource	cs;
+ };
+@@ -229,32 +236,89 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
+ 			struct ttc_timer_clocksource, ttc);
  
- /*
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 43780ab5e279..003e6c3663b1 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -120,6 +120,19 @@ int tick_is_broadcast_device(struct clock_event_device *dev)
- 	return (dev && tick_broadcast_device.evtdev == dev);
- }
- 
-+int tick_broadcast_update_freq(struct clock_event_device *dev, u32 freq)
-+{
-+	int ret = -ENODEV;
+ 	switch (event) {
+-	case POST_RATE_CHANGE:
++	case PRE_RATE_CHANGE:
++	{
++		u32 psv;
++		unsigned long factor, rate_low, rate_high;
 +
-+	if (tick_is_broadcast_device(dev)) {
-+		raw_spin_lock(&tick_broadcast_lock);
-+		ret = __clockevents_update_freq(dev, freq);
-+		raw_spin_unlock(&tick_broadcast_lock);
++		if (ndata->new_rate > ndata->old_rate) {
++			factor = DIV_ROUND_CLOSEST(ndata->new_rate,
++					ndata->old_rate);
++			rate_low = ndata->old_rate;
++			rate_high = ndata->new_rate;
++		} else {
++			factor = DIV_ROUND_CLOSEST(ndata->old_rate,
++					ndata->new_rate);
++			rate_low = ndata->new_rate;
++			rate_high = ndata->old_rate;
++		}
++
++		if (!is_power_of_2(factor))
++				return NOTIFY_BAD;
++
++		if (abs(rate_high - (factor * rate_low)) > MAX_F_ERR)
++			return NOTIFY_BAD;
++
++		factor = __ilog2_u32(factor);
++
+ 		/*
+-		 * Do whatever is necessary to maintain a proper time base
+-		 *
+-		 * I cannot find a way to adjust the currently used clocksource
+-		 * to the new frequency. __clocksource_updatefreq_hz() sounds
+-		 * good, but does not work. Not sure what's that missing.
+-		 *
+-		 * This approach works, but triggers two clocksource switches.
+-		 * The first after unregister to clocksource jiffies. And
+-		 * another one after the register to the newly registered timer.
+-		 *
+-		 * Alternatively we could 'waste' another HW timer to ping pong
+-		 * between clock sources. That would also use one register and
+-		 * one unregister call, but only trigger one clocksource switch
+-		 * for the cost of another HW timer used by the OS.
++		 * store timer clock ctrl register so we can restore it in case
++		 * of an abort.
+ 		 */
+-		clocksource_unregister(&ttccs->cs);
+-		clocksource_register_hz(&ttccs->cs,
+-				ndata->new_rate / PRESCALE);
+-		/* fall through */
+-	case PRE_RATE_CHANGE:
++		ttccs->scale_clk_ctrl_reg_old =
++			__raw_readl(ttccs->ttc.base_addr +
++					TTC_CLK_CNTRL_OFFSET);
++
++		psv = (ttccs->scale_clk_ctrl_reg_old &
++				TTC_CLK_CNTRL_PSV_MASK) >>
++				TTC_CLK_CNTRL_PSV_SHIFT;
++		if (ndata->new_rate < ndata->old_rate)
++			psv -= factor;
++		else
++			psv += factor;
++
++		/* prescaler within legal range? */
++		if (psv & ~(TTC_CLK_CNTRL_PSV_MASK >> TTC_CLK_CNTRL_PSV_SHIFT))
++			return NOTIFY_BAD;
++
++		ttccs->scale_clk_ctrl_reg_new = ttccs->scale_clk_ctrl_reg_old &
++			~TTC_CLK_CNTRL_PSV_MASK;
++		ttccs->scale_clk_ctrl_reg_new |= psv << TTC_CLK_CNTRL_PSV_SHIFT;
++
++
++		/* scale down: adjust divider in post-change notification */
++		if (ndata->new_rate < ndata->old_rate)
++			return NOTIFY_DONE;
++
++		/* scale up: adjust divider now - before frequency change */
++		__raw_writel(ttccs->scale_clk_ctrl_reg_new,
++				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		break;
 +	}
-+	return ret;
-+}
++	case POST_RATE_CHANGE:
++		/* scale up: pre-change notification did the adjustment */
++		if (ndata->new_rate > ndata->old_rate)
++			return NOTIFY_OK;
 +
++		/* scale down: adjust divider now - after frequency change */
++		__raw_writel(ttccs->scale_clk_ctrl_reg_new,
++				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		break;
 +
- static void err_broadcast(const struct cpumask *mask)
- {
- 	pr_crit_once("Failed to broadcast timer tick. Some CPUs may be unresponsive.\n");
-@@ -272,12 +285,8 @@ static void tick_do_broadcast(struct cpumask *mask)
-  */
- static void tick_do_periodic_broadcast(void)
- {
--	raw_spin_lock(&tick_broadcast_lock);
--
- 	cpumask_and(tmpmask, cpu_online_mask, tick_broadcast_mask);
- 	tick_do_broadcast(tmpmask);
--
--	raw_spin_unlock(&tick_broadcast_lock);
- }
- 
- /*
-@@ -287,13 +296,15 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
- {
- 	ktime_t next;
- 
-+	raw_spin_lock(&tick_broadcast_lock);
+ 	case ABORT_RATE_CHANGE:
++		/* we have to undo the adjustment in case we scale up */
++		if (ndata->new_rate < ndata->old_rate)
++			return NOTIFY_OK;
 +
- 	tick_do_periodic_broadcast();
- 
- 	/*
- 	 * The device is in periodic mode. No reprogramming necessary:
- 	 */
- 	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
--		return;
-+		goto unlock;
- 
- 	/*
- 	 * Setup the next period for devices, which do not have
-@@ -306,9 +317,11 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
- 		next = ktime_add(next, tick_period);
- 
- 		if (!clockevents_program_event(dev, next, false))
--			return;
-+			goto unlock;
- 		tick_do_periodic_broadcast();
++		/* restore original register value */
++		__raw_writel(ttccs->scale_clk_ctrl_reg_old,
++				ttccs->ttc.base_addr + TTC_CLK_CNTRL_OFFSET);
++		/* fall through */
+ 	default:
+ 		return NOTIFY_DONE;
  	}
-+unlock:
-+	raw_spin_unlock(&tick_broadcast_lock);
++
++	return NOTIFY_DONE;
  }
  
- /*
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index 8329669b51ec..26f1c0ba9d81 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -111,6 +111,7 @@ extern int tick_resume_broadcast(void);
- extern void tick_broadcast_init(void);
- extern void
- tick_set_periodic_handler(struct clock_event_device *dev, int broadcast);
-+int tick_broadcast_update_freq(struct clock_event_device *dev, u32 freq);
- 
- #else /* !BROADCAST */
- 
-@@ -133,6 +134,8 @@ static inline void tick_shutdown_broadcast(unsigned int *cpup) { }
- static inline void tick_suspend_broadcast(void) { }
- static inline int tick_resume_broadcast(void) { return 0; }
- static inline void tick_broadcast_init(void) { }
-+static inline int tick_broadcast_update_freq(struct clock_event_device *dev,
-+					     u32 freq) { return -ENODEV; }
- 
- /*
-  * Set the periodic handler in non broadcast mode
-@@ -154,5 +157,6 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
- 
- #endif
- 
-+int __clockevents_update_freq(struct clock_event_device *dev, u32 freq);
- extern void do_timer(unsigned long ticks);
- extern void update_wall_time(void);
+ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
 -- 
 1.8.5.3
 
