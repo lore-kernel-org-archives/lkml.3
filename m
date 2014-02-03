@@ -1,204 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaBCGz7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 01:55:59 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:54295 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaBCGz4 (ORCPT
+	id S1752967AbaBCG4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 01:56:30 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:47856 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaBCG42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 01:55:56 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com
-Cc: catalin.marinas@arm.com, will.deacon@arm.com, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v4 1/1] audit: Add generic compat syscall support
-Date: Mon,  3 Feb 2014 15:55:28 +0900
-Message-Id: <1391410528-4844-2-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391410528-4844-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1389945795-4255-1-git-send-email-takahiro.akashi@linaro.org>
- <1391410528-4844-1-git-send-email-takahiro.akashi@linaro.org>
+	Mon, 3 Feb 2014 01:56:28 -0500
+Message-ID: <1391410583.3801.6.camel@europa>
+Subject: Re: [PATCH] Make math_state_restore() save and restore the
+ interrupt flag
+From: Suresh Siddha <sbsiddha@gmail.com>
+Reply-To: sbsiddha@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nate Eldredge <nate@thatsmathematics.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
+        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
+Date: Sun, 02 Feb 2014 22:56:23 -0800
+In-Reply-To: <CA+55aFzz8a7K+KSB_TkGb1ih1hAg09-0TQusQgE5vwMJGegHDw@mail.gmail.com>
+References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+	 <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
+	 <CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>
+	 <CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
+	 <CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>
+	 <1391325599.6481.5.camel@europa>
+	 <CA+55aFzz8a7K+KSB_TkGb1ih1hAg09-0TQusQgE5vwMJGegHDw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lib/audit.c provides a generic definition for auditing system calls.
-This patch extends it for compat syscall support on bi-architectures
-(32/64-bit) by adding lib/compat_audit.c.
-What is required to support this feature are:
- * add asm/unistd32.h for compat system call names
- * enable CONFIG_AUDIT_COMPAT_GENERIC
+On Sun, 2014-02-02 at 11:15 -0800, Linus Torvalds wrote:
+> On Sat, Feb 1, 2014 at 11:19 PM, Suresh Siddha <sbsiddha@gmail.com> wrote:
+> >
+> > The real fix for Nate's problem will be coming from Linus, with a
+> > slightly modified option-b that Linus proposed. Linus, please let me
+> > know if you want me to spin it. I can do it sunday night.
+> 
+> Please do it, since clearly I wasn't aware enough about the whole
+> non-TS-checking FPU state details.
+> 
+> Also, since this issue doesn't seem to be a recent regression, I'm not
+> going to take this patch directly (even though I'm planning on doing
+> -rc1 in a few hours), and expect that I'll get it through the normal
+> channels (presumably together with the __kernel_fpu_end cleanups). Ok
+> with everybody?
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Here is the second patch, which should fix the issue reported in this
+thread. Maarten, Nate, George, please give this patch a try as is and
+see if it helps address the issue you ran into. And please ack/review
+with your test results.
+
+Other patch which cleans up the irq_enable/disable logic in
+math_state_restore() has been sent yesterday. You can run your
+experiments with both these patches if you want. But your issue should
+get fixed with just the appended patch here.
+
+Peter, Please push both these patches through normal channels depending
+on the results.
+
+thanks,
+suresh
 ---
- include/linux/audit.h      |    8 +++++++
- include/uapi/linux/audit.h |    6 ++++++
- lib/Kconfig                |    5 +++++
- lib/Makefile               |    1 +
- lib/audit.c                |   15 ++++++++++++-
- lib/compat_audit.c         |   50 ++++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 84 insertions(+), 1 deletion(-)
- create mode 100644 lib/compat_audit.c
+From: Suresh Siddha <sbsiddha@gmail.com>
+Subject: x86, fpu: check tsk_used_math() in kernel_fpu_end() for eager fpu
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index bf1ef22..b5d5cca 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -78,6 +78,14 @@ extern int is_audit_feature_set(int which);
- extern int __init audit_register_class(int class, unsigned *list);
- extern int audit_classify_syscall(int abi, unsigned syscall);
- extern int audit_classify_arch(int arch);
-+/* only for compat system calls */
-+extern unsigned compat_write_class[];
-+extern unsigned compat_read_class[];
-+extern unsigned compat_dir_class[];
-+extern unsigned compat_chattr_class[];
-+extern unsigned compat_signal_class[];
-+
-+extern int __weak audit_classify_compat_syscall(int abi, unsigned syscall);
+For non-eager fpu mode, thread's fpu state is allocated during the first
+fpu usage (in the context of device not available exception). This
+(math_state_restore()) can be a blocking call and hence we enable
+interrupts (which were originally disabled when the exception happened),
+allocate memory and disable interrupts etc.
+
+But the eager-fpu mode, call's the same math_state_restore() from
+kernel_fpu_end(). The assumption being that tsk_used_math() is always
+set for the eager-fpu mode and thus avoid the code path of enabling
+interrupts, allocating fpu state using blocking call and disable
+interrupts etc. 
+
+But the below issue was noticed by Maarten Baert, Nate Eldredge and
+few others:
+
+If a user process dumps core on an ecrypt fs while aesni-intel is loaded,
+we get a BUG() in __find_get_block() complaining that it was called with
+interrupts disabled; then all further accesses to our ecrypt fs hang
+and we have to reboot.
+
+The aesni-intel code (encrypting the core file that we are writing) needs
+the FPU and quite properly wraps its code in kernel_fpu_{begin,end}(),
+the latter of which calls math_state_restore(). So after kernel_fpu_end(),
+interrupts may be disabled, which nobody seems to expect, and they stay
+that way until we eventually get to __find_get_block() which barfs.
+
+For eager fpu, most the time, tsk_used_math() is true. At few instances
+during thread exit, signal return handling etc, tsk_used_math() might
+be false.
+
+In kernel_fpu_end(), for eager-fpu, call math_state_restore()
+only if tsk_used_math() is set. Otherwise, don't bother. Kernel code
+path which cleared tsk_used_math() knows what needs to be done
+with the fpu state.
+
+Reported-by: Maarten Baert <maarten-baert@hotmail.com>
+Reported-by: Nate Eldredge <nate@thatsmathematics.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
+Cc: George Spelvin <linux@horizon.com>
+---
+ arch/x86/kernel/i387.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 4e5f770..670bba1 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -87,10 +87,19 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
  
- /* audit_names->type values */
- #define	AUDIT_TYPE_UNKNOWN	0	/* we don't know yet */
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 44b05a0..0a73cf3 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -355,6 +355,12 @@ enum {
- #define AUDIT_ARCH_SPARC64	(EM_SPARCV9|__AUDIT_ARCH_64BIT)
- #define AUDIT_ARCH_X86_64	(EM_X86_64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
- 
-+#ifdef CONFIG_COMPAT
-+#define audit_is_compat(arch)	(!((arch) & __AUDIT_ARCH_64BIT))
-+#else
-+#define audit_is_compat(arch)	false
-+#endif
-+
- #define AUDIT_PERM_EXEC		1
- #define AUDIT_PERM_WRITE	2
- #define AUDIT_PERM_READ		4
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 991c98b..48896db 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -182,6 +182,11 @@ config AUDIT_GENERIC
- 	depends on AUDIT && !AUDIT_ARCH
- 	default y
- 
-+config AUDIT_COMPAT_GENERIC
-+	bool
-+	depends on AUDIT_GENERIC && COMPAT
-+	default y
-+
- config RANDOM32_SELFTEST
- 	bool "PRNG perform self test on init"
- 	default n
-diff --git a/lib/Makefile b/lib/Makefile
-index a459c31..972552b 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -93,6 +93,7 @@ obj-$(CONFIG_TEXTSEARCH_BM) += ts_bm.o
- obj-$(CONFIG_TEXTSEARCH_FSM) += ts_fsm.o
- obj-$(CONFIG_SMP) += percpu_counter.o
- obj-$(CONFIG_AUDIT_GENERIC) += audit.o
-+obj-$(CONFIG_AUDIT_COMPAT_GENERIC) += compat_audit.o
- 
- obj-$(CONFIG_SWIOTLB) += swiotlb.o
- obj-$(CONFIG_IOMMU_HELPER) += iommu-helper.o
-diff --git a/lib/audit.c b/lib/audit.c
-index 76bbed4..1d726a2 100644
---- a/lib/audit.c
-+++ b/lib/audit.c
-@@ -30,11 +30,17 @@ static unsigned signal_class[] = {
- 
- int audit_classify_arch(int arch)
+ void __kernel_fpu_end(void)
  {
--	return 0;
-+	if (audit_is_compat(arch))
-+		return 1;
-+	else
-+		return 0;
- }
- 
- int audit_classify_syscall(int abi, unsigned syscall)
- {
-+	if (audit_is_compat(abi))
-+		return audit_classify_compat_syscall(abi, syscall);
-+
- 	switch(syscall) {
- #ifdef __NR_open
- 	case __NR_open:
-@@ -57,6 +63,13 @@ int audit_classify_syscall(int abi, unsigned syscall)
- 
- static int __init audit_classes_init(void)
- {
-+#ifdef CONFIG_AUDIT_COMPAT_GENERIC
-+	audit_register_class(AUDIT_CLASS_WRITE_32, compat_write_class);
-+	audit_register_class(AUDIT_CLASS_READ_32, compat_read_class);
-+	audit_register_class(AUDIT_CLASS_DIR_WRITE_32, compat_dir_class);
-+	audit_register_class(AUDIT_CLASS_CHATTR_32, compat_chattr_class);
-+	audit_register_class(AUDIT_CLASS_SIGNAL_32, compat_signal_class);
-+#endif
- 	audit_register_class(AUDIT_CLASS_WRITE, write_class);
- 	audit_register_class(AUDIT_CLASS_READ, read_class);
- 	audit_register_class(AUDIT_CLASS_DIR_WRITE, dir_class);
-diff --git a/lib/compat_audit.c b/lib/compat_audit.c
-new file mode 100644
-index 0000000..873f75b
---- /dev/null
-+++ b/lib/compat_audit.c
-@@ -0,0 +1,50 @@
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <asm/unistd32.h>
-+
-+unsigned compat_dir_class[] = {
-+#include <asm-generic/audit_dir_write.h>
-+~0U
-+};
-+
-+unsigned compat_read_class[] = {
-+#include <asm-generic/audit_read.h>
-+~0U
-+};
-+
-+unsigned compat_write_class[] = {
-+#include <asm-generic/audit_write.h>
-+~0U
-+};
-+
-+unsigned compat_chattr_class[] = {
-+#include <asm-generic/audit_change_attr.h>
-+~0U
-+};
-+
-+unsigned compat_signal_class[] = {
-+#include <asm-generic/audit_signal.h>
-+~0U
-+};
-+
-+int audit_classify_compat_syscall(int abi, unsigned syscall)
-+{
-+	switch (syscall) {
-+#ifdef __NR_open
-+	case __NR_open:
-+		return 2;
-+#endif
-+#ifdef __NR_openat
-+	case __NR_openat:
-+		return 3;
-+#endif
-+#ifdef __NR_socketcall
-+	case __NR_socketcall:
-+		return 4;
-+#endif
-+	case __NR_execve:
-+		return 5;
-+	default:
-+		return 1;
+-	if (use_eager_fpu())
+-		math_state_restore();
+-	else
++	if (use_eager_fpu()) {
++		/*
++		 * For eager fpu, most the time, tsk_used_math() is true.
++		 * Restore the user math as we are done with the kernel usage.
++		 * At few instances during thread exit, signal handling etc,
++		 * tsk_used_math() is false. Those few places will take proper
++		 * actions, so we don't need to restore the math here.
++		 */
++		if (likely(tsk_used_math(current)))
++			math_state_restore();
++	} else {
+ 		stts();
 +	}
-+}
--- 
-1.7.9.5
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
+ 
+
 
