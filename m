@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761AbaBCTJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:09:51 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:62920 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbaBCTJa (ORCPT
+	id S1753742AbaBCTJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:09:49 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37215 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819AbaBCTJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:09:30 -0500
+	Mon, 3 Feb 2014 14:09:33 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: [PATCH 08/10] kernfs: implement kernfs_node_from_dentry(), kernfs_root_from_sb() and kernfs_rename()
-Date: Mon,  3 Feb 2014 14:09:15 -0500
-Message-Id: <1391454557-32376-9-git-send-email-tj@kernel.org>
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH 10/10] kernfs: add CONFIG_KERNFS
+Date: Mon,  3 Feb 2014 14:09:17 -0500
+Message-Id: <1391454557-32376-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1391454557-32376-1-git-send-email-tj@kernel.org>
 References: <1391454557-32376-1-git-send-email-tj@kernel.org>
@@ -21,116 +21,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement helpers to determine node from dentry and root from
-super_block.  Also add a kernfs_rename_ns() wrapper which assumes NULL
-namespace.  These generally make sense and will be used by cgroup.
-
-v2: Some dummy implementations for !CONFIG_SYSFS was missing.  Fixed.
-    Reported by kbuild test robot.
+As sysfs was kernfs's only user, kernfs has been piggybacking on
+CONFIG_SYSFS; however, kernfs is scheduled to grow a new user very
+soon.  Introduce a separate config option CONFIG_KERNFS which is to be
+selected by kernfs users.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org
 ---
- fs/kernfs/dir.c        | 18 ++++++++++++++++++
- fs/kernfs/mount.c      | 14 ++++++++++++++
- include/linux/kernfs.h | 16 ++++++++++++++++
- 3 files changed, 48 insertions(+)
+ fs/Kconfig             | 1 +
+ fs/Makefile            | 3 ++-
+ fs/kernfs/Kconfig      | 7 +++++++
+ fs/sysfs/Kconfig       | 1 +
+ include/linux/kernfs.h | 6 +++---
+ 5 files changed, 14 insertions(+), 4 deletions(-)
+ create mode 100644 fs/kernfs/Kconfig
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 3cff0a2..42a250f 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -350,6 +350,24 @@ const struct dentry_operations kernfs_dops = {
- 	.d_release	= kernfs_dop_release,
- };
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 7385e54..312393f 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -96,6 +96,7 @@ endif # BLOCK
+ menu "Pseudo filesystems"
  
-+/**
-+ * kernfs_node_from_dentry - determine kernfs_node associated with a dentry
-+ * @dentry: the dentry in question
-+ *
-+ * Return the kernfs_node associated with @dentry.  If @dentry is not a
-+ * kernfs one, %NULL is returned.
-+ *
-+ * While the returned kernfs_node will stay accessible as long as @dentry
-+ * is accessible, the returned node can be in any state and the caller is
-+ * fully responsible for determining what's accessible.
-+ */
-+struct kernfs_node *kernfs_node_from_dentry(struct dentry *dentry)
-+{
-+	if (dentry->d_op == &kernfs_dops)
-+		return dentry->d_fsdata;
-+	return NULL;
-+}
-+
- static struct kernfs_node *__kernfs_new_node(struct kernfs_root *root,
- 					     const char *name, umode_t mode,
- 					     unsigned flags)
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index 70cc698..e5b28b0 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -48,6 +48,20 @@ static const struct super_operations kernfs_sops = {
- 	.show_options	= kernfs_sop_show_options,
- };
+ source "fs/proc/Kconfig"
++source "fs/kernfs/Kconfig"
+ source "fs/sysfs/Kconfig"
  
-+/**
-+ * kernfs_root_from_sb - determine kernfs_root associated with a super_block
-+ * @sb: the super_block in question
-+ *
-+ * Return the kernfs_root associated with @sb.  If @sb is not a kernfs one,
-+ * %NULL is returned.
-+ */
-+struct kernfs_root *kernfs_root_from_sb(struct super_block *sb)
-+{
-+	if (sb->s_op == &kernfs_sops)
-+		return kernfs_info(sb)->root;
-+	return NULL;
-+}
+ config TMPFS
+diff --git a/fs/Makefile b/fs/Makefile
+index 47ac07b..f9cb987 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -52,7 +52,8 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
+ obj-y				+= quota/
+ 
+ obj-$(CONFIG_PROC_FS)		+= proc/
+-obj-$(CONFIG_SYSFS)		+= sysfs/ kernfs/
++obj-$(CONFIG_KERNFS)		+= kernfs/
++obj-$(CONFIG_SYSFS)		+= sysfs/
+ obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
+ obj-y				+= devpts/
+ 
+diff --git a/fs/kernfs/Kconfig b/fs/kernfs/Kconfig
+new file mode 100644
+index 0000000..397b5f7
+--- /dev/null
++++ b/fs/kernfs/Kconfig
+@@ -0,0 +1,7 @@
++#
++# KERNFS should be selected by its users
++#
 +
- static int kernfs_fill_super(struct super_block *sb)
- {
- 	struct kernfs_super_info *info = kernfs_info(sb);
++config KERNFS
++	bool
++	default n
+diff --git a/fs/sysfs/Kconfig b/fs/sysfs/Kconfig
+index 8c41fea..b275601 100644
+--- a/fs/sysfs/Kconfig
++++ b/fs/sysfs/Kconfig
+@@ -1,6 +1,7 @@
+ config SYSFS
+ 	bool "sysfs file system support" if EXPERT
+ 	default y
++	select KERNFS
+ 	help
+ 	The sysfs filesystem is a virtual filesystem that the kernel uses to
+ 	export internal kernel objects, their attributes, and their
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 9ca0f09..9c89904 100644
+index b7cb267..32b696f 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -234,6 +234,9 @@ struct kernfs_node *kernfs_find_and_get_ns(struct kernfs_node *parent,
- void kernfs_get(struct kernfs_node *kn);
- void kernfs_put(struct kernfs_node *kn);
+@@ -201,7 +201,7 @@ struct kernfs_ops {
+ #endif
+ };
  
-+struct kernfs_node *kernfs_node_from_dentry(struct dentry *dentry);
-+struct kernfs_root *kernfs_root_from_sb(struct super_block *sb);
-+
- struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
- 				       unsigned int flags, void *priv);
- void kernfs_destroy_root(struct kernfs_root *root);
-@@ -288,6 +291,12 @@ kernfs_find_and_get_ns(struct kernfs_node *parent, const char *name,
- static inline void kernfs_get(struct kernfs_node *kn) { }
- static inline void kernfs_put(struct kernfs_node *kn) { }
+-#ifdef CONFIG_SYSFS
++#ifdef CONFIG_KERNFS
  
-+static inline struct kernfs_node *kernfs_node_from_dentry(struct dentry *dentry)
-+{ return NULL; }
-+
-+static inline struct kernfs_root *kernfs_root_from_sb(struct super_block *sb)
-+{ return NULL; }
-+
- static inline struct kernfs_root *
- kernfs_create_root(struct kernfs_syscall_ops *scops, unsigned int flags,
- 		   void *priv)
-@@ -388,6 +397,13 @@ static inline int kernfs_remove_by_name(struct kernfs_node *parent,
- 	return kernfs_remove_by_name_ns(parent, name, NULL);
- }
+ static inline enum kernfs_node_type kernfs_type(struct kernfs_node *kn)
+ {
+@@ -284,7 +284,7 @@ void kernfs_kill_sb(struct super_block *sb);
  
-+static inline int kernfs_rename(struct kernfs_node *kn,
-+				struct kernfs_node *new_parent,
-+				const char *new_name)
-+{
-+	return kernfs_rename_ns(kn, new_parent, new_name, NULL);
-+}
-+
- static inline struct dentry *
- kernfs_mount(struct file_system_type *fs_type, int flags,
- 	     struct kernfs_root *root)
+ void kernfs_init(void);
+ 
+-#else	/* CONFIG_SYSFS */
++#else	/* CONFIG_KERNFS */
+ 
+ static inline enum kernfs_node_type kernfs_type(struct kernfs_node *kn)
+ { return 0; }	/* whatever */
+@@ -379,7 +379,7 @@ static inline void kernfs_kill_sb(struct super_block *sb) { }
+ 
+ static inline void kernfs_init(void) { }
+ 
+-#endif	/* CONFIG_SYSFS */
++#endif	/* CONFIG_KERNFS */
+ 
+ static inline struct kernfs_node *
+ kernfs_find_and_get(struct kernfs_node *kn, const char *name)
 -- 
 1.8.5.3
 
