@@ -1,136 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaBCGhG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 01:37:06 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39595 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874AbaBCGhD (ORCPT
+	id S1751618AbaBCGku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 01:40:50 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:61240 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaBCGks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 01:37:03 -0500
-Message-ID: <52EF382E.4020003@linux.vnet.ibm.com>
-Date: Mon, 03 Feb 2014 12:03:18 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, nicolas.pitre@linaro.org,
-        mingo@redhat.com, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-References: <1391090962-15032-1-git-send-email-daniel.lezcano@linaro.org> <1391090962-15032-4-git-send-email-daniel.lezcano@linaro.org> <20140130153150.GD5002@laptop.programming.kicks-ass.net> <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net> <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <52EB77C3.20704@linaro.org>
-In-Reply-To: <52EB77C3.20704@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020306-7164-0000-0000-000005A559BF
+	Mon, 3 Feb 2014 01:40:48 -0500
+X-AuditID: 9c93017e-b7b63ae000000e6a-80-52ef39eed81c
+From: Chanho Min <chanho.min@lge.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Hankyung Yu <hankyung.yu@lge.com>, Pierre Ossman <drzeus@drzeus.cx>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        HyoJun Im <hyojun.im@lge.com>, Chanho Min <chanho.min@lge.com>
+Subject: [PATCH] mmc:sdhci: handle busy-end interrupt during command
+Date: Mon,  3 Feb 2014 15:40:24 +0900
+Message-Id: <1391409624-6234-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+It is fully legal for a controller to start handling busy-end interrupt
+before it has signaled that the command has completed. So make sure
+we do things in the proper order, Or it results that command interrupt
+is ignored so it can cause unexpected operations. This is founded at some
+toshiba emmc with the bellow warning.
 
-On 01/31/2014 03:45 PM, Daniel Lezcano wrote:
-> On 01/31/2014 09:45 AM, Preeti Murthy wrote:
->> Hi,
->>
->> On Thu, Jan 30, 2014 at 10:55 PM, Daniel Lezcano
->> <daniel.lezcano@linaro.org> wrote:
->>> On 01/30/2014 05:35 PM, Peter Zijlstra wrote:
->>>>
->>>> On Thu, Jan 30, 2014 at 05:27:54PM +0100, Daniel Lezcano wrote:
->>>>>
->>>>> struct cpuidle_state *state = &drv->states[rq->index];
->>>>>
->>>>> And from the state, we have the following informations:
->>>>>
->>>>> struct cpuidle_state {
->>>>>
->>>>>          [ ... ]
->>>>>
->>>>>           unsigned int    exit_latency; /* in US */
->>>>>           int             power_usage; /* in mW */
->>>>>           unsigned int    target_residency; /* in US */
->>>>>           bool            disabled; /* disabled on all CPUs */
->>>>>
->>>>>          [ ... ]
->>>>> };
->>>>
->>>>
->>>> Right, but can we say that a higher index will save more power and have
->>>> a higher exit latency? Or is a driver free to have a random mapping
->>>> from
->>>> idle_index to state?
->>>
->>>
->>> If the driver does its own random mapping that will break the governor
->>> logic. So yes, the states are ordered, the higher the index is, the
->>> more you
->>> save power and the higher the exit latency is.
->>
->> The above point holds true for only the ladder governor which sees the
->> idle
->> states indexed in the increasing order of target_residency/exit_latency.
-> 
-> The cpuidle framework has been modified for both governor, see commit
-> 8aef33a7.
-> 
-> The power field was initially used to do the selection, but no power
-> value was ever used to filled this field by any hardware. So the field
-> was arbitrarily filled with a decreasing value (-1, -2, -3 ...), and
-> used by the governor's select function. The patch above just removed
-> this field and the condition on power for 'select' assuming the idle
-> state are power ordered in the array.
+"mmc0: Got command interrupt 0x00000001 even though
+no command operation was in progress."
 
-Ok. Looking at commit id 71abbbf856a0, it looks like the primary
-motivation for it was the power_usage numbers of each idle state. But if
-that went unused, then it perhaps makes sense to revert that patch.
+Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ drivers/mmc/host/sdhci.c  |   17 +++++++++++++++--
+ include/linux/mmc/sdhci.h |    1 +
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-Commit 8aef33a7 pretty much did that. However I think it overlooked the
-menu_select() function where the the search iterates through all the
-idle states introduced by the above mentioned commit again. Since its
-purpose is outdated as per what you say, its best if we correct this now
-as per the below post that you have pointed to.
-
-[RFC PATCH] cpuidle: reduce unnecessary loop in c-state selection
-> 
->> However this is not true as far as I can see in the menu governor. It
->> acknowledges the dynamic ordering of idle states as can be seen in the
->> menu_select() function in the menu governor, where the idle state for the
->> CPU gets chosen.  You will notice that, even if it is found that the
->> predicted
->> idle time of the CPU is smaller than the target residency of an idle
->> state,
->> the governor continues to search for suitable idle states in the
->> higher indexed
->> states although it should have halted if the idle states' were ordered
->> according
->> to their target residency.. The same holds for exit_latency.
-> 
-> I am not sure to get the point. Actually, this loop should be just
-> optimized to backward search the idle state like cpuidle_play_dead does
-> 
-> There is also a patch proposed by Alex Shi about this loop.
-> 
-> [RFC PATCH] cpuidle: reduce unnecessary loop in c-state selection
-> 
-> http://comments.gmane.org/gmane.linux.power-management.general/42124
-
-But again if we are copying the exit_latency and target_residency
-numbers of the idle state entered, into the rq as soon as the idle state
-for the CPU is chosen, as per the discussion on this thread, then I
-guess the ordering of the idle states in the cpuidle state table does
-not matter.
-
-Thanks
-
-Regards
-Preeti U Murthy
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index bd8a098..21f98e7 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1016,6 +1016,7 @@ void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 	mod_timer(&host->timer, jiffies + 10 * HZ);
+ 
+ 	host->cmd = cmd;
++	host->busy_handle = 0;
+ 
+ 	sdhci_prepare_data(host, cmd);
+ 
+@@ -2271,8 +2272,12 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
+ 		if (host->cmd->data)
+ 			DBG("Cannot wait for busy signal when also "
+ 				"doing a data transfer");
+-		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ))
++		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ)
++				&& !host->busy_handle) {
++			/* Mark that command complete before busy is ended */
++			host->busy_handle = 1;
+ 			return;
++		}
+ 
+ 		/* The controller does not support the end-of-busy IRQ,
+ 		 * fall through and take the SDHCI_INT_RESPONSE */
+@@ -2335,7 +2340,15 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
+ 		 */
+ 		if (host->cmd && (host->cmd->flags & MMC_RSP_BUSY)) {
+ 			if (intmask & SDHCI_INT_DATA_END) {
+-				sdhci_finish_command(host);
++				/*
++				 * Some cards handle busy-end interrupt
++				 * before the command completed, so make
++				 * sure we do things in the proper order.
++				 */
++				if (host->busy_handle)
++					sdhci_finish_command(host);
++				else
++					host->busy_handle = 1;
+ 				return;
+ 			}
+ 		}
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 3e781b8..0118020 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -148,6 +148,7 @@ struct sdhci_host {
+ 	struct mmc_command *cmd;	/* Current command */
+ 	struct mmc_data *data;	/* Current data request */
+ 	unsigned int data_early:1;	/* Data finished before cmd */
++	unsigned int busy_handle:1;	/* Handling the order of Busy-end */
+ 
+ 	struct sg_mapping_iter sg_miter;	/* SG state for PIO */
+ 	unsigned int blocks;	/* remaining PIO blocks */
+-- 
+1.7.9.5
 
