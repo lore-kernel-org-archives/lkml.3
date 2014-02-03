@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaBCV3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:29:37 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15263 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaBCV3f convert rfc822-to-8bit (ORCPT
+	id S1753469AbaBCVa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:30:57 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:50271 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaBCVaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:29:35 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 13:28:11 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "abrestic@chromium.org" <abrestic@chromium.org>,
-        "dgreid@chromium.org" <dgreid@chromium.org>,
-        "katierh@chromium.org" <katierh@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 3 Feb 2014 13:29:33 -0800
-Subject: RE: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional property
-Thread-Topic: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional
- property
-Thread-Index: Ac8hJqe3/pXoMI2uSN2eNKaPvNEOwAAADChg
-Message-ID: <643E69AA4436674C8F39DCC2C05F7638631998539D@HQMAIL03.nvidia.com>
-References: <1391204811-6293-1-git-send-email-achew@nvidia.com>
- <20140203171053.GA28338@e106331-lin.cambridge.arm.com>
- <643E69AA4436674C8F39DCC2C05F763863199852CA@HQMAIL03.nvidia.com>
- <52F005A0.4080807@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F7638631998538B@HQMAIL03.nvidia.com>
- <52F00994.7080701@wwwdotorg.org>
-In-Reply-To: <52F00994.7080701@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 3 Feb 2014 16:30:55 -0500
+From: Marc Carino <marc.ceeeee@gmail.com>
+To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
+Subject: [PATCH v6 0/8] ARM: brcmstb: Add Broadcom STB SoC support
+Date: Mon,  3 Feb 2014 13:30:33 -0800
+Message-Id: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
+X-Mailer: git-send-email 1.8.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 02/03/2014 02:16 PM, Andrew Chew wrote:
-> >> On 02/03/2014 11:59 AM, Andrew Chew wrote:
-> >>>> On Fri, Jan 31, 2014 at 09:46:51PM +0000, Andrew Chew wrote:
-> >>>>> This optional property can be used to specify which timers are to
-> >>>>> be used for hardware watchdog timeouts (via a tegra wdt driver).
-> >>>>
-> >>>> Is there any reason that a particular timer should be used?
-> >>>
-> >>> I worry about colliding with other timer allocations, and wanted to
-> >>> be flexible in this regard.
-> >>
-> >> Are the other timer allocations represented in DT, or simply made by
-> >> or hard- coded in the driver? If the former, this property seems like
-> >> a good equivalent of any existing allocations. If the latter, can't
-> >> the driver just allocate or hard- code the allocation in the same way as any
-> existing allocations?
-> >
-> > From what I've seen, timer allocations are just hard-coded into whatever
-> driver.
-> > I didn't think this was a particularly good idea, since when writing
-> > other drivers that for some reason need a timer, the author has to be
-> > aware of allocations made in other, barely related drivers.
-> 
-> I'm not sure that they would; why wouldn't the timer driver register the
-> various timers with standard Linux APIs which the clients talk to, thus
-> avoiding the clients having any knowledge at all of which channels are used
-> for what.
-> 
-> If you're talking about the watchdog driver, then can't we just create a
-> shared header file that the clocksource and watchdog drivers both include,
-> which defines the timer ID allocations?
+This patchset contains the board support package for the
+Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
+minimal set of code needed for a BCM7445-based board to boot
+the Linux kernel.
 
-Sure, let's go with that.  In that case, this patch isn't needed, and should be
-dropped.
+These changes heavily leverage the OF/devicetree framework.
+
+v6:
+- rebased to v3.14-rc1
+- utilize common APIs for handling CPU power-down
+- drop deprecated __cpuinit attributes
+
+v5 (https://lkml.org/lkml/2014/1/21/640):
+- rebased to v3.13 tag
+- make UART DT node a child of 'rdb' node
+- fix ordering of debug UART entries
+
+v4 (https://lkml.org/lkml/2014/1/17/455):
+- make a reboot driver and put it in the drivers folder
+- rework DT bindings to leverage 'syscon'
+- rework BSP code to use 'syscon' for all register mappings
+- misc. tweaks per suggestions from v3
+
+v3 (https://lkml.org/lkml/2014/1/14/696):
+- rebased to v3.13-rc8
+- switched to using 'multi_v7_defconfig'
+- eliminated dependence on compile-time peripheral register access
+- moved DT node iomap out from 'init_early'
+- misc. minor cleanups from mailing-list discussion for v2
+
+v2 (https://lkml.org/lkml/2013/11/26/570):
+- rebased to v3.13-rc1
+- moved implementation to 'mach-bcm' folder
+- added CPU init for B16RM
+
+v1:
+- initial submission
+
+[1] http://www.broadcom.com/products/Cable/Cable-Set-Top-Box-Solutions/BCM7445
+
+Marc Carino (8):
+  ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
+  power: reset: Add reboot driver for brcmstb
+  ARM: brcmstb: add debug UART for earlyprintk support
+  ARM: do CPU-specific init for Broadcom Brahma15 cores
+  ARM: brcmstb: add CPU binding for Broadcom Brahma15
+  ARM: brcmstb: add misc. DT bindings for brcmstb
+  ARM: brcmstb: gic: add compatible string for Broadcom Brahma15
+  ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
+
+ .../devicetree/bindings/arm/brcm-brcmstb.txt       |   95 ++++++
+ Documentation/devicetree/bindings/arm/cpus.txt     |    1 +
+ Documentation/devicetree/bindings/arm/gic.txt      |    1 +
+ arch/arm/Kconfig.debug                             |   15 +-
+ arch/arm/boot/dts/bcm7445.dts                      |  111 +++++++
+ arch/arm/configs/multi_v7_defconfig                |    1 +
+ arch/arm/mach-bcm/Kconfig                          |   15 +
+ arch/arm/mach-bcm/Makefile                         |    4 +
+ arch/arm/mach-bcm/brcmstb.c                        |  104 +++++++
+ arch/arm/mach-bcm/brcmstb.h                        |   38 +++
+ arch/arm/mach-bcm/headsmp-brcmstb.S                |   33 ++
+ arch/arm/mach-bcm/hotplug-brcmstb.c                |  311 ++++++++++++++++++++
+ arch/arm/mm/proc-v7.S                              |   11 +
+ drivers/power/reset/Kconfig                        |   10 +
+ drivers/power/reset/Makefile                       |    1 +
+ drivers/power/reset/brcmstb-reboot.c               |  120 ++++++++
+ 16 files changed, 870 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+ create mode 100644 arch/arm/boot/dts/bcm7445.dts
+ create mode 100644 arch/arm/mach-bcm/brcmstb.c
+ create mode 100644 arch/arm/mach-bcm/brcmstb.h
+ create mode 100644 arch/arm/mach-bcm/headsmp-brcmstb.S
+ create mode 100644 arch/arm/mach-bcm/hotplug-brcmstb.c
+ create mode 100644 drivers/power/reset/brcmstb-reboot.c
+
