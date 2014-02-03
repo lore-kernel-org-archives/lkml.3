@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaBCXJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:09:04 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46524 "EHLO
+	id S1753402AbaBCXJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:09:35 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46507 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576AbaBCXJA (ORCPT
+	with ESMTP id S1753222AbaBCXI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:09:00 -0500
+	Mon, 3 Feb 2014 18:08:59 -0500
 From: Josh Cartwright <joshc@codeaurora.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
         Sagar Dharia <sdharia@codeaurora.org>,
         Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 6/6] regmap: spmi: support base and extended register spaces
-Date: Mon,  3 Feb 2014 17:05:38 -0600
-Message-Id: <1391468739-20987-7-git-send-email-joshc@codeaurora.org>
+        Michael Bohan <mbohan@codeaurora.org>,
+        Kenneth Heitke <kheitke@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v5 3/6] spmi: Add MSM PMIC Arbiter SPMI controller
+Date: Mon,  3 Feb 2014 17:05:35 -0600
+Message-Id: <1391468739-20987-4-git-send-email-joshc@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
 References: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
@@ -24,325 +27,476 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPMI states that a slave may contain two register spaces, the Base
-register space is a 5-bit byte-addressable space accessed via the
-Register Read/Write and Register Zero Write command sequences, and the
-Extended register space: a 16-bit byte-addressable space accessed via
-the Extended Read/Write and Extended Read/Write Long command sequences.
+From: Kenneth Heitke <kheitke@codeaurora.org>
 
-Provide support for accessing both of these spaces, taking advantage of
-the more bandwidth-efficient commands ('Register 0 Write' vs 'Register
-Write', and 'Extended Register Read/Write' vs 'Extended Register
-Read/Write Long') when possible.
+Qualcomm's PMIC Arbiter SPMI controller functions as a bus master and
+is used to communication with one or more PMIC (slave) devices on the
+SPMI bus.  The PMIC Arbiter is actually a hardware wrapper around the
+SPMI controller that provides concurrent and autonomous PMIC access
+to various entities that need to communicate with the PMIC.
 
+The SPMI controller hardware handles all of the SPMI bus activity (bus
+arbitration, sequence start condition, transmission of frames, etc).
+This software driver uses the PMIC Arbiter register interface to
+initiate command sequences on the SPMI bus.  The status register is
+read to determine when the command sequence has completed and whether
+or not it completed successfully.
+
+Signed-off-by: Kenneth Heitke <kheitke@codeaurora.org>
 Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-Acked-by: Mark Brown <broonie@linaro.org>
 ---
- drivers/base/regmap/regmap-spmi.c | 228 ++++++++++++++++++++++++++++++++------
- include/linux/regmap.h            |  12 +-
- 2 files changed, 205 insertions(+), 35 deletions(-)
+ drivers/spmi/Kconfig         |  17 ++
+ drivers/spmi/Makefile        |   2 +
+ drivers/spmi/spmi-pmic-arb.c | 405 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 424 insertions(+)
+ create mode 100644 drivers/spmi/spmi-pmic-arb.c
 
-diff --git a/drivers/base/regmap/regmap-spmi.c b/drivers/base/regmap/regmap-spmi.c
-index ac23910..d7026dc 100644
---- a/drivers/base/regmap/regmap-spmi.c
-+++ b/drivers/base/regmap/regmap-spmi.c
-@@ -22,69 +22,235 @@
- #include <linux/module.h>
- #include <linux/init.h>
- 
--static int regmap_spmi_read(void *context,
--			    const void *reg, size_t reg_size,
--			    void *val, size_t val_size)
-+static int regmap_spmi_base_read(void *context,
-+				 const void *reg, size_t reg_size,
-+				 void *val, size_t val_size)
- {
-+	u8 addr = *(u8 *)reg;
-+	int err = 0;
+diff --git a/drivers/spmi/Kconfig b/drivers/spmi/Kconfig
+index 1dbfee0..80b7901 100644
+--- a/drivers/spmi/Kconfig
++++ b/drivers/spmi/Kconfig
+@@ -7,3 +7,20 @@ menuconfig SPMI
+ 	  SPMI (System Power Management Interface) is a two-wire
+ 	  serial interface between baseband and application processors
+ 	  and Power Management Integrated Circuits (PMIC).
 +
-+	BUG_ON(reg_size != 1);
++if SPMI
 +
-+	while (val_size-- && !err)
-+		err = spmi_register_read(context, addr++, val++);
++config SPMI_MSM_PMIC_ARB
++	tristate "Qualcomm MSM SPMI Controller (PMIC Arbiter)"
++	depends on ARM
++	depends on ARCH_MSM || COMPILE_TEST
++	default ARCH_MSM
++	help
++	  If you say yes to this option, support will be included for the
++	  built-in SPMI PMIC Arbiter interface on Qualcomm MSM family
++	  processors.
 +
-+	return err;
-+}
++	  This is required for communicating with Qualcomm PMICs and
++	  other devices that have the SPMI interface.
 +
-+static int regmap_spmi_base_gather_write(void *context,
-+					 const void *reg, size_t reg_size,
-+					 const void *val, size_t val_size)
-+{
-+	const u8 *data = val;
-+	u8 addr = *(u8 *)reg;
-+	int err = 0;
++endif
+diff --git a/drivers/spmi/Makefile b/drivers/spmi/Makefile
+index 1de1acd..fc75104 100644
+--- a/drivers/spmi/Makefile
++++ b/drivers/spmi/Makefile
+@@ -2,3 +2,5 @@
+ # Makefile for kernel SPMI framework.
+ #
+ obj-$(CONFIG_SPMI)	+= spmi.o
 +
-+	BUG_ON(reg_size != 1);
++obj-$(CONFIG_SPMI_MSM_PMIC_ARB)	+= spmi-pmic-arb.o
+diff --git a/drivers/spmi/spmi-pmic-arb.c b/drivers/spmi/spmi-pmic-arb.c
+new file mode 100644
+index 0000000..b7f753f
+--- /dev/null
++++ b/drivers/spmi/spmi-pmic-arb.c
+@@ -0,0 +1,405 @@
++/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/spmi.h>
 +
-+	/*
-+	 * SPMI defines a more bandwidth-efficient 'Register 0 Write' sequence,
-+	 * use it when possible.
-+	 */
-+	if (addr == 0 && val_size) {
-+		err = spmi_register_zero_write(context, *data);
-+		if (err)
-+			goto err_out;
++/* PMIC Arbiter configuration registers */
++#define PMIC_ARB_VERSION		0x0000
++#define PMIC_ARB_INT_EN			0x0004
 +
-+		data++;
-+		addr++;
-+		val_size--;
-+	}
++/* PMIC Arbiter channel registers */
++#define PMIC_ARB_CMD(N)			(0x0800 + (0x80 * (N)))
++#define PMIC_ARB_CONFIG(N)		(0x0804 + (0x80 * (N)))
++#define PMIC_ARB_STATUS(N)		(0x0808 + (0x80 * (N)))
++#define PMIC_ARB_WDATA0(N)		(0x0810 + (0x80 * (N)))
++#define PMIC_ARB_WDATA1(N)		(0x0814 + (0x80 * (N)))
++#define PMIC_ARB_RDATA0(N)		(0x0818 + (0x80 * (N)))
++#define PMIC_ARB_RDATA1(N)		(0x081C + (0x80 * (N)))
 +
-+	while (val_size) {
-+		err = spmi_register_write(context, addr, *data);
-+		if (err)
-+			goto err_out;
++/* Interrupt Controller */
++#define SPMI_PIC_OWNER_ACC_STATUS(M, N)	(0x0000 + ((32 * (M)) + (4 * (N))))
++#define SPMI_PIC_ACC_ENABLE(N)		(0x0200 + (4 * (N)))
++#define SPMI_PIC_IRQ_STATUS(N)		(0x0600 + (4 * (N)))
++#define SPMI_PIC_IRQ_CLEAR(N)		(0x0A00 + (4 * (N)))
 +
-+		data++;
-+		addr++;
-+		val_size--;
-+	}
++/* Mapping Table */
++#define SPMI_MAPPING_TABLE_REG(N)	(0x0B00 + (4 * (N)))
++#define SPMI_MAPPING_BIT_INDEX(X)	(((X) >> 18) & 0xF)
++#define SPMI_MAPPING_BIT_IS_0_FLAG(X)	(((X) >> 17) & 0x1)
++#define SPMI_MAPPING_BIT_IS_0_RESULT(X)	(((X) >> 9) & 0xFF)
++#define SPMI_MAPPING_BIT_IS_1_FLAG(X)	(((X) >> 8) & 0x1)
++#define SPMI_MAPPING_BIT_IS_1_RESULT(X)	(((X) >> 0) & 0xFF)
 +
-+err_out:
-+	return err;
-+}
++#define SPMI_MAPPING_TABLE_LEN		255
++#define SPMI_MAPPING_TABLE_TREE_DEPTH	16	/* Maximum of 16-bits */
 +
-+static int regmap_spmi_base_write(void *context, const void *data,
-+				  size_t count)
-+{
-+	BUG_ON(count < 1);
-+	return regmap_spmi_base_gather_write(context, data, 1, data + 1,
-+					     count - 1);
-+}
++/* Ownership Table */
++#define SPMI_OWNERSHIP_TABLE_REG(N)	(0x0700 + (4 * (N)))
++#define SPMI_OWNERSHIP_PERIPH2OWNER(X)	((X) & 0x7)
 +
-+static struct regmap_bus regmap_spmi_base = {
-+	.read				= regmap_spmi_base_read,
-+	.write				= regmap_spmi_base_write,
-+	.gather_write			= regmap_spmi_base_gather_write,
-+	.reg_format_endian_default	= REGMAP_ENDIAN_NATIVE,
-+	.val_format_endian_default	= REGMAP_ENDIAN_NATIVE,
++/* Channel Status fields */
++enum pmic_arb_chnl_status {
++	PMIC_ARB_STATUS_DONE	= (1 << 0),
++	PMIC_ARB_STATUS_FAILURE	= (1 << 1),
++	PMIC_ARB_STATUS_DENIED	= (1 << 2),
++	PMIC_ARB_STATUS_DROPPED	= (1 << 3),
 +};
 +
-+/**
-+ * regmap_init_spmi_base(): Create regmap for the Base register space
-+ * @sdev:	SPMI device that will be interacted with
-+ * @config:	Configuration for register map
-+ *
-+ * The return value will be an ERR_PTR() on error or a valid pointer to
-+ * a struct regmap.
-+ */
-+struct regmap *regmap_init_spmi_base(struct spmi_device *sdev,
-+				     const struct regmap_config *config)
-+{
-+	return regmap_init(&sdev->dev, &regmap_spmi_base, sdev, config);
-+}
-+EXPORT_SYMBOL_GPL(regmap_init_spmi_base);
++/* Command register fields */
++#define PMIC_ARB_CMD_MAX_BYTE_COUNT	8
++
++/* Command Opcodes */
++enum pmic_arb_cmd_op_code {
++	PMIC_ARB_OP_EXT_WRITEL = 0,
++	PMIC_ARB_OP_EXT_READL = 1,
++	PMIC_ARB_OP_EXT_WRITE = 2,
++	PMIC_ARB_OP_RESET = 3,
++	PMIC_ARB_OP_SLEEP = 4,
++	PMIC_ARB_OP_SHUTDOWN = 5,
++	PMIC_ARB_OP_WAKEUP = 6,
++	PMIC_ARB_OP_AUTHENTICATE = 7,
++	PMIC_ARB_OP_MSTR_READ = 8,
++	PMIC_ARB_OP_MSTR_WRITE = 9,
++	PMIC_ARB_OP_EXT_READ = 13,
++	PMIC_ARB_OP_WRITE = 14,
++	PMIC_ARB_OP_READ = 15,
++	PMIC_ARB_OP_ZERO_WRITE = 16,
++};
++
++/* Maximum number of support PMIC peripherals */
++#define PMIC_ARB_MAX_PERIPHS		256
++#define PMIC_ARB_PERIPH_ID_VALID	(1 << 15)
++#define PMIC_ARB_TIMEOUT_US		100
++#define PMIC_ARB_MAX_TRANS_BYTES	(8)
++
++#define PMIC_ARB_APID_MASK		0xFF
++#define PMIC_ARB_PPID_MASK		0xFFF
++
++/* interrupt enable bit */
++#define SPMI_PIC_ACC_ENABLE_BIT		BIT(0)
 +
 +/**
-+ * devm_regmap_init_spmi_base(): Create managed regmap for Base register space
-+ * @sdev:	SPMI device that will be interacted with
-+ * @config:	Configuration for register map
++ * spmi_pmic_arb_dev - SPMI PMIC Arbiter object
 + *
-+ * The return value will be an ERR_PTR() on error or a valid pointer
-+ * to a struct regmap.  The regmap will be automatically freed by the
-+ * device management code.
++ * @base:		address of the PMIC Arbiter core registers.
++ * @intr:		address of the SPMI interrupt control registers.
++ * @cnfg:		address of the PMIC Arbiter configuration registers.
++ * @lock:		lock to synchronize accesses.
++ * @channel:		which channel to use for accesses.
 + */
-+struct regmap *devm_regmap_init_spmi_base(struct spmi_device *sdev,
-+					  const struct regmap_config *config)
++struct spmi_pmic_arb_dev {
++	void __iomem		*base;
++	void __iomem		*intr;
++	void __iomem		*cnfg;
++	spinlock_t		lock;
++	u8			channel;
++};
++
++static inline u32 pmic_arb_base_read(struct spmi_pmic_arb_dev *dev, u32 offset)
 +{
-+	return devm_regmap_init(&sdev->dev, &regmap_spmi_base, sdev, config);
++	return readl_relaxed(dev->base + offset);
 +}
-+EXPORT_SYMBOL_GPL(devm_regmap_init_spmi_base);
 +
-+static int regmap_spmi_ext_read(void *context,
-+				const void *reg, size_t reg_size,
-+				void *val, size_t val_size)
++static inline void pmic_arb_base_write(struct spmi_pmic_arb_dev *dev,
++				       u32 offset, u32 val)
 +{
-+	int err = 0;
-+	size_t len;
-+	u16 addr;
++	writel_relaxed(val, dev->base + offset);
++}
 +
- 	BUG_ON(reg_size != 2);
--	return spmi_ext_register_readl(context, *(u16 *)reg,
--				       val, val_size);
++/**
++ * pa_read_data: reads pmic-arb's register and copy 1..4 bytes to buf
++ * @bc:		byte count -1. range: 0..3
++ * @reg:	register's address
++ * @buf:	output parameter, length must be bc + 1
++ */
++static void pa_read_data(struct spmi_pmic_arb_dev *dev, u8 *buf, u32 reg, u8 bc)
++{
++	u32 data = pmic_arb_base_read(dev, reg);
++	memcpy(buf, &data, (bc & 3) + 1);
++}
 +
-+	addr = *(u16 *)reg;
++/**
++ * pa_write_data: write 1..4 bytes from buf to pmic-arb's register
++ * @bc:		byte-count -1. range: 0..3.
++ * @reg:	register's address.
++ * @buf:	buffer to write. length must be bc + 1.
++ */
++static void
++pa_write_data(struct spmi_pmic_arb_dev *dev, const u8 *buf, u32 reg, u8 bc)
++{
++	u32 data = 0;
++	memcpy(&data, buf, (bc & 3) + 1);
++	pmic_arb_base_write(dev, reg, data);
++}
 +
-+	/*
-+	 * Split accesses into two to take advantage of the more
-+	 * bandwidth-efficient 'Extended Register Read' command when possible
-+	 */
-+	while (addr <= 0xFF && val_size) {
-+		len = min_t(size_t, val_size, 16);
++static int pmic_arb_wait_for_done(struct spmi_controller *ctrl)
++{
++	struct spmi_pmic_arb_dev *dev = spmi_controller_get_drvdata(ctrl);
++	u32 status = 0;
++	u32 timeout = PMIC_ARB_TIMEOUT_US;
++	u32 offset = PMIC_ARB_STATUS(dev->channel);
 +
-+		err = spmi_ext_register_read(context, addr, val, len);
-+		if (err)
-+			goto err_out;
++	while (timeout--) {
++		status = pmic_arb_base_read(dev, offset);
 +
-+		addr += len;
-+		val += len;
-+		val_size -= len;
++		if (status & PMIC_ARB_STATUS_DONE) {
++			if (status & PMIC_ARB_STATUS_DENIED) {
++				dev_err(&ctrl->dev,
++					"%s: transaction denied (0x%x)\n",
++					__func__, status);
++				return -EPERM;
++			}
++
++			if (status & PMIC_ARB_STATUS_FAILURE) {
++				dev_err(&ctrl->dev,
++					"%s: transaction failed (0x%x)\n",
++					__func__, status);
++				return -EIO;
++			}
++
++			if (status & PMIC_ARB_STATUS_DROPPED) {
++				dev_err(&ctrl->dev,
++					"%s: transaction dropped (0x%x)\n",
++					__func__, status);
++				return -EIO;
++			}
++
++			return 0;
++		}
++		udelay(1);
 +	}
 +
-+	while (val_size) {
-+		len = min_t(size_t, val_size, 8);
++	dev_err(&ctrl->dev,
++		"%s: timeout, status 0x%x\n",
++		__func__, status);
++	return -ETIMEDOUT;
++}
 +
-+		err = spmi_ext_register_readl(context, addr, val, val_size);
-+		if (err)
-+			goto err_out;
++/* Non-data command */
++static int pmic_arb_cmd(struct spmi_controller *ctrl, u8 opc, u8 sid)
++{
++	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
++	unsigned long flags;
++	u32 cmd;
++	int rc;
 +
-+		addr += len;
-+		val += len;
-+		val_size -= len;
++	/* Check for valid non-data command */
++	if (opc < SPMI_CMD_RESET || opc > SPMI_CMD_WAKEUP)
++		return -EINVAL;
++
++	cmd = ((opc | 0x40) << 27) | ((sid & 0xf) << 20);
++
++	spin_lock_irqsave(&pmic_arb->lock, flags);
++	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
++	rc = pmic_arb_wait_for_done(ctrl);
++	spin_unlock_irqrestore(&pmic_arb->lock, flags);
++
++	return rc;
++}
++
++static int pmic_arb_read_cmd(struct spmi_controller *ctrl, u8 opc, u8 sid,
++			     u16 addr, u8 *buf, size_t len)
++{
++	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
++	unsigned long flags;
++	u8 bc = len - 1;
++	u32 cmd;
++	int rc;
++
++	if (bc >= PMIC_ARB_MAX_TRANS_BYTES) {
++		dev_err(&ctrl->dev,
++			"pmic-arb supports 1..%d bytes per trans, but %d requested",
++			PMIC_ARB_MAX_TRANS_BYTES, len);
++		return  -EINVAL;
 +	}
 +
-+err_out:
++	/* Check the opcode */
++	if (opc >= 0x60 && opc <= 0x7F)
++		opc = PMIC_ARB_OP_READ;
++	else if (opc >= 0x20 && opc <= 0x2F)
++		opc = PMIC_ARB_OP_EXT_READ;
++	else if (opc >= 0x38 && opc <= 0x3F)
++		opc = PMIC_ARB_OP_EXT_READL;
++	else
++		return -EINVAL;
++
++	cmd = (opc << 27) | ((sid & 0xf) << 20) | (addr << 4) | (bc & 0x7);
++
++	spin_lock_irqsave(&pmic_arb->lock, flags);
++	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
++	rc = pmic_arb_wait_for_done(ctrl);
++	if (rc)
++		goto done;
++
++	pa_read_data(pmic_arb, buf, PMIC_ARB_RDATA0(pmic_arb->channel),
++		     min_t(u8, bc, 3));
++
++	if (bc > 3)
++		pa_read_data(pmic_arb, buf + 4,
++				PMIC_ARB_RDATA1(pmic_arb->channel), bc - 4);
++
++done:
++	spin_unlock_irqrestore(&pmic_arb->lock, flags);
++	return rc;
++}
++
++static int pmic_arb_write_cmd(struct spmi_controller *ctrl, u8 opc, u8 sid,
++			      u16 addr, const u8 *buf, size_t len)
++{
++	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
++	unsigned long flags;
++	u8 bc = len - 1;
++	u32 cmd;
++	int rc;
++
++	if (bc >= PMIC_ARB_MAX_TRANS_BYTES) {
++		dev_err(&ctrl->dev,
++			"pmic-arb supports 1..%d bytes per trans, but:%d requested",
++			PMIC_ARB_MAX_TRANS_BYTES, len);
++		return  -EINVAL;
++	}
++
++	/* Check the opcode */
++	if (opc >= 0x40 && opc <= 0x5F)
++		opc = PMIC_ARB_OP_WRITE;
++	else if (opc >= 0x00 && opc <= 0x0F)
++		opc = PMIC_ARB_OP_EXT_WRITE;
++	else if (opc >= 0x30 && opc <= 0x37)
++		opc = PMIC_ARB_OP_EXT_WRITEL;
++	else if (opc >= 0x80 && opc <= 0xFF)
++		opc = PMIC_ARB_OP_ZERO_WRITE;
++	else
++		return -EINVAL;
++
++	cmd = (opc << 27) | ((sid & 0xf) << 20) | (addr << 4) | (bc & 0x7);
++
++	/* Write data to FIFOs */
++	spin_lock_irqsave(&pmic_arb->lock, flags);
++	pa_write_data(pmic_arb, buf, PMIC_ARB_WDATA0(pmic_arb->channel)
++							, min_t(u8, bc, 3));
++	if (bc > 3)
++		pa_write_data(pmic_arb, buf + 4,
++				PMIC_ARB_WDATA1(pmic_arb->channel), bc - 4);
++
++	/* Start the transaction */
++	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
++	rc = pmic_arb_wait_for_done(ctrl);
++	spin_unlock_irqrestore(&pmic_arb->lock, flags);
++
++	return rc;
++}
++
++static int spmi_pmic_arb_probe(struct platform_device *pdev)
++{
++	struct spmi_pmic_arb_dev *pa;
++	struct spmi_controller *ctrl;
++	struct resource *res;
++	u32 channel;
++	int err, i;
++
++	ctrl = spmi_controller_alloc(&pdev->dev, sizeof(*pa));
++	if (!ctrl)
++		return -ENOMEM;
++
++	pa = spmi_controller_get_drvdata(ctrl);
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "core");
++	pa->base = devm_ioremap_resource(&ctrl->dev, res);
++	if (IS_ERR(pa->base)) {
++		err = PTR_ERR(pa->base);
++		goto err_put_ctrl;
++	}
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "intr");
++	pa->intr = devm_ioremap_resource(&ctrl->dev, res);
++	if (IS_ERR(pa->intr)) {
++		err = PTR_ERR(pa->intr);
++		goto err_put_ctrl;
++	}
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cnfg");
++	pa->cnfg = devm_ioremap_resource(&ctrl->dev, res);
++	if (IS_ERR(pa->cnfg)) {
++		err = PTR_ERR(pa->cnfg);
++		goto err_put_ctrl;
++	}
++
++	err = of_property_read_u32(pdev->dev.of_node, "qcom,channel", &channel);
++	if (err) {
++		dev_err(&pdev->dev, "channel unspecified.\n");
++		goto err_put_ctrl;
++	}
++
++	if (channel > 5) {
++		dev_err(&pdev->dev, "invalid channel (%u) specified.\n",
++			channel);
++		goto err_put_ctrl;
++	}
++
++	pa->channel = channel;
++
++	platform_set_drvdata(pdev, ctrl);
++	spin_lock_init(&pa->lock);
++
++	ctrl->cmd = pmic_arb_cmd;
++	ctrl->read_cmd = pmic_arb_read_cmd;
++	ctrl->write_cmd = pmic_arb_write_cmd;
++
++	err = spmi_controller_add(ctrl);
++	if (err)
++		goto err_put_ctrl;
++
++	dev_dbg(&ctrl->dev, "PMIC Arb Version 0x%x\n",
++		pmic_arb_base_read(pa, PMIC_ARB_VERSION));
++
++	return 0;
++
++err_put_ctrl:
++	spmi_controller_put(ctrl);
 +	return err;
- }
- 
--static int regmap_spmi_gather_write(void *context,
--				    const void *reg, size_t reg_size,
--				    const void *val, size_t val_size)
-+static int regmap_spmi_ext_gather_write(void *context,
-+					const void *reg, size_t reg_size,
-+					const void *val, size_t val_size)
- {
-+	int err = 0;
-+	size_t len;
-+	u16 addr;
++}
 +
- 	BUG_ON(reg_size != 2);
--	return spmi_ext_register_writel(context, *(u16 *)reg, val, val_size);
++static int spmi_pmic_arb_remove(struct platform_device *pdev)
++{
++	struct spmi_controller *ctrl = platform_get_drvdata(pdev);
++	spmi_controller_remove(ctrl);
++	spmi_controller_put(ctrl);
++	return 0;
++}
 +
-+	addr = *(u16 *)reg;
++static const struct of_device_id spmi_pmic_arb_match_table[] = {
++	{ .compatible = "qcom,spmi-pmic-arb", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, spmi_pmic_arb_match_table);
 +
-+	while (addr <= 0xFF && val_size) {
-+		len = min_t(size_t, val_size, 16);
++static struct platform_driver spmi_pmic_arb_driver = {
++	.probe		= spmi_pmic_arb_probe,
++	.remove		= spmi_pmic_arb_remove,
++	.driver		= {
++		.name	= "spmi_pmic_arb",
++		.owner	= THIS_MODULE,
++		.of_match_table = spmi_pmic_arb_match_table,
++	},
++};
++module_platform_driver(spmi_pmic_arb_driver);
 +
-+		err = spmi_ext_register_write(context, addr, val, len);
-+		if (err)
-+			goto err_out;
-+
-+		addr += len;
-+		val += len;
-+		val_size -= len;
-+	}
-+
-+	while (val_size) {
-+		len = min_t(size_t, val_size, 8);
-+
-+		err = spmi_ext_register_writel(context, addr, val, len);
-+		if (err)
-+			goto err_out;
-+
-+		addr += len;
-+		val += len;
-+		val_size -= len;
-+	}
-+
-+err_out:
-+	return err;
- }
- 
--static int regmap_spmi_write(void *context, const void *data,
--			     size_t count)
-+static int regmap_spmi_ext_write(void *context, const void *data,
-+				 size_t count)
- {
- 	BUG_ON(count < 2);
--	return regmap_spmi_gather_write(context, data, 2, data + 2, count - 2);
-+	return regmap_spmi_ext_gather_write(context, data, 2, data + 2,
-+					    count - 2);
- }
- 
--static struct regmap_bus regmap_spmi = {
--	.read				= regmap_spmi_read,
--	.write				= regmap_spmi_write,
--	.gather_write			= regmap_spmi_gather_write,
-+static struct regmap_bus regmap_spmi_ext = {
-+	.read				= regmap_spmi_ext_read,
-+	.write				= regmap_spmi_ext_write,
-+	.gather_write			= regmap_spmi_ext_gather_write,
- 	.reg_format_endian_default	= REGMAP_ENDIAN_NATIVE,
- 	.val_format_endian_default	= REGMAP_ENDIAN_NATIVE,
- };
- 
- /**
-- * regmap_init_spmi(): Initialize register map
-- *
-- * @sdev: Device that will be interacted with
-- * @config: Configuration for register map
-+ * regmap_init_spmi_ext(): Create regmap for Ext register space
-+ * @sdev:	Device that will be interacted with
-+ * @config:	Configuration for register map
-  *
-  * The return value will be an ERR_PTR() on error or a valid pointer to
-  * a struct regmap.
-  */
--struct regmap *regmap_init_spmi(struct spmi_device *sdev,
--				const struct regmap_config *config)
-+struct regmap *regmap_init_spmi_ext(struct spmi_device *sdev,
-+				    const struct regmap_config *config)
- {
--	return regmap_init(&sdev->dev, &regmap_spmi, sdev, config);
-+	return regmap_init(&sdev->dev, &regmap_spmi_ext, sdev, config);
- }
--EXPORT_SYMBOL_GPL(regmap_init_spmi);
-+EXPORT_SYMBOL_GPL(regmap_init_spmi_ext);
- 
- /**
-- * devm_regmap_init_spmi(): Initialise managed register map
-- *
-- * @sdev: Device that will be interacted with
-- * @config: Configuration for register map
-+ * devm_regmap_init_spmi_ext(): Create managed regmap for Ext register space
-+ * @sdev:	SPMI device that will be interacted with
-+ * @config:	Configuration for register map
-  *
-  * The return value will be an ERR_PTR() on error or a valid pointer
-  * to a struct regmap.  The regmap will be automatically freed by the
-  * device management code.
-  */
--struct regmap *devm_regmap_init_spmi(struct spmi_device *sdev,
-+struct regmap *devm_regmap_init_spmi_ext(struct spmi_device *sdev,
- 				     const struct regmap_config *config)
- {
--	return devm_regmap_init(&sdev->dev, &regmap_spmi, sdev, config);
-+	return devm_regmap_init(&sdev->dev, &regmap_spmi_ext, sdev, config);
- }
--EXPORT_SYMBOL_GPL(devm_regmap_init_spmi);
-+EXPORT_SYMBOL_GPL(devm_regmap_init_spmi_ext);
- 
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 4149f1a..8cc73ac 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -321,8 +321,10 @@ struct regmap *regmap_init_i2c(struct i2c_client *i2c,
- 			       const struct regmap_config *config);
- struct regmap *regmap_init_spi(struct spi_device *dev,
- 			       const struct regmap_config *config);
--struct regmap *regmap_init_spmi(struct spmi_device *dev,
--			       const struct regmap_config *config);
-+struct regmap *regmap_init_spmi_base(struct spmi_device *dev,
-+				     const struct regmap_config *config);
-+struct regmap *regmap_init_spmi_ext(struct spmi_device *dev,
-+				    const struct regmap_config *config);
- struct regmap *regmap_init_mmio_clk(struct device *dev, const char *clk_id,
- 				    void __iomem *regs,
- 				    const struct regmap_config *config);
-@@ -335,8 +337,10 @@ struct regmap *devm_regmap_init_i2c(struct i2c_client *i2c,
- 				    const struct regmap_config *config);
- struct regmap *devm_regmap_init_spi(struct spi_device *dev,
- 				    const struct regmap_config *config);
--struct regmap *devm_regmap_init_spmi(struct spmi_device *dev,
--				     const struct regmap_config *config);
-+struct regmap *devm_regmap_init_spmi_base(struct spmi_device *dev,
-+					  const struct regmap_config *config);
-+struct regmap *devm_regmap_init_spmi_ext(struct spmi_device *dev,
-+					 const struct regmap_config *config);
- struct regmap *devm_regmap_init_mmio_clk(struct device *dev, const char *clk_id,
- 					 void __iomem *regs,
- 					 const struct regmap_config *config);
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:spmi_pmic_arb");
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
