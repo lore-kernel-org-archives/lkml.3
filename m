@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaBCX2X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:28:23 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63028 "HELO
+	id S1754588AbaBCXgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:36:24 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:65292 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751864AbaBCX2T (ORCPT
+	with SMTP id S1752828AbaBCX2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:28:19 -0500
+	Mon, 3 Feb 2014 18:28:23 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH 24/24][New] ACPI / hotplug / PCI: Rework acpiphp_check_host_bridge()
-Date: Tue, 04 Feb 2014 00:41:54 +0100
-Message-ID: <7962756.Dx5cJ92CrE@vostro.rjw.lan>
+Subject: [PATCH 17/24][Resend] ACPICA: Introduce acpi_get_data_full() and rework acpi_get_data()
+Date: Tue, 04 Feb 2014 00:34:19 +0100
+Message-ID: <2346175.LEPCgcSjCH@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
 In-Reply-To: <7532948.aJNUotNMpR@vostro.rjw.lan>
 References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140203104408.GQ18029@intel.com> <7532948.aJNUotNMpR@vostro.rjw.lan>
@@ -28,97 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Since the only existing caller of acpiphp_check_host_bridge(),
-which is acpi_pci_root_scan_dependent(), already has a struct
-acpi_device pointer needed to obtain the ACPIPHP context, it
-doesn't make sense to execute acpi_bus_get_device() on its
-handle in acpiphp_handle_to_bridge() just in order to get that
-pointer back.
+Introduce a new function, acpi_get_data_full(), working in analogy
+with acpi_get_data() except that it can execute a callback provided
+as its 4th argument right after acpi_ns_get_attached_data() has
+returned a success.
 
-For this reason, modify acpiphp_check_host_bridge() to take
-a struct acpi_device pointer as its argument and rearrange the
-code accordingly.
+That will allow Linux to reference count the object pointed to by
+*data before the namespace mutex is released so as to ensure that it
+will not be freed going forward until the reference to it acquired
+by acpi_get_data_full() is dropped.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/acpi/pci_root.c            |    2 +-
- drivers/pci/hotplug/acpiphp_glue.c |   11 +++--------
- include/linux/pci-acpi.h           |    4 ++--
- 3 files changed, 6 insertions(+), 11 deletions(-)
+ drivers/acpi/acpica/nsxfeval.c |   33 ++++++++++++++++++++++++++++++---
+ include/acpi/acpixf.h          |    4 ++++
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
-Index: linux-pm/include/linux/pci-acpi.h
+Index: linux-pm/drivers/acpi/acpica/nsxfeval.c
 ===================================================================
---- linux-pm.orig/include/linux/pci-acpi.h
-+++ linux-pm/include/linux/pci-acpi.h
-@@ -59,12 +59,12 @@ static inline void acpi_pci_slot_remove(
- void acpiphp_init(void);
- void acpiphp_enumerate_slots(struct pci_bus *bus);
- void acpiphp_remove_slots(struct pci_bus *bus);
--void acpiphp_check_host_bridge(acpi_handle handle);
-+void acpiphp_check_host_bridge(struct acpi_device *adev);
- #else
- static inline void acpiphp_init(void) { }
- static inline void acpiphp_enumerate_slots(struct pci_bus *bus) { }
- static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
--static inline void acpiphp_check_host_bridge(acpi_handle handle) { }
-+static inline void acpiphp_check_host_bridge(struct acpi_device *adev) { }
- #endif
+--- linux-pm.orig/drivers/acpi/acpica/nsxfeval.c
++++ linux-pm/drivers/acpi/acpica/nsxfeval.c
+@@ -923,19 +923,22 @@ ACPI_EXPORT_SYMBOL(acpi_detach_data)
  
- #else	/* CONFIG_ACPI */
-Index: linux-pm/drivers/acpi/pci_root.c
-===================================================================
---- linux-pm.orig/drivers/acpi/pci_root.c
-+++ linux-pm/drivers/acpi/pci_root.c
-@@ -51,7 +51,7 @@ static void acpi_pci_root_remove(struct
- 
- static int acpi_pci_root_scan_dependent(struct acpi_device *adev)
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_get_data
++ * FUNCTION:    acpi_get_data_full
+  *
+  * PARAMETERS:  obj_handle          - Namespace node
+  *              handler             - Handler used in call to attach_data
+  *              data                - Where the data is returned
++ *              callback            - function to execute before returning
+  *
+  * RETURN:      Status
+  *
+- * DESCRIPTION: Retrieve data that was previously attached to a namespace node.
++ * DESCRIPTION: Retrieve data that was previously attached to a namespace node
++ *              and execute a callback before returning.
+  *
+  ******************************************************************************/
+ acpi_status
+-acpi_get_data(acpi_handle obj_handle, acpi_object_handler handler, void **data)
++acpi_get_data_full(acpi_handle obj_handle, acpi_object_handler handler,
++		   void **data, void (*callback)(void *))
  {
--	acpiphp_check_host_bridge(adev->handle);
-+	acpiphp_check_host_bridge(adev);
- 	return 0;
- }
- 
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -378,15 +378,11 @@ static acpi_status register_slot(acpi_ha
- 	return AE_OK;
- }
- 
--static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle)
-+static struct acpiphp_bridge *acpiphp_dev_to_bridge(struct acpi_device *adev)
- {
--	struct acpi_device *adev = acpi_bus_get_acpi_device(handle);
- 	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge = NULL;
- 
--	if (!adev)
--		return NULL;
--
- 	acpi_lock_hp_context();
- 	context = acpiphp_get_context(adev);
- 	if (context) {
-@@ -397,7 +393,6 @@ static struct acpiphp_bridge *acpiphp_ha
- 		acpiphp_put_context(context);
+ 	struct acpi_namespace_node *node;
+ 	acpi_status status;
+@@ -960,10 +963,34 @@ acpi_get_data(acpi_handle obj_handle, ac
  	}
- 	acpi_unlock_hp_context();
--	acpi_bus_put_acpi_device(adev);
- 	return bridge;
+ 
+ 	status = acpi_ns_get_attached_data(node, handler, data);
++	if (ACPI_SUCCESS(status) && callback) {
++		callback(*data);
++	}
+ 
+ unlock_and_exit:
+ 	(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+ 	return (status);
  }
  
-@@ -764,11 +759,11 @@ static void acpiphp_sanitize_bus(struct
-  * ACPI event handlers
-  */
++ACPI_EXPORT_SYMBOL(acpi_get_data_full)
++
++/*******************************************************************************
++ *
++ * FUNCTION:    acpi_get_data
++ *
++ * PARAMETERS:  obj_handle          - Namespace node
++ *              handler             - Handler used in call to attach_data
++ *              data                - Where the data is returned
++ *
++ * RETURN:      Status
++ *
++ * DESCRIPTION: Retrieve data that was previously attached to a namespace node.
++ *
++ ******************************************************************************/
++acpi_status
++acpi_get_data(acpi_handle obj_handle, acpi_object_handler handler, void **data)
++{
++	return acpi_get_data_full(obj_handle, handler, data, NULL);
++}
++
+ ACPI_EXPORT_SYMBOL(acpi_get_data)
+Index: linux-pm/include/acpi/acpixf.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpixf.h
++++ linux-pm/include/acpi/acpixf.h
+@@ -230,6 +230,10 @@ acpi_attach_data(acpi_handle object, acp
+ acpi_status acpi_detach_data(acpi_handle object, acpi_object_handler handler);
  
--void acpiphp_check_host_bridge(acpi_handle handle)
-+void acpiphp_check_host_bridge(struct acpi_device *adev)
- {
- 	struct acpiphp_bridge *bridge;
+ acpi_status
++acpi_get_data_full(acpi_handle object, acpi_object_handler handler, void **data,
++		   void (*callback)(void *));
++
++acpi_status
+ acpi_get_data(acpi_handle object, acpi_object_handler handler, void **data);
  
--	bridge = acpiphp_handle_to_bridge(handle);
-+	bridge = acpiphp_dev_to_bridge(adev);
- 	if (bridge) {
- 		pci_lock_rescan_remove();
- 
-
+ acpi_status
