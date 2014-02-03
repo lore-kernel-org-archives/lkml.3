@@ -1,101 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaBCPKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:10:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072AbaBCPKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:10:16 -0500
-Date: Mon, 3 Feb 2014 13:09:15 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 3/3] perf tools: Add readable output for callchain debug
-Message-ID: <20140203150915.GA2352@infradead.org>
-References: <1391427883-13443-1-git-send-email-jolsa@redhat.com>
- <1391427883-13443-3-git-send-email-jolsa@redhat.com>
+	id S1752565AbaBCPK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:10:58 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:62881 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaBCPK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 10:10:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391427883-13443-3-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1391316630-29541-6-git-send-email-benjamin.tissoires@redhat.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-6-git-send-email-benjamin.tissoires@redhat.com>
+Date: Mon, 3 Feb 2014 16:10:56 +0100
+Message-ID: <CANq1E4S+RLDpDd+zxgBRKsEw0-29un9mzS5jYBcoeJgQf5Upjg@mail.gmail.com>
+Subject: Re: [PATCH 05/11] HID: HIDp: remove hidp_hidinput_event
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Feb 03, 2014 at 12:44:43PM +0100, Jiri Olsa escreveu:
-> Adding people readable output for callchain debug,
-> to get following '-v' output:
-> 
->   $ perf record -v -g ls
->   callchain: type DWARF
->   callchain: stack dump size 4096
->   ...
+Hi
 
-Applied, but then I tried:
+On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> hidp uses its own ->hidinput_input_event() instead of the generic binding
+> in hid-input.
+> Moving the handling of LEDs towards hidp_hidinput_event() allows two things:
+> - remove hidinput_input_event definitively from struct hid_device
+> - hidraw user space programs can also set the LEDs
 
-[acme@zoo linux]$ perf evlist -v
-cycles: sample_freq=4000, size: 96, sample_type:
-IP|TID|TIME|CALLCHAIN|PERIOD, disabled: 1, inherit: 1, mmap: 1, comm: 1,
-freq: 1, enable_on_exec: 1, sample_id_all: 1, exclude_guest: 1
-[acme@zoo linux]$ 
+This one looks good. hid-input uses output_raw_report(), which is on
+INTR for BT-HID, which is equivalent to what hidp_send_report() does.
+So:
 
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-I.e. using the tool that provides info about 'perf.data' files, and
-there I couldn't figure it out which kind of callchains was used, can
-you fix it there too?
+Btw., you might have to keep hidp_send_report() if you drop earlier
+patches (haven't exactly looked at the order), but feel free to keep
+my r-b anyway.
 
-- Arnaldo
- 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
+Thanks
+David
+
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 > ---
->  tools/perf/builtin-record.c | 4 +++-
->  tools/perf/perf.h           | 3 ++-
->  2 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 3f7ec8a..679758f 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -741,7 +741,9 @@ int record_parse_callchain(const char *arg, struct record_opts *opts)
->  
->  static void callchain_debug(struct record_opts *opts)
->  {
-> -	pr_debug("callchain: type %d\n", opts->call_graph);
-> +	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF" };
-> +
-> +	pr_debug("callchain: type %s\n", str[opts->call_graph]);
->  
->  	if (opts->call_graph == CALLCHAIN_DWARF)
->  		pr_debug("callchain: stack dump size %d\n",
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index 6dabc15..c30e1ae 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -251,7 +251,8 @@ void pthread__unblock_sigwinch(void);
->  enum perf_call_graph_mode {
->  	CALLCHAIN_NONE,
->  	CALLCHAIN_FP,
-> -	CALLCHAIN_DWARF
-> +	CALLCHAIN_DWARF,
-> +	CALLCHAIN_MAX
+>  net/bluetooth/hidp/core.c | 46 ----------------------------------------------
+>  1 file changed, 46 deletions(-)
+>
+> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+> index b062cee..469e61b 100644
+> --- a/net/bluetooth/hidp/core.c
+> +++ b/net/bluetooth/hidp/core.c
+> @@ -223,51 +223,6 @@ static void hidp_input_report(struct hidp_session *session, struct sk_buff *skb)
+>         input_sync(dev);
+>  }
+>
+> -static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
+> -{
+> -       unsigned char hdr;
+> -       u8 *buf;
+> -       int rsize, ret;
+> -
+> -       buf = hid_alloc_report_buf(report, GFP_ATOMIC);
+> -       if (!buf)
+> -               return -EIO;
+> -
+> -       hid_output_report(report, buf);
+> -       hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
+> -
+> -       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+> -       ret = hidp_send_intr_message(session, hdr, buf, rsize);
+> -
+> -       kfree(buf);
+> -       return ret;
+> -}
+> -
+> -static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
+> -                              unsigned int code, int value)
+> -{
+> -       struct hid_device *hid = input_get_drvdata(dev);
+> -       struct hidp_session *session = hid->driver_data;
+> -       struct hid_field *field;
+> -       int offset;
+> -
+> -       BT_DBG("session %p type %d code %d value %d",
+> -              session, type, code, value);
+> -
+> -       if (type != EV_LED)
+> -               return -1;
+> -
+> -       offset = hidinput_find_field(hid, type, code, &field);
+> -       if (offset == -1) {
+> -               hid_warn(dev, "event field not found\n");
+> -               return -1;
+> -       }
+> -
+> -       hid_set_field(field, offset, value);
+> -
+> -       return hidp_send_report(session, field->report);
+> -}
+> -
+>  static int hidp_get_raw_report(struct hid_device *hid,
+>                 unsigned char report_number,
+>                 unsigned char *data, size_t count,
+> @@ -817,7 +772,6 @@ static struct hid_ll_driver hidp_hid_driver = {
+>         .close = hidp_close,
+>         .raw_request = hidp_raw_request,
+>         .output_report = hidp_output_report,
+> -       .hidinput_input_event = hidp_hidinput_event,
 >  };
->  
->  struct record_opts {
-> -- 
+>
+>  /* This function sets up the hid device. It does not add it
+> --
 > 1.8.3.1
+>
