@@ -1,107 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326AbaBCQUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:20:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35926 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116AbaBCQUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:20:39 -0500
-Date: Mon, 3 Feb 2014 17:20:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org
-Subject: Re: Need help in bug in isolate_migratepages_range
-Message-ID: <20140203162036.GJ2495@dhcp22.suse.cz>
-References: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de>
- <20140203122052.GC2495@dhcp22.suse.cz>
- <alpine.LRH.2.02.1402031426510.13382@diagnostix.dwd.de>
+	id S1753356AbaBCQV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:21:29 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:38225 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaBCQV1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:21:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1402031426510.13382@diagnostix.dwd.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4Rn=rijG8Xv97okj2k4iv=ZG6wa30xQrxgjhutQovD+dg@mail.gmail.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-5-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4Rn=rijG8Xv97okj2k4iv=ZG6wa30xQrxgjhutQovD+dg@mail.gmail.com>
+Date: Mon, 3 Feb 2014 11:21:25 -0500
+Message-ID: <CAN+gG=EesWpKiz-M4LrLTM0ne+o8=XE3vdQnwBPuHOyEgwEJKw@mail.gmail.com>
+Subject: Re: [PATCH 04/11] HID: logitech-dj: remove hidinput_input_event
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-02-14 14:29:22, Holger Kiehl wrote:
-> I have attached it. Please, tell me if you do not get the attachment.
+On Mon, Feb 3, 2014 at 11:06 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> hid-logitech-dj uses its own ->hidinput_input_event() instead of
+>> the generic binding in hid-input.
+>> Moving the handling of LEDs towards logi_dj_output_hidraw_report()
+>> allows two things:
+>> - remove hidinput_input_event in struct hid_device
+>> - hidraw user space programs can also set the LEDs
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/hid-logitech-dj.c | 99 +++++++++++++++----------------------------
+>>  1 file changed, 35 insertions(+), 64 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+>> index f45279c..61d2bbf 100644
+>> --- a/drivers/hid/hid-logitech-dj.c
+>> +++ b/drivers/hid/hid-logitech-dj.c
+>> @@ -44,14 +44,6 @@ static const char kbd_descriptor[] = {
+>>         0x19, 0xE0,             /*   USAGE_MINIMUM (Left Control)   */
+>>         0x29, 0xE7,             /*   USAGE_MAXIMUM (Right GUI)      */
+>>         0x81, 0x02,             /*   INPUT (Data,Var,Abs)       */
+>> -       0x95, 0x05,             /*   REPORT COUNT (5)           */
+>> -       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
+>> -       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
+>> -       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
+>> -       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
+>> -       0x95, 0x01,             /*   REPORT COUNT (1)           */
+>> -       0x75, 0x03,             /*   REPORT SIZE (3)            */
+>> -       0x91, 0x01,             /*   OUTPUT (Constant)          */
+>>         0x95, 0x06,             /*   REPORT_COUNT (6)           */
+>>         0x75, 0x08,             /*   REPORT_SIZE (8)            */
+>>         0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
+>> @@ -60,6 +52,18 @@ static const char kbd_descriptor[] = {
+>>         0x19, 0x00,             /*   USAGE_MINIMUM (no event)       */
+>>         0x2A, 0xFF, 0x00,       /*   USAGE_MAXIMUM (reserved)       */
+>>         0x81, 0x00,             /*   INPUT (Data,Ary,Abs)       */
+>> +       0x85, 0x0e,             /* REPORT_ID (14)               */
+>> +       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
+>> +       0x95, 0x05,             /*   REPORT COUNT (5)           */
+>> +       0x75, 0x01,             /*   REPORT SIZE (1)            */
+>> +       0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
+>> +       0x25, 0x01,             /*   LOGICAL_MAXIMUM (1)        */
+>> +       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
+>> +       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
+>> +       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
+>> +       0x95, 0x01,             /*   REPORT COUNT (1)           */
+>> +       0x75, 0x03,             /*   REPORT SIZE (3)            */
+>> +       0x91, 0x01,             /*   OUTPUT (Constant)          */
+>>         0xC0
+>>  };
+>>
+>> @@ -544,10 +548,30 @@ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
+>>                                         size_t count,
+>>                                         unsigned char report_type)
+>>  {
+>> -       /* Called by hid raw to send data */
+>> -       dbg_hid("%s\n", __func__);
+>> +       struct dj_device *djdev = hid->driver_data;
+>> +       struct dj_receiver_dev *djrcv_dev = djdev->dj_receiver_dev;
+>> +       u8 *out_buf;
+>> +       int ret;
+>>
+>> -       return 0;
+>> +       if (buf[0] != REPORT_TYPE_LEDS)
+>> +               return -EINVAL;
+>> +
+>> +       out_buf = kzalloc(DJREPORT_SHORT_LENGTH, GFP_ATOMIC);
+>> +       if (!out_buf)
+>> +               return -ENOMEM;
+>> +
+>> +       if (count < DJREPORT_SHORT_LENGTH - 2)
+>> +               count = DJREPORT_SHORT_LENGTH - 2;
+>> +
+>> +       out_buf[0] = REPORT_ID_DJ_SHORT;
+>> +       out_buf[1] = djdev->device_index;
+>> +       memcpy(out_buf + 2, buf, count);
+>> +
+>> +       ret = djrcv_dev->hdev->hid_output_raw_report(djrcv_dev->hdev, out_buf,
+>> +               DJREPORT_SHORT_LENGTH, report_type);
+>
+> Strictly speaking the code below uses HID_REQ_SET_REPORT and you
+> replace it with hid_output_raw_report() here (which at least for BTHID
+> is not equivalent). Anyhow, HID-core uses hid_output_raw_report(),
+> too, so this should be fine.
 
-I hoped it would help me to get a closer compiled code to yours but I am
-probably using too different gcc.
-Anyway I've tried to check whether I can hook on something and it seems
-that this is a race with thp merge/split or something like that.
- 
-[...]
-> >>   Jan 31 13:07:43 asterix kernel: BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
-> >>   Jan 31 13:07:43 asterix kernel: IP: [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
-> >>   Jan 31 13:07:43 asterix kernel: PGD 7d3074067 PUD 7d3073067 PMD 0
-> >>   Jan 31 13:07:43 asterix kernel: Oops: 0000 [#1] SMP
-> >>   Jan 31 13:07:43 asterix kernel: Modules linked in: drbd lru_cache coretemp ipmi_devintf bonding nf_conntrack_ftp binfmt_misc usbhid i2c_i801 sg ehci_pci i2c_core ehci_hcd uhci_hcd i5000_edac i5k_amb ipmi_si ipmi_msghandler usbcore usb_common [last unloaded: microcode]
-> >>   Jan 31 13:07:43 asterix kernel: CPU: 5 PID: 14164 Comm: java Not tainted 3.12.9 #1
-> >>   Jan 31 13:07:43 asterix kernel: Hardware name: FUJITSU SIEMENS PRIMERGY RX300 S4             /D2519, BIOS 4.06  Rev. 1.04.2519             07/30/2008
-> >>   Jan 31 13:07:43 asterix kernel: task: ffff8807d30b08c0 ti: ffff8807d30b2000 task.ti: ffff8807d30b2000
-> >>   Jan 31 13:07:43 asterix kernel: RIP: 0010:[<ffffffff810af0ac>]  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
-> >>   Jan 31 13:07:43 asterix kernel: RSP: 0000:ffff8807d30b3928  EFLAGS: 00010286
-> >>   Jan 31 13:07:43 asterix kernel: RAX: 0000000000000000 RBX: 000000000020ec09 RCX: 0000000000000002
-> >>   Jan 31 13:07:43 asterix kernel: RDX: 2c00000000008000 RSI: 0000000000000004 RDI: 000000000000006c
-> >>   Jan 31 13:07:43 asterix kernel: RBP: ffff8807d30b39f8 R08: ffff88083fbde390 R09: 0000000000000001
-> >>   Jan 31 13:07:43 asterix kernel: R10: 0000000000000000 R11: ffffea000733a000 R12: ffff8807d30b3a58
-> >>   Jan 31 13:07:43 asterix kernel: R13: ffffea000733a1f8 R14: 0000000000000000 R15: ffff88083ffe1d80
-> >>   Jan 31 13:07:43 asterix kernel: FS:  00007f9d9e72f910(0000) GS:ffff88083fd40000(0000) knlGS:0000000000000000
-> >>   Jan 31 13:07:43 asterix kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >>   Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c CR3: 00000007d3070000 CR4: 00000000000407e0
-> >>   Jan 31 13:07:43 asterix kernel: Stack:
-> >>   Jan 31 13:07:43 asterix kernel: 0000000000000009 ffff88083ffe16c0 ffffea00002e6af0 ffff8807d30b3998
-> >>   Jan 31 13:07:43 asterix kernel: ffff8807d30b2010 00ff8807d30b08c0 ffff8807d30b08c0 000000000020f000
-> >>   Jan 31 13:07:43 asterix kernel: 0000000000000000 000000000000083b 000000000000000a ffff8807d30b3a68
-> >>   Jan 31 13:07:43 asterix kernel: Call Trace:
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810a161f>] ? lru_add_drain_cpu+0x25/0x97
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810af687>] compact_zone+0x2b5/0x319
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810da586>] ? put_super+0x20/0x2c
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810afa4d>] compact_zone_order+0xad/0xc4
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810afaf5>] try_to_compact_pages+0x91/0xe8
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff8109b92d>] ? page_alloc_cpu_notify+0x3e/0x3e
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff8109da34>] __alloc_pages_direct_compact+0xae/0x195
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff8109e45d>] __alloc_pages_nodemask+0x772/0x7b5
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810c85a3>] alloc_pages_vma+0xd6/0x101
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810d47e3>] do_huge_pmd_anonymous_page+0x199/0x2ee
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810b3884>] handle_mm_fault+0x1b7/0xceb
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff8105dedc>] ? __dequeue_entity+0x2e/0x33
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8c3>] __do_page_fault+0x3bd/0x3e4
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810bbe1a>] ? mprotect_fixup+0x1c9/0x1fb
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810aa0f0>] ? vm_mmap_pgoff+0x6d/0x8f
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff810795f5>] ? SyS_futex+0x103/0x13d
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8f3>] do_page_fault+0x9/0xb
-> >>   Jan 31 13:07:43 asterix kernel: [<ffffffff813d3672>] page_fault+0x22/0x30
-> >>   Jan 31 13:07:43 asterix kernel: Code: 00 41 f7 45 00 ff ff ff 01 0f 85 43 02 00 00 41 8b 45 18 85 c0 0f 89 37 02 00 00 49 8b 55 00 4c 89 e8 66 85 d2 79 04 49 8b 45 30 <8b> 40 1c 83 f8 01 0f 85 1b 02 00 00 49 8b 55 08 30 c0 48 85 d2
-> >>   Jan 31 13:07:43 asterix kernel: RIP  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
-> >>   Jan 31 13:07:43 asterix kernel: RSP <ffff8807d30b3928>
-> >>   Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c
-> >>   Jan 31 13:07:43 asterix kernel: ---[ end trace fba75c5b0b9175ea ]---
+Yes, you are right. This fires back on me yesterday when I tried to
+remove the hid_output_raw_report() calls.
+It occurs it works because usbhid_out_raw_report() uses set_report
+when there is no urbout, which is the case with logitech receivers.
+So I guess an ideal solution would be to implement a hid_hw_request call.
 
-This seems to match:
-   17027:       49 8b 17                mov    (%r15),%rdx	# page->flags
-   1702a:       4c 89 f8                mov    %r15,%rax
-   1702d:       80 e6 80                and    $0x80,%dh	# PageTail test
-   17030:       74 04                   je     17036 <isolate_migratepages_range+0x2bf>
-   17032:       49 8b 47 30             mov    0x30(%r15),%rax	# page = page->first_page
-   17036:       8b 40 1c                mov    0x1c(%rax),%eax	<<< page->_count
-   17039:       ff c8                   dec    %eax
+However, the only concern I have with hid_hw_request is that it does
+not allow hidraw to play with the LEDs given that hidraw does not have
+an ioctl for SET_REPORT (or GET_REPORT). I already seen this issue
+regarding i2c_hid at some point, but it was "solved" in i2c_hid by
+using the same ugly trick that we have in USB-hid.
 
-Which seems to be inlined compound_head. DH is 0x80 so this is a tail
-page. This would suggest that tail page doesn't have firs_pages set up
-properly and it contains NULL.
+Cheers,
+Benjamin
 
-But maybe I've just matched the code incorrectly. Could you try to
-disassemble your vmlinux a send the generated code, please?
-
-Something like
-objdump -d vmlinux > vmlinux.dis
-and cut out isolate_migratepages_range function. Or simply upload your
-vmlinux.dis somewhere so that we can download it.
--- 
-Michal Hocko
-SUSE Labs
+>
+> Thanks
+> David
+>
+>> +
+>> +       kfree(out_buf);
+>> +       return ret;
+>>  }
+>>
+>>  static void rdcat(char *rdesc, unsigned int *rsize, const char *data, unsigned int size)
+>> @@ -613,58 +637,6 @@ static int logi_dj_ll_parse(struct hid_device *hid)
+>>         return retval;
+>>  }
+>>
+>> -static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
+>> -                                 unsigned int code, int value)
+>> -{
+>> -       /* Sent by the input layer to handle leds and Force Feedback */
+>> -       struct hid_device *dj_hiddev = input_get_drvdata(dev);
+>> -       struct dj_device *dj_dev = dj_hiddev->driver_data;
+>> -
+>> -       struct dj_receiver_dev *djrcv_dev =
+>> -           dev_get_drvdata(dj_hiddev->dev.parent);
+>> -       struct hid_device *dj_rcv_hiddev = djrcv_dev->hdev;
+>> -       struct hid_report_enum *output_report_enum;
+>> -
+>> -       struct hid_field *field;
+>> -       struct hid_report *report;
+>> -       unsigned char *data;
+>> -       int offset;
+>> -
+>> -       dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
+>> -               __func__, dev->phys, type, code, value);
+>> -
+>> -       if (type != EV_LED)
+>> -               return -1;
+>> -
+>> -       offset = hidinput_find_field(dj_hiddev, type, code, &field);
+>> -
+>> -       if (offset == -1) {
+>> -               dev_warn(&dev->dev, "event field not found\n");
+>> -               return -1;
+>> -       }
+>> -       hid_set_field(field, offset, value);
+>> -
+>> -       data = hid_alloc_report_buf(field->report, GFP_ATOMIC);
+>> -       if (!data) {
+>> -               dev_warn(&dev->dev, "failed to allocate report buf memory\n");
+>> -               return -1;
+>> -       }
+>> -
+>> -       hid_output_report(field->report, &data[0]);
+>> -
+>> -       output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
+>> -       report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
+>> -       hid_set_field(report->field[0], 0, dj_dev->device_index);
+>> -       hid_set_field(report->field[0], 1, REPORT_TYPE_LEDS);
+>> -       hid_set_field(report->field[0], 2, data[1]);
+>> -
+>> -       hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
+>> -
+>> -       kfree(data);
+>> -
+>> -       return 0;
+>> -}
+>> -
+>>  static int logi_dj_ll_start(struct hid_device *hid)
+>>  {
+>>         dbg_hid("%s\n", __func__);
+>> @@ -683,7 +655,6 @@ static struct hid_ll_driver logi_dj_ll_driver = {
+>>         .stop = logi_dj_ll_stop,
+>>         .open = logi_dj_ll_open,
+>>         .close = logi_dj_ll_close,
+>> -       .hidinput_input_event = logi_dj_ll_input_event,
+>>  };
+>>
+>>
+>> --
+>> 1.8.3.1
+>>
