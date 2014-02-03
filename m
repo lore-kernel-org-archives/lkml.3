@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaBCOPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:15:36 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:17891 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaBCOPd (ORCPT
+	id S1752313AbaBCORf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:17:35 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:41724 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaBCORd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:15:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 06:14:10 -0800
-Date: Mon, 3 Feb 2014 16:15:29 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Jim Lin <jilin@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, "Danny Huang" <dahuang@nvidia.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 3/6] misc: fuse: Add efuse driver for Tegra
-Message-ID: <20140203141529.GF19389@tbergstrom-lnx.Nvidia.com>
-References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com>
- <1390952176-30402-4-git-send-email-pdeschrijver@nvidia.com>
- <1390962378.2398.11.camel@jilin-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1390962378.2398.11.camel@jilin-desktop>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Feb 2014 09:17:33 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: NFS client broken in Linus' tip
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+In-Reply-To: <20140203080325.GB806@infradead.org>
+Date: Mon, 3 Feb 2014 09:17:30 -0500
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viro Alexander <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk> <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org> <20140203080325.GB806@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 03:26:18AM +0100, Jim Lin wrote:
-> On Wed, 2014-01-29 at 07:36 +0800, Peter De Schrijver wrote:
-> > Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
-> > 
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> > ---
-> >  Documentation/ABI/testing/sysfs-driver-tegra-fuse |    8 +
-> >  drivers/misc/fuse/Makefile                        |    1 +
-> >  drivers/misc/fuse/tegra/Makefile                  |    7 +
-> >  drivers/misc/fuse/tegra/fuse-tegra.c              |  228 ++++++++++++++++
-> >  drivers/misc/fuse/tegra/fuse-tegra20.c            |  136 ++++++++++
-> >  drivers/misc/fuse/tegra/fuse-tegra30.c            |  178 +++++++++++++
-> >  drivers/misc/fuse/tegra/fuse.h                    |   82 ++++++
-> Could we move this fuse.h to other folder under /include/linux
-> (like /include/linux/platform_data)
-> for other driver to include?
 
-I don't think we should expose everything in fuse.h to the world.
+On Feb 3, 2014, at 3:03, Christoph Hellwig <hch@infradead.org> wrote:
 
-> So other driver can invoke function to read fuse data if needed.
+> On Fri, Jan 31, 2014 at 03:59:30PM -0500, Trond Myklebust wrote:
+>> posix_acl_xattr_get requires get_acl() to return EOPNOTSUPP if the
+>> filesystem cannot support acls. This is needed for NFS, which can't
+>> know whether or not the server supports acls until it tries to get/set
+>> one.
+>> This patch converts posix_acl_chmod and posix_acl_create to deal with
+>> EOPNOTSUPP return values from get_acl().
+> 
+> Shouldn't NFS just return a NULL ACL here?
 
-Which functionality do you want? Just reading the fuse data exposed in
-the sysfs file from a driver? exporting tegra_fuse_readl() should do
-that I think?
+As I said above, that causes posix_acl_xattr_get() to return the wrong answer (ENODATA instead of EOPNOTSUPP).
 
-Cheers,
+--
+Trond Myklebust
+Linux NFS client maintainer
 
-Peter.
