@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaBCPOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:14:06 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:56614
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750967AbaBCPOD (ORCPT
+	id S1752391AbaBCPRm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:17:42 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34733 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaBCPRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:14:03 -0500
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h19b6n1155h)
-Date: Mon, 3 Feb 2014 16:13:47 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 3 Feb 2014 10:17:40 -0500
+Date: Mon, 3 Feb 2014 15:17:21 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
+        SH-Linux <linux-sh@vger.kernel.org>, devicetree@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Message-ID: <20140203151721.GA22609@sirena.org.uk>
+References: <52EEF452.4060205@renesas.com>
+ <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <monstr@monstr.eu>, Mark Rutland <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-doc@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 09/10] watchdog: xilinx: Add missing binding
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <9c721b89ed2ceb6997809bb3363f852277e67dc2.1391177880.git.michal.simek@xilinx.com> <201402031606.11753.arnd@arndb.de>
-In-Reply-To: <201402031606.11753.arnd@arndb.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <24ecacca-2714-4834-921c-b827c0e592a3@VA3EHSMHS003.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9989e9MCpLPr9Uiv"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: rspi: fix build error when CONFIG_OF is not set
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 04:06 PM, Arnd Bergmann wrote:
-> On Friday 31 January 2014, Michal Simek wrote:
->> +Optional properties:
->> +- clock-frequency      : Frequency of clock in Hz
->> +- xlnx,wdt-enable-once : 0 - Watchdog can be restarted
->> +                         1 - Watchdog can be enabled just once
->> +- xlnx,wdt-interval    : Watchdog timeout interval in 2^<val> clock cycles,
->> +                         <val> is integer from 8 to 31.
->> +
-> 
-> The latter two don't really seem to be xilinx specific, it would be
-> reasonable to have a standard watchdog binding that mandates a common
-> format for them.
-> 
-> I'm not sure about the enable-once flag, which seems to just map to the
-> "nowayout" watchdog option that is not a hardware feature at all
-> and should probably be kept as a software setting only, rather than
-> settable through DT. If it is kept, it should have a standard name and
-> get turned into a boolean (present/absent) property rather than a
-> 0/1 integer property.
-> 
-> The interval should really be specified in terms of seconds or miliseconds,
-> not in clock cycles.
 
-Intention wasn't to fix binding but document current one
-which is in mainline for a long time.
+--9989e9MCpLPr9Uiv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Apart of this - yes, wdt-enable-once is nowayout and wdt-interval should be timeout
-is seconds, and clock-frequency should go out and use CCF for getting clock.
+On Mon, Feb 03, 2014 at 09:47:25AM +0100, Geert Uytterhoeven wrote:
 
-Thanks,
-Michal
+> Thanks, obviously I missed that of_match_device() still uses the ID table
+> parameter if CONFIG_OF=n :-(
 
+> Below I have two alternative solutions:
+>   1. Uses rspi_of_match() to nullify the ID table pointer, like is done in
+>      the platform_driver structure,
+>   2. Fixes it at the OF subsystem level, by nullifying the ID table pointer
+>      inside of_match_device().
 
+> If 2 is accepted, drivers don't have to care about this anymore.
+
+I think if we can fix it at the subsystem level that's clearly nicer
+since it means nothing else will run into the same issue.  Your patch
+looks OK to me, I'd suggest submitting it.
+
+--9989e9MCpLPr9Uiv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS77L+AAoJELSic+t+oim9zuoP/2cjnKAG84aAxFK/gcB7lzHd
+iPdkAwcBIgGY8dDqxaMSVJVbRQflKHO2UXimmClAf1kmU4Xg386bWrNoPHuATdy3
+5M07hQlzBnCeJkPWkizvr/0viJn3bW/HAv0eJPcVzWpHBpNSKq03U5C/WFtYS8VL
+2nBAf/qYitKX73dT2AiD3DJETr2TgtAQkA1Zfvm0JC9pZa7Ayx/OpDvrLl3wH6zg
+E4lmPVdhG14N/pYQ4EsnGLvQV3Y1wBwVvxei23yA5blgf5tu/vmHW5CS08lGNQJr
+9RyFETv45blrQQyqg9fpxw98krahGAHEDrrrdfMi+jdMCq5L4/Mr0cAQx3kkMyNs
+1C+CF/YLIakGD+WyAA2YJ+RcS0BjnP+JXjAaUR2YyasK9xs/8dW8RMto2p6mx2Ea
+dfUA4nRT47KG9WDDvk9DDuzTqikuYXHQ+n+DbOM8HYq5pdVVssKIiGvl1ZMhDctW
+CbH1LSZ/DllDa9YfCb+q+qxt8OAhBdHB5+eIj+wEwFKRWBw7ITA/NCCE6+a/pHvd
+zmV46VkjEnCFXrvJNJjMcqYqOUtgPk6352H7t2EExoLExXXmNxncdNO8RB+yq5y1
+Pv1ucKVSpYlAzIEroPsG5UjlU0hEHjTnWXeGX26vie75n0kaVjDRzf87pco0ZWIw
+eE3CanuYUNvpzTKjp6yA
+=GCNg
+-----END PGP SIGNATURE-----
+
+--9989e9MCpLPr9Uiv--
