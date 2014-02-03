@@ -1,121 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaBCUlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:41:49 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47872 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbaBCUls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:41:48 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH] x86, microcode, AMD: Unify valid container checks
-Date: Mon,  3 Feb 2014 21:41:44 +0100
-Message-Id: <1391460104-7261-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.5.2.192.g7794a68
-In-Reply-To: <20140203203323.GG4281@pd.tnic>
-References: <20140203203323.GG4281@pd.tnic>
+	id S1753553AbaBCUnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:43:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39535 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaBCUnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 15:43:53 -0500
+Date: Mon, 3 Feb 2014 15:43:46 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, roger.pau@citrix.com,
+        Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pvh: set cr4 flags for APs
+Message-ID: <20140203204346.GA12728@phenom.dumpdata.com>
+References: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
+ <1391040918-11722-2-git-send-email-mukesh.rathor@oracle.com>
+ <20140203114914.GA3350@phenom.dumpdata.com>
+ <20140203113001.2433a77c@mantra.us.oracle.com>
+ <20140203195240.GA10738@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203195240.GA10738@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On Mon, Feb 03, 2014 at 02:52:40PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Feb 03, 2014 at 11:30:01AM -0800, Mukesh Rathor wrote:
+> > On Mon, 3 Feb 2014 06:49:14 -0500
+> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > 
+> > > On Wed, Jan 29, 2014 at 04:15:18PM -0800, Mukesh Rathor wrote:
+> > > > We need to set cr4 flags for APs that are already set for BSP.
+> > > 
+> > > The title is missing the 'xen' part.
+> > 
+> > The patch is for linux, not xen.
+> 
+> Right. And hence you need to prefix the title with 'xen' in it
+> otherwise it won't be obvious from the Linux log line for what
+> component of the Linux tree it is.
+> 
+> > 
+> > > I rewrote it a bit and I think this should go in 3.14.
+> > > 
+> > > David, Boris: It is not the full fix as there are other parts to
+> > > make an PVH guest use 2MB or 1GB pages- but this fixes an obvious
+> > > bug.
+> > > 
+> > > 
+> > > 
+> > > From 797ea6812ff0a90cce966a4ff6bad57cbadc43b5 Mon Sep 17 00:00:00 2001
+> > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > Date: Wed, 29 Jan 2014 16:15:18 -0800
+> > > Subject: [PATCH] xen/pvh: set CR4 flags for APs
+> > > 
+> > > The Xen ABI sets said flags for the BSP, but it does
+> > 
+> > NO it does not. I said it few times, it's set by probe_page_size_mask
+> > (which is in linux) for the BSP. The comment below also says it.
+> 
+> Where does it set it for APs? Can we piggyback on that?
 
-For additional coverage, BorisO and friends unknowlingly did swap AMD
-microcode with Intel microcode blobs in order to see what happens. What
-did happen on 32-bit was
+And since I am in a hurry to fix an build regression I did the research
+myself - but this kind of information needs to be in the commit message.
 
-[    5.722656] BUG: unable to handle kernel paging request at be3a6008
-[    5.722693] IP: [<c106d6b4>] load_microcode_amd+0x24/0x3f0
-[    5.722716] *pdpt = 0000000000000000 *pde = 0000000000000000
+Here is what I have, please comment as I want to send a git pull to Linux
+within the hour.
 
-because there was a valid initrd there but without valid microcode in it
-and the container check happened *after* the relocated ramdisk handling
-on 32-bit, which was clearly wrong.
+>From 125ef07fd58e963cc286554f6536e46c9712033c Mon Sep 17 00:00:00 2001
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+Date: Wed, 29 Jan 2014 16:15:18 -0800
+Subject: [PATCH] xen/pvh: set CR4 flags for APs
 
-While at it, take care of the ramdisk relocation on both 32- and 64-bit
-as it is done on both. Also, comment what we're doing because this code
-is a bit tricky.
+During bootup in the 'probe_page_size_mask' these CR4
+flags are set in there. But for AP processors they
+are not set as we do not use 'secondary_startup_64' which
+the baremetal kernels uses. Instead do it in
+this function which we use in Xen PVH during our
+startup for AP and BSP processors.
 
-Reported-and-tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+As such fix it up to make sure we have that flag set.
+
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kernel/cpu/microcode/amd_early.c | 43 +++++++++++++++++++++----------
- 1 file changed, 29 insertions(+), 14 deletions(-)
+ arch/x86/xen/enlighten.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
-index 8384c0fa206f..617a9e284245 100644
---- a/arch/x86/kernel/cpu/microcode/amd_early.c
-+++ b/arch/x86/kernel/cpu/microcode/amd_early.c
-@@ -285,6 +285,15 @@ static void __init collect_cpu_sig_on_bsp(void *arg)
- 
- 	uci->cpu_sig.sig = cpuid_eax(0x00000001);
- }
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index a4d7b64..201d09a 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1473,6 +1473,18 @@ static void xen_pvh_set_cr_flags(int cpu)
+ 	 * X86_CR0_TS, X86_CR0_PE, X86_CR0_ET are set by Xen for HVM guests
+ 	 * (which PVH shared codepaths), while X86_CR0_PG is for PVH. */
+ 	write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_NE | X86_CR0_WP | X86_CR0_AM);
 +
-+static void __init get_bsp_sig(void)
-+{
-+	unsigned int bsp = boot_cpu_data.cpu_index;
-+	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
-+
-+	if (!uci->cpu_sig.sig)
-+		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
-+}
- #else
- void load_ucode_amd_ap(void)
- {
-@@ -337,31 +346,37 @@ void load_ucode_amd_ap(void)
- 
- int __init save_microcode_in_initrd_amd(void)
- {
-+	unsigned long cont;
- 	enum ucode_state ret;
- 	u32 eax;
- 
--#ifdef CONFIG_X86_32
--	unsigned int bsp = boot_cpu_data.cpu_index;
--	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
--
--	if (!uci->cpu_sig.sig)
--		smp_call_function_single(bsp, collect_cpu_sig_on_bsp, NULL, 1);
-+	if (!container)
-+		return -EINVAL;
- 
-+#ifdef CONFIG_X86_32
-+	get_bsp_sig();
-+	cont = (unsigned long)container;
-+#else
- 	/*
--	 * Take into account the fact that the ramdisk might get relocated
--	 * and therefore we need to recompute the container's position in
--	 * virtual memory space.
-+	 * We need the physical address of the container for both bitness since
-+	 * boot_params.hdr.ramdisk_image is a physical address.
- 	 */
--	container = (u8 *)(__va((u32)relocated_ramdisk) +
--			   ((u32)container - boot_params.hdr.ramdisk_image));
-+	cont = __pa(container);
- #endif
-+
++	if (!cpu)
++		return;
 +	/*
-+	 * Take into account the fact that the ramdisk might get relocated and
-+	 * therefore we need to recompute the container's position in virtual
-+	 * memory space.
-+	 */
-+	if (relocated_ramdisk)
-+		container = (u8 *)(__va(relocated_ramdisk) +
-+			     (cont - boot_params.hdr.ramdisk_image));
++	 * For BSP, PSE PGE are set in probe_page_size_mask(), for APs
++	 * set them here. For all, OSFXSR OSXMMEXCPT are set in fpu_init.
++	*/
++	if (cpu_has_pse)
++		set_in_cr4(X86_CR4_PSE);
 +
- 	if (ucode_new_rev)
- 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
- 			ucode_new_rev);
++	if (cpu_has_pge)
++		set_in_cr4(X86_CR4_PGE);
+ }
  
--	if (!container)
--		return -EINVAL;
--
- 	eax   = cpuid_eax(0x00000001);
- 	eax   = ((eax >> 8) & 0xf) + ((eax >> 20) & 0xff);
- 
+ /*
 -- 
-1.8.5.2.192.g7794a68
+1.8.3.1
 
