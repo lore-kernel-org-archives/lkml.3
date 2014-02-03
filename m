@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaBCO4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:56:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47316 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaBCO4X (ORCPT
+	id S1752559AbaBCO5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:57:36 -0500
+Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:53795 "EHLO
+	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751678AbaBCO5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:56:23 -0500
-Date: Mon, 3 Feb 2014 15:56:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140203145605.GL8874@twins.programming.kicks-ass.net>
-References: <52EA8B07.6020206@linaro.org>
- <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
- <20140131090230.GM5002@laptop.programming.kicks-ass.net>
- <52EB6F65.8050008@linux.vnet.ibm.com>
- <52EBBC23.8020603@linux.intel.com>
- <52EBC33A.6080101@linaro.org>
- <52EBC645.2040607@linux.intel.com>
- <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
- <20140203125441.GD19029@e103034-lin>
- <52EFA9D3.1030601@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EFA9D3.1030601@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 3 Feb 2014 09:57:35 -0500
+Message-ID: <1391439425.3509.16.camel@linaro1.home>
+Subject: Re: [PATCH v5 07/16] ARM: Remove use of struct kprobe from generic
+ probes code
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        davem@davemloft.net, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Date: Mon, 03 Feb 2014 14:57:05 +0000
+In-Reply-To: <1390507559-4697-8-git-send-email-dave.long@linaro.org>
+References: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
+	 <1390507559-4697-8-git-send-email-dave.long@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Arjan, could you have a look at teaching your Thunderpants to wrap lines
-at ~80 chars please?
-
-On Mon, Feb 03, 2014 at 06:38:11AM -0800, Arjan van de Ven wrote:
-> On 2/3/2014 4:54 AM, Morten Rasmussen wrote:
+On Thu, 2014-01-23 at 15:05 -0500, David Long wrote:
+> From: "David A. Long" <dave.long@linaro.org>
 > 
-> >
-> >I'm therefore not convinced that idle state index is the right thing to
-> >give the scheduler. Using a cost metric would be better in my
-> >opinion.
+> Change the generic ARM probes code to pass in the opcode and architecture-specific
+> structure separately instead of using struct kprobe, so we do not pollute
+> code being used only for uprobes or other non-kprobes instruction
+> interpretation.
 > 
-> 
-> I totally agree with this, and we may need two separate cost metrics
-> 
-> 1) A latency driven one
-> 2) A performance impact on
-> 
-> first one is pretty much the exit latency related time, sort of a
-> "expected time to first instruction" (currently menuidle has the
-> 99.999% worst case number, which is not useful for this, but is a
-> first approximation). This is obviously the dominating number for
-> expected-short running tasks
-> 
-> second on is more of a "is there any cache/TLB left or is it flushed"
-> kind of metric. It's more tricky to compute, since what is the cost of
-> an empty cache (or even a cache migration) after all....  .... but I
-> suspect it's in part what the scheduler will care about more for
-> expected-long  running tasks.
+> Signed-off-by: David A. Long <dave.long@linaro.org>
+> ---
 
-Yeah, so currently we 'assume' cache hotness based on runtime; see
-task_hot(). A hint that the CPU wiped its caches might help there.
+One minor nit-pick...
 
-We also used to measure the entire cache migration cost between all
-topologies in the system. That got ripped out when CFS got introduced,
-but there's been a few people wanting to bring that back because the
-single migration cost thingy simply doesn't work too well for some
-workloads.
+[...]
+> diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
+> index c7ee290..cea707a 100644
+> --- a/arch/arm/kernel/kprobes-thumb.c
+> +++ b/arch/arm/kernel/kprobes-thumb.c
+[...]
+> @@ -593,7 +590,7 @@ t16_emulate_pop_pc(struct kprobe *p, struct pt_regs *regs)
+>  	bx_write_pc(pc, regs);
+>  }
+>  
+> -static enum kprobe_insn __kprobes
+> +enum kprobe_insn __kprobes
+>  t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+>  		struct decode_header *d)
+>  {
 
-The reason Ingo took it out was that these measured numbers would
-slightly vary from boot to boot making it hard to compare performance
-numbers across boots.
+The above removal of 'static' appears to be an unneeded accidental
+change?
 
-There's something to be said for either case I suppose.
+-- 
+Tixy
+
