@@ -1,47 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaBCOf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:35:29 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:46932 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaBCOf2 (ORCPT
+	id S1752765AbaBCOfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:35:55 -0500
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:48390 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752362AbaBCOfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:35:28 -0500
-Date: Mon, 3 Feb 2014 15:35:12 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] regulator: core: Correct default return value for full
-  constraints
-Message-ID: <20140203153512.3b1d14e4@endymion.delvare>
-In-Reply-To: <20140203110249.GA6392@sirena.org.uk>
-References: <1390846075-17415-1-git-send-email-broonie@kernel.org>
-	<20140203104141.40cc04e5@endymion.delvare>
-	<20140203110249.GA6392@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	Mon, 3 Feb 2014 09:35:51 -0500
+From: <srinivas.kandagatla@st.com>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>, Arnd Bergmann <arnd@arndb.de>,
+        <stephen.gallimore@st.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH v2 0/6] ARM: STi reset controller support
+Date: Mon, 3 Feb 2014 14:27:45 +0000
+Message-ID: <1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-On Mon, 3 Feb 2014 11:02:49 +0000, Mark Brown wrote:
-> On Mon, Feb 03, 2014 at 10:41:41AM +0100, Jean Delvare wrote:
-> 
-> > Can you please review / apply this patch? It fixes a real bug. I also
-> > think it should go to the 3.13-stable tree.
-> 
-> Uh, it is applied?  I'm the one who maintains the regulator tree
-> generally...
+Hi All,
 
-Ah, I see it in your tree. But it's not in 3.14-rc1. As this fixes a
-regression, it would be great to have it upstream ASAP, so that it can
-propagate to 3.13-stable.
+This patch series adds reset controller support for STi SOC series STiH415 and
+STiH416. It adds support for both power down reset and soft reset controllers.
+On STi series SOCs reset lines are wired up to system configuration registers.
+Most of the IPs on STi SOCs are left in reset state, so this driver is very
+important for other drivers to use the IPs.
+
+Patch 01: Adds reset controller based on system configuration registers via
+regmap.
+
+Patch 02, 03: adds STiH415 and STiH416 reset controller drivers.
+
+Patch 04, 05: adds STiH415 and STiH416 soft reset controllers.
+
+The final patch 06 selects reset controller in mach-sti Kconfig.
+
+I would like get this driver in to 3.15, so that its possible to add dt
+support for other IPs with reset lines. Without this patchset its impossible
+to add DT support to IPs with reset lines as reset line definition is in
+common header file in include/dt-bindings/.
+
+This reset controller will be used by gmac, i2c and st-ir drivers.
+
+
+Comments?
+
+Changes since v1:
+	- Added all the softreset lines.
+	- rebased to v3.14-rc1.
 
 Thanks,
+srini
+
+
+Srinivas Kandagatla (2):
+  drivers: reset: stih415: add softreset controller
+  drivers: reset: stih416: add softreset controller
+
+Stephen Gallimore (4):
+  drivers: reset: STi SoC system configuration reset controller support
+  drivers: reset: Reset controller driver for STiH415
+  drivers: reset: Reset controller driver for STiH416
+  ARM: STi: Add reset controller support to mach-sti Kconfig
+
+ .../devicetree/bindings/reset/st,sti-powerdown.txt |   47 +++++
+ .../devicetree/bindings/reset/st,sti-softreset.txt |   46 +++++
+ arch/arm/boot/dts/stih415.dtsi                     |   11 ++
+ arch/arm/boot/dts/stih416.dtsi                     |   11 ++
+ arch/arm/mach-sti/Kconfig                          |    3 +
+ drivers/reset/Kconfig                              |    2 +
+ drivers/reset/Makefile                             |    1 +
+ drivers/reset/sti/Kconfig                          |   15 ++
+ drivers/reset/sti/Makefile                         |    4 +
+ drivers/reset/sti/reset-stih415.c                  |  112 ++++++++++++
+ drivers/reset/sti/reset-stih416.c                  |  143 +++++++++++++++
+ drivers/reset/sti/reset-syscfg.c                   |  186 ++++++++++++++++++++
+ drivers/reset/sti/reset-syscfg.h                   |   69 ++++++++
+ .../dt-bindings/reset-controller/stih415-resets.h  |   26 +++
+ .../dt-bindings/reset-controller/stih416-resets.h  |   50 ++++++
+ 15 files changed, 726 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-softreset.txt
+ create mode 100644 drivers/reset/sti/Kconfig
+ create mode 100644 drivers/reset/sti/Makefile
+ create mode 100644 drivers/reset/sti/reset-stih415.c
+ create mode 100644 drivers/reset/sti/reset-stih416.c
+ create mode 100644 drivers/reset/sti/reset-syscfg.c
+ create mode 100644 drivers/reset/sti/reset-syscfg.h
+ create mode 100644 include/dt-bindings/reset-controller/stih415-resets.h
+ create mode 100644 include/dt-bindings/reset-controller/stih416-resets.h
+
 -- 
-Jean Delvare
+1.7.9.5
+
