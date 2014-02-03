@@ -1,210 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaBCTLf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:11:35 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:34450 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaBCTLb (ORCPT
+	id S1753522AbaBCTJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:09:26 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:49618 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074AbaBCTJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:11:31 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [PATCH v2.1] audit: Only use the syscall slowpath when syscall audit rules exist
-Date: Mon,  3 Feb 2014 11:11:26 -0800
-Message-Id: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
+	Mon, 3 Feb 2014 14:09:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/10] kernfs: rename kernfs_dir_ops to kernfs_syscall_ops
+Date: Mon,  3 Feb 2014 14:09:09 -0500
+Message-Id: <1391454557-32376-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391454557-32376-1-git-send-email-tj@kernel.org>
+References: <1391454557-32376-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This toggles TIF_SYSCALL_AUDIT as needed when rules change instead of
-leaving it set whenever rules might be set in the future.  This reduces
-syscall latency from >60ns to closer to 40ns on my laptop.
+We're gonna need non-dir syscall callbacks, which will make dir_ops a
+misnomer.  Let's rename kernfs_dir_ops to kernfs_syscall_ops.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Steve Grubb <sgrubb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+This is pure rename.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
+ fs/kernfs/dir.c        | 25 +++++++++++++------------
+ include/linux/kernfs.h | 18 +++++++++---------
+ 2 files changed, 22 insertions(+), 21 deletions(-)
 
-This brown paper bag release is brought to you by git commit's -a flag.
-
-Changes from v2: Contains the correct patch
-
-Changes from v1:
- - For new tasks, set flags in a new audit_sync_flags callback instead of
-   in audit_alloc (thanks, Oleg).
- - Rework locking.
- - Use irqsave/irqrestore to avoid having to think about who else might have
-   taken spinlocks.
-
- include/linux/audit.h | 11 ++++++++--
- kernel/auditfilter.c  |  4 ++--
- kernel/auditsc.c      | 57 +++++++++++++++++++++++++++++++++++++++++++++------
- kernel/fork.c         |  3 +++
- 4 files changed, 65 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index a406419..a81f498 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -298,7 +298,9 @@ static inline void audit_mmap_fd(int fd, int flags)
- 		__audit_mmap_fd(fd, flags);
- }
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index bfbfb48..f58d2f1 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -527,13 +527,14 @@ EXPORT_SYMBOL_GPL(kernfs_find_and_get_ns);
  
--extern int audit_n_rules;
-+extern void audit_inc_n_rules(void);
-+extern void audit_dec_n_rules(void);
-+extern void audit_sync_flags(struct task_struct *tsk);
- extern int audit_signals;
- #else /* CONFIG_AUDITSYSCALL */
- static inline int audit_alloc(struct task_struct *task)
-@@ -404,7 +406,12 @@ static inline void audit_mmap_fd(int fd, int flags)
- { }
- static inline void audit_ptrace(struct task_struct *t)
- { }
--#define audit_n_rules 0
-+static inline void audit_inc_n_rules(void)
-+{ }
-+static inline void audit_dec_n_rules(void)
-+{ }
-+static inline void audit_sync_flags(struct task_struct *tsk)
-+{ }
- #define audit_signals 0
- #endif /* CONFIG_AUDITSYSCALL */
- 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 51f3fd4..0ce531d 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -903,7 +903,7 @@ static inline int audit_add_rule(struct audit_entry *entry)
- 	}
- #ifdef CONFIG_AUDITSYSCALL
- 	if (!dont_count)
--		audit_n_rules++;
-+		audit_inc_n_rules();
- 
- 	if (!audit_match_signal(entry))
- 		audit_signals++;
-@@ -955,7 +955,7 @@ static inline int audit_del_rule(struct audit_entry *entry)
- 
- #ifdef CONFIG_AUDITSYSCALL
- 	if (!dont_count)
--		audit_n_rules--;
-+		audit_dec_n_rules();
- 
- 	if (!audit_match_signal(entry))
- 		audit_signals--;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 90594c9..cd44c88 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -79,8 +79,13 @@
- /* no execve audit message should be longer than this (userspace limits) */
- #define MAX_EXECVE_AUDIT_LEN 7500
- 
--/* number of audit rules */
--int audit_n_rules;
-+/*
-+ * number of audit rules
-+ *
-+ * To change this, you must hold audit_filter_mutex *and* have a read lock
-+ * on tasklist_lock.
-+ */
-+static int audit_n_rules;
- 
- /* determines whether we collect data for signals sent */
- int audit_signals;
-@@ -911,6 +916,40 @@ static inline struct audit_context *audit_alloc_context(enum audit_state state)
- 	return context;
- }
- 
-+void audit_inc_n_rules()
-+{
-+	struct task_struct *p, *g;
-+	unsigned long flags;
-+
-+	read_lock_irqsave(&tasklist_lock, flags);
-+	if (audit_n_rules++ == 0) {
-+		do_each_thread(g, p) {
-+			if (p->audit_context)
-+				set_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-+		} while_each_thread(g, p);
-+	}
-+	read_unlock_irqrestore(&tasklist_lock, flags);
-+}
-+
-+void audit_dec_n_rules()
-+{
-+	struct task_struct *p, *g;
-+	unsigned long flags;
-+
-+	read_lock_irqsave(&tasklist_lock, flags);
-+
-+	--audit_n_rules;
-+	BUG_ON(audit_n_rules < 0);
-+
-+	if (audit_n_rules == 0) {
-+		do_each_thread(g, p) {
-+			clear_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-+		} while_each_thread(g, p);
-+	}
-+
-+	read_unlock_irqrestore(&tasklist_lock, flags);
-+}
-+
  /**
-  * audit_alloc - allocate an audit context block for a task
-  * @tsk: task
-@@ -930,10 +969,8 @@ int audit_alloc(struct task_struct *tsk)
- 		return 0; /* Return if not auditing. */
- 
- 	state = audit_filter_task(tsk, &key);
--	if (state == AUDIT_DISABLED) {
--		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-+	if (state == AUDIT_DISABLED)
- 		return 0;
--	}
- 
- 	if (!(context = audit_alloc_context(state))) {
- 		kfree(key);
-@@ -943,10 +980,18 @@ int audit_alloc(struct task_struct *tsk)
- 	context->filterkey = key;
- 
- 	tsk->audit_context  = context;
--	set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
- 	return 0;
- }
- 
-+void audit_sync_flags(struct task_struct *tsk)
-+{
-+	/* The caller has a write lock on tasklist_lock. */
-+	if (audit_n_rules && tsk->audit_context)
-+		set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-+	else
-+		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-+}
-+
- static inline void audit_free_context(struct audit_context *context)
+  * kernfs_create_root - create a new kernfs hierarchy
+- * @kdops: optional directory syscall operations for the hierarchy
++ * @scops: optional syscall operations for the hierarchy
+  * @priv: opaque data associated with the new directory
+  *
+  * Returns the root of the new hierarchy on success, ERR_PTR() value on
+  * failure.
+  */
+-struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
++struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
++				       void *priv)
  {
- 	audit_free_names(context);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index dfa736c..3f28173 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1479,6 +1479,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	struct kernfs_root *root;
+ 	struct kernfs_node *kn;
+@@ -556,7 +557,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
+ 	kn->priv = priv;
+ 	kn->dir.root = root;
  
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+
-+	audit_sync_flags(p);
-+
- 	write_unlock_irq(&tasklist_lock);
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
+-	root->dir_ops = kdops;
++	root->syscall_ops = scops;
+ 	root->kn = kn;
+ 	init_waitqueue_head(&root->deactivate_waitq);
+ 
+@@ -653,16 +654,16 @@ static int kernfs_iop_mkdir(struct inode *dir, struct dentry *dentry,
+ 			    umode_t mode)
+ {
+ 	struct kernfs_node *parent = dir->i_private;
+-	struct kernfs_dir_ops *kdops = kernfs_root(parent)->dir_ops;
++	struct kernfs_syscall_ops *scops = kernfs_root(parent)->syscall_ops;
+ 	int ret;
+ 
+-	if (!kdops || !kdops->mkdir)
++	if (!scops || !scops->mkdir)
+ 		return -EPERM;
+ 
+ 	if (!kernfs_get_active(parent))
+ 		return -ENODEV;
+ 
+-	ret = kdops->mkdir(parent, dentry->d_name.name, mode);
++	ret = scops->mkdir(parent, dentry->d_name.name, mode);
+ 
+ 	kernfs_put_active(parent);
+ 	return ret;
+@@ -671,16 +672,16 @@ static int kernfs_iop_mkdir(struct inode *dir, struct dentry *dentry,
+ static int kernfs_iop_rmdir(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct kernfs_node *kn  = dentry->d_fsdata;
+-	struct kernfs_dir_ops *kdops = kernfs_root(kn)->dir_ops;
++	struct kernfs_syscall_ops *scops = kernfs_root(kn)->syscall_ops;
+ 	int ret;
+ 
+-	if (!kdops || !kdops->rmdir)
++	if (!scops || !scops->rmdir)
+ 		return -EPERM;
+ 
+ 	if (!kernfs_get_active(kn))
+ 		return -ENODEV;
+ 
+-	ret = kdops->rmdir(kn);
++	ret = scops->rmdir(kn);
+ 
+ 	kernfs_put_active(kn);
+ 	return ret;
+@@ -691,10 +692,10 @@ static int kernfs_iop_rename(struct inode *old_dir, struct dentry *old_dentry,
+ {
+ 	struct kernfs_node *kn  = old_dentry->d_fsdata;
+ 	struct kernfs_node *new_parent = new_dir->i_private;
+-	struct kernfs_dir_ops *kdops = kernfs_root(kn)->dir_ops;
++	struct kernfs_syscall_ops *scops = kernfs_root(kn)->syscall_ops;
+ 	int ret;
+ 
+-	if (!kdops || !kdops->rename)
++	if (!scops || !scops->rename)
+ 		return -EPERM;
+ 
+ 	if (!kernfs_get_active(kn))
+@@ -705,7 +706,7 @@ static int kernfs_iop_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		return -ENODEV;
+ 	}
+ 
+-	ret = kdops->rename(kn, new_parent, new_dentry->d_name.name);
++	ret = scops->rename(kn, new_parent, new_dentry->d_name.name);
+ 
+ 	kernfs_put_active(new_parent);
+ 	kernfs_put_active(kn);
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 58a131d..5ddc474 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -108,13 +108,13 @@ struct kernfs_node {
+ };
+ 
+ /*
+- * kernfs_dir_ops may be specified on kernfs_create_root() to support
+- * directory manipulation syscalls.  These optional callbacks are invoked
+- * on the matching syscalls and can perform any kernfs operations which
+- * don't necessarily have to be the exact operation requested.  An active
+- * reference is held for each kernfs_node parameter.
++ * kernfs_syscall_ops may be specified on kernfs_create_root() to support
++ * syscalls.  These optional callbacks are invoked on the matching syscalls
++ * and can perform any kernfs operations which don't necessarily have to be
++ * the exact operation requested.  An active reference is held for each
++ * kernfs_node parameter.
+  */
+-struct kernfs_dir_ops {
++struct kernfs_syscall_ops {
+ 	int (*mkdir)(struct kernfs_node *parent, const char *name,
+ 		     umode_t mode);
+ 	int (*rmdir)(struct kernfs_node *kn);
+@@ -128,7 +128,7 @@ struct kernfs_root {
+ 
+ 	/* private fields, do not use outside kernfs proper */
+ 	struct ida		ino_ida;
+-	struct kernfs_dir_ops	*dir_ops;
++	struct kernfs_syscall_ops *syscall_ops;
+ 	wait_queue_head_t	deactivate_waitq;
+ };
+ 
+@@ -219,7 +219,7 @@ struct kernfs_node *kernfs_find_and_get_ns(struct kernfs_node *parent,
+ void kernfs_get(struct kernfs_node *kn);
+ void kernfs_put(struct kernfs_node *kn);
+ 
+-struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops,
++struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
+ 				       void *priv);
+ void kernfs_destroy_root(struct kernfs_root *root);
+ 
+@@ -273,7 +273,7 @@ static inline void kernfs_get(struct kernfs_node *kn) { }
+ static inline void kernfs_put(struct kernfs_node *kn) { }
+ 
+ static inline struct kernfs_root *
+-kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
++kernfs_create_root(struct kernfs_syscall_ops *scops, void *priv)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline void kernfs_destroy_root(struct kernfs_root *root) { }
 -- 
 1.8.5.3
 
