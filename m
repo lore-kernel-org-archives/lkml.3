@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaBCWG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:06:26 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:64015 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaBCWGY (ORCPT
+	id S1753306AbaBCWIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:08:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46931 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388AbaBCWIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:06:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140203215151.GA25594@dcvr.yhbt.net>
-References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
- <52EFEF0A.9080101@amacapital.net> <CAJ3m7Br60ph=Ja_ggJAp9cb5fNJy2O1rRHeJW_jjeTJbYmG3UA@mail.gmail.com>
- <CALCETrXBRW=x9myjxzZB+ChtPiH9zjNOd=YLtCp61ib3bqEpKA@mail.gmail.com> <20140203215151.GA25594@dcvr.yhbt.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Feb 2014 14:06:04 -0800
-Message-ID: <CALCETrX1GE0w8nXMxRHmgqRS8_hKwZ8dq+T1c4DPip8Jh+-8Dw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
-To: Eric Wong <normalperson@yhbt.net>
-Cc: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Feb 2014 17:08:36 -0500
+Date: Mon, 3 Feb 2014 14:08:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
+        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH v2 2/7] memcg, slab: cleanup memcg cache name creation
+Message-Id: <20140203140835.c414b6222abfd9c349648e2a@linux-foundation.org>
+In-Reply-To: <ec86147b3dfd5bf7da5b34e12b7a4e4881f49690.1391441746.git.vdavydov@parallels.com>
+References: <cover.1391441746.git.vdavydov@parallels.com>
+	<ec86147b3dfd5bf7da5b34e12b7a4e4881f49690.1391441746.git.vdavydov@parallels.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 1:51 PM, Eric Wong <normalperson@yhbt.net> wrote:
-> Andy Lutomirski <luto@amacapital.net> wrote:
->> >> On 02/02/2014 06:17 PM, Nathaniel Yazdani wrote:
->> > So are you saying that those features you mentioned are specifically sought
->> > after for the kernel? If so I'd like to take a crack at some of them,
->> > may as well
->> > get some use out of my new knowledge of epoll internals :)
->>
->> If by "sought after", you mean "is there at least one epoll user who
->> wants them", then yes :)
->>
->> I think that EPOLLET and EPOLLONESHOT are giant hacks, and that what
->> everyone really wants is the ability to very efficiently toggle events
->> on and off.  The ability to do it simultaneously and inexpensively
->> with epoll_wait would make it happen.
->
-> Everybody using single-threaded epoll, you mean?  I suppose there's
-> quite a few of those.
->
-> I've pondered an epoll_xchg syscall which would behave like *BSD kevent
-> to satisfy single-threaded users, but never got around to it.  All my
-> epoll uses are multithreaded w/ oneshot nowadays, so xchg would only
-> save one syscall per thread.
+On Mon, 3 Feb 2014 19:54:37 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-Even for multithreaded, the ability to rearm EPOLLONESHOT entries
-without extra syscalls would probably be useful.
+> The way memcg_create_kmem_cache() creates the name for a memcg cache
+> looks rather strange: it first formats the name in the static buffer
+> tmp_name protected by a mutex, then passes the pointer to the buffer to
+> kmem_cache_create_memcg(), which finally duplicates it to the cache
+> name.
+> 
+> Let's clean this up by moving memcg cache name creation to a separate
+> function to be called by kmem_cache_create_memcg(), and estimating the
+> length of the name string before copying anything to it so that we won't
+> need a temporary buffer.
+> 
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3193,6 +3193,37 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>  	return 0;
+>  }
+>  
+> +static int memcg_print_cache_name(char *buf, size_t size,
+> +		struct mem_cgroup *memcg, struct kmem_cache *root_cache)
+> +{
+> +	int ret;
+> +
+> +	rcu_read_lock();
+> +	ret = snprintf(buf, size, "%s(%d:%s)", root_cache->name,
+> +		       memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
+> +	rcu_read_unlock();
+> +	return ret;
+> +}
+> +
+> +char *memcg_create_cache_name(struct mem_cgroup *memcg,
+> +			      struct kmem_cache *root_cache)
+> +{
+> +	int len;
+> +	char *name;
+> +
+> +	/*
+> +	 * We cannot use kasprintf() here, because cgroup_name() must be called
+> +	 * under RCU protection.
+> +	 */
+> +	len = memcg_print_cache_name(NULL, 0, memcg, root_cache);
+> +
+> +	name = kmalloc(len + 1, GFP_KERNEL);
+> +	if (name)
+> +		memcg_print_cache_name(name, len + 1, memcg, root_cache);
 
---Andy
+but but but this assumes that cgroup_name(memcg->css.cgroup) did not
+change between the two calls to memcg_print_cache_name().  If that is
+the case then the locking was unneeded anyway.
+
+> +	return name;
+> +}
+> +
+>  int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+>  			     struct kmem_cache *root_cache)
+>  {
+> @@ -3397,44 +3428,6 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+>  	schedule_work(&cachep->memcg_params->destroy);
+>  }
+>  
+
