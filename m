@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672AbaBCKfd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 05:35:33 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43623 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965AbaBCKf2 (ORCPT
+	id S1752750AbaBCKfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 05:35:48 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:44832 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750965AbaBCKfp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 05:35:28 -0500
-Date: Mon, 3 Feb 2014 10:35:22 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mfd: sec-core: sec_pmic_{suspend,resume}() should
- depend on CONFIG_PM_SLEEP
-Message-ID: <20140203103522.GR13529@lee--X1>
-References: <1390732723-7129-1-git-send-email-geert@linux-m68k.org>
- <1390732723-7129-2-git-send-email-geert@linux-m68k.org>
+	Mon, 3 Feb 2014 05:35:45 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'James Hogan'" <james.hogan@imgtec.com>
+CC: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        "Greg KH" <gregkh@linuxfoundation.org>,
+        "bergwolf@gmail.com" <bergwolf@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "oleg.drokin@intel.com" <oleg.drokin@intel.com>,
+        "jacques-charles.lafoucriere@cea.fr" 
+	<jacques-charles.lafoucriere@cea.fr>,
+        "jinshan.xiong@intel.com" <jinshan.xiong@intel.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>
+Subject: RE: [PATCH] drivers: staging: lustre: lustre: include: add
+ "__attribute__((packed))" for the related union
+Thread-Topic: [PATCH] drivers: staging: lustre: lustre: include: add
+ "__attribute__((packed))" for the related union
+Thread-Index: AQHPH1WqrPdkB9hsu0CwpyENM0ZOOpqjPaqAgAARGPCAAAYjAIAAApBA
+Date: Mon, 3 Feb 2014 10:35:02 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6B777A@AcuExch.aculab.com>
+References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com>
+ <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda>
+ <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda>
+ <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com>
+ <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com>
+ <20140203085855.GA26722@mwanda>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com>
+ <52EF6DCC.6040807@imgtec.com>
+In-Reply-To: <52EF6DCC.6040807@imgtec.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1390732723-7129-2-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If CONFIG_PM_SLEEP=n:
+From: James Hogan 
+> On 03/02/14 10:05, David Laight wrote:
+> > From: Dan Carpenter
+> >> On Sat, Feb 01, 2014 at 09:57:39PM +0800, Chen Gang wrote:
+> >>> It seems, our kernel still stick to treate 'pack' region have effect
+> >>> with both 'align' and 'sizeof'.
+> >>
+> >> It's not about packed regions.  It's about unions.  It's saying the
+> >> sizeof() a union is a multiple of 4 unless it's packed.
+> >>
+> >> union foo {
+> >> 	short x;
+> >> 	short y;
+> >> };
+> >>
+> >> The author intended the sizeof(union foo) to be 2 but on metag arch then
+> >> it is 4.
+> >
+> > The same is probably be true of: struct foo { _u16 bar; };
 > 
-> drivers/mfd/sec-core.c:349: warning: ‘sec_pmic_suspend’ defined but not used
-> drivers/mfd/sec-core.c:371: warning: ‘sec_pmic_resume’ defined but not used
+> Yes indeed.
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  drivers/mfd/sec-core.c |    2 ++
->  1 file changed, 2 insertions(+)
+> > Architectures that define such alignment rules are a right PITA.
+> > You either need to get the size to 2 without using 'packed', or
+> > just not define such structures.
+> > It is worth seeing if adding aligned(2) will change the size - I'm
+> > not sure.
+> 
+> __aligned(2) alone doesn't seem to have any effect on sizeof() or
+> __alignof__() unless it is accompanied by __packed. x86_64 is similar in
+> that respect (it just packs sanely in the first place).
+> 
+> Combining __packed with __aligned(2) does the trick though (__packed
+> alone sets __aligned(1) which is obviously going to be suboptimal).
 
-Applied to my -fixes branch.
+Compile some code for a cpu that doesn't support misaligned transfers
+(probably one of sparc, arm, ppc) and see if the compiler generates a
+single 16bit request or two 8 bits ones.
+You don't want the compiler generating multiple byte-sized memory transfers.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	David
+
+
+
