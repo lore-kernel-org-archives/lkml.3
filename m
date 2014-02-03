@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaBCSsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:48:03 -0500
-Received: from longford.logfs.org ([213.229.74.203]:42711 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaBCSsB (ORCPT
+	id S1753289AbaBCSt2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:49:28 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:50848 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576AbaBCSt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:48:01 -0500
-Date: Mon, 3 Feb 2014 13:48:57 -0500
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
-        blogic@openwrt.org, andrewmcgr@gmail.com, smueller@chronox.de,
-        geert@linux-m68k.org, tg@mirbsd.de
-Subject: Re: [PATCH,RFC] random: collect cpu randomness
-Message-ID: <20140203184857.GA26740@logfs.org>
-References: <20140202203617.GA9499@logfs.org>
- <20140203155042.GD9499@logfs.org>
- <20140203163729.GA13634@thunk.org>
+	Mon, 3 Feb 2014 13:49:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140203163729.GA13634@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <lcojvq$n46$1@ger.gmane.org>
+References: <1391435387-13062-1-git-send-email-geert@linux-m68k.org>
+	<lcojvq$n46$1@ger.gmane.org>
+Date: Mon, 3 Feb 2014 19:49:25 +0100
+X-Google-Sender-Auth: QKfuBZLSWZt6SlpWzNnekmTLBcQ
+Message-ID: <CAMuHMdU6mQpQJtjULE+b+7eOiq=mzEhsb-yZeBemPo6gQaKrQg@mail.gmail.com>
+Subject: Re: [PATCH resend 1/2] bcache: Use %zi to format size_t
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ian Pilcher <arequipeno@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 February 2014 11:37:29 -0500, Theodore Ts'o wrote:
-> 
-> So we could take the struct pt_regs which we get from get_irq_regs(),
-> XOR them together and use them to feed into input[2] amd input[3] in
-> add_interrupt_randomness().  Or some other way of distributing the
-> values of all of the irq registers into the __u32 input[4] array.
-> 
-> That would probably be a good and useful thing to do.  Was that
-> basically what you were suggesting?
+On Mon, Feb 3, 2014 at 6:34 PM, Ian Pilcher <arequipeno@gmail.com> wrote:
+> Shouldn't size_t use %zu?
 
-Yes.
+Technically yes. %zi/%zd prints signed numbers (ssize_t), while %zu prints
+unsigned (size_t).
 
-Jörn
+Gr{oetje,eeting}s,
+
+                        Geert
 
 --
-When you copy some code, you are supposed to read it.  If nothing else,
-there's a chance to spot and fix an obvious bug instead of sharing it...
--- Al Viro
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
