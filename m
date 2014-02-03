@@ -1,87 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaBCXQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:16:37 -0500
-Received: from 1wt.eu ([62.212.114.60]:56189 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268AbaBCXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:16:35 -0500
-Date: Tue, 4 Feb 2014 00:16:03 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-Message-ID: <20140203231603.GA11613@1wt.eu>
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <52EA2875.5020807@free-electrons.com> <52EA2A04.2070109@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52EA2A04.2070109@gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1753493AbaBCXRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:17:23 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:35108 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427AbaBCXRV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 18:17:21 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH] of: restructure for_each macros to fix compile warnings
+Date: Mon,  3 Feb 2014 17:17:04 -0600
+Message-Id: <1391469424-5245-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+From: Rob Herring <robh@kernel.org>
 
-On Thu, Jan 30, 2014 at 11:31:32AM +0100, Sebastian Hesselbarth wrote:
-> On 01/30/14 11:24, Gregory CLEMENT wrote:
-> >On 25/01/2014 19:19, Sebastian Hesselbarth wrote:
-> >>This patch set fixes clk init order that went upside-down with
-> >>v3.14. I haven't really investigated what caused this, but I assume
-> >>it is related with DT node reordering by addresses.
-> >
-> >Can you explain what kind of issue do you observe?
-> 
-> Sure. When probing CLK_OF_DECLAREed clock drivers, clock-gating driver
-> gets registered before core-clocks. It therefore cannot resolve it's
-> parent clock name for tclk and all clock gates will have no parent
-> clock.
-> 
-> Usually, you'll see in some drivers (e.g. v643xx_eth) div_by_zero errors
-> poping up, when they calculate a frequency division factors based on
-> clock gate frequency, which should have been tclk but is 0 now.
+Commit 00b2c76a6a "include/linux/of.h: make for_each_child_of_node()
+reference its args when CONFIG_OF=n" fixed warnings for unused
+variables, but introduced variable "used uninitialized" warnings.
+Simply initializing the variables would result in "set but not used"
+warnings with W=1.
 
-Well, to be honnest, I have no idea whether your patch is the right way
-to fix the problem or not, but what I can say is that it fixes such oopses
-that appear in 3.14-rc1 when booting on mirabox :
+Fix both types of warnings by making all the for_each macros
+unconditional and rely on the dummy static inline functions to
+initialize and reference any variables.
 
-Division by zero in kernel.
-CPU: 0 PID: 6 Comm: kworker/u2:0 Not tainted 3.13.0-bck-mbx #6
-Workqueue: kmmcd mmc_rescan
-[<c0010865>] (unwind_backtrace+0x1/0x98) from [<c000e947>] (show_stack+0xb/0xc)
-[<c000e947>] (show_stack+0xb/0xc) from [<c0135913>] (Ldiv0+0x9/0x12)
-[<c0135913>] (Ldiv0+0x9/0x12) from [<c01f708b>] (mvsd_set_ios+0xcb/0x160)
-[<c01f708b>] (mvsd_set_ios+0xcb/0x160) from [<c01ec1fd>] (__mmc_set_clock+0x2d/0
-x40)
-[<c01ec1fd>] (__mmc_set_clock+0x2d/0x40) from [<c01f1a59>] (mmc_sdio_init_card+0
-x391/0x808)
-[<c01f1a59>] (mmc_sdio_init_card+0x391/0x808) from [<c01f2163>] (mmc_attach_sdio
-+0x5b/0x218)
-[<c01f2163>] (mmc_attach_sdio+0x5b/0x218) from [<c01ed0d9>] (mmc_rescan+0x159/0x
-1b4)
-[<c01ed0d9>] (mmc_rescan+0x159/0x1b4) from [<c0024579>] (process_one_work+0xa9/0
-x21c)
-[<c0024579>] (process_one_work+0xa9/0x21c) from [<c002494d>] (worker_thread+0xb5
-/0x248)
-[<c002494d>] (worker_thread+0xb5/0x248) from [<c0027f1b>] (kthread+0x7b/0x94)
-+0xa7/0x138)
-[<c04228b3>] (kernel_init_freeable+0xa7/0x138) from [<c027e6cf>] (kernel_init+0x
-7/0xb8)
-[<c027e6cf>] (kernel_init+0x7/0xb8) from [<c000cb9d>] (ret_from_fork+0x11/0x34)
-mvsdio d00d4000.mvsdio: lacking card detect (fall back to polling)
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Rob Herring <robh@kernel.org>
+---
+ include/linux/of.h | 153 +++++++++++++++++++++++++++++------------------------
+ 1 file changed, 84 insertions(+), 69 deletions(-)
 
-By the way, seeing how often a trick related to the DT is nedeed to solve an
-oops or a panic, I'm really scared that this whole DT mess is just becoming
-the exact copy of the ACPI mess (but 15 years later) and we'll experience the
-same horrible things :-( Sometimes I'm wondering whether there are not too
-many structural things put in there...
-
-Regards,
-Willy
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 70c64ba..435cb99 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -169,35 +169,15 @@ static inline const char *of_node_full_name(const struct device_node *np)
+ 
+ extern struct device_node *of_find_node_by_name(struct device_node *from,
+ 	const char *name);
+-#define for_each_node_by_name(dn, name) \
+-	for (dn = of_find_node_by_name(NULL, name); dn; \
+-	     dn = of_find_node_by_name(dn, name))
+ extern struct device_node *of_find_node_by_type(struct device_node *from,
+ 	const char *type);
+-#define for_each_node_by_type(dn, type) \
+-	for (dn = of_find_node_by_type(NULL, type); dn; \
+-	     dn = of_find_node_by_type(dn, type))
+ extern struct device_node *of_find_compatible_node(struct device_node *from,
+ 	const char *type, const char *compat);
+-#define for_each_compatible_node(dn, type, compatible) \
+-	for (dn = of_find_compatible_node(NULL, type, compatible); dn; \
+-	     dn = of_find_compatible_node(dn, type, compatible))
+ extern struct device_node *of_find_matching_node_and_match(
+ 	struct device_node *from,
+ 	const struct of_device_id *matches,
+ 	const struct of_device_id **match);
+-static inline struct device_node *of_find_matching_node(
+-	struct device_node *from,
+-	const struct of_device_id *matches)
+-{
+-	return of_find_matching_node_and_match(from, matches, NULL);
+-}
+-#define for_each_matching_node(dn, matches) \
+-	for (dn = of_find_matching_node(NULL, matches); dn; \
+-	     dn = of_find_matching_node(dn, matches))
+-#define for_each_matching_node_and_match(dn, matches, match) \
+-	for (dn = of_find_matching_node_and_match(NULL, matches, match); \
+-	     dn; dn = of_find_matching_node_and_match(dn, matches, match))
++
+ extern struct device_node *of_find_node_by_path(const char *path);
+ extern struct device_node *of_find_node_by_phandle(phandle handle);
+ extern struct device_node *of_get_parent(const struct device_node *node);
+@@ -209,43 +189,11 @@ extern struct device_node *of_get_next_available_child(
+ 
+ extern struct device_node *of_get_child_by_name(const struct device_node *node,
+ 					const char *name);
+-#define for_each_child_of_node(parent, child) \
+-	for (child = of_get_next_child(parent, NULL); child != NULL; \
+-	     child = of_get_next_child(parent, child))
+-
+-#define for_each_available_child_of_node(parent, child) \
+-	for (child = of_get_next_available_child(parent, NULL); child != NULL; \
+-	     child = of_get_next_available_child(parent, child))
+-
+-static inline int of_get_child_count(const struct device_node *np)
+-{
+-	struct device_node *child;
+-	int num = 0;
+-
+-	for_each_child_of_node(np, child)
+-		num++;
+-
+-	return num;
+-}
+-
+-static inline int of_get_available_child_count(const struct device_node *np)
+-{
+-	struct device_node *child;
+-	int num = 0;
+-
+-	for_each_available_child_of_node(np, child)
+-		num++;
+-
+-	return num;
+-}
+ 
+ /* cache lookup */
+ extern struct device_node *of_find_next_cache_node(const struct device_node *);
+ extern struct device_node *of_find_node_with_property(
+ 	struct device_node *from, const char *prop_name);
+-#define for_each_node_with_property(dn, prop_name) \
+-	for (dn = of_find_node_with_property(NULL, prop_name); dn; \
+-	     dn = of_find_node_with_property(dn, prop_name))
+ 
+ extern struct property *of_find_property(const struct device_node *np,
+ 					 const char *name,
+@@ -367,42 +315,53 @@ static inline struct device_node *of_find_node_by_name(struct device_node *from,
+ 	return NULL;
+ }
+ 
+-static inline struct device_node *of_get_parent(const struct device_node *node)
++static inline struct device_node *of_find_node_by_type(struct device_node *from,
++	const char *type)
+ {
+ 	return NULL;
+ }
+ 
+-static inline bool of_have_populated_dt(void)
++static inline struct device_node *of_find_matching_node_and_match(
++	struct device_node *from,
++	const struct of_device_id *matches,
++	const struct of_device_id **match)
+ {
+-	return false;
++	return NULL;
+ }
+ 
+-/* Kill an unused variable warning on a device_node pointer */
+-static inline void __of_use_dn(const struct device_node *np)
++static inline struct device_node *of_get_parent(const struct device_node *node)
+ {
++	return NULL;
+ }
+ 
+-#define for_each_child_of_node(parent, child) \
+-	while (__of_use_dn(parent), __of_use_dn(child), 0)
++static inline struct device_node *of_get_next_child(
++	const struct device_node *node, struct device_node *prev)
++{
++	return NULL;
++}
+ 
+-#define for_each_available_child_of_node(parent, child) \
+-	while (0)
++static inline struct device_node *of_get_next_available_child(
++	const struct device_node *node, struct device_node *prev)
++{
++	return NULL;
++}
+ 
+-static inline struct device_node *of_get_child_by_name(
+-					const struct device_node *node,
+-					const char *name)
++static inline struct device_node *of_find_node_with_property(
++	struct device_node *from, const char *prop_name)
+ {
+ 	return NULL;
+ }
+ 
+-static inline int of_get_child_count(const struct device_node *np)
++static inline bool of_have_populated_dt(void)
+ {
+-	return 0;
++	return false;
+ }
+ 
+-static inline int of_get_available_child_count(const struct device_node *np)
++static inline struct device_node *of_get_child_by_name(
++					const struct device_node *node,
++					const char *name)
+ {
+-	return 0;
++	return NULL;
+ }
+ 
+ static inline int of_device_is_compatible(const struct device_node *device,
+@@ -569,6 +528,13 @@ extern int of_node_to_nid(struct device_node *np);
+ static inline int of_node_to_nid(struct device_node *device) { return 0; }
+ #endif
+ 
++static inline struct device_node *of_find_matching_node(
++	struct device_node *from,
++	const struct of_device_id *matches)
++{
++	return of_find_matching_node_and_match(from, matches, NULL);
++}
++
+ /**
+  * of_property_read_bool - Findfrom a property
+  * @np:		device node from which the property value is to be read.
+@@ -618,6 +584,55 @@ static inline int of_property_read_u32(const struct device_node *np,
+ 		s;						\
+ 		s = of_prop_next_string(prop, s))
+ 
++#define for_each_node_by_name(dn, name) \
++	for (dn = of_find_node_by_name(NULL, name); dn; \
++	     dn = of_find_node_by_name(dn, name))
++#define for_each_node_by_type(dn, type) \
++	for (dn = of_find_node_by_type(NULL, type); dn; \
++	     dn = of_find_node_by_type(dn, type))
++#define for_each_compatible_node(dn, type, compatible) \
++	for (dn = of_find_compatible_node(NULL, type, compatible); dn; \
++	     dn = of_find_compatible_node(dn, type, compatible))
++#define for_each_matching_node(dn, matches) \
++	for (dn = of_find_matching_node(NULL, matches); dn; \
++	     dn = of_find_matching_node(dn, matches))
++#define for_each_matching_node_and_match(dn, matches, match) \
++	for (dn = of_find_matching_node_and_match(NULL, matches, match); \
++	     dn; dn = of_find_matching_node_and_match(dn, matches, match))
++
++#define for_each_child_of_node(parent, child) \
++	for (child = of_get_next_child(parent, NULL); child != NULL; \
++	     child = of_get_next_child(parent, child))
++#define for_each_available_child_of_node(parent, child) \
++	for (child = of_get_next_available_child(parent, NULL); child != NULL; \
++	     child = of_get_next_available_child(parent, child))
++
++#define for_each_node_with_property(dn, prop_name) \
++	for (dn = of_find_node_with_property(NULL, prop_name); dn; \
++	     dn = of_find_node_with_property(dn, prop_name))
++
++static inline int of_get_child_count(const struct device_node *np)
++{
++	struct device_node *child;
++	int num = 0;
++
++	for_each_child_of_node(np, child)
++		num++;
++
++	return num;
++}
++
++static inline int of_get_available_child_count(const struct device_node *np)
++{
++	struct device_node *child;
++	int num = 0;
++
++	for_each_available_child_of_node(np, child)
++		num++;
++
++	return num;
++}
++
+ #if defined(CONFIG_PROC_FS) && defined(CONFIG_PROC_DEVICETREE)
+ extern void proc_device_tree_add_node(struct device_node *, struct proc_dir_entry *);
+ extern void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop);
+-- 
+1.8.3.2
 
