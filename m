@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaBCVMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:12:01 -0500
-Received: from toast.topped-with-meat.com ([204.197.218.159]:59332 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaBCVL7 (ORCPT
+	id S1753739AbaBCVMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:12:19 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:58091 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773AbaBCVMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:11:59 -0500
+	Mon, 3 Feb 2014 16:12:00 -0500
+Date: Mon, 3 Feb 2014 13:11:57 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: kosaki.motohiro@gmail.com
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] mm: __set_page_dirty_nobuffers uses spin_lock_irqseve
+ instead of spin_lock_irq
+In-Reply-To: <1391446195-9457-1-git-send-email-kosaki.motohiro@gmail.com>
+Message-ID: <alpine.DEB.2.02.1402031308300.7898@chino.kir.corp.google.com>
+References: <1391446195-9457-1-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-X-Fcc: ~/Mail/lkml
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Stefani Seibold <stefani@seibold.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com, Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH 3/4] Add 32 bit VDSO time support for 32 bit kernel
-In-Reply-To: H. Peter Anvin's message of  Saturday, 1 February 2014 16:56:56 -0800 <52ED97D8.50809@zytor.com>
-References: <1391268756-10766-1-git-send-email-stefani@seibold.net>
-	<1391268756-10766-4-git-send-email-stefani@seibold.net>
-	<CALCETrVp+aTm_mT4bg6kcaX3QOnqyjVdfM9vdhHZPsKG276X0A@mail.gmail.com>
-	<52ED90A3.9080802@zytor.com>
-	<CALCETrV-odpkNyFFSDRcrOdT1m11FTXgZJ+oASKKWa_wn8hUWw@mail.gmail.com>
-	<384f3ba9-ce01-4779-8988-556cea724f07@email.android.com>
-	<52ED97D8.50809@zytor.com>
-Emacs: a learning curve that you can use as a plumb line.
-Message-Id: <20140203211155.77EF674413@topped-with-meat.com>
-Date: Mon,  3 Feb 2014 13:11:55 -0800 (PST)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.1 cv=Rt9WckWK c=1 sm=1 tr=0
-		a=WkljmVdYkabdwxfqvArNOQ==:117 a=14OXPxybAAAA:8 a=CBeSZioxfMsA:10
-		a=Z6MIti7PxpgA:10 a=kj9zAlcOel0A:10 a=hOe2yjtxAAAA:8 a=1d1W4jXkn7cA:10
-		a=scXZTnEgpzbLjRVXPycA:9 a=NGdl49OUiY2cOXI5:21 a=Qp322rv0uAumGzzd:21
-		a=CjuIK1q_8ugA:10
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > config COMPAT_VDSO
-> >         def_bool y
-> >         prompt "Compat VDSO support"
-> >         depends on X86_32 || IA32_EMULATION
-> >         ---help---
-> >           Map the 32-bit VDSO to the predictable old-style address too.
-> > 
-> >           Say N here if you are running a sufficiently recent glibc
-> >           version (2.3.3 or later), to remove the high-mapped
-> >           VDSO mapping and to exclusively use the randomized VDSO.
-> > 
-> >           If unsure, say Y.
+On Mon, 3 Feb 2014, kosaki.motohiro@gmail.com wrote:
+
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > 
-> So we need this for 32-bit glibc < 2.3.3, and we effecively have the
-> same problem as on 64 bits.  Next question is if those old glibcs rely
-> on the entry point alone or if they also expect the vdso header at that
-> address.
+> During aio stress test, we observed the following lockdep warning.
+> This mean AIO+numa_balancing is currently deadlockable.
 > 
-> I looked at the glibc diffs from 2.3.2 to 2.3.3, but it isn't really
-> obvious to me what assumptions the 2.3.2 glibc made.  Perhaps Roland has
-> any idea?
+> The problem is, aio_migratepage disable interrupt, but __set_page_dirty_nobuffers
+> unintentionally enable it again.
+> 
+> Generally, all helper function should use spin_lock_irqsave()
+> instead of spin_lock_irq() because they don't know caller at all.
+> 
+> [  599.843948] other info that might help us debug this:
+> [  599.873748]  Possible unsafe locking scenario:
+> [  599.873748]
+> [  599.900902]        CPU0
+> [  599.912701]        ----
+> [  599.924929]   lock(&(&ctx->completion_lock)->rlock);
+> [  599.950299]   <Interrupt>
+> [  599.962576]     lock(&(&ctx->completion_lock)->rlock);
+> [  599.985771]
+> [  599.985771]  *** DEADLOCK ***
+> 
+> [  600.375623]  [<ffffffff81678d3c>] dump_stack+0x19/0x1b
+> [  600.398769]  [<ffffffff816731aa>] print_usage_bug+0x1f7/0x208
+> [  600.425092]  [<ffffffff810df370>] ? print_shortest_lock_dependencies+0x1d0/0x1d0
+> [  600.458981]  [<ffffffff810e08dd>] mark_lock+0x21d/0x2a0
+> [  600.482910]  [<ffffffff810e0a19>] mark_held_locks+0xb9/0x140
+> [  600.508956]  [<ffffffff8168201c>] ? _raw_spin_unlock_irq+0x2c/0x50
+> [  600.536825]  [<ffffffff810e0ba5>] trace_hardirqs_on_caller+0x105/0x1d0
+> [  600.566861]  [<ffffffff810e0c7d>] trace_hardirqs_on+0xd/0x10
+> [  600.593210]  [<ffffffff8168201c>] _raw_spin_unlock_irq+0x2c/0x50
+> [  600.620599]  [<ffffffff8117f72c>] __set_page_dirty_nobuffers+0x8c/0xf0
+> [  600.649992]  [<ffffffff811d1094>] migrate_page_copy+0x434/0x540
+> [  600.676635]  [<ffffffff8123f5b1>] aio_migratepage+0xb1/0x140
+> [  600.703126]  [<ffffffff811d126d>] move_to_new_page+0x7d/0x230
+> [  600.729022]  [<ffffffff811d1b45>] migrate_pages+0x5e5/0x700
+> [  600.754705]  [<ffffffff811d0070>] ? buffer_migrate_lock_buffers+0xb0/0xb0
+> [  600.785784]  [<ffffffff811d29cc>] migrate_misplaced_page+0xbc/0xf0
+> [  600.814029]  [<ffffffff8119eb62>] do_numa_page+0x102/0x190
+> [  600.839182]  [<ffffffff8119ee31>] handle_pte_fault+0x241/0x970
+> [  600.865875]  [<ffffffff811a0345>] handle_mm_fault+0x265/0x370
+> [  600.892071]  [<ffffffff81686d82>] __do_page_fault+0x172/0x5a0
+> [  600.918065]  [<ffffffff81682cd8>] ? retint_swapgs+0x13/0x1b
+> [  600.943493]  [<ffffffff816871ca>] do_page_fault+0x1a/0x70
+> [  600.968081]  [<ffffffff81682ff8>] page_fault+0x28/0x30
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Larry Woodman <lwoodman@redhat.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Johannes Weiner <jweiner@redhat.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  mm/page-writeback.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 2d30e2c..7106cb1 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -2173,11 +2173,12 @@ int __set_page_dirty_nobuffers(struct page *page)
+>  	if (!TestSetPageDirty(page)) {
+>  		struct address_space *mapping = page_mapping(page);
+>  		struct address_space *mapping2;
+> +		unsigned long flags;
+>  
+>  		if (!mapping)
+>  			return 1;
+>  
+> -		spin_lock_irq(&mapping->tree_lock);
+> +		spin_lock_irqsave(&mapping->tree_lock, flags);
+>  		mapping2 = page_mapping(page);
+>  		if (mapping2) { /* Race with truncate? */
+>  			BUG_ON(mapping2 != mapping);
+> @@ -2186,7 +2187,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+>  			radix_tree_tag_set(&mapping->page_tree,
+>  				page_index(page), PAGECACHE_TAG_DIRTY);
+>  		}
+> -		spin_unlock_irq(&mapping->tree_lock);
+> +		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+>  		if (mapping->host) {
+>  			/* !PageAnon && !swapper_space */
+>  			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
 
-Jakub often has more reliable memories of these things than I do.
-
->From looking at the old states of the code, AFAICT 2.3.3 was the first
-version that actually looked at AT_SYSINFO_EHDR or cared about the vDSO per
-se; 2.3.2 just uses AT_SYSINFO.
-
-I have a vague recollection that there was a period wherein ld.so would
-crash (trying to modify part of the read-only vDSO image in place) if the
-vDSO was loaded somewhere other than its prelinked location.  But I don't
-see any evidence in the code that there was actually a release made of code
-with that issue.
-
-I'm fairly sure there are some relevant issues that I've forgotten and am
-overlooking now.
-
-> The safest thing for that might be to have the compat vdso be a
-> completely separate object from the real vdso, and let the former be an
-> object as similar to the current one as possible.
-
-I'm not at all clear on what particular dangers that avoids.
-
-
-Thanks,
-Roland
+Indeed, good catch.  Do we need the same treatment for 
+__set_page_dirty_buffers() that can be called by way of 
+clear_page_dirty_for_io()?
