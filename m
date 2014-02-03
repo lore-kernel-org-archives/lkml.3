@@ -1,174 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaBCGBL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 01:01:11 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60006 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaBCGBJ (ORCPT
+	id S1751123AbaBCGF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 01:05:59 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:15685 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaBCGF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 01:01:09 -0500
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com, arndb@arndb.de
-Cc: catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        patches@linaro.org, AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH] audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL
-Date: Mon,  3 Feb 2014 15:00:32 +0900
-Message-Id: <1391407232-4623-1-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20140129223652.GA13702@madcap2.tricolour.ca>
-References: <20140129223652.GA13702@madcap2.tricolour.ca>
+	Mon, 3 Feb 2014 01:05:57 -0500
+X-AuditID: cbfee68d-b7fcd6d00000315b-11-52ef31c36e4c
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH] f2fs: remove the ugly pointer conversion
+Date: Mon, 03 Feb 2014 15:04:25 +0900
+Message-id: <1391407465-8377-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zA93Dhu+DDN4fE7S4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6Px5mfmgsNCFWd7
+	PzI1MHbzdzFyckgImEi8mLCJHcIWk7hwbz0biC0ksIxRov9rKUxN28VVTF2MXEDx6YwSy970
+	QjlNTBITz0wF6ubgYBPQlti83wCkQUSAWWLB1POMIDXMAhMYJf4ves8CkhAWsJT4+a+NFcRm
+	EVCVeDO1BSzOK+AmMbtrH9QV2hLbnk8Ea5YQuM8mMWHzb6gGAYlvkw+xgCyTEJCV2HSAGaJe
+	UuLgihssExgFFzAyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQICcHeHYy3D1gfYkwGGjeR
+	WUo0OR8Ywnkl8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjE
+	wSnVwFh3p6Gn1Ixl7T7Hyc93RFs7/6jMirNQ8dA1NJH6URh9U0Smeam/7GYvqaCHEgu9psux
+	bBT+ZhgQox2zJz8itSLx+5ysfRNffLZdvuCv7+V5Bk7rGyqaOJK8GQuKFE/NW2egfJdjQVst
+	w5q9LwynRFVVp1/9/sJj0hPNxVnay56n/d5wUaOAT4mlOCPRUIu5qDgRAEDUW3hXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQd3Dhu+DDD5f5bW4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
+	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
+	kCC4HiMDNJCwjjGj8eZn5oLDQhVnez8yNTB283cxcnJICJhItF1cxQRhi0lcuLeerYuRi0NI
+	YDqjxLI3vUwQThOTxMQzU9m7GDk42AS0JTbvNwBpEBFgllgw9TwjSA2zwARGif+L3rOAJIQF
+	LCV+/mtjBbFZBFQl3kxtAYvzCrhJzO7axw6xTVti2/OJjBMYuRcwMqxiFE0tSC4oTkrPNdQr
+	TswtLs1L10vOz93ECA7xZ1I7GFc2WBxiFOBgVOLh7dj7LkiINbGsuDL3EKMEB7OSCG+3wPsg
+	Id6UxMqq1KL8+KLSnNTiQ4zJQNsnMkuJJucD4y+vJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaB
+	QgLpiSWp2ampBalFMFuYODilGhgTNsbYvvn8h43fg3+ZUBqvf+MGTWuN8J/5Yetu72OUrFK+
+	8WbNIVNjqSeXDTSfL2Wzrj9fuulFXXSfS8KxjoArN+q5DVKi4oy7wvf/E90jpH7V7FpCx8/P
+	syZvmSOfqfGhf5GFa0LG7Hd5k+0NUv3OVuf/lvSX7P7xdLJZo7GAZoXN/CC+KCWW4oxEQy3m
+	ouJEAEmaeAa1AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently AUDITSYSCALL has a long list of architecture depencency:
-       depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML ||
-		SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-The purpose of this patch is to replace it with HAVE_ARCH_AUDITSYSCALL
-for simplicity.
+This patch modifies the use of bi_private to remove pointer chasing for sbi.
+Previously, we had a bi_private structure, but it needs memory allocation.
+So this patch uses bi_private by the sbi pointer and adds a completion pointer
+into the sbi.
+This can achieve no memory allocation and nice use of the bi_private.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- arch/arm/Kconfig       |    1 +
- arch/ia64/Kconfig      |    1 +
- arch/parisc/Kconfig    |    1 +
- arch/powerpc/Kconfig   |    1 +
- arch/s390/Kconfig      |    1 +
- arch/sh/Kconfig        |    1 +
- arch/sparc/Kconfig     |    1 +
- arch/um/Kconfig.common |    1 +
- arch/x86/Kconfig       |    1 +
- init/Kconfig           |    5 ++++-
- 10 files changed, 13 insertions(+), 1 deletion(-)
+ fs/f2fs/data.c | 11 +++++++----
+ fs/f2fs/f2fs.h |  1 +
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index c1f1a7e..cf69f89 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -23,6 +23,7 @@ config ARM
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
- 	select HARDIRQS_SW_RESEND
-+	select HAVE_ARCH_AUDITSYSCALL if (AEABI && !OABI_COMPAT)
- 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_SECCOMP_FILTER if (AEABI && !OABI_COMPAT)
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 4e4119b..9143d91 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -43,6 +43,7 @@ config IA64
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_RELA
- 	select ARCH_USE_CMPXCHG_LOCKREF
-+	select HAVE_ARCH_AUDITSYSCALL
- 	default y
- 	help
- 	  The Itanium Processor Family is Intel's 64-bit successor to
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index b5f1858..0821e83 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -28,6 +28,7 @@ config PARISC
- 	select CLONE_BACKWARDS
- 	select TTY # Needed for pdc_cons.c
- 	select HAVE_DEBUG_STACKOVERFLOW
-+	select HAVE_ARCH_AUDITSYSCALL
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 20c3c64..d175ae3 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -45,7 +45,7 @@ static void f2fs_read_end_io(struct bio *bio, int err)
  
- 	help
- 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index b44b52c..96627d6 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -139,6 +139,7 @@ config PPC
- 	select OLD_SIGACTION if PPC32
- 	select HAVE_DEBUG_STACKOVERFLOW
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
-+	select HAVE_ARCH_AUDITSYSCALL
+ static void f2fs_write_end_io(struct bio *bio, int err)
+ {
+-	struct f2fs_sb_info *sbi = F2FS_SB(bio->bi_io_vec->bv_page->mapping->host->i_sb);
++	struct f2fs_sb_info *sbi = bio->bi_private;
+ 	struct bio_vec *bvec;
+ 	int i;
  
- config GENERIC_CSUM
- 	def_bool CPU_LITTLE_ENDIAN
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 1e1a03d..b3b9853 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -103,6 +103,7 @@ config S390
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_TIME_VSYSCALL
- 	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
-+	select HAVE_ARCH_AUDITSYSCALL
- 	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
- 	select HAVE_ARCH_SECCOMP_FILTER
- 	select HAVE_ARCH_TRACEHOOK
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 9b0979f..675fb7c 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -42,6 +42,7 @@ config SUPERH
- 	select MODULES_USE_ELF_RELA
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION
-+	select HAVE_ARCH_AUDITSYSCALL
- 	help
- 	  The SuperH is a RISC processor targeted for use in embedded systems
- 	  and consumer electronics; it was also used in the Sega Dreamcast
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index d4f7a6a..7f7ad7e 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -76,6 +76,7 @@ config SPARC64
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_C_RECORDMCOUNT
- 	select NO_BOOTMEM
-+	select HAVE_ARCH_AUDITSYSCALL
+@@ -61,8 +61,10 @@ static void f2fs_write_end_io(struct bio *bio, int err)
+ 		dec_page_count(sbi, F2FS_WRITEBACK);
+ 	}
  
- config ARCH_DEFCONFIG
- 	string
-diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-index 21ca44c..6915d28 100644
---- a/arch/um/Kconfig.common
-+++ b/arch/um/Kconfig.common
-@@ -1,6 +1,7 @@
- config UML
- 	bool
- 	default y
-+	select HAVE_ARCH_AUDITSYSCALL
- 	select HAVE_UID16
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_CPU_DEVICES
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index e903c71..6ef682f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -124,6 +124,7 @@ config X86
- 	select RTC_LIB
- 	select HAVE_DEBUG_STACKOVERFLOW
- 	select HAVE_IRQ_EXIT_ON_IRQ_STACK if X86_64
-+	select HAVE_ARCH_AUDITSYSCALL
+-	if (bio->bi_private)
+-		complete(bio->bi_private);
++	if (sbi->wait_io) {
++		complete(sbi->wait_io);
++		sbi->wait_io = NULL;
++	}
  
- config INSTRUCTION_DECODER
- 	def_bool y
-diff --git a/init/Kconfig b/init/Kconfig
-index 79383d3..9fe22d2 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -282,9 +282,12 @@ config AUDIT
- 	  logging of avc messages output).  Does not do system-call
- 	  auditing without CONFIG_AUDITSYSCALL.
+ 	if (!get_pages(sbi, F2FS_WRITEBACK) &&
+ 			!list_empty(&sbi->cp_wait.task_list))
+@@ -85,6 +87,7 @@ static struct bio *__bio_alloc(struct f2fs_sb_info *sbi, block_t blk_addr,
+ 	bio->bi_bdev = sbi->sb->s_bdev;
+ 	bio->bi_iter.bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
+ 	bio->bi_end_io = is_read ? f2fs_read_end_io : f2fs_write_end_io;
++	bio->bi_private = sbi;
  
-+config HAVE_ARCH_AUDITSYSCALL
-+	bool
-+
- config AUDITSYSCALL
- 	bool "Enable system-call auditing support"
--	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-+	depends on AUDIT && HAVE_ARCH_AUDITSYSCALL
- 	default y if SECURITY_SELINUX
- 	help
- 	  Enable low-overhead system-call auditing infrastructure that
+ 	return bio;
+ }
+@@ -112,7 +115,7 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
+ 		 */
+ 		if (fio->type == META_FLUSH) {
+ 			DECLARE_COMPLETION_ONSTACK(wait);
+-			io->bio->bi_private = &wait;
++			io->sbi->wait_io = &wait;
+ 			submit_bio(rw, io->bio);
+ 			wait_for_completion(&wait);
+ 		} else {
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 55288d2..aeff132 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -398,6 +398,7 @@ struct f2fs_sb_info {
+ 	/* for bio operations */
+ 	struct f2fs_bio_info read_io;			/* for read bios */
+ 	struct f2fs_bio_info write_io[NR_PAGE_TYPE];	/* for write bios */
++	struct completion *wait_io;		/* for completion bios */
+ 
+ 	/* for checkpoint */
+ 	struct f2fs_checkpoint *ckpt;		/* raw checkpoint pointer */
 -- 
-1.7.9.5
+1.8.4.474.g128a96c
 
