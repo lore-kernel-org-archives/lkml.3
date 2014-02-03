@@ -1,212 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaBCQV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:21:29 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:38225 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbaBCQV1 (ORCPT
+	id S1753376AbaBCQWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:22:12 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:37876 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaBCQWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:21:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4Rn=rijG8Xv97okj2k4iv=ZG6wa30xQrxgjhutQovD+dg@mail.gmail.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1391316630-29541-5-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4Rn=rijG8Xv97okj2k4iv=ZG6wa30xQrxgjhutQovD+dg@mail.gmail.com>
-Date: Mon, 3 Feb 2014 11:21:25 -0500
-Message-ID: <CAN+gG=EesWpKiz-M4LrLTM0ne+o8=XE3vdQnwBPuHOyEgwEJKw@mail.gmail.com>
-Subject: Re: [PATCH 04/11] HID: logitech-dj: remove hidinput_input_event
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Feb 2014 11:22:09 -0500
+Message-ID: <1391444524.28432.99.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] [RFC] netfilter: nf_conntrack: don't relase a conntrack
+ with non-zero refcnt
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Florian Westphal <fw@strlen.de>, Andrew Vagin <avagin@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Vasiliy Averin <vvs@parallels.com>
+Date: Mon, 03 Feb 2014 08:22:04 -0800
+In-Reply-To: <20140202233046.GA4137@localhost>
+References: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1389720948-7883-1-git-send-email-avagin@openvz.org>
+	 <20140114185329.GB28205@breakpoint.cc>
+	 <20140115180844.GA3605@paralelels.com>
+	 <20140116092301.GF28205@breakpoint.cc> <20140202233046.GA4137@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 11:06 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> hid-logitech-dj uses its own ->hidinput_input_event() instead of
->> the generic binding in hid-input.
->> Moving the handling of LEDs towards logi_dj_output_hidraw_report()
->> allows two things:
->> - remove hidinput_input_event in struct hid_device
->> - hidraw user space programs can also set the LEDs
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>  drivers/hid/hid-logitech-dj.c | 99 +++++++++++++++----------------------------
->>  1 file changed, 35 insertions(+), 64 deletions(-)
->>
->> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
->> index f45279c..61d2bbf 100644
->> --- a/drivers/hid/hid-logitech-dj.c
->> +++ b/drivers/hid/hid-logitech-dj.c
->> @@ -44,14 +44,6 @@ static const char kbd_descriptor[] = {
->>         0x19, 0xE0,             /*   USAGE_MINIMUM (Left Control)   */
->>         0x29, 0xE7,             /*   USAGE_MAXIMUM (Right GUI)      */
->>         0x81, 0x02,             /*   INPUT (Data,Var,Abs)       */
->> -       0x95, 0x05,             /*   REPORT COUNT (5)           */
->> -       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
->> -       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
->> -       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
->> -       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
->> -       0x95, 0x01,             /*   REPORT COUNT (1)           */
->> -       0x75, 0x03,             /*   REPORT SIZE (3)            */
->> -       0x91, 0x01,             /*   OUTPUT (Constant)          */
->>         0x95, 0x06,             /*   REPORT_COUNT (6)           */
->>         0x75, 0x08,             /*   REPORT_SIZE (8)            */
->>         0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
->> @@ -60,6 +52,18 @@ static const char kbd_descriptor[] = {
->>         0x19, 0x00,             /*   USAGE_MINIMUM (no event)       */
->>         0x2A, 0xFF, 0x00,       /*   USAGE_MAXIMUM (reserved)       */
->>         0x81, 0x00,             /*   INPUT (Data,Ary,Abs)       */
->> +       0x85, 0x0e,             /* REPORT_ID (14)               */
->> +       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
->> +       0x95, 0x05,             /*   REPORT COUNT (5)           */
->> +       0x75, 0x01,             /*   REPORT SIZE (1)            */
->> +       0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
->> +       0x25, 0x01,             /*   LOGICAL_MAXIMUM (1)        */
->> +       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
->> +       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
->> +       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
->> +       0x95, 0x01,             /*   REPORT COUNT (1)           */
->> +       0x75, 0x03,             /*   REPORT SIZE (3)            */
->> +       0x91, 0x01,             /*   OUTPUT (Constant)          */
->>         0xC0
->>  };
->>
->> @@ -544,10 +548,30 @@ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
->>                                         size_t count,
->>                                         unsigned char report_type)
->>  {
->> -       /* Called by hid raw to send data */
->> -       dbg_hid("%s\n", __func__);
->> +       struct dj_device *djdev = hid->driver_data;
->> +       struct dj_receiver_dev *djrcv_dev = djdev->dj_receiver_dev;
->> +       u8 *out_buf;
->> +       int ret;
->>
->> -       return 0;
->> +       if (buf[0] != REPORT_TYPE_LEDS)
->> +               return -EINVAL;
->> +
->> +       out_buf = kzalloc(DJREPORT_SHORT_LENGTH, GFP_ATOMIC);
->> +       if (!out_buf)
->> +               return -ENOMEM;
->> +
->> +       if (count < DJREPORT_SHORT_LENGTH - 2)
->> +               count = DJREPORT_SHORT_LENGTH - 2;
->> +
->> +       out_buf[0] = REPORT_ID_DJ_SHORT;
->> +       out_buf[1] = djdev->device_index;
->> +       memcpy(out_buf + 2, buf, count);
->> +
->> +       ret = djrcv_dev->hdev->hid_output_raw_report(djrcv_dev->hdev, out_buf,
->> +               DJREPORT_SHORT_LENGTH, report_type);
->
-> Strictly speaking the code below uses HID_REQ_SET_REPORT and you
-> replace it with hid_output_raw_report() here (which at least for BTHID
-> is not equivalent). Anyhow, HID-core uses hid_output_raw_report(),
-> too, so this should be fine.
+On Mon, 2014-02-03 at 00:30 +0100, Pablo Neira Ayuso wrote:
+>          */
+>         smp_wmb();
+> -       atomic_set(&ct->ct_general.use, 1);
+> +       atomic_set(&ct->ct_general.use, 0);
+>         return ct; 
 
-Yes, you are right. This fires back on me yesterday when I tried to
-remove the hid_output_raw_report() calls.
-It occurs it works because usbhid_out_raw_report() uses set_report
-when there is no urbout, which is the case with logitech receivers.
-So I guess an ideal solution would be to implement a hid_hw_request call.
+Hi Pablo !
 
-However, the only concern I have with hid_hw_request is that it does
-not allow hidraw to play with the LEDs given that hidraw does not have
-an ioctl for SET_REPORT (or GET_REPORT). I already seen this issue
-regarding i2c_hid at some point, but it was "solved" in i2c_hid by
-using the same ugly trick that we have in USB-hid.
+I think your patch is the way to go, but might need some extra care
+with memory barriers.
 
-Cheers,
-Benjamin
+I believe the smp_wmb() here is no longer needed.
 
->
-> Thanks
-> David
->
->> +
->> +       kfree(out_buf);
->> +       return ret;
->>  }
->>
->>  static void rdcat(char *rdesc, unsigned int *rsize, const char *data, unsigned int size)
->> @@ -613,58 +637,6 @@ static int logi_dj_ll_parse(struct hid_device *hid)
->>         return retval;
->>  }
->>
->> -static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
->> -                                 unsigned int code, int value)
->> -{
->> -       /* Sent by the input layer to handle leds and Force Feedback */
->> -       struct hid_device *dj_hiddev = input_get_drvdata(dev);
->> -       struct dj_device *dj_dev = dj_hiddev->driver_data;
->> -
->> -       struct dj_receiver_dev *djrcv_dev =
->> -           dev_get_drvdata(dj_hiddev->dev.parent);
->> -       struct hid_device *dj_rcv_hiddev = djrcv_dev->hdev;
->> -       struct hid_report_enum *output_report_enum;
->> -
->> -       struct hid_field *field;
->> -       struct hid_report *report;
->> -       unsigned char *data;
->> -       int offset;
->> -
->> -       dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
->> -               __func__, dev->phys, type, code, value);
->> -
->> -       if (type != EV_LED)
->> -               return -1;
->> -
->> -       offset = hidinput_find_field(dj_hiddev, type, code, &field);
->> -
->> -       if (offset == -1) {
->> -               dev_warn(&dev->dev, "event field not found\n");
->> -               return -1;
->> -       }
->> -       hid_set_field(field, offset, value);
->> -
->> -       data = hid_alloc_report_buf(field->report, GFP_ATOMIC);
->> -       if (!data) {
->> -               dev_warn(&dev->dev, "failed to allocate report buf memory\n");
->> -               return -1;
->> -       }
->> -
->> -       hid_output_report(field->report, &data[0]);
->> -
->> -       output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
->> -       report = output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
->> -       hid_set_field(report->field[0], 0, dj_dev->device_index);
->> -       hid_set_field(report->field[0], 1, REPORT_TYPE_LEDS);
->> -       hid_set_field(report->field[0], 2, data[1]);
->> -
->> -       hid_hw_request(dj_rcv_hiddev, report, HID_REQ_SET_REPORT);
->> -
->> -       kfree(data);
->> -
->> -       return 0;
->> -}
->> -
->>  static int logi_dj_ll_start(struct hid_device *hid)
->>  {
->>         dbg_hid("%s\n", __func__);
->> @@ -683,7 +655,6 @@ static struct hid_ll_driver logi_dj_ll_driver = {
->>         .stop = logi_dj_ll_stop,
->>         .open = logi_dj_ll_open,
->>         .close = logi_dj_ll_close,
->> -       .hidinput_input_event = logi_dj_ll_input_event,
->>  };
->>
->>
->> --
->> 1.8.3.1
->>
+If its a newly allocated memory, no other users can access to ct,
+if its a recycled ct, content is already 0 anyway.
+
+After your patch, nf_conntrack_get(&tmpl->ct_general) should increment 
+an already non zero refcnt, so no memory barrier is needed.
+
+But one smp_wmb() is needed right before this point :
+
+	/* The caller holds a reference to this object */
+	atomic_set(&ct->ct_general.use, 2);
+
+Thanks !
+
+
