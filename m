@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751123AbaBCIT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 03:19:28 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:49328 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaBCIT1 (ORCPT
+	id S1751472AbaBCITi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 03:19:38 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:42891 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181AbaBCITh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 03:19:27 -0500
+	Mon, 3 Feb 2014 03:19:37 -0500
+Message-ID: <52EF5112.4020305@hitachi.com>
+Date: Mon, 03 Feb 2014 17:19:30 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAM4v1pPnHuSKX9UAjnqzappThKS0a6_6-PEqpiiCPpjQ_3anQQ@mail.gmail.com>
-References: <CALZhoSQZQcM0yKTw1=ZkYz3Z_3X2QxLk0vCw6gKXW55HSrVEdw@mail.gmail.com>
-	<alpine.DEB.2.02.1401221459590.4260@ionos.tec.linutronix.de>
-	<CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
-	<CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
-	<CAM4v1pPnHuSKX9UAjnqzappThKS0a6_6-PEqpiiCPpjQ_3anQQ@mail.gmail.com>
-Date: Mon, 3 Feb 2014 13:49:26 +0530
-Message-ID: <CAKohpo=qQJwgDpzJMtk-PN6PBB_1KsSXZ_tYrVLOz_9Qzs=gsA@mail.gmail.com>
-Subject: Re: Is it ok for deferrable timer wakeup the idle cpu?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Lei Wen <adrian.wenl@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip v2 1/8] [BUGFIX] perf-probe: Fix to do exit call
+ for symbol maps
+References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <20140129091452.22141.36766.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <87iosw3ao8.fsf@sejong.aot.lge.com>
+In-Reply-To: <87iosw3ao8.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 January 2014 10:57, Preeti Murthy <preeti.lkml@gmail.com> wrote:
-> How about simplifying this design by doing the below?
->
-> 1. Since anyway cpufreq governors monitor load on the cpu once every
-> 5ms, *tie it with tick_sched_timer*, which also gets deferred when the cpu
-> enters nohz_idle.
+(2014/02/03 16:41), Namhyung Kim wrote:
+> Hi Masami,
+> 
+> On Wed, 29 Jan 2014 09:14:52 +0000, Masami Hiramatsu wrote:
+>> Some perf-probe commands do symbol_init() but doesn't
+>> do exit call. This fixes that to call symbol_exit()
+>> and relase machine if needed.
+>> This also merges init_vmlinux() and init_user_exec()
+>> because both of them are doing similar things.
+>> (init_user_exec() just skips init vmlinux related
+>>  symbol maps)
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> ---
+>>  tools/perf/util/probe-event.c |  110 +++++++++++++++++++++++------------------
+>>  1 file changed, 61 insertions(+), 49 deletions(-)
+>>
+>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+>> index a8a9b6c..14c649df 100644
+>> --- a/tools/perf/util/probe-event.c
+>> +++ b/tools/perf/util/probe-event.c
+>> @@ -73,31 +73,35 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
+>>  static int convert_name_to_addr(struct perf_probe_event *pev,
+>>  				const char *exec);
+>>  static void clear_probe_trace_event(struct probe_trace_event *tev);
+>> -static struct machine machine;
+>> +static struct machine *host_machine;
+>>  
+>>  /* Initialize symbol maps and path of vmlinux/modules */
+>> -static int init_vmlinux(void)
+>> +static int init_symbol_maps(bool user_only)
+>>  {
+>>  	int ret;
+>>  
+>>  	symbol_conf.sort_by_name = true;
+>> -	if (symbol_conf.vmlinux_name == NULL)
+>> -		symbol_conf.try_vmlinux_path = true;
+>> -	else
+>> -		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
+>> +	if (user_only)
+>> +		symbol_conf.try_vmlinux_path = false;
+>> +	else {
+>> +		if (symbol_conf.vmlinux_name == NULL)
+>> +			symbol_conf.try_vmlinux_path = true;
+> 
+> This looks unnecessary and duplicate since we already have following
+> code in __cmd_probe().
+> 
+> 	/*
+> 	 * Only consider the user's kernel image path if given.
+> 	 */
+> 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
 
-Its configurable. We can change sampling time to whatever we want. Some
-might be selecting it as 30 ms.
+Ah, I see :)
+OK, I'll remove that part not to setting symbol_conf in probe-event.c.
 
-> 2. To overcome the problem of running this job of monitoring the load
-> on every cpu, have the *time keeping* cpu do it for you.
->
-> The time keeping cpu has the property that if it has to go to idle, it will do
-> so and let the next cpu that runs the periodic timer become the time keeper.
-> Hence no cpu is prevented from entering nohz_idle and the cpu that is busy
-> and first executes periodic timer will take over as the time keeper.
->
-> The result would be:
->
-> 1. One cpu at any point in time will be monitoring cpu load, at every sched tick
-> as long as its busy. If it goes to sleep, then it gives up this duty
-> and enters idle.
-> The next cpu that runs the periodic timer becomes the cpu to monitor the load
-> and will continue to do so as long as its busy. Hence we do not miss monitoring
-> the cpu load.
->
-> 2. This will avoid an additional timer for cpufreq.
->
-> 3. It avoids sending IPIs each time this timer gets modified since there is just
-> one CPU doing the monitoring.
->
-> 4. The downside to this could be that we are stretching the functions of the
->  periodic timer into the power management domain which does not seem like
-> the right thing to do.
+Thank you!
 
-Looks good, but AFAIK timerkeeper is still to be implemented? Also the best
-solution is to get rid of this timer completely by getting inputs from
-scheduler.
-Probably some ARM/Linaro folks are working on it.
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
