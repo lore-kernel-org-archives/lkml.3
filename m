@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaBCOyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:54:41 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:35747 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134AbaBCOyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:54:40 -0500
-Date: Mon, 3 Feb 2014 15:54:38 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: 3.13.0: crash on boot
-Message-ID: <20140203145438.GA4281@pd.tnic>
-References: <20140131083707.GA9968@oktetlabs.ru>
- <CAErSpo6PaX2BcTqF4GD5ez3wDaPizUCNZJEjy_5EozAd3epoaA@mail.gmail.com>
- <20140203144120.GA15384@console-pimps.org>
+	id S1752760AbaBCOzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:55:46 -0500
+Received: from smtp03.stone-is.org ([87.238.162.65]:48927 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752474AbaBCOzn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 09:55:43 -0500
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <52EFADEB.3030806@acm.org>
+Date: Mon, 03 Feb 2014 15:55:39 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140203144120.GA15384@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masanari Iida <standby24x7@gmail.com>, JBottomley@parallels.com,
+        trivial@kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: scsi: Fix warning on make htmldocs caused by
+ scsi_transport_srp.c
+References: <1391438065-22267-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1391438065-22267-1-git-send-email-standby24x7@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 02:41:20PM +0000, Matt Fleming wrote:
-> On Fri, 31 Jan, at 11:29:39AM, Bjorn Helgaas wrote:
-> > [+cc Matt and Matthew; maybe EFI related?]
->  
-> (Pulling in Borislav too)
+On 02/03/14 15:34, Masanari Iida wrote:
+> This patch fixed following warnings on make htmldocs.
 > 
-> Yeah, looks EFI related.
+> Warning(/drivers/scsi/scsi_transport_srp.c:819):
+> No description found for parameter 'rport'
 > 
-> > On Fri, Jan 31, 2014 at 1:37 AM, Alexandra N. Kossovsky
-> > <Alexandra.Kossovsky@oktetlabs.ru> wrote:
-> > > Hello.
-> > >
-> > > I've got 3.13.0 kernel creshed on boot.  A lot of debug options are on.
-> > > Crash:
-> > > BUG: unable to handle kernel paging request at 000000012a53f020
-> > > IP: [<00000000cf038cc6>] 0xcf038cc6
-> > > PGD 2962067 PUD 2965067 PMD 12fe8f067 PTE 800000012a53f962
-> > > Oops: 0000 [#1] SMP
-> > > Modules linked in:
-> > > CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.13.0-debug-amd64 #2
-> > > Hardware name: Supermicro X9SCL/X9SCM/X9SCL/X9SCM, BIOS 2.0b 09/17/2012
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  drivers/scsi/scsi_transport_srp.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/scsi/scsi_transport_srp.c b/drivers/scsi/scsi_transport_srp.c
+> index d47ffc8..664eb38 100644
+> --- a/drivers/scsi/scsi_transport_srp.c
+> +++ b/drivers/scsi/scsi_transport_srp.c
+> @@ -811,6 +811,8 @@ EXPORT_SYMBOL_GPL(srp_remove_host);
+>  /**
+>   * srp_stop_rport_timers - stop the transport layer recovery timers
+>   *
+> + * @rport: SRP remote port to be removed
+> + *
+>   * Must be called after srp_remove_host() and scsi_remove_host(). The caller
+>   * must hold a reference on the rport (rport->dev) and on the SCSI host
+>   * (rport->dev.parent).
 
-Also, if you have a BIOS update for your box, that could be worth
-another try.
+The comment added by this patch is wrong. That is easy to see by having
+a look at the function name and function description.
 
--- 
-Regards/Gruss,
-    Boris.
+In case anyone is wondering why this kerneldoc warning was not addressed
+by commit 0c7f821: that patch was prepared against kernel v3.12-rc7 and
+the warning reported above is new in kernel v3.14-rc1.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Bart.
