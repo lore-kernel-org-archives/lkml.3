@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaBCSQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:16:37 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54248 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062AbaBCSQe (ORCPT
+	id S1753624AbaBCSWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:22:37 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:40621 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaBCSQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:16:34 -0500
+	Mon, 3 Feb 2014 13:16:38 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 01/16] staging: android: Split uapi out of android_alarm.h
-Date: Mon,  3 Feb 2014 10:16:13 -0800
-Message-Id: <1391451388-23906-2-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 04/16] staging: android: Split uapi out of binder.h
+Date: Mon,  3 Feb 2014 10:16:16 -0800
+Message-Id: <1391451388-23906-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
 References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
@@ -24,87 +24,352 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-Move the userspace interface of android_alarm.h to
-drivers/staging/android/uapi/android_alarm.h
+Move the userspace interface of binder.h to
+drivers/staging/android/uapi/binder.h.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
 Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: minor commit msg tweak]
+[jstultz: Worked out the collisions from some of the type changes
+made upstream. Also minor commit subject tweak]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/android_alarm.h      | 44 +-------------------
- drivers/staging/android/uapi/android_alarm.h | 62 ++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+), 42 deletions(-)
- create mode 100644 drivers/staging/android/uapi/android_alarm.h
+ drivers/staging/android/binder.h      | 306 +------------------------------
+ drivers/staging/android/uapi/binder.h | 330 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 331 insertions(+), 305 deletions(-)
+ create mode 100644 drivers/staging/android/uapi/binder.h
 
-diff --git a/drivers/staging/android/android_alarm.h b/drivers/staging/android/android_alarm.h
-index 4fd32f3..495b20c 100644
---- a/drivers/staging/android/android_alarm.h
-+++ b/drivers/staging/android/android_alarm.h
-@@ -16,50 +16,10 @@
- #ifndef _LINUX_ANDROID_ALARM_H
- #define _LINUX_ANDROID_ALARM_H
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index cbe34516..d4101a6 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -20,311 +20,7 @@
+ #ifndef _LINUX_BINDER_H
+ #define _LINUX_BINDER_H
  
 -#include <linux/ioctl.h>
--#include <linux/time.h>
- #include <linux/compat.h>
-+#include <linux/ioctl.h>
- 
--enum android_alarm_type {
--	/* return code bit numbers or set alarm arg */
--	ANDROID_ALARM_RTC_WAKEUP,
--	ANDROID_ALARM_RTC,
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
--	ANDROID_ALARM_ELAPSED_REALTIME,
--	ANDROID_ALARM_SYSTEMTIME,
 -
--	ANDROID_ALARM_TYPE_COUNT,
+-#define B_PACK_CHARS(c1, c2, c3, c4) \
+-	((((c1)<<24)) | (((c2)<<16)) | (((c3)<<8)) | (c4))
+-#define B_TYPE_LARGE 0x85
 -
--	/* return code bit numbers */
--	/* ANDROID_ALARM_TIME_CHANGE = 16 */
+-enum {
+-	BINDER_TYPE_BINDER	= B_PACK_CHARS('s', 'b', '*', B_TYPE_LARGE),
+-	BINDER_TYPE_WEAK_BINDER	= B_PACK_CHARS('w', 'b', '*', B_TYPE_LARGE),
+-	BINDER_TYPE_HANDLE	= B_PACK_CHARS('s', 'h', '*', B_TYPE_LARGE),
+-	BINDER_TYPE_WEAK_HANDLE	= B_PACK_CHARS('w', 'h', '*', B_TYPE_LARGE),
+-	BINDER_TYPE_FD		= B_PACK_CHARS('f', 'd', '*', B_TYPE_LARGE),
 -};
 -
--enum android_alarm_return_flags {
--	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
--	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
--				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
--	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
--				1U << ANDROID_ALARM_ELAPSED_REALTIME,
--	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
--	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
+-enum {
+-	FLAT_BINDER_FLAG_PRIORITY_MASK = 0xff,
+-	FLAT_BINDER_FLAG_ACCEPTS_FDS = 0x100,
 -};
 -
--/* Disable alarm */
--#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
+-/*
+- * This is the flattened representation of a Binder object for transfer
+- * between processes.  The 'offsets' supplied as part of a binder transaction
+- * contains offsets into the data where these structures occur.  The Binder
+- * driver takes care of re-writing the structure type and data as it moves
+- * between processes.
+- */
+-struct flat_binder_object {
+-	/* 8 bytes for large_flat_header. */
+-	__u32		type;
+-	__u32		flags;
 -
--/* Ack last alarm and wait for next */
--#define ANDROID_ALARM_WAIT                  _IO('a', 1)
+-	/* 8 bytes of data. */
+-	union {
+-		void __user	*binder;	/* local object */
+-		__u32	    handle;		/* remote object */
+-	};
 -
--#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
--/* Set alarm */
--#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
--#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
--#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
--#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
--#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
--#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+-	/* extra data associated with local object */
+-	void __user		*cookie;
+-};
 -
-+#include "uapi/android_alarm.h"
+-/*
+- * On 64-bit platforms where user code may run in 32-bits the driver must
+- * translate the buffer (and local binder) addresses appropriately.
+- */
+-
+-struct binder_write_read {
+-	size_t write_size;	/* bytes to write */
+-	size_t write_consumed;	/* bytes consumed by driver */
+-	unsigned long	write_buffer;
+-	size_t read_size;	/* bytes to read */
+-	size_t read_consumed;	/* bytes consumed by driver */
+-	unsigned long	read_buffer;
+-};
+-
+-/* Use with BINDER_VERSION, driver fills in fields. */
+-struct binder_version {
+-	/* driver protocol version -- increment with incompatible change */
+-	__s32       protocol_version;
+-};
+-
+-/* This is the current protocol version. */
+-#define BINDER_CURRENT_PROTOCOL_VERSION 7
+-
+-#define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
+-#define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
+-#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
+-#define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
+-#define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
+-#define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
+-#define BINDER_VERSION			_IOWR('b', 9, struct binder_version)
+-
+-/*
+- * NOTE: Two special error codes you should check for when calling
+- * in to the driver are:
+- *
+- * EINTR -- The operation has been interupted.  This should be
+- * handled by retrying the ioctl() until a different error code
+- * is returned.
+- *
+- * ECONNREFUSED -- The driver is no longer accepting operations
+- * from your process.  That is, the process is being destroyed.
+- * You should handle this by exiting from your process.  Note
+- * that once this error code is returned, all further calls to
+- * the driver from any thread will return this same code.
+- */
+-
+-enum transaction_flags {
+-	TF_ONE_WAY	= 0x01,	/* this is a one-way call: async, no return */
+-	TF_ROOT_OBJECT	= 0x04,	/* contents are the component's root object */
+-	TF_STATUS_CODE	= 0x08,	/* contents are a 32-bit status code */
+-	TF_ACCEPT_FDS	= 0x10,	/* allow replies with file descriptors */
+-};
+-
+-struct binder_transaction_data {
+-	/* The first two are only used for bcTRANSACTION and brTRANSACTION,
+-	 * identifying the target and contents of the transaction.
+-	 */
+-	union {
+-		__u32	handle;	/* target descriptor of command transaction */
+-		void	*ptr;	/* target descriptor of return transaction */
+-	} target;
+-	void		*cookie;	/* target object cookie */
+-	__u32		code;		/* transaction command */
+-
+-	/* General information about the transaction. */
+-	__u32	        flags;
+-	pid_t		sender_pid;
+-	uid_t		sender_euid;
+-	size_t		data_size;	/* number of bytes of data */
+-	size_t		offsets_size;	/* number of bytes of offsets */
+-
+-	/* If this transaction is inline, the data immediately
+-	 * follows here; otherwise, it ends with a pointer to
+-	 * the data buffer.
+-	 */
+-	union {
+-		struct {
+-			/* transaction data */
+-			const void __user	*buffer;
+-			/* offsets from buffer to flat_binder_object structs */
+-			const void __user	*offsets;
+-		} ptr;
+-		__u8	buf[8];
+-	} data;
+-};
+-
+-struct binder_ptr_cookie {
+-	void *ptr;
+-	void *cookie;
+-};
+-
+-struct binder_pri_desc {
+-	__s32 priority;
+-	__u32 desc;
+-};
+-
+-struct binder_pri_ptr_cookie {
+-	__s32 priority;
+-	void *ptr;
+-	void *cookie;
+-};
+-
+-enum binder_driver_return_protocol {
+-	BR_ERROR = _IOR('r', 0, __s32),
+-	/*
+-	 * int: error code
+-	 */
+-
+-	BR_OK = _IO('r', 1),
+-	/* No parameters! */
+-
+-	BR_TRANSACTION = _IOR('r', 2, struct binder_transaction_data),
+-	BR_REPLY = _IOR('r', 3, struct binder_transaction_data),
+-	/*
+-	 * binder_transaction_data: the received command.
+-	 */
+-
+-	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
+-	/*
+-	 * not currently supported
+-	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
+-	 * Else the remote object has acquired a primary reference.
+-	 */
+-
+-	BR_DEAD_REPLY = _IO('r', 5),
+-	/*
+-	 * The target of the last transaction (either a bcTRANSACTION or
+-	 * a bcATTEMPT_ACQUIRE) is no longer with us.  No parameters.
+-	 */
+-
+-	BR_TRANSACTION_COMPLETE = _IO('r', 6),
+-	/*
+-	 * No parameters... always refers to the last transaction requested
+-	 * (including replies).  Note that this will be sent even for
+-	 * asynchronous transactions.
+-	 */
+-
+-	BR_INCREFS = _IOR('r', 7, struct binder_ptr_cookie),
+-	BR_ACQUIRE = _IOR('r', 8, struct binder_ptr_cookie),
+-	BR_RELEASE = _IOR('r', 9, struct binder_ptr_cookie),
+-	BR_DECREFS = _IOR('r', 10, struct binder_ptr_cookie),
+-	/*
+-	 * void *:	ptr to binder
+-	 * void *: cookie for binder
+-	 */
+-
+-	BR_ATTEMPT_ACQUIRE = _IOR('r', 11, struct binder_pri_ptr_cookie),
+-	/*
+-	 * not currently supported
+-	 * int:	priority
+-	 * void *: ptr to binder
+-	 * void *: cookie for binder
+-	 */
+-
+-	BR_NOOP = _IO('r', 12),
+-	/*
+-	 * No parameters.  Do nothing and examine the next command.  It exists
+-	 * primarily so that we can replace it with a BR_SPAWN_LOOPER command.
+-	 */
+-
+-	BR_SPAWN_LOOPER = _IO('r', 13),
+-	/*
+-	 * No parameters.  The driver has determined that a process has no
+-	 * threads waiting to service incoming transactions.  When a process
+-	 * receives this command, it must spawn a new service thread and
+-	 * register it via bcENTER_LOOPER.
+-	 */
+-
+-	BR_FINISHED = _IO('r', 14),
+-	/*
+-	 * not currently supported
+-	 * stop threadpool thread
+-	 */
+-
+-	BR_DEAD_BINDER = _IOR('r', 15, void *),
+-	/*
+-	 * void *: cookie
+-	 */
+-	BR_CLEAR_DEATH_NOTIFICATION_DONE = _IOR('r', 16, void *),
+-	/*
+-	 * void *: cookie
+-	 */
+-
+-	BR_FAILED_REPLY = _IO('r', 17),
+-	/*
+-	 * The the last transaction (either a bcTRANSACTION or
+-	 * a bcATTEMPT_ACQUIRE) failed (e.g. out of memory).  No parameters.
+-	 */
+-};
+-
+-enum binder_driver_command_protocol {
+-	BC_TRANSACTION = _IOW('c', 0, struct binder_transaction_data),
+-	BC_REPLY = _IOW('c', 1, struct binder_transaction_data),
+-	/*
+-	 * binder_transaction_data: the sent command.
+-	 */
+-
+-	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
+-	/*
+-	 * not currently supported
+-	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
+-	 * Else you have acquired a primary reference on the object.
+-	 */
+-
+-	BC_FREE_BUFFER = _IOW('c', 3, void *),
+-	/*
+-	 * void *: ptr to transaction data received on a read
+-	 */
+-
+-	BC_INCREFS = _IOW('c', 4, __u32),
+-	BC_ACQUIRE = _IOW('c', 5, __u32),
+-	BC_RELEASE = _IOW('c', 6, __u32),
+-	BC_DECREFS = _IOW('c', 7, __u32),
+-	/*
+-	 * int:	descriptor
+-	 */
+-
+-	BC_INCREFS_DONE = _IOW('c', 8, struct binder_ptr_cookie),
+-	BC_ACQUIRE_DONE = _IOW('c', 9, struct binder_ptr_cookie),
+-	/*
+-	 * void *: ptr to binder
+-	 * void *: cookie for binder
+-	 */
+-
+-	BC_ATTEMPT_ACQUIRE = _IOW('c', 10, struct binder_pri_desc),
+-	/*
+-	 * not currently supported
+-	 * int: priority
+-	 * int: descriptor
+-	 */
+-
+-	BC_REGISTER_LOOPER = _IO('c', 11),
+-	/*
+-	 * No parameters.
+-	 * Register a spawned looper thread with the device.
+-	 */
+-
+-	BC_ENTER_LOOPER = _IO('c', 12),
+-	BC_EXIT_LOOPER = _IO('c', 13),
+-	/*
+-	 * No parameters.
+-	 * These two commands are sent as an application-level thread
+-	 * enters and exits the binder loop, respectively.  They are
+-	 * used so the binder can have an accurate count of the number
+-	 * of looping threads it has available.
+-	 */
+-
+-	BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14, struct binder_ptr_cookie),
+-	/*
+-	 * void *: ptr to binder
+-	 * void *: cookie
+-	 */
+-
+-	BC_CLEAR_DEATH_NOTIFICATION = _IOW('c', 15, struct binder_ptr_cookie),
+-	/*
+-	 * void *: ptr to binder
+-	 * void *: cookie
+-	 */
+-
+-	BC_DEAD_BINDER_DONE = _IOW('c', 16, void *),
+-	/*
+-	 * void *: cookie
+-	 */
+-};
++#include "uapi/binder.h"
  
- #ifdef CONFIG_COMPAT
- #define ANDROID_ALARM_SET_COMPAT(type)		ALARM_IOW(2, type, \
-diff --git a/drivers/staging/android/uapi/android_alarm.h b/drivers/staging/android/uapi/android_alarm.h
+ #endif /* _LINUX_BINDER_H */
+ 
+diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
 new file mode 100644
-index 0000000..aa013f6
+index 0000000..93edeb8
 --- /dev/null
-+++ b/drivers/staging/android/uapi/android_alarm.h
-@@ -0,0 +1,62 @@
-+/* drivers/staging/android/uapi/android_alarm.h
++++ b/drivers/staging/android/uapi/binder.h
+@@ -0,0 +1,330 @@
++/*
++ * Copyright (C) 2008 Google, Inc.
 + *
-+ * Copyright (C) 2006-2007 Google, Inc.
++ * Based on, but no longer compatible with, the original
++ * OpenBinder.org binder driver interface, which is:
++ *
++ * Copyright (c) 2005 Palmsource, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -117,53 +382,317 @@ index 0000000..aa013f6
 + *
 + */
 +
-+#ifndef _UAPI_LINUX_ANDROID_ALARM_H
-+#define _UAPI_LINUX_ANDROID_ALARM_H
++#ifndef _UAPI_LINUX_BINDER_H
++#define _UAPI_LINUX_BINDER_H
 +
 +#include <linux/ioctl.h>
-+#include <linux/time.h>
 +
-+enum android_alarm_type {
-+	/* return code bit numbers or set alarm arg */
-+	ANDROID_ALARM_RTC_WAKEUP,
-+	ANDROID_ALARM_RTC,
-+	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
-+	ANDROID_ALARM_ELAPSED_REALTIME,
-+	ANDROID_ALARM_SYSTEMTIME,
++#define B_PACK_CHARS(c1, c2, c3, c4) \
++	((((c1)<<24)) | (((c2)<<16)) | (((c3)<<8)) | (c4))
++#define B_TYPE_LARGE 0x85
 +
-+	ANDROID_ALARM_TYPE_COUNT,
-+
-+	/* return code bit numbers */
-+	/* ANDROID_ALARM_TIME_CHANGE = 16 */
++enum {
++	BINDER_TYPE_BINDER	= B_PACK_CHARS('s', 'b', '*', B_TYPE_LARGE),
++	BINDER_TYPE_WEAK_BINDER	= B_PACK_CHARS('w', 'b', '*', B_TYPE_LARGE),
++	BINDER_TYPE_HANDLE	= B_PACK_CHARS('s', 'h', '*', B_TYPE_LARGE),
++	BINDER_TYPE_WEAK_HANDLE	= B_PACK_CHARS('w', 'h', '*', B_TYPE_LARGE),
++	BINDER_TYPE_FD		= B_PACK_CHARS('f', 'd', '*', B_TYPE_LARGE),
 +};
 +
-+enum android_alarm_return_flags {
-+	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
-+	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
-+	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
-+				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
-+	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
-+				1U << ANDROID_ALARM_ELAPSED_REALTIME,
-+	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
-+	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
++enum {
++	FLAT_BINDER_FLAG_PRIORITY_MASK = 0xff,
++	FLAT_BINDER_FLAG_ACCEPTS_FDS = 0x100,
 +};
 +
-+/* Disable alarm */
-+#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
++/*
++ * This is the flattened representation of a Binder object for transfer
++ * between processes.  The 'offsets' supplied as part of a binder transaction
++ * contains offsets into the data where these structures occur.  The Binder
++ * driver takes care of re-writing the structure type and data as it moves
++ * between processes.
++ */
++struct flat_binder_object {
++	/* 8 bytes for large_flat_header. */
++	__u32		type;
++	__u32		flags;
 +
-+/* Ack last alarm and wait for next */
-+#define ANDROID_ALARM_WAIT                  _IO('a', 1)
++	/* 8 bytes of data. */
++	union {
++		void __user	*binder;	/* local object */
++		__u32	    handle;		/* remote object */
++	};
 +
-+#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
-+/* Set alarm */
-+#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
-+#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
-+#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
-+#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
-+#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
-+#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
++	/* extra data associated with local object */
++	void __user		*cookie;
++};
 +
-+#endif
++/*
++ * On 64-bit platforms where user code may run in 32-bits the driver must
++ * translate the buffer (and local binder) addresses appropriately.
++ */
++
++struct binder_write_read {
++	size_t write_size;	/* bytes to write */
++	size_t write_consumed;	/* bytes consumed by driver */
++	unsigned long	write_buffer;
++	size_t read_size;	/* bytes to read */
++	size_t read_consumed;	/* bytes consumed by driver */
++	unsigned long	read_buffer;
++};
++
++/* Use with BINDER_VERSION, driver fills in fields. */
++struct binder_version {
++	/* driver protocol version -- increment with incompatible change */
++	__s32       protocol_version;
++};
++
++/* This is the current protocol version. */
++#define BINDER_CURRENT_PROTOCOL_VERSION 7
++
++#define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
++#define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
++#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
++#define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
++#define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
++#define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
++#define BINDER_VERSION			_IOWR('b', 9, struct binder_version)
++
++/*
++ * NOTE: Two special error codes you should check for when calling
++ * in to the driver are:
++ *
++ * EINTR -- The operation has been interupted.  This should be
++ * handled by retrying the ioctl() until a different error code
++ * is returned.
++ *
++ * ECONNREFUSED -- The driver is no longer accepting operations
++ * from your process.  That is, the process is being destroyed.
++ * You should handle this by exiting from your process.  Note
++ * that once this error code is returned, all further calls to
++ * the driver from any thread will return this same code.
++ */
++
++enum transaction_flags {
++	TF_ONE_WAY	= 0x01,	/* this is a one-way call: async, no return */
++	TF_ROOT_OBJECT	= 0x04,	/* contents are the component's root object */
++	TF_STATUS_CODE	= 0x08,	/* contents are a 32-bit status code */
++	TF_ACCEPT_FDS	= 0x10,	/* allow replies with file descriptors */
++};
++
++struct binder_transaction_data {
++	/* The first two are only used for bcTRANSACTION and brTRANSACTION,
++	 * identifying the target and contents of the transaction.
++	 */
++	union {
++		__u32	handle;	/* target descriptor of command transaction */
++		void	*ptr;	/* target descriptor of return transaction */
++	} target;
++	void		*cookie;	/* target object cookie */
++	__u32		code;		/* transaction command */
++
++	/* General information about the transaction. */
++	__u32	        flags;
++	pid_t		sender_pid;
++	uid_t		sender_euid;
++	size_t		data_size;	/* number of bytes of data */
++	size_t		offsets_size;	/* number of bytes of offsets */
++
++	/* If this transaction is inline, the data immediately
++	 * follows here; otherwise, it ends with a pointer to
++	 * the data buffer.
++	 */
++	union {
++		struct {
++			/* transaction data */
++			const void __user	*buffer;
++			/* offsets from buffer to flat_binder_object structs */
++			const void __user	*offsets;
++		} ptr;
++		__u8	buf[8];
++	} data;
++};
++
++struct binder_ptr_cookie {
++	void *ptr;
++	void *cookie;
++};
++
++struct binder_pri_desc {
++	__s32 priority;
++	__u32 desc;
++};
++
++struct binder_pri_ptr_cookie {
++	__s32 priority;
++	void *ptr;
++	void *cookie;
++};
++
++enum binder_driver_return_protocol {
++	BR_ERROR = _IOR('r', 0, __s32),
++	/*
++	 * int: error code
++	 */
++
++	BR_OK = _IO('r', 1),
++	/* No parameters! */
++
++	BR_TRANSACTION = _IOR('r', 2, struct binder_transaction_data),
++	BR_REPLY = _IOR('r', 3, struct binder_transaction_data),
++	/*
++	 * binder_transaction_data: the received command.
++	 */
++
++	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
++	/*
++	 * not currently supported
++	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
++	 * Else the remote object has acquired a primary reference.
++	 */
++
++	BR_DEAD_REPLY = _IO('r', 5),
++	/*
++	 * The target of the last transaction (either a bcTRANSACTION or
++	 * a bcATTEMPT_ACQUIRE) is no longer with us.  No parameters.
++	 */
++
++	BR_TRANSACTION_COMPLETE = _IO('r', 6),
++	/*
++	 * No parameters... always refers to the last transaction requested
++	 * (including replies).  Note that this will be sent even for
++	 * asynchronous transactions.
++	 */
++
++	BR_INCREFS = _IOR('r', 7, struct binder_ptr_cookie),
++	BR_ACQUIRE = _IOR('r', 8, struct binder_ptr_cookie),
++	BR_RELEASE = _IOR('r', 9, struct binder_ptr_cookie),
++	BR_DECREFS = _IOR('r', 10, struct binder_ptr_cookie),
++	/*
++	 * void *:	ptr to binder
++	 * void *: cookie for binder
++	 */
++
++	BR_ATTEMPT_ACQUIRE = _IOR('r', 11, struct binder_pri_ptr_cookie),
++	/*
++	 * not currently supported
++	 * int:	priority
++	 * void *: ptr to binder
++	 * void *: cookie for binder
++	 */
++
++	BR_NOOP = _IO('r', 12),
++	/*
++	 * No parameters.  Do nothing and examine the next command.  It exists
++	 * primarily so that we can replace it with a BR_SPAWN_LOOPER command.
++	 */
++
++	BR_SPAWN_LOOPER = _IO('r', 13),
++	/*
++	 * No parameters.  The driver has determined that a process has no
++	 * threads waiting to service incoming transactions.  When a process
++	 * receives this command, it must spawn a new service thread and
++	 * register it via bcENTER_LOOPER.
++	 */
++
++	BR_FINISHED = _IO('r', 14),
++	/*
++	 * not currently supported
++	 * stop threadpool thread
++	 */
++
++	BR_DEAD_BINDER = _IOR('r', 15, void *),
++	/*
++	 * void *: cookie
++	 */
++	BR_CLEAR_DEATH_NOTIFICATION_DONE = _IOR('r', 16, void *),
++	/*
++	 * void *: cookie
++	 */
++
++	BR_FAILED_REPLY = _IO('r', 17),
++	/*
++	 * The the last transaction (either a bcTRANSACTION or
++	 * a bcATTEMPT_ACQUIRE) failed (e.g. out of memory).  No parameters.
++	 */
++};
++
++enum binder_driver_command_protocol {
++	BC_TRANSACTION = _IOW('c', 0, struct binder_transaction_data),
++	BC_REPLY = _IOW('c', 1, struct binder_transaction_data),
++	/*
++	 * binder_transaction_data: the sent command.
++	 */
++
++	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
++	/*
++	 * not currently supported
++	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
++	 * Else you have acquired a primary reference on the object.
++	 */
++
++	BC_FREE_BUFFER = _IOW('c', 3, void *),
++	/*
++	 * void *: ptr to transaction data received on a read
++	 */
++
++	BC_INCREFS = _IOW('c', 4, __u32),
++	BC_ACQUIRE = _IOW('c', 5, __u32),
++	BC_RELEASE = _IOW('c', 6, __u32),
++	BC_DECREFS = _IOW('c', 7, __u32),
++	/*
++	 * int:	descriptor
++	 */
++
++	BC_INCREFS_DONE = _IOW('c', 8, struct binder_ptr_cookie),
++	BC_ACQUIRE_DONE = _IOW('c', 9, struct binder_ptr_cookie),
++	/*
++	 * void *: ptr to binder
++	 * void *: cookie for binder
++	 */
++
++	BC_ATTEMPT_ACQUIRE = _IOW('c', 10, struct binder_pri_desc),
++	/*
++	 * not currently supported
++	 * int: priority
++	 * int: descriptor
++	 */
++
++	BC_REGISTER_LOOPER = _IO('c', 11),
++	/*
++	 * No parameters.
++	 * Register a spawned looper thread with the device.
++	 */
++
++	BC_ENTER_LOOPER = _IO('c', 12),
++	BC_EXIT_LOOPER = _IO('c', 13),
++	/*
++	 * No parameters.
++	 * These two commands are sent as an application-level thread
++	 * enters and exits the binder loop, respectively.  They are
++	 * used so the binder can have an accurate count of the number
++	 * of looping threads it has available.
++	 */
++
++	BC_REQUEST_DEATH_NOTIFICATION = _IOW('c', 14, struct binder_ptr_cookie),
++	/*
++	 * void *: ptr to binder
++	 * void *: cookie
++	 */
++
++	BC_CLEAR_DEATH_NOTIFICATION = _IOW('c', 15, struct binder_ptr_cookie),
++	/*
++	 * void *: ptr to binder
++	 * void *: cookie
++	 */
++
++	BC_DEAD_BINDER_DONE = _IOW('c', 16, void *),
++	/*
++	 * void *: cookie
++	 */
++};
++
++#endif /* _UAPI_LINUX_BINDER_H */
++
 -- 
 1.8.3.2
 
