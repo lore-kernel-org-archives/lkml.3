@@ -1,86 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaBCNrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 08:47:24 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:38036 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaBCNrV convert rfc822-to-8bit (ORCPT
+	id S1752715AbaBCNr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 08:47:57 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:42506 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183AbaBCNrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 08:47:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1389783998.14001.22.camel@joe-AO722>
-References: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
-	<1389776784-30825-2-git-send-email-geert@linux-m68k.org>
-	<1389783998.14001.22.camel@joe-AO722>
-Date: Mon, 3 Feb 2014 14:47:20 +0100
-X-Google-Sender-Auth: ng9lyCMOy_qiYTV2j_kv-ubfuRw
-Message-ID: <CAMuHMdUv_xP-1A950i0U=Petaey-_VosSxh5sk44Gqti-ikY6w@mail.gmail.com>
-Subject: Re: [PATCH -next 2/2] bcache: Use max_t() when comparing different types
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>,
-        linux-bcache@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Feb 2014 08:47:55 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Linux IIO List <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 4/6] iio: Add ABI docs for pulse capture devices
+Date: Mon,  3 Feb 2014 08:40:30 -0500
+Message-Id: <1391434832-23807-5-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1391434832-23807-1-git-send-email-mporter@linaro.org>
+References: <1391434832-23807-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 12:06 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2014-01-15 at 10:06 +0100, Geert Uytterhoeven wrote:
->> drivers/md/bcache/btree.c: In function ‘insert_u64s_remaining’:
->> drivers/md/bcache/btree.c:1816: warning: comparison of distinct pointer types lacks a cast
-> []
->> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> []
->> @@ -1813,7 +1813,7 @@ static size_t insert_u64s_remaining(struct btree *b)
->>       if (b->keys.ops->is_extents)
->>               ret -= KEY_MAX_U64S;
->>
->> -     return max(ret, 0L);
->> +     return max_t(ssize_t, ret, 0L);
->
-> why not
->         return max(ret, 0);
+Add standard ABI entries for pulse capture devices. Also add
+a separate ABI entry for the TI ECAP driver polarity option.
 
-Indeed, that also works, on both 32-bit and 64-bit.
-Will resend, now all the issues moved from -next to Linus' tree.
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+ Documentation/ABI/testing/sysfs-bus-iio              | 18 ++++++++++++++++++
+ Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap |  9 +++++++++
+ 2 files changed, 27 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap
 
-> I think it odd that:
->
-> drivers/md/bcache/bset.h:static inline size_t bch_btree_keys_u64s_remaining(struct btree_keys *b)
->
-> and:
->
-> static size_t insert_u64s_remaining(struct btree *b)
-> {
->         ssize_t ret = bch_btree_keys_u64s_remaining(&b->keys);
->
->         /*
->          * Might land in the middle of an existing extent and have to split it
->          */
->         if (b->keys.ops->is_extents)
->                 ret -= KEY_MAX_U64S;
->
->         return max(ret, 0L);
-> }
->
-> so the only use of that size_t inline is cast to ssize_t
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+index 6e02c50..918a201 100644
+--- a/Documentation/ABI/testing/sysfs-bus-iio
++++ b/Documentation/ABI/testing/sysfs-bus-iio
+@@ -210,6 +210,14 @@ Contact:	linux-iio@vger.kernel.org
+ Description:
+ 		Scaled humidity measurement in milli percent.
+ 
++What:		/sys/bus/iio/devices/iio:deviceX/in_pulseY_raw
++What:		/sys/bus/iio/devices/iio:deviceX/in_pulse_raw
++KernelVersion:	3.15
++Contact:	linux-iio@vger.kernel.org
++Description:
++		Raw pulse measurement from channel Y. Units after
++		application of scale and offset are nanoseconds.
++
+ What:		/sys/bus/iio/devices/iio:deviceX/in_accel_offset
+ What:		/sys/bus/iio/devices/iio:deviceX/in_accel_x_offset
+ What:		/sys/bus/iio/devices/iio:deviceX/in_accel_y_offset
+@@ -220,6 +228,8 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_tempY_offset
+ What:		/sys/bus/iio/devices/iio:deviceX/in_temp_offset
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_offset
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_pulseY_offset
++What:		/sys/bus/iio/devices/iio:deviceX/in_pulse_offset
+ KernelVersion:	2.6.35
+ Contact:	linux-iio@vger.kernel.org
+ Description:
+@@ -251,6 +261,8 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_magn_z_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
+ What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_pulseY_scale
++What:		/sys/bus/iio/devices/iio:deviceX/in_pulse_scale
+ KernelVersion:	2.6.35
+ Contact:	linux-iio@vger.kernel.org
+ Description:
+@@ -784,6 +796,8 @@ What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_en
+ What:		/sys/.../iio:deviceX/scan_elements/in_pressure_en
++What:		/sys/.../iio:deviceX/scan_elements/in_pulseY_en
++What:		/sys/.../iio:deviceX/scan_elements/in_pulse_en
+ KernelVersion:	2.6.37
+ Contact:	linux-iio@vger.kernel.org
+ Description:
+@@ -799,6 +813,8 @@ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_type
+ What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_type
+ What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_type
+ What:		/sys/.../iio:deviceX/scan_elements/in_pressure_type
++What:		/sys/.../iio:deviceX/scan_elements/in_pulseY_type
++What:		/sys/.../iio:deviceX/scan_elements/in_pulse_type
+ KernelVersion:	2.6.37
+ Contact:	linux-iio@vger.kernel.org
+ Description:
+@@ -845,6 +861,8 @@ What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_index
+ What:		/sys/.../iio:deviceX/scan_elements/in_pressure_index
++What:		/sys/.../iio:deviceX/scan_elements/in_pulseY_index
++What:		/sys/.../iio:deviceX/scan_elements/in_pulse_index
+ KernelVersion:	2.6.37
+ Contact:	linux-iio@vger.kernel.org
+ Description:
+diff --git a/Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap b/Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap
+new file mode 100644
+index 0000000..a9e4a9f
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap
+@@ -0,0 +1,9 @@
++What:		/sys/bus/iio/devices/iio:deviceX/pulse_polarityY
++What:		/sys/bus/iio/devices/iio:deviceX/pulse_polarity
++Date:		January 2014
++KernelVersion:	3.15
++Contact:	Matt Porter <mporter@linaro.org>
++Description:
++		Get and set the polarity of the pulse signal to be captured
++		for channel Y.  1 indicates a high pulse signal and 0
++		indicates a low pulse signal.
+-- 
+1.8.4
 
-If the value returned by bch_btree_keys_u64s_remaining() is smaller
-than KEY_MAX_U64S, it must stay negative after the subtraction,
-instead of wrapping around to a big positive number. That's why ret is
-ssize_t and not size_t.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
