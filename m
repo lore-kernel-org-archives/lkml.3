@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaBCQo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:44:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36230 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189AbaBCQo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:44:56 -0500
-Date: Mon, 3 Feb 2014 17:44:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC 4/5] memcg: make sure that memcg is not offline when
- charging
-Message-ID: <20140203164455.GL2495@dhcp22.suse.cz>
-References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
- <1387295130-19771-5-git-send-email-mhocko@suse.cz>
- <20140130172906.GE6963@cmpxchg.org>
- <20140203133313.GF2495@dhcp22.suse.cz>
- <20140203161823.GJ6963@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203161823.GJ6963@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753115AbaBCQpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:45:12 -0500
+Received: from smarthost01a.mail.zen.net.uk ([212.23.1.1]:47114 "EHLO
+	smarthost01a.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753013AbaBCQpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:45:08 -0500
+Message-ID: <1391445893.3509.36.camel@linaro1.home>
+Subject: Re: [PATCH v5 00/16] uprobes: Add uprobes support for ARM
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        davem@davemloft.net, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Date: Mon, 03 Feb 2014 16:44:53 +0000
+In-Reply-To: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
+References: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01a-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-02-14 11:18:23, Johannes Weiner wrote:
-> On Mon, Feb 03, 2014 at 02:33:13PM +0100, Michal Hocko wrote:
-> > On Thu 30-01-14 12:29:06, Johannes Weiner wrote:
-> > > On Tue, Dec 17, 2013 at 04:45:29PM +0100, Michal Hocko wrote:
-[...]
-> > > > In order to make this raceless we would need to hold rcu_read_lock since
-> > > > css_tryget until res_counter_charge. This is not so easy unfortunately
-> > > > because mem_cgroup_do_charge might sleep so we would need to do drop rcu
-> > > > lock and do css_tryget tricks after each reclaim.
-> > > 
-> > > Yes, why not?
-> > 
-> > Although css_tryget is cheap these days I thought that a simple flag
-> > check would be even heaper in this hot path. Changing the patch to use
-> > css_tryget rather than offline check is trivial if you really think it
-> > is better?
+On Thu, 2014-01-23 at 15:05 -0500, David Long wrote:
+> From: "David A. Long" <dave.long@linaro.org>
 > 
-> You already changed it to do css_tryget() on every single charge.
+> This patch series adds basic uprobes support to ARM. It is based on patches
+> developed earlier by Rabin Vincent. That approach of adding hooks into
+> the kprobes instruction parsing code was not well received. This approach
+> separates the ARM instruction parsing code in kprobes out into a separate set
+> of functions which can be used by both kprobes and uprobes. Both kprobes and
+> uprobes then provide their own semantic action tables to process the results of
+> the parsing.
 
-Fair point
+Assuming my comment about 'const' use in patch 5 is addressed, then for
+patches 2 to 14 you can add:
 
-Thanks!
+Acked-by: Jon Medhurst <tixy@linaro.org>
+
+Thanks Dave for persevering.
+
 -- 
-Michal Hocko
-SUSE Labs
+Tixy
+
