@@ -1,167 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819AbaBCKga (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 05:36:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51254 "EHLO mx1.redhat.com"
+	id S1752735AbaBCKh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 05:37:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36576 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752769AbaBCKg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 05:36:27 -0500
-Date: Mon, 3 Feb 2014 11:12:16 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Rientjes <rientjes@google.com>, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        xen-devel@lists.xensource.com
-Subject: Re: [BUG?] Interrupts enabled after
- xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
-Message-ID: <20140203101215.GA1725@redhat.com>
-References: <20140128150848.GA1428@redhat.com>
- <20140128160404.GA5732@phenom.dumpdata.com>
- <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
- <20140129082521.GA1362@redhat.com>
- <20140131160140.GC23648@phenom.dumpdata.com>
+	id S1750849AbaBCKhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 05:37:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,771,1384329600"; 
+   d="scan'208";a="448827896"
+Date: Mon, 3 Feb 2014 12:44:08 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 0/13] ACPI / hotplug / PCI: Updates on top of changes
+ merged recently
+Message-ID: <20140203104408.GQ18029@intel.com>
+References: <2217793.001RY6hKlo@vostro.rjw.lan>
+ <1935791.liE9ZlzmO9@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140131160140.GC23648@phenom.dumpdata.com>
+In-Reply-To: <1935791.liE9ZlzmO9@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 11:01:40AM -0500, Konrad Rzeszutek Wilk wrote:
-> Perhaps by using 'subsys_system_register' and stick it there?
+On Sun, Feb 02, 2014 at 01:19:33AM +0100, Rafael J. Wysocki wrote:
+> On Monday, January 27, 2014 01:37:17 AM Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > ACPIPHP can be simplified a bit on top of some PCI and ACPI changes merged
+> > recently and the following series of patches implements those simplifications:
+> > 
+> > [1/11] Fix up two kerneldoc comments in acpiphp_glue.c.
+> > [2/11] Get rid of an unnecessary label in register_slot().
+> > [3/11] Drop acpiphp_bus_trim() and use acpi_bus_trim() instead of it directly.
+> > [4/11] Move the acpi_bus_get_device() call out of acpiphp_no_hotplug().
+> > [5/11] Store struct acpi_device pointers instead of ACPI handles in struct acpiphp_context.
+> > [6/11] Drop acpiphp_bus_add() (which has only one user).
+> > [7/11] Drop crit_sect mutexes (that are redundant).
+> > [8/11] Clean up the usage of the slot variable in hotplug_event().
+> > [9/11] Drop dev_in_slot() and rework disable_slot() to walk bus->devices directly.
+> > [10/11] Use acpi_handle_debug() in hotplug_event() instead of open-coded stuff.
+> > [11/11] Drop handle argument from the member functions of struct acpi_dock_ops.
+> > 
+> > All of that is relateively straightforward, but I have some more intrusive changes
+> > on top of it in the works.  They will be posted separately later this week.
+> 
+> I've learned a couple of things since I sent this patchset.  First, all
+> bus->devices list walks that may remove PCI devices should be done in reverse
+> order or they can crash if virtual functions are involved.  Second, hotplug_event()
+> (in acpiphp_glue.c) has to acquire pci_rescan_remove_lock by itself, because it
+> may be called from multiple places and all of them need that lock to be held.
+> That is done by patches [1-2/13] which I'm planning to push as fixes for 3.14-rc2.
+> 
+> The rest is pretty much the same as last time except that the old patch [9/11]
+> became [3/13] in this series and it has been changed so that the list is walked in
+> reverse order.
 
-This will not call ->resume callback as it is only called for
-devices, so additional dummy device is needed, for example:
+On Intel NUC and DZ77RE-75K,
 
-struct device xap_dev = {
-        .init_name = "xen-acpi-processor-dev",
-        .bus = &xap_bus,
-};
-...
-subsys_system_register(&xap_bus, NULL);
-device_register(&xap_dev);
-
-But I'm not sure if that is good solution. It crate some not necessery
-sysfs directories and files. Additionaly it can restore CPU C-states
-after some other drivers resume, which prehaps require proper C-states.
-
-Hence maybe adding direct notify from xen core resume will be better
-idea (proposed patch below). Plese let me know what you think, I'll
-provide solution which you choose to bug reporters for testing.
-
-Thanks
-Stanislaw
-
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 624e8dc..96e4173 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -13,6 +13,7 @@
- #include <linux/freezer.h>
- #include <linux/syscore_ops.h>
- #include <linux/export.h>
-+#include <linux/notifier.h>
- 
- #include <xen/xen.h>
- #include <xen/xenbus.h>
-@@ -46,6 +47,20 @@ struct suspend_info {
- 	void (*post)(int cancelled);
- };
- 
-+static RAW_NOTIFIER_HEAD(xen_resume_notifier);
-+
-+void xen_resume_notifier_register(struct notifier_block *nb)
-+{
-+	raw_notifier_chain_register(&xen_resume_notifier, nb);
-+}
-+EXPORT_SYMBOL_GPL(xen_resume_notifier_register);
-+
-+void xen_resume_notifier_unregister(struct notifier_block *nb)
-+{
-+	raw_notifier_chain_unregister(&xen_resume_notifier, nb);
-+}
-+EXPORT_SYMBOL_GPL(xen_resume_notifier_unregister);
-+
- #ifdef CONFIG_HIBERNATE_CALLBACKS
- static void xen_hvm_post_suspend(int cancelled)
- {
-@@ -152,6 +167,8 @@ static void do_suspend(void)
- 
- 	err = stop_machine(xen_suspend, &si, cpumask_of(0));
- 
-+	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
-+
- 	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
- 	if (err) {
-diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
-index 7231859..82358d1 100644
---- a/drivers/xen/xen-acpi-processor.c
-+++ b/drivers/xen/xen-acpi-processor.c
-@@ -27,10 +27,10 @@
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/types.h>
--#include <linux/syscore_ops.h>
- #include <linux/acpi.h>
- #include <acpi/processor.h>
- #include <xen/xen.h>
-+#include <xen/xen-ops.h>
- #include <xen/interface/platform.h>
- #include <asm/xen/hypercall.h>
- 
-@@ -495,14 +495,15 @@ static int xen_upload_processor_pm_data(void)
- 	return rc;
- }
- 
--static void xen_acpi_processor_resume(void)
-+static int xen_acpi_processor_resume(struct notifier_block *nb,
-+				     unsigned long action, void *data)
- {
- 	bitmap_zero(acpi_ids_done, nr_acpi_bits);
--	xen_upload_processor_pm_data();
-+	return xen_upload_processor_pm_data();
- }
- 
--static struct syscore_ops xap_syscore_ops = {
--	.resume	= xen_acpi_processor_resume,
-+struct notifier_block xen_acpi_processor_resume_nb = {
-+	.notifier_call = xen_acpi_processor_resume,
- };
- 
- static int __init xen_acpi_processor_init(void)
-@@ -555,7 +556,7 @@ static int __init xen_acpi_processor_init(void)
- 	if (rc)
- 		goto err_unregister;
- 
--	register_syscore_ops(&xap_syscore_ops);
-+	xen_resume_notifier_register(&xen_acpi_processor_resume_nb);
- 
- 	return 0;
- err_unregister:
-@@ -574,7 +575,7 @@ static void __exit xen_acpi_processor_exit(void)
- {
- 	int i;
- 
--	unregister_syscore_ops(&xap_syscore_ops);
-+	xen_resume_notifier_unregister(&xen_acpi_processor_resume_nb);
- 	kfree(acpi_ids_done);
- 	kfree(acpi_id_present);
- 	kfree(acpi_id_cst_present);
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index fb2ea8f..6412358 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -16,6 +16,9 @@ void xen_mm_unpin_all(void);
- void xen_timer_resume(void);
- void xen_arch_resume(void);
- 
-+void xen_resume_notifier_register(struct notifier_block *nb);
-+void xen_resume_notifier_unregister(struct notifier_block *nb);
-+
- int xen_setup_shutdown_event(void);
- 
- extern unsigned long *xen_contiguous_bitmap;
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
