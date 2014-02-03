@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbaBCLLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:11:14 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44098 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaBCLLM (ORCPT
+	id S1752243AbaBCLNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:13:39 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41188 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaBCLNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:11:12 -0500
-Date: Mon, 3 Feb 2014 11:10:40 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Pavel Roskin <proski@gnu.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: serial8250: bogus low_latency destabilizes kernel, need sanity
- check
-Message-ID: <20140203111040.4cafe560@alan.etchedpixels.co.uk>
-In-Reply-To: <52ED0E0F.5050300@hurleysoftware.com>
-References: <20140113193547.47b7a646@IRBT4585>
-	<20140114120811.648571ea@alan.etchedpixels.co.uk>
-	<20140114112457.q54ujbz9c444s040-cebfxv@webmail.spamcop.net>
-	<52ED0E0F.5050300@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Feb 2014 06:13:37 -0500
+Date: Mon, 3 Feb 2014 11:13:27 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140203111326.GV10323@ZenIV.linux.org.uk>
+References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
+ <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203102943.GF11829@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 01 Feb 2014 10:09:03 -0500
-Peter Hurley <peter@hurleysoftware.com> wrote:
-
-> On 01/14/2014 11:24 AM, Pavel Roskin wrote:
-> > Hi Alan,
-> >
-> > Quoting One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>:
-> >
-> >>> Maybe we should unset the low_latency flag as soon as DMA fails?  There
-> >>> are two flags, one is state->uart_port->flags and the other is
-> >>> port->low_latency.  I guess we need to unset both.
-> >>
-> >> Well low latency and DMA are pretty much exclusive in the real world so
-> >> probably DMA ports shouldn't allow low_latency to be set at all in DMA
-> >> mode.
-> >
-> > That's a useful insight.  I assumed exactly the opposite.
+On Mon, Feb 03, 2014 at 02:29:43AM -0800, Christoph Hellwig wrote:
+> On Thu, Jan 30, 2014 at 02:01:38PM -0800, Linus Torvalds wrote:
+> > In the end, all the original call-sites should have a dentry, and none
+> > of this is "fundamental". But you're right, it looks like an absolute
+> > nightmare to add the dentry pointer through the whole chain. Damn.
+> > 
+> > So I'm not thrilled about it, but maybe that "d_find_alias(inode)" to
+> > find the dentry is good enough in practice. It feels very much
+> > incorrect (it could find a dentry with a path that you cannot actually
+> > access on the server, and result in user-visible errors), but I
+> > definitely see your argument. It may just not be worth the pain for
+> > this odd ceph case.
 > 
-> The meaning of low_latency has migrated since 2.6.28
+> It's not just ceph.  9p fundamentally needs it and I really want to
+> convert 9p to the new code so that we can get rid of the lower level
+> interfaces entirely and eventually move ACL dispatching entirely
+> into the VFS.  The same d_find_alias hack should work for 9p as well,
+> although spreading this even more gets uglier and uglier.  Similarly
+> for CIFS which pretends to understand the Posix ACL xattrs, but doesn't
+> use any of the infrastructure as it seems to rely on server side
+> enforcement.
 
-Not really. The meaning of low latency was always "get the turn around
-time for command/response protocols down as low as possible". DMA driven
-serial usually reports a transfer completion on a watermark or a timeout,
-so tends to work very badly within the Linux definition of 'low latency'
-for tty.
+9P is going to be fun to deal with; that's why I've ended up abandoning
+vfs.git#experimental-xattr last year.  We probably want to move FIDs
+from dentries to inodes there, and rely in ->getxattr() et.al. upon
+having already done ->d_revalidate() on some dentry for that inode.
 
-What it does has certainly changed but thats implementation detail.
- 
-> Perhaps we should unconditionally unset low_latency (or remove it entirely).
-> Real low latency can be addressed by using the -RT kernel.
+Another pile of fun is fsnotify_xattr() call in __vfs_setxattr_noperm()
+and the whole misbegotten IMA/EVM mess ;-/  
 
-Just saying "use -RT" would be a regression and actually hurt quite a few
-annoying "simple protocol" using tools for all sorts of control systems.
-We are talking about milliseconds not microseconds here.
-
-The expected behaviour in low_latency is probably best described as
-
-data arrives
-processed
-wakeup
-
-and to avoid the case of
-
-data arrives
-queued for back end
-[up to 10mS delay, but typically 1-2mS]
-processed
-wakeup
-
-
-which multipled over a 50,000 S record download is a lot of time
-
-Everything else is not user visible so can be changed freely to get that
-assumption to work (including ending up not needing it in the first
-place).
-
-Getting tty to the point everything but N_TTY canonical mode is a fast
-path would probably eliminate the need nicely - I don't know of any use
-cases that expect ICANON, ECHO or I*/O* processing for low latency.
-
+See #experimental-xattr - a lot of stuff in that direction is sitting there;
+might turn out to be useful.
