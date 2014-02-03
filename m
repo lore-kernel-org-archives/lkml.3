@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaBCGvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 01:51:18 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:57615 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaBCGvQ (ORCPT
+	id S1752279AbaBCGzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 01:55:04 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:13312 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaBCGzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 01:51:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140128135033.GC9172@localhost.localdomain>
-References: <CALZhoSQZQcM0yKTw1=ZkYz3Z_3X2QxLk0vCw6gKXW55HSrVEdw@mail.gmail.com>
-	<alpine.DEB.2.02.1401221459590.4260@ionos.tec.linutronix.de>
-	<CALZhoSSSOZKwDok2ZHumeZAs0R88SC6bU2BaL54U3TU6jgoaZA@mail.gmail.com>
-	<CAKohpomMZ0TAN2e6N76_g4ZRzxd5vZ1XfuZfxrP7GMxfTNiLVw@mail.gmail.com>
-	<20140123133537.GA13345@localhost.localdomain>
-	<CAKohponoTb-SeRx8Za6HhmVNwrT0COxykhi=s=uOR8SGNvkgUA@mail.gmail.com>
-	<20140128135033.GC9172@localhost.localdomain>
-Date: Mon, 3 Feb 2014 12:21:16 +0530
-Message-ID: <CAKohpok7obD9LqPwLLQMOPw9fTyKg4WpwiZ8EPAgqtHSsC0fxw@mail.gmail.com>
-Subject: Re: Is it ok for deferrable timer wakeup the idle cpu?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lei Wen <adrian.wenl@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Feb 2014 01:55:01 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-09-52ef3d4199c7
+Message-id: <52EF3D3C.8050704@samsung.com>
+Date: Mon, 03 Feb 2014 10:54:52 +0400
+From: Alexey Perevalov <a.perevalov@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+Cc: Alexey Perevalov <a.perevalov@samsung.com>, linux-kernel@vger.kernel.org,
+        anton@enomsg.org, kyungmin.park@samsung.com, akpm@linux-foundation.org,
+        cw00.choi@samsung.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
+References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
+ <52DEC6A3.9020600@linaro.org>
+In-reply-to: <52DEC6A3.9020600@linaro.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/xa7qOtu+DDF6cMLOYe/c8i8Wc9WvY
+	LA5u1bS4/uU5q8WZ37oWZ5vesFtc3jWHzWLzpqnMDhweE/o/MXrcubaHzePduXPsHidm/Gbx
+	6NuyitHj8ya5ALYoLpuU1JzMstQifbsEroyJBzgLLopU3D/8ibGB8bZAFyMnh4SAiUT7sQ8s
+	ELaYxIV769lAbCGBpYwSj47IdDFyAdmfgeymdnaQBK+AlsSmux+YQWwWAVWJ+S8nAdkcHGwC
+	BhL77tmCmKICERJHl2tCVAtK/Jh8D2y8iICGxMIlV5lARjILXGWU+Pp7EitIQljAVeLE9vWs
+	EHvTJZqffQJbxQm0auP97UwgNrOAtcTKSdsYIWx5ic1r3jJPYBSYhWTHLCRls5CULWBkXsUo
+	mlqaXFCclJ5rpFecmFtcmpeul5yfu4kREvBfdzAuPWZ1iFGAg1GJh/fB/ndBQqyJZcWVuYcY
+	JTiYlUR4uwXeBwnxpiRWVqUW5ccXleakFh9iZOLglGpg7A8KENu4fkbf+/I+hp7PobxtZZvl
+	51vfYL7Y2h33wWPrjQnvkpfK2/lWRYZcEX5ns7dny4HZE1NeO8vyPMg/oPmeZVaX//HfkS2O
+	aybMvX+yUnLrlDXr9ba9WnfNsj225tDbK152x6L/sVavcl7LdjvXT0rbROmO+Repskv6B1N0
+	FtgsfyAgrcRSnJFoqMVcVJwIAONqN25WAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry was away for short vacation.
+Dear John, hello
 
-On 28 January 2014 19:20, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Jan 23, 2014 at 07:50:40PM +0530, Viresh Kumar wrote:
->> Wait, I got the wrong code here. That's wasn't my initial intention.
->> I actually wanted to write something like this:
+could we figure out without Thomas advice?
+Maybe it worth to propose timerfd and posix timer flag unification patch?
+
+On 01/21/2014 11:12 PM, John Stultz wrote:
+> On 01/13/2014 02:43 AM, Alexey Perevalov wrote:
+>> Hello dear community.
 >>
->>  -       wake_up_nohz_cpu(cpu);
->>  +       if (!tbase_get_deferrable(timer->base) || idle_cpu(cpu))
->>  +               wake_up_nohz_cpu(cpu);
+>> This is reworked patch set of original Anton's Vorontsov
+>> proposal regarding unified deferrable timers in the user space.
+>> http://lwn.net/Articles/514707/
 >>
->> Will that work?
-
-Something is seriously wrong with me, again wrote rubbish code.
-Let me phrase what I wanted to write :)
-
-"don't send IPI to a idle CPU for a deferrable timer."
-
-Probably I code it correctly this time atleast.
-
--       wake_up_nohz_cpu(cpu);
-+       if (!(tbase_get_deferrable(timer->base) && idle_cpu(cpu)))
-+               wake_up_nohz_cpu(cpu);
-
-> Well, this is going to wake up the target from its idle state, which is
-> what we want to avoid if the timer is deferrable, right?
-
-Yeah, sorry for doing it for second time :(
-
-> The simplest thing we want is:
+>>
+>> I decided to resubmit it due we found it usefull for us too.
+>>
+>> timerfd was modified since Anton's commit, Alarm support was added.
+>> This isn't only rebase. Anton's previous version used deferrable timer
+>> in couple with hrtimer. This version uses only deferrable timer. It
+>> mean the behaviour of overrun number is different.
+>> e.g. if you don't poll one second timer for a 10 seconds - you'll get
+>> 10 overruns with hrtimer, but for deferrable timer it could be another value.
+>>
+> Sorry, last week was a little crazy and I didn't get a chance to closely
+> review this. But looking at this my major conceptual objection with the
+> previous patchset (introducing the new clockid) is gone.
 >
->            if (!tbase_get_deferrable(timer->base) || tick_nohz_full_cpu(cpu))
->                wake_up_nohz_cpu(cpu);
+> My remaining conceptual concern here is that the TIMER_DEFERRABLE flag
+> is a timerfd only construct here, and I worry we should make sure we
+> think this through well enough that the same functionality can be
+> supported via other timer interfaces (like clock_nanosleep, etc), which
+> may mean the functionality should be pushed more deeply into the hrtimer
+> subsystem.
 >
-> This spares the IPI for the common case where the timer is deferrable and we run
-> in periodic or dynticks-idle mode (which should be 99.99% of the existing workloads).
-
-I wasn't looking at this problem with NO_HZ_FULL in mind. As I thought its
-only about if the CPU is idle or not. And so the solution I was
-talking about was:
-
-"don't send IPI to a idle CPU for a deferrable timer."
-
-But I see that still failing with the code you wrote. For normal cases where we
-don't enable NO_HZ_FULL, we will still end up waking up idle CPUs which
-is what Lei Wen reported initially.
-
-Also if a CPU is marked for NO_HZ_FULL and is not idle currently then we
-wouldn't send a IPI for a deferrable timer. But we actually need that, so that
-we can reevaluate the timers order again?
-
-> Then we can later optimize that and spare the IPI on full dynticks CPUs when they run
-> idle, but that require some special care about subtle races which can't be dealt
-> with a simple test on "idle_cpu(target)". And power consumption in full dynticks
-> is already very suboptimized anyway.
+> So main suggestion here is to make sure you cc Thomas Gleixner on future
+> iterations, so he can provide some thoughts on what the best approach
+> might be here. I know he also has some plans that might collide with the
+> jiffies_to_ktime work.
 >
-> So I suggest we start simple with the above test, and a big fat comment which explains
-> what we are doing and what needs to be done in the future.
+> Thomas: Any thought here? Should we be trying to unify the timerfd flags
+> and the posix timer flags (specifically things like TIMER_CANCEL_ON_SET,
+> which is currently timerfd-only)?  Should a deferrable flag be added to
+> the hrtimer core or left to the timer wheel?
+>
+> thanks
+> -john
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+
+
+-- 
+Best regards,
+Alexey Perevalov,
+Leading software engineer,
+phone: +7 (495) 797 25 00 ext 3969
+e-mail: a.perevalov@samsung.com <mailto:a.perevalov@samsumng.com>
+
+Mobile group, Samsung R&D Institute Rus
+12 Dvintsev street, building 1
+127018, Moscow, Russian Federation
