@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaBCWBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:01:23 -0500
-Received: from eddie.linux-mips.org ([78.24.191.182]:53052 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaBCWBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:01:22 -0500
-X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Feb 2014 17:01:22 EST
-Date: Mon, 3 Feb 2014 21:54:22 +0000 (GMT)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: =?ISO-8859-15?Q?J=F6rn_Engel?= <joern@logfs.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
-        blogic@openwrt.org, andrewmcgr@gmail.com, smueller@chronox.de,
-        Geert Uytterhoeven <geert@linux-m68k.org>, tg@mirbsd.de
-Subject: Re: [PATCH,RFC] random: collect cpu randomness
-In-Reply-To: <20140203163729.GA13634@thunk.org>
-Message-ID: <alpine.LFD.2.10.1402032149530.3940@eddie.linux-mips.org>
-References: <20140202203617.GA9499@logfs.org> <20140203155042.GD9499@logfs.org> <20140203163729.GA13634@thunk.org>
-User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+	id S1753543AbaBCWCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:02:08 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:57697 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789AbaBCWCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 17:02:07 -0500
+X-Greylist: delayed 612 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Feb 2014 17:02:07 EST
+Date: Mon, 3 Feb 2014 21:51:51 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
+Message-ID: <20140203215151.GA25594@dcvr.yhbt.net>
+References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+ <52EFEF0A.9080101@amacapital.net>
+ <CAJ3m7Br60ph=Ja_ggJAp9cb5fNJy2O1rRHeJW_jjeTJbYmG3UA@mail.gmail.com>
+ <CALCETrXBRW=x9myjxzZB+ChtPiH9zjNOd=YLtCp61ib3bqEpKA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXBRW=x9myjxzZB+ChtPiH9zjNOd=YLtCp61ib3bqEpKA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Feb 2014, Theodore Ts'o wrote:
-
-> > How about taking the saved registers from the interrupted CPU, xor'ing
-> > them all and calling the result random_get_entropy() on systems
-> > lacking a good cycles-counter?
+Andy Lutomirski <luto@amacapital.net> wrote:
+> >> On 02/02/2014 06:17 PM, Nathaniel Yazdani wrote:
+> > So are you saying that those features you mentioned are specifically sought
+> > after for the kernel? If so I'd like to take a crack at some of them,
+> > may as well
+> > get some use out of my new knowledge of epoll internals :)
 > 
-> So we could take the struct pt_regs which we get from get_irq_regs(),
-> XOR them together and use them to feed into input[2] amd input[3] in
-> add_interrupt_randomness().  Or some other way of distributing the
-> values of all of the irq registers into the __u32 input[4] array.
+> If by "sought after", you mean "is there at least one epoll user who
+> wants them", then yes :)
+> 
+> I think that EPOLLET and EPOLLONESHOT are giant hacks, and that what
+> everyone really wants is the ability to very efficiently toggle events
+> on and off.  The ability to do it simultaneously and inexpensively
+> with epoll_wait would make it happen.
 
- Can we be sure we don't leak information this way?  Just being 
-paranoid...
+Everybody using single-threaded epoll, you mean?  I suppose there's
+quite a few of those.
 
-  Maciej
+I've pondered an epoll_xchg syscall which would behave like *BSD kevent
+to satisfy single-threaded users, but never got around to it.  All my
+epoll uses are multithreaded w/ oneshot nowadays, so xchg would only
+save one syscall per thread.
