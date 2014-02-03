@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaBCPco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:32:44 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:62200 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaBCPcm (ORCPT
+	id S1752857AbaBCPeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:34:03 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:60769 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaBCPeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:32:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-doc@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 09/10] watchdog: xilinx: Add missing binding
-Date: Mon, 03 Feb 2014 16:32:25 +0100
-Message-ID: <3121595.GbLMuGPlvA@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <24ecacca-2714-4834-921c-b827c0e592a3@VA3EHSMHS003.ehs.local>
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <201402031606.11753.arnd@arndb.de> <24ecacca-2714-4834-921c-b827c0e592a3@VA3EHSMHS003.ehs.local>
+	Mon, 3 Feb 2014 10:34:01 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:wOi6G2Gih/Y9GtxT/pmComfbWOl8se+5HvcFiE/O9D+
- f5eXzhwQ1gnNaYjPHfg3wh4AhLL9bV/wC4/2FTJP/2iK6ENZ/d
- zoniGXivwqz/NX79kCRCYFhHQieIb/pwPeHOyib6J6PfGGU3LR
- KUHgowZ68O+UIUwYywnBg0mRA2AhEjsLENMwObaf/Oz0Ud5Dsy
- fHMQ/sKWsIyvhbI2DyJXvs1IoZ06qXcMz5zDw9OmBdBh/znI4Z
- xBTyN8vT6cnHdesJNcYiDhs7BNUA8ye0ij4sN8BMFPw8Ml+qbA
- ussc8IscmaWVjuf3wPftETfHvat841vzhcRLBGDY0sgDCiVQWA
- uzx10t2jT6IwptiIPg+M=
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Mon, 3 Feb 2014 17:33:39 +0200
+Message-ID: <CA+QCeVQC-iqPqmvKK6D6YL=4do8yB3ez3n=L2Jj9_2qu5FVLbQ@mail.gmail.com>
+Subject: SysRQ via serial console doesn't work for VMWare guests
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 February 2014 16:13:47 Michal Simek wrote:
-> Intention wasn't to fix binding but document current one
-> which is in mainline for a long time.
+Hi,
 
-Ok, I see.
+I have tried to utilize SysRQ via serial console in VMWare environment:
+>From what I've seen RS-232 Break + <KEY> just doesn't work for 3.13.1
+for VMWare guests:
 
-> Apart of this - yes, wdt-enable-once is nowayout and wdt-interval should be timeout
-> is seconds, and clock-frequency should go out and use CCF for getting clock.
+[root@dca-eccs-sbx-db2 ~]# cat /proc/tty/driver/serial
+serinfo:1.0 driver revision:
+0: uart:16550A port:000003F8 irq:4 tx:10034 rx:1 RTS|CTS|DTR|DSR|CD
+1: uart:16550A port:000002F8 irq:3 tx:0 rx:0 CTS|DSR|CD
+2: uart:unknown port:000003E8 irq:4
+3: uart:unknown port:000002E8 irq:3
+[root@dca-eccs-sbx-db2 ~]#
 
-Could we make a common binding then, and document that the xilinx
-watchdog can optionally provide either one?
+Kernel console messages are visible just fine. But SysRQ over serial
+is not working.
 
-	Arnd
+What I have tried to issue break is:
+1) screen Control-a b (first VM serial port connected to second VM serial port))
+2) minicom Ctrl-a f (first VM serial port connected to second VM serial port)
+3) telnet - ctrl + ] "send brk" from virtual serial port concentrator.
+
+All three above seem like really sending break, though any SysRQ
+command neither after 5 seconds as stated in documentation nor
+immediately is producing any result.
+
+Have anyone succeed to use SysRQ over serial with WMWare guests?
+
+I have already opened Red Hat case for that. Their responce was:
+
+"...I think this only works on real physical serial ports.  From the kernel
+docs:
+    On the serial console (PC style standard serial ports only) -
+           You send a BREAK, then within 5 seconds a command key.
+           Sending BREAK twice is interpreted as a normal BREAK.
+https://www.kernel.org/doc/Documentation/sysrq.txt
+
+An RS-232 BREAK is a period of no electricity on the wire.  That's
+rather difficult to do in a software-only virtual environment..."
+
+I have found that explanation a bit strange.
