@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaBCUcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:32:43 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:40939 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaBCUcm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:32:42 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: NFS client broken in Linus' tip
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <20140203202543.GA7070@infradead.org>
-Date: Mon, 3 Feb 2014 15:32:39 -0500
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linuxnfs <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Viro Alexander <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <93466B34-9D46-4AF2-8806-8CC5D3371F4D@primarydata.com>
-References: <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org> <20140203080325.GB806@infradead.org> <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com> <20140203145759.GA30263@infradead.org> <3003D7E5-93F8-4B32-ACDB-07ED3F6CE70D@primarydata.com> <1391458935.17089.1.camel@leira.trondhjem.org> <20140203202543.GA7070@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-X-Mailer: Apple Mail (2.1827)
+	id S1753565AbaBCUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:33:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48677 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaBCUd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 15:33:26 -0500
+Date: Mon, 3 Feb 2014 21:33:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH -v2] x86, microcode, AMD: Sanity-check initrd image
+Message-ID: <20140203203323.GG4281@pd.tnic>
+References: <20140128232219.GO815@pd.tnic>
+ <20140130151321.GC23342@pd.tnic>
+ <52EAAAD5.2010301@oracle.com>
+ <20140130195413.GH23342@pd.tnic>
+ <20140203175526.GB4281@pd.tnic>
+ <52EFEA57.4000709@oracle.com>
+ <20140203193000.GD4281@pd.tnic>
+ <52EFEFFE.6010608@oracle.com>
+ <20140203195212.GF4281@pd.tnic>
+ <52EFFC03.8070701@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52EFFC03.8070701@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Feb 3, 2014, at 15:25, Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Mon, Feb 03, 2014 at 03:22:15PM -0500, Trond Myklebust wrote:
->> FWIW, here is the alternative patch. I've tested it, and it seems to
->> work.
+On Mon, Feb 03, 2014 at 03:28:51PM -0500, Boris Ostrovsky wrote:
+> On 02/03/2014 02:52 PM, Borislav Petkov wrote:
+> >On Mon, Feb 03, 2014 at 02:37:34PM -0500, Boris Ostrovsky wrote:
+> >>It exploded when 'if (!container)' check was done *after* relocation,
+> >>which made container non-zero. If you do the check *before* then I
+> >>think you will catch the fact that container is empty.
+> >Ah, right, this was it.
+> >
+> >Ok, just remove the signature check then and give it a try pls:
 > 
-> I much prefer the original one.  One major point of the series was to
-> get individual filesystems out of the business of providing xattr
-> handlers for ACLs.
+> Yes, this fixes the bug. And it loads microcode for a good binary.
 > 
+> For these two patches:
+> Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> 
+> (You might want to rename the final patch to something else since
+> you are not checking the blob anymore).
 
-Then could you and Al please provide an Acked-by? This is a userspace API, so we shouldn’t be changing return values without good reason.
+Yes, will do. It'll be one patch though - it is still small enough. I'll
+send it as a reply to this message.
 
+Thanks for your help!
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Trond Myklebust
-Linux NFS client maintainer
-
