@@ -1,194 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaBCTIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:08:50 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:49995 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaBCTIt (ORCPT
+	id S1753451AbaBCTJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:09:22 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:55667 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074AbaBCTJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:08:49 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [PATCH v2] audit: Only use the syscall slowpath when syscall audit rules exist
-Date: Mon,  3 Feb 2014 11:08:39 -0800
-Message-Id: <c06d8497e0d9f3f936f952c2ac89eecf54f95a52.1391454430.git.luto@amacapital.net>
+	Mon, 3 Feb 2014 14:09:21 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHSET v2 driver-core-next] kernfs: prepare for cgroup's kernfs conversion
+Date: Mon,  3 Feb 2014 14:09:07 -0500
+Message-Id: <1391454557-32376-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This toggles TIF_SYSCALL_AUDIT as needed when rules change instead of
-leaving it set whenever rules might be set in the future.  This reduces
-syscall latency from >60ns to closer to 40ns on my laptop.
+Hello,
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Steve Grubb <sgrubb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+This patchset makes various updates in preparation of cgroup's kernfs
+conversion.  Changes from the last take[L] are
 
-Changes from v1:
- - For new tasks, set flags in a new audit_sync_flags callback instead of
-   in audit_alloc (thanks, Oleg).
- - Rework locking.
- - Use irqsave/irqrestore to avoid having to think about who else might have
-   taken spinlocks.
+* Refreshed on top of v3.14-rc1.
 
- include/linux/audit.h |  9 +++++--
- kernel/auditfilter.c  |  4 ++--
- kernel/auditsc.c      | 65 ++++++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 71 insertions(+), 7 deletions(-)
+* 0010-kernfs-add-CONFIG_KERNFS.patch added.
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index a406419..534ba85 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -298,7 +298,9 @@ static inline void audit_mmap_fd(int fd, int flags)
- 		__audit_mmap_fd(fd, flags);
- }
- 
--extern int audit_n_rules;
-+extern void audit_inc_n_rules(void);
-+extern void audit_dec_n_rules(void);
-+
- extern int audit_signals;
- #else /* CONFIG_AUDITSYSCALL */
- static inline int audit_alloc(struct task_struct *task)
-@@ -404,7 +406,10 @@ static inline void audit_mmap_fd(int fd, int flags)
- { }
- static inline void audit_ptrace(struct task_struct *t)
- { }
--#define audit_n_rules 0
-+static inline void audit_inc_n_rules(void)
-+{ }
-+static inline void audit_dec_n_rules(void)
-+{ }
- #define audit_signals 0
- #endif /* CONFIG_AUDITSYSCALL */
- 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 51f3fd4..0ce531d 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -903,7 +903,7 @@ static inline int audit_add_rule(struct audit_entry *entry)
- 	}
- #ifdef CONFIG_AUDITSYSCALL
- 	if (!dont_count)
--		audit_n_rules++;
-+		audit_inc_n_rules();
- 
- 	if (!audit_match_signal(entry))
- 		audit_signals++;
-@@ -955,7 +955,7 @@ static inline int audit_del_rule(struct audit_entry *entry)
- 
- #ifdef CONFIG_AUDITSYSCALL
- 	if (!dont_count)
--		audit_n_rules--;
-+		audit_dec_n_rules();
- 
- 	if (!audit_match_signal(entry))
- 		audit_signals--;
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 90594c9..363d0bb 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -79,8 +79,15 @@
- /* no execve audit message should be longer than this (userspace limits) */
- #define MAX_EXECVE_AUDIT_LEN 7500
- 
--/* number of audit rules */
--int audit_n_rules;
-+/*
-+ * number of audit rules
-+ *
-+ * n_rules_lock protects audit_n_rules.  It also prevents audit_alloc from
-+ * racing against changes to audit_n_rules: to change someone else's
-+ * audit_context or TIF_SYSCALL_AUDIT, you need write_lock(&n_rules_lock).
-+ */
-+static DEFINE_RWLOCK(n_rules_lock);
-+static int audit_n_rules;
- 
- /* determines whether we collect data for signals sent */
- int audit_signals;
-@@ -911,6 +918,47 @@ static inline struct audit_context *audit_alloc_context(enum audit_state state)
- 	return context;
- }
- 
-+void audit_inc_n_rules()
-+{
-+	struct task_struct *p, *g;
-+
-+	write_lock(&n_rules_lock);
-+
-+	if (audit_n_rules++ != 0)
-+		goto out;  /* The overall state isn't changing. */
-+
-+	read_lock(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		if (p->audit_context)
-+			set_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-+	} while_each_thread(g, p);
-+	read_unlock(&tasklist_lock);
-+
-+out:
-+	write_unlock(&n_rules_lock);
-+}
-+
-+void audit_dec_n_rules()
-+{
-+	struct task_struct *p, *g;
-+
-+	write_lock(&n_rules_lock);
-+	--audit_n_rules;
-+	BUG_ON(audit_n_rules < 0);
-+
-+	if (audit_n_rules != 0)
-+		goto out;  /* The overall state isn't changing. */
-+
-+	read_lock(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-+	} while_each_thread(g, p);
-+	read_unlock(&tasklist_lock);
-+
-+out:
-+	write_unlock(&n_rules_lock);
-+}
-+
- /**
-  * audit_alloc - allocate an audit context block for a task
-  * @tsk: task
-@@ -931,6 +979,11 @@ int audit_alloc(struct task_struct *tsk)
- 
- 	state = audit_filter_task(tsk, &key);
- 	if (state == AUDIT_DISABLED) {
-+		/*
-+		 * There is no relevant race against inc/dec_n_rules
-+		 * here -- inc won't set TIF_SYSCALL_AUDIT, and, if dec
-+		 * clears it redundantly, there's no harm done.
-+		 */
- 		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
- 		return 0;
- 	}
-@@ -942,8 +995,14 @@ int audit_alloc(struct task_struct *tsk)
- 	}
- 	context->filterkey = key;
- 
-+	read_lock(&n_rules_lock);
- 	tsk->audit_context  = context;
--	set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-+	if (audit_n_rules)
-+		set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-+	else
-+		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-+	read_unlock(&n_rules_lock);
-+
- 	return 0;
- }
- 
--- 
-1.8.5.3
+This patchset contains the following 10 patches.
 
+ 0001-kernfs-invoke-dir_ops-while-holding-active-ref-of-th.patch
+ 0002-kernfs-rename-kernfs_dir_ops-to-kernfs_syscall_ops.patch
+ 0003-kernfs-implement-kernfs_syscall_ops-remount_fs-and-s.patch
+ 0004-kernfs-add-missing-kernfs_active-checks-in-directory.patch
+ 0005-kernfs-allow-nodes-to-be-created-in-the-deactivated-.patch
+ 0006-kernfs-implement-kernfs_ops-atomic_write_len.patch
+ 0007-kernfs-add-kernfs_open_file-priv.patch
+ 0008-kernfs-implement-kernfs_node_from_dentry-kernfs_root.patch
+ 0009-kernfs-implement-kernfs_get_parent-kernfs_name-path-.patch
+ 0010-kernfs-add-CONFIG_KERNFS.patch
+
+ 0001-0003 update kernfs_dir_ops for active ref protection, add
+ additional syscall operations and rename the struct to
+ kernfs_syscall_ops.
+
+ 0004-0005 implement an option to create new kernfs_nodes in
+ deactivated state so that multiple nodes can be made visible
+ atomically or removed without ever being visible to userland.
+
+ 0006 implements kernfs_ops->atomic_write_len which will be used to
+ support cgroup cftype->max_write_len.
+
+ 0007 adds kernfs_open_file->priv.
+
+ 0008-0009 add various helpers and accessors.
+
+ 0010 adds CONFIG_KERNFS so that kernfs can be selected independently
+ from sysfs.
+
+This patchset is on top of
+
+  v3.14-rc1 38dbfb59d117
++ [1] [PATCHSET v5 driver-core-next] kernfs, sysfs, driver-core: implement synchronous self-removal
+
+diffstat follows.
+
+ fs/Kconfig             |    1 
+ fs/Makefile            |    3 
+ fs/kernfs/Kconfig      |    7 +
+ fs/kernfs/dir.c        |  325 ++++++++++++++++++++++++++++++++++++++++++++-----
+ fs/kernfs/file.c       |   49 ++++---
+ fs/kernfs/mount.c      |   37 +++++
+ fs/sysfs/Kconfig       |    1 
+ fs/sysfs/dir.c         |   44 +-----
+ fs/sysfs/mount.c       |    2 
+ include/linux/kernfs.h |   90 +++++++++++--
+ 10 files changed, 460 insertions(+), 99 deletions(-)
+
+Thanks!
+
+--
+tejun
+
+[L] http://lkml.kernel.org/g/1390951971-15671-1-git-send-email-tj@kernel.org
+[1] http://lkml.kernel.org/g/1391454185-32143-1-git-send-email-tj@kernel.org
