@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaBCHLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 02:11:19 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:13855 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751257AbaBCHLS (ORCPT
+	id S1752860AbaBCHTj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 02:19:39 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52912 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013AbaBCHTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 02:11:18 -0500
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Feb 2014 02:11:17 EST
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-10.tower-193.messagelabs.com!1391411052!5191035!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 03 Feb 2014 08:04:13 +0100
-Date: Mon, 3 Feb 2014 08:04:06 +0100
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <bp@suse.de>, <m.chehab@samsung.com>
-CC: <linux-edac@vger.kernel.org>, <johannes.thumshirn@men.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] edac/85xx: Remove deprecated IRQF_DISABLED
-Message-ID: <20140203070404.GA32443@jtlinux>
-References: <1390293747-11185-1-git-send-email-johannes.thumshirn@men.de>
+	Mon, 3 Feb 2014 02:19:38 -0500
+Message-ID: <52EF42FF.60907@linux.vnet.ibm.com>
+Date: Mon, 03 Feb 2014 12:49:27 +0530
+From: Sohny Thomas <sthomas@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1390293747-11185-1-git-send-email-johannes.thumshirn@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        yoshfuji@linux-ipv6.org, davem@davemloft.net,
+        kumuda <kumuda@linux.vnet.ibm.com>
+Subject: Re: [PATCH] ipv6: default route for link local address is not added
+ while assigning a address
+References: <52E8A2AA.3090507@linux.vnet.ibm.com> <52E8DA37.7010208@6wind.com> <20140130232909.GH25336@order.stressinduktion.org>
+In-Reply-To: <20140130232909.GH25336@order.stressinduktion.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020307-5140-0000-0000-0000048090CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 21, 2014 at 09:42:27AM +0100, Johannes Thumshirn wrote:
-> Remove IRQF_DISABLED as it is a NOOP.
+
+> Actually I am not so sure, there is no defined semantic of flush. I would
+> be ok with all three solutions: leave it as is, always add link-local
+> address (it does not matter if we don't have a link-local address on
+> that interface, as a global scoped one is just fine enough) or make flush not
+> remove the link-local address (but this seems a bit too special cased for me).
+
+1) In case if we leave it as it is, there is rfc 6724 rule 2 to be 
+considered ( previously rfc 3484)
+
+Rule 2: Prefer appropriate scope.
+    If Scope(SA) < Scope(SB): If Scope(SA) < Scope(D), then prefer SB and
+    otherwise prefer SA.  Similarly, if Scope(SB) < Scope(SA): If
+    Scope(SB) < Scope(D), then prefer SA and otherwise prefer SB.
+
+Test:
+
+    Destination: fe80::2(LS)
+     Candidate Source Addresses: 3ffe::1(GS) or fec0::1(SS) or LLA(LS)
+     Result: LLA(LS)
+     Scope(LLA) < Scope(fec0::1): If Scope(LLA) < Scope(fe80::2),  no, 
+prefer LLA
+     Scope(LLA) < Scope(3ffe::1): If Scope(LLA) < Scope(fe80::2),  no, 
+prefer LLA
+
+
+Now the above test fails since the route itself is not present, and the 
+test assumes that the route gets added since the LLA is not removed 
+during the test
+
+2) having a LLA always helps in NDP i think
+
+3) making flush not remove link-local address will be chnaging 
+functionality of ip flush command
+
+Regards,
+Sohny
+
 >
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-> ---
->  drivers/edac/mpc85xx_edac.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+> Greetings,
 >
-> diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-> index 8f918217..f4aec2e 100644
-> --- a/drivers/edac/mpc85xx_edac.c
-> +++ b/drivers/edac/mpc85xx_edac.c
-> @@ -357,7 +357,7 @@ int mpc85xx_pci_err_probe(struct platform_device *op)
->  		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
->  		res = devm_request_irq(&op->dev, pdata->irq,
->  				       mpc85xx_pci_isr,
-> -				       IRQF_DISABLED | IRQF_SHARED,
-> +				       IRQF_SHARED,
->  				       "[EDAC] PCI err", pci);
->  		if (res < 0) {
->  			printk(KERN_ERR
-> @@ -633,7 +633,7 @@ static int mpc85xx_l2_err_probe(struct platform_device *op)
->  	if (edac_op_state == EDAC_OPSTATE_INT) {
->  		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
->  		res = devm_request_irq(&op->dev, pdata->irq,
-> -				       mpc85xx_l2_isr, IRQF_DISABLED,
-> +				       mpc85xx_l2_isr, 0,
->  				       "[EDAC] L2 err", edac_dev);
->  		if (res < 0) {
->  			printk(KERN_ERR
-> @@ -1133,7 +1133,7 @@ static int mpc85xx_mc_err_probe(struct platform_device *op)
->  		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
->  		res = devm_request_irq(&op->dev, pdata->irq,
->  				       mpc85xx_mc_isr,
-> -					IRQF_DISABLED | IRQF_SHARED,
-> +				       IRQF_SHARED,
->  				       "[EDAC] MC err", mci);
->  		if (res < 0) {
->  			printk(KERN_ERR "%s: Unable to request irq %d for "
-> --
-> 1.8.5.2
+>    Hannes
+>
+>
 >
 
-Boris, Mauro:
-
-Ping?
-
-Johannes
