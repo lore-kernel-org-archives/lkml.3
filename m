@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaBCHts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 02:49:48 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51969 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566AbaBCHtq (ORCPT
+	id S1751412AbaBCHr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 02:47:57 -0500
+Received: from www84.your-server.de ([213.133.104.84]:56603 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaBCHrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 02:49:46 -0500
-X-AuditID: 9c93016f-b7b7aae0000036de-62-52ef4a19ad4b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt \(Red Hat\)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip v2 4/8] perf-probe: Use _stext based address instead of the symbol name
-In-Reply-To: <20140129091459.22141.29467.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-	(Masami Hiramatsu's message of "Wed, 29 Jan 2014 09:14:59 +0000")
-References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-	<20140129091459.22141.29467.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Mon, 03 Feb 2014 16:49:44 +0900
-Message-ID: <87d2j43aav.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Feb 2014 02:47:55 -0500
+From: stefani@seibold.net
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v10 2/8] Add new func _install_special_mapping() to mmap.c
+Date: Mon,  3 Feb 2014 08:48:35 +0100
+Message-Id: <1391413721-17148-3-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391413721-17148-1-git-send-email-stefani@seibold.net>
+References: <1391413721-17148-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jan 2014 09:14:59 +0000, Masami Hiramatsu wrote:
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 4a9f43b..120954b 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -387,6 +387,44 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
->  	return ret;
->  }
->  
-> +/* Post processing the probe events */
-> +static int post_process_probe_trace_events(struct probe_trace_event *tevs,
-> +					   int ntevs, const char *module,
-> +					   bool uprobe)
-> +{
-> +	struct symbol *sym;
-> +	struct map *map;
-> +	unsigned long stext = 0;
-> +	char *tmp;
-> +	int i;
-> +
-> +	if (uprobe)
-> +		return add_exec_to_probe_trace_events(tevs, ntevs, module);
-> +
-> +	/* Note that currently _stext based probe is not for drivers */
-> +	if (module)
-> +		return add_module_to_probe_trace_events(tevs, ntevs, module);
-> +
-> +	sym = __find_kernel_function_by_name("_stext", &map);
+From: Stefani Seibold <stefani@seibold.net>
 
-Couldn't we just use kmap->ref_reloc_sym instead of the hard-coded
-"_stext"?  You might want to check the Adrian's recent kaslr fixes (now
-in tip/perf/urgent).
+The _install_special_mapping() is the new base function for
+install_special_mapping(). This function will return a pointer of the
+created VMA or a error code in an ERR_PTR()
 
-Thanks,
-Namhyung
+This new function will be needed by the for the vdso 32 bit support to map the
+additonal vvar and hpet pages into the 32 bit address space. This will be done
+with io_remap_pfn_range() and remap_pfn_range, which requieres a vm_area_struct.
 
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ include/linux/mm.h |  3 +++
+ mm/mmap.c          | 20 ++++++++++++++++----
+ 2 files changed, 19 insertions(+), 4 deletions(-)
 
-> +	if (!sym) {
-> +		pr_debug("Failed to find _stext. Use original symbol name.\n");
-> +		return 0;
-> +	}
-> +	stext = map->unmap_ip(map, sym->start);
-> +
-> +	for (i = 0; i < ntevs; i++) {
-> +		if (tevs[i].point.address) {
-> +			tmp = strdup("_stext");
-> +			if (!tmp)
-> +				return -ENOMEM;
-> +			free(tevs[i].point.symbol);
-> +			tevs[i].point.symbol = tmp;
-> +			tevs[i].point.offset = tevs[i].point.address - stext;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f28f46e..55342aa 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1740,6 +1740,9 @@ extern void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file);
+ extern struct file *get_mm_exe_file(struct mm_struct *mm);
+ 
+ extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
++extern struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
++				   unsigned long addr, unsigned long len,
++				   unsigned long flags, struct page **pages);
+ extern int install_special_mapping(struct mm_struct *mm,
+ 				   unsigned long addr, unsigned long len,
+ 				   unsigned long flags, struct page **pages);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 20ff0c3..81ba54f 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2918,7 +2918,7 @@ static const struct vm_operations_struct special_mapping_vmops = {
+  * The array pointer and the pages it points to are assumed to stay alive
+  * for as long as this mapping might exist.
+  */
+-int install_special_mapping(struct mm_struct *mm,
++struct vm_area_struct *_install_special_mapping(struct mm_struct *mm,
+ 			    unsigned long addr, unsigned long len,
+ 			    unsigned long vm_flags, struct page **pages)
+ {
+@@ -2927,7 +2927,7 @@ int install_special_mapping(struct mm_struct *mm,
+ 
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+ 	if (unlikely(vma == NULL))
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 	vma->vm_mm = mm;
+@@ -2948,11 +2948,23 @@ int install_special_mapping(struct mm_struct *mm,
+ 
+ 	perf_event_mmap(vma);
+ 
+-	return 0;
++	return vma;
+ 
+ out:
+ 	kmem_cache_free(vm_area_cachep, vma);
+-	return ret;
++	return ERR_PTR(ret);
++}
++
++int install_special_mapping(struct mm_struct *mm,
++			    unsigned long addr, unsigned long len,
++			    unsigned long vm_flags, struct page **pages)
++{
++	struct vm_area_struct *vma = _install_special_mapping(mm,
++			    addr, len, vm_flags, pages);
++
++	if (IS_ERR(vma))
++		return PTR_ERR(vma);
++	return 0;
+ }
+ 
+ static DEFINE_MUTEX(mm_all_locks_mutex);
+-- 
+1.8.5.3
+
