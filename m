@@ -1,70 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaBCLDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:03:01 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34581 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbaBCLDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:03:00 -0500
-Date: Mon, 3 Feb 2014 11:02:49 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Guenter Roeck <linux@roeck-us.net>
-Message-ID: <20140203110249.GA6392@sirena.org.uk>
-References: <1390846075-17415-1-git-send-email-broonie@kernel.org>
- <20140203104141.40cc04e5@endymion.delvare>
+	id S1752846AbaBCLDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:03:10 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:12692 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752782AbaBCLDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:03:06 -0500
+Message-ID: <52EF7762.2060809@imgtec.com>
+Date: Mon, 3 Feb 2014 11:02:58 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <20140203104141.40cc04e5@endymion.delvare>
-X-Cookie: Preserve the old, but know the new.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Correct default return value for full
- constraints
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: David Laight <David.Laight@ACULAB.COM>
+CC: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        "Greg KH" <gregkh@linuxfoundation.org>,
+        "bergwolf@gmail.com" <bergwolf@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "oleg.drokin@intel.com" <oleg.drokin@intel.com>,
+        "jacques-charles.lafoucriere@cea.fr" 
+	<jacques-charles.lafoucriere@cea.fr>,
+        "jinshan.xiong@intel.com" <jinshan.xiong@intel.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
+ for the related union
+References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com> <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda> <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda> <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com> <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com> <20140203085855.GA26722@mwanda> <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com> <52EF6DCC.6040807@imgtec.com> <063D6719AE5E284EB5DD2968C1650D6D0F6B777A@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B777A@AcuExch.aculab.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2014_02_03_11_03_00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/02/14 10:35, David Laight wrote:
+> From: James Hogan 
+>> On 03/02/14 10:05, David Laight wrote:
+>>> Architectures that define such alignment rules are a right PITA.
+>>> You either need to get the size to 2 without using 'packed', or
+>>> just not define such structures.
+>>> It is worth seeing if adding aligned(2) will change the size - I'm
+>>> not sure.
+>>
+>> __aligned(2) alone doesn't seem to have any effect on sizeof() or
+>> __alignof__() unless it is accompanied by __packed. x86_64 is similar in
+>> that respect (it just packs sanely in the first place).
+>>
+>> Combining __packed with __aligned(2) does the trick though (__packed
+>> alone sets __aligned(1) which is obviously going to be suboptimal).
+> 
+> Compile some code for a cpu that doesn't support misaligned transfers
+> (probably one of sparc, arm, ppc) and see if the compiler generates a
+> single 16bit request or two 8 bits ones.
+> You don't want the compiler generating multiple byte-sized memory transfers.
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Meta is also one of those arches, and according to my quick tests,
+__packed alone does correctly make it fall back to byte loads/stores,
+but with __packed __aligned(2) it uses 16bit loads/stores. I've also
+confirmed that with an ARM toolchain (see below for example).
 
-On Mon, Feb 03, 2014 at 10:41:41AM +0100, Jean Delvare wrote:
+Cheers
+James
 
-> Can you please review / apply this patch? It fixes a real bug. I also
-> think it should go to the 3.13-stable tree.
+input:
 
-Uh, it is applied?  I'm the one who maintains the regulator tree
-generally...
+#define __aligned(x)			__attribute__((aligned(x)))
+#define __packed			__attribute__((packed))
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+union a {
+	short x, y;
+} __aligned(2) __packed;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+struct b {
+	short x;
+} __aligned(2) __packed;
 
-iQIcBAEBAgAGBQJS73dWAAoJELSic+t+oim9tj0P/isFAsLwznVw3Ll/N4UmoU1P
-NuvTCth6NUL5TOySbCTQ/4Y2IxCmHfIZIqReMC2on6RqVOgUEZQJJyx+/EEDE1+N
-lhoVGxRyHVY9oC2K2l0nGN3qgORwFNdcsLz1SK3IlsUsFzArBaO+2m68AuETLYJq
-Xb21Ca+TmPL/X+HNeMX7+J+qMrBld3Y5ALjVItGMzqQeqzYtabLwGC0iTORd/Xz8
-JA137NHCSDrEhOB+M5J0xelfbRjhp8HRVBeXoi54kNROtkMn4oSoFCxJJ8ChPGwM
-CFePo9VMSrKSiyr5k3bJiRZ6P+WOjonvdYW3K4gOCCjR1KTPHxCLMygKqKm8SySV
-ft67q+yKHZ+Ws3EegD8HP22MxaWARsCFt4Pee8XXZ8UfFndH473bFkf2DgBtcMB5
-T7ktAk567qhc0ZIu+ed6V1FCF5WyCl92pKAR6DDDH5Wvtaiq78yLlfCRHTcYPEX2
-/eA8uA3wCkvjR234IGotVxk8aeuk3NuRiGad3CwUel4fyTEHMmUXPnE26H3eZ8rg
-b7QXkNveHqSaQ0HK+e1HrDzTbnhNdKHnmB7M/4rAOWwVH6EyhM/3gnApQuffAgZP
-SM65HLTivLjJl2kwu5bRnle1IhG/or+IR+ahwOS8s1Ty83E5mX9l+yXCjMrUndH2
-lMKvmDIv/ZF0tAYh0P5e
-=TY0t
------END PGP SIGNATURE-----
+unsigned int soa = sizeof(union a);
+unsigned int aoa = __alignof__(union a);
+unsigned int sob = sizeof(struct b);
+unsigned int aob = __alignof__(struct b);
 
---AqsLC8rIMeq19msA--
+void t(struct b *x, union a *y)
+{
+	++x->x;
+	++y->x;
+}
+
+ARM output (-O2):
+
+	.cpu arm10tdmi
+	.fpu softvfp
+	.eabi_attribute 20, 1
+	.eabi_attribute 21, 1
+	.eabi_attribute 23, 3
+	.eabi_attribute 24, 1
+	.eabi_attribute 25, 1
+	.eabi_attribute 26, 2
+	.eabi_attribute 30, 2
+	.eabi_attribute 34, 0
+	.eabi_attribute 18, 4
+	.file	"alignment4.c"
+	.text
+	.align	2
+	.global	t
+	.type	t, %function
+t:
+	@ args = 0, pretend = 0, frame = 0
+	@ frame_needed = 0, uses_anonymous_args = 0
+	@ link register save eliminated.
+	ldrh	r3, [r0, #0]
+	add	r3, r3, #1
+	strh	r3, [r0, #0]	@ movhi
+	ldrh	r3, [r1, #0]
+	add	r3, r3, #1
+	strh	r3, [r1, #0]	@ movhi
+	bx	lr
+	.size	t, .-t
+	.global	aob
+	.global	sob
+	.global	aoa
+	.global	soa
+	.data
+	.align	2
+	.type	aob, %object
+	.size	aob, 4
+aob:
+	.word	2
+	.type	sob, %object
+	.size	sob, 4
+sob:
+	.word	2
+	.type	aoa, %object
+	.size	aoa, 4
+aoa:
+	.word	2
+	.type	soa, %object
+	.size	soa, 4
+soa:
+	.word	2
+	.ident	"GCC: (GNU) 4.7.1 20120606 (Red Hat 4.7.1-0.1.20120606)"
+	.section	.note.GNU-stack,"",%progbits
+
