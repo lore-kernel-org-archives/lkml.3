@@ -1,177 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaBCQuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:50:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134AbaBCQt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:49:58 -0500
-Date: Mon, 3 Feb 2014 17:39:21 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Do we really need curr_target in signal_struct ?
-Message-ID: <20140203163921.GA25698@redhat.com>
-References: <1390895840.8373.2.camel@beeld> <20140128164320.GB7596@redhat.com> <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com> <20140129145535.GA12562@redhat.com> <CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com> <20140129183204.GA22808@redhat.com> <CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com> <CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com> <20140201165122.GA7478@redhat.com> <CADZ9YHg-8XrQ0p+uQNRNBhvnHE83xVxLKais0DrT9vfoQvm=uA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADZ9YHg-8XrQ0p+uQNRNBhvnHE83xVxLKais0DrT9vfoQvm=uA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753358AbaBCQuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:50:20 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:37097 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaBCQuP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:50:15 -0500
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, stable@vger.kernel.org
+Subject: [PATCH] mm: __set_page_dirty_nobuffers uses spin_lock_irqseve instead of spin_lock_irq
+Date: Mon,  3 Feb 2014 11:49:55 -0500
+Message-Id: <1391446195-9457-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02, Rakib Mullick wrote:
->
-> On Sat, Feb 1, 2014 at 10:51 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 02/01, Rakib Mullick wrote:
-> >>
-> >> > Since the optimization (usages of ->curr_target) isn't perfect, so there's
-> >> > chance of being misunderstood. This optimization is misleading too (I think),
-> >> > cause curr_target don't have anything to do with wants_signal()
-> >
-> > can't understand... curr_target is obviously connected to wants_signal() ?
-> No. I meant, curr_target doesn't makes sure that it really wants the
-> signal, it's likely
-> choice.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Sure. But why this is "misleading" and "don't have anything to do with
-wants_signal()" ? OK, nevermind.
+During aio stress test, we observed the following lockdep warning.
+This mean AIO+numa_balancing is currently deadlockable.
 
-> > As I already said it caches the last wants_signal(t) thread?
-> Yes, you said. But, gets messed up at exit path, not useful everytime.
+The problem is, aio_migratepage disable interrupt, but __set_page_dirty_nobuffers
+unintentionally enable it again.
 
-Yes.
+Generally, all helper function should use spin_lock_irqsave()
+instead of spin_lock_irq() because they don't know caller at all.
 
-> If fails, p gets checked twice.
+[  599.843948] other info that might help us debug this:
+[  599.873748]  Possible unsafe locking scenario:
+[  599.873748]
+[  599.900902]        CPU0
+[  599.912701]        ----
+[  599.924929]   lock(&(&ctx->completion_lock)->rlock);
+[  599.950299]   <Interrupt>
+[  599.962576]     lock(&(&ctx->completion_lock)->rlock);
+[  599.985771]
+[  599.985771]  *** DEADLOCK ***
 
-Yes, but this is minor, I think.
+[  600.375623]  [<ffffffff81678d3c>] dump_stack+0x19/0x1b
+[  600.398769]  [<ffffffff816731aa>] print_usage_bug+0x1f7/0x208
+[  600.425092]  [<ffffffff810df370>] ? print_shortest_lock_dependencies+0x1d0/0x1d0
+[  600.458981]  [<ffffffff810e08dd>] mark_lock+0x21d/0x2a0
+[  600.482910]  [<ffffffff810e0a19>] mark_held_locks+0xb9/0x140
+[  600.508956]  [<ffffffff8168201c>] ? _raw_spin_unlock_irq+0x2c/0x50
+[  600.536825]  [<ffffffff810e0ba5>] trace_hardirqs_on_caller+0x105/0x1d0
+[  600.566861]  [<ffffffff810e0c7d>] trace_hardirqs_on+0xd/0x10
+[  600.593210]  [<ffffffff8168201c>] _raw_spin_unlock_irq+0x2c/0x50
+[  600.620599]  [<ffffffff8117f72c>] __set_page_dirty_nobuffers+0x8c/0xf0
+[  600.649992]  [<ffffffff811d1094>] migrate_page_copy+0x434/0x540
+[  600.676635]  [<ffffffff8123f5b1>] aio_migratepage+0xb1/0x140
+[  600.703126]  [<ffffffff811d126d>] move_to_new_page+0x7d/0x230
+[  600.729022]  [<ffffffff811d1b45>] migrate_pages+0x5e5/0x700
+[  600.754705]  [<ffffffff811d0070>] ? buffer_migrate_lock_buffers+0xb0/0xb0
+[  600.785784]  [<ffffffff811d29cc>] migrate_misplaced_page+0xbc/0xf0
+[  600.814029]  [<ffffffff8119eb62>] do_numa_page+0x102/0x190
+[  600.839182]  [<ffffffff8119ee31>] handle_pte_fault+0x241/0x970
+[  600.865875]  [<ffffffff811a0345>] handle_mm_fault+0x265/0x370
+[  600.892071]  [<ffffffff81686d82>] __do_page_fault+0x172/0x5a0
+[  600.918065]  [<ffffffff81682cd8>] ? retint_swapgs+0x13/0x1b
+[  600.943493]  [<ffffffff816871ca>] do_page_fault+0x1a/0x70
+[  600.968081]  [<ffffffff81682ff8>] page_fault+0x28/0x30
 
-> >> I took a look and found that using while_each_thread()
-> >> can make things better than current.
-> >
-> > Why?
-> >
-> using while_each_thread() we can start thread traversing from p, which
-> is a likely
-> pick and also gets away from redundant checking of p.
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Larry Woodman <lwoodman@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ mm/page-writeback.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Heh. We always check "p" first. And (in general) we do not want to start
-from "p" if we want to find a wants_signal() thread, and ->curr_target can
-help to avoid this.
-
-> >> What do you think?
-> >
-> > The patch is technically wrong, a group-wide signal doesn't check all
-> > threads after this change.
-> If group is empty, we don't need to check other than t.
-
-I didn't meant the thread_group_empty() case. Please look at your code:
-
-
-	if (!group || thread_group_empty(p)) {
-		if (wants_signal(sig, t))
-			goto found;
-	} else {
-		while_each_thread(p, t) {
-			if (wants_signal(sig, t))
-				goto found;
-		}
-	}
-
-Suppose that group == T, thread_group_empty(p) == F. Suppose that all
-sub-threads except "p" blocked this signal. With this change "p" (and
-thus the whole thread group) won't be notified. IOW, with your change
-we do not check "p" at all. This is wrong.
-
-> > Rakib. It is not that I like ->curr_target very much. But let me repeat,
-> > if you want to remove this optimization you need to explain why it doesn't
-> > make sense. You claim that this "can make things better" without any
-> > argument.
-> >
-> Well, I had other way of looking at it and didn't find any real usages
-> of ->curr_target and got confused though the code comment in curr_target.
-
-The only user of ->curr_target is complete_signal(), you have found it.
-
-> > As for me - I simply do not know. This logic is very old, I am not even
-> > sure that the current usage of ->curr_signal matches the original intent.
-> > But it can obviously help in some cases, and you need to explain why we
-> > do not care.
-> >
-> Actually, this is exactly what i wanted to know. What is the purpose
-> of ->curr_signal, *do we really need it?* If I knew or seen any reason
-> I'd have never asked this question. You guys knows this domain better than
-> me, that's why I asked.
-
-I can only read the current code. I do not know the original intent.
-
-> > So I won't argue if you submit the technically correct patch, but you
-> > need to convince Andrew or Ingo to take it. I think the right change in
-> > complete_signal() is something like below. It can be even simpler and use
-> > the single do/while loop, but then we need to check "group" inside that
-> > loop. With the change below ->curr_target can be simply removed.
-> >
-> I'll try to make points to convince Andrew or Ingo, I'll try to show
-> up my points,
-> and the rest will be upon them.
->
-> And here's what i think about ->curr_target removal (as per my understanding):
->
->  a) ->curr_target is only might be useful in group wide case.
-
-Yes.
-
->  b) Usually signals are sent particularly to a thread
-
-Really?
-
-> so ->curr_signal
-> doesn't makes sense.
-
-Well. I do not know what else I can say ;)
-
->  c) If ->curr_signal pointed thread is killed, curr_signal points to
-> the next thread,
-> but nothing can make sure that it's a right pick.
-
-Yes (except a thread can't be killed), so what? Obviously, if ->curr_targer
-exits we should update this pointer. We could even nullify it.
-
->  d) also current in implementation p is checked twice.
-
-Yes, "p" can be checked twice. I don't think this is that bad, and I
-do not think this particular "problem" should be fixed.
-
->  e) One use case of ->curr_signal is, it always points to the lastly
-> created thread,
-> as it's a better candidate for want_signal cause newly created thread don't
-> usually have any signal pending.
-
-I simply can't understand. Why? I do not think so.
-
-> We can acheive the same without ->curr_signal
-> by traversing thread group from the lastly created thread.
-
-We certainly can't "achieve the same" this way, although I am not sure
-what this "the same" actually means.
-
-> So, this is what I think. Let me know if these reason's looks reasonable to you,
-
-No. Contrary, whatever I personally think about ->curr_signal, I feel
-that you do not understand the code you are trying to change. Sorry,
-I can be wrong. But I still do not see any argument.
-
-> cause before Ingo or Andrew taking it, it requires your ack.
-
-Not really. And of course I'll review the patch correctness-wise, and
-I already sent the change in complete_signal() which looks right to me.
-
-But I am not going to ack the behaviour change, simply because I have
-no idea how this can impact the existing applications. Perhaps nobody
-will notice this change, but we can't know this.
-
-Oleg.
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 2d30e2c..7106cb1 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -2173,11 +2173,12 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+ 		struct address_space *mapping2;
++		unsigned long flags;
+ 
+ 		if (!mapping)
+ 			return 1;
+ 
+-		spin_lock_irq(&mapping->tree_lock);
++		spin_lock_irqsave(&mapping->tree_lock, flags);
+ 		mapping2 = page_mapping(page);
+ 		if (mapping2) { /* Race with truncate? */
+ 			BUG_ON(mapping2 != mapping);
+@@ -2186,7 +2187,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 			radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 		}
+-		spin_unlock_irq(&mapping->tree_lock);
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 		if (mapping->host) {
+ 			/* !PageAnon && !swapper_space */
+ 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+-- 
+1.7.1
 
