@@ -1,103 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaBCSdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:33:54 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:41655 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaBCSdx (ORCPT
+	id S1753340AbaBCSfN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:35:13 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54652 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753092AbaBCSfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:33:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140203181144.GA29296@redhat.com>
-References: <a8356e46aed7213128e84a888170391adb6afe30.1391449825.git.luto@amacapital.net>
- <20140203181144.GA29296@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Feb 2014 10:33:32 -0800
-Message-ID: <CALCETrWAMR8Ba32Q830WccPfhTDWx9GtkU_7SyhSnT=m4rmKBQ@mail.gmail.com>
-Subject: Re: [PATCH] audit: Only use the syscall slowpath when syscall audit
- rules exist
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Feb 2014 13:35:10 -0500
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: [PATCH] [RFC] Support for creating generic host_bridge from device tree
+Date: Mon,  3 Feb 2014 18:33:47 +0000
+Message-Id: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 10:11 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/03, Andy Lutomirski wrote:
->>
->> @@ -911,6 +918,47 @@ static inline struct audit_context *audit_alloc_context(enum audit_state state)
->>       return context;
->>  }
->>
->> +void audit_inc_n_rules()
->> +{
->> +     struct task_struct *p, *g;
->> +
->> +     write_lock(&n_rules_lock);
->> +
->> +     if (audit_n_rules++ != 0)
->> +             goto out;  /* The overall state isn't changing. */
->> +
->> +     read_lock(&tasklist_lock);
->> +     do_each_thread(g, p) {
->> +             if (p->audit_context)
->> +                     set_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
->> +     } while_each_thread(g, p);
->> +     read_unlock(&tasklist_lock);
->
-> Cosmetic, but I'd suggest to use for_each_process_thread() instead
-> of do_each_thread/while_each_thread.
+Following the discussion started here [1], I now have a proposal for tackling
+generic support for host bridges described via device tree. It is an initial
+stab at it, to try to get feedback and suggestions, but it is functional enough
+that I have PCI Express for arm64 working on an FPGA using the patch that I am
+also publishing that adds support for PCI for that platform.
 
-I didn't notice that option :)
+Looking at the existing architectures that fit the requirements (use of device
+tree and PCI) yields the powerpc and microblaze as generic enough to make them
+candidates for conversion. I have a tentative patch for microblaze that I can
+only compile test it, unfortunately using qemu-microblaze leads to an early
+crash in the kernel.
 
->
-> And I am not sure why n_rules_lock is rwlock_t... OK, to make
-> audit_alloc() more scalable, I guess. Please see below.
->
+As Bjorn has mentioned in the previous discussion, the idea is to add to
+struct pci_host_bridge enough data to be able to reduce the size or remove the
+architecture specific pci_controller structure. arm64 support actually manages
+to get rid of all the architecture static data and has no pci_controller structure
+defined. For host bridge drivers that means a change of API unless architectures
+decide to provide a compatibility layer (comments here please).
 
-Yes.  I should probably also use the irqsave variant.
+In order to initialise a host bridge with the new API, the following example
+code is sufficient for a _probe() function:
 
->> @@ -942,8 +995,14 @@ int audit_alloc(struct task_struct *tsk)
->>       }
->>       context->filterkey = key;
->>
->> +     read_lock(&n_rules_lock);
->>       tsk->audit_context  = context;
->> -     set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
->> +     if (audit_n_rules)
->> +             set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
->> +     else
->> +             clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
->> +     read_unlock(&n_rules_lock);
->
-> Perhaps this is fine, but n_rules_lock can't prevent the race with
-> audit_inc/dec_n_rules(). The problem is, this is called before the
-> new task is visible to for_each_process_thread().
+static int myhostbridge_probe(struct platform_device *pdev)
+{
+	int err;
+	struct device_node *dev;
+	struct pci_host_bridge *bridge;
+	struct resource bus_range;
+	struct myhostbridge_port *pp;
+	LIST_HEAD(resources);
 
-Hmm.  I missed that.
+	dev = pdev->dev.of_node;
 
->
-> If we want to fix this race, we need something like audit_sync_flags()
-> called after copy_process() drops tasklist, or from tasklist_lock
-> protected section (in this case it doesn't need n_rules_lock).
->
-> Or perhaps audit_alloc() should not try to clear TIF_SYSCALL_AUDIT at all.
-> In both cases n_rules_lock can be spinlock_t.
+	if (!of_device_is_available(dev)) {
+		pr_warn("%s: disabled\n", dev->full_name);
+		return -ENODEV;
+	}
 
-Here are two options:
+	pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
+	if (!pp)
+		return -ENOMEM;
 
-1. Sync the flags inside tasklist_lock, as I think you're suggesting.
-This seems simple.
+	err = of_pci_parse_bus_range(dev, &bus_range);
+	if (err) {
+		bus_range.start = 0;
+		bus_range.end = 255;
+		bus_range.flags = IORESOURCE_BUS;
+	}
+	pci_add_resource(&resources, &bus_range);
 
-2. Make this whole thing lazy -- always set TIF_SYSCALL_AUDIT for new
-tasks, but clear it on the first syscall.
+	bridge = pci_host_bridge_of_init(&pdev->dev, 0, &myhostbridge_ops, pp, &resources);
+	if (!bridge) {
+		err = -EINVAL;
+		goto bridge_init_fail;
+	}
 
-I'm leaning toward number 1.
+	err = myhostbridge_setup(bridge->bus);
+	if (err)
+		goto bridge_init_fail;
 
-Thanks for the instant review!
+	/*
+	 * Add flags here, this is just an example
+	 */
+	pci_add_flags(PCI_ENABLE_PROC_DOMAINS | PCI_COMPAT_DOMAIN_0);
+	pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
 
---Andy
+	bus_range.end = pci_scan_child_bus(bridge->bus);
+	pci_bus_update_busn_res_end(bridge->bus, bus_range.end);
+
+	pci_assign_unassigned_bus_resources(bridge->bus);
+
+	pci_bus_add_devices(bridge->bus);
+
+	return 0;
+
+bridge_init_fail:
+	kfree(pp);
+	pci_free_resource_list(&resources);
+	return err;
+}
+
+Best regards,
+Liviu Dudau
+
+[1] http://thread.gmane.org/gmane.linux.kernel.pci/25946
+
+Liviu Dudau (1):
+  pci: Add support for creating a generic host_bridge from device tree
+
+ drivers/pci/host-bridge.c | 92 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/probe.c       | 11 ++++++
+ include/linux/pci.h       | 14 ++++++++
+ 3 files changed, 117 insertions(+)
+
+-- 
+1.8.5.3
+
