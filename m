@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaBCVbz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:31:55 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:64369 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289AbaBCVbs (ORCPT
+	id S1753876AbaBCVcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:32:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42393 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559AbaBCVcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:31:48 -0500
-From: Marc Carino <marc.ceeeee@gmail.com>
-To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: [PATCH v6 4/8] ARM: do CPU-specific init for Broadcom Brahma15 cores
-Date: Mon,  3 Feb 2014 13:30:37 -0800
-Message-Id: <1391463041-15241-5-git-send-email-marc.ceeeee@gmail.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
+	Mon, 3 Feb 2014 16:32:01 -0500
+Date: Mon, 3 Feb 2014 21:31:53 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140203213153.GZ10323@ZenIV.linux.org.uk>
+References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
+ <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+ <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+ <20140203211955.GY10323@ZenIV.linux.org.uk>
+ <20140203212447.GA4843@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203212447.GA4843@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perform any CPU-specific initialization required on the
-Broadcom Brahma-15 core.
+On Mon, Feb 03, 2014 at 01:24:47PM -0800, Christoph Hellwig wrote:
+> On Mon, Feb 03, 2014 at 09:19:55PM +0000, Al Viro wrote:
+> > Result *is* a function of inode alone; the problem with 9P is that we
+> > are caching FIDs in the wrong place.
+> 
+> I don't think that's true for CIFS unfortunately, which is path based.
 
-Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
----
- arch/arm/mm/proc-v7.S |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+Yes, and...?  CIFS also doesn't have hardlinks, so _there_ d_find_alias()
+is just fine.
 
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index bd17819..98ea423 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -193,6 +193,7 @@ __v7_cr7mp_setup:
- 	b	1f
- __v7_ca7mp_setup:
- __v7_ca15mp_setup:
-+__v7_b15mp_setup:
- 	mov	r10, #0
- 1:
- #ifdef CONFIG_SMP
-@@ -494,6 +495,16 @@ __v7_ca15mp_proc_info:
- 	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
- 
- 	/*
-+	 * Broadcom Corporation Brahma-B15 processor.
-+	 */
-+	.type	__v7_b15mp_proc_info, #object
-+__v7_b15mp_proc_info:
-+	.long	0x420f00f0
-+	.long	0xff0ffff0
-+	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
-+	.size	__v7_b15mp_proc_info, . - __v7_b15mp_proc_info
-+
-+	/*
- 	 * Qualcomm Inc. Krait processors.
- 	 */
- 	.type	__krait_proc_info, #object
--- 
-1.7.1
+9P is actually trickier; there we need some massage, but for CIFS it's
+literally a matter of one function call.
 
+The problem with 9P is that the way we do it right now, you might pick
+the wrong dentry.  _Some_ alias already bears the FID you are after,
+but if you end up picking the one that doesn't, you might very well
+end up being unable to obtain one either.
