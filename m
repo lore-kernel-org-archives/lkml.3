@@ -1,216 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaBCOfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:35:52 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:46323 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752350AbaBCOft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:35:49 -0500
-From: <srinivas.kandagatla@st.com>
-To: <linux-arm-kernel@lists.infradead.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel@stlinux.com>, Arnd Bergmann <arnd@arndb.de>,
-        <stephen.gallimore@st.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH v2 3/6] drivers: reset: Reset controller driver for STiH416
-Date: Mon, 3 Feb 2014 14:28:43 +0000
-Message-ID: <1391437723-12055-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1391437665-11913-1-git-send-email-srinivas.kandagatla@st.com>
+	id S1753169AbaBCOiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:38:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42491 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752320AbaBCOiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 09:38:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,772,1384329600"; 
+   d="scan'208";a="469052641"
+Message-ID: <52EFA9D3.1030601@linux.intel.com>
+Date: Mon, 03 Feb 2014 06:38:11 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.65.51.147]
+To: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
+        Preeti Murthy <preeti.lkml@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
+ rq
+References: <52EA7D8A.6080604@linaro.org> <20140130163501.GG5002@laptop.programming.kicks-ass.net> <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com> <52EBC33A.6080101@linaro.org> <52EBC645.2040607@linux.intel.com> <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr> <20140203125441.GD19029@e103034-lin>
+In-Reply-To: <20140203125441.GD19029@e103034-lin>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Gallimore <stephen.gallimore@st.com>
+On 2/3/2014 4:54 AM, Morten Rasmussen wrote:
 
-This patch adds a reset controller platform driver for the STiH416
-SoC. This initial version provides a compatible driver for the
-"st,stih416-powerdown" device, which registers a system configuration
-register based reset controller that controls the powerdown state of
-hardware such as the on-chip USB host controllers.
+>
+> I'm therefore not convinced that idle state index is the right thing to
+> give the scheduler. Using a cost metric would be better in my
+> opinion.
 
-Signed-off-by: Stephen Gallimore <stephen.gallimore@st.com>
----
- arch/arm/boot/dts/stih416.dtsi                     |    6 ++
- drivers/reset/sti/Kconfig                          |    4 +
- drivers/reset/sti/Makefile                         |    2 +-
- drivers/reset/sti/reset-stih416.c                  |   79 ++++++++++++++++++++
- .../dt-bindings/reset-controller/stih416-resets.h  |   21 ++++++
- 5 files changed, 111 insertions(+), 1 deletion(-)
- create mode 100644 drivers/reset/sti/reset-stih416.c
- create mode 100644 include/dt-bindings/reset-controller/stih416-resets.h
 
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index b7ab47b..e5bec66 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -10,6 +10,7 @@
- #include "stih416-clock.dtsi"
- #include "stih416-pinctrl.dtsi"
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/reset-controller/stih416-resets.h>
- / {
- 	L2: cache-controller {
- 		compatible = "arm,pl310-cache";
-@@ -27,6 +28,11 @@
- 		ranges;
- 		compatible	= "simple-bus";
- 
-+		powerdown: powerdown-controller {
-+			#reset-cells = <1>;
-+			compatible = "st,stih416-powerdown";
-+		};
-+
- 		syscfg_sbc:sbc-syscfg@fe600000{
- 			compatible	= "st,stih416-sbc-syscfg", "syscon";
- 			reg		= <0xfe600000 0x1000>;
-diff --git a/drivers/reset/sti/Kconfig b/drivers/reset/sti/Kconfig
-index ef6654a..88d2d03 100644
---- a/drivers/reset/sti/Kconfig
-+++ b/drivers/reset/sti/Kconfig
-@@ -8,4 +8,8 @@ config STIH415_RESET
- 	bool
- 	select STI_RESET_SYSCFG
- 
-+config STIH416_RESET
-+	bool
-+	select STI_RESET_SYSCFG
-+
- endif
-diff --git a/drivers/reset/sti/Makefile b/drivers/reset/sti/Makefile
-index fce4433..be1c976 100644
---- a/drivers/reset/sti/Makefile
-+++ b/drivers/reset/sti/Makefile
-@@ -1,4 +1,4 @@
- obj-$(CONFIG_STI_RESET_SYSCFG) += reset-syscfg.o
- 
--# SoC specific reset devices
- obj-$(CONFIG_STIH415_RESET) += reset-stih415.o
-+obj-$(CONFIG_STIH416_RESET) += reset-stih416.o
-diff --git a/drivers/reset/sti/reset-stih416.c b/drivers/reset/sti/reset-stih416.c
-new file mode 100644
-index 0000000..0becfc5
---- /dev/null
-+++ b/drivers/reset/sti/reset-stih416.c
-@@ -0,0 +1,79 @@
-+/*
-+ * Copyright (C) 2013 STMicroelectronics (R&D) Limited
-+ * Author: Stephen Gallimore <stephen.gallimore@st.com>
-+ * Author: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+
-+#include <dt-bindings/reset-controller/stih416-resets.h>
-+
-+#include "reset-syscfg.h"
-+
-+/*
-+ * STiH416 Peripheral powerdown definitions.
-+ */
-+static const char stih416_front[] = "st,stih416-front-syscfg";
-+static const char stih416_rear[] = "st,stih416-rear-syscfg";
-+static const char stih416_sbc[] = "st,stih416-sbc-syscfg";
-+static const char stih416_lpm[] = "st,stih416-lpm-syscfg";
-+
-+#define STIH416_PDN_FRONT(_bit) \
-+	_SYSCFG_RST_CH(stih416_front, SYSCFG_1500, _bit, SYSSTAT_1578, _bit)
-+
-+#define STIH416_PDN_REAR(_cntl, _stat) \
-+	_SYSCFG_RST_CH(stih416_rear, SYSCFG_2525, _cntl, SYSSTAT_2583, _stat)
-+
-+#define SYSCFG_1500	0x7d0 /* Powerdown request EMI/NAND/Keyscan */
-+#define SYSSTAT_1578	0x908 /* Powerdown status EMI/NAND/Keyscan */
-+
-+#define SYSCFG_2525	0x834 /* Powerdown request USB/SATA/PCIe */
-+#define SYSSTAT_2583	0x91c /* Powerdown status USB/SATA/PCIe */
-+
-+static const struct syscfg_reset_channel_data stih416_powerdowns[] = {
-+	[STIH416_EMISS_POWERDOWN]	= STIH416_PDN_FRONT(0),
-+	[STIH416_NAND_POWERDOWN]	= STIH416_PDN_FRONT(1),
-+	[STIH416_KEYSCAN_POWERDOWN]	= STIH416_PDN_FRONT(2),
-+	[STIH416_USB0_POWERDOWN]	= STIH416_PDN_REAR(0, 0),
-+	[STIH416_USB1_POWERDOWN]	= STIH416_PDN_REAR(1, 1),
-+	[STIH416_USB2_POWERDOWN]	= STIH416_PDN_REAR(2, 2),
-+	[STIH416_USB3_POWERDOWN]	= STIH416_PDN_REAR(6, 5),
-+	[STIH416_SATA0_POWERDOWN]	= STIH416_PDN_REAR(3, 3),
-+	[STIH416_SATA1_POWERDOWN]	= STIH416_PDN_REAR(4, 4),
-+	[STIH416_PCIE0_POWERDOWN]	= STIH416_PDN_REAR(7, 9),
-+	[STIH416_PCIE1_POWERDOWN]	= STIH416_PDN_REAR(5, 8),
-+};
-+
-+static struct syscfg_reset_controller_data stih416_powerdown_controller = {
-+	.wait_for_ack	= true,
-+	.nr_channels	= ARRAY_SIZE(stih416_powerdowns),
-+	.channels	= stih416_powerdowns,
-+};
-+
-+static struct of_device_id stih416_reset_match[] = {
-+	{ .compatible = "st,stih416-powerdown",
-+	  .data = &stih416_powerdown_controller, },
-+	{},
-+};
-+
-+static struct platform_driver stih416_reset_driver = {
-+	.probe = syscfg_reset_probe,
-+	.driver = {
-+		.name = "reset-stih416",
-+		.owner = THIS_MODULE,
-+		.of_match_table = stih416_reset_match,
-+	},
-+};
-+
-+static int __init stih416_reset_init(void)
-+{
-+	return platform_driver_register(&stih416_reset_driver);
-+}
-+arch_initcall(stih416_reset_init);
-diff --git a/include/dt-bindings/reset-controller/stih416-resets.h b/include/dt-bindings/reset-controller/stih416-resets.h
-new file mode 100644
-index 0000000..d7da55f
---- /dev/null
-+++ b/include/dt-bindings/reset-controller/stih416-resets.h
-@@ -0,0 +1,21 @@
-+/*
-+ * This header provides constants for the reset controller
-+ * based peripheral powerdown requests on the STMicroelectronics
-+ * STiH416 SoC.
-+ */
-+#ifndef _DT_BINDINGS_RESET_CONTROLLER_STIH416
-+#define _DT_BINDINGS_RESET_CONTROLLER_STIH416
-+
-+#define STIH416_EMISS_POWERDOWN		0
-+#define STIH416_NAND_POWERDOWN		1
-+#define STIH416_KEYSCAN_POWERDOWN	2
-+#define STIH416_USB0_POWERDOWN		3
-+#define STIH416_USB1_POWERDOWN		4
-+#define STIH416_USB2_POWERDOWN		5
-+#define STIH416_USB3_POWERDOWN		6
-+#define STIH416_SATA0_POWERDOWN		7
-+#define STIH416_SATA1_POWERDOWN		8
-+#define STIH416_PCIE0_POWERDOWN		9
-+#define STIH416_PCIE1_POWERDOWN		10
-+
-+#endif /* _DT_BINDINGS_RESET_CONTROLLER_STIH416 */
--- 
-1.7.9.5
+I totally agree with this, and we may need two separate cost metrics
+
+1) A latency driven one
+2) A performance impact on
+
+first one is pretty much the exit latency related time, sort of a "expected time to first instruction"
+(currently menuidle has the 99.999% worst case number, which is not useful for this, but is a first
+approximation). This is obviously the dominating number for expected-short running tasks
+
+second on is more of a "is there any cache/TLB left or is it flushed" kind of metric. It's more tricky
+to compute, since what is the cost of an empty cache (or even a cache migration) after all....
+.... but I suspect it's in part what the scheduler will care about more for expected-long  running tasks.
+
+
+
 
