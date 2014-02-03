@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaBCLEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:04:30 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58413 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaBCLE2 (ORCPT
+	id S1751844AbaBCLLO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:11:14 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44098 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBCLLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:04:28 -0500
-Date: Mon, 3 Feb 2014 03:04:26 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: akpm@linux-foundation.org, mhocko@suse.cz, penberg@kernel.org,
-        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 1/8] memcg: export kmemcg cache id via cgroup fs
-In-Reply-To: <52EF3DBF.3000404@parallels.com>
-Message-ID: <alpine.DEB.2.02.1402030250110.31061@chino.kir.corp.google.com>
-References: <cover.1391356789.git.vdavydov@parallels.com> <570a97e4dfaded0939a9ddbea49055019dcc5803.1391356789.git.vdavydov@parallels.com> <alpine.DEB.2.02.1402022219101.10847@chino.kir.corp.google.com> <52EF3DBF.3000404@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 3 Feb 2014 06:11:12 -0500
+Date: Mon, 3 Feb 2014 11:10:40 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Pavel Roskin <proski@gnu.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: serial8250: bogus low_latency destabilizes kernel, need sanity
+ check
+Message-ID: <20140203111040.4cafe560@alan.etchedpixels.co.uk>
+In-Reply-To: <52ED0E0F.5050300@hurleysoftware.com>
+References: <20140113193547.47b7a646@IRBT4585>
+	<20140114120811.648571ea@alan.etchedpixels.co.uk>
+	<20140114112457.q54ujbz9c444s040-cebfxv@webmail.spamcop.net>
+	<52ED0E0F.5050300@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Feb 2014, Vladimir Davydov wrote:
+On Sat, 01 Feb 2014 10:09:03 -0500
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-> AFAIU, cgroup identifiers dumped on oom (cgroup paths, currently) and
-> memcg slab cache names serve for different purposes.
-
-Sure, you may dump the name for a number of legitimate reasons, but the 
-problem still exists that it's difficult to determine what memcg is being 
-referenced without a flat hierarchy and unique memcg names for all 
-children.
-
-> The point is oom is
-> a perfectly normal situation for the kernel, and info dumped to dmesg is
-> for admin to find out the cause of the problem (a greedy user or
-> cgroup).
-
-Hmm, so if we hand out top-level memcgs to individual jobs or users, like 
-our userspace does, and they are able to configure their child memcgs as 
-they wish, and then they or the admin finds in the kernel log that a 
-memory hog was killed from the memcg with the perfectly anonymous memcg 
-name of "memcg", how do we determine what job or user triggered that kill?  
-User id is not going to be conclusive in a production environment with 
-shared user accounts.
-
-> On the other hand, slab cache names are dumped to dmesg only on
-> extraordinary situations - like bugs in slab implementation, or double
-> free, or detected memory leaks - where we usually do not need the name
-> of the memcg that triggered the problem, because the bug is likely to be
-> in the kernel subsys using the cache.
-
-There's certainly overlap here since slab leaks triggered by a particular 
-workload, perhaps by usage of a particular syscall, can occur and cause 
-oom killing but the problem remains that neither the memcg name nor the 
-slab cache name may be conclusive to determine what job or user triggered 
-the issue.  That's why we make strict demands that memcg names are always 
-unique and encode several key values to identify the user and job and we 
-don't rely on the parent.
-
-I can also see the huge maintenance burden it would be to keep around a 
-mapping of kmem ids to {user, job} pairs just in case we later identify a 
-problem and in 99% of the cases would be just wasted storage.
-
-> Plus, the names are exported to
-> sysfs in case of slub, again for debugging purposes, AFAIK. So IMO the
-> use cases for oom vs slab names are completely different - information
-> vs debugging - and I want to export kmem.id only for the ability of
-> debugging kmemcg and slab subsystems.
+> On 01/14/2014 11:24 AM, Pavel Roskin wrote:
+> > Hi Alan,
+> >
+> > Quoting One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>:
+> >
+> >>> Maybe we should unset the low_latency flag as soon as DMA fails?  There
+> >>> are two flags, one is state->uart_port->flags and the other is
+> >>> port->low_latency.  I guess we need to unset both.
+> >>
+> >> Well low latency and DMA are pretty much exclusive in the real world so
+> >> probably DMA ports shouldn't allow low_latency to be set at all in DMA
+> >> mode.
+> >
+> > That's a useful insight.  I assumed exactly the opposite.
 > 
+> The meaning of low_latency has migrated since 2.6.28
 
-Eeek, I'm not sure I agree.  I've often found that reproducing rare slab 
-issues is very difficult without knowledge of the workload so that I can 
-reproduce it.  Whereas X is a very large number of machines and we see 
-this issue on 0.0001% of X machines, I would be required to enable this 
-"debugging" aid unconditionally to ever be able to map the stored kmem id 
-back to a user and job, that mapping would be extremely costly to 
-maintain, and we've gained nothing if we had already demanded that 
-userspace identify their memcg names with unique identifiers regardless of 
-where they are in the hierarchy.
+Not really. The meaning of low latency was always "get the turn around
+time for command/response protocols down as low as possible". DMA driven
+serial usually reports a transfer completion on a watermark or a timeout,
+so tends to work very badly within the Linux definition of 'low latency'
+for tty.
+
+What it does has certainly changed but thats implementation detail.
+ 
+> Perhaps we should unconditionally unset low_latency (or remove it entirely).
+> Real low latency can be addressed by using the -RT kernel.
+
+Just saying "use -RT" would be a regression and actually hurt quite a few
+annoying "simple protocol" using tools for all sorts of control systems.
+We are talking about milliseconds not microseconds here.
+
+The expected behaviour in low_latency is probably best described as
+
+data arrives
+processed
+wakeup
+
+and to avoid the case of
+
+data arrives
+queued for back end
+[up to 10mS delay, but typically 1-2mS]
+processed
+wakeup
+
+
+which multipled over a 50,000 S record download is a lot of time
+
+Everything else is not user visible so can be changed freely to get that
+assumption to work (including ending up not needing it in the first
+place).
+
+Getting tty to the point everything but N_TTY canonical mode is a fast
+path would probably eliminate the need nicely - I don't know of any use
+cases that expect ICANON, ECHO or I*/O* processing for low latency.
+
