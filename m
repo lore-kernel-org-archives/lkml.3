@@ -1,107 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364AbaBCQwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:52:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36307 "EHLO mx2.suse.de"
+	id S1753207AbaBCQzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:55:10 -0500
+Received: from sh.osrg.net ([192.16.179.4]:59543 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173AbaBCQwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:52:17 -0500
-Message-ID: <52EFC93D.3030106@suse.cz>
-Date: Mon, 03 Feb 2014 17:52:13 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>, Holger Kiehl <Holger.Kiehl@dwd.de>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org
-Subject: Re: Need help in bug in isolate_migratepages_range
-References: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de> <20140203122052.GC2495@dhcp22.suse.cz> <alpine.LRH.2.02.1402031426510.13382@diagnostix.dwd.de> <20140203162036.GJ2495@dhcp22.suse.cz>
-In-Reply-To: <20140203162036.GJ2495@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752160AbaBCQzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:55:05 -0500
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-nilfs <linux-nilfs@vger.kernel.org>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [PATCH 1/4] nilfs2: update MAINTAINERS file entries
+Date: Tue,  4 Feb 2014 01:50:41 +0900
+Message-Id: <1391446244-1435-2-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: git-send-email 1.7.9.3
+In-Reply-To: <1391446244-1435-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+References: <1391446244-1435-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Dispatcher: imput version 20100215(IM150)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (sh.osrg.net [192.16.179.4]); Tue, 04 Feb 2014 01:55:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 05:20 PM, Michal Hocko wrote:
-> On Mon 03-02-14 14:29:22, Holger Kiehl wrote:
->> I have attached it. Please, tell me if you do not get the attachment.
->
-> I hoped it would help me to get a closer compiled code to yours but I am
-> probably using too different gcc.
-> Anyway I've tried to check whether I can hook on something and it seems
-> that this is a race with thp merge/split or something like that.
->
-> [...]
->>>>    Jan 31 13:07:43 asterix kernel: BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
->>>>    Jan 31 13:07:43 asterix kernel: IP: [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
->>>>    Jan 31 13:07:43 asterix kernel: PGD 7d3074067 PUD 7d3073067 PMD 0
->>>>    Jan 31 13:07:43 asterix kernel: Oops: 0000 [#1] SMP
->>>>    Jan 31 13:07:43 asterix kernel: Modules linked in: drbd lru_cache coretemp ipmi_devintf bonding nf_conntrack_ftp binfmt_misc usbhid i2c_i801 sg ehci_pci i2c_core ehci_hcd uhci_hcd i5000_edac i5k_amb ipmi_si ipmi_msghandler usbcore usb_common [last unloaded: microcode]
->>>>    Jan 31 13:07:43 asterix kernel: CPU: 5 PID: 14164 Comm: java Not tainted 3.12.9 #1
->>>>    Jan 31 13:07:43 asterix kernel: Hardware name: FUJITSU SIEMENS PRIMERGY RX300 S4             /D2519, BIOS 4.06  Rev. 1.04.2519             07/30/2008
->>>>    Jan 31 13:07:43 asterix kernel: task: ffff8807d30b08c0 ti: ffff8807d30b2000 task.ti: ffff8807d30b2000
->>>>    Jan 31 13:07:43 asterix kernel: RIP: 0010:[<ffffffff810af0ac>]  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
->>>>    Jan 31 13:07:43 asterix kernel: RSP: 0000:ffff8807d30b3928  EFLAGS: 00010286
->>>>    Jan 31 13:07:43 asterix kernel: RAX: 0000000000000000 RBX: 000000000020ec09 RCX: 0000000000000002
->>>>    Jan 31 13:07:43 asterix kernel: RDX: 2c00000000008000 RSI: 0000000000000004 RDI: 000000000000006c
->>>>    Jan 31 13:07:43 asterix kernel: RBP: ffff8807d30b39f8 R08: ffff88083fbde390 R09: 0000000000000001
->>>>    Jan 31 13:07:43 asterix kernel: R10: 0000000000000000 R11: ffffea000733a000 R12: ffff8807d30b3a58
->>>>    Jan 31 13:07:43 asterix kernel: R13: ffffea000733a1f8 R14: 0000000000000000 R15: ffff88083ffe1d80
->>>>    Jan 31 13:07:43 asterix kernel: FS:  00007f9d9e72f910(0000) GS:ffff88083fd40000(0000) knlGS:0000000000000000
->>>>    Jan 31 13:07:43 asterix kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>>>    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c CR3: 00000007d3070000 CR4: 00000000000407e0
->>>>    Jan 31 13:07:43 asterix kernel: Stack:
->>>>    Jan 31 13:07:43 asterix kernel: 0000000000000009 ffff88083ffe16c0 ffffea00002e6af0 ffff8807d30b3998
->>>>    Jan 31 13:07:43 asterix kernel: ffff8807d30b2010 00ff8807d30b08c0 ffff8807d30b08c0 000000000020f000
->>>>    Jan 31 13:07:43 asterix kernel: 0000000000000000 000000000000083b 000000000000000a ffff8807d30b3a68
->>>>    Jan 31 13:07:43 asterix kernel: Call Trace:
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810a161f>] ? lru_add_drain_cpu+0x25/0x97
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810af687>] compact_zone+0x2b5/0x319
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810da586>] ? put_super+0x20/0x2c
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810afa4d>] compact_zone_order+0xad/0xc4
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810afaf5>] try_to_compact_pages+0x91/0xe8
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff8109b92d>] ? page_alloc_cpu_notify+0x3e/0x3e
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff8109da34>] __alloc_pages_direct_compact+0xae/0x195
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff8109e45d>] __alloc_pages_nodemask+0x772/0x7b5
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810c85a3>] alloc_pages_vma+0xd6/0x101
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810d47e3>] do_huge_pmd_anonymous_page+0x199/0x2ee
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810b3884>] handle_mm_fault+0x1b7/0xceb
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff8105dedc>] ? __dequeue_entity+0x2e/0x33
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8c3>] __do_page_fault+0x3bd/0x3e4
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810bbe1a>] ? mprotect_fixup+0x1c9/0x1fb
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810aa0f0>] ? vm_mmap_pgoff+0x6d/0x8f
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff810795f5>] ? SyS_futex+0x103/0x13d
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8f3>] do_page_fault+0x9/0xb
->>>>    Jan 31 13:07:43 asterix kernel: [<ffffffff813d3672>] page_fault+0x22/0x30
->>>>    Jan 31 13:07:43 asterix kernel: Code: 00 41 f7 45 00 ff ff ff 01 0f 85 43 02 00 00 41 8b 45 18 85 c0 0f 89 37 02 00 00 49 8b 55 00 4c 89 e8 66 85 d2 79 04 49 8b 45 30 <8b> 40 1c 83 f8 01 0f 85 1b 02 00 00 49 8b 55 08 30 c0 48 85 d2
->>>>    Jan 31 13:07:43 asterix kernel: RIP  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
->>>>    Jan 31 13:07:43 asterix kernel: RSP <ffff8807d30b3928>
->>>>    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c
->>>>    Jan 31 13:07:43 asterix kernel: ---[ end trace fba75c5b0b9175ea ]---
->
-> This seems to match:
->     17027:       49 8b 17                mov    (%r15),%rdx	# page->flags
->     1702a:       4c 89 f8                mov    %r15,%rax
->     1702d:       80 e6 80                and    $0x80,%dh	# PageTail test
->     17030:       74 04                   je     17036 <isolate_migratepages_range+0x2bf>
->     17032:       49 8b 47 30             mov    0x30(%r15),%rax	# page = page->first_page
->     17036:       8b 40 1c                mov    0x1c(%rax),%eax	<<< page->_count
->     17039:       ff c8                   dec    %eax
->
-> Which seems to be inlined compound_head. DH is 0x80 so this is a tail
-> page. This would suggest that tail page doesn't have firs_pages set up
-> properly and it contains NULL.
+Update git repository entry of nilfs2 file system and maintainer's
+email description.
 
-It seems to come from balloon_page_movable() and its test 
-page_count(page) == 1.
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+---
+ MAINTAINERS |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> But maybe I've just matched the code incorrectly. Could you try to
-> disassemble your vmlinux a send the generated code, please?
->
-> Something like
-> objdump -d vmlinux > vmlinux.dis
-> and cut out isolate_migratepages_range function. Or simply upload your
-> vmlinux.dis somewhere so that we can download it.
->
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b2cf5cf..342caaa 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6085,10 +6085,10 @@ F:	include/uapi/linux/nfs*
+ F:	include/uapi/linux/sunrpc/
+ 
+ NILFS2 FILESYSTEM
+-M:	KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
++M:	Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+ L:	linux-nilfs@vger.kernel.org
+ W:	http://www.nilfs.org/en/
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git
++T:	git git://github.com/konis/nilfs2.git
+ S:	Supported
+ F:	Documentation/filesystems/nilfs2.txt
+ F:	fs/nilfs2/
+-- 
+1.7.9.3
 
