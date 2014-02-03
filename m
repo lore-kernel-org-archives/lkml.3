@@ -1,116 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaBCLNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:13:48 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:20110 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752415AbaBCLNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:13:45 -0500
+	id S1752746AbaBCLOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:14:33 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:15035 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344AbaBCLOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:14:31 -0500
 X-IronPort-AV: E=Sophos;i="4.95,771,1384300800"; 
-   d="scan'208";a="99161694"
-Date: Mon, 3 Feb 2014 11:13:35 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        Julien Grall <julien.grall@linaro.org>,
+   d="scan'208";a="97230513"
+Message-ID: <1391426067.10515.54.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH] arm: document "mach-virt" platform.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Christopher Covington <cov@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <jonathan.davies@citrix.com>, <wei.liu2@citrix.com>,
-        <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [PATCH v6] xen/grant-table: Avoid m2p_override during
- mapping
-In-Reply-To: <52EF7618.7030402@citrix.com>
-Message-ID: <alpine.DEB.2.02.1402031103070.4373@kaball.uk.xensource.com>
-References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401232333280.15917@kaball.uk.xensource.com> <52EE1E26.2040308@linaro.org> <52EE93F0.1020508@citrix.com> <52EF7618.7030402@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, "Rob Herring" <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, "Olof Johansson" <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Mon, 3 Feb 2014 11:14:27 +0000
+In-Reply-To: <20140203045638.GB4167@cbox>
+References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
+	 <52EA83D6.9050506@codeaurora.org> <20140203045638.GB4167@cbox>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="1342847746-1122221688-1391425897=:4373"
-Content-ID: <alpine.DEB.2.02.1402031111440.4373@kaball.uk.xensource.com>
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
 X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1342847746-1122221688-1391425897=:4373
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Content-ID: <alpine.DEB.2.02.1402031111441.4373@kaball.uk.xensource.com>
+On Sun, 2014-02-02 at 20:56 -0800, Christoffer Dall wrote:
+> On Thu, Jan 30, 2014 at 11:54:46AM -0500, Christopher Covington wrote:
+> > Hi Ian,
+> > 
+> > On 01/30/2014 11:11 AM, Ian Campbell wrote:
+> > > mach-virt has existed for a while but it is not written down what it actually
+> > > consists of. Although it seems a bit unusual to document a binding for an
+> > > entire platform since mach-virt is entirely virtual it is helpful to have
+> > > something to refer to in the absence of a single concrete implementation.
+> > > 
+> > > I've done my best to capture the requirements based on the git log and my
+> > > memory/understanding.
+> > > 
+> > > While here remove the xenvm dts example, the Xen tools will now build a
+> > > suitable mach-virt compatible dts when launching the guest.
+> > 
+> 
+> [...]
+> 
+> > > +The platform may also provide hypervisor specific functionality
+> > > +(e.g. PV I/O), if it does so then this functionality must be
+> > > +discoverable (directly or indirectly) via device tree.
+> > 
+> > I think it would be informative to provide pointers here to commonly used
+> > paravirtualized devices, especially VirtIO PCI/MMIO.
+> > 
+> 
+> I disagree: that would only encourage limited testing or assumptions
+> about these specific devices when really this platform is just a
+> bare-bones platform driven by device tree which should make no
+> preference, whatsoever, about which devices are used with the platform.
 
-On Mon, 3 Feb 2014, David Vrabel wrote:
-> On 02/02/14 18:52, Zoltan Kiss wrote:
-> > On 02/02/14 11:29, Julien Grall wrote:
-> >> Hello,
-> >>
-> >> This patch is breaking Linux compilation on ARM:
-> >>
-> >> drivers/xen/grant-table.c: In function =E2=80=98__gnttab_map_refs=E2=
-=80=99:
-> >> drivers/xen/grant-table.c:989:3: error: implicit declaration of
-> >> function =E2=80=98FOREIGN_FRAME=E2=80=99 [-Werror=3Dimplicit-function-=
-declaration]
-> >>     if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
-> >>     ^
-> >> drivers/xen/grant-table.c: In function =E2=80=98__gnttab_unmap_refs=E2=
-=80=99:
-> >> drivers/xen/grant-table.c:1054:3: error: implicit declaration of
-> >> function =E2=80=98get_phys_to_machine=E2=80=99 [-Werror=3Dimplicit-fun=
-ction-declaration]
-> >>     mfn =3D get_phys_to_machine(pfn);
-> >>     ^
-> >> drivers/xen/grant-table.c:1055:43: error: =E2=80=98FOREIGN_FRAME_BIT=
-=E2=80=99
-> >> undeclared (first use in this function)
-> >>     if (mfn =3D=3D INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
-> >>                                             ^
-> >> drivers/xen/grant-table.c:1055:43: note: each undeclared identifier is
-> >> reported only once for each function it appears in
-> >> drivers/xen/grant-table.c:1068:9: error: too many arguments to
-> >> function =E2=80=98m2p_remove_override=E2=80=99
-> >>           mfn);
-> >>           ^
-> >> In file included from include/xen/page.h:4:0,
-> >>                   from drivers/xen/grant-table.c:48:
-> >> /local/home/julien/works/midway/linux/arch/arm/include/asm/xen/page.h:=
-106:19:
-> >> note: declared here
-> >>   static inline int m2p_remove_override(struct page *page, bool
-> >> clear_pte)
-> >>                     ^
-> >> cc1: some warnings being treated as errors
-> >=20
-> > Hi,
-> >=20
-> > That's bad indeed. I think the best solution is to put those parts
-> > behind an #ifdef x86. The ones moved from x86/p2m.c to grant-table.c.
-> > David, Stefano, what do you think?
->=20
-> I don't think we want (more) #ifdef CONFIG_X86 in grant-table.c and the
-> arch-specific bits will have to factored out into their own functions
-> with suitable stubs provided for ARM.
+Thanks, I think this is exactly what I was failing to express coherently
+last week ;-)
 
-We certainly don't want more ifdefs like that.
+Ian.
 
-
-> But, this patch went in late and it's clearly not ready. So I think it
-> should be reverted and we should aim to get it sorted out for 3.15.
->=20
-> Konrad/Stefano (if you agree) please revert
-> 08ece5bb2312b4510b161a6ef6682f37f4eac8a1 and send a pull request.
-
-Unfortunately I have to agree: fixing the prototype of
-m2p_remove_override and replacing get_phys_to_machine with pfn_to_mfn is
-easy.
-However FOREIGN_FRAME is an x86-ism and I don't feel confortable with
-adding yet another #define under arch/arm/xen just to deal with x86
-stuff that spill on common code.
-
-Sorry for not spotting this earlier.
-
-
-> Konrad, I also think you should look at adding an ARM build to your test
-> system (I thought you had this already).
-
-Let's talk about how to set it up offline.
---1342847746-1122221688-1391425897=:4373--
