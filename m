@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaBCWo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:44:57 -0500
-Received: from imap.thunk.org ([74.207.234.97]:53882 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160AbaBCWo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:44:56 -0500
-Date: Mon, 3 Feb 2014 17:44:38 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
-        blogic@openwrt.org, andrewmcgr@gmail.com, smueller@chronox.de,
-        Geert Uytterhoeven <geert@linux-m68k.org>, tg@mirbsd.de
-Subject: Re: [PATCH,RFC] random: collect cpu randomness
-Message-ID: <20140203224438.GD22856@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"Maciej W. Rozycki" <macro@linux-mips.org>,
-	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
-	blogic@openwrt.org, andrewmcgr@gmail.com, smueller@chronox.de,
-	Geert Uytterhoeven <geert@linux-m68k.org>, tg@mirbsd.de
-References: <20140202203617.GA9499@logfs.org>
- <20140203155042.GD9499@logfs.org>
- <20140203163729.GA13634@thunk.org>
- <alpine.LFD.2.10.1402032149530.3940@eddie.linux-mips.org>
+	id S1753191AbaBCWrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:47:17 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:33436 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaBCWrQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 17:47:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.10.1402032149530.3940@eddie.linux-mips.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
+References: <1391452183-2160-1-git-send-email-bp@alien8.de>
+	<alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
+Date: Mon, 3 Feb 2014 14:47:15 -0800
+X-Google-Sender-Auth: A4vnsRqVOg9LRyoiUKQSjHNBjto
+Message-ID: <CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
+Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
+        Borislav Petkov <bp@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 09:54:22PM +0000, Maciej W. Rozycki wrote:
-> 
->  Can we be sure we don't leak information this way?  Just being 
-> paranoid...
+On Mon, Feb 3, 2014 at 2:00 PM, David Rientjes <rientjes@google.com> wrote:
+>
+> How do you define "huge bloat" if the size of vmlinux doesn't increase?
 
-The register information will be mixed pretty thoroughly by the time
-it gets to the entropy pool, and then we don't ever expose the entropy
-pool to userspace.  So no, I don't think we need to worry about
-leaking information.
+Don't be silly. The size of all the object files increase *hugely*.
 
-					- Ted
+This is my fs/builtin.o in my normal config:
+
+  -rw-rw-r--. 1 torvalds torvalds  2838613 Feb  3 14:32 fs/built-in.o
+
+and with the *reduced* debug info, ie .config diff as follows:
+
+  +CONFIG_DEBUG_INFO=y
+  +CONFIG_DEBUG_INFO_REDUCED=y
+
+I get this:
+
+  -rw-rw-r--. 1 torvalds torvalds 11793317 Feb  3 14:33 fs/built-in.o
+
+iow, that "reduced" debug info is still more than 4x bigger than a
+non-debug-info kernel.
+
+David, if you don't think that debug-info bloats the build, you're in
+huge *huge* denial. CONFIG_DEBUG_INFO (even with the "reduced" thing)
+is ABSOLUTELY HORRIBLE CRAP.
+
+> Would some people consider that to be acceptable but now mysteriously
+> confused because we don't know what "huge bloat" you're referring to?
+
+That >4x size increase doesn't match your idea of "huge bloat"?
+
+The object files being much bigger really does screw you especially on
+laptops that often have less memory and less capable IO subsystems.
+The final links in particular tend to be much bigger and use much more
+memory.
+
+I suspect a lot of people are in denial about just how *horrible* the
+overhead of debug builds are. And yeah, if you have oodles of memory
+to cache things, it's not too bad. But you really want to have *lots*
+of memory, because otherwise you won't be caching all those object
+files in RAM, and your build easily becomes IO bound at link time. A
+factor of four size difference will not be helping your poor slow
+laptop disk..
+
+                      Linus
