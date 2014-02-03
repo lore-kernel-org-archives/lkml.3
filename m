@@ -1,47 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaBCVhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:37:16 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:51075 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714AbaBCVhE (ORCPT
+	id S1753886AbaBCViW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:38:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46764 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395AbaBCViU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:37:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140203213153.GZ10323@ZenIV.linux.org.uk>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
-	<1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
-	<CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
-	<20140130075421.GA10050@infradead.org>
-	<CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
-	<20140203102943.GF11829@infradead.org>
-	<CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
-	<20140203211955.GY10323@ZenIV.linux.org.uk>
-	<20140203212447.GA4843@infradead.org>
-	<20140203213153.GZ10323@ZenIV.linux.org.uk>
-Date: Mon, 3 Feb 2014 13:37:03 -0800
-X-Google-Sender-Auth: JdUo1nTB8lvcvw9JvYQYMKa1JEs
-Message-ID: <CA+55aFwsZtgsgirO0LJu4D1ZqQkgLBZcMk_w_7BTHeysz==gEw@mail.gmail.com>
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>, zheng.z.yan@intel.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Feb 2014 16:38:20 -0500
+Date: Mon, 3 Feb 2014 13:38:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-nilfs <linux-nilfs@vger.kernel.org>,
+        Andreas Rohner <andreas.rohner@gmx.net>
+Subject: Re: [PATCH 3/4] nilfs2: add nilfs_sufile_set_suinfo to update
+ segment usage
+Message-Id: <20140203133818.5b78761c08846f2d1216b6e2@linux-foundation.org>
+In-Reply-To: <1391446244-1435-4-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+References: <1391446244-1435-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+	<1391446244-1435-4-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 1:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Tue,  4 Feb 2014 01:50:43 +0900 Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp> wrote:
+
+> From: Andreas Rohner <andreas.rohner@gmx.net>
+> 
+> This patch introduces the nilfs_sufile_set_suinfo function, which
+> expects an array of nilfs_suinfo_update structures and updates the
+> segment usage information accordingly.
+> 
+> This is basically a helper function for the newly introduced
+> NILFS_IOCTL_SET_SUINFO ioctl.
+> 
+> ..
 >
-> Yes, and...?  CIFS also doesn't have hardlinks, so _there_ d_find_alias()
-> is just fine.
+> --- a/fs/nilfs2/sufile.c
+> +++ b/fs/nilfs2/sufile.c
+> @@ -870,6 +870,137 @@ ssize_t nilfs_sufile_get_suinfo(struct inode *sufile, __u64 segnum, void *buf,
+>  }
+>  
+>  /**
+> + * nilfs_sufile_set_suinfo - sets segment usage info
+> + * @sufile: inode of segment usage file
+> + * @buf: array of suinfo_update
+> + * @supsz: byte size of suinfo_update
+> + * @nsup: size of suinfo_update array
+> + *
+> + * Description: Takes an array of nilfs_suinfo_update structs and updates
+> + * segment usage accordingly. Only the fields indicated by the sup_flags
+> + * are updated.
+> + *
+> + * Return Value: On success, 0 is returned. On error, one of the
+> + * following negative error codes is returned.
+> + *
+> + * %-EIO - I/O error.
+> + *
+> + * %-ENOMEM - Insufficient amount of memory available.
+> + *
+> + * %-EINVAL - Invalid values in input (segment number, flags or nblocks)
+> + */
+> +ssize_t nilfs_sufile_set_suinfo(struct inode *sufile, void *buf,
+> +				unsigned supsz, size_t nsup)
+> +{
+> +	struct the_nilfs *nilfs = sufile->i_sb->s_fs_info;
+> +	struct buffer_head *header_bh, *bh;
+> +	struct nilfs_suinfo_update *sup, *supend = buf + supsz * nsup;
+> +	struct nilfs_segment_usage *su;
+> +	void *kaddr;
+> +	unsigned long blkoff, prev_blkoff;
+> +	int cleansi, cleansu, dirtysi, dirtysu;
+> +	long ncleaned = 0, ndirtied = 0;
+> +	int ret = 0;
+> +
+> +	if (unlikely(nsup == 0))
+> +		return ret;
+> +
+> +	for (sup = buf; sup < supend; sup = (void *)sup + supsz) {
+> +		if (sup->sup_segnum >= nilfs->ns_nsegments
+> +			|| (sup->sup_flags &
+> +				(~0UL << __NR_NILFS_SUINFO_UPDATE_FIELDS))
+> +			|| (nilfs_suinfo_update_nblocks(sup) &&
+> +				sup->sup_sui.sui_nblocks >
+> +				nilfs->ns_blocks_per_segment))
+> +			return -EINVAL;
+> +	}
+> +
+> +	down_write(&NILFS_MDT(sufile)->mi_sem);
+> +
+> +	ret = nilfs_sufile_get_header_block(sufile, &header_bh);
+> +	if (ret < 0)
+> +		goto out_sem;
+> +
+> +	sup = buf;
+> +	blkoff = nilfs_sufile_get_blkoff(sufile, sup->sup_segnum);
+> +	ret = nilfs_mdt_get_block(sufile, blkoff, 1, NULL, &bh);
+> +	if (ret < 0)
+> +		goto out_header;
+> +
+> +	for (;;) {
+> +		kaddr = kmap_atomic(bh->b_page);
 
-Hmm? I'm pretty sure cifs can actually have hardlinks.
+Can this buffer_head really be in highmem?
 
-             Linus
+> +		su = nilfs_sufile_block_get_segment_usage(
+> +			sufile, sup->sup_segnum, bh, kaddr);
+
+Returns an address wthin the kmapped page.  I really hope
+nilfs_sufile_block_get_segment_usage() cannot return an address outside
+that page - it appears to do quite a lot of unchecked arithmetic which
+is dependent on stuff which was read from the disk.  What it that was
+interfered with or otherwise corrupted?
+
+> +		if (nilfs_suinfo_update_lastmod(sup))
+> +			su->su_lastmod = cpu_to_le64(sup->sup_sui.sui_lastmod);
+> +
+> +		if (nilfs_suinfo_update_nblocks(sup))
+> +			su->su_nblocks = cpu_to_le32(sup->sup_sui.sui_nblocks);
+> +
+> +		if (nilfs_suinfo_update_flags(sup)) {
+> +			/*
+> +			 * Active flag is a virtual flag projected by running
+> +			 * nilfs kernel code - drop it not to write it to
+> +			 * disk.
+> +			 */
+> +			sup->sup_sui.sui_flags &=
+> +					~(1UL << NILFS_SEGMENT_USAGE_ACTIVE);
+> +
+> +			cleansi = nilfs_suinfo_clean(&sup->sup_sui);
+> +			cleansu = nilfs_segment_usage_clean(su);
+> +			dirtysi = nilfs_suinfo_dirty(&sup->sup_sui);
+> +			dirtysu = nilfs_segment_usage_dirty(su);
+> +
+> +			if (cleansi && !cleansu)
+> +				++ncleaned;
+> +			else if (!cleansi && cleansu)
+> +				--ncleaned;
+> +
+> +			if (dirtysi && !dirtysu)
+> +				++ndirtied;
+> +			else if (!dirtysi && dirtysu)
+> +				--ndirtied;
+> +
+> +			su->su_flags = cpu_to_le32(sup->sup_sui.sui_flags);
+> +		}
+> +
+> +		kunmap_atomic(kaddr);
+
+flush_dcache_page()?  Can the page be mapped by userspace?
+
+> +		sup = (void *)sup + supsz;
+> +		if (sup >= supend)
+> +			break;
+> +
+> +		prev_blkoff = blkoff;
+> +		blkoff = nilfs_sufile_get_blkoff(sufile, sup->sup_segnum);
+> +		if (blkoff == prev_blkoff)
+> +			continue;
+> +
+> +		/* get different block */
+> +		mark_buffer_dirty(bh);
+> +		brelse(bh);
+
+put_bh() will suffice - we know bh != NULL.
+
+> +		ret = nilfs_mdt_get_block(sufile, blkoff, 1, NULL, &bh);
+> +		if (unlikely(ret < 0))
+> +			goto out_mark;
+> +	}
+> +	mark_buffer_dirty(bh);
+> +	brelse(bh);
+
+ditto
+
+> + out_mark:
+> +	if (ncleaned || ndirtied) {
+> +		nilfs_sufile_mod_counter(header_bh, (u64)ncleaned,
+> +				(u64)ndirtied);
+> +		NILFS_SUI(sufile)->ncleansegs += ncleaned;
+> +	}
+> +	nilfs_mdt_mark_dirty(sufile);
+> + out_header:
+> +	brelse(header_bh);
+> + out_sem:
+> +	up_write(&NILFS_MDT(sufile)->mi_sem);
+> +	return ret;
+> +}
+> +
+> +/**
+
