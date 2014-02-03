@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaBCPy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:54:57 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35603 "EHLO
+	id S1753233AbaBCPz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:55:28 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35593 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014AbaBCPyt (ORCPT
+	with ESMTP id S1752931AbaBCPys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:54:49 -0500
+	Mon, 3 Feb 2014 10:54:48 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
         <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH v2 7/7] slub: rework sysfs layout for memcg caches
-Date: Mon, 3 Feb 2014 19:54:42 +0400
-Message-ID: <3794b40c31cb5370c5490ab1da06fc93fced288c.1391441746.git.vdavydov@parallels.com>
+Subject: [PATCH v2 5/7] memcg, slab: do not destroy children caches if parent has aliases
+Date: Mon, 3 Feb 2014 19:54:40 +0400
+Message-ID: <3b5bba7dec287bc4d77ceb801eb4f6996393f797.1391441746.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1391441746.git.vdavydov@parallels.com>
 References: <cover.1391441746.git.vdavydov@parallels.com>
@@ -25,200 +25,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we try to arrange sysfs entries for memcg caches in the same
-manner as for global caches. Apart from turning /sys/kernel/slab into a
-mess when there are a lot of kmem-active memcgs created, it actually
-does not work properly - we won't create more than one link to a memcg
-cache in case its parent is merged with another cache. For instance, if
-A is a root cache merged with another root cache B, we will have the
-following sysfs setup:
+Currently we destroy children caches at the very beginning of
+kmem_cache_destroy(). This is wrong, because the root cache will not
+necessarily be destroyed in the end - if it has aliases (refcount > 0),
+kmem_cache_destroy() will simply decrement its refcount and return. In
+this case, at best we will get a bunch of warnings in dmesg, like this
+one:
 
-  X
-  A -> X
-  B -> X
+  kmem_cache_destroy kmalloc-32:0: Slab cache still has objects
+  CPU: 1 PID: 7139 Comm: modprobe Tainted: G    B   W    3.13.0+ #117
+  Hardware name:
+   ffff88007d7a6368 ffff880039b07e48 ffffffff8168cc2e ffff88007d7a6d68
+   ffff88007d7a6300 ffff880039b07e68 ffffffff81175e9f 0000000000000000
+   ffff88007d7a6300 ffff880039b07e98 ffffffff811b67c7 ffff88003e803c00
+  Call Trace:
+   [<ffffffff8168cc2e>] dump_stack+0x49/0x5b
+   [<ffffffff81175e9f>] kmem_cache_destroy+0xdf/0xf0
+   [<ffffffff811b67c7>] kmem_cache_destroy_memcg_children+0x97/0xc0
+   [<ffffffff81175dcf>] kmem_cache_destroy+0xf/0xf0
+   [<ffffffffa0130b21>] xfs_mru_cache_uninit+0x21/0x30 [xfs]
+   [<ffffffffa01893ea>] exit_xfs_fs+0x2e/0xc44 [xfs]
+   [<ffffffff810eeb58>] SyS_delete_module+0x198/0x1f0
+   [<ffffffff816994f9>] system_call_fastpath+0x16/0x1b
 
-where X is some unique id (see create_unique_id()). Now if memcgs M and
-N start to allocate from cache A (or B, which is the same), we will get:
+At worst - if kmem_cache_destroy() will race with an allocation from a
+memcg cache - the kernel will panic.
 
-  X
-  X:M
-  X:N
-  A -> X
-  B -> X
-  A:M -> X:M
-  A:N -> X:N
-
-Since B is an alias for A, we won't get entries B:M and B:N, which is
-confusing.
-
-It is more logical to have entries for memcg caches under the
-corresponding root cache's sysfs directory. This would allow us to keep
-sysfs layout clean, and avoid such inconsistencies like one described
-above.
-
-This patch does the trick. It creates a "cgroup" kset in each root cache
-kobject to keep its children caches there.
+This patch fixes this by moving children caches destruction after the
+check if the cache has aliases. Plus, it forbids destroying a root cache
+if it still has children caches, because each children cache keeps a
+reference to its parent.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slub_def.h |    3 ++
- mm/slub.c                |   85 ++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 73 insertions(+), 15 deletions(-)
+ include/linux/memcontrol.h |    5 ---
+ mm/memcontrol.c            |    2 +-
+ mm/slab.h                  |   17 ++++++++--
+ mm/slab_common.c           |   74 +++++++++++++++++++++++++++++---------------
+ 4 files changed, 65 insertions(+), 33 deletions(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index f56bfa9e4526..f2f7398848cf 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -87,6 +87,9 @@ struct kmem_cache {
- #ifdef CONFIG_MEMCG_KMEM
- 	struct memcg_cache_params *memcg_params;
- 	int max_attr_size; /* for propagation, maximum size of a stored attr */
-+#ifdef CONFIG_SYSFS
-+	struct kset *memcg_kset;
-+#endif
- #endif
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index de79a9617e09..1a7d9c6741b7 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -513,7 +513,6 @@ struct kmem_cache *
+ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
  
- #ifdef CONFIG_NUMA
-diff --git a/mm/slub.c b/mm/slub.c
-index f3d2ef725ed6..d5d1ecc5ace9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5137,6 +5137,44 @@ static const struct kset_uevent_ops slab_uevent_ops = {
+ void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
+-void kmem_cache_destroy_memcg_children(struct kmem_cache *s);
  
- static struct kset *slab_kset;
+ /**
+  * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
+@@ -667,10 +666,6 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+ {
+ 	return cachep;
+ }
+-
+-static inline void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+-{
+-}
+ #endif /* CONFIG_MEMCG_KMEM */
+ #endif /* _LINUX_MEMCONTROL_H */
  
-+#ifdef CONFIG_MEMCG_KMEM
-+static inline struct kset *cache_kset(struct kmem_cache *s)
-+{
-+	if (is_root_cache(s))
-+		return slab_kset;
-+	return s->memcg_params->root_cache->memcg_kset;
-+}
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6a059e73212c..4b8dd7ef18bf 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3428,7 +3428,7 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+ 	schedule_work(&cachep->memcg_params->destroy);
+ }
+ 
+-void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
++void __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ {
+ 	struct kmem_cache *c;
+ 	int i;
+diff --git a/mm/slab.h b/mm/slab.h
+index 3045316b7c9d..b5ad968020a3 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -191,7 +191,16 @@ static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
+ 		return s;
+ 	return s->memcg_params->root_cache;
+ }
+-#else
 +
-+static int create_cache_memcg_kset(struct kmem_cache *s)
-+{
-+	if (!is_root_cache(s))
-+		return 0;
-+	s->memcg_kset = kset_create_and_add("cgroup", NULL, &s->kobj);
-+	if (!s->memcg_kset)
-+		return -ENOMEM;
-+	return 0;
-+}
++extern void __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
 +
-+static void destroy_cache_memcg_kset(struct kmem_cache *s)
++static inline void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
 +{
-+	kset_unregister(s->memcg_kset);
++	mutex_unlock(&slab_mutex);
++	__kmem_cache_destroy_memcg_children(s);
++	mutex_lock(&slab_mutex);
 +}
-+#else
-+static inline struct kset *cache_kset(struct kmem_cache *s)
-+{
-+	return slab_kset;
-+}
++#else /* !CONFIG_MEMCG_KMEM */
+ static inline bool is_root_cache(struct kmem_cache *s)
+ {
+ 	return true;
+@@ -226,7 +235,11 @@ static inline struct kmem_cache *memcg_root_cache(struct kmem_cache *s)
+ {
+ 	return s;
+ }
+-#endif
 +
-+static inline int create_cache_memcg_kset(struct kmem_cache *s)
-+{
-+	return 0;
-+}
-+
-+static inline void destroy_cache_memcg_kset(struct kmem_cache *s)
++static inline void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
 +{
 +}
 +#endif /* CONFIG_MEMCG_KMEM */
-+
- #define ID_STR_LENGTH 64
  
- /* Create a unique string id for a slab cache:
-@@ -5148,7 +5186,8 @@ static char *create_unique_id(struct kmem_cache *s)
- 	char *name = kmalloc(ID_STR_LENGTH, GFP_KERNEL);
- 	char *p = name;
- 
--	BUG_ON(!name);
-+	if (!name)
-+		return NULL;
- 
- 	*p++ = ':';
- 	/*
-@@ -5192,7 +5231,8 @@ static int sysfs_slab_add(struct kmem_cache *s)
- 		 * This is typically the case for debug situations. In that
- 		 * case we can catch duplicate names easily.
- 		 */
--		sysfs_remove_link(&slab_kset->kobj, s->name);
-+		if (is_root_cache(s))
-+			sysfs_remove_link(&slab_kset->kobj, s->name);
- 		name = s->name;
- 	} else {
- 		/*
-@@ -5200,28 +5240,40 @@ static int sysfs_slab_add(struct kmem_cache *s)
- 		 * for the symlinks.
- 		 */
- 		name = create_unique_id(s);
-+		if (!name)
-+			return -ENOMEM;
- 	}
- 
--	s->kobj.kset = slab_kset;
-+	s->kobj.kset = cache_kset(s);
- 	err = kobject_init_and_add(&s->kobj, &slab_ktype, NULL, "%s", name);
--	if (err) {
--		kobject_put(&s->kobj);
--		return err;
--	}
-+	if (err)
-+		goto out_put_kobj;
-+
-+	err = create_cache_memcg_kset(s);
-+	if (err)
-+		goto out_del_kobj;
- 
- 	err = sysfs_create_group(&s->kobj, &slab_attr_group);
--	if (err) {
--		kobject_del(&s->kobj);
--		kobject_put(&s->kobj);
--		return err;
--	}
-+	if (err)
-+		goto out_del_memcg_kset;
-+
- 	kobject_uevent(&s->kobj, KOBJ_ADD);
--	if (!unmergeable) {
-+	if (!unmergeable && is_root_cache(s)) {
- 		/* Setup first alias */
- 		sysfs_slab_alias(s, s->name);
--		kfree(name);
- 	}
--	return 0;
-+out:
-+	if (!unmergeable)
-+		kfree(name);
-+	return err;
-+
-+out_del_memcg_kset:
-+	destroy_cache_memcg_kset(s);
-+out_del_kobj:
-+	kobject_del(&s->kobj);
-+out_put_kobj:
-+	kobject_put(&s->kobj);
-+	goto out;
- }
- 
- static void sysfs_slab_remove(struct kmem_cache *s)
-@@ -5233,6 +5285,7 @@ static void sysfs_slab_remove(struct kmem_cache *s)
- 		 */
- 		return;
- 
-+	destroy_cache_memcg_kset(s);
- 	kobject_uevent(&s->kobj, KOBJ_REMOVE);
- 	kobject_del(&s->kobj);
- 	kobject_put(&s->kobj);
-@@ -5254,6 +5307,8 @@ static int sysfs_slab_alias(struct kmem_cache *s, const char *name)
+ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
  {
- 	struct saved_alias *al;
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 4dff4bb66f19..f8de8e5a18fd 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -300,38 +300,62 @@ out_free_cache:
+ }
+ #endif /* CONFIG_MEMCG_KMEM */
  
-+	BUG_ON(!is_root_cache(s));
+-void kmem_cache_destroy(struct kmem_cache *s)
++static bool cache_has_children(struct kmem_cache *s)
+ {
+-	/* Destroy all the children caches if we aren't a memcg cache */
+-	kmem_cache_destroy_memcg_children(s);
++	int i;
 +
- 	if (slab_state == FULL) {
- 		/*
- 		 * If we have a leftover link then remove it.
++	if (!is_root_cache(s))
++		return false;
++	for_each_memcg_cache_index(i) {
++		if (cache_from_memcg_idx(s, i))
++			return true;
++	}
++	return false;
++}
+ 
++void kmem_cache_destroy(struct kmem_cache *s)
++{
+ 	get_online_cpus();
+ 	mutex_lock(&slab_mutex);
++
+ 	s->refcount--;
+-	if (!s->refcount) {
+-		list_del(&s->list);
+-		memcg_unregister_cache(s);
+-
+-		if (!__kmem_cache_shutdown(s)) {
+-			mutex_unlock(&slab_mutex);
+-			if (s->flags & SLAB_DESTROY_BY_RCU)
+-				rcu_barrier();
+-
+-			memcg_free_cache_params(s);
+-			kfree(s->name);
+-			kmem_cache_free(kmem_cache, s);
+-		} else {
+-			list_add(&s->list, &slab_caches);
+-			memcg_register_cache(s);
+-			mutex_unlock(&slab_mutex);
+-			printk(KERN_ERR "kmem_cache_destroy %s: Slab cache still has objects\n",
+-				s->name);
+-			dump_stack();
+-		}
+-	} else {
+-		mutex_unlock(&slab_mutex);
++	if (s->refcount)
++		goto out_unlock;
++
++	list_del(&s->list);
++	memcg_unregister_cache(s);
++
++	/* Destroy all the children caches if we aren't a memcg cache */
++	kmem_cache_destroy_memcg_children(s);
++	if (cache_has_children(s))
++		goto out_undelete;
++
++	if (__kmem_cache_shutdown(s) != 0) {
++		printk(KERN_ERR "kmem_cache_destroy %s: "
++		       "Slab cache still has objects\n", s->name);
++		dump_stack();
++		goto out_undelete;
+ 	}
++
++	mutex_unlock(&slab_mutex);
++	if (s->flags & SLAB_DESTROY_BY_RCU)
++		rcu_barrier();
++
++	memcg_free_cache_params(s);
++	kfree(s->name);
++	kmem_cache_free(kmem_cache, s);
++	goto out_put_cpus; /* slab_mutex already unlocked */
++
++out_unlock:
++	mutex_unlock(&slab_mutex);
++out_put_cpus:
+ 	put_online_cpus();
++	return;
++
++out_undelete:
++	list_add(&s->list, &slab_caches);
++	memcg_register_cache(s);
++	goto out_unlock;
+ }
+ EXPORT_SYMBOL(kmem_cache_destroy);
+ 
 -- 
 1.7.10.4
 
