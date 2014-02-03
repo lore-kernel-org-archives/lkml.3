@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaBCGku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 01:40:50 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:61240 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaBCGks (ORCPT
+	id S1752483AbaBCGlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 01:41:42 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58485 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaBCGll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 01:40:48 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-80-52ef39eed81c
-From: Chanho Min <chanho.min@lge.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Hankyung Yu <hankyung.yu@lge.com>, Pierre Ossman <drzeus@drzeus.cx>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        HyoJun Im <hyojun.im@lge.com>, Chanho Min <chanho.min@lge.com>
-Subject: [PATCH] mmc:sdhci: handle busy-end interrupt during command
-Date: Mon,  3 Feb 2014 15:40:24 +0900
-Message-Id: <1391409624-6234-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Feb 2014 01:41:41 -0500
+X-Original-SENDERIP: 10.177.222.146
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 3 Feb 2014 15:41:38 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        mhocko@suse.cz, aneesh.kumar@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, hughd@google.com,
+        david@gibson.dropbear.id.au, liwanp@linux.vnet.ibm.com,
+        n-horiguchi@ah.jp.nec.com, dhillf@gmail.com, rientjes@google.com,
+        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] mm, hugetlb: improve page-fault scalability
+Message-ID: <20140203064138.GA2360@lge.com>
+References: <1391189806-13319-1-git-send-email-davidlohr@hp.com>
+ <1391189806-13319-7-git-send-email-davidlohr@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391189806-13319-7-git-send-email-davidlohr@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is fully legal for a controller to start handling busy-end interrupt
-before it has signaled that the command has completed. So make sure
-we do things in the proper order, Or it results that command interrupt
-is ignored so it can cause unexpected operations. This is founded at some
-toshiba emmc with the bellow warning.
+On Fri, Jan 31, 2014 at 09:36:46AM -0800, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
+> 
+> The kernel can currently only handle a single hugetlb page fault at a time.
+> This is due to a single mutex that serializes the entire path. This lock
+> protects from spurious OOM errors under conditions of low of low availability
+> of free hugepages. This problem is specific to hugepages, because it is
+> normal to want to use every single hugepage in the system - with normal pages
+> we simply assume there will always be a few spare pages which can be used
+> temporarily until the race is resolved.
+> 
+> Address this problem by using a table of mutexes, allowing a better chance of
+> parallelization, where each hugepage is individually serialized. The hash key
+> is selected depending on the mapping type. For shared ones it consists of the
+> address space and file offset being faulted; while for private ones the mm and
+> virtual address are used. The size of the table is selected based on a compromise
+> of collisions and memory footprint of a series of database workloads.
 
-"mmc0: Got command interrupt 0x00000001 even though
-no command operation was in progress."
+Hello,
 
-Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- drivers/mmc/host/sdhci.c  |   17 +++++++++++++++--
- include/linux/mmc/sdhci.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
+Thanks for doing this patchset. :)
+Just one question!
+Why do we need a separate hash key depending on the mapping type?
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index bd8a098..21f98e7 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1016,6 +1016,7 @@ void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 	mod_timer(&host->timer, jiffies + 10 * HZ);
- 
- 	host->cmd = cmd;
-+	host->busy_handle = 0;
- 
- 	sdhci_prepare_data(host, cmd);
- 
-@@ -2271,8 +2272,12 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
- 		if (host->cmd->data)
- 			DBG("Cannot wait for busy signal when also "
- 				"doing a data transfer");
--		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ))
-+		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ)
-+				&& !host->busy_handle) {
-+			/* Mark that command complete before busy is ended */
-+			host->busy_handle = 1;
- 			return;
-+		}
- 
- 		/* The controller does not support the end-of-busy IRQ,
- 		 * fall through and take the SDHCI_INT_RESPONSE */
-@@ -2335,7 +2340,15 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
- 		 */
- 		if (host->cmd && (host->cmd->flags & MMC_RSP_BUSY)) {
- 			if (intmask & SDHCI_INT_DATA_END) {
--				sdhci_finish_command(host);
-+				/*
-+				 * Some cards handle busy-end interrupt
-+				 * before the command completed, so make
-+				 * sure we do things in the proper order.
-+				 */
-+				if (host->busy_handle)
-+					sdhci_finish_command(host);
-+				else
-+					host->busy_handle = 1;
- 				return;
- 			}
- 		}
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 3e781b8..0118020 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -148,6 +148,7 @@ struct sdhci_host {
- 	struct mmc_command *cmd;	/* Current command */
- 	struct mmc_data *data;	/* Current data request */
- 	unsigned int data_early:1;	/* Data finished before cmd */
-+	unsigned int busy_handle:1;	/* Handling the order of Busy-end */
- 
- 	struct sg_mapping_iter sg_miter;	/* SG state for PIO */
- 	unsigned int blocks;	/* remaining PIO blocks */
--- 
-1.7.9.5
-
+Thanks.
