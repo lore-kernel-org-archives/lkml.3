@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750965AbaBCI6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 03:58:09 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:55745 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750750AbaBCI6I (ORCPT
+	id S1751421AbaBCI7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 03:59:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28712 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaBCI73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 03:58:08 -0500
-Date: Mon, 3 Feb 2014 09:58:00 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog,dw: Add dependency on HAS_IOMEM
-Message-ID: <20140203085800.GC29278@spo001.leaseweb.com>
-References: <1391172454-17959-1-git-send-email-richard@nod.at>
-Mime-Version: 1.0
+	Mon, 3 Feb 2014 03:59:29 -0500
+Date: Mon, 3 Feb 2014 11:58:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: James Hogan <james.hogan@imgtec.com>, devel@driverdev.osuosl.org,
+        andreas.dilger@intel.com, Antonio Quartulli <antonio@meshcoding.com>,
+        Greg KH <gregkh@linuxfoundation.org>, bergwolf@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, oleg.drokin@intel.com,
+        jacques-charles.lafoucriere@cea.fr, jinshan.xiong@intel.com,
+        netdev <netdev@vger.kernel.org>, linux-metag@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add
+ "__attribute__((packed))" for the related union
+Message-ID: <20140203085855.GA26722@mwanda>
+References: <20140118142404.GT7444@mwanda>
+ <52DBA3D4.3090308@gmail.com>
+ <52DD0EFF.2010305@imgtec.com>
+ <20140120123045.GV7444@mwanda>
+ <52DD18A5.1090308@imgtec.com>
+ <20140120125603.GD4815@mwanda>
+ <20140120211356.GG4815@mwanda>
+ <52DE4DA3.7090301@imgtec.com>
+ <52E3A642.7010307@gmail.com>
+ <52ECFD53.7010401@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391172454-17959-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <52ECFD53.7010401@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
-
-> On archs like S390 or um this driver cannot build nor work.
-> Make it depend on HAS_IOMEM to bypass build failures.
+On Sat, Feb 01, 2014 at 09:57:39PM +0800, Chen Gang wrote:
+> It seems, our kernel still stick to treate 'pack' region have effect
+> with both 'align' and 'sizeof'.
 > 
-> drivers/built-in.o: In function `dw_wdt_drv_probe':
-> drivers/watchdog/dw_wdt.c:302: undefined reference to `devm_ioremap_resource'
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-Patch added to linux-watchdog-next.
+It's not about packed regions.  It's about unions.  It's saying the
+sizeof() a union is a multiple of 4 unless it's packed.
 
-Kind regards,
-Wim.
+union foo {
+	short x;
+	short y;
+};
+
+The author intended the sizeof(union foo) to be 2 but on metag arch then
+it is 4.
+
+regards,
+dan carpenter
 
