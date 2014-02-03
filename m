@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472AbaBCITi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 03:19:38 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:42891 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaBCITh (ORCPT
+	id S1751049AbaBCIYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 03:24:30 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58089 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaBCIY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 03:19:37 -0500
-Message-ID: <52EF5112.4020305@hitachi.com>
-Date: Mon, 03 Feb 2014 17:19:30 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 3 Feb 2014 03:24:29 -0500
+Message-ID: <52EF53B5.6050203@linux.vnet.ibm.com>
+Date: Mon, 03 Feb 2014 14:00:45 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip v2 1/8] [BUGFIX] perf-probe: Fix to do exit call
- for symbol maps
-References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <20140129091452.22141.36766.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <87iosw3ao8.fsf@sejong.aot.lge.com>
-In-Reply-To: <87iosw3ao8.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V5] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+References: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+In-Reply-To: <1390388025-1418-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020308-7014-0000-0000-00000445BD27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/03 16:41), Namhyung Kim wrote:
-> Hi Masami,
-> 
-> On Wed, 29 Jan 2014 09:14:52 +0000, Masami Hiramatsu wrote:
->> Some perf-probe commands do symbol_init() but doesn't
->> do exit call. This fixes that to call symbol_exit()
->> and relase machine if needed.
->> This also merges init_vmlinux() and init_user_exec()
->> because both of them are doing similar things.
->> (init_user_exec() just skips init vmlinux related
->>  symbol maps)
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> ---
->>  tools/perf/util/probe-event.c |  110 +++++++++++++++++++++++------------------
->>  1 file changed, 61 insertions(+), 49 deletions(-)
->>
->> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
->> index a8a9b6c..14c649df 100644
->> --- a/tools/perf/util/probe-event.c
->> +++ b/tools/perf/util/probe-event.c
->> @@ -73,31 +73,35 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
->>  static int convert_name_to_addr(struct perf_probe_event *pev,
->>  				const char *exec);
->>  static void clear_probe_trace_event(struct probe_trace_event *tev);
->> -static struct machine machine;
->> +static struct machine *host_machine;
->>  
->>  /* Initialize symbol maps and path of vmlinux/modules */
->> -static int init_vmlinux(void)
->> +static int init_symbol_maps(bool user_only)
->>  {
->>  	int ret;
->>  
->>  	symbol_conf.sort_by_name = true;
->> -	if (symbol_conf.vmlinux_name == NULL)
->> -		symbol_conf.try_vmlinux_path = true;
->> -	else
->> -		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
->> +	if (user_only)
->> +		symbol_conf.try_vmlinux_path = false;
->> +	else {
->> +		if (symbol_conf.vmlinux_name == NULL)
->> +			symbol_conf.try_vmlinux_path = true;
-> 
-> This looks unnecessary and duplicate since we already have following
-> code in __cmd_probe().
-> 
-> 	/*
-> 	 * Only consider the user's kernel image path if given.
-> 	 */
-> 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
+On 01/22/2014 04:23 PM, Raghavendra K T wrote:
+> max_sane_readahead returns zero on the cpu having no local memory
+> node. Fix that by returning a sanitized number of pages viz.,
+> minimum of (requested pages, 4k)
+>
+> Result:
+> fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
+> 32GB* 4G RAM  numa machine ( 12 iterations) yielded
+>
+> Kernel     Avg      Stddev
+> base      7.2963    1.10 %
+> patched   7.2972    1.18 %
+>
+> Reviewed-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
 
-Ah, I see :)
-OK, I'll remove that part not to setting symbol_conf in probe-event.c.
-
-Thank you!
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Could you please let me know what do you feel about the patch ?
 
 
