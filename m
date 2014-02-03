@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaBCVWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:22:08 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36365 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaBCVWG (ORCPT
+	id S1753497AbaBCVXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:23:43 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:37815 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566AbaBCVXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:22:06 -0500
-Message-ID: <52F0086F.60103@linux.vnet.ibm.com>
-Date: Mon, 03 Feb 2014 13:21:51 -0800
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Feb 2014 16:23:41 -0500
+Date: Mon, 3 Feb 2014 13:23:36 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140203212336.GA31966@infradead.org>
+References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
+ <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+ <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 3/8] powerpc: add hvcalls for 24x7 and gpci (get performance
- counter info)
-References: <20140201055806.A25152C00B2@ozlabs.org>
-In-Reply-To: <20140201055806.A25152C00B2@ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020321-9332-0000-0000-000002FA75D5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 09:58 PM, Michael Ellerman wrote:
-> On Thu, 2014-16-01 at 23:53:49 UTC, Cody P Schafer wrote:
->> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
->> ---
->>   arch/powerpc/include/asm/hvcall.h | 6 +++++-
->>   1 file changed, 5 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
->> index d8b600b..48d6efa 100644
->> --- a/arch/powerpc/include/asm/hvcall.h
->> +++ b/arch/powerpc/include/asm/hvcall.h
->> @@ -269,11 +269,15 @@
->>   #define H_COP			0x304
->>   #define H_GET_MPP_X		0x314
->>   #define H_SET_MODE		0x31C
->> -#define MAX_HCALL_OPCODE	H_SET_MODE
->> +#define H_GET_24X7_CATALOG_PAGE 0xF078
->> +#define H_GET_24X7_DATA		0xF07C
->> +#define H_GET_PERF_COUNTER_INFO 0xF080
->
-> Ugh, why the hell did they put them up there.
->
->> +#define MAX_HCALL_OPCODE	H_GET_PERF_COUNTER_INFO
->
-> We have an array which is sized based on this, which is unpleasant.
->
-> I think you're better off putting these below in the platform specific section,
-> and leaving MAX_HCALL_OPCODE alone. The only downside is you can't use the
-> hcall tracing to see them.
+On Mon, Feb 03, 2014 at 01:03:32PM -0800, Linus Torvalds wrote:
+> Now, to be honest, pushing it down one more level (to
+> generic_permission()) will actually start causing some trouble. In
+> particular, gfs2_permission() fundamentally does not have a dentry for
+> several of the callers.
 
-Ya, I'm aware. I've got them up there as I did want to trace them :) . I 
-don't see a big issue with moving them out of that section, though.
+Looking over the gfs2 code the problem seems to be that it duplicates
+permissions checks from the may_{lookup,create,linkat,delete}, most
+likely because it needs cluster locking in place for them.  The right
+fix seems to be to optionally call the filesystem from those.  That
+being said I wonder how ocfs2 or network filesystems get away without
+that.
 
->>   /* Platform specific hcalls, used by KVM */
->>   #define H_RTAS			0xf000
->
+> What do you think? I guess this patch could be split up into two: one
+> that does the "vfs_xyz()" helper functions, and another that does the
+> inode_permission() change. I tied them together mainly because I
+> started with the inode_permission() change, and that required the
+> vfs_xyz() change.
 
+The changes look good to me, and yes I think they should be split.
+I'll see if I can take this further, but doing something non-hacky
+in GFS2 would be the first step here.
 
