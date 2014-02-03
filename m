@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987AbaBCVjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:39:36 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42427 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbaBCVjf (ORCPT
+	id S1753441AbaBCVlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:41:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46770 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaBCVlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:39:35 -0500
-Date: Mon, 3 Feb 2014 21:39:26 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-Message-ID: <20140203213926.GA10323@ZenIV.linux.org.uk>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
- <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
- <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
- <20140130075421.GA10050@infradead.org>
- <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
- <20140203102943.GF11829@infradead.org>
- <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
- <20140203211955.GY10323@ZenIV.linux.org.uk>
- <CA+55aFyfPVgGXn_hSBnnVyzWn4AbZQ40MPk_AoKB_6uC6LJqPg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyfPVgGXn_hSBnnVyzWn4AbZQ40MPk_AoKB_6uC6LJqPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Feb 2014 16:41:02 -0500
+Date: Mon, 3 Feb 2014 13:41:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-nilfs <linux-nilfs@vger.kernel.org>,
+        Andreas Rohner <andreas.rohner@gmx.net>
+Subject: Re: [PATCH 4/4] nilfs2: implementation of NILFS_IOCTL_SET_SUINFO
+ ioctl
+Message-Id: <20140203134101.c56b916544e2475f63227339@linux-foundation.org>
+In-Reply-To: <1391446244-1435-5-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+References: <1391446244-1435-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+	<1391446244-1435-5-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 01:31:19PM -0800, Linus Torvalds wrote:
+On Tue,  4 Feb 2014 01:50:44 +0900 Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp> wrote:
 
-> If the protocol is path-based (and it happens, and it's actually the
-> *correct* thing to do for a network filesystem, rather than the
-> idiotic "file handle" crap that tries to emulate the unix inode
-> semantics in the protocol), then the inode is simply not sufficient.
+> With this ioctl the segment usage entries in the SUFILE can be
+> updated from userspace.
 > 
-> And no, d_find_alias() is not correct or sufficient either. It can
-> work in practice (and probably does perfectly fine 99.9% of the time),
-> but it can equally well give the *wrong* dentry: yes, the dentry it
-> returns would have been a valid dentry for somebody at some time, but
-> it might be a stale dentry *now*, and it might be the wrong dentry for
-> the current user (because the current user may not have permissions to
-> that particular path, even if the user has permissions through his
-> *own* path).
+> This is useful, because it allows the userspace GC to modify and update
+> segment usage entries for specific segments, which enables it to avoid
+> unnecessary write operations.
 > 
-> So I really think you're *fundamentally* incorrect when you say
-> "result *is* a function of inode alone".
+> If a segment needs to be cleaned, but there is no or very little
+> reclaimable space in it, the cleaning operation basically degrades to
+> a useless moving operation. In the end the only thing that changes is
+> the location of the data and a timestamp in the segment usage
+> information. With this ioctl the GC can skip the cleaning and update
+> the segment usage entries directly instead.
+> 
+> This is basically a shortcut to cleaning the segment. It is still
+> necessary to read the segment summary information, but the writing of
+> the live blocks can be skipped if it's not worth it.
 
-Which fs are you talking about?  For 9P it *is* a function of inode alone.
-For CIFS there's no wrong dentry to pick - it doesn't have links to start
-with.
+Documentation/filesystems/nilfs2.txt should be updated to document the
+new ioctl.
 
-If we really have hardlinks, the result of permission check would better
-be a function of inode itself - as in, "if it gives different results
-for two pathnames reachable for the same user, we have a bug".
+Which we're in there, please check that the ioctl documentation is
+otherwise complete and up-to-date.  These things have a tendency to
+bitrot.
+
