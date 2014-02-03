@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaBCLfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:35:25 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:52606 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbaBCLfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:35:23 -0500
-Message-ID: <52EF7EFC.5040704@gmail.com>
-Date: Mon, 03 Feb 2014 19:35:24 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752783AbaBCLgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:36:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237AbaBCLgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:36:51 -0500
+Date: Mon, 3 Feb 2014 12:39:01 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] pinctrl: protect pinctrl_list add
+Message-ID: <20140203113900.GD1725@redhat.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: James Hogan <james.hogan@imgtec.com>, devel@driverdev.osuosl.org,
-        andreas.dilger@intel.com, Antonio Quartulli <antonio@meshcoding.com>,
-        Greg KH <gregkh@linuxfoundation.org>, bergwolf@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, oleg.drokin@intel.com,
-        jacques-charles.lafoucriere@cea.fr, jinshan.xiong@intel.com,
-        netdev <netdev@vger.kernel.org>, linux-metag@vger.kernel.org,
-        David Laight <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
- for the related union
-References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com> <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda> <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda> <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com> <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com> <20140203085855.GA26722@mwanda> <52EF6965.6040406@gmail.com>
-In-Reply-To: <52EF6965.6040406@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 06:03 PM, Chen Gang wrote:
-> On 02/03/2014 04:58 PM, Dan Carpenter wrote:
->> On Sat, Feb 01, 2014 at 09:57:39PM +0800, Chen Gang wrote:
->>> It seems, our kernel still stick to treate 'pack' region have effect
->>> with both 'align' and 'sizeof'.
->>>
->>
->> It's not about packed regions.  It's about unions.  It's saying the
->> sizeof() a union is a multiple of 4 unless it's packed.
->>
->> union foo {
->> 	short x;
->> 	short y;
->> };
->>
->> The author intended the sizeof(union foo) to be 2 but on metag arch then
->> it is 4.
->>
-> 
-> Yeah, just like your original discussion.  :-)
-> 
-> 
-> Hmm... can we say: "for metag compiler, in a pack region, it considers
-> variables alignment, but does not consider about struct/union alignment
-> (except append packed to each related struct/union)".
-> 
-> For compatible (consider about its ABI), it has to keep this features,
-> but for kernel, it needs be changed.
-> 
-> So, I suggest to add one parameter to compiler to switch this feature,
-> and append this parameter to KBUILD_CFLAGS in "arch/metag/Makefile"
-> which can satisfy both ABI and kernel.
-> 
+We have few fedora bug reports about list corruption on pinctrl,
+for example:
+https://bugzilla.redhat.com/show_bug.cgi?id=1051918
 
-After append the parameter to KBUILD_CFLAGS in "arch/metag/Makefile",
+Most likely corruption happen due lack of protection of pinctrl_list
+when adding new nodes to it. Patch corrects that.
 
- - I guess/assume "include/uapi/*" should/will not need be modified.
+Fixes: 57b676f9c1b ("pinctrl: fix and simplify locking")
+Cc: stable@vger.kernel.org
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+I only compile tested patch, also did not get test results from bug
+reporters yet. But I'm pretty confident that patch fixes the problem
+and does not cause any other deadlock.
 
- - but need check all files in "arch/metag/include/uapi/*".
-   (add padding data for packed struct/union when __KERNEL__ defined)
+ drivers/pinctrl/core.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
- - maybe we have to process metag related ABI which not in "*/uapi/*"
-   (add padding data for packed struct/union when __KERNEL__ defined)
-   and when we find them, recommend to move all of them to "*/uapi/*".
-
-
-Sorry, I don't know whether this way is the best way or not, but for me
-it is an executable way to solve this feature issue and satisfy both
-kernel and ABI.
-
-
-Thanks.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5ee61a4..cab020a 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -851,7 +851,9 @@ static struct pinctrl *create_pinctrl(struct device *dev)
+ 	kref_init(&p->users);
+ 
+ 	/* Add the pinctrl handle to the global list */
++	mutex_lock(&pinctrl_list_mutex);
+ 	list_add_tail(&p->node, &pinctrl_list);
++	mutex_unlock(&pinctrl_list_mutex);
+ 
+ 	return p;
+ }
 -- 
-Chen Gang
+1.7.11.7
 
-Open, share and attitude like air, water and life which God blessed
