@@ -1,85 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaBCXxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:53:10 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48095 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaBCXxI (ORCPT
+	id S1753484AbaBCXyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:54:13 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49027 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857AbaBCXyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:53:08 -0500
-Date: Mon, 3 Feb 2014 15:53:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cl@linux-foundation.org,
-        penberg@kernel.org, mpm@selenic.com, peterz@infradead.org
-Subject: Re: [PATCH] Fix lockdep false positive in add_full()
-Message-ID: <20140203235302.GK4333@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140203225725.GA4069@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1402031531160.7643@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402031531160.7643@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020323-1344-0000-0000-0000056A3E12
+	Mon, 3 Feb 2014 18:54:11 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: stable@vger.kernel.org
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Anssi Hannula <anssi.hannula@iki.fi>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 1/2] ALSA: hda - hdmi: introduce patch_nvhdmi()
+Date: Mon,  3 Feb 2014 16:54:03 -0700
+Message-Id: <1391471644-16256-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 03:31:40PM -0800, David Rientjes wrote:
-> On Mon, 3 Feb 2014, Paul E. McKenney wrote:
-> 
-> > Hello!
-> > 
-> > The add_full() function currently has a lockdep_assert_held() requiring
-> > that the kmem_cache_node structure's ->list_lock be held.  However,
-> > this lock is not acquired by add_full()'s caller deactivate_slab()
-> > in the full-node case unless debugging is enabled.  Because full nodes
-> > are accessed only by debugging code, this state of affairs results in
-> > lockdep false-positive splats like the following:
-> > 
-> > [   43.942868] WARNING: CPU: 0 PID: 698 at /home/paulmck/public_git/linux-rcu/mm/slub.c:1007 deactivate_slab+0x509/0x720()
-> > [   43.943016] Modules linked in:
-> > [   43.943016] CPU: 0 PID: 698 Comm: torture_onoff Not tainted 3.14.0-rc1+ #1
-> > [   43.943016] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> > [   43.943016]  00000000000003ef ffff88001e3f5ba8 ffffffff818952ec 0000000000000046
-> > [   43.943016]  0000000000000000 ffff88001e3f5be8 ffffffff81049517 ffffea0000784e00
-> > [   43.943016]  0000000000000000 ffffea00007a9000 0000000000000002 0000000000000000
-> > [   43.943016] Call Trace:
-> > [   43.943016]  [<ffffffff818952ec>] dump_stack+0x46/0x58
-> > [   43.943016]  [<ffffffff81049517>] warn_slowpath_common+0x87/0xb0
-> > [   43.943016]  [<ffffffff81049555>] warn_slowpath_null+0x15/0x20
-> > [   43.943016]  [<ffffffff8116e679>] deactivate_slab+0x509/0x720
-> > [   43.943016]  [<ffffffff8116eebb>] ? slab_cpuup_callback+0x3b/0x100
-> > [   43.943016]  [<ffffffff8116ef52>] ? slab_cpuup_callback+0xd2/0x100
-> > [   43.943016]  [<ffffffff8116ef24>] slab_cpuup_callback+0xa4/0x100
-> > [   43.943016]  [<ffffffff818a4c14>] notifier_call_chain+0x54/0x110
-> > [   43.943016]  [<ffffffff81075b79>] __raw_notifier_call_chain+0x9/0x10
-> > [   43.943016]  [<ffffffff8104963b>] __cpu_notify+0x1b/0x30
-> > [   43.943016]  [<ffffffff81049720>] cpu_notify_nofail+0x10/0x20
-> > [   43.943016]  [<ffffffff8188cc5d>] _cpu_down+0x10d/0x2e0
-> > [   43.943016]  [<ffffffff8188ce60>] cpu_down+0x30/0x50
-> > [   43.943016]  [<ffffffff811205f3>] torture_onoff+0xd3/0x3c0
-> > [   43.943016]  [<ffffffff81120520>] ? torture_onoff_stats+0x90/0x90
-> > [   43.943016]  [<ffffffff810710df>] kthread+0xdf/0x100
-> > [   43.943016]  [<ffffffff818a09cb>] ? _raw_spin_unlock_irq+0x2b/0x40
-> > [   43.943016]  [<ffffffff81071000>] ? flush_kthread_worker+0x130/0x130
-> > [   43.943016]  [<ffffffff818a983c>] ret_from_fork+0x7c/0xb0
-> > [   43.943016]  [<ffffffff81071000>] ? flush_kthread_worker+0x130/0x130
-> > 
-> > This commit therefore does the lockdep check only if debuggging is
-> > enabled, thus avoiding the false positives.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> This was discussed in http://marc.info/?t=139145791300002, what do you 
-> think about the patch in that thread instead?
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-Looks fine to me!  I also tried it out and it avoided the splats, as noted
-in my mail in the other thread, so please feel free to add my Tested-by.
+(This is a backport of *part* of upstream 611885bc963a "ALSA: hda -
+hdmi: Disallow unsupported 2ch remapping on NVIDIA codecs" to stable
+3.10 through 3.12. Later stable already contain all of the original
+patch.)
 
-							Thanx, Paul
+Mainline commit 611885bc963a "ALSA: hda - hdmi: Disallow unsupported 2ch
+remapping on NVIDIA codecs" introduces function patch_nvhdmi(). That
+function is edited by 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
+dynamically enabled". In order to backport the PIN_OUT patch, I am first
+back-porting just the addition of function patch_nvhdmi(), so that the
+conflicts applying the PIN_OUT patch are simplified.
+
+Ideally, one might backport all of 611885bc963a. However, that commit
+doesn't apply to stable kernels, since it relies on a chain of other
+patches which implement new features.
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[swarren, extracted just a small part of the original patch]
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ sound/pci/hda/patch_hdmi.c | 60 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
+
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index f26c42c92db7..aad73a1fc2cd 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -2560,6 +2560,20 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
+ 	return 0;
+ }
+ 
++static int patch_nvhdmi(struct hda_codec *codec)
++{
++	struct hdmi_spec *spec;
++	int err;
++
++	err = patch_generic_hdmi(codec);
++	if (err)
++		return err;
++
++	spec = codec->spec;
++
++	return 0;
++}
++
+ /*
+  * ATI-specific implementations
+  *
+@@ -2632,30 +2646,30 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
+ { .id = 0x10de0005, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
+ { .id = 0x10de0006, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
+ { .id = 0x10de0007, .name = "MCP79/7A HDMI",	.patch = patch_nvhdmi_8ch_7x },
+-{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_nvhdmi },
++{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_nvhdmi },
+ /* 17 is known to be absent */
+-{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
+ { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
+-- 
+1.8.1.5
 
