@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbaBCQzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:55:08 -0500
-Received: from sh.osrg.net ([192.16.179.4]:59542 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908AbaBCQzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:55:05 -0500
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-nilfs <linux-nilfs@vger.kernel.org>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [PATCH 0/4] nilfs2 updates
-Date: Tue,  4 Feb 2014 01:50:40 +0900
-Message-Id: <1391446244-1435-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.9.3
-X-Dispatcher: imput version 20100215(IM150)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (sh.osrg.net [192.16.179.4]); Tue, 04 Feb 2014 01:55:00 +0900 (JST)
+	id S1753100AbaBCQ55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:57:57 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58083 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751686AbaBCQ5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:57:55 -0500
+Date: Mon, 3 Feb 2014 16:57:18 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "msalter@redhat.com" <msalter@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/5] arm: add new asm macro update_sctlr
+Message-ID: <20140203165718.GO14112@mudshark.cambridge.arm.com>
+References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
+ <1389445524-30623-3-git-send-email-leif.lindholm@linaro.org>
+ <20140122112055.GF1621@mudshark.cambridge.arm.com>
+ <20140129182805.GF11329@bivouac.eciton.net>
+ <1391029124.2488.50.camel@deneb.redhat.com>
+ <20140130131247.GG11329@bivouac.eciton.net>
+ <20140203103415.GA12187@mudshark.cambridge.arm.com>
+ <20140203155542.GI11329@bivouac.eciton.net>
+ <20140203160051.GG14112@mudshark.cambridge.arm.com>
+ <20140203164636.GJ11329@bivouac.eciton.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203164636.GJ11329@bivouac.eciton.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Mon, Feb 03, 2014 at 04:46:36PM +0000, Leif Lindholm wrote:
+> On Mon, Feb 03, 2014 at 04:00:51PM +0000, Will Deacon wrote:
+> > > > > With the two call sites in uefi_phys.S as:
+> > > > > 
+> > > > > 	ldr	r5, =(CR_M)
+> > > > > 	update_sctlr	r12, , r5
+> > > > > and
+> > > > > 	ldr	r4, =(CR_I | CR_C | CR_M)
+> > > > > 	update_sctlr	r12, r4
+> > > > 
+> > > > These ldr= could be movs, right?
+> > > 
+> > > The first one could.
+> > > The second one could be movw on armv7+.
+> > > 
+> > > > If so, I definitely prefer this to putting an ldr = into the macro itself
+> > > > (option 2).
+> > > 
+> > > And your preference between 1) and 2) is?
+> > 
+> > (1), using bic and mov[tw] where possible.
+> 
+> (1): ok, thanks.
+> 
+> bic: sure, that was an oversight.
+> 
+> mov[tw]: why?
+> Then we end up battling different available immediate fields in A32/T32
+> instruction sets and v5/v6/v7 architecture versions.
 
-Please queue this patchset for the next merge window.
+I was making the assumption that UEFI was going to be v7 only... is this not
+true?
 
-Andreas's three patches will add a new ioctl which helps to mitigate
-overheads of garbage collection of nilfs.  The original cover letter
-can be seen at:
-
- [1] http://marc.info/?l=linux-nilfs&m=139081676816008
-
-there the userland counterpart is not yet finished, but this kernel
-patchset is ready for merge, I think.
-
-My additional patch updates entries of nilfs2 file system in
-MAINTAINERS file (independently).
-
-Thanks in advance,
-Ryusuke Konishi
---
-Andreas Rohner (3):
-      nilfs2: add struct nilfs_suinfo_update and flags
-      nilfs2: add nilfs_sufile_set_suinfo to update segment usage
-      nilfs2: implementation of NILFS_IOCTL_SET_SUINFO ioctl
-
-Ryusuke Konishi (1):
-      nilfs2: update MAINTAINERS file entries
-
- MAINTAINERS               |    4 +-
- fs/nilfs2/ioctl.c         |   92 +++++++++++++++++++++++++++++++
- fs/nilfs2/sufile.c        |  131 +++++++++++++++++++++++++++++++++++++++++++++
- fs/nilfs2/sufile.h        |    1 +
- include/linux/nilfs2_fs.h |   44 +++++++++++++++
- 5 files changed, 270 insertions(+), 2 deletions(-)
-
+Will
