@@ -1,135 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859AbaBCP2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:28:21 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:47739 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaBCP2T (ORCPT
+	id S1752974AbaBCP3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:29:18 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:53510 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaBCP3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:28:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4S+RLDpDd+zxgBRKsEw0-29un9mzS5jYBcoeJgQf5Upjg@mail.gmail.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1391316630-29541-6-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4S+RLDpDd+zxgBRKsEw0-29un9mzS5jYBcoeJgQf5Upjg@mail.gmail.com>
-Date: Mon, 3 Feb 2014 10:28:18 -0500
-Message-ID: <CAN+gG=GR7kfRYzTW6NQ_anHFpgXOyCWezafMEnJxXqYXkrO1-A@mail.gmail.com>
-Subject: Re: [PATCH 05/11] HID: HIDp: remove hidp_hidinput_event
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Feb 2014 10:29:17 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux USB List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usb: gadget: s3c-hsotg: fix build on x86 and other architectures
+Date: Mon,  3 Feb 2014 10:29:09 -0500
+Message-Id: <1391441349-15887-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 10:10 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> hidp uses its own ->hidinput_input_event() instead of the generic binding
->> in hid-input.
->> Moving the handling of LEDs towards hidp_hidinput_event() allows two things:
->> - remove hidinput_input_event definitively from struct hid_device
->> - hidraw user space programs can also set the LEDs
->
-> This one looks good. hid-input uses output_raw_report(), which is on
-> INTR for BT-HID, which is equivalent to what hidp_send_report() does.
-> So:
->
-> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+The readsl and writesl I/O accessors are only defined on some
+architectures. The driver currently depends on CONFIG_ARM because
+the build breaks on x86, in particular. Switch to use of ioread32_rep
+and iowrite32_rep to fix build on all architectures and remove the
+CONFIG_ARM dependency.
 
-Thanks
+Also update printk formatting to handle a long long dma_addr_t to avoid
+warnings on !32-bit architectures.
 
->
-> Btw., you might have to keep hidp_send_report() if you drop earlier
-> patches (haven't exactly looked at the order), but feel free to keep
-> my r-b anyway.
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+ drivers/usb/gadget/Kconfig     |  1 -
+ drivers/usb/gadget/s3c-hsotg.c | 12 ++++++------
+ 2 files changed, 6 insertions(+), 7 deletions(-)
 
-No need to keep it, patches 1 to 4 do not touch HIDp, so no one else
-use hidp_send_report().
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 8154165..782f43a 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -301,7 +301,6 @@ config USB_PXA27X
+ 	   gadget drivers to also be dynamically linked.
+ 
+ config USB_S3C_HSOTG
+-	depends on ARM
+ 	tristate "Designware/S3C HS/OtG USB Device controller"
+ 	help
+ 	  The Designware USB2.0 high-speed gadget controller
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index 1172eae..0449b76 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -617,7 +617,7 @@ static int s3c_hsotg_write_fifo(struct s3c_hsotg *hsotg,
+ 	to_write = DIV_ROUND_UP(to_write, 4);
+ 	data = hs_req->req.buf + buf_pos;
+ 
+-	writesl(hsotg->regs + EPFIFO(hs_ep->index), data, to_write);
++	iowrite32_rep(hsotg->regs + EPFIFO(hs_ep->index), data, to_write);
+ 
+ 	return (to_write >= can_write) ? -ENOSPC : 0;
+ }
+@@ -720,8 +720,8 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
+ 		ureq->length, ureq->actual);
+ 	if (0)
+ 		dev_dbg(hsotg->dev,
+-			"REQ buf %p len %d dma 0x%08x noi=%d zp=%d snok=%d\n",
+-			ureq->buf, length, ureq->dma,
++			"REQ buf %p len %d dma 0x%08llx noi=%d zp=%d snok=%d\n",
++			ureq->buf, length, (unsigned long long)ureq->dma,
+ 			ureq->no_interrupt, ureq->zero, ureq->short_not_ok);
+ 
+ 	maxreq = get_ep_limit(hs_ep);
+@@ -789,8 +789,8 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
+ 		dma_reg = dir_in ? DIEPDMA(index) : DOEPDMA(index);
+ 		writel(ureq->dma, hsotg->regs + dma_reg);
+ 
+-		dev_dbg(hsotg->dev, "%s: 0x%08x => 0x%08x\n",
+-			__func__, ureq->dma, dma_reg);
++		dev_dbg(hsotg->dev, "%s: 0x%08llx => 0x%08x\n",
++			__func__, (unsigned long long)ureq->dma, dma_reg);
+ 	}
+ 
+ 	ctrl |= DxEPCTL_EPEna;	/* ensure ep enabled */
+@@ -1488,7 +1488,7 @@ static void s3c_hsotg_rx_data(struct s3c_hsotg *hsotg, int ep_idx, int size)
+ 	 * note, we might over-write the buffer end by 3 bytes depending on
+ 	 * alignment of the data.
+ 	 */
+-	readsl(fifo, hs_req->req.buf + read_ptr, to_read);
++	ioread32_rep(fifo, hs_req->req.buf + read_ptr, to_read);
+ }
+ 
+ /**
+-- 
+1.8.4
 
-Cheers,
-Benjamin
-
->
-> Thanks
-> David
->
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>  net/bluetooth/hidp/core.c | 46 ----------------------------------------------
->>  1 file changed, 46 deletions(-)
->>
->> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
->> index b062cee..469e61b 100644
->> --- a/net/bluetooth/hidp/core.c
->> +++ b/net/bluetooth/hidp/core.c
->> @@ -223,51 +223,6 @@ static void hidp_input_report(struct hidp_session *session, struct sk_buff *skb)
->>         input_sync(dev);
->>  }
->>
->> -static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
->> -{
->> -       unsigned char hdr;
->> -       u8 *buf;
->> -       int rsize, ret;
->> -
->> -       buf = hid_alloc_report_buf(report, GFP_ATOMIC);
->> -       if (!buf)
->> -               return -EIO;
->> -
->> -       hid_output_report(report, buf);
->> -       hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
->> -
->> -       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
->> -       ret = hidp_send_intr_message(session, hdr, buf, rsize);
->> -
->> -       kfree(buf);
->> -       return ret;
->> -}
->> -
->> -static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
->> -                              unsigned int code, int value)
->> -{
->> -       struct hid_device *hid = input_get_drvdata(dev);
->> -       struct hidp_session *session = hid->driver_data;
->> -       struct hid_field *field;
->> -       int offset;
->> -
->> -       BT_DBG("session %p type %d code %d value %d",
->> -              session, type, code, value);
->> -
->> -       if (type != EV_LED)
->> -               return -1;
->> -
->> -       offset = hidinput_find_field(hid, type, code, &field);
->> -       if (offset == -1) {
->> -               hid_warn(dev, "event field not found\n");
->> -               return -1;
->> -       }
->> -
->> -       hid_set_field(field, offset, value);
->> -
->> -       return hidp_send_report(session, field->report);
->> -}
->> -
->>  static int hidp_get_raw_report(struct hid_device *hid,
->>                 unsigned char report_number,
->>                 unsigned char *data, size_t count,
->> @@ -817,7 +772,6 @@ static struct hid_ll_driver hidp_hid_driver = {
->>         .close = hidp_close,
->>         .raw_request = hidp_raw_request,
->>         .output_report = hidp_output_report,
->> -       .hidinput_input_event = hidp_hidinput_event,
->>  };
->>
->>  /* This function sets up the hid device. It does not add it
->> --
->> 1.8.3.1
->>
