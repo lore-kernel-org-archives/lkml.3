@@ -1,179 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaBCTJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:09:26 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:49618 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaBCTJX (ORCPT
+	id S1753909AbaBCTMC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:12:02 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48466 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaBCTJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:09:23 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/10] kernfs: rename kernfs_dir_ops to kernfs_syscall_ops
-Date: Mon,  3 Feb 2014 14:09:09 -0500
-Message-Id: <1391454557-32376-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391454557-32376-1-git-send-email-tj@kernel.org>
-References: <1391454557-32376-1-git-send-email-tj@kernel.org>
+	Mon, 3 Feb 2014 14:09:26 -0500
+Message-ID: <52EFE980.7070607@kernel.org>
+Date: Mon, 03 Feb 2014 19:09:52 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Marek Vasut <marex@denx.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iio: mxs-lradc: remove useless check
+References: <1390071918-10622-1-git-send-email-alexandre.belloni@free-electrons.com> <201401182133.15839.marex@denx.de>
+In-Reply-To: <201401182133.15839.marex@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're gonna need non-dir syscall callbacks, which will make dir_ops a
-misnomer.  Let's rename kernfs_dir_ops to kernfs_syscall_ops.
 
-This is pure rename.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/kernfs/dir.c        | 25 +++++++++++++------------
- include/linux/kernfs.h | 18 +++++++++---------
- 2 files changed, 22 insertions(+), 21 deletions(-)
+On 18/01/14 20:33, Marek Vasut wrote:
+> On Saturday, January 18, 2014 at 08:05:18 PM, Alexandre Belloni wrote:
+>> Checking the channel number is useless since mxs_lradc_read_raw() is called
+>> from a controlled environment and the driver is responsible for filing the
+>> struct iio_chan_spec.
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>> ---
+>>   drivers/staging/iio/adc/mxs-lradc.c | 4 ----
+>>   1 file changed, 4 deletions(-)
+>
+> Changelog's missing ;-)
+>
+> Acked-by: Marek Vasut <marex@denx.de>
+Applied to the togreg branch of iio.git - will be pushed out as testing for
+the autobuilders to play with it.
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index bfbfb48..f58d2f1 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -527,13 +527,14 @@ EXPORT_SYMBOL_GPL(kernfs_find_and_get_ns);
- 
- /**
-  * kernfs_create_root - create a new kernfs hierarchy
-- * @kdops: optional directory syscall operations for the hierarchy
-+ * @scops: optional syscall operations for the hierarchy
-  * @priv: opaque data associated with the new directory
-  *
-  * Returns the root of the new hierarchy on success, ERR_PTR() value on
-  * failure.
-  */
--struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
-+struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
-+				       void *priv)
- {
- 	struct kernfs_root *root;
- 	struct kernfs_node *kn;
-@@ -556,7 +557,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
- 	kn->priv = priv;
- 	kn->dir.root = root;
- 
--	root->dir_ops = kdops;
-+	root->syscall_ops = scops;
- 	root->kn = kn;
- 	init_waitqueue_head(&root->deactivate_waitq);
- 
-@@ -653,16 +654,16 @@ static int kernfs_iop_mkdir(struct inode *dir, struct dentry *dentry,
- 			    umode_t mode)
- {
- 	struct kernfs_node *parent = dir->i_private;
--	struct kernfs_dir_ops *kdops = kernfs_root(parent)->dir_ops;
-+	struct kernfs_syscall_ops *scops = kernfs_root(parent)->syscall_ops;
- 	int ret;
- 
--	if (!kdops || !kdops->mkdir)
-+	if (!scops || !scops->mkdir)
- 		return -EPERM;
- 
- 	if (!kernfs_get_active(parent))
- 		return -ENODEV;
- 
--	ret = kdops->mkdir(parent, dentry->d_name.name, mode);
-+	ret = scops->mkdir(parent, dentry->d_name.name, mode);
- 
- 	kernfs_put_active(parent);
- 	return ret;
-@@ -671,16 +672,16 @@ static int kernfs_iop_mkdir(struct inode *dir, struct dentry *dentry,
- static int kernfs_iop_rmdir(struct inode *dir, struct dentry *dentry)
- {
- 	struct kernfs_node *kn  = dentry->d_fsdata;
--	struct kernfs_dir_ops *kdops = kernfs_root(kn)->dir_ops;
-+	struct kernfs_syscall_ops *scops = kernfs_root(kn)->syscall_ops;
- 	int ret;
- 
--	if (!kdops || !kdops->rmdir)
-+	if (!scops || !scops->rmdir)
- 		return -EPERM;
- 
- 	if (!kernfs_get_active(kn))
- 		return -ENODEV;
- 
--	ret = kdops->rmdir(kn);
-+	ret = scops->rmdir(kn);
- 
- 	kernfs_put_active(kn);
- 	return ret;
-@@ -691,10 +692,10 @@ static int kernfs_iop_rename(struct inode *old_dir, struct dentry *old_dentry,
- {
- 	struct kernfs_node *kn  = old_dentry->d_fsdata;
- 	struct kernfs_node *new_parent = new_dir->i_private;
--	struct kernfs_dir_ops *kdops = kernfs_root(kn)->dir_ops;
-+	struct kernfs_syscall_ops *scops = kernfs_root(kn)->syscall_ops;
- 	int ret;
- 
--	if (!kdops || !kdops->rename)
-+	if (!scops || !scops->rename)
- 		return -EPERM;
- 
- 	if (!kernfs_get_active(kn))
-@@ -705,7 +706,7 @@ static int kernfs_iop_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		return -ENODEV;
- 	}
- 
--	ret = kdops->rename(kn, new_parent, new_dentry->d_name.name);
-+	ret = scops->rename(kn, new_parent, new_dentry->d_name.name);
- 
- 	kernfs_put_active(new_parent);
- 	kernfs_put_active(kn);
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 58a131d..5ddc474 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -108,13 +108,13 @@ struct kernfs_node {
- };
- 
- /*
-- * kernfs_dir_ops may be specified on kernfs_create_root() to support
-- * directory manipulation syscalls.  These optional callbacks are invoked
-- * on the matching syscalls and can perform any kernfs operations which
-- * don't necessarily have to be the exact operation requested.  An active
-- * reference is held for each kernfs_node parameter.
-+ * kernfs_syscall_ops may be specified on kernfs_create_root() to support
-+ * syscalls.  These optional callbacks are invoked on the matching syscalls
-+ * and can perform any kernfs operations which don't necessarily have to be
-+ * the exact operation requested.  An active reference is held for each
-+ * kernfs_node parameter.
-  */
--struct kernfs_dir_ops {
-+struct kernfs_syscall_ops {
- 	int (*mkdir)(struct kernfs_node *parent, const char *name,
- 		     umode_t mode);
- 	int (*rmdir)(struct kernfs_node *kn);
-@@ -128,7 +128,7 @@ struct kernfs_root {
- 
- 	/* private fields, do not use outside kernfs proper */
- 	struct ida		ino_ida;
--	struct kernfs_dir_ops	*dir_ops;
-+	struct kernfs_syscall_ops *syscall_ops;
- 	wait_queue_head_t	deactivate_waitq;
- };
- 
-@@ -219,7 +219,7 @@ struct kernfs_node *kernfs_find_and_get_ns(struct kernfs_node *parent,
- void kernfs_get(struct kernfs_node *kn);
- void kernfs_put(struct kernfs_node *kn);
- 
--struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops,
-+struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
- 				       void *priv);
- void kernfs_destroy_root(struct kernfs_root *root);
- 
-@@ -273,7 +273,7 @@ static inline void kernfs_get(struct kernfs_node *kn) { }
- static inline void kernfs_put(struct kernfs_node *kn) { }
- 
- static inline struct kernfs_root *
--kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
-+kernfs_create_root(struct kernfs_syscall_ops *scops, void *priv)
- { return ERR_PTR(-ENOSYS); }
- 
- static inline void kernfs_destroy_root(struct kernfs_root *root) { }
--- 
-1.8.5.3
-
+Thanks.
+>
+>> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
+>> b/drivers/staging/iio/adc/mxs-lradc.c index 7fc66a6a6e36..d304156ca2f7
+>> 100644
+>> --- a/drivers/staging/iio/adc/mxs-lradc.c
+>> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+>> @@ -897,10 +897,6 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>>   {
+>>   	struct mxs_lradc *lradc = iio_priv(iio_dev);
+>>
+>> -	/* Check for invalid channel */
+>> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
+>> -		return -EINVAL;
+>> -
+>>   	switch (m) {
+>>   	case IIO_CHAN_INFO_RAW:
+>>   		if (chan->type == IIO_TEMP)
+>
+> Best regards,
+> Marek Vasut
+>
