@@ -1,55 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaBCUS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:18:56 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48897 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaBCUSy (ORCPT
+	id S1753563AbaBCUTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:19:10 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:39488 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753518AbaBCUTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:18:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140203201228.GE26722@mwanda>
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail>
-	<20140202160512.GA4946@redhat.com>
-	<201402021807.37772.s.L-H@gmx.de>
-	<52EFCC66.9020304@lwfinger.net>
-	<20140203201228.GE26722@mwanda>
-Date: Mon, 3 Feb 2014 12:18:53 -0800
-X-Google-Sender-Auth: IlAJ363lYn3r6ttb7riAr8KRSHo
-Message-ID: <CA+55aFyHZfw9rtZQJ9i2p7MQAVX4iM0QCdzRZzaivD2nRDHeLQ@mail.gmail.com>
-Subject: Re: rtl8821ae.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>, Dave Jones <davej@redhat.com>,
-        Andrea Merello <andrea.merello@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Feb 2014 15:19:04 -0500
+From: Greg Pearson <greg.pearson@hp.com>
+To: akpm@linux-foundation.org, vgoyal@redhat.com, d.hatayama@jp.fujitsu.com,
+        holzheu@linux.vnet.ibm.com, dhowells@redhat.com,
+        paul.gortmaker@windriver.com
+Cc: linux-kernel@vger.kernel.org, greg.pearson@hp.com
+Subject: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during header update
+Date: Mon,  3 Feb 2014 13:18:38 -0700
+Message-Id: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 12:12 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Mon, Feb 03, 2014 at 11:05:42AM -0600, Larry Finger wrote:
->> A combined driver would require very many branches based on chip
->> number and would certainly execute much more slowly.
->
-> I seriously doubt there are performance issues with merging the drivers.
+Currently, update_note_header_size_elf64() and
+update_note_header_size_elf32() will add the size
+of a PT_NOTE entry to real_sz even if that causes real_sz
+to exceeds max_sz. This patch corrects the while loop logic
+in those routines to ensure that does not happen and prints
+a warning if a PT_NOTE entry is dropped.
 
-Quite frankly, merging drivers can be a f*cking pain. I would
-seriously suggest avoiding it *unless* the hardware is literally
-almost identical, or the drivers have been written with multi-chip
-support from the ground up by people who actually understood the
-hardware.
+One possible negative side effect of exceeding the max_sz
+limit is an allocation failure in merge_note_headers_elf64()
+or merge_note_headers_elf32() which would produce console
+output such as the following while booting the crash
+kernel.
 
-But the reason isn't performance - it's subtle breakage. Merged
-drivers have a tendency to break support for chip A when you fix
-something for chip B. And the end result is a driver that nobody
-understands, and nobody can sanely test.
+vmalloc: allocation failure: 14076997632 bytes
+swapper/0: page allocation failure: order:0, mode:0x80d2
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-gbp1 #7
+ffffffff817dcc30 ffff88003025fc28 ffffffff815bdb0b ffff88003025fcb0
+ffffffff8113b3d0 ffffffff817dcc30 ffff88003025fc48 ffffc90000000018
+ffff88003025fcc0 ffff88003025fc60 ffff88003025fc80 ffff88002b5df980
+Call Trace:
+[<ffffffff815bdb0b>] dump_stack+0x19/0x1b
+[<ffffffff8113b3d0>] warn_alloc_failed+0xf0/0x160
+[<ffffffff81a1267d>] ? merge_note_headers_elf64.constprop.9+0x116/0x24a
+[<ffffffff8116d34e>] __vmalloc_node_range+0x19e/0x250
+[<ffffffff81210454>] ? read_from_oldmem.part.0+0xa4/0xe0
+[<ffffffff8116d4ec>] vmalloc_user+0x4c/0x70
+[<ffffffff81a1267d>] ? merge_note_headers_elf64.constprop.9+0x116/0x24a
+[<ffffffff81a1267d>] merge_note_headers_elf64.constprop.9+0x116/0x24a
+[<ffffffff81a12cce>] vmcore_init+0x2d4/0x76c
+[<ffffffff8120f9f0>] ? kcore_update_ram+0x1f0/0x1f0
+[<ffffffff81063b92>] ? walk_system_raange+0x112/0x130
+[<ffffffff81a129fa>] ? merge_note_headers_elf32.constprop.8+0x249/0x249
+[<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+[<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+[<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+[<ffffffff815a0d20>] ? rest_init+0x80/0x80
+[<ffffffff815a0d2e>] kernel_init+0xe/0x180
+[<ffffffff815cd8ac>] ret_from_fork+0x7c/0xb0
+[<ffffffff815a0d20>] ? rest_init+0x80/0x80
 
-Sometimes it's simply better to leave old drivers alone.
+Kdump: vmcore not initialized
 
-                  Linus
+kdump: dump target is /dev/sda4
+kdump: saving to /sysroot//var/crash/127.0.0.1-2014.01.28-13:58:52/
+kdump: saving vmcore-dmesg.txt
+Cannot open /proc/vmcore: No such file or directory
+kdump: saving vmcore-dmesg.txt failed
+kdump: saving vmcore
+kdump: saving vmcore failed
+
+This type of failure has been seen on a four socket prototype
+system with certain memory configurations. Most PT_NOTE sections
+have a single entry similar to:
+
+  n_namesz = 0x5
+  n_descsz = 0x150
+  n_type   = 0x1
+
+Occasionally, a second entry is encountered with very
+large n_namesz and n_descsz sizes:
+
+  n_namesz = 0x80000008
+  n_descsz = 0x510ae163
+  n_type   = 0x80000008
+
+Not yet sure of the source of these extra entries, they
+seem bogus, but they shouldn't cause crash dump to fail.
+
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+---
+ fs/proc/vmcore.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 2ca7ba0..051c803 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -468,12 +468,14 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
+ 			return rc;
+ 		}
+ 		nhdr_ptr = notes_section;
+-		while (real_sz < max_sz) {
+-			if (nhdr_ptr->n_namesz == 0)
+-				break;
++		while (nhdr_ptr->n_namesz != 0) {
+ 			sz = sizeof(Elf64_Nhdr) +
+ 				((nhdr_ptr->n_namesz + 3) & ~3) +
+ 				((nhdr_ptr->n_descsz + 3) & ~3);
++			if ((real_sz + sz) > max_sz) {
++				pr_warn("Warning: dropping PT_NOTE entry\n");
++				break;
++			}
+ 			real_sz += sz;
+ 			nhdr_ptr = (Elf64_Nhdr*)((char*)nhdr_ptr + sz);
+ 		}
+@@ -648,12 +650,14 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
+ 			return rc;
+ 		}
+ 		nhdr_ptr = notes_section;
+-		while (real_sz < max_sz) {
+-			if (nhdr_ptr->n_namesz == 0)
+-				break;
++		while (nhdr_ptr->n_namesz != 0) {
+ 			sz = sizeof(Elf32_Nhdr) +
+ 				((nhdr_ptr->n_namesz + 3) & ~3) +
+ 				((nhdr_ptr->n_descsz + 3) & ~3);
++			if ((real_sz + sz) > max_sz) {
++				pr_warn("Warning: dropping PT_NOTE entry\n");
++				break;
++			}
+ 			real_sz += sz;
+ 			nhdr_ptr = (Elf32_Nhdr*)((char*)nhdr_ptr + sz);
+ 		}
+-- 
+1.8.3.2
+
