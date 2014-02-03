@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaBCWrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:47:17 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:33436 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaBCWrQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:47:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
-References: <1391452183-2160-1-git-send-email-bp@alien8.de>
-	<alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
-Date: Mon, 3 Feb 2014 14:47:15 -0800
-X-Google-Sender-Auth: A4vnsRqVOg9LRyoiUKQSjHNBjto
-Message-ID: <CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
-Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
-        Borislav Petkov <bp@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753100AbaBCWyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:54:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:23506 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268AbaBCWx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 17:53:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,775,1384329600"; 
+   d="scan'208";a="469316101"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>
+Subject: [PATCH char-misc-linus] misc: mic: fix possible signed underflow (undefined behavior) in userspace API
+Date: Mon,  3 Feb 2014 14:53:19 -0800
+Message-Id: <a40665dc7ea26c79337408bece3dc6af2846fc1a.1391408255.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 2:00 PM, David Rientjes <rientjes@google.com> wrote:
->
-> How do you define "huge bloat" if the size of vmlinux doesn't increase?
+iovcnt is declared as a signed integer in both the userspace API and
+as a local variable in mic_virtio.c. The while() loop in mic_virtio.c
+iterates until the local variable iovcnt reaches the value 0. If
+userspace passes e.g. INT_MIN as iovcnt field, this loop then appears
+to depend on an undefined behavior (signed underflow) to complete.
+The fix is to use unsigned integers in both the userspace API and
+the local variable.
 
-Don't be silly. The size of all the object files increase *hugely*.
+This issue was reported @ https://lkml.org/lkml/2014/1/10/10
 
-This is my fs/builtin.o in my normal config:
+Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
+---
+ drivers/misc/mic/host/mic_virtio.c | 3 ++-
+ include/uapi/linux/mic_ioctl.h     | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-  -rw-rw-r--. 1 torvalds torvalds  2838613 Feb  3 14:32 fs/built-in.o
+diff --git a/drivers/misc/mic/host/mic_virtio.c b/drivers/misc/mic/host/mic_virtio.c
+index 752ff87..7e1ef0e 100644
+--- a/drivers/misc/mic/host/mic_virtio.c
++++ b/drivers/misc/mic/host/mic_virtio.c
+@@ -156,7 +156,8 @@ static int mic_vringh_copy(struct mic_vdev *mvdev, struct vringh_kiov *iov,
+ static int _mic_virtio_copy(struct mic_vdev *mvdev,
+ 	struct mic_copy_desc *copy)
+ {
+-	int ret = 0, iovcnt = copy->iovcnt;
++	int ret = 0;
++	u32 iovcnt = copy->iovcnt;
+ 	struct iovec iov;
+ 	struct iovec __user *u_iov = copy->iov;
+ 	void __user *ubuf = NULL;
+diff --git a/include/uapi/linux/mic_ioctl.h b/include/uapi/linux/mic_ioctl.h
+index 7fabba5..feb0b4c 100644
+--- a/include/uapi/linux/mic_ioctl.h
++++ b/include/uapi/linux/mic_ioctl.h
+@@ -39,7 +39,7 @@ struct mic_copy_desc {
+ #else
+ 	struct iovec *iov;
+ #endif
+-	int iovcnt;
++	__u32 iovcnt;
+ 	__u8 vr_idx;
+ 	__u8 update_used;
+ 	__u32 out_len;
+-- 
+1.8.2.1
 
-and with the *reduced* debug info, ie .config diff as follows:
-
-  +CONFIG_DEBUG_INFO=y
-  +CONFIG_DEBUG_INFO_REDUCED=y
-
-I get this:
-
-  -rw-rw-r--. 1 torvalds torvalds 11793317 Feb  3 14:33 fs/built-in.o
-
-iow, that "reduced" debug info is still more than 4x bigger than a
-non-debug-info kernel.
-
-David, if you don't think that debug-info bloats the build, you're in
-huge *huge* denial. CONFIG_DEBUG_INFO (even with the "reduced" thing)
-is ABSOLUTELY HORRIBLE CRAP.
-
-> Would some people consider that to be acceptable but now mysteriously
-> confused because we don't know what "huge bloat" you're referring to?
-
-That >4x size increase doesn't match your idea of "huge bloat"?
-
-The object files being much bigger really does screw you especially on
-laptops that often have less memory and less capable IO subsystems.
-The final links in particular tend to be much bigger and use much more
-memory.
-
-I suspect a lot of people are in denial about just how *horrible* the
-overhead of debug builds are. And yeah, if you have oodles of memory
-to cache things, it's not too bad. But you really want to have *lots*
-of memory, because otherwise you won't be caching all those object
-files in RAM, and your build easily becomes IO bound at link time. A
-factor of four size difference will not be helping your poor slow
-laptop disk..
-
-                      Linus
