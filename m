@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaBCSWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:22:44 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:50811 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708AbaBCSWn (ORCPT
+	id S1753830AbaBCSXW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:23:22 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:62840 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221AbaBCSQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:22:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140124163548.GH31040@mudshark.cambridge.arm.com>
-References: <1390399879-5109-1-git-send-email-jean.pihet@linaro.org>
-	<20140124163548.GH31040@mudshark.cambridge.arm.com>
-Date: Mon, 3 Feb 2014 19:22:42 +0100
-Message-ID: <CAFrcx1kgxYJX6HvRSivZxShPrj8S3YsHUWwMkzD8dumxmE5z2w@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] perf: AARCH64 arch support
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>, Arnaldo <acme@ghostprotocols.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Feb 2014 13:16:35 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 02/16] staging: android: Split uapi out of ashmem.h
+Date: Mon,  3 Feb 2014 10:16:14 -0800
+Message-Id: <1391451388-23906-3-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
+References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will, Arnaldo,
+From: Colin Cross <ccross@android.com>
 
-On 24 January 2014 17:35, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Jean,
->
-> On Wed, Jan 22, 2014 at 02:11:15PM +0000, Jean Pihet wrote:
->> Add AARCH64 specific support. This includes the following:
->> - AARCH64 perf registers definition and hooks,
->> - compat mode registers use, i.e. profiling a 32-bit binary on
->>    a 64-bit system,
->> - unwinding using the dwarf information from the .debug_frame
->>    section of the ELF binary,
->> - unwinding using the frame pointer information; in 64-bit and
->>    compat modes.
->>
->> Note: support for unwinding using the dwarf information in compat
->> mode requires some changes to the libunwind code. Those changes
->> have been submitted on the libunwind ML and are in discussion.
->>
->> Tested on ARMv7, ARMv8 and x86_64 platforms. The compat mode has been
->> tested on ARMv8 using statically built 32-bit binaries.
->
-> This is look alright to me now, but there are still two blockers:
->
->  (1) Getting the libunwind code merged
-This one is independent of the kernel changes. The libunwind stuff is
-under disuccsion atm, cf. libunwind ML.
+Move the userspace interface of ashmem.h to
+drivers/staging/android/uapi/ashmem.h
 
->  (2) Splitting this into an arch/arm64 series and a tools/perf series, so
->      that acme can merge the latter independently (and avoid the mess we had
->      last time).
-Split into:
-- the tools/perf change: '[PATCH] perf: ARM64: wire up perf_regs and
-unwind support'
-and
-- the arch/arm64 changes: '[PATCH v6 0/3] perf: AARCH64 arch support'.
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+[jstultz: Minor commit message tweak]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/staging/android/ashmem.h      | 30 +---------------------
+ drivers/staging/android/uapi/ashmem.h | 47 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 29 deletions(-)
+ create mode 100644 drivers/staging/android/uapi/ashmem.h
 
+diff --git a/drivers/staging/android/ashmem.h b/drivers/staging/android/ashmem.h
+index 8dc0f0d..5abcfd7 100644
+--- a/drivers/staging/android/ashmem.h
++++ b/drivers/staging/android/ashmem.h
+@@ -16,35 +16,7 @@
+ #include <linux/ioctl.h>
+ #include <linux/compat.h>
+ 
+-#define ASHMEM_NAME_LEN		256
+-
+-#define ASHMEM_NAME_DEF		"dev/ashmem"
+-
+-/* Return values from ASHMEM_PIN: Was the mapping purged while unpinned? */
+-#define ASHMEM_NOT_PURGED	0
+-#define ASHMEM_WAS_PURGED	1
+-
+-/* Return values from ASHMEM_GET_PIN_STATUS: Is the mapping pinned? */
+-#define ASHMEM_IS_UNPINNED	0
+-#define ASHMEM_IS_PINNED	1
+-
+-struct ashmem_pin {
+-	__u32 offset;	/* offset into region, in bytes, page-aligned */
+-	__u32 len;	/* length forward from offset, in bytes, page-aligned */
+-};
+-
+-#define __ASHMEMIOC		0x77
+-
+-#define ASHMEM_SET_NAME		_IOW(__ASHMEMIOC, 1, char[ASHMEM_NAME_LEN])
+-#define ASHMEM_GET_NAME		_IOR(__ASHMEMIOC, 2, char[ASHMEM_NAME_LEN])
+-#define ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, size_t)
+-#define ASHMEM_GET_SIZE		_IO(__ASHMEMIOC, 4)
+-#define ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned long)
+-#define ASHMEM_GET_PROT_MASK	_IO(__ASHMEMIOC, 6)
+-#define ASHMEM_PIN		_IOW(__ASHMEMIOC, 7, struct ashmem_pin)
+-#define ASHMEM_UNPIN		_IOW(__ASHMEMIOC, 8, struct ashmem_pin)
+-#define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
+-#define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
++#include "uapi/ashmem.h"
+ 
+ /* support of 32bit userspace on 64bit platforms */
+ #ifdef CONFIG_COMPAT
+diff --git a/drivers/staging/android/uapi/ashmem.h b/drivers/staging/android/uapi/ashmem.h
+new file mode 100644
+index 0000000..ba4743c
+--- /dev/null
++++ b/drivers/staging/android/uapi/ashmem.h
+@@ -0,0 +1,47 @@
++/*
++ * drivers/staging/android/uapi/ashmem.h
++ *
++ * Copyright 2008 Google Inc.
++ * Author: Robert Love
++ *
++ * This file is dual licensed.  It may be redistributed and/or modified
++ * under the terms of the Apache 2.0 License OR version 2 of the GNU
++ * General Public License.
++ */
++
++#ifndef _UAPI_LINUX_ASHMEM_H
++#define _UAPI_LINUX_ASHMEM_H
++
++#include <linux/ioctl.h>
++
++#define ASHMEM_NAME_LEN		256
++
++#define ASHMEM_NAME_DEF		"dev/ashmem"
++
++/* Return values from ASHMEM_PIN: Was the mapping purged while unpinned? */
++#define ASHMEM_NOT_PURGED	0
++#define ASHMEM_WAS_PURGED	1
++
++/* Return values from ASHMEM_GET_PIN_STATUS: Is the mapping pinned? */
++#define ASHMEM_IS_UNPINNED	0
++#define ASHMEM_IS_PINNED	1
++
++struct ashmem_pin {
++	__u32 offset;	/* offset into region, in bytes, page-aligned */
++	__u32 len;	/* length forward from offset, in bytes, page-aligned */
++};
++
++#define __ASHMEMIOC		0x77
++
++#define ASHMEM_SET_NAME		_IOW(__ASHMEMIOC, 1, char[ASHMEM_NAME_LEN])
++#define ASHMEM_GET_NAME		_IOR(__ASHMEMIOC, 2, char[ASHMEM_NAME_LEN])
++#define ASHMEM_SET_SIZE		_IOW(__ASHMEMIOC, 3, size_t)
++#define ASHMEM_GET_SIZE		_IO(__ASHMEMIOC, 4)
++#define ASHMEM_SET_PROT_MASK	_IOW(__ASHMEMIOC, 5, unsigned long)
++#define ASHMEM_GET_PROT_MASK	_IO(__ASHMEMIOC, 6)
++#define ASHMEM_PIN		_IOW(__ASHMEMIOC, 7, struct ashmem_pin)
++#define ASHMEM_UNPIN		_IOW(__ASHMEMIOC, 8, struct ashmem_pin)
++#define ASHMEM_GET_PIN_STATUS	_IO(__ASHMEMIOC, 9)
++#define ASHMEM_PURGE_ALL_CACHES	_IO(__ASHMEMIOC, 10)
++
++#endif	/* _UAPI_LINUX_ASHMEM_H */
+-- 
+1.8.3.2
 
->
-> Anyway, for the series:
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
-Thanks! I have added your Acked-By in the series.
-
->
-> Will
-
-Jean
