@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaBCTmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:42:06 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:45458 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaBCTmE (ORCPT
+	id S1753473AbaBCTm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:42:28 -0500
+Received: from exprod5og102.obsmtp.com ([64.18.0.143]:47202 "HELO
+	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753411AbaBCTmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:42:04 -0500
+	Mon, 3 Feb 2014 14:42:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <52EFEF0A.9080101@amacapital.net>
-References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-	<52EFEF0A.9080101@amacapital.net>
-Date: Mon, 3 Feb 2014 11:42:03 -0800
-Message-ID: <CAJ3m7Br60ph=Ja_ggJAp9cb5fNJy2O1rRHeJW_jjeTJbYmG3UA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
-From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201401301516.27091.arnd@arndb.de>
+References: <1390599168-13150-1-git-send-email-tinamdar@apm.com>
+	<1390599168-13150-2-git-send-email-tinamdar@apm.com>
+	<201401301516.27091.arnd@arndb.de>
+Date: Mon, 3 Feb 2014 11:42:22 -0800
+Message-ID: <CACoXjcnXoysMeBsGuOb3t5b10zdeJ8pOnuOOzR8AaZhsOOYVEw@mail.gmail.com>
+Subject: Re: [RFC PATCH V3 1/4] pci: APM X-Gene PCIe controller driver
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches <patches@apm.com>,
+        Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/3/14, Andy Lutomirski <luto@amacapital.net> wrote:
-> On 02/02/2014 06:17 PM, Nathaniel Yazdani wrote:
->> Hi everyone,
->>
->> This patch series adds support for read(), write(), and ioctl()
->> operations
->> on eventpolls as well as an associated userspace structure to format the
->> eventpoll entries delivered via read()/write() buffers. The new
->> structure,
->> struct epoll, differs from struct epoll_event mainly in that it also
->> holds
->> the associated file descriptor. Using the normal I/O interface to
->> manipulate
->> eventpolls is much neater than using epoll-specific syscalls while also
->> allowing for greater flexibility (theoretically, pipes could be used to
->> filter access). Specifically, write() creates, modifies, and/or removes
->> event
->> entries stored in the supplied buffer, using the userspace identifier to
->> check whether an entry exists and removing it if no events are set to
->> trigger
->> it, while read() simply waits for enough events to fill the provided
->> buffer.
->> As timeout control is essential for polling to be practical, ioctl() is
->> used
->> to configure an optional timeout, which is infinite by default.
+On Thu, Jan 30, 2014 at 6:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 24 January 2014, Tanmay Inamdar wrote:
 >
-> If major changes are made to the epoll API, I want a way to do a bunch
-> of EPOLL_CTL_MODs and a wait, all in one syscall.  Even better: allow
-> more flexible timeouts (CLOCK_MONOTONIC, CLOCK_REALTIME, etc) at the
-> same time.
+>> +static void xgene_pcie_fixup_bridge(struct pci_dev *dev)
+>> +{
+>> +     int i;
+>> +
+>> +     /* Hide the PCI host BARs from the kernel as their content doesn't
+>> +      * fit well in the resource management
+>> +      */
+>> +     for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+>> +             dev->resource[i].start = dev->resource[i].end = 0;
+>> +             dev->resource[i].flags = 0;
+>> +     }
+>> +     dev_info(&dev->dev, "Hiding X-Gene pci host bridge resources %s\n",
+>> +              pci_name(dev));
+>> +}
+>> +DECLARE_PCI_FIXUP_HEADER(XGENE_PCIE_VENDORID, XGENE_PCIE_DEVICEID,
+>> +                      xgene_pcie_fixup_bridge);
 >
-> Since this can't do that, I'm not terribly inspired.
->
-> --Andy
+> Shouldn't this be gone now that the host bridge is correctly shown
+> at the domain root?
 
-So are you saying that those features you mentioned are specifically sought
-after for the kernel? If so I'd like to take a crack at some of them,
-may as well
-get some use out of my new knowledge of epoll internals :)
+In inbound region configuration, whole DDR space is mapped into the
+BAR of RC. When Linux PCI mid-layer starts enumerating, it reads the
+size of BAR of RC and tries to fit it into the memory resource. First
+thing is that the outbound memory is not enough to map the inbound BAR
+space. This creates problem with the resource management logic and
+second thing is that, it is not required to map inbound BAR space RC
+bar as no one will be accessing it further.
 
-Thanks for your input,
-Nate Yazdani
+As Jason suggested, Bridge BAR's should be 0 size unless the bridge
+itself has registers. However this is not the case with XGene PCIe
+controller. It may have been inherited from the legacy design.
+'arch/powerpc/sysdev/ppc4xx_pci.c' has similar fixup function.
+
+>
+>> +static int xgene_pcie_setup(int nr, struct pci_sys_data *sys)
+>> +{
+>> +     struct xgene_pcie_port *pp = sys->private_data;
+>> +     struct resource *io = &pp->realio;
+>> +
+>> +     io->start = sys->domain * SZ_64K;
+>> +     io->end = io->start + SZ_64K;
+>> +     io->flags = pp->io.res.flags;
+>> +     io->name = "PCI IO";
+>> +     pci_ioremap_io(io->start, pp->io.res.start);
+>> +
+>> +     pci_add_resource_offset(&sys->resources, io, sys->io_offset);
+>> +     sys->mem_offset = pp->mem.res.start - pp->mem.pci_addr;
+>> +     pci_add_resource_offset(&sys->resources, &pp->mem.res,
+>> +                             sys->mem_offset);
+>> +     return 1;
+>> +}
+>
+> Thanks for bringing back the I/O space handling.
+>
+> You don't seem to set sys->io_offset anywhere, but each of the
+> ports listed in your DT starts a local bus I/O register range
+> at port 0.
+>
+> AFAICT, you need to add (somewhere)
+>
+>         sys->io_offset = pp->realio.start - pp->io.pci_addr;
+>
+> but there could be something else missing. You clearly haven't
+> tested if the I/O space actually works.
+
+That is correct :-). Could not find the card. Thanks for the patch below.
+>
+> If you want to try out the I/O space, I'd suggest using an Intel
+> e1000 network card, which has both memory and i/o space. There
+> is a patch at http://www.spinics.net/lists/linux-pci/msg27684.html
+> that lets you check the I/O registers on it, or you can go
+> through /dev/port from user space.
+>
+> I also haven't seen your patch that adds pci_ioremap_io() for
+> arm64. It would be helpful to keep it in the same patch
+> series, since it won't build without this patch.
+
+I will post the arm64 pci patch along with next revision of this
+driver. That will cover the 'pci_ioremap_io' as well.
+
+>
+>         Arnd
