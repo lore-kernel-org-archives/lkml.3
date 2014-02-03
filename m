@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaBCXeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:34:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60142 "HELO
+	id S1754494AbaBCXet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:34:49 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60499 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753542AbaBCX2Z (ORCPT
+	with SMTP id S1753533AbaBCX2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:28:25 -0500
+	Mon, 3 Feb 2014 18:28:24 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH 13/24][Resend] ACPI / hotplug / PCI: Drop crit_sect locking
-Date: Tue, 04 Feb 2014 00:27:01 +0100
-Message-ID: <5034851.lQfU1PoFxK@vostro.rjw.lan>
+Subject: [PATCH 14/24][Update] ACPI / hotplug / PCI: Simplify hotplug_event()
+Date: Tue, 04 Feb 2014 00:33:46 +0100
+Message-ID: <2410580.0hC0rE6lqd@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
 In-Reply-To: <7532948.aJNUotNMpR@vostro.rjw.lan>
 References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140203104408.GQ18029@intel.com> <7532948.aJNUotNMpR@vostro.rjw.lan>
@@ -28,123 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-After recent PCI core changes related to the rescan/remove locking,
-the code sections under crit_sect mutexes from ACPIPHP slot objects
-are always executed under the general PCI rescan/remove lock.
-For this reason, the crit_sect mutexes are simply redundant, so drop
-them.
+A few lines of code can be cut from hotplug_event() by defining
+and initializing the slot variable at the top of the function,
+so do that.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/pci/hotplug/acpiphp.h      |    1 -
- drivers/pci/hotplug/acpiphp_glue.c |   23 +++--------------------
- 2 files changed, 3 insertions(+), 21 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   19 ++++++-------------
+ 1 file changed, 6 insertions(+), 13 deletions(-)
 
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -347,7 +347,6 @@ static acpi_status register_slot(acpi_ha
- 	slot->bus = bridge->pci_bus;
- 	slot->device = device;
- 	INIT_LIST_HEAD(&slot->funcs);
--	mutex_init(&slot->crit_sect);
+@@ -817,6 +817,7 @@ static void hotplug_event(acpi_handle ha
+ {
+ 	struct acpiphp_context *context = data;
+ 	struct acpiphp_func *func = &context->func;
++	struct acpiphp_slot *slot = func->slot;
+ 	struct acpiphp_bridge *bridge;
+ 	char objname[64];
+ 	struct acpi_buffer buffer = { .length = sizeof(objname),
+@@ -838,14 +839,11 @@ static void hotplug_event(acpi_handle ha
+ 		pr_debug("%s: Bus check notify on %s\n", __func__, objname);
+ 		pr_debug("%s: re-enumerating slots under %s\n",
+ 			 __func__, objname);
+-		if (bridge) {
++		if (bridge)
+ 			acpiphp_check_bridge(bridge);
+-		} else {
+-			struct acpiphp_slot *slot = func->slot;
++		else if (!(slot->flags & SLOT_IS_GOING_AWAY))
++			enable_slot(slot);
  
- 	list_add_tail(&slot->node, &bridge->slots);
+-			if (!(slot->flags & SLOT_IS_GOING_AWAY))
+-				enable_slot(slot);
+-		}
+ 		break;
  
-@@ -744,7 +743,6 @@ static void acpiphp_check_bridge(struct
- 		struct pci_bus *bus = slot->bus;
- 		struct pci_dev *dev, *tmp;
- 
--		mutex_lock(&slot->crit_sect);
- 		if (slot_no_hotplug(slot)) {
- 			; /* do nothing */
- 		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
-@@ -759,7 +757,6 @@ static void acpiphp_check_bridge(struct
- 		} else {
- 			disable_slot(slot);
- 		}
--		mutex_unlock(&slot->crit_sect);
- 	}
- }
- 
-@@ -846,12 +843,8 @@ static void hotplug_event(acpi_handle ha
- 		} else {
- 			struct acpiphp_slot *slot = func->slot;
- 
+ 	case ACPI_NOTIFY_DEVICE_CHECK:
+@@ -853,12 +851,7 @@ static void hotplug_event(acpi_handle ha
+ 		pr_debug("%s: Device check notify on %s\n", __func__, objname);
+ 		if (bridge) {
+ 			acpiphp_check_bridge(bridge);
+-		} else {
+-			struct acpiphp_slot *slot = func->slot;
+-
 -			if (slot->flags & SLOT_IS_GOING_AWAY)
 -				break;
 -
--			mutex_lock(&slot->crit_sect);
--			enable_slot(slot);
--			mutex_unlock(&slot->crit_sect);
-+			if (!(slot->flags & SLOT_IS_GOING_AWAY))
-+				enable_slot(slot);
- 		}
- 		break;
- 
-@@ -862,7 +855,6 @@ static void hotplug_event(acpi_handle ha
- 			acpiphp_check_bridge(bridge);
- 		} else {
- 			struct acpiphp_slot *slot = func->slot;
--			int ret;
- 
- 			if (slot->flags & SLOT_IS_GOING_AWAY)
- 				break;
-@@ -871,10 +863,7 @@ static void hotplug_event(acpi_handle ha
++		} else if (!(slot->flags & SLOT_IS_GOING_AWAY)) {
+ 			/*
  			 * Check if anything has changed in the slot and rescan
  			 * from the parent if that's the case.
- 			 */
--			mutex_lock(&slot->crit_sect);
--			ret = acpiphp_rescan_slot(slot);
--			mutex_unlock(&slot->crit_sect);
--			if (ret)
-+			if (acpiphp_rescan_slot(slot))
- 				acpiphp_check_bridge(func->parent);
- 		}
+@@ -871,7 +864,7 @@ static void hotplug_event(acpi_handle ha
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 		/* request device eject */
+ 		pr_debug("%s: Device eject notify on %s\n", __func__, objname);
+-		acpiphp_disable_and_eject_slot(func->slot);
++		acpiphp_disable_and_eject_slot(slot);
  		break;
-@@ -1088,13 +1077,10 @@ int acpiphp_enable_slot(struct acpiphp_s
- 	if (slot->flags & SLOT_IS_GOING_AWAY)
- 		return -ENODEV;
+ 	}
  
--	mutex_lock(&slot->crit_sect);
- 	/* configure all functions */
- 	if (!(slot->flags & SLOT_ENABLED))
- 		enable_slot(slot);
- 
--	mutex_unlock(&slot->crit_sect);
--
- 	pci_unlock_rescan_remove();
- 	return 0;
- }
-@@ -1110,8 +1096,6 @@ static int acpiphp_disable_and_eject_slo
- 	if (slot->flags & SLOT_IS_GOING_AWAY)
- 		return -ENODEV;
- 
--	mutex_lock(&slot->crit_sect);
--
- 	/* unconfigure all functions */
- 	disable_slot(slot);
- 
-@@ -1125,7 +1109,6 @@ static int acpiphp_disable_and_eject_slo
- 			break;
- 		}
- 
--	mutex_unlock(&slot->crit_sect);
- 	return 0;
- }
- 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -93,7 +93,6 @@ struct acpiphp_slot {
- 	struct list_head funcs;		/* one slot may have different
- 					   objects (i.e. for each function) */
- 	struct slot *slot;
--	struct mutex crit_sect;
- 
- 	u8		device;		/* pci device# */
- 	u32		flags;		/* see below */
-
