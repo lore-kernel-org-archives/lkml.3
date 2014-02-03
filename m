@@ -1,63 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaBCUEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:04:46 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42303 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaBCUEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:04:44 -0500
-Message-ID: <52EFF658.2080001@lwfinger.net>
-Date: Mon, 03 Feb 2014 14:04:40 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Kernel WARNING splat in 3.14-rc1
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753484AbaBCUF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:05:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931AbaBCUFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 15:05:24 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-edac@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] edac, poll timeout cannot be zero
+Date: Mon,  3 Feb 2014 15:05:13 -0500
+Message-Id: <1391457913-881-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On my freshly built 3.14-rc1 kernel, I get the following new warning splat from 
-slub:
+If you do
 
-[   69.008845] ------------[ cut here ]------------
-[   69.008861] WARNING: CPU: 0 PID: 1578 at mm/slub.c:1007 
-deactivate_slab+0x4bb/0x520()
-[   69.008863] Modules linked in: rfcomm nfs fscache af_packet lockd sunrpc bnep 
-rtl8723be arc4 rtl8723_common b43 rtl_pci rtlwifi mac80211 cfg80211 btusb bl
-uetooth powernow_k8 kvm_amd kvm snd_hda_intel snd_hda_codec bcma snd_hwdep r852 
-sdhci_pci sdhci snd_pcm sr_mod snd_seq ssb cdrom forcedeth sm_common pcspkr s
-nd_timer serio_raw snd_seq_device snd nand mtd mmc_core rfkill ata_generic 
-pata_amd nand_ids nand_bch bch nand_ecc 6lowpan_iphc soundcore btcoexist r592 ac v
-ideo memstick button battery sg dm_mod autofs4 thermal processor thermal_sys hwmon
-[   69.008934] CPU: 0 PID: 1578 Comm: akonadi_newmail Not tainted 3.14.0-rc1-wl+ #60
-[   69.008936] Hardware name: Hewlett-Packard HP Pavilion dv2700 Notebook 
-PC/30D6, BIOS F.27 11/27/2008
-[   69.008939]  0000000000000009 ffff880085ab1cd0 ffffffff815ee4a0 0000000000000000
-[   69.008945]  ffff880085ab1d08 ffffffff8104e768 ffffea0001ee69c0 ffff8800bb401800
-[   69.008950]  0000000000000000 ffff8800bb400c80 0000000000000002 ffff880085ab1d18
-[   69.008956] Call Trace:
-[   69.008965]  [<ffffffff815ee4a0>] dump_stack+0x4d/0x6f
-[   69.008971]  [<ffffffff8104e768>] warn_slowpath_common+0x78/0xa0
-[   69.008976]  [<ffffffff8104e845>] warn_slowpath_null+0x15/0x20
-[   69.008980]  [<ffffffff8118581b>] deactivate_slab+0x4bb/0x520
-[   69.008985]  [<ffffffff81183429>] ? new_slab+0x1f9/0x300
-[   69.008989]  [<ffffffff815ebe57>] __slab_alloc+0x34d/0x4f5
-[   69.008994]  [<ffffffff81185a6b>] ? kmem_cache_alloc+0x18b/0x1c0
-[   69.008999]  [<ffffffff810770d1>] ? prepare_creds+0x21/0x1a0
-[   69.009003]  [<ffffffff810770d1>] ? prepare_creds+0x21/0x1a0
-[   69.009007]  [<ffffffff81185a6b>] kmem_cache_alloc+0x18b/0x1c0
-[   69.009011]  [<ffffffff810770d1>] prepare_creds+0x21/0x1a0
-[   69.009016]  [<ffffffff8119f955>] SyS_access+0x35/0x1f0
-[   69.009019]  [<ffffffff815fe8a2>] system_call_fastpath+0x16/0x1b
-[   69.009019] ---[ end trace c63f75644bfb030a ]---
+echo 0 > /sys/module/edac_core/parameters/edac_mc_poll_msec
 
-There is a similar warning for my other CPU as well. The warning comes from 
-"lockdep_assert_held(&n->list_lock);".
+the following stack trace is output because the edac module is not
+designed to poll with a timeout of zero.
 
-If needed, I can bisect this issue.
+------------[ cut here ]------------
+WARNING: CPU: 12 PID: 0 at lib/list_debug.c:33 __list_add+0xac/0xc0()
+list_add corruption. prev->next should be next (ffff8808291dd1b8), but was           (null). (prev=ffff8808286fe3f8).
+Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
+CPU: 12 PID: 0 Comm: swapper/12 Not tainted 3.13.0+ #1
+Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+ 0000000000000009 ffff88082f683cc8 ffffffff815f1945 ffff88082f683d10
+ ffff88082f683d00 ffffffff81069dad ffff880826f9b248 ffff8808291dd1b8
+ ffff8808286fe3f8 ffff8808291dc000 0000000000000000 ffff88082f683d60
+Call Trace:
+ <IRQ>  [<ffffffff815f1945>] dump_stack+0x45/0x56
+ [<ffffffff81069dad>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff81069e1c>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff812dd0fc>] __list_add+0xac/0xc0
+ [<ffffffff8107570b>] __internal_add_timer+0xab/0x130
+ [<ffffffff81075907>] internal_add_timer+0x17/0x40
+ [<ffffffff81077dfa>] mod_timer_pinned+0xca/0x170
+ [<ffffffff8149f7f0>] ? pid_param_set+0x130/0x130
+ [<ffffffff8149fa7a>] intel_pstate_timer_func+0x28a/0x380
+ [<ffffffff8149f7f0>] ? pid_param_set+0x130/0x130
+ [<ffffffff810757d6>] call_timer_fn+0x36/0x100
+ [<ffffffff8149f7f0>] ? pid_param_set+0x130/0x130
+ [<ffffffff810767ff>] run_timer_softirq+0x1ff/0x2f0
+ [<ffffffff8106f3b5>] __do_softirq+0xf5/0x2e0
+ [<ffffffff8106f87d>] irq_exit+0x10d/0x120
+ [<ffffffff816042b5>] smp_apic_timer_interrupt+0x45/0x60
+ [<ffffffff81602c1d>] apic_timer_interrupt+0x6d/0x80
+ <EOI>  [<ffffffff814a022f>] ? cpuidle_enter_state+0x4f/0xc0
+ [<ffffffff814a0228>] ? cpuidle_enter_state+0x48/0xc0
+ [<ffffffff814a0359>] cpuidle_idle_call+0xb9/0x1f0
+ [<ffffffff8101e44e>] arch_cpu_idle+0xe/0x30
+ [<ffffffff810c327e>] cpu_startup_entry+0x9e/0x240
+ [<ffffffff81043544>] start_secondary+0x1e4/0x290
+---[ end trace 078b214fc68689e6 ]---
+------------[ cut here ]------------
+------------[ cut here ]------------
+kernel BUG at kernel/timer.c:1084!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
+CPU: 12 PID: 0 Comm: swapper/12 Tainted: G        W    3.13.0+ #1
+Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+task: ffff880428eadd30 ti: ffff880428eb8000 task.ti: ffff880428eb8000
+RIP: 0010:[<ffffffff810759c3>]  [<ffffffff810759c3>] cascade+0x93/0xa0
+RSP: 0018:ffff88082f683e70  EFLAGS: 00010083
+RAX: ffffffff81c64580 RBX: 0000000000000000 RCX: ffff88082f683ed8
+RDX: 0000000000000019 RSI: ffff8808286f83f8 RDI: ffff8808291dc000
+RBP: ffff88082f683ea0 R08: ffff8808291dd3b8 R09: 0000000000000100
+R10: 0000000000000000 R11: ffff88082f6839fe R12: ffff8808291dc000
+R13: ffff88082f683e70 R14: 0000000000000019 R15: ffff88082f683ed8
+FS:  0000000000000000(0000) GS:ffff88082f680000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000000004a4fb0 CR3: 00000000018f8000 CR4: 00000000000407e0
+Stack:
+ ffff8808286f83f8 ffff880826f9b248 ffff8808291dc000 0000000000000000
+ ffffffff81083c10 0000000000000002 ffff88082f683f10 ffffffff81076845
+ ffff8808291ddc28 ffff8808291dd828 ffff8808291dd428 ffff8808291dd028
+Call Trace:
+ <IRQ>
+ [<ffffffff81083c10>] ? __queue_work+0x320/0x320
+ [<ffffffff81076845>] run_timer_softirq+0x245/0x2f0
+ [<ffffffff8106f3b5>] __do_softirq+0xf5/0x2e0
+ [<ffffffff8106f87d>] irq_exit+0x10d/0x120
+ [<ffffffff816042b5>] smp_apic_timer_interrupt+0x45/0x60
+ [<ffffffff81602c1d>] apic_timer_interrupt+0x6d/0x80
+ <EOI>
+ [<ffffffff814a022f>] ? cpuidle_enter_state+0x4f/0xc0
+ [<ffffffff814a0228>] ? cpuidle_enter_state+0x48/0xc0
+ [<ffffffff814a0359>] cpuidle_idle_call+0xb9/0x1f0
+ [<ffffffff8101e44e>] arch_cpu_idle+0xe/0x30
+ [<ffffffff810c327e>] cpu_startup_entry+0x9e/0x240
+ [<ffffffff81043544>] start_secondary+0x1e4/0x290
+Code: 49 39 cc 75 26 48 89 de 48 89 c3 4c 89 e7 e8 b5 fc ff ff 4c 39 eb 48 8b 03 75 dd 48 83 c4 10 44 89 f0 5b 41 5c 41 5d 41 5e 5d c3 <0f> 0b 66 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 48 89
+RIP  [<ffffffff810759c3>] cascade+0x93/0xa0
+ RSP <ffff88082f683e70>
+WARNING: CPU: 36 PID: 1154 at kernel/workqueue.c:1461 __queue_delayed_work+0xed/0x1a0()
+[ 3108.665556] Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal coretemp kvm_intel kvm ixgbe e1000e crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper cryptd iTCO_wdt ptp sb_edac iTCO_vendor_support pps_core mdio ipmi_devintf edac_core ioatdma microcode shpchp lpc_ich pcspkr i2c_i801 dca mfd_core ipmi_si wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod sr_mod cdrom crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt isci i2c_algo_bit drm_kms_helper ttm drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod
+[ 3108.737843] CPU: 36 PID: 1154 Comm: kworker/u481:3 Tainted: G        W    3.13.0+ #1
+[ 3108.746480] Hardware name: Intel Corporation LH Pass ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+[ 3108.759435] Workqueue: edac-poller edac_mc_workq_function [edac_core]
+[ 3108.766630]  0000000000000009 ffff880425137d70 ffffffff815f1945 0000000000000000
+[ 3108.774932]  ffff880425137da8 ffffffff81069dad 0000000000002000 ffff880826bb1200
+[ 3108.783230]  ffff8808286fe3f8 ffff880036371000 0000000000003c20 ffff880425137db8
+[ 3108.791521] Call Trace:
+[ 3108.794265]  [<ffffffff815f1945>] dump_stack+0x45/0x56
+[ 3108.800015]  [<ffffffff81069dad>] warn_slowpath_common+0x7d/0xa0
+[ 3108.806732]  [<ffffffff81069e8a>] warn_slowpath_null+0x1a/0x20
+[ 3108.813238]  [<ffffffff81083d1d>] __queue_delayed_work+0xed/0x1a0
+[ 3108.820034]  [<ffffffff81084077>] queue_delayed_work_on+0x27/0x50
+[ 3108.826831]  [<ffffffffa14b0392>] edac_mc_workq_function+0x72/0xa0 [edac_core]
+[ 3108.834908]  [<ffffffff81085c3b>] process_one_work+0x17b/0x460
+[ 3108.841414]  [<ffffffff810869db>] worker_thread+0x11b/0x400
+[ 3108.847635]  [<ffffffff810868c0>] ? rescuer_thread+0x3e0/0x3e0
+[ 3108.854143]  [<ffffffff8108d612>] kthread+0xd2/0xf0
+[ 3108.859584]  [<ffffffff8108d540>] ? kthread_create_on_node+0x180/0x180
+[ 3108.866873]  [<ffffffff81601efc>] ret_from_fork+0x7c/0xb0
+[ 3108.872896]  [<ffffffff8108d540>] ? kthread_create_on_node+0x180/0x180
+[ 3108.880176] ---[ end trace 078b214fc68689e7 ]---
 
-Larry
+This patch adds a range check in the edac_mc_poll_msec code to check for 0.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/edac/edac_mc_sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 51c0362..8ec1747 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -61,7 +61,7 @@ static int edac_set_poll_msec(const char *val, struct kernel_param *kp)
+ 	ret = kstrtol(val, 0, &l);
+ 	if (ret)
+ 		return ret;
+-	if ((int)l != l)
++	if (!l || ((int)l != l))
+ 		return -EINVAL;
+ 	*((int *)kp->arg) = l;
+ 
+-- 
+1.7.9.3
+
