@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318AbaBCXdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:33:21 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51995 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753554AbaBCX20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753647AbaBCX20 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 3 Feb 2014 18:28:26 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51374 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752854AbaBCX2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 18:28:20 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH 12/24][Resend] ACPI / hotplug / PCI: Drop acpiphp_bus_add()
-Date: Tue, 04 Feb 2014 00:26:06 +0100
-Message-ID: <1535557.TbkE2ed7qM@vostro.rjw.lan>
+Subject: [PATCH 22/24][Resend] ACPI / hotplug / PCI: Simplify acpi_install_hotplug_notify_handler()
+Date: Tue, 04 Feb 2014 00:39:38 +0100
+Message-ID: <2300097.5mc1uSoD5p@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
 In-Reply-To: <7532948.aJNUotNMpR@vostro.rjw.lan>
 References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140203104408.GQ18029@intel.com> <7532948.aJNUotNMpR@vostro.rjw.lan>
@@ -28,56 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-acpiphp_bus_add() is only called from one place, so move the code out
-of it into that place and drop it.  Also make that code use
-func_to_acpi_device() to get the struct acpi_device pointer it needs
-instead of calling acpi_bus_get_device() which may be costly.
+Since acpi_hotplug_notify_cb() does not use its data argument any
+more, the second argument of acpi_install_hotplug_notify_handler()
+can be dropped, so do that and update its callers accordingly.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+ drivers/acpi/scan.c                |    6 +++---
+ drivers/pci/hotplug/acpiphp_glue.c |    2 +-
+ include/acpi/acpi_bus.h            |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -577,10 +577,10 @@ static void acpi_hotplug_notify_cb(acpi_
+ 	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+ }
+ 
+-void acpi_install_hotplug_notify_handler(acpi_handle handle, void *data)
++void acpi_install_hotplug_notify_handler(acpi_handle handle)
+ {
+ 	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-				    acpi_hotplug_notify_cb, data);
++				    acpi_hotplug_notify_cb, NULL);
+ }
+ 
+ void acpi_remove_hotplug_notify_handler(acpi_handle handle)
+@@ -2048,7 +2048,7 @@ static void acpi_scan_init_hotplug(acpi_
+ 	list_for_each_entry(hwid, &pnp.ids, list) {
+ 		handler = acpi_scan_match_handler(hwid->id, NULL);
+ 		if (handler) {
+-			acpi_install_hotplug_notify_handler(handle, handler);
++			acpi_install_hotplug_notify_handler(handle);
+ 			break;
+ 		}
+ 	}
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -491,20 +491,6 @@ static unsigned char acpiphp_max_busnr(s
- 	return max;
+@@ -372,7 +372,7 @@ static acpi_status register_slot(acpi_ha
+ 
+ 	/* install notify handler */
+ 	if (!(newfunc->flags & FUNC_HAS_DCK))
+-		acpi_install_hotplug_notify_handler(handle, NULL);
++		acpi_install_hotplug_notify_handler(handle);
+ 
+ 	return AE_OK;
  }
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -445,7 +445,7 @@ static inline bool acpi_device_enumerate
+ typedef void (*acpi_hp_callback)(void *data, u32 src);
  
--/**
-- * acpiphp_bus_add - Scan ACPI namespace subtree.
-- * @handle: ACPI object handle to start the scan from.
-- */
--static void acpiphp_bus_add(acpi_handle handle)
--{
--	struct acpi_device *adev = NULL;
--
--	acpi_bus_scan(handle);
--	acpi_bus_get_device(handle, &adev);
--	if (acpi_device_enumerated(adev))
--		acpi_device_set_power(adev, ACPI_STATE_D0);
--}
--
- static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
- {
- 	struct acpiphp_func *func;
-@@ -544,9 +530,13 @@ static int acpiphp_rescan_slot(struct ac
- {
- 	struct acpiphp_func *func;
+ acpi_status acpi_hotplug_execute(acpi_hp_callback func, void *data, u32 src);
+-void acpi_install_hotplug_notify_handler(acpi_handle handle, void *data);
++void acpi_install_hotplug_notify_handler(acpi_handle handle);
+ void acpi_remove_hotplug_notify_handler(acpi_handle handle);
  
--	list_for_each_entry(func, &slot->funcs, sibling)
--		acpiphp_bus_add(func_to_handle(func));
-+	list_for_each_entry(func, &slot->funcs, sibling) {
-+		struct acpi_device *adev = func_to_acpi_device(func);
- 
-+		acpi_bus_scan(adev->handle);
-+		if (acpi_device_enumerated(adev))
-+			acpi_device_set_power(adev, ACPI_STATE_D0);
-+	}
- 	return pci_scan_slot(slot->bus, PCI_DEVFN(slot->device, 0));
- }
- 
+ /**
 
