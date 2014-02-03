@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaBCNdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 08:33:12 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:36719 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaBCNdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 08:33:10 -0500
-Date: Mon, 3 Feb 2014 14:31:02 +0100
-From: Henrik Austad <henrik@austad.us>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/core: fix sched_rt_global_validate
-Message-ID: <20140203133102.GA13556@austad.us>
-References: <1391186607-11247-1-git-send-email-juri.lelli@gmail.com>
- <20140203095302.GA13242@austad.us>
- <52EF6BED.7050001@gmail.com>
+	id S1752278AbaBCNdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 08:33:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59942 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751985AbaBCNdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 08:33:15 -0500
+Date: Mon, 3 Feb 2014 14:33:13 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC 4/5] memcg: make sure that memcg is not offline when
+ charging
+Message-ID: <20140203133313.GF2495@dhcp22.suse.cz>
+References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
+ <1387295130-19771-5-git-send-email-mhocko@suse.cz>
+ <20140130172906.GE6963@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52EF6BED.7050001@gmail.com>
+In-Reply-To: <20140130172906.GE6963@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 30-01-14 12:29:06, Johannes Weiner wrote:
+> On Tue, Dec 17, 2013 at 04:45:29PM +0100, Michal Hocko wrote:
+> > The current charge path might race with memcg offlining because holding
+> > css reference doesn't stop css offline. As a result res counter might be
+> > charged after mem_cgroup_reparent_charges (called from memcg css_offline
+> > callback) and so the charge would never be freed. This has been worked
+> > around by 96f1c58d8534 (mm: memcg: fix race condition between memcg
+> > teardown and swapin) which tries to catch such a leaked charges later
+> > during css_free. It is more optimal to heal this race in the long term
+> > though.
+> 
+> We already deal with the race, so IMO the only outstanding improvement
+> is to take advantage of the teardown synchronization provided by the
+> cgroup core and get rid of our one-liner workaround in .css_free.
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am not sure I am following you here. Which teardown synchronization do
+you have in mind? rcu_read_lock & css_tryget?
 
-On Mon, Feb 03, 2014 at 11:14:05AM +0100, Juri Lelli wrote:
-> On 02/03/2014 10:53 AM, Henrik Austad wrote:
-> > On Fri, Jan 31, 2014 at 05:43:27PM +0100, Juri Lelli wrote:
-> >> Don't compare sysctl_sched_rt_runtime against sysctl_sched_rt_period if
-> >> the former is equal to RUNTIME_INF, otherwise disabling -rt bandwidth
-> >> management always fails.
-> >>
-> >> Cc: Ingo Molnar <mingo@redhat.com>
-> >> Cc: Peter Zijlstra <peterz@infradead.org>
-> >> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
-> >> ---
-> >>  kernel/sched/core.c |    3 ++-
-> >>  1 file changed, 2 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> >> index 210a12a..5c0a304 100644
-> >> --- a/kernel/sched/core.c
-> >> +++ b/kernel/sched/core.c
-> >> @@ -7477,7 +7477,8 @@ static int sched_rt_global_validate(void)
-> >>  	if (sysctl_sched_rt_period <=3D 0)
-> >>  		return -EINVAL;
-> >> =20
-> >> -	if (sysctl_sched_rt_runtime > sysctl_sched_rt_period)
-> >> +	if ((sysctl_sched_rt_runtime !=3D RUNTIME_INF) &&
-> >> +		(sysctl_sched_rt_runtime > sysctl_sched_rt_period))
-> >>  		return -EINVAL;
-> >=20
-> > Won't this be caught by the test above?
-> >=20
-> > #define RUNTIME_INF ((u64)~0ULL)
-> >=20
-> > which means that if sysctl_sched_rt_runtime is set to RUNTIME_INF, it w=
-ill=20
-> > trigger on the previous test, and the first part of this test will alwa=
-ys=20
-> > be true.
-> >=20
-> > Or have I suffered catastrophic monday-morning braindamage?
-> >=20
->=20
-> As I understand it. When you do
->=20
->  echo -1 > /proc/sys/kernel/sched_rt_runtime_us
->=20
-> sysctl_sched_rt_runtime is actually set to -1 (being an int).
+> > In order to make this raceless we would need to hold rcu_read_lock since
+> > css_tryget until res_counter_charge. This is not so easy unfortunately
+> > because mem_cgroup_do_charge might sleep so we would need to do drop rcu
+> > lock and do css_tryget tricks after each reclaim.
+> 
+> Yes, why not?
 
-Yes.
+Although css_tryget is cheap these days I thought that a simple flag
+check would be even heaper in this hot path. Changing the patch to use
+css_tryget rather than offline check is trivial if you really think it
+is better?
 
-> But then you compare it against and unsigned int, so the cast converts it=
- to
-> actually be RUNTIME_INF, and thus greater than sysctl_sched_rt_period (so=
- the
-> function returns -EINVAL, while you'd want it to return 0, as you are dis=
-abling
-> -rt throttling).
+Btw. I plan to repost the series as soon as Andrew releases his mmotm
+tree.
 
-Ah, yes, it comes down to my early-monday brain hemorrhage, mixing up=20
-rt_period and rt_runtime. My apologies!
-
-> Makes sense?
-
-Yes it does.
-
---=20
-Henrik Austad
-
---17pEHd4RhPHOinZp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlLvmhYACgkQ6k5VT6v45lnXgACfcOD8NhFYSlMu4/ExsOJZU+Qr
-4tQAn3xoaSQa6SzZgdiQslwqx9IJtZK1
-=BDIP
------END PGP SIGNATURE-----
-
---17pEHd4RhPHOinZp--
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
