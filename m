@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaBCLpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:45:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492AbaBCLpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:45:17 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 3/3] perf tools: Add readable output for callchain debug
-Date: Mon,  3 Feb 2014 12:44:43 +0100
-Message-Id: <1391427883-13443-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1391427883-13443-1-git-send-email-jolsa@redhat.com>
-References: <1391427883-13443-1-git-send-email-jolsa@redhat.com>
+	id S1752684AbaBCLst (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:48:49 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:62757 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaBCLss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:48:48 -0500
+Message-ID: <52EF8222.6030709@gmail.com>
+Date: Mon, 03 Feb 2014 19:48:50 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, hskinnemoen@gmail.com,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        egtvedt@samfundet.no
+Subject: Re: [PATCH] kernel/kprobes.c: move cleanup_rp_inst() to where CONFIG_KRETPROBES
+ enabled
+References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com>
+In-Reply-To: <52EDB022.5070101@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding people readable output for callchain debug,
-to get following '-v' output:
+On 02/02/2014 10:40 AM, Masami Hiramatsu wrote:
+> (2014/02/01 21:17), Chen Gang wrote:
+>> When CONFIG_KRETPROBES disabled, cleanup_rp_inst() is useless too. It
+>> is only called by unregister_kretprobes() which is in CONFIG_KRETPROBES
+>> enabled area.
+>>
+>> The related warning (allmodconfig under avr32):
+>>
+>>   kernel/kprobes.c:1181: warning: 'cleanup_rp_inst' defined but not used
+> 
+> This patch itself looks good to me.
+> And it seems that not only the cleanup_rp_inst, but also other
+> kretprobe related functions should be moved (free_rp_inst,etc)
+> 
 
-  $ perf record -v -g ls
-  callchain: type DWARF
-  callchain: stack dump size 4096
-  ...
+OK, thanks, need/should I check them again and send patch v2 for them?
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-record.c | 4 +++-
- tools/perf/perf.h           | 3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 3f7ec8a..679758f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -741,7 +741,9 @@ int record_parse_callchain(const char *arg, struct record_opts *opts)
- 
- static void callchain_debug(struct record_opts *opts)
- {
--	pr_debug("callchain: type %d\n", opts->call_graph);
-+	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF" };
-+
-+	pr_debug("callchain: type %s\n", str[opts->call_graph]);
- 
- 	if (opts->call_graph == CALLCHAIN_DWARF)
- 		pr_debug("callchain: stack dump size %d\n",
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 6dabc15..c30e1ae 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -251,7 +251,8 @@ void pthread__unblock_sigwinch(void);
- enum perf_call_graph_mode {
- 	CALLCHAIN_NONE,
- 	CALLCHAIN_FP,
--	CALLCHAIN_DWARF
-+	CALLCHAIN_DWARF,
-+	CALLCHAIN_MAX
- };
- 
- struct record_opts {
+Thanks.
 -- 
-1.8.3.1
+Chen Gang
 
+Open, share and attitude like air, water and life which God blessed
