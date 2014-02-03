@@ -1,88 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaBCP2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:28:09 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:38400 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaBCP2H (ORCPT
+	id S1752859AbaBCP2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:28:21 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:47739 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556AbaBCP2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:28:07 -0500
+	Mon, 3 Feb 2014 10:28:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAN7rbOti4ODDz9h_oMQpqdB5JWwL0wpB-7rzcbKxho_46pKawg@mail.gmail.com>
-References: <1390252922-25889-1-git-send-email-jean.pihet@linaro.org>
-	<CAN7rbOstSYgZ39o68AA+z62Uj6KYzNhDkyX+sbHPr=xc-rRjRg@mail.gmail.com>
-	<CAFrcx1nSDD4Sts7uDxxyG9LpyQiwFhby8oLEpWW-qotyWPpGpw@mail.gmail.com>
-	<CAN7rbOti4ODDz9h_oMQpqdB5JWwL0wpB-7rzcbKxho_46pKawg@mail.gmail.com>
-Date: Mon, 3 Feb 2014 16:28:06 +0100
-Message-ID: <CAFrcx1mdRb6M24TsNWaZ6eEp2QFke3xvxqC2F96G7mdJ29t7JQ@mail.gmail.com>
-Subject: Re: [Libunwind-devel] [RFC PATCH 0/3] Add support for dwarf compat
- mode unwinding
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Arun Sharma <arun@sharma-home.net>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        libunwind-devel <libunwind-devel@nongnu.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CANq1E4S+RLDpDd+zxgBRKsEw0-29un9mzS5jYBcoeJgQf5Upjg@mail.gmail.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-6-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4S+RLDpDd+zxgBRKsEw0-29un9mzS5jYBcoeJgQf5Upjg@mail.gmail.com>
+Date: Mon, 3 Feb 2014 10:28:18 -0500
+Message-ID: <CAN+gG=GR7kfRYzTW6NQ_anHFpgXOyCWezafMEnJxXqYXkrO1-A@mail.gmail.com>
+Subject: Re: [PATCH 05/11] HID: HIDp: remove hidp_hidinput_event
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arun,
+On Mon, Feb 3, 2014 at 10:10 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> hidp uses its own ->hidinput_input_event() instead of the generic binding
+>> in hid-input.
+>> Moving the handling of LEDs towards hidp_hidinput_event() allows two things:
+>> - remove hidinput_input_event definitively from struct hid_device
+>> - hidraw user space programs can also set the LEDs
+>
+> This one looks good. hid-input uses output_raw_report(), which is on
+> INTR for BT-HID, which is equivalent to what hidp_send_report() does.
+> So:
+>
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-On 22 January 2014 06:15, Arun Sharma <arun@sharma-home.net> wrote:
-> On Tue, Jan 21, 2014 at 12:16 AM, Jean Pihet <jean.pihet@linaro.org> wrote:
+Thanks
+
 >
->>>> This is the case when e.g. profiling an ARMv7 binary that runs on an
->>>> ARMv8 (aka AARCH64) platform.
->>>
->>> Why not configure libunwind for ARMv7 in that case?
->>>
->>> I'm trying to understand how is your use case different from using
->>> x86_32 libunwind to do local unwinding on a x86_64 machine.
->> Can you give more details on the use case and how to configure
->> libunwind?
+> Btw., you might have to keep hidp_send_report() if you drop earlier
+> patches (haven't exactly looked at the order), but feel free to keep
+> my r-b anyway.
+
+No need to keep it, patches 1 to 4 do not touch HIDp, so no one else
+use hidp_send_report().
+
+Cheers,
+Benjamin
+
 >
-> You could either build libunwind on a ARMv7 machine and copy it over
-> or setup a 32 bit chroot on a 64 bit kernel and compile libunwind
-> inside that.
->
->> The provided patches dynamically detect the target binary
->> address size and parse the debug info accordingly, all that in a
->> single library.
->
-> This is generally called cross-unwinding in libunwind lingo. Some
-> description here:
->
-> http://www.nongnu.org/libunwind/man/libunwind%283%29.html#section_4
+> Thanks
+> David
 >
 >>
->> Note: my use case is to call libunwind from the perf utility in order
->> to unwind from the dwarf info.
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  net/bluetooth/hidp/core.c | 46 ----------------------------------------------
+>>  1 file changed, 46 deletions(-)
 >>
->
-> You could link in two copies of libunwind into the perf binary:
-> * libunwind.a for local (host == target) unwinding
-> * libunwind-arm.a for 32 bit cross-unwinding
->
-> Doing cross-unwinding requires you to write a bunch of "accessors" on
-> how to access the address space of a non-local thread.
->
-> Something like ./configure --target=arm on aarch64.
-
-Thanks for the link and info.
-
-Is there a concrete example of cross-unwinding with multiple targets,
-for example on x86_64 using native and x86_32 libunwind libraries
-simultaneously?
-I am trying to assess the impact of multiple unwinding libs in the perf code.
-
-Jiri, Arnaldo,
-How is that done on x86? I do not think this can be done with the
-current perf code, am I correct?
-
->
->  -Arun
-
-Regards,
-Jean
+>> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+>> index b062cee..469e61b 100644
+>> --- a/net/bluetooth/hidp/core.c
+>> +++ b/net/bluetooth/hidp/core.c
+>> @@ -223,51 +223,6 @@ static void hidp_input_report(struct hidp_session *session, struct sk_buff *skb)
+>>         input_sync(dev);
+>>  }
+>>
+>> -static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
+>> -{
+>> -       unsigned char hdr;
+>> -       u8 *buf;
+>> -       int rsize, ret;
+>> -
+>> -       buf = hid_alloc_report_buf(report, GFP_ATOMIC);
+>> -       if (!buf)
+>> -               return -EIO;
+>> -
+>> -       hid_output_report(report, buf);
+>> -       hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
+>> -
+>> -       rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
+>> -       ret = hidp_send_intr_message(session, hdr, buf, rsize);
+>> -
+>> -       kfree(buf);
+>> -       return ret;
+>> -}
+>> -
+>> -static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
+>> -                              unsigned int code, int value)
+>> -{
+>> -       struct hid_device *hid = input_get_drvdata(dev);
+>> -       struct hidp_session *session = hid->driver_data;
+>> -       struct hid_field *field;
+>> -       int offset;
+>> -
+>> -       BT_DBG("session %p type %d code %d value %d",
+>> -              session, type, code, value);
+>> -
+>> -       if (type != EV_LED)
+>> -               return -1;
+>> -
+>> -       offset = hidinput_find_field(hid, type, code, &field);
+>> -       if (offset == -1) {
+>> -               hid_warn(dev, "event field not found\n");
+>> -               return -1;
+>> -       }
+>> -
+>> -       hid_set_field(field, offset, value);
+>> -
+>> -       return hidp_send_report(session, field->report);
+>> -}
+>> -
+>>  static int hidp_get_raw_report(struct hid_device *hid,
+>>                 unsigned char report_number,
+>>                 unsigned char *data, size_t count,
+>> @@ -817,7 +772,6 @@ static struct hid_ll_driver hidp_hid_driver = {
+>>         .close = hidp_close,
+>>         .raw_request = hidp_raw_request,
+>>         .output_report = hidp_output_report,
+>> -       .hidinput_input_event = hidp_hidinput_event,
+>>  };
+>>
+>>  /* This function sets up the hid device. It does not add it
+>> --
+>> 1.8.3.1
+>>
