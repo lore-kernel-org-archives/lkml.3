@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaBCJnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 04:43:51 -0500
-Received: from dehamd003.servertools24.de ([31.47.254.18]:35910 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752483AbaBCJns (ORCPT
+	id S1751776AbaBCJp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 04:45:26 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:39540 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaBCJpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 04:43:48 -0500
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-X-No-Relay: not in my network
-Message-ID: <52EF64CE.90506@ladisch.de>
-Date: Mon, 03 Feb 2014 10:43:42 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Feb 2014 04:45:24 -0500
+Date: Mon, 3 Feb 2014 09:45:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 09/18] mfd: max14577: Add "muic" suffix to regmap and
+ irq_chip
+Message-ID: <20140203094518.GJ13529@lee--X1>
+References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
+ <1390911522-28209-10-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>, viro@zeniv.linux.org.uk
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
-References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-In-Reply-To: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1390911522-28209-10-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nathaniel Yazdani wrote:
-> Using the normal I/O interface to manipulate eventpolls is much neater
-> than using epoll-specific syscalls
+> This patch continues the preparation for adding support for max77836
+> device to existing max14577 driver.
+> 
+> Add "muic" suffix to regmap and irq_data fields in maxim_core state
+> container to prepare for max77836 support.
+> This is only a rename-like patch, new code is not added.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
+>  drivers/extcon/extcon-max14577.c     |   17 +++++++++--------
+>  drivers/mfd/max14577.c               |   22 +++++++++++-----------
+>  drivers/power/max14577_charger.c     |    8 ++++----
+>  drivers/regulator/max14577.c         |    2 +-
+>  include/linux/mfd/max14577-private.h |    4 ++--
+>  5 files changed, 27 insertions(+), 26 deletions(-)
 
-But it introduces a _second_ API, which is epoll-specific too, and does
-not use the standard semantics either.
+Happy to apply this with maintainer Acks.
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-> while also allowing for greater flexibility (theoretically, pipes could
-> be used to filter access).
-
-I do not understand this.
-
-> read() simply waits for enough events to fill the provided buffer.
-
-The usual semantics of read() are to return a partially filled buffer if
-it would block otherwise, i.e., blocking is done only if the returned
-buffer would have been empty.
-
-> As timeout control is essential for polling to be practical, ioctl() is
-> used to configure an optional timeout
-
-This is what the timeout parameter of poll() and friends is for.
-
-
-Regards,
-Clemens
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
