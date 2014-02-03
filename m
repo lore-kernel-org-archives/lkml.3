@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064AbaBCKOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 05:14:10 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:37379 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaBCKOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 05:14:09 -0500
-Message-ID: <52EF6BED.7050001@gmail.com>
-Date: Mon, 03 Feb 2014 11:14:05 +0100
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751999AbaBCKWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 05:22:18 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:11215 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258AbaBCKWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 05:22:16 -0500
+Message-ID: <52EF6DCC.6040807@imgtec.com>
+Date: Mon, 3 Feb 2014 10:22:04 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Henrik Austad <henrik@austad.us>
-CC: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/core: fix sched_rt_global_validate
-References: <1391186607-11247-1-git-send-email-juri.lelli@gmail.com> <20140203095302.GA13242@austad.us>
-In-Reply-To: <20140203095302.GA13242@austad.us>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Laight <David.Laight@ACULAB.COM>
+CC: "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        "Greg KH" <gregkh@linuxfoundation.org>,
+        "bergwolf@gmail.com" <bergwolf@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "oleg.drokin@intel.com" <oleg.drokin@intel.com>,
+        "jacques-charles.lafoucriere@cea.fr" 
+	<jacques-charles.lafoucriere@cea.fr>,
+        "jinshan.xiong@intel.com" <jinshan.xiong@intel.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
+ for the related union
+References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com> <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda> <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda> <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com> <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com> <20140203085855.GA26722@mwanda> <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2014_02_03_10_22_05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 10:53 AM, Henrik Austad wrote:
-> On Fri, Jan 31, 2014 at 05:43:27PM +0100, Juri Lelli wrote:
->> Don't compare sysctl_sched_rt_runtime against sysctl_sched_rt_period if
->> the former is equal to RUNTIME_INF, otherwise disabling -rt bandwidth
->> management always fails.
+On 03/02/14 10:05, David Laight wrote:
+> From: Dan Carpenter
+>> On Sat, Feb 01, 2014 at 09:57:39PM +0800, Chen Gang wrote:
+>>> It seems, our kernel still stick to treate 'pack' region have effect
+>>> with both 'align' and 'sizeof'.
 >>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
->> ---
->>  kernel/sched/core.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
+>> It's not about packed regions.  It's about unions.  It's saying the
+>> sizeof() a union is a multiple of 4 unless it's packed.
 >>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 210a12a..5c0a304 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -7477,7 +7477,8 @@ static int sched_rt_global_validate(void)
->>  	if (sysctl_sched_rt_period <= 0)
->>  		return -EINVAL;
->>  
->> -	if (sysctl_sched_rt_runtime > sysctl_sched_rt_period)
->> +	if ((sysctl_sched_rt_runtime != RUNTIME_INF) &&
->> +		(sysctl_sched_rt_runtime > sysctl_sched_rt_period))
->>  		return -EINVAL;
+>> union foo {
+>> 	short x;
+>> 	short y;
+>> };
+>>
+>> The author intended the sizeof(union foo) to be 2 but on metag arch then
+>> it is 4.
 > 
-> Won't this be caught by the test above?
-> 
-> #define RUNTIME_INF ((u64)~0ULL)
-> 
-> which means that if sysctl_sched_rt_runtime is set to RUNTIME_INF, it will 
-> trigger on the previous test, and the first part of this test will always 
-> be true.
-> 
-> Or have I suffered catastrophic monday-morning braindamage?
-> 
+> The same is probably be true of: struct foo { _u16 bar; };
 
-As I understand it. When you do
+Yes indeed.
 
- echo -1 > /proc/sys/kernel/sched_rt_runtime_us
+> Architectures that define such alignment rules are a right PITA.
+> You either need to get the size to 2 without using 'packed', or
+> just not define such structures.
+> It is worth seeing if adding aligned(2) will change the size - I'm
+> not sure.
 
-sysctl_sched_rt_runtime is actually set to -1 (being an int).
-But then you compare it against and unsigned int, so the cast converts it to
-actually be RUNTIME_INF, and thus greater than sysctl_sched_rt_period (so the
-function returns -EINVAL, while you'd want it to return 0, as you are disabling
--rt throttling).
+__aligned(2) alone doesn't seem to have any effect on sizeof() or
+__alignof__() unless it is accompanied by __packed. x86_64 is similar in
+that respect (it just packs sanely in the first place).
 
-Makes sense?
+Combining __packed with __aligned(2) does the trick though (__packed
+alone sets __aligned(1) which is obviously going to be suboptimal).
 
-Thanks,
+Cheers
+James
 
-- Juri
