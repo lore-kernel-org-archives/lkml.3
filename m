@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaBCVi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:38:26 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:34057 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753897AbaBCViX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:38:23 -0500
-Date: Mon, 3 Feb 2014 15:38:18 -0600
-From: Ben Myers <bpm@sgi.com>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        sandeen@sandeen.net
-Subject: Re: [GIT PULL] XFS update #2 for 3.14-rc1
-Message-ID: <20140203213818.GA2258@sgi.com>
-References: <20140129011209.253624266DC@whiskey.americas.sgi.com>
+	id S1753968AbaBCVin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:38:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753735AbaBCViV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 16:38:21 -0500
+Date: Mon, 3 Feb 2014 16:38:13 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg Pearson <greg.pearson@hp.com>
+Cc: akpm@linux-foundation.org, d.hatayama@jp.fujitsu.com,
+        holzheu@linux.vnet.ibm.com, dhowells@redhat.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during
+ header update
+Message-ID: <20140203213813.GH10795@redhat.com>
+References: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140129011209.253624266DC@whiskey.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On Mon, Feb 03, 2014 at 01:18:38PM -0700, Greg Pearson wrote:
 
-On Tue, Jan 28, 2014 at 07:12:09PM -0600, Ben Myers wrote:
->    Please pull this xfs update for 3.14.  This is to allow logical sector sized
->    direct io on advanced format disks.
+[..]
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 2ca7ba0..051c803 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -468,12 +468,14 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
+>  			return rc;
+>  		}
+>  		nhdr_ptr = notes_section;
+> -		while (real_sz < max_sz) {
+> -			if (nhdr_ptr->n_namesz == 0)
+> -				break;
+> +		while (nhdr_ptr->n_namesz != 0) {
+>  			sz = sizeof(Elf64_Nhdr) +
+>  				((nhdr_ptr->n_namesz + 3) & ~3) +
+>  				((nhdr_ptr->n_descsz + 3) & ~3);
+> +			if ((real_sz + sz) > max_sz) {
+> +				pr_warn("Warning: dropping PT_NOTE entry\n");
+> +				break;
+> +			}
 
-Could you pick this up for -rc2?
+Hi Greg,
 
-Thanks,
-	Ben
+Couple of minor nits.
 
-> The following changes since commit bf3964c188d686424ff7b69a45941851b9f437f0:
-> 
->   Merge branch 'xfs-extent-list-locking-fixes' into for-next (2014-01-09 16:03:18 -0600)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.14-rc1-2
-> 
-> for you to fetch changes up to 7c71ee78031c248dca13fc94dea9a4cc217db6cf:
-> 
->   xfs: allow logical-sector sized O_DIRECT (2014-01-24 11:55:42 -0600)
-> 
-> ----------------------------------------------------------------
-> xfs: update #2 for v3.14-rc1
-> 
-> - allow logical sector sized direct io on 'advanced format' 4k/512 disk.
-> 
-> ----------------------------------------------------------------
-> Eric Sandeen (3):
->       xfs: clean up xfs_buftarg
->       xfs: rename xfs_buftarg structure members
->       xfs: allow logical-sector sized O_DIRECT
-> 
->  fs/xfs/xfs_buf.c   | 14 +++++++++-----
->  fs/xfs/xfs_buf.h   | 20 +++++++++++++++++---
->  fs/xfs/xfs_file.c  |  7 +++++--
->  fs/xfs/xfs_ioctl.c |  2 +-
->  4 files changed, 32 insertions(+), 11 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I think it is a good idea to give more data in warning which tells why
+are we dropping a note entry. May be something like.
+
+"Warning: Total note entry size exceeded PT_NOTE memsz. Dropping PT_NOTE entry, n_namesz=<> n_descsz=<>".
+
+Secondly, if there is only on note entry in a PT_NOTE header and we drop
+it, then that PT_NOTE header is empty and needs to be cleaned up.
+
+I think you will have to modify get_note_number_and_size_elf64() and
+other relevant functions which are not expecting ->p_memsz=0.
+
+Thanks
+Vivek
