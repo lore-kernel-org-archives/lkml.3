@@ -1,138 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaBCUTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:19:10 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:39488 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518AbaBCUTE (ORCPT
+	id S1753323AbaBCUWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:22:21 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:38766 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaBCUWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:19:04 -0500
-From: Greg Pearson <greg.pearson@hp.com>
-To: akpm@linux-foundation.org, vgoyal@redhat.com, d.hatayama@jp.fujitsu.com,
-        holzheu@linux.vnet.ibm.com, dhowells@redhat.com,
-        paul.gortmaker@windriver.com
-Cc: linux-kernel@vger.kernel.org, greg.pearson@hp.com
-Subject: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during header update
-Date: Mon,  3 Feb 2014 13:18:38 -0700
-Message-Id: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 3 Feb 2014 15:22:18 -0500
+Message-ID: <1391458935.17089.1.camel@leira.trondhjem.org>
+Subject: Re: NFS client broken in Linus' tip
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viro Alexander <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
+Date: Mon, 03 Feb 2014 15:22:15 -0500
+In-Reply-To: <3003D7E5-93F8-4B32-ACDB-07ED3F6CE70D@primarydata.com>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
+	 <20140130141405.GA23985@infradead.org>
+	 <20140130142752.GX15937@n2100.arm.linux.org.uk>
+	 <20140130143208.GB9573@infradead.org>
+	 <20140130153812.GA15937@n2100.arm.linux.org.uk>
+	 <1391201970.6978.1.camel@leira.trondhjem.org>
+	 <20140203080325.GB806@infradead.org>
+	 <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com>
+	 <20140203145759.GA30263@infradead.org>
+	 <3003D7E5-93F8-4B32-ACDB-07ED3F6CE70D@primarydata.com>
+Organization: Primary Data
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, update_note_header_size_elf64() and
-update_note_header_size_elf32() will add the size
-of a PT_NOTE entry to real_sz even if that causes real_sz
-to exceeds max_sz. This patch corrects the while loop logic
-in those routines to ensure that does not happen and prints
-a warning if a PT_NOTE entry is dropped.
+On Mon, 2014-02-03 at 10:45 -0500, Trond Myklebust wrote:
+> On Feb 3, 2014, at 9:57, Christoph Hellwig <hch@infradead.org> wrote:
+> 
+> > On Mon, Feb 03, 2014 at 09:17:30AM -0500, Trond Myklebust wrote:
+> >> As I said above, that causes posix_acl_xattr_get() to return the wrong answer (ENODATA instead of EOPNOTSUPP).
+> > 
+> > Is it really the wrong answer?  How does userspace care wether this
+> > server doesn't support ACLs at all or none is set?  The resulting
+> > behavior is the same.
+> 
+> It will certainly cause acl_get_file() to behave differently than previously. I’ve no idea how that will affect applications, though.
+> 
+> > If there's a good reason to care we might have to go with your patch,
+> > but if we can avoid it I'd prefer to keep things simple.
+> 
+> One alternative is to simply wrap posix_acl_xattr_get() in fs/nfs/nfs3acl.c, and have it check the value of nfs_server_capable(inode, NFS_CAP_ACLS) before returning ENODATA. That’s rather ugly too...
 
-One possible negative side effect of exceeding the max_sz
-limit is an allocation failure in merge_note_headers_elf64()
-or merge_note_headers_elf32() which would produce console
-output such as the following while booting the crash
-kernel.
+FWIW, here is the alternative patch. I've tested it, and it seems to
+work.
+8<---------------------------------------------------------------------
+>From 2e527b12169a67e9cfcf43898ae4d15bcfa1ede9 Mon Sep 17 00:00:00 2001
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+Date: Mon, 3 Feb 2014 13:07:05 -0500
+Subject: [PATCH] NFSv3: Fix return values for get_acl()
 
-vmalloc: allocation failure: 14076997632 bytes
-swapper/0: page allocation failure: order:0, mode:0x80d2
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-gbp1 #7
-ffffffff817dcc30 ffff88003025fc28 ffffffff815bdb0b ffff88003025fcb0
-ffffffff8113b3d0 ffffffff817dcc30 ffff88003025fc48 ffffc90000000018
-ffff88003025fcc0 ffff88003025fc60 ffff88003025fc80 ffff88002b5df980
-Call Trace:
-[<ffffffff815bdb0b>] dump_stack+0x19/0x1b
-[<ffffffff8113b3d0>] warn_alloc_failed+0xf0/0x160
-[<ffffffff81a1267d>] ? merge_note_headers_elf64.constprop.9+0x116/0x24a
-[<ffffffff8116d34e>] __vmalloc_node_range+0x19e/0x250
-[<ffffffff81210454>] ? read_from_oldmem.part.0+0xa4/0xe0
-[<ffffffff8116d4ec>] vmalloc_user+0x4c/0x70
-[<ffffffff81a1267d>] ? merge_note_headers_elf64.constprop.9+0x116/0x24a
-[<ffffffff81a1267d>] merge_note_headers_elf64.constprop.9+0x116/0x24a
-[<ffffffff81a12cce>] vmcore_init+0x2d4/0x76c
-[<ffffffff8120f9f0>] ? kcore_update_ram+0x1f0/0x1f0
-[<ffffffff81063b92>] ? walk_system_raange+0x112/0x130
-[<ffffffff81a129fa>] ? merge_note_headers_elf32.constprop.8+0x249/0x249
-[<ffffffff810020e2>] do_one_initcall+0xe2/0x190
-[<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
-[<ffffffff819e18d0>] ? do_early_param+0x88/0x88
-[<ffffffff815a0d20>] ? rest_init+0x80/0x80
-[<ffffffff815a0d2e>] kernel_init+0xe/0x180
-[<ffffffff815cd8ac>] ret_from_fork+0x7c/0xb0
-[<ffffffff815a0d20>] ? rest_init+0x80/0x80
+Ensure that nfs3_get_acl() returns NULL when the server doesn't support
+POSIX acls. This ensures that posix_acl_create() does the right thing,
+and applies the current_umask() to the mode before returning.
 
-Kdump: vmcore not initialized
+Add a wrapper around posix_acl_xattr_get() so that we continue to
+return EOPNOTSUPP when the server doesn't support POSIX acls. Otherwise,
+the NULL return from nfs3_get_acl() will cause ENODATA to be returned.
 
-kdump: dump target is /dev/sda4
-kdump: saving to /sysroot//var/crash/127.0.0.1-2014.01.28-13:58:52/
-kdump: saving vmcore-dmesg.txt
-Cannot open /proc/vmcore: No such file or directory
-kdump: saving vmcore-dmesg.txt failed
-kdump: saving vmcore
-kdump: saving vmcore failed
+Also add the appropriate exports to posix_acl_xattr_get, posix_acl_xattr_set
+and posix_acl_xattr_list to enable their use in the wrapper.
 
-This type of failure has been seen on a four socket prototype
-system with certain memory configurations. Most PT_NOTE sections
-have a single entry similar to:
-
-  n_namesz = 0x5
-  n_descsz = 0x150
-  n_type   = 0x1
-
-Occasionally, a second entry is encountered with very
-large n_namesz and n_descsz sizes:
-
-  n_namesz = 0x80000008
-  n_descsz = 0x510ae163
-  n_type   = 0x80000008
-
-Not yet sure of the source of these extra entries, they
-seem bogus, but they shouldn't cause crash dump to fail.
-
-Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+Reported-by: Russell King <linux@arm.linux.org.uk>
+Link: http://lkml.kernel.org/r/20140130140834.GW15937@n2100.arm.linux.org.uk
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro viro@zeniv.linux.org.uk>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 ---
- fs/proc/vmcore.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ fs/nfs/nfs3acl.c                | 42 ++++++++++++++++++++++++++++++++++++-----
+ fs/posix_acl.c                  |  9 ++++++---
+ include/linux/posix_acl_xattr.h |  8 ++++++++
+ 3 files changed, 51 insertions(+), 8 deletions(-)
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 2ca7ba0..051c803 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -468,12 +468,14 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
- 			return rc;
- 		}
- 		nhdr_ptr = notes_section;
--		while (real_sz < max_sz) {
--			if (nhdr_ptr->n_namesz == 0)
--				break;
-+		while (nhdr_ptr->n_namesz != 0) {
- 			sz = sizeof(Elf64_Nhdr) +
- 				((nhdr_ptr->n_namesz + 3) & ~3) +
- 				((nhdr_ptr->n_descsz + 3) & ~3);
-+			if ((real_sz + sz) > max_sz) {
-+				pr_warn("Warning: dropping PT_NOTE entry\n");
-+				break;
-+			}
- 			real_sz += sz;
- 			nhdr_ptr = (Elf64_Nhdr*)((char*)nhdr_ptr + sz);
- 		}
-@@ -648,12 +650,14 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
- 			return rc;
- 		}
- 		nhdr_ptr = notes_section;
--		while (real_sz < max_sz) {
--			if (nhdr_ptr->n_namesz == 0)
--				break;
-+		while (nhdr_ptr->n_namesz != 0) {
- 			sz = sizeof(Elf32_Nhdr) +
- 				((nhdr_ptr->n_namesz + 3) & ~3) +
- 				((nhdr_ptr->n_descsz + 3) & ~3);
-+			if ((real_sz + sz) > max_sz) {
-+				pr_warn("Warning: dropping PT_NOTE entry\n");
-+				break;
-+			}
- 			real_sz += sz;
- 			nhdr_ptr = (Elf32_Nhdr*)((char*)nhdr_ptr + sz);
- 		}
+diff --git a/fs/nfs/nfs3acl.c b/fs/nfs/nfs3acl.c
+index 871d6eda8dba..d1bc84f22f64 100644
+--- a/fs/nfs/nfs3acl.c
++++ b/fs/nfs/nfs3acl.c
+@@ -28,8 +28,10 @@ struct posix_acl *nfs3_get_acl(struct inode *inode, int type)
+ 	};
+ 	int status, count;
+ 
+-	if (!nfs_server_capable(inode, NFS_CAP_ACLS))
+-		return ERR_PTR(-EOPNOTSUPP);
++	if (!nfs_server_capable(inode, NFS_CAP_ACLS)) {
++		cache_no_acl(inode);
++		return NULL;
++	}
+ 
+ 	status = nfs_revalidate_inode(server, inode);
+ 	if (status < 0)
+@@ -70,7 +72,7 @@ struct posix_acl *nfs3_get_acl(struct inode *inode, int type)
+ 			dprintk("NFS_V3_ACL extension not supported; disabling\n");
+ 			server->caps &= ~NFS_CAP_ACLS;
+ 		case -ENOTSUPP:
+-			status = -EOPNOTSUPP;
++			status = 0;
+ 		default:
+ 			goto getout;
+ 	}
+@@ -242,8 +244,38 @@ fail:
+ 	return PTR_ERR(alloc);
+ }
+ 
++static int
++nfs_posix_acl_xattr_get(struct dentry *dentry, const char *name,
++		void *value, size_t size, int type)
++{
++	int ret;
++
++	ret = posix_acl_xattr_get(dentry, name, value, size, type);
++	/*
++	 * This check is needed to override the ENODATA error that
++	 * posix_acl_xattr_get will return if the acl probe fails.
++	 */
++	if (!nfs_server_capable(dentry->d_inode, NFS_CAP_ACLS))
++		ret = -EOPNOTSUPP;
++	return ret;
++}
++
++static const struct xattr_handler nfs_posix_acl_access_xattr_handler = {
++	.prefix = POSIX_ACL_XATTR_ACCESS,
++	.flags = ACL_TYPE_ACCESS,
++	.get = nfs_posix_acl_xattr_get,
++	.set = posix_acl_xattr_set,
++};
++
++static const struct xattr_handler nfs_posix_acl_default_xattr_handler = {
++	.prefix = POSIX_ACL_XATTR_DEFAULT,
++	.flags = ACL_TYPE_DEFAULT,
++	.get = nfs_posix_acl_xattr_get,
++	.set = posix_acl_xattr_set,
++};
++
+ const struct xattr_handler *nfs3_xattr_handlers[] = {
+-	&posix_acl_access_xattr_handler,
+-	&posix_acl_default_xattr_handler,
++	&nfs_posix_acl_access_xattr_handler,
++	&nfs_posix_acl_default_xattr_handler,
+ 	NULL,
+ };
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 38bae5a0ea25..835167f92952 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -750,7 +750,7 @@ posix_acl_to_xattr(struct user_namespace *user_ns, const struct posix_acl *acl,
+ }
+ EXPORT_SYMBOL (posix_acl_to_xattr);
+ 
+-static int
++int
+ posix_acl_xattr_get(struct dentry *dentry, const char *name,
+ 		void *value, size_t size, int type)
+ {
+@@ -773,8 +773,9 @@ posix_acl_xattr_get(struct dentry *dentry, const char *name,
+ 
+ 	return error;
+ }
++EXPORT_SYMBOL_GPL(posix_acl_xattr_get);
+ 
+-static int
++int
+ posix_acl_xattr_set(struct dentry *dentry, const char *name,
+ 		const void *value, size_t size, int flags, int type)
+ {
+@@ -809,8 +810,9 @@ out:
+ 	posix_acl_release(acl);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(posix_acl_xattr_set);
+ 
+-static size_t
++size_t
+ posix_acl_xattr_list(struct dentry *dentry, char *list, size_t list_size,
+ 		const char *name, size_t name_len, int type)
+ {
+@@ -832,6 +834,7 @@ posix_acl_xattr_list(struct dentry *dentry, char *list, size_t list_size,
+ 		memcpy(list, xname, size);
+ 	return size;
+ }
++EXPORT_SYMBOL_GPL(posix_acl_xattr_list);
+ 
+ const struct xattr_handler posix_acl_access_xattr_handler = {
+ 	.prefix = POSIX_ACL_XATTR_ACCESS,
+diff --git a/include/linux/posix_acl_xattr.h b/include/linux/posix_acl_xattr.h
+index 6f14ee295822..fc062003a456 100644
+--- a/include/linux/posix_acl_xattr.h
++++ b/include/linux/posix_acl_xattr.h
+@@ -69,6 +69,14 @@ struct posix_acl *posix_acl_from_xattr(struct user_namespace *user_ns,
+ int posix_acl_to_xattr(struct user_namespace *user_ns,
+ 		       const struct posix_acl *acl, void *buffer, size_t size);
+ 
++int posix_acl_xattr_get(struct dentry *dentry, const char *name,
++			void *value, size_t size, int type);
++int posix_acl_xattr_set(struct dentry *dentry, const char *name,
++			const void *value, size_t size, int flags, int type);
++size_t posix_acl_xattr_list(struct dentry *dentry, char *list,
++			    size_t list_size, const char *name,
++			    size_t name_len, int type);
++
+ extern const struct xattr_handler posix_acl_access_xattr_handler;
+ extern const struct xattr_handler posix_acl_default_xattr_handler;
+ 
 -- 
-1.8.3.2
+1.8.5.3
+
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
