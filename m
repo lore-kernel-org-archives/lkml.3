@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaBCP3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:29:18 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:53510 "EHLO
+	id S1753052AbaBCP30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:29:26 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:59502 "EHLO
 	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaBCP3R (ORCPT
+	with ESMTP id S1753013AbaBCP3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:29:17 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] usb: gadget: s3c-hsotg: fix build on x86 and other architectures
-Date: Mon,  3 Feb 2014 10:29:09 -0500
-Message-Id: <1391441349-15887-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	Mon, 3 Feb 2014 10:29:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391316630-29541-4-git-send-email-benjamin.tissoires@redhat.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-4-git-send-email-benjamin.tissoires@redhat.com>
+Date: Mon, 3 Feb 2014 16:29:23 +0100
+Message-ID: <CANq1E4Q2uuz5avEpEXHZdjysRi=TWZm9SvUzyOYyWTt7k-dSBQ@mail.gmail.com>
+Subject: Re: [PATCH 03/11] HID: add inliners for ll_driver transport-layer callbacks
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The readsl and writesl I/O accessors are only defined on some
-architectures. The driver currently depends on CONFIG_ARM because
-the build breaks on x86, in particular. Switch to use of ioread32_rep
-and iowrite32_rep to fix build on all architectures and remove the
-CONFIG_ARM dependency.
+Hi
 
-Also update printk formatting to handle a long long dma_addr_t to avoid
-warnings on !32-bit architectures.
+On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Those callbacks are not mandatory, so it's better to add inliners
+> to use them safely.
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- drivers/usb/gadget/Kconfig     |  1 -
- drivers/usb/gadget/s3c-hsotg.c | 12 ++++++------
- 2 files changed, 6 insertions(+), 7 deletions(-)
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 8154165..782f43a 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -301,7 +301,6 @@ config USB_PXA27X
- 	   gadget drivers to also be dynamically linked.
- 
- config USB_S3C_HSOTG
--	depends on ARM
- 	tristate "Designware/S3C HS/OtG USB Device controller"
- 	help
- 	  The Designware USB2.0 high-speed gadget controller
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 1172eae..0449b76 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -617,7 +617,7 @@ static int s3c_hsotg_write_fifo(struct s3c_hsotg *hsotg,
- 	to_write = DIV_ROUND_UP(to_write, 4);
- 	data = hs_req->req.buf + buf_pos;
- 
--	writesl(hsotg->regs + EPFIFO(hs_ep->index), data, to_write);
-+	iowrite32_rep(hsotg->regs + EPFIFO(hs_ep->index), data, to_write);
- 
- 	return (to_write >= can_write) ? -ENOSPC : 0;
- }
-@@ -720,8 +720,8 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
- 		ureq->length, ureq->actual);
- 	if (0)
- 		dev_dbg(hsotg->dev,
--			"REQ buf %p len %d dma 0x%08x noi=%d zp=%d snok=%d\n",
--			ureq->buf, length, ureq->dma,
-+			"REQ buf %p len %d dma 0x%08llx noi=%d zp=%d snok=%d\n",
-+			ureq->buf, length, (unsigned long long)ureq->dma,
- 			ureq->no_interrupt, ureq->zero, ureq->short_not_ok);
- 
- 	maxreq = get_ep_limit(hs_ep);
-@@ -789,8 +789,8 @@ static void s3c_hsotg_start_req(struct s3c_hsotg *hsotg,
- 		dma_reg = dir_in ? DIEPDMA(index) : DOEPDMA(index);
- 		writel(ureq->dma, hsotg->regs + dma_reg);
- 
--		dev_dbg(hsotg->dev, "%s: 0x%08x => 0x%08x\n",
--			__func__, ureq->dma, dma_reg);
-+		dev_dbg(hsotg->dev, "%s: 0x%08llx => 0x%08x\n",
-+			__func__, (unsigned long long)ureq->dma, dma_reg);
- 	}
- 
- 	ctrl |= DxEPCTL_EPEna;	/* ensure ep enabled */
-@@ -1488,7 +1488,7 @@ static void s3c_hsotg_rx_data(struct s3c_hsotg *hsotg, int ep_idx, int size)
- 	 * note, we might over-write the buffer end by 3 bytes depending on
- 	 * alignment of the data.
- 	 */
--	readsl(fifo, hs_req->req.buf + read_ptr, to_read);
-+	ioread32_rep(fifo, hs_req->req.buf + read_ptr, to_read);
- }
- 
- /**
--- 
-1.8.4
+Thanks
+David
 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  include/linux/hid.h | 45 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 45 insertions(+)
+>
+> diff --git a/include/linux/hid.h b/include/linux/hid.h
+> index 003cc8e..dddcad0 100644
+> --- a/include/linux/hid.h
+> +++ b/include/linux/hid.h
+> @@ -680,6 +680,8 @@ struct hid_driver {
+>   *        shouldn't allocate anything to not leak memory
+>   * @request: send report request to device (e.g. feature report)
+>   * @wait: wait for buffered io to complete (send/recv reports)
+> + * @raw_request: send raw report request to device (e.g. feature report)
+> + * @output_report: send output report to device
+>   * @idle: send idle request to device
+>   */
+>  struct hid_ll_driver {
+> @@ -974,6 +976,49 @@ static inline void hid_hw_request(struct hid_device *hdev,
+>  }
+>
+>  /**
+> + * hid_hw_raw_request - send report request to device
+> + *
+> + * @hdev: hid device
+> + * @reportnum: report ID
+> + * @buf: in/out data to transfer
+> + * @len: length of buf
+> + * @rtype: HID report type
+> + * @reqtype: HID_REQ_GET_REPORT or HID_REQ_SET_REPORT
+> + *
+> + * @return: count of data transfered, negative if error
+> + *
+> + * Same behavior as hid_hw_request, but with raw buffers instead.
+> + */
+> +static inline int hid_hw_raw_request(struct hid_device *hdev,
+> +                                 unsigned char reportnum, __u8 *buf,
+> +                                 size_t len, unsigned char rtype, int reqtype)
+> +{
+> +       if (hdev->ll_driver->raw_request)
+> +               return hdev->ll_driver->raw_request(hdev, reportnum, buf, len,
+> +                                                   rtype, reqtype);
+> +
+> +       return -ENOSYS;
+> +}
+> +
+> +/**
+> + * hid_hw_output_report - send output report to device
+> + *
+> + * @hdev: hid device
+> + * @buf: raw data to transfer
+> + * @len: length of buf
+> + *
+> + * @return: count of data transfered, negative if error
+> + */
+> +static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
+> +                                       size_t len)
+> +{
+> +       if (hdev->ll_driver->output_report)
+> +               return hdev->ll_driver->output_report(hdev, buf, len);
+> +
+> +       return -ENOSYS;
+> +}
+> +
+> +/**
+>   * hid_hw_idle - send idle request to device
+>   *
+>   * @hdev: hid device
+> --
+> 1.8.3.1
+>
