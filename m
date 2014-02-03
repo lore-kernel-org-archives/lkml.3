@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaBCXbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:31:22 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59578 "HELO
+	id S1753739AbaBCX21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:28:27 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59753 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753741AbaBCX22 (ORCPT
+	with SMTP id S1753048AbaBCX2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:28:28 -0500
+	Mon, 3 Feb 2014 18:28:22 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH 7/24][Resend] ACPI / hotplug / PCI: Proper kerneldoc comments for enumeration/removal
-Date: Tue, 04 Feb 2014 00:21:09 +0100
-Message-ID: <1440107.UAdRzE8vMj@vostro.rjw.lan>
+Subject: [PATCH 19/24][Update] ACPI / hotplug / PCI: Define hotplug context lock in the core
+Date: Tue, 04 Feb 2014 00:36:21 +0100
+Message-ID: <3772225.8E46cip4Kj@vostro.rjw.lan>
 User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
 In-Reply-To: <7532948.aJNUotNMpR@vostro.rjw.lan>
 References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140203104408.GQ18029@intel.com> <7532948.aJNUotNMpR@vostro.rjw.lan>
@@ -28,45 +28,258 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Add proper kerneldoc comments describing acpiphp_enumerate_slots()
-and acpiphp_remove_slots().
+Subsequent changes will require the ACPI core to acquire the lock
+protecting the ACPIPHP hotplug contexts, so move the definition of
+the lock to the core and change its name to be more generic.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/acpi/scan.c                |   11 +++++++
+ drivers/pci/hotplug/acpiphp_glue.c |   51 ++++++++++++++++++-------------------
+ include/acpi/acpi_bus.h            |    2 +
+ 3 files changed, 38 insertions(+), 26 deletions(-)
 
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -41,6 +41,7 @@ static DEFINE_MUTEX(acpi_scan_lock);
+ static LIST_HEAD(acpi_scan_handlers_list);
+ DEFINE_MUTEX(acpi_device_lock);
+ LIST_HEAD(acpi_wakeup_device_list);
++static DEFINE_MUTEX(acpi_hp_context_lock);
+ 
+ struct acpi_device_bus_id{
+ 	char bus_id[15];
+@@ -60,6 +61,16 @@ void acpi_scan_lock_release(void)
+ }
+ EXPORT_SYMBOL_GPL(acpi_scan_lock_release);
+ 
++void acpi_lock_hp_context(void)
++{
++	mutex_lock(&acpi_hp_context_lock);
++}
++
++void acpi_unlock_hp_context(void)
++{
++	mutex_unlock(&acpi_hp_context_lock);
++}
++
+ int acpi_scan_add_handler(struct acpi_scan_handler *handler)
+ {
+ 	if (!handler || !handler->attach)
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -1001,9 +1001,12 @@ static void handle_hotplug_event(acpi_ha
- 	acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
- }
+@@ -58,7 +58,6 @@
  
--/*
-- * Create hotplug slots for the PCI bus.
-- * It should always return 0 to avoid skipping following notifiers.
-+/**
-+ * acpiphp_enumerate_slots - Enumerate PCI slots for a given bus.
-+ * @bus: PCI bus to enumerate the slots for.
-+ *
-+ * A "slot" is an object associated with a PCI device number.  All functions
-+ * (PCI devices) with the same bus and device number belong to the same slot.
+ static LIST_HEAD(bridge_list);
+ static DEFINE_MUTEX(bridge_mutex);
+-static DEFINE_MUTEX(acpiphp_context_lock);
+ 
+ static void handle_hotplug_event(acpi_handle handle, u32 type, void *data);
+ static void acpiphp_sanitize_bus(struct pci_bus *bus);
+@@ -75,7 +74,7 @@ static void acpiphp_context_handler(acpi
+  * acpiphp_init_context - Create hotplug context and grab a reference to it.
+  * @adev: ACPI device object to create the context for.
+  *
+- * Call under acpiphp_context_lock.
++ * Call under acpi_hp_context_lock.
   */
- void acpiphp_enumerate_slots(struct pci_bus *bus)
+ static struct acpiphp_context *acpiphp_init_context(struct acpi_device *adev)
  {
-@@ -1076,7 +1079,10 @@ void acpiphp_enumerate_slots(struct pci_
- 	}
+@@ -100,7 +99,7 @@ static struct acpiphp_context *acpiphp_i
+  * acpiphp_get_context - Get hotplug context and grab a reference to it.
+  * @handle: ACPI object handle to get the context for.
+  *
+- * Call under acpiphp_context_lock.
++ * Call under acpi_hp_context_lock.
+  */
+ static struct acpiphp_context *acpiphp_get_context(acpi_handle handle)
+ {
+@@ -122,7 +121,7 @@ static struct acpiphp_context *acpiphp_g
+  *
+  * The context object is removed if there are no more references to it.
+  *
+- * Call under acpiphp_context_lock.
++ * Call under acpi_hp_context_lock.
+  */
+ static void acpiphp_put_context(struct acpiphp_context *context)
+ {
+@@ -151,7 +150,7 @@ static void free_bridge(struct kref *kre
+ 	struct acpiphp_slot *slot, *next;
+ 	struct acpiphp_func *func, *tmp;
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 
+ 	bridge = container_of(kref, struct acpiphp_bridge, ref);
+ 
+@@ -175,7 +174,7 @@ static void free_bridge(struct kref *kre
+ 	pci_dev_put(bridge->pci_dev);
+ 	kfree(bridge);
+ 
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
  }
  
--/* Destroy hotplug slots associated with the PCI bus */
-+/**
-+ * acpiphp_remove_slots - Remove slot objects associated with a given bus.
-+ * @bus: PCI bus to remove the slot objects for.
-+ */
- void acpiphp_remove_slots(struct pci_bus *bus)
+ /*
+@@ -214,16 +213,16 @@ static void dock_event(acpi_handle handl
  {
+ 	struct acpiphp_context *context;
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 	context = acpiphp_get_context(handle);
+ 	if (!context || WARN_ON(context->adev->handle != handle)
+ 	    || context->func.parent->is_going_away) {
+-		mutex_unlock(&acpiphp_context_lock);
++		acpi_unlock_hp_context();
+ 		return;
+ 	}
+ 	get_bridge(context->func.parent);
+ 	acpiphp_put_context(context);
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
+ 
+ 	hotplug_event(type, context);
+ 
+@@ -310,17 +309,17 @@ static acpi_status register_slot(acpi_ha
+ 	device = (adr >> 16) & 0xffff;
+ 	function = adr & 0xffff;
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 	context = acpiphp_init_context(adev);
+ 	if (!context) {
+-		mutex_unlock(&acpiphp_context_lock);
++		acpi_unlock_hp_context();
+ 		acpi_handle_err(handle, "No hotplug context\n");
+ 		return AE_NOT_EXIST;
+ 	}
+ 	newfunc = &context->func;
+ 	newfunc->function = function;
+ 	newfunc->parent = bridge;
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
+ 
+ 	if (acpi_has_method(handle, "_EJ0"))
+ 		newfunc->flags = FUNC_HAS_EJ0;
+@@ -338,9 +337,9 @@ static acpi_status register_slot(acpi_ha
+ 
+ 	slot = kzalloc(sizeof(struct acpiphp_slot), GFP_KERNEL);
+ 	if (!slot) {
+-		mutex_lock(&acpiphp_context_lock);
++		acpi_lock_hp_context();
+ 		acpiphp_put_context(context);
+-		mutex_unlock(&acpiphp_context_lock);
++		acpi_unlock_hp_context();
+ 		return AE_NO_MEMORY;
+ 	}
+ 
+@@ -415,7 +414,7 @@ static struct acpiphp_bridge *acpiphp_ha
+ 	struct acpiphp_context *context;
+ 	struct acpiphp_bridge *bridge = NULL;
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 	context = acpiphp_get_context(handle);
+ 	if (context) {
+ 		bridge = context->bridge;
+@@ -424,7 +423,7 @@ static struct acpiphp_bridge *acpiphp_ha
+ 
+ 		acpiphp_put_context(context);
+ 	}
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
+ 	return bridge;
+ }
+ 
+@@ -458,9 +457,9 @@ static void cleanup_bridge(struct acpiph
+ 	list_del(&bridge->list);
+ 	mutex_unlock(&bridge_mutex);
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 	bridge->is_going_away = true;
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
+ }
+ 
+ /**
+@@ -820,12 +819,12 @@ static void hotplug_event(u32 type, stru
+ 	struct acpiphp_slot *slot = func->slot;
  	struct acpiphp_bridge *bridge;
-
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 	bridge = context->bridge;
+ 	if (bridge)
+ 		get_bridge(bridge);
+ 
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
+ 
+ 	pci_lock_rescan_remove();
+ 
+@@ -927,7 +926,7 @@ static void handle_hotplug_event(acpi_ha
+ 		goto out;
+ 	}
+ 
+-	mutex_lock(&acpiphp_context_lock);
++	acpi_lock_hp_context();
+ 	context = acpiphp_get_context(handle);
+ 	if (!context || WARN_ON(context->adev->handle != handle)
+ 	    || context->func.parent->is_going_away)
+@@ -937,13 +936,13 @@ static void handle_hotplug_event(acpi_ha
+ 	acpiphp_put_context(context);
+ 	status = acpi_hotplug_execute(hotplug_event_work, context, type);
+ 	if (ACPI_SUCCESS(status)) {
+-		mutex_unlock(&acpiphp_context_lock);
++		acpi_unlock_hp_context();
+ 		return;
+ 	}
+ 	put_bridge(context->func.parent);
+ 
+  err_out:
+-	mutex_unlock(&acpiphp_context_lock);
++	acpi_unlock_hp_context();
+ 	ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+ 
+  out:
+@@ -999,10 +998,10 @@ void acpiphp_enumerate_slots(struct pci_
+ 		 * parent is going to be handled by pciehp, in which case this
+ 		 * bridge is not interesting to us either.
+ 		 */
+-		mutex_lock(&acpiphp_context_lock);
++		acpi_lock_hp_context();
+ 		context = acpiphp_get_context(handle);
+ 		if (!context) {
+-			mutex_unlock(&acpiphp_context_lock);
++			acpi_unlock_hp_context();
+ 			put_device(&bus->dev);
+ 			pci_dev_put(bridge->pci_dev);
+ 			kfree(bridge);
+@@ -1012,7 +1011,7 @@ void acpiphp_enumerate_slots(struct pci_
+ 		context->bridge = bridge;
+ 		/* Get a reference to the parent bridge. */
+ 		get_bridge(context->func.parent);
+-		mutex_unlock(&acpiphp_context_lock);
++		acpi_unlock_hp_context();
+ 	}
+ 
+ 	/* must be added to the list prior to calling register_slot */
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -404,6 +404,8 @@ static inline bool acpi_bus_can_wakeup(a
+ 
+ void acpi_scan_lock_acquire(void);
+ void acpi_scan_lock_release(void);
++void acpi_lock_hp_context(void);
++void acpi_unlock_hp_context(void);
+ int acpi_scan_add_handler(struct acpi_scan_handler *handler);
+ int acpi_bus_register_driver(struct acpi_driver *driver);
+ void acpi_bus_unregister_driver(struct acpi_driver *driver);
