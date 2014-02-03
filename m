@@ -1,117 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbaBCP4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:56:17 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35584 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaBCPyr (ORCPT
+	id S1753155AbaBCP65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:58:57 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:46700 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbaBCP64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:54:47 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
-        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: [PATCH v2 4/7] memcg, slab: unregister cache from memcg before starting to destroy it
-Date: Mon, 3 Feb 2014 19:54:39 +0400
-Message-ID: <f933075d173ee85e6a8d7232c48ae9eca7aad840.1391441746.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1391441746.git.vdavydov@parallels.com>
-References: <cover.1391441746.git.vdavydov@parallels.com>
+	Mon, 3 Feb 2014 10:58:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+In-Reply-To: <CAFrcx1mdRb6M24TsNWaZ6eEp2QFke3xvxqC2F96G7mdJ29t7JQ@mail.gmail.com>
+References: <1390252922-25889-1-git-send-email-jean.pihet@linaro.org>
+	<CAN7rbOstSYgZ39o68AA+z62Uj6KYzNhDkyX+sbHPr=xc-rRjRg@mail.gmail.com>
+	<CAFrcx1nSDD4Sts7uDxxyG9LpyQiwFhby8oLEpWW-qotyWPpGpw@mail.gmail.com>
+	<CAN7rbOti4ODDz9h_oMQpqdB5JWwL0wpB-7rzcbKxho_46pKawg@mail.gmail.com>
+	<CAFrcx1mdRb6M24TsNWaZ6eEp2QFke3xvxqC2F96G7mdJ29t7JQ@mail.gmail.com>
+Date: Mon, 3 Feb 2014 07:50:43 -0800
+X-Google-Sender-Auth: V62w-u5hcFl5BV-L6qOMuMpmJVo
+Message-ID: <CAN7rbOudSDZFwqeJg5=yYdCkCxWyxp1ZGyi1epQ=MpoXyLPaDQ@mail.gmail.com>
+Subject: Re: [Libunwind-devel] [RFC PATCH 0/3] Add support for dwarf compat
+ mode unwinding
+From: Arun Sharma <arun@sharma-home.net>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        libunwind-devel <libunwind-devel@nongnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, memcg_unregister_cache(), which deletes the cache being
-destroyed from the memcg_slab_caches list, is called after
-__kmem_cache_shutdown() (see kmem_cache_destroy()), which starts to
-destroy the cache. As a result, one can access a partially destroyed
-cache while traversing a memcg_slab_caches list, which can have deadly
-consequences (for instance, cache_show() called for each cache on a
-memcg_slab_caches list from mem_cgroup_slabinfo_read() will dereference
-pointers to already freed data).
+On Mon, Feb 3, 2014 at 7:28 AM, Jean Pihet <jean.pihet@linaro.org> wrote:
 
-To fix this, let's move memcg_unregister_cache() before the cache
-destruction process beginning, issuing memcg_register_cache() on
-failure.
+>> Something like ./configure --target=arm on aarch64.
+>
+> Thanks for the link and info.
+>
+> Is there a concrete example of cross-unwinding with multiple targets,
+> for example on x86_64 using native and x86_32 libunwind libraries
+> simultaneously?
+> I am trying to assess the impact of multiple unwinding libs in the perf code.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/memcontrol.c  |   12 ++++++------
- mm/slab_common.c |    3 ++-
- 2 files changed, 8 insertions(+), 7 deletions(-)
+Might want to check with folks who worked on Frysk. There was some
+criticism that it was non-trivial, but it's been done.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b94d9917707c..6a059e73212c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3247,6 +3247,7 @@ int memcg_alloc_cache_params(struct kmem_cache *s,
- 		s->memcg_params->root_cache = root_cache;
- 		INIT_WORK(&s->memcg_params->destroy,
- 				kmem_cache_destroy_work_func);
-+		css_get(&memcg->css);
- 	} else
- 		s->memcg_params->is_root_cache = true;
- 
-@@ -3255,6 +3256,10 @@ int memcg_alloc_cache_params(struct kmem_cache *s,
- 
- void memcg_free_cache_params(struct kmem_cache *s)
- {
-+	if (!s->memcg_params)
-+		return;
-+	if (!s->memcg_params->is_root_cache)
-+		css_put(&s->memcg_params->memcg->css);
- 	kfree(s->memcg_params);
- }
- 
-@@ -3277,9 +3282,6 @@ void memcg_register_cache(struct kmem_cache *s)
- 	memcg = s->memcg_params->memcg;
- 	id = memcg_cache_id(memcg);
- 
--	css_get(&memcg->css);
--
--
- 	/*
- 	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
- 	 * barrier here to ensure nobody will see the kmem_cache partially
-@@ -3328,10 +3330,8 @@ void memcg_unregister_cache(struct kmem_cache *s)
- 	 * after removing it from the memcg_slab_caches list, otherwise we can
- 	 * fail to convert memcg_params_to_cache() while traversing the list.
- 	 */
--	VM_BUG_ON(!root->memcg_params->memcg_caches[id]);
-+	VM_BUG_ON(root->memcg_params->memcg_caches[id] != s);
- 	root->memcg_params->memcg_caches[id] = NULL;
--
--	css_put(&memcg->css);
- }
- 
- /*
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 3314fb3ead7f..4dff4bb66f19 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -310,9 +310,9 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 	s->refcount--;
- 	if (!s->refcount) {
- 		list_del(&s->list);
-+		memcg_unregister_cache(s);
- 
- 		if (!__kmem_cache_shutdown(s)) {
--			memcg_unregister_cache(s);
- 			mutex_unlock(&slab_mutex);
- 			if (s->flags & SLAB_DESTROY_BY_RCU)
- 				rcu_barrier();
-@@ -322,6 +322,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 			kmem_cache_free(kmem_cache, s);
- 		} else {
- 			list_add(&s->list, &slab_caches);
-+			memcg_register_cache(s);
- 			mutex_unlock(&slab_mutex);
- 			printk(KERN_ERR "kmem_cache_destroy %s: Slab cache still has objects\n",
- 				s->name);
--- 
-1.7.10.4
+http://lists.nongnu.org/archive/html/libunwind-devel/2007-05/msg00006.html
 
+ -Arun
