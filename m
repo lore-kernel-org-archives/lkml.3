@@ -1,133 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaBCUvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:51:37 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43311 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaBCUvg (ORCPT
+	id S1753316AbaBCUwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:52:19 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:41056 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074AbaBCUwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:51:36 -0500
-Date: Mon, 3 Feb 2014 12:51:29 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, roger.pau@citrix.com,
-        Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pvh: set cr4 flags for APs
-Message-ID: <20140203125129.0fb5e5e6@mantra.us.oracle.com>
-In-Reply-To: <20140203204346.GA12728@phenom.dumpdata.com>
-References: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
-	<1391040918-11722-2-git-send-email-mukesh.rathor@oracle.com>
-	<20140203114914.GA3350@phenom.dumpdata.com>
-	<20140203113001.2433a77c@mantra.us.oracle.com>
-	<20140203195240.GA10738@phenom.dumpdata.com>
-	<20140203204346.GA12728@phenom.dumpdata.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+	Mon, 3 Feb 2014 15:52:16 -0500
+Message-ID: <1391460734.28432.111.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: [PATCH] ip_tunnel: fix panic in ip_tunnel_xmit()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tommi Rantala <tt.rantala@gmail.com>, David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        trinity@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>,
+        Maciej =?UTF-8?Q?=C5=BBenczykowski?= <maze@google.com>
+Date: Mon, 03 Feb 2014 12:52:14 -0800
+In-Reply-To: <CA+ydwto5CTDSED=pZ_DfAZyh6Jx7xKJafRuDFUtV4ZZCb70ULA@mail.gmail.com>
+References: <CA+ydwtrWCgi=v7v=8yjNMV37Aa4ua9zbqYM5_uUdQrLSQt+VEw@mail.gmail.com>
+	 <1391201873.28432.86.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CA+ydwtpmFbhkck9z8G7tfHQZW+4rWSepQMgPURqVCwrZ77v2bA@mail.gmail.com>
+	 <CA+ydwto5CTDSED=pZ_DfAZyh6Jx7xKJafRuDFUtV4ZZCb70ULA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Feb 2014 15:43:46 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+From: Eric Dumazet <edumazet@google.com>
 
-> On Mon, Feb 03, 2014 at 02:52:40PM -0500, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Feb 03, 2014 at 11:30:01AM -0800, Mukesh Rathor wrote:
-> > > On Mon, 3 Feb 2014 06:49:14 -0500
-> > > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > > 
-> > > > On Wed, Jan 29, 2014 at 04:15:18PM -0800, Mukesh Rathor wrote:
-> > > > > We need to set cr4 flags for APs that are already set for BSP.
-> > > > 
-> > > > The title is missing the 'xen' part.
-> > > 
-> > > The patch is for linux, not xen.
-> > 
-> > Right. And hence you need to prefix the title with 'xen' in it
-> > otherwise it won't be obvious from the Linux log line for what
-> > component of the Linux tree it is.
-> > 
-> > > 
-> > > > I rewrote it a bit and I think this should go in 3.14.
-> > > > 
-> > > > David, Boris: It is not the full fix as there are other parts to
-> > > > make an PVH guest use 2MB or 1GB pages- but this fixes an
-> > > > obvious bug.
-> > > > 
-> > > > 
-> > > > 
-> > > > From 797ea6812ff0a90cce966a4ff6bad57cbadc43b5 Mon Sep 17
-> > > > 00:00:00 2001 From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > > Date: Wed, 29 Jan 2014 16:15:18 -0800
-> > > > Subject: [PATCH] xen/pvh: set CR4 flags for APs
-> > > > 
-> > > > The Xen ABI sets said flags for the BSP, but it does
-> > > 
-> > > NO it does not. I said it few times, it's set by
-> > > probe_page_size_mask (which is in linux) for the BSP. The comment
-> > > below also says it.
-> > 
-> > Where does it set it for APs? Can we piggyback on that?
-> 
-> And since I am in a hurry to fix an build regression I did the
-> research myself - but this kind of information needs to be in the
-> commit message.
-> 
-> Here is what I have, please comment as I want to send a git pull to
-> Linux within the hour.
-> 
-> From 125ef07fd58e963cc286554f6536e46c9712033c Mon Sep 17 00:00:00 2001
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Date: Wed, 29 Jan 2014 16:15:18 -0800
-> Subject: [PATCH] xen/pvh: set CR4 flags for APs
-> 
-> During bootup in the 'probe_page_size_mask' these CR4
-> flags are set in there. But for AP processors they
-> are not set as we do not use 'secondary_startup_64' which
-> the baremetal kernels uses. Instead do it in
-> this function which we use in Xen PVH during our
-> startup for AP and BSP processors.
-> 
-> As such fix it up to make sure we have that flag set.
+Setting rt variable to NULL at the beginning of ip_tunnel_xmit()
+missed possible use of this variable as a scratch value.
 
-Thats good enough for me.
+Also fixes a possible dst leak in tunnel_dst_check() :
+If we had to call tunnel_dst_reset(), we forgot to
+release the reference on dst.
 
-Mukesh
+Merges tunnel_dst_get()/tunnel_dst_check() into
+a single tunnel_rtable_get() function for clarity.
 
+Many thanks to Tommi for his report and tests.
 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/enlighten.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index a4d7b64..201d09a 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1473,6 +1473,18 @@ static void xen_pvh_set_cr_flags(int cpu)
->  	 * X86_CR0_TS, X86_CR0_PE, X86_CR0_ET are set by Xen for HVM
-> guests
->  	 * (which PVH shared codepaths), while X86_CR0_PG is for
-> PVH. */ write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_NE | X86_CR0_WP |
-> X86_CR0_AM); +
-> +	if (!cpu)
-> +		return;
-> +	/*
-> +	 * For BSP, PSE PGE are set in probe_page_size_mask(), for
-> APs
-> +	 * set them here. For all, OSFXSR OSXMMEXCPT are set in
-> fpu_init.
-> +	*/
-> +	if (cpu_has_pse)
-> +		set_in_cr4(X86_CR4_PSE);
-> +
-> +	if (cpu_has_pge)
-> +		set_in_cr4(X86_CR4_PGE);
->  }
->  
->  /*
+Fixes: 7d442fab0a67 ("ipv4: Cache dst in tunnels)"
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Maciej Żenczykowski <maze@google.com>
+---
+ net/ipv4/ip_tunnel.c |   29 +++++++++++------------------
+ 1 file changed, 11 insertions(+), 18 deletions(-)
+
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index bd28f386bd02..50228be5c17b 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -101,28 +101,22 @@ static void tunnel_dst_reset_all(struct ip_tunnel *t)
+ 		__tunnel_dst_set(per_cpu_ptr(t->dst_cache, i), NULL);
+ }
+ 
+-static struct dst_entry *tunnel_dst_get(struct ip_tunnel *t)
++static struct rtable *tunnel_rtable_get(struct ip_tunnel *t, u32 cookie)
+ {
+ 	struct dst_entry *dst;
+ 
+ 	rcu_read_lock();
+ 	dst = rcu_dereference(this_cpu_ptr(t->dst_cache)->dst);
+-	if (dst)
++	if (dst) {
++		if (dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
++			rcu_read_unlock();
++			tunnel_dst_reset(t);
++			return NULL;
++		}
+ 		dst_hold(dst);
+-	rcu_read_unlock();
+-	return dst;
+-}
+-
+-static struct dst_entry *tunnel_dst_check(struct ip_tunnel *t, u32 cookie)
+-{
+-	struct dst_entry *dst = tunnel_dst_get(t);
+-
+-	if (dst && dst->obsolete && dst->ops->check(dst, cookie) == NULL) {
+-		tunnel_dst_reset(t);
+-		return NULL;
+ 	}
+-
+-	return dst;
++	rcu_read_unlock();
++	return (struct rtable *)dst;
+ }
+ 
+ /* Often modified stats are per cpu, other are shared (netdev->stats) */
+@@ -584,7 +578,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
+ 	struct flowi4 fl4;
+ 	u8     tos, ttl;
+ 	__be16 df;
+-	struct rtable *rt = NULL;	/* Route to the other host */
++	struct rtable *rt;		/* Route to the other host */
+ 	unsigned int max_headroom;	/* The extra header space needed */
+ 	__be32 dst;
+ 	int err;
+@@ -657,8 +651,7 @@ void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
+ 	init_tunnel_flow(&fl4, protocol, dst, tnl_params->saddr,
+ 			 tunnel->parms.o_key, RT_TOS(tos), tunnel->parms.link);
+ 
+-	if (connected)
+-		rt = (struct rtable *)tunnel_dst_check(tunnel, 0);
++	rt = connected ? tunnel_rtable_get(tunnel, 0) : NULL;
+ 
+ 	if (!rt) {
+ 		rt = ip_route_output_key(tunnel->net, &fl4);
+
 
