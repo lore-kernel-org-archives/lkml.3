@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaBCCRo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 21:17:44 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:64724 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586AbaBCCRm (ORCPT
+	id S1752721AbaBCCXV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 21:23:21 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:47351 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586AbaBCCXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 21:17:42 -0500
+	Sun, 2 Feb 2014 21:23:19 -0500
 From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
 To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
-Date: Sun,  2 Feb 2014 18:17:09 -0800
-Message-Id: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+Subject: [RFC PATCH 1/3] epoll: reserve small ioctl() space
+Date: Sun,  2 Feb 2014 18:17:10 -0800
+Message-Id: <1391393832-8754-2-git-send-email-n1ght.4nd.d4y@gmail.com>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Reserve a small ioctl() command space for eventpolls, of which only two
+are currently utilized.
 
-This patch series adds support for read(), write(), and ioctl() operations
-on eventpolls as well as an associated userspace structure to format the
-eventpoll entries delivered via read()/write() buffers. The new structure,
-struct epoll, differs from struct epoll_event mainly in that it also holds
-the associated file descriptor. Using the normal I/O interface to manipulate
-eventpolls is much neater than using epoll-specific syscalls while also
-allowing for greater flexibility (theoretically, pipes could be used to
-filter access). Specifically, write() creates, modifies, and/or removes event
-entries stored in the supplied buffer, using the userspace identifier to
-check whether an entry exists and removing it if no events are set to trigger
-it, while read() simply waits for enough events to fill the provided buffer.
-As timeout control is essential for polling to be practical, ioctl() is used
-to configure an optional timeout, which is infinite by default.
-
- Documentation/ioctl/ioctl-number.txt |   1 +
- fs/eventpoll.c                       | 534 ++++++++++++++++++++++++-----------
- include/uapi/linux/eventpoll.h       |  10 +
- 3 files changed, 384 insertions(+), 161 deletions(-)
+Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+---
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index d7e43fa..3c6f8ac 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -81,6 +81,7 @@ Code  Seq#(hex)	Include File		Comments
+ 0x22	all	scsi/sg.h
+ '#'	00-3F	IEEE 1394 Subsystem	Block for the entire subsystem
+ '$'	00-0F	linux/perf_counter.h, linux/perf_event.h
++'$'	10-1F	include/uapi/linux/eventpoll.h
+ '&'	00-07	drivers/firewire/nosy-user.h
+ '1'	00-1F	<linux/timepps.h>	PPS kit from Ulrich Windl
+ 					<ftp://ftp.de.kernel.org/pub/linux/daemons/ntp/PPS/>
