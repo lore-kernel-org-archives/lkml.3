@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089AbaBCXN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:13:28 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:48840 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaBCXN1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:13:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <87eh3kx1n6.fsf@devron.myhome.or.jp>
-References: <1387953112-2828-1-git-send-email-linkinjeon@gmail.com>
-	<87eh3kx1n6.fsf@devron.myhome.or.jp>
-Date: Tue, 4 Feb 2014 08:13:26 +0900
-Message-ID: <CAKYAXd9mm6KmMu6XvQoFynQtyAC8yR5rCd12SMoB_PFgojbEiw@mail.gmail.com>
-Subject: Re: [PATCH v3 5/6] fat: permit to return phy block number by fibmap
- in fallocated region
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753092AbaBCXQh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:16:37 -0500
+Received: from 1wt.eu ([62.212.114.60]:56189 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268AbaBCXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 18:16:35 -0500
+Date: Tue, 4 Feb 2014 00:16:03 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140203231603.GA11613@1wt.eu>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <52EA2875.5020807@free-electrons.com> <52EA2A04.2070109@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EA2A04.2070109@gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-03, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> Make the fibmap call the return the proper physical block number for any
->> offset request in the fallocated range.
->>
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  fs/fat/cache.c |   13 ++++++++++---
->>  fs/fat/fat.h   |    3 +++
->>  fs/fat/inode.c |    3 +++
->>  3 files changed, 16 insertions(+), 3 deletions(-)
->>
->> diff --git a/fs/fat/cache.c b/fs/fat/cache.c
->> index a132666..d22c1a2 100644
->> --- a/fs/fat/cache.c
->> +++ b/fs/fat/cache.c
->> @@ -325,19 +325,26 @@ int fat_bmap(struct inode *inode, sector_t sector,
->> sector_t *phys,
->>
->>  	last_block = (i_size_read(inode) + (blocksize - 1)) >> blocksize_bits;
->>  	if (sector >= last_block) {
->> -		if (!create)
->> -			return 0;
->> -
->>  		/*
->>  		 * Both ->mmu_private and ->i_disksize can access
->>  		 * on only allocation path. (caller must hold ->i_mutex)
->>  		 */
->>  		last_block = (MSDOS_I(inode)->i_disksize + (blocksize - 1))
->>  			>> blocksize_bits;
->> +		if (!create) {
->> +			/* Map a block in fallocated region */
->> +			if (atomic_read(&MSDOS_I(inode)->beyond_isize))
->> +				if (sector < last_block)
->> +					goto out_map_cluster;
->> +
->> +			return 0;
->> +		}
->> +
->>  		if (sector >= last_block)
->>  			return 0;
->>  	}
->>
->> +out_map_cluster:
->>  	cluster = sector >> (sbi->cluster_bits - sb->s_blocksize_bits);
->>  	offset  = sector & (sbi->sec_per_clus - 1);
->>  	cluster = fat_bmap_cluster(inode, cluster);
->> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
->> index 7b5851f..b884276 100644
->> --- a/fs/fat/fat.h
->> +++ b/fs/fat/fat.h
->> @@ -129,6 +129,9 @@ struct msdos_inode_info {
->>  	struct hlist_node i_dir_hash;	/* hash by i_logstart */
->>  	struct rw_semaphore truncate_lock; /* protect bmap against truncate */
->>  	struct inode vfs_inode;
->> +
->> +	/* for getting block number beyond file size in case of fallocate */
->> +	atomic_t beyond_isize;
->>  };
->>
->>  struct fat_slot_info {
->> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
->> index 3636617..1c3192b 100644
->> --- a/fs/fat/inode.c
->> +++ b/fs/fat/inode.c
->> @@ -256,7 +256,10 @@ static sector_t _fat_bmap(struct address_space
->> *mapping, sector_t block)
->>
->>  	/* fat_get_cluster() assumes the requested blocknr isn't truncated. */
->>  	down_read(&MSDOS_I(mapping->host)->truncate_lock);
->> +	/* To get block number beyond file size in fallocated region */
->> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 1);
->>  	blocknr = generic_block_bmap(mapping, block, fat_get_block);
->> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 0);
->>  	up_read(&MSDOS_I(mapping->host)->truncate_lock);
->
-> This is racy. While user is using bmap, kernel can allocate new blocks.
-> We should use another function for this.
-I understand that fat can map fallocated blocks in read case while
-user is using bmap.
-But I can not find the case allocate new blocks.
-If I am missing something, Could you please elaborate more ?
-Is it a case of _bmap request returning the block number for block
-allocated in parallel write path ?
+Hi Sebastian,
 
-Thanks.
->
-> For example, something like
->
-> fat_get_block_bmap()
-> {
->         [...]
-> 	fat_get_block2(inode, iblock, &max_blocks, bh_result, create, bmap);
->         [...]
-> }
->
-> blocknr = generic_block_bmap(mapping, block, fat_get_block_bmap);
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+On Thu, Jan 30, 2014 at 11:31:32AM +0100, Sebastian Hesselbarth wrote:
+> On 01/30/14 11:24, Gregory CLEMENT wrote:
+> >On 25/01/2014 19:19, Sebastian Hesselbarth wrote:
+> >>This patch set fixes clk init order that went upside-down with
+> >>v3.14. I haven't really investigated what caused this, but I assume
+> >>it is related with DT node reordering by addresses.
+> >
+> >Can you explain what kind of issue do you observe?
+> 
+> Sure. When probing CLK_OF_DECLAREed clock drivers, clock-gating driver
+> gets registered before core-clocks. It therefore cannot resolve it's
+> parent clock name for tclk and all clock gates will have no parent
+> clock.
+> 
+> Usually, you'll see in some drivers (e.g. v643xx_eth) div_by_zero errors
+> poping up, when they calculate a frequency division factors based on
+> clock gate frequency, which should have been tclk but is 0 now.
+
+Well, to be honnest, I have no idea whether your patch is the right way
+to fix the problem or not, but what I can say is that it fixes such oopses
+that appear in 3.14-rc1 when booting on mirabox :
+
+Division by zero in kernel.
+CPU: 0 PID: 6 Comm: kworker/u2:0 Not tainted 3.13.0-bck-mbx #6
+Workqueue: kmmcd mmc_rescan
+[<c0010865>] (unwind_backtrace+0x1/0x98) from [<c000e947>] (show_stack+0xb/0xc)
+[<c000e947>] (show_stack+0xb/0xc) from [<c0135913>] (Ldiv0+0x9/0x12)
+[<c0135913>] (Ldiv0+0x9/0x12) from [<c01f708b>] (mvsd_set_ios+0xcb/0x160)
+[<c01f708b>] (mvsd_set_ios+0xcb/0x160) from [<c01ec1fd>] (__mmc_set_clock+0x2d/0
+x40)
+[<c01ec1fd>] (__mmc_set_clock+0x2d/0x40) from [<c01f1a59>] (mmc_sdio_init_card+0
+x391/0x808)
+[<c01f1a59>] (mmc_sdio_init_card+0x391/0x808) from [<c01f2163>] (mmc_attach_sdio
++0x5b/0x218)
+[<c01f2163>] (mmc_attach_sdio+0x5b/0x218) from [<c01ed0d9>] (mmc_rescan+0x159/0x
+1b4)
+[<c01ed0d9>] (mmc_rescan+0x159/0x1b4) from [<c0024579>] (process_one_work+0xa9/0
+x21c)
+[<c0024579>] (process_one_work+0xa9/0x21c) from [<c002494d>] (worker_thread+0xb5
+/0x248)
+[<c002494d>] (worker_thread+0xb5/0x248) from [<c0027f1b>] (kthread+0x7b/0x94)
++0xa7/0x138)
+[<c04228b3>] (kernel_init_freeable+0xa7/0x138) from [<c027e6cf>] (kernel_init+0x
+7/0xb8)
+[<c027e6cf>] (kernel_init+0x7/0xb8) from [<c000cb9d>] (ret_from_fork+0x11/0x34)
+mvsdio d00d4000.mvsdio: lacking card detect (fall back to polling)
+
+By the way, seeing how often a trick related to the DT is nedeed to solve an
+oops or a panic, I'm really scared that this whole DT mess is just becoming
+the exact copy of the ACPI mess (but 15 years later) and we'll experience the
+same horrible things :-( Sometimes I'm wondering whether there are not too
+many structural things put in there...
+
+Regards,
+Willy
+
