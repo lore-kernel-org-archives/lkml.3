@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaBCMU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 07:20:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58944 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039AbaBCMUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 07:20:55 -0500
-Date: Mon, 3 Feb 2014 13:20:52 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org
-Subject: Re: Need help in bug in isolate_migratepages_range
-Message-ID: <20140203122052.GC2495@dhcp22.suse.cz>
-References: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de>
+	id S1752088AbaBCMrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 07:47:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34642 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaBCMrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 07:47:45 -0500
+Date: Mon, 3 Feb 2014 12:46:59 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140203124659.GW22609@sirena.org.uk>
+References: <cover.1390986082.git.moinejf@free.fr>
+ <20140202124358.GD26684@n2100.arm.linux.org.uk>
+ <20140202190606.6fa193ce@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ztQAJXOExAP3xDFw"
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de>
+In-Reply-To: <20140202190606.6fa193ce@armhf>
+X-Cookie: PARDON me, am I speaking ENGLISH?
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5 00/23]
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing linux-mm]
 
-Does this ring bells? I haven't checked very deeply but it doesn't seem
-to be fixed since 3.12.
+--ztQAJXOExAP3xDFw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hoolger, could you post your config, please?
+On Sun, Feb 02, 2014 at 07:06:06PM +0100, Jean-Francois Moine wrote:
 
-On Fri 31-01-14 21:12:27, Holger Kiehl wrote:
-> Hello,
-> 
-> today one of our system got a kernel bug message. It kept on running
-> but more and more process begin to be stuck in D state (eg. a simple w
-> command would never return) and I eventually had to reboot. Here the
-> full message:
-> 
->    Jan 31 13:07:43 asterix kernel: BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
->    Jan 31 13:07:43 asterix kernel: IP: [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
->    Jan 31 13:07:43 asterix kernel: PGD 7d3074067 PUD 7d3073067 PMD 0
->    Jan 31 13:07:43 asterix kernel: Oops: 0000 [#1] SMP
->    Jan 31 13:07:43 asterix kernel: Modules linked in: drbd lru_cache coretemp ipmi_devintf bonding nf_conntrack_ftp binfmt_misc usbhid i2c_i801 sg ehci_pci i2c_core ehci_hcd uhci_hcd i5000_edac i5k_amb ipmi_si ipmi_msghandler usbcore usb_common [last unloaded: microcode]
->    Jan 31 13:07:43 asterix kernel: CPU: 5 PID: 14164 Comm: java Not tainted 3.12.9 #1
->    Jan 31 13:07:43 asterix kernel: Hardware name: FUJITSU SIEMENS PRIMERGY RX300 S4             /D2519, BIOS 4.06  Rev. 1.04.2519             07/30/2008
->    Jan 31 13:07:43 asterix kernel: task: ffff8807d30b08c0 ti: ffff8807d30b2000 task.ti: ffff8807d30b2000
->    Jan 31 13:07:43 asterix kernel: RIP: 0010:[<ffffffff810af0ac>]  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
->    Jan 31 13:07:43 asterix kernel: RSP: 0000:ffff8807d30b3928  EFLAGS: 00010286
->    Jan 31 13:07:43 asterix kernel: RAX: 0000000000000000 RBX: 000000000020ec09 RCX: 0000000000000002
->    Jan 31 13:07:43 asterix kernel: RDX: 2c00000000008000 RSI: 0000000000000004 RDI: 000000000000006c
->    Jan 31 13:07:43 asterix kernel: RBP: ffff8807d30b39f8 R08: ffff88083fbde390 R09: 0000000000000001
->    Jan 31 13:07:43 asterix kernel: R10: 0000000000000000 R11: ffffea000733a000 R12: ffff8807d30b3a58
->    Jan 31 13:07:43 asterix kernel: R13: ffffea000733a1f8 R14: 0000000000000000 R15: ffff88083ffe1d80
->    Jan 31 13:07:43 asterix kernel: FS:  00007f9d9e72f910(0000) GS:ffff88083fd40000(0000) knlGS:0000000000000000
->    Jan 31 13:07:43 asterix kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c CR3: 00000007d3070000 CR4: 00000000000407e0
->    Jan 31 13:07:43 asterix kernel: Stack:
->    Jan 31 13:07:43 asterix kernel: 0000000000000009 ffff88083ffe16c0 ffffea00002e6af0 ffff8807d30b3998
->    Jan 31 13:07:43 asterix kernel: ffff8807d30b2010 00ff8807d30b08c0 ffff8807d30b08c0 000000000020f000
->    Jan 31 13:07:43 asterix kernel: 0000000000000000 000000000000083b 000000000000000a ffff8807d30b3a68
->    Jan 31 13:07:43 asterix kernel: Call Trace:
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810a161f>] ? lru_add_drain_cpu+0x25/0x97
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810af687>] compact_zone+0x2b5/0x319
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810da586>] ? put_super+0x20/0x2c
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810afa4d>] compact_zone_order+0xad/0xc4
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810afaf5>] try_to_compact_pages+0x91/0xe8
->    Jan 31 13:07:43 asterix kernel: [<ffffffff8109b92d>] ? page_alloc_cpu_notify+0x3e/0x3e
->    Jan 31 13:07:43 asterix kernel: [<ffffffff8109da34>] __alloc_pages_direct_compact+0xae/0x195
->    Jan 31 13:07:43 asterix kernel: [<ffffffff8109e45d>] __alloc_pages_nodemask+0x772/0x7b5
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810c85a3>] alloc_pages_vma+0xd6/0x101
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810d47e3>] do_huge_pmd_anonymous_page+0x199/0x2ee
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810b3884>] handle_mm_fault+0x1b7/0xceb
->    Jan 31 13:07:43 asterix kernel: [<ffffffff8105dedc>] ? __dequeue_entity+0x2e/0x33
->    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8c3>] __do_page_fault+0x3bd/0x3e4
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810bbe1a>] ? mprotect_fixup+0x1c9/0x1fb
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810aa0f0>] ? vm_mmap_pgoff+0x6d/0x8f
->    Jan 31 13:07:43 asterix kernel: [<ffffffff810795f5>] ? SyS_futex+0x103/0x13d
->    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8f3>] do_page_fault+0x9/0xb
->    Jan 31 13:07:43 asterix kernel: [<ffffffff813d3672>] page_fault+0x22/0x30
->    Jan 31 13:07:43 asterix kernel: Code: 00 41 f7 45 00 ff ff ff 01 0f 85 43 02 00 00 41 8b 45 18 85 c0 0f 89 37 02 00 00 49 8b 55 00 4c 89 e8 66 85 d2 79 04 49 8b 45 30 <8b> 40 1c 83 f8 01 0f 85 1b 02 00 00 49 8b 55 08 30 c0 48 85 d2
->    Jan 31 13:07:43 asterix kernel: RIP  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
->    Jan 31 13:07:43 asterix kernel: RSP <ffff8807d30b3928>
->    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c
->    Jan 31 13:07:43 asterix kernel: ---[ end trace fba75c5b0b9175ea ]---
-> 
-> Kernel is a plain kernel.org kernel 3.12.9 and it uses drbd to replicate
-> data to another host. Any idea what the cause of this bug is? Could it be
-> hardware? The system has been running now for five years without any problems.
-> 
-> Please CC me since I am not on the list.
-> 
-> Many thanks in advance.
-> 
-> Regards,
-> Holger
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> - the .of_match_table is not needed because the i2c client is created by
+>   the i2c subsystem from the 'reg' in the DT,
 
--- 
-Michal Hocko
-SUSE Labs
+It's generally better to have an explict set of OF IDs even if the
+default does work - matching purely on the device name does work almost
+all the time but there are collisions out there with different
+manufacturers using the same prefix for their chips (the example I
+always trot out is that both Wolfson and Wondermedia use "wm").
+
+--ztQAJXOExAP3xDFw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS74/AAAoJELSic+t+oim93WQP/3fpPl9EtGKD55JmoulCZ1/I
+f9qgrBWUWPheHxkYbCbRojGdttM9u+OHE65Ir5ckOAWp0m2Z6Q124gLOtuOY4QGO
+ty5afEarYKtQlgqd4NvoInPuWBXklU4pTdWeuiZkOns3yVRkmYoeQwy//AuFQkK2
+ByIpjK/n58c/D8Tz7YfhZCeTanHlK6Gvw3uXmeAbj9j2/vapAn5sUNGQkfAec1oR
+Y/k3TKwYtcIV82I/dAY0XbCeNs48eLhlGCV/t2aF055ODd2ghwWYjgp+zy9mr1tE
+v94daQEGMghkE9i3BR0UBOxbe9Kfr+xwBbFe8cjXPd079Vhq6WT0lmmHbLf00tZg
+F6g/Vrs/QgUYfksCyyvuPtNHvAeDgMvWhuIuwgY4YvH7eOag43V4GV+J0wRGpmZq
+YxXs2aWkJqEvxHk68oLQx6rmEuBzCAfwQqhkdy8j2I+nwLUqNxxcEPIuuUcUToOf
+yjH7+svfxgfRfeF3nO8s0wUTb0BtJYIWBurxufIIgN4xP2nudPWOtcZ7Y/cHzzW+
+W7kxHblozuUtBFzE19TZoSrMdSF/rHD7ZjScBHd1bQ3yzbmLORqYITjAt2dcdKOi
+3flyVdp1u1oeGsdFivU/Z+z82N+qd0dMSP5fUKWDMayViMfevWJ8digCgqVHgdI7
+kVi08u1MkkLsV0M9JhJn
+=hWbp
+-----END PGP SIGNATURE-----
+
+--ztQAJXOExAP3xDFw--
