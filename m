@@ -1,96 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaBCS7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:59:43 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:2906 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaBCS7k convert rfc822-to-8bit (ORCPT
+	id S1753343AbaBCTAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:00:04 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:40249 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaBCTAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:59:40 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 10:58:16 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "abrestic@chromium.org" <abrestic@chromium.org>,
-        "dgreid@chromium.org" <dgreid@chromium.org>,
-        "katierh@chromium.org" <katierh@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 3 Feb 2014 10:59:38 -0800
-Subject: RE: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional property
-Thread-Topic: [PATCH v1] ARM: tegra: add nvidia,wdt-timer-id optional
- property
-Thread-Index: Ac8hAuoiUK0kqejmRAOGd7y1YQMzDgADpbGQ
-Message-ID: <643E69AA4436674C8F39DCC2C05F763863199852CA@HQMAIL03.nvidia.com>
-References: <1391204811-6293-1-git-send-email-achew@nvidia.com>
- <20140203171053.GA28338@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140203171053.GA28338@e106331-lin.cambridge.arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Feb 2014 14:00:02 -0500
 MIME-Version: 1.0
+In-Reply-To: <CANq1E4S0WjuqW3coJDKqH9Gm5JWwb_W_CEU8Ety15m0CjhOqZQ@mail.gmail.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-3-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4S0WjuqW3coJDKqH9Gm5JWwb_W_CEU8Ety15m0CjhOqZQ@mail.gmail.com>
+Date: Mon, 3 Feb 2014 14:00:00 -0500
+Message-ID: <CAN+gG=G7G4Twr6-6cftKXXdfgSRZ54ZmaYzLcOLiQhMhgCX5og@mail.gmail.com>
+Subject: Re: [PATCH 02/11] HID: i2c-hid: implement ll_driver transport-layer callbacks
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>,
+        Andrew Duggan <aduggan@synaptics.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Jan 31, 2014 at 09:46:51PM +0000, Andrew Chew wrote:
-> > This optional property can be used to specify which timers are to be
-> > used for hardware watchdog timeouts (via a tegra wdt driver).
-> 
-> Is there any reason that a particular timer should be used?
+On Mon, Feb 3, 2014 at 11:04 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> Add output_report and raw_request to i2c-hid.
+>> Hopefully, we will manage to have the same transport level between
+>> all the transport drivers.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>  drivers/hid/i2c-hid/i2c-hid.c | 24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+>> index ce68a12..5099f1f 100644
+>> --- a/drivers/hid/i2c-hid/i2c-hid.c
+>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+>> @@ -574,6 +574,28 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
+>>         return ret;
+>>  }
+>>
+>> +static int i2c_hid_output_report(struct hid_device *hid, __u8 *buf,
+>> +               size_t count)
+>> +{
+>> +       return i2c_hid_output_raw_report(hid, buf, count, HID_OUTPUT_REPORT);
+>> +}
+>> +
+>> +static int i2c_hid_raw_request(struct hid_device *hid, unsigned char reportnum,
+>> +                              __u8 *buf, size_t len, unsigned char rtype,
+>> +                              int reqtype)
+>> +{
+>> +       switch (reqtype) {
+>> +       case HID_REQ_GET_REPORT:
+>> +               return i2c_hid_get_raw_report(hid, reportnum, buf, len, rtype);
+>> +       case HID_REQ_SET_REPORT:
+>> +               if (buf[0] != reportnum)
+>> +                       return -EINVAL;
+>> +               return i2c_hid_output_raw_report(hid, buf, len, rtype);
+>
+> I just skimmed the I2C-HID specs and it defines three methods for
+> input/output reports:
+>
+> 1) Section 6.2:
+> raw async output-reports can be sent by writing the data at any time
+> to wOutputRegister.
+> This should be used as method for hid->output_report().
+>
+> 2) Section 7.1:
+> SET_REPORT can be issued by writing the right OPCODE + report-ID into
+> wCommandRegister and the data into wDataRegister.
+> This should be used as method for hid->raw_request() + HID_REQ_SET_REPORT.
+>
+> 3) Section 7.1:
+> GET_REPORT can be issued by writing the right OPCODE + report-ID into
+> wCommandRegister and then waiting for the device to write the data
+> into wDataRegister.
+> This should be used for hid->raw_request() + HID_REQ_GET_REPORT
+>
+>
+> The GET_REPORT implementation looks fine to me, but the
+> i2c_hid_set_report() seems to support both 1) and 2) depending on the
+> passed type and capabilities:
+>  - it uses 2) for FEATURE_REPORT reports or if the max OUTPUT_LENGTH is 0
+>  - it uses 1) otherwise
+>
+> I'm not sure whether the i2c-hid-spec mandates this behavior, so I am
+> not saying it's wrong. I just wanna understand what we do here. So if
+> we use hid->output_report() with HID_FEATURE_REPORT, the current code
+> turns this into a SET_REPORT. Likewise, an hid->raw_request() with
+> HID_REQ_SET_REPORT but with HID_OUTPUT_REPORT turns into an
+> output-report.
 
-I worry about colliding with other timer allocations, and wanted to be
-flexible in this regard.
+Ok, just for the record (I think that you already answered this in the
+4/11 review):
+this behavior has been added in commit
+811adb9622de310efbb661531c3ec0ae5d2b2bc0 for Synaptics so they can
+talk to their HID/I2C firmware.
+The use they are making is through hdev->hid_output_raw_report(), and
+at that time output_report() did not exist.
 
-> This shouldn't even mention the driver, as the binding should describe the
-> HW, not how it's used by Linux at the moment.
-> 
-> >
-> > Signed-off-by: Andrew Chew <achew@nvidia.com>
-> > ---
-> >  Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt | 8
-> > ++++++++
-> >  1 file changed, 8 insertions(+)
-> >
-> > diff --git
-> > a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> > b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> > index b5082a1..e87fa70 100644
-> > --- a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> > +++ b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-> > @@ -13,6 +13,13 @@ Required properties:
-> >  - clocks : Must contain one entry, for the module clock.
-> >    See ../clocks/clock-bindings.txt for details.
-> >
-> > +Optional properties:
-> > +
-> > +- nvidia,wdt-timer-id: A list of timer IDs to be used for watchdogs.
-> > +    Watchdog 0 will be assigned to the first timer listed, watchdog 1 will
-> > +    be assigned to the second timer listed, etc. up to the number of
-> watchdogs
-> > +    available.
-> 
-> This sounds like a description of what software should do. Is there any
-> reason this order is important?
+I guess that with the new API (output_report() and raw_request() ) we
+can revert this and it will not bother them given that rmi-hid.c is
+still not upstream.
 
-The order in regards to which watchdog (watchdog 0, watchdog 1, etc) is paired
-with which timer is unimportant for purposes of the watchdog driver that
-I will follow up with.  I can leave those details out of the bindings description
-if that resolves your concern.
+I have no clue if anyone else is using hdev->hid_output_raw_report()
+for I2C devices, but we could still try to clean this right now given
+that those devices are not well spread (besides some hid-multitouch
+touchscreens which do not use OUTPUT reports).
 
-> Also, it feels odd for the proerty name to be singular given it's a list...
+I am still a little bit concerned by hidraw not able to call
+set_report in this case, but this could be fixed also by adding an
+ioctl.
 
-You're right.  Given what it is, it really should be nvidia,wdt-timer-ids.
+How does that sound?
 
+Cheers,
+Benjamin
+
+>
+> I'd rather expect this behavior:
+>
+> hid->output_report() should always do this:
+>   args[index++] = outputRegister & 0xFF;
+>   args[index++] = outputRegister >> 8;
+>   hidcmd = &hid_no_cmd;
+>
+> while hid->raw_request() should always do this:
+>   args[index++] = dataRegister & 0xFF;
+>   args[index++] = dataRegister >> 8;
+>
+> The special case for maxOutputLength==0 seems fine to me, but the
+> "reportType == 0x03" looks weird.
+>
+>
+> Thanks
+> David
+>
+>> +       default:
+>> +               return -EIO;
+>> +       }
+>> +}
+>> +
+>>  static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
+>>                 int reqtype)
+>>  {
+>> @@ -761,6 +783,8 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
+>>         .close = i2c_hid_close,
+>>         .power = i2c_hid_power,
+>>         .request = i2c_hid_request,
+>> +       .output_report = i2c_hid_output_report,
+>> +       .raw_request = i2c_hid_raw_request,
+>>  };
+>>
+>>  static int i2c_hid_init_irq(struct i2c_client *client)
+>> --
+>> 1.8.3.1
+>>
