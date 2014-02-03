@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaBCQpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:45:12 -0500
-Received: from smarthost01a.mail.zen.net.uk ([212.23.1.1]:47114 "EHLO
-	smarthost01a.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753013AbaBCQpI (ORCPT
+	id S1753260AbaBCQpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:45:36 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:47188 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106AbaBCQpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:45:08 -0500
-Message-ID: <1391445893.3509.36.camel@linaro1.home>
-Subject: Re: [PATCH v5 00/16] uprobes: Add uprobes support for ARM
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        davem@davemloft.net, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Date: Mon, 03 Feb 2014 16:44:53 +0000
-In-Reply-To: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
-References: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01a-IP: [82.69.122.217]
+	Mon, 3 Feb 2014 11:45:31 -0500
+Date: Mon, 3 Feb 2014 16:46:36 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "msalter@redhat.com" <msalter@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/5] arm: add new asm macro update_sctlr
+Message-ID: <20140203164636.GJ11329@bivouac.eciton.net>
+References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
+ <1389445524-30623-3-git-send-email-leif.lindholm@linaro.org>
+ <20140122112055.GF1621@mudshark.cambridge.arm.com>
+ <20140129182805.GF11329@bivouac.eciton.net>
+ <1391029124.2488.50.camel@deneb.redhat.com>
+ <20140130131247.GG11329@bivouac.eciton.net>
+ <20140203103415.GA12187@mudshark.cambridge.arm.com>
+ <20140203155542.GI11329@bivouac.eciton.net>
+ <20140203160051.GG14112@mudshark.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203160051.GG14112@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-23 at 15:05 -0500, David Long wrote:
-> From: "David A. Long" <dave.long@linaro.org>
+On Mon, Feb 03, 2014 at 04:00:51PM +0000, Will Deacon wrote:
+> > > > With the two call sites in uefi_phys.S as:
+> > > > 
+> > > > 	ldr	r5, =(CR_M)
+> > > > 	update_sctlr	r12, , r5
+> > > > and
+> > > > 	ldr	r4, =(CR_I | CR_C | CR_M)
+> > > > 	update_sctlr	r12, r4
+> > > 
+> > > These ldr= could be movs, right?
+> > 
+> > The first one could.
+> > The second one could be movw on armv7+.
+> > 
+> > > If so, I definitely prefer this to putting an ldr = into the macro itself
+> > > (option 2).
+> > 
+> > And your preference between 1) and 2) is?
 > 
-> This patch series adds basic uprobes support to ARM. It is based on patches
-> developed earlier by Rabin Vincent. That approach of adding hooks into
-> the kprobes instruction parsing code was not well received. This approach
-> separates the ARM instruction parsing code in kprobes out into a separate set
-> of functions which can be used by both kprobes and uprobes. Both kprobes and
-> uprobes then provide their own semantic action tables to process the results of
-> the parsing.
+> (1), using bic and mov[tw] where possible.
 
-Assuming my comment about 'const' use in patch 5 is addressed, then for
-patches 2 to 14 you can add:
+(1): ok, thanks.
 
-Acked-by: Jon Medhurst <tixy@linaro.org>
+bic: sure, that was an oversight.
 
-Thanks Dave for persevering.
+mov[tw]: why?
+Then we end up battling different available immediate fields in A32/T32
+instruction sets and v5/v6/v7 architecture versions.
 
--- 
-Tixy
-
+/
+    Leif
