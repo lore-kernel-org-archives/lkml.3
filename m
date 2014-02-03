@@ -1,57 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaBCVcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:32:06 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42393 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaBCVcB (ORCPT
+	id S1753937AbaBCVcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:32:14 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:42969 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaBCVcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:32:01 -0500
-Date: Mon, 3 Feb 2014 21:31:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-Message-ID: <20140203213153.GZ10323@ZenIV.linux.org.uk>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
- <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
- <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
- <20140130075421.GA10050@infradead.org>
- <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
- <20140203102943.GF11829@infradead.org>
- <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
- <20140203211955.GY10323@ZenIV.linux.org.uk>
- <20140203212447.GA4843@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203212447.GA4843@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Feb 2014 16:32:09 -0500
+From: Marc Carino <marc.ceeeee@gmail.com>
+To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
+Subject: [PATCH v6 6/8] ARM: brcmstb: add misc. DT bindings for brcmstb
+Date: Mon,  3 Feb 2014 13:30:39 -0800
+Message-Id: <1391463041-15241-7-git-send-email-marc.ceeeee@gmail.com>
+X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
+References: <1391463041-15241-1-git-send-email-marc.ceeeee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 01:24:47PM -0800, Christoph Hellwig wrote:
-> On Mon, Feb 03, 2014 at 09:19:55PM +0000, Al Viro wrote:
-> > Result *is* a function of inode alone; the problem with 9P is that we
-> > are caching FIDs in the wrong place.
-> 
-> I don't think that's true for CIFS unfortunately, which is path based.
+Document the bindings that the Broadcom STB platform needs
+for proper bootup.
 
-Yes, and...?  CIFS also doesn't have hardlinks, so _there_ d_find_alias()
-is just fine.
+Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+---
+ .../devicetree/bindings/arm/brcm-brcmstb.txt       |   95 ++++++++++++++++++++
+ 1 files changed, 95 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
 
-9P is actually trickier; there we need some massage, but for CIFS it's
-literally a matter of one function call.
+diff --git a/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt b/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+new file mode 100644
+index 0000000..3c436cc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+@@ -0,0 +1,95 @@
++ARM Broadcom STB platforms Device Tree Bindings
++-----------------------------------------------
++Boards with Broadcom Brahma15 ARM-based BCMxxxx (generally BCM7xxx variants)
++SoC shall have the following DT organization:
++
++Required root node properties:
++    - compatible: "brcm,bcm<chip_id>", "brcm,brcmstb"
++
++example:
++/ {
++    #address-cells = <2>;
++    #size-cells = <2>;
++    model = "Broadcom STB (bcm7445)";
++    compatible = "brcm,bcm7445", "brcm,brcmstb";
++
++Further, syscon nodes that map platform-specific registers used for general
++system control is required:
++
++    - compatible: "brcm,bcm<chip_id>-sun-top-ctrl", "syscon"
++    - compatible: "brcm,bcm<chip_id>-hif-cpubiuctrl", "syscon"
++    - compatible: "brcm,bcm<chip_id>-hif-continuation", "syscon"
++
++example:
++    rdb {
++        #address-cells = <1>;
++        #size-cells = <1>;
++        compatible = "simple-bus";
++        ranges = <0 0x00 0xf0000000 0x1000000>;
++
++        sun_top_ctrl: syscon@404000 {
++            compatible = "brcm,bcm7445-sun-top-ctrl", "syscon";
++            reg = <0x404000 0x51c>;
++        };
++
++        hif_cpubiuctrl: syscon@3e2400 {
++            compatible = "brcm,bcm7445-hif-cpubiuctrl", "syscon";
++            reg = <0x3e2400 0x5b4>;
++        };
++
++        hif_continuation: syscon@452000 {
++            compatible = "brcm,bcm7445-hif-continuation", "syscon";
++            reg = <0x452000 0x100>;
++        };
++    };
++
++Lastly, nodes that allow for support of SMP initialization and reboot are
++required:
++
++smpboot
++-------
++Required properties:
++
++    - compatible
++        The string "brcm,brcmstb-smpboot".
++
++    - syscon-cpu
++        A phandle / integer array property which lets the BSP know the location
++        of certain CPU power-on registers.
++
++        The layout of the property is as follows:
++            o a phandle to the "hif_cpubiuctrl" syscon node
++            o offset to the base CPU power zone register
++            o offset to the base CPU reset register
++
++    - syscon-cont
++        A phandle pointing to the syscon node which describes the CPU boot
++        continuation registers.
++            o a phandle to the "hif_continuation" syscon node
++
++example:
++    smpboot {
++        compatible = "brcm,brcmstb-smpboot";
++        syscon-cpu = <&hif_cpubiuctrl 0x88 0x178>;
++        syscon-cont = <&hif_continuation>;
++    };
++
++reboot
++-------
++Required properties
++
++    - compatible
++        The string property "brcm,brcmstb-reboot".
++
++    - syscon
++        A phandle / integer array that points to the syscon node which describes
++        the general system reset registers.
++            o a phandle to "sun_top_ctrl"
++            o offset to the "reset source enable" register
++            o offset to the "software master reset" register
++
++example:
++    reboot {
++        compatible = "brcm,brcmstb-reboot";
++        syscon = <&sun_top_ctrl 0x304 0x308>;
++    };
+-- 
+1.7.1
 
-The problem with 9P is that the way we do it right now, you might pick
-the wrong dentry.  _Some_ alias already bears the FID you are after,
-but if you end up picking the one that doesn't, you might very well
-end up being unable to obtain one either.
