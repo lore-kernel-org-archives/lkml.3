@@ -1,208 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaBCN7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 08:59:37 -0500
-Received: from relay.parallels.com ([195.214.232.42]:42034 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaBCN7e (ORCPT
+	id S1752005AbaBCOOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:14:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:28520 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaBCOOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 08:59:34 -0500
-Date: Mon, 3 Feb 2014 17:59:25 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: Florian Westphal <fw@strlen.de>, Andrey Vagin <avagin@openvz.org>,
-        <netfilter-devel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, <netfilter@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <vvs@openvz.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Vasiliy Averin <vvs@parallels.com>
-Subject: Re: [PATCH] [RFC] netfilter: nf_conntrack: don't relase a conntrack
- with non-zero refcnt
-Message-ID: <20140203135925.GA3003@paralelels.com>
-References: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
- <1389720948-7883-1-git-send-email-avagin@openvz.org>
- <20140114185329.GB28205@breakpoint.cc>
- <20140115180844.GA3605@paralelels.com>
- <20140116092301.GF28205@breakpoint.cc>
- <20140202233046.GA4137@localhost>
+	Mon, 3 Feb 2014 09:14:43 -0500
+Date: Mon, 3 Feb 2014 09:14:29 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: David Rientjes <rientjes@google.com>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, Ben Guthro <benjamin.guthro@citrix.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        xen-devel@lists.xensource.com
+Subject: Re: [BUG?] Interrupts enabled after
+ xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+Message-ID: <20140203141429.GD3400@phenom.dumpdata.com>
+References: <20140128150848.GA1428@redhat.com>
+ <20140128160404.GA5732@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1401282120180.20167@chino.kir.corp.google.com>
+ <20140129082521.GA1362@redhat.com>
+ <20140131160140.GC23648@phenom.dumpdata.com>
+ <20140203101215.GA1725@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140202233046.GA4137@localhost>
+In-Reply-To: <20140203101215.GA1725@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.30.16.48]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 12:30:46AM +0100, Pablo Neira Ayuso wrote:
-> On Thu, Jan 16, 2014 at 10:23:01AM +0100, Florian Westphal wrote:
-> > Andrew Vagin <avagin@parallels.com> wrote:
-> > > > I think it would be nice if we could keep it that way.
-> > > > If everything fails we could proably intoduce a 'larval' dummy list
-> > > > similar to the one used by template conntracks?
-> > > 
-> > > I'm not sure, that this is required. Could you elaborate when this can
-> > > be useful?
-> > 
-> > You can dump the lists via ctnetlink.  Its meant as a debugging aid in
-> > case one suspects refcnt leaks.
-> > 
-> > Granted, in this situation there should be no leak since we put the newly
-> > allocated entry in the error case.
-> > 
-> > > Now I see only overhead, because we need to take the nf_conntrack_lock
-> > > lock to add conntrack in a list.
-> > 
-> > True. I don't have any preference, I guess I'd just do the insertion into the
-> > unconfirmed list when we know we cannot track to keep the "unhashed"
-> > bug trap in the destroy function.
-> > 
-> > Pablo, any preference?
+On Mon, Feb 03, 2014 at 11:12:16AM +0100, Stanislaw Gruszka wrote:
+> On Fri, Jan 31, 2014 at 11:01:40AM -0500, Konrad Rzeszutek Wilk wrote:
+> > Perhaps by using 'subsys_system_register' and stick it there?
 > 
-> I think we can initially set to zero the refcount and bump it once it
-> gets into any of the lists, so Eric's golden rule also stands for
-> conntracks that are released without being inserted in any list via
-> nf_conntrack_free().
+> This will not call ->resume callback as it is only called for
+> devices, so additional dummy device is needed, for example:
 > 
-> My idea was to use dying list to detect possible runtime leaks (ie.
-> missing nf_ct_put somewhere), not simple leaks the initialization
-> path, as you said, it would add too much overhead to catch them with
-> the dying list, so we can skip those.
+> struct device xap_dev = {
+>         .init_name = "xen-acpi-processor-dev",
+>         .bus = &xap_bus,
+> };
+> ...
+> subsys_system_register(&xap_bus, NULL);
+> device_register(&xap_dev);
 > 
-> Please, let me know if you find any issue with this approach.
+> But I'm not sure if that is good solution. It crate some not necessery
+> sysfs directories and files. Additionaly it can restore CPU C-states
+> after some other drivers resume, which prehaps require proper C-states.
 
-Hello Pablo,
+Yes.
+> 
+> Hence maybe adding direct notify from xen core resume will be better
+> idea (proposed patch below). Plese let me know what you think, I'll
+> provide solution which you choose to bug reporters for testing.
 
-I don't see any problem with this approach and I like it.
-Thank you for the patch.
+Let me think about it for a day or so.
 
-> diff --git a/include/net/netfilter/nf_conntrack.h b/include/net/netfilter/nf_conntrack.h
-> index 01ea6ee..b2ac624 100644
-> --- a/include/net/netfilter/nf_conntrack.h
-> +++ b/include/net/netfilter/nf_conntrack.h
-> @@ -284,6 +284,8 @@ extern unsigned int nf_conntrack_max;
->  extern unsigned int nf_conntrack_hash_rnd;
->  void init_nf_conntrack_hash_rnd(void);
+Thanks!
+> 
+> Thanks
+> Stanislaw
+> 
+> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> index 624e8dc..96e4173 100644
+> --- a/drivers/xen/manage.c
+> +++ b/drivers/xen/manage.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/freezer.h>
+>  #include <linux/syscore_ops.h>
+>  #include <linux/export.h>
+> +#include <linux/notifier.h>
 >  
-> +void nf_conntrack_tmpl_insert(struct net *net, struct nf_conn *tmpl);
+>  #include <xen/xen.h>
+>  #include <xen/xenbus.h>
+> @@ -46,6 +47,20 @@ struct suspend_info {
+>  	void (*post)(int cancelled);
+>  };
+>  
+> +static RAW_NOTIFIER_HEAD(xen_resume_notifier);
 > +
->  #define NF_CT_STAT_INC(net, count)	  __this_cpu_inc((net)->ct.stat->count)
->  #define NF_CT_STAT_INC_ATOMIC(net, count) this_cpu_inc((net)->ct.stat->count)
->  
-> diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-> index 4d1fb5d..bd5ec5a 100644
-> --- a/net/netfilter/nf_conntrack_core.c
-> +++ b/net/netfilter/nf_conntrack_core.c
-> @@ -448,7 +448,8 @@ nf_conntrack_hash_check_insert(struct nf_conn *ct)
->  			goto out;
->  
->  	add_timer(&ct->timeout);
-> -	nf_conntrack_get(&ct->ct_general);
-> +	/* The caller holds a reference to this object */
-> +	atomic_set(&ct->ct_general.use, 2);
->  	__nf_conntrack_hash_insert(ct, hash, repl_hash);
->  	NF_CT_STAT_INC(net, insert);
->  	spin_unlock_bh(&nf_conntrack_lock);
-> @@ -462,6 +463,21 @@ out:
->  }
->  EXPORT_SYMBOL_GPL(nf_conntrack_hash_check_insert);
->  
-> +/* deletion from this larval template list happens via nf_ct_put() */
-> +void nf_conntrack_tmpl_insert(struct net *net, struct nf_conn *tmpl)
+> +void xen_resume_notifier_register(struct notifier_block *nb)
 > +{
-> +	__set_bit(IPS_TEMPLATE_BIT, &tmpl->status);
-> +	__set_bit(IPS_CONFIRMED_BIT, &tmpl->status);
-> +	nf_conntrack_get(&tmpl->ct_general);
-> +
-> +	spin_lock_bh(&nf_conntrack_lock);
-> +	/* Overload tuple linked list to put us in template list. */
-> +	hlist_nulls_add_head_rcu(&tmpl->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
-> +				 &net->ct.tmpl);
-> +	spin_unlock_bh(&nf_conntrack_lock);
+> +	raw_notifier_chain_register(&xen_resume_notifier, nb);
 > +}
-> +EXPORT_SYMBOL_GPL(nf_conntrack_tmpl_insert);
+> +EXPORT_SYMBOL_GPL(xen_resume_notifier_register);
 > +
->  /* Confirm a connection given skb; places it in hash table */
->  int
->  __nf_conntrack_confirm(struct sk_buff *skb)
-> @@ -733,11 +749,11 @@ __nf_conntrack_alloc(struct net *net, u16 zone,
->  		nf_ct_zone->id = zone;
->  	}
->  #endif
-> -	/*
-> -	 * changes to lookup keys must be done before setting refcnt to 1
-> +	/* Because we use RCU lookups, we set ct_general.use to zero before
-> +	 * this is inserted in any list.
->  	 */
->  	smp_wmb();
-> -	atomic_set(&ct->ct_general.use, 1);
-> +	atomic_set(&ct->ct_general.use, 0);
->  	return ct;
->  
->  #ifdef CONFIG_NF_CONNTRACK_ZONES
-> @@ -761,6 +777,11 @@ void nf_conntrack_free(struct nf_conn *ct)
+> +void xen_resume_notifier_unregister(struct notifier_block *nb)
+> +{
+> +	raw_notifier_chain_unregister(&xen_resume_notifier, nb);
+> +}
+> +EXPORT_SYMBOL_GPL(xen_resume_notifier_unregister);
+> +
+>  #ifdef CONFIG_HIBERNATE_CALLBACKS
+>  static void xen_hvm_post_suspend(int cancelled)
 >  {
->  	struct net *net = nf_ct_net(ct);
+> @@ -152,6 +167,8 @@ static void do_suspend(void)
 >  
-> +	/* A freed object has refcnt == 0, thats
-> +	 * the golden rule for SLAB_DESTROY_BY_RCU
-> +	 */
-> +	NF_CT_ASSERT(atomic_read(&ct->ct_general.use) == 0);
+>  	err = stop_machine(xen_suspend, &si, cpumask_of(0));
+>  
+> +	raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
 > +
->  	nf_ct_ext_destroy(ct);
->  	nf_ct_ext_free(ct);
->  	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
-> @@ -856,6 +877,9 @@ init_conntrack(struct net *net, struct nf_conn *tmpl,
->  		NF_CT_STAT_INC(net, new);
->  	}
+>  	dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
 >  
-> +	/* Now it is inserted into the hashes, bump refcount */
-> +	nf_conntrack_get(&ct->ct_general);
-> +
->  	/* Overload tuple linked list to put us in unconfirmed list. */
->  	hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
->  		       &net->ct.unconfirmed);
-> diff --git a/net/netfilter/nf_synproxy_core.c b/net/netfilter/nf_synproxy_core.c
-> index 9858e3e..52e20c9 100644
-> --- a/net/netfilter/nf_synproxy_core.c
-> +++ b/net/netfilter/nf_synproxy_core.c
-> @@ -363,9 +363,8 @@ static int __net_init synproxy_net_init(struct net *net)
->  		goto err2;
->  	if (!nfct_synproxy_ext_add(ct))
->  		goto err2;
-> -	__set_bit(IPS_TEMPLATE_BIT, &ct->status);
-> -	__set_bit(IPS_CONFIRMED_BIT, &ct->status);
+>  	if (err) {
+> diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+> index 7231859..82358d1 100644
+> --- a/drivers/xen/xen-acpi-processor.c
+> +++ b/drivers/xen/xen-acpi-processor.c
+> @@ -27,10 +27,10 @@
+>  #include <linux/init.h>
+>  #include <linux/module.h>
+>  #include <linux/types.h>
+> -#include <linux/syscore_ops.h>
+>  #include <linux/acpi.h>
+>  #include <acpi/processor.h>
+>  #include <xen/xen.h>
+> +#include <xen/xen-ops.h>
+>  #include <xen/interface/platform.h>
+>  #include <asm/xen/hypercall.h>
 >  
-> +	nf_conntrack_tmpl_insert(net, ct);
->  	snet->tmpl = ct;
->  
->  	snet->stats = alloc_percpu(struct synproxy_stats);
-> @@ -390,7 +389,7 @@ static void __net_exit synproxy_net_exit(struct net *net)
->  {
->  	struct synproxy_net *snet = synproxy_pernet(net);
->  
-> -	nf_conntrack_free(snet->tmpl);
-> +	nf_ct_put(snet->tmpl);
->  	synproxy_proc_exit(net);
->  	free_percpu(snet->stats);
+> @@ -495,14 +495,15 @@ static int xen_upload_processor_pm_data(void)
+>  	return rc;
 >  }
-> diff --git a/net/netfilter/xt_CT.c b/net/netfilter/xt_CT.c
-> index 5929be6..75747ae 100644
-> --- a/net/netfilter/xt_CT.c
-> +++ b/net/netfilter/xt_CT.c
-> @@ -228,12 +228,7 @@ static int xt_ct_tg_check(const struct xt_tgchk_param *par,
->  			goto err3;
->  	}
 >  
-> -	__set_bit(IPS_TEMPLATE_BIT, &ct->status);
-> -	__set_bit(IPS_CONFIRMED_BIT, &ct->status);
-> -
-> -	/* Overload tuple linked list to put us in template list. */
-> -	hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
-> -				 &par->net->ct.tmpl);
-> +	nf_conntrack_tmpl_insert(par->net, ct);
->  out:
->  	info->ct = ct;
+> -static void xen_acpi_processor_resume(void)
+> +static int xen_acpi_processor_resume(struct notifier_block *nb,
+> +				     unsigned long action, void *data)
+>  {
+>  	bitmap_zero(acpi_ids_done, nr_acpi_bits);
+> -	xen_upload_processor_pm_data();
+> +	return xen_upload_processor_pm_data();
+>  }
+>  
+> -static struct syscore_ops xap_syscore_ops = {
+> -	.resume	= xen_acpi_processor_resume,
+> +struct notifier_block xen_acpi_processor_resume_nb = {
+> +	.notifier_call = xen_acpi_processor_resume,
+>  };
+>  
+>  static int __init xen_acpi_processor_init(void)
+> @@ -555,7 +556,7 @@ static int __init xen_acpi_processor_init(void)
+>  	if (rc)
+>  		goto err_unregister;
+>  
+> -	register_syscore_ops(&xap_syscore_ops);
+> +	xen_resume_notifier_register(&xen_acpi_processor_resume_nb);
+>  
 >  	return 0;
-
+>  err_unregister:
+> @@ -574,7 +575,7 @@ static void __exit xen_acpi_processor_exit(void)
+>  {
+>  	int i;
+>  
+> -	unregister_syscore_ops(&xap_syscore_ops);
+> +	xen_resume_notifier_unregister(&xen_acpi_processor_resume_nb);
+>  	kfree(acpi_ids_done);
+>  	kfree(acpi_id_present);
+>  	kfree(acpi_id_cst_present);
+> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> index fb2ea8f..6412358 100644
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -16,6 +16,9 @@ void xen_mm_unpin_all(void);
+>  void xen_timer_resume(void);
+>  void xen_arch_resume(void);
+>  
+> +void xen_resume_notifier_register(struct notifier_block *nb);
+> +void xen_resume_notifier_unregister(struct notifier_block *nb);
+> +
+>  int xen_setup_shutdown_event(void);
+>  
+>  extern unsigned long *xen_contiguous_bitmap;
