@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaBCTwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:52:25 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:45550
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1753417AbaBCTwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:52:16 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51401 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559AbaBCTwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:52:23 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] Drivers: hv: vmbus: Support per-channel driver state
-Date: Mon,  3 Feb 2014 12:42:45 -0800
-Message-Id: <1391460165-30094-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752559AbaBCTwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 14:52:15 -0500
+Date: Mon, 3 Feb 2014 20:52:13 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH -v2] x86, microcode, AMD: Sanity-check initrd image
+Message-ID: <20140203195212.GF4281@pd.tnic>
+References: <52E8230F.7080300@oracle.com>
+ <52E83903.5040908@oracle.com>
+ <20140128232219.GO815@pd.tnic>
+ <20140130151321.GC23342@pd.tnic>
+ <52EAAAD5.2010301@oracle.com>
+ <20140130195413.GH23342@pd.tnic>
+ <20140203175526.GB4281@pd.tnic>
+ <52EFEA57.4000709@oracle.com>
+ <20140203193000.GD4281@pd.tnic>
+ <52EFEFFE.6010608@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52EFEFFE.6010608@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we implement Virtual Receive Side Scaling on the networking side
-(the VRSS patches are currently under review), it will be useful to have
-per-channel state that vmbus drivers can manage. Add support for
-managing per-channel state.
+On Mon, Feb 03, 2014 at 02:37:34PM -0500, Boris Ostrovsky wrote:
+> It exploded when 'if (!container)' check was done *after* relocation,
+> which made container non-zero. If you do the check *before* then I
+> think you will catch the fact that container is empty.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- include/linux/hyperv.h |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+Ah, right, this was it.
 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 15da677..96fb70e 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -1043,6 +1043,10 @@ struct vmbus_channel {
- 	 * This will be NULL for the primary channel.
- 	 */
- 	struct vmbus_channel *primary_channel;
-+	/*
-+	 * Support per-channel state for use by vmbus drivers.
-+	 */
-+	void *per_channel_state;
- };
+Ok, just remove the signature check then and give it a try pls:
+
+--
+diff --git a/arch/x86/kernel/cpu/microcode/amd_early.c b/arch/x86/kernel/cpu/microcode/amd_early.c
+index 41537ae7c31d..362994511be1 100644
+--- a/arch/x86/kernel/cpu/microcode/amd_early.c
++++ b/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -37,12 +37,10 @@ static __initdata char ucode_path[] = "kernel/x86/microcode/AuthenticAMD.bin";
  
- static inline void set_channel_read_state(struct vmbus_channel *c, bool state)
-@@ -1050,6 +1054,16 @@ static inline void set_channel_read_state(struct vmbus_channel *c, bool state)
- 	c->batched_reading = state;
+ static struct cpio_data __init find_ucode_in_initrd(void)
+ {
+-	struct cpio_data ret;
+ 	long offset = 0;
+ 	char *path;
+ 	void *start;
+ 	size_t size;
+-	u32 *hdr;
+ 
+ #ifdef CONFIG_X86_32
+ 	struct boot_params *p;
+@@ -60,21 +58,7 @@ static struct cpio_data __init find_ucode_in_initrd(void)
+ 	start   = (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET);
+ 	size    = boot_params.hdr.ramdisk_size;
+ #endif
+-
+-	ret = find_cpio_data(path, start, size, &offset);
+-	if (!ret.data)
+-		return ret;
+-
+-	/* Verify we didn't get some garbage from the initrd. */
+-	hdr = (u32 *)ret.data;
+-
+-	if (hdr[0] != UCODE_MAGIC ||
+-	    hdr[1] != UCODE_EQUIV_CPU_TABLE_TYPE ||
+-	    hdr[2] == 0) {
+-		ret.data = NULL;
+-		ret.size = 0;
+-	}
+-	return ret;
++	return find_cpio_data(path, start, size, &offset);
  }
  
-+static inline void set_per_channel_state(struct vmbus_channel *c, void *s)
-+{
-+	c->per_channel_state = s;
-+}
-+
-+static inline void *get_per_channel_state(struct vmbus_channel *c)
-+{
-+	return c->per_channel_state;
-+}
-+
- void vmbus_onmessage(void *context);
- 
- int vmbus_request_offers(void);
--- 
-1.7.4.1
+ static size_t compute_container_size(u8 *data, u32 total_size)
+--
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
