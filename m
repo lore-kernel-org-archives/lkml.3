@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaBCWez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:34:55 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:51572 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaBCWex (ORCPT
+	id S1753458AbaBCWkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:40:17 -0500
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:54194 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaBCWkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:34:53 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: [PATCH v3 2/7] time: clockevents: Adjust timer interval when frequency changes
-Date: Mon,  3 Feb 2014 14:34:32 -0800
-Message-Id: <1391466877-28908-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391466877-28908-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1391466877-28908-1-git-send-email-soren.brinkmann@xilinx.com>
+	Mon, 3 Feb 2014 17:40:16 -0500
+MIME-Version: 1.0
+X-Originating-IP: [89.242.63.23]
+In-Reply-To: <1391453028-23191-2-git-send-email-Liviu.Dudau@arm.com>
+References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com>
+	<1391453028-23191-2-git-send-email-Liviu.Dudau@arm.com>
+Date: Mon, 3 Feb 2014 22:34:40 +0000
+Message-ID: <CAPcvp5EF_=G=VwWLfbw6mwczErTHeq4AbVALYpuAzb3c5eb2rA@mail.gmail.com>
+Subject: Re: [PATCH] arm64: Add architecture support for PCI
+From: Andrew Murray <amurray@embedded-bits.co.uk>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To adjust the timer's interval in periodic mode, the clockevent device
-is put into periodic mode during clockevents_update_freq() in case the
-timer is in periodic mode.
+On 3 February 2014 18:43, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+> index 4cc813e..ce5bad2 100644
+> --- a/arch/arm64/include/asm/io.h
+> +++ b/arch/arm64/include/asm/io.h
+> @@ -120,9 +120,13 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+>  /*
+>   *  I/O port access primitives.
+>   */
+> +#define arch_has_dev_port()    (0)
+>  #define IO_SPACE_LIMIT         0xffff
+>  #define PCI_IOBASE             ((void __iomem *)(MODULES_VADDR - SZ_2M))
+>
+> +#define ioport_map(port, nr)   (PCI_IOBASE + ((port) & IO_SPACE_LIMIT))
+> +#define ioport_unmap(addr)
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-It is assumed that simply calling the timer's 'set_mode()' API takes care of
-programming an appropriate interval based on the current timer frequency.
-If that doesn't work for all timers, I guess it might require a new API
-call.
----
- kernel/time/clockevents.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+I'm not sure that this will work. The in[bwl], out[bwl] macros in
+arch/arm64/include/asm/io.h already add the PCI_IOBASE offset.
 
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 641d91003a45..f85e5fda9c66 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -443,10 +443,13 @@ int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
- {
- 	clockevents_config(dev, freq);
- 
--	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
--		return 0;
-+	if (dev->mode == CLOCK_EVT_MODE_ONESHOT)
-+		return clockevents_program_event(dev, dev->next_event, false);
-+
-+	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
-+		dev->set_mode(CLOCK_EVT_MODE_PERIODIC, dev);
- 
--	return clockevents_program_event(dev, dev->next_event, false);
-+	return 0;
- }
- 
- /**
--- 
-1.8.5.3
+Instead of these two #defines, why not just enforce that
+GENERIC_PCI_IOMAP is enabled? Or at least wrap these defines with 'if
+(!config_enabled(CONFIG_GENERIC_PCI_IOMAP))' or similar.
 
+> +
+>  static inline u8 inb(unsigned long addr)
+>  {
+>         return readb(addr + PCI_IOBASE);
+
+
+Andrew Murray
