@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbaBCX3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:29:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47293 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaBCX31 (ORCPT
+	id S1754059AbaBCX37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:29:59 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53354 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753821AbaBCX2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:29:27 -0500
-Date: Mon, 3 Feb 2014 15:29:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Weijie Yang <weijie.yang@samsung.com>, hughd@google.com,
-        "'Minchan Kim'" <minchan@kernel.org>, shli@kernel.org,
-        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
-        "'Seth Jennings'" <sjennings@variantweb.net>,
-        "'Heesub Shin'" <heesub.shin@samsung.com>, mquzik@redhat.com,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/8] mm/swap: fix race on swap_info reuse between
- swapoff and swapon
-Message-Id: <20140203152925.89360139306d143f5360fa07@linux-foundation.org>
-In-Reply-To: <20140203152340.b28bb35698ee75615eb23041@linux-foundation.org>
-References: <000d01cf1b47$f12e11f0$d38a35d0$%yang@samsung.com>
-	<20140203152340.b28bb35698ee75615eb23041@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Feb 2014 18:28:31 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: [PATCH 3/24][Resend] ACPI / hotplug / PCI: Scan root bus under the PCI rescan-remove lock
+Date: Tue, 04 Feb 2014 00:16:47 +0100
+Message-ID: <17625030.0nuH6OuXil@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <7532948.aJNUotNMpR@vostro.rjw.lan>
+References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140203104408.GQ18029@intel.com> <7532948.aJNUotNMpR@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Feb 2014 15:23:40 -0800 Andrew Morton <akpm@linux-foundation.org> wrote:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> On Mon, 27 Jan 2014 18:03:04 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
-> 
-> > swapoff clear swap_info's SWP_USED flag prematurely and free its resources
-> > after that. A concurrent swapon will reuse this swap_info while its previous
-> > resources are not cleared completely.
-> > 
-> > These late freed resources are:
-> >  - p->percpu_cluster
-> >  - swap_cgroup_ctrl[type]
-> >  - block_device setting
-> >  - inode->i_flags &= ~S_SWAPFILE
-> > 
-> > This patch clear SWP_USED flag after all its resources freed, so that swapon
-> > can reuse this swap_info by alloc_swap_info() safely.
-> > 
-> > This patch is just for a rare scenario, aim to correct of code.
-> 
-> I believe that
-> http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
-> makes this patch redundant?
-> 
+Since acpiphp_check_bridge() called by acpiphp_check_host_bridge()
+does things that require PCI rescan-remove locking around it,
+make acpiphp_check_host_bridge() use that locking.
 
-oop, hang on.  This patch *is* a stealth-updated version of
-http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/hotplug/acpiphp_glue.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Undocumented removals of si->swap_map have been added.  What's going on
-there?
-
-I think I'll stick with the original patch for now.  If you see
-additional optimisations or changes, let's address that separately?
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -829,7 +829,11 @@ void acpiphp_check_host_bridge(acpi_hand
+ 
+ 	bridge = acpiphp_handle_to_bridge(handle);
+ 	if (bridge) {
++		pci_lock_rescan_remove();
++
+ 		acpiphp_check_bridge(bridge);
++
++		pci_unlock_rescan_remove();
+ 		put_bridge(bridge);
+ 	}
+ }
 
