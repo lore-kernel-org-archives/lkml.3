@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaBCRbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 12:31:19 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34765 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaBCRbS (ORCPT
+	id S1753115AbaBCRdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 12:33:53 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:55848 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaBCRdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 12:31:18 -0500
-Date: Mon, 3 Feb 2014 17:31:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Message-ID: <20140203173104.GF22609@sirena.org.uk>
-References: <1390846075-17415-1-git-send-email-broonie@kernel.org>
- <20140203104141.40cc04e5@endymion.delvare>
- <20140203110249.GA6392@sirena.org.uk>
- <20140203153512.3b1d14e4@endymion.delvare>
- <20140203154109.GB22609@sirena.org.uk>
- <20140203165210.GB30754@roeck-us.net>
+	Mon, 3 Feb 2014 12:33:51 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KvB7u8NuoXBZIbZd"
-Content-Disposition: inline
-In-Reply-To: <20140203165210.GB30754@roeck-us.net>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Correct default return value for full
- constraints
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
+Date: Mon, 3 Feb 2014 18:33:51 +0100
+X-Google-Sender-Auth: _9lCElPmW8PU-2gIm6U9SbqQCH0
+Message-ID: <CAKMK7uHr7D_VqnkbLPpRpvq9-BimBaEoUtmdxQg5ePZg12ZC3g@mail.gmail.com>
+Subject: Re: [RFC 00/16] drm/nouveau: initial support for GK20A (Tegra K1)
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>,
+        Nouveau Dev <nouveau@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>, gnurou@gmail.com,
+        Eric Brower <ebrower@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 1, 2014 at 4:16 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> Finally, support for probing GK20A is added in the last 2 patches. It should be
+> noted that contrary to what Nouveau currently expects, GK20A does not embed any
+> display hardware (that part being handled by tegradrm). So this driver should
+> really be only used through DRM render-nodes and collaborate with the display
+> driver using PRIME. I have not yet figured out how to turn GK20A's instantiation
+> of Nouveau into a render-node only driver without breaking support for existing
+> desktop GPUs, and consequently the driver spawns a /dev/dri/cardX node which we
+> should try to get rid of.
 
---KvB7u8NuoXBZIbZd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+tbh I wouldn't care about the lagecy dev nodes - we have hw platforms
+on intel with similar setup (i.e. just rendering and no outputs) and
+we don't bother to hide the legacy node. kms ioctl will still be
+there, but as long as no encoder/connector/crtc/... gets set up by the
+driver the only thing userspace can do is create framebuffers. Which
+is rather harmless ;-)
 
-On Mon, Feb 03, 2014 at 08:52:10AM -0800, Guenter Roeck wrote:
-> On Mon, Feb 03, 2014 at 03:41:09PM +0000, Mark Brown wrote:
-
-> > It's on a fixes tag so it'll go in next time I send stuff to Linus,
-> > it'll go next time I send something to him.  That's usually about once
-> > per release.  Especially if things are tagged for stable I like to try
-> > to avoid sending them too quickly unless they're build breaks or
-> > similar.
-
-> We still have the lm90 driver failing in 13.3 for non-DT platforms.
-> One should think that this has some level of importance. If a driver
-> doesn't build or doesn't work makes little difference for the user,
-> after all.
-
-On the other hand it's a hardware monitoring driver which nobody managed
-to notice problems with for pretty much an entire release cycle and a
-fix in the core regulator lookup code which has the ability to break
-boot prior to the console coming up if it goes wrong.  An extra week is
-not going to be the end of the world here but helps ensure better
-exposure of what hits stable.
-
---KvB7u8NuoXBZIbZd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS79JVAAoJELSic+t+oim9vHwP/0stlqDLuWHZ7ulB6B3EDLu+
-HM3No9d6nK+zm6b9gWK9ZXEyNqx9rEFis/VECGaIl98sxzEm0hHWXGdSBFjO/Ud3
-WqeR4SMPMngKMTJm54StD5OcU9Gji5QduUhAU3LELYN22ZA2veM8E1xulIBckZ2j
-ob+lAwyrZLQcD8ay13JpPPqBCAKOGDN16kDen1ld2gJ2UrUHgHFwcPD+rn0Z80WF
-I2WdVZQuiWiOD8/LvYouVghbMXxQlzA++sryL25SqfmdDMRT3kShKi3c+2jPeOnq
-9xw7MklJWi6xHVU98K+nG4PBfuOcwCfFEFkTdp8NkkZIpXCkjs6EvYACbgVyMNJD
-qQzURX3fpPC1joS31WCeSbWK6eHHXvDUqnZl+fmNPJ4QEw2vFN6efBNf8sroOlEk
-e3xUXQgdC0cXfhIDzoNFgmdHI7eXpHYyj2WgLsvZ2A5jp3gVFkxx2ZVmKhdkMMrp
-DAbvn65e6FpsXW4B5uYWXYs4NFf68M+4c/lkQKulhhn5IS0wGwVOXOwx9w0t1yG/
-g9HHPuSb0kmu71tUKucCdLTsF4AKzoqK9IZtewtr/H0tmL8nMPsvVS7vP4s0Kz9V
-qcaY2JSreL9+L0kiONrYuySkNLG9sR4X7wC9RlOYAn3OkCB8EtdW6x6KKImQl8vL
-swn3b15DKr0+bfD+nx0T
-=89Li
------END PGP SIGNATURE-----
-
---KvB7u8NuoXBZIbZd--
+And having legacy dev nodes around helps on older userspace (e.g.
+X/Prime with dri2 which uses flink).
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
