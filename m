@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252AbaBCQSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:18:04 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9533 "EHLO mga01.intel.com"
+	id S1753287AbaBCQSa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:18:30 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:56617 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037AbaBCQSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:18:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,773,1384329600"; 
-   d="scan'208";a="469101841"
-Message-ID: <52EFC12B.50704@linux.intel.com>
-Date: Mon, 03 Feb 2014 08:17:47 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752088AbaBCQS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:18:29 -0500
+Date: Mon, 3 Feb 2014 11:18:23 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC 4/5] memcg: make sure that memcg is not offline when
+ charging
+Message-ID: <20140203161823.GJ6963@cmpxchg.org>
+References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
+ <1387295130-19771-5-git-send-email-mhocko@suse.cz>
+ <20140130172906.GE6963@cmpxchg.org>
+ <20140203133313.GF2495@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Morten Rasmussen <morten.rasmussen@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
- rq
-References: <52EA8B07.6020206@linaro.org> <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com> <52EBC33A.6080101@linaro.org> <52EBC645.2040607@linux.intel.com> <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr> <20140203125441.GD19029@e103034-lin> <52EFA9D3.1030601@linux.intel.com> <20140203145605.GL8874@twins.programming.kicks-ass.net>
-In-Reply-To: <20140203145605.GL8874@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203133313.GF2495@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/3/2014 6:56 AM, Peter Zijlstra wrote:
->
-> Arjan, could you have a look at teaching your Thunderpants to wrap lines
-> at ~80 chars please?
+On Mon, Feb 03, 2014 at 02:33:13PM +0100, Michal Hocko wrote:
+> On Thu 30-01-14 12:29:06, Johannes Weiner wrote:
+> > On Tue, Dec 17, 2013 at 04:45:29PM +0100, Michal Hocko wrote:
+> > > The current charge path might race with memcg offlining because holding
+> > > css reference doesn't stop css offline. As a result res counter might be
+> > > charged after mem_cgroup_reparent_charges (called from memcg css_offline
+> > > callback) and so the charge would never be freed. This has been worked
+> > > around by 96f1c58d8534 (mm: memcg: fix race condition between memcg
+> > > teardown and swapin) which tries to catch such a leaked charges later
+> > > during css_free. It is more optimal to heal this race in the long term
+> > > though.
+> > 
+> > We already deal with the race, so IMO the only outstanding improvement
+> > is to take advantage of the teardown synchronization provided by the
+> > cgroup core and get rid of our one-liner workaround in .css_free.
+> 
+> I am not sure I am following you here. Which teardown synchronization do
+> you have in mind? rcu_read_lock & css_tryget?
 
-I'll try but it suffers from Apple-disease
+Yes.  It provides rcu synchronization between establishing new
+references and offlining, as long as you establish references
+atomically in one RCU read-side section:
 
+repeat:
+  rcu_read_lock()
+  css_tryget()
+  res_counter_charge()
+  rcu_read_unlock()
+  if retries++ < RECLAIM_RETRIES:
+    reclaim
+    goto repeat
 
->> 1) A latency driven one
->> 2) A performance impact on
->>
->> first one is pretty much the exit latency related time, sort of a
->> "expected time to first instruction" (currently menuidle has the
->> 99.999% worst case number, which is not useful for this, but is a
->> first approximation). This is obviously the dominating number for
->> expected-short running tasks
->>
->> second on is more of a "is there any cache/TLB left or is it flushed"
->> kind of metric. It's more tricky to compute, since what is the cost of
->> an empty cache (or even a cache migration) after all....  .... but I
->> suspect it's in part what the scheduler will care about more for
->> expected-long  running tasks.
->
-> Yeah, so currently we 'assume' cache hotness based on runtime; see
-> task_hot(). A hint that the CPU wiped its caches might help there.
+> > > In order to make this raceless we would need to hold rcu_read_lock since
+> > > css_tryget until res_counter_charge. This is not so easy unfortunately
+> > > because mem_cgroup_do_charge might sleep so we would need to do drop rcu
+> > > lock and do css_tryget tricks after each reclaim.
+> > 
+> > Yes, why not?
+> 
+> Although css_tryget is cheap these days I thought that a simple flag
+> check would be even heaper in this hot path. Changing the patch to use
+> css_tryget rather than offline check is trivial if you really think it
+> is better?
 
-if there's a simple api like
+You already changed it to do css_tryget() on every single charge.
 
-sched_cpu_cache_wiped(int llc)
-
-that would be very nice for this; the menuidle side knows this
-for some cases and thus can just call it. This would be a very
-small and minimal change
-
-* if you don't care about llc vs core local caches then that
-   parameter can go away
-
-* I assume this is also called for the local cpu... if not then we
-   need to add a cpu number argument
-
-* we can also call this from architecture code when wbinvd or the
-   arm equivalent is called etc
-
-
-
+Direct reclaim is invoked only from a fraction of all charges, it's
+already a slowpath, I don't think another percpu counter op will be
+the final straw that makes this path too fat.
