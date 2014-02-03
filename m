@@ -1,181 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaBCQMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:12:31 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:54176 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaBCQMa (ORCPT
+	id S1753013AbaBCQNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:13:44 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.166]:44391 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751686AbaBCQNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:12:30 -0500
+	Mon, 3 Feb 2014 11:13:43 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-8.tower-38.messagelabs.com!1391443891!14670583!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David Dajun Chen" <david.chen@diasemi.com>
+Subject: RE: [PATCH V1] fix da9052 volatile register definition ommissions
+Thread-Topic: [PATCH V1] fix da9052 volatile register definition ommissions
+Thread-Index: AQHPHE23tMPX7aURykWvLFze4y5OupqjXPuAgABedmA=
+Date: Mon, 3 Feb 2014 16:11:30 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB51AD22E658@NB-EX-MBX02.diasemi.com>
+References: <201401281723.s0SHNmLa041140@swsrvapps-02.lan>
+ <20140203102919.GP13529@lee--X1>
+In-Reply-To: <20140203102919.GP13529@lee--X1>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.24.126]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1391316630-29541-10-git-send-email-benjamin.tissoires@redhat.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1391316630-29541-10-git-send-email-benjamin.tissoires@redhat.com>
-Date: Mon, 3 Feb 2014 17:12:29 +0100
-Message-ID: <CANq1E4Qk_FUBAh3NDGV-E0wDPaS+sUZiRghLeQv7BmT9XJpRJg@mail.gmail.com>
-Subject: Re: [PATCH 09/11] HID: remove hid_get_raw_report in struct hid_device
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s13GDmcN012206
 
-Hi
+> -----Original Message-----
+> From: Lee Jones [mailto:lee.jones@linaro.org]
+> Sent: 03 February 2014 10:29
+> To: Opensource [Anthony Olech]
+> Cc: Mark Brown; Samuel Ortiz; linux-kernel@vger.kernel.org; David Dajun
+> Chen
+> Subject: Re: [PATCH V1] fix da9052 volatile register definition ommissions
+> > Three of the PMIC registers have some bits that are changed
+> > autonomously by the PMIC itself (some time) after being set by some
+> > component driver of the DA9052 PMIC and hence they need to be marked
+> > as volatile so that the regmap API will not cache their values.
+> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+> These are not correct.
+> Who authored the patch?
 
-On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> dev->hid_get_raw_report(X) and hid_hw_raw_request(X, HID_REQ_GET_REPORT)
-> are strictly equivalent. Switch the hid subsystem to the hid_hw notation
-> and remove the field .hid_get_raw_report in struct hid_device.
+Hi Lee,
 
-Finally we can remove that beast:
+I found the problem when running regression tests for another different problem.
+And according to my testing on a SMDK6410+DA9053EVB the patch is correct!!
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Tony Olech
 
-Thanks
-David
+> > ---
+> > This patch is relative to linux-next repository tag next-20140128
+> > The bug that this patch fixes affects two components of DA9052 namely:
+> > WATCHDOG - the first kick will work but sebsequent ones will not
+> >            thus the will timeout at 2 x interval.
+> > REGULATORS - the first change to any DA9052 BUCK voltage will be
+> >              actioned, but sebsequent ones will not.
+> Which patch caused the bug?
 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-input.c       | 6 +++---
->  drivers/hid/hid-sony.c        | 3 ++-
->  drivers/hid/hidraw.c          | 7 ++++---
->  drivers/hid/i2c-hid/i2c-hid.c | 1 -
->  drivers/hid/uhid.c            | 1 -
->  drivers/hid/usbhid/hid-core.c | 1 -
->  include/linux/hid.h           | 3 ---
->  net/bluetooth/hidp/core.c     | 1 -
->  8 files changed, 9 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 594722d..1de5997 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -350,9 +350,9 @@ static int hidinput_get_battery_property(struct power_supply *psy,
->                         ret = -ENOMEM;
->                         break;
->                 }
-> -               ret = dev->hid_get_raw_report(dev, dev->battery_report_id,
-> -                                             buf, 2,
-> -                                             dev->battery_report_type);
-> +               ret = hid_hw_raw_request(dev, dev->battery_report_id, buf, 2,
-> +                                        dev->battery_report_type,
-> +                                        HID_REQ_GET_REPORT);
->
->                 if (ret != 2) {
->                         ret = -ENODATA;
-> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-> index 1235405..3930acb 100644
-> --- a/drivers/hid/hid-sony.c
-> +++ b/drivers/hid/hid-sony.c
-> @@ -706,7 +706,8 @@ static int sixaxis_set_operational_usb(struct hid_device *hdev)
->         if (!buf)
->                 return -ENOMEM;
->
-> -       ret = hdev->hid_get_raw_report(hdev, 0xf2, buf, 17, HID_FEATURE_REPORT);
-> +       ret = hid_hw_raw_request(hdev, 0xf2, buf, 17, HID_FEATURE_REPORT,
-> +                                HID_REQ_GET_REPORT);
->
->         if (ret < 0)
->                 hid_err(hdev, "can't set operational mode\n");
-> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-> index cb0137b..4b2dc95 100644
-> --- a/drivers/hid/hidraw.c
-> +++ b/drivers/hid/hidraw.c
-> @@ -189,7 +189,7 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t
->
->         dev = hidraw_table[minor]->hid;
->
-> -       if (!dev->hid_get_raw_report) {
-> +       if (!dev->ll_driver->raw_request) {
->                 ret = -ENODEV;
->                 goto out;
->         }
-> @@ -216,14 +216,15 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t
->
->         /*
->          * Read the first byte from the user. This is the report number,
-> -        * which is passed to dev->hid_get_raw_report().
-> +        * which is passed to hid_hw_raw_request().
->          */
->         if (copy_from_user(&report_number, buffer, 1)) {
->                 ret = -EFAULT;
->                 goto out_free;
->         }
->
-> -       ret = dev->hid_get_raw_report(dev, report_number, buf, count, report_type);
-> +       ret = hid_hw_raw_request(dev, report_number, buf, count, report_type,
-> +                                HID_REQ_GET_REPORT);
->
->         if (ret < 0)
->                 goto out_free;
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 5099f1f..fe3b392 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -1029,7 +1029,6 @@ static int i2c_hid_probe(struct i2c_client *client,
->
->         hid->driver_data = client;
->         hid->ll_driver = &i2c_hid_ll_driver;
-> -       hid->hid_get_raw_report = i2c_hid_get_raw_report;
->         hid->hid_output_raw_report = i2c_hid_output_raw_report;
->         hid->dev.parent = &client->dev;
->         ACPI_COMPANION_SET(&hid->dev, ACPI_COMPANION(&client->dev));
-> diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-> index 438c9f1..7358346 100644
-> --- a/drivers/hid/uhid.c
-> +++ b/drivers/hid/uhid.c
-> @@ -421,7 +421,6 @@ static int uhid_dev_create(struct uhid_device *uhid,
->         hid->uniq[63] = 0;
->
->         hid->ll_driver = &uhid_hid_driver;
-> -       hid->hid_get_raw_report = uhid_hid_get_raw;
->         hid->hid_output_raw_report = uhid_hid_output_raw;
->         hid->bus = ev->u.create.bus;
->         hid->vendor = ev->u.create.vendor;
-> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> index 406497b..b9a770f 100644
-> --- a/drivers/hid/usbhid/hid-core.c
-> +++ b/drivers/hid/usbhid/hid-core.c
-> @@ -1289,7 +1289,6 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
->
->         usb_set_intfdata(intf, hid);
->         hid->ll_driver = &usb_hid_driver;
-> -       hid->hid_get_raw_report = usbhid_get_raw_report;
->         hid->hid_output_raw_report = usbhid_output_raw_report;
->         hid->ff_init = hid_pidff_init;
->  #ifdef CONFIG_USB_HIDDEV
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 38c307b..c56681a 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -508,9 +508,6 @@ struct hid_device {                                                 /* device report descriptor */
->                                   struct hid_usage *, __s32);
->         void (*hiddev_report_event) (struct hid_device *, struct hid_report *);
->
-> -       /* handler for raw input (Get_Report) data, used by hidraw */
-> -       int (*hid_get_raw_report) (struct hid_device *, unsigned char, __u8 *, size_t, unsigned char);
-> -
->         /* handler for raw output data, used by hidraw */
->         int (*hid_output_raw_report) (struct hid_device *, __u8 *, size_t, unsigned char);
->
-> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-> index 02670b3..77c4bad 100644
-> --- a/net/bluetooth/hidp/core.c
-> +++ b/net/bluetooth/hidp/core.c
-> @@ -773,7 +773,6 @@ static int hidp_setup_hid(struct hidp_session *session,
->         hid->dev.parent = &session->conn->hcon->dev;
->         hid->ll_driver = &hidp_hid_driver;
->
-> -       hid->hid_get_raw_report = hidp_get_raw_report;
->         hid->hid_output_raw_report = hidp_output_raw_report;
->
->         /* True if device is blacklisted in drivers/hid/hid-core.c */
+I will find out when I start rebasing backwards to submit patches to linux-stable!
+
+> >  drivers/mfd/da9052-core.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> >
+> > diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+> > index 25838f1..e8af816 100644
+> > --- a/drivers/mfd/da9052-core.c
+> > +++ b/drivers/mfd/da9052-core.c
+> > @@ -279,6 +279,9 @@ static bool da9052_reg_volatile(struct device *dev,
+> unsigned int reg)
+> >  	case DA9052_EVENT_B_REG:
+> >  	case DA9052_EVENT_C_REG:
+> >  	case DA9052_EVENT_D_REG:
+> > +	case DA9052_CONTROL_B_REG:
+> > +	case DA9052_CONTROL_D_REG:
+> > +	case DA9052_SUPPLY_REG:
+> >  	case DA9052_FAULTLOG_REG:
+> >  	case DA9052_CHG_TIME_REG:
+> >  	case DA9052_ADC_RES_L_REG:
+> 
 > --
-> 1.8.3.1
->
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead Linaro.org â”‚ Open source
+> software for ARM SoCs Follow Linaro: Facebook | Twitter | Blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
