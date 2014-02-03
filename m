@@ -1,356 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbaBCSR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:17:28 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:45329 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553AbaBCSRZ (ORCPT
+	id S1753614AbaBCSR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:17:56 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49080 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479AbaBCSQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:17:25 -0500
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>
-Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH] perf: ARM64: wire up perf_regs and unwind support
-Date: Mon,  3 Feb 2014 19:17:07 +0100
-Message-Id: <1391451427-31221-1-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 3 Feb 2014 13:16:55 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 16/16] staging: ion: Add private buffer flag to skip page pooling on free
+Date: Mon,  3 Feb 2014 10:16:28 -0800
+Message-Id: <1391451388-23906-17-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
+References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch hooks in the perf_regs and libunwind code for ARM64.
-The tools/perf/arch/arm64 is created; it contains the arch specific
-code for DWARF unwinding.
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
+Currently, when we free a buffer it might actually just go back into a
+heap-specific page pool rather than going back to the system. This poses
+a problem because sometimes (like when we're running a shrinker in low
+memory conditions) we need to force the memory associated with the
+buffer to truly be relinquished to the system rather than just going
+back into a page pool.
+
+There isn't a use case for this flag by Ion clients, so make it a
+private flag. The main use case right now is to provide a mechanism for
+the deferred free code to force stale buffers to bypass page pooling.
+
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+[jstultz: Minor commit subject tweak]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- tools/perf/arch/arm64/Makefile            |  7 +++
- tools/perf/arch/arm64/include/perf_regs.h | 88 +++++++++++++++++++++++++++++++
- tools/perf/arch/arm64/util/dwarf-regs.c   | 80 ++++++++++++++++++++++++++++
- tools/perf/arch/arm64/util/unwind.c       | 82 ++++++++++++++++++++++++++++
- tools/perf/config/Makefile                |  8 ++-
- 5 files changed, 264 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/arch/arm64/Makefile
- create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
- create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
- create mode 100644 tools/perf/arch/arm64/util/unwind.c
+ drivers/staging/android/ion/ion_heap.c        | 19 ++++++++++--
+ drivers/staging/android/ion/ion_priv.h        | 42 ++++++++++++++++++++++++++-
+ drivers/staging/android/ion/ion_system_heap.c |  4 +--
+ 3 files changed, 59 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
-new file mode 100644
-index 0000000..fe9b61e
---- /dev/null
-+++ b/tools/perf/arch/arm64/Makefile
-@@ -0,0 +1,7 @@
-+ifndef NO_DWARF
-+PERF_HAVE_DWARF_REGS := 1
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
-+endif
-+ifndef NO_LIBUNWIND
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
-+endif
-diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
-new file mode 100644
-index 0000000..2359546
---- /dev/null
-+++ b/tools/perf/arch/arm64/include/perf_regs.h
-@@ -0,0 +1,88 @@
-+#ifndef ARCH_PERF_REGS_H
-+#define ARCH_PERF_REGS_H
-+
-+#include <stdlib.h>
-+#include "../../util/types.h"
-+#include <asm/perf_regs.h>
-+
-+#define PERF_REGS_MASK	((1ULL << PERF_REG_ARM64_MAX) - 1)
-+#define PERF_REG_IP	PERF_REG_ARM64_PC
-+#define PERF_REG_SP	PERF_REG_ARM64_SP
-+
-+static inline const char *perf_reg_name(int id)
+diff --git a/drivers/staging/android/ion/ion_heap.c b/drivers/staging/android/ion/ion_heap.c
+index f49bdc0..6ab8f13 100644
+--- a/drivers/staging/android/ion/ion_heap.c
++++ b/drivers/staging/android/ion/ion_heap.c
+@@ -178,7 +178,8 @@ size_t ion_heap_freelist_size(struct ion_heap *heap)
+ 	return size;
+ }
+ 
+-size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
++static size_t _ion_heap_freelist_drain(struct ion_heap *heap, size_t size,
++				bool skip_pools)
+ {
+ 	struct ion_buffer *buffer;
+ 	size_t total_drained = 0;
+@@ -197,6 +198,8 @@ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
+ 					  list);
+ 		list_del(&buffer->list);
+ 		heap->free_list_size -= buffer->size;
++		if (skip_pools)
++			buffer->private_flags |= ION_PRIV_FLAG_SHRINKER_FREE;
+ 		total_drained += buffer->size;
+ 		spin_unlock(&heap->free_lock);
+ 		ion_buffer_destroy(buffer);
+@@ -207,6 +210,16 @@ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
+ 	return total_drained;
+ }
+ 
++size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
 +{
-+	switch (id) {
-+	case PERF_REG_ARM64_X0:
-+		return "x0";
-+	case PERF_REG_ARM64_X1:
-+		return "x1";
-+	case PERF_REG_ARM64_X2:
-+		return "x2";
-+	case PERF_REG_ARM64_X3:
-+		return "x3";
-+	case PERF_REG_ARM64_X4:
-+		return "x4";
-+	case PERF_REG_ARM64_X5:
-+		return "x5";
-+	case PERF_REG_ARM64_X6:
-+		return "x6";
-+	case PERF_REG_ARM64_X7:
-+		return "x7";
-+	case PERF_REG_ARM64_X8:
-+		return "x8";
-+	case PERF_REG_ARM64_X9:
-+		return "x9";
-+	case PERF_REG_ARM64_X10:
-+		return "x10";
-+	case PERF_REG_ARM64_X11:
-+		return "x11";
-+	case PERF_REG_ARM64_X12:
-+		return "x12";
-+	case PERF_REG_ARM64_X13:
-+		return "x13";
-+	case PERF_REG_ARM64_X14:
-+		return "x14";
-+	case PERF_REG_ARM64_X15:
-+		return "x15";
-+	case PERF_REG_ARM64_X16:
-+		return "x16";
-+	case PERF_REG_ARM64_X17:
-+		return "x17";
-+	case PERF_REG_ARM64_X18:
-+		return "x18";
-+	case PERF_REG_ARM64_X19:
-+		return "x19";
-+	case PERF_REG_ARM64_X20:
-+		return "x20";
-+	case PERF_REG_ARM64_X21:
-+		return "x21";
-+	case PERF_REG_ARM64_X22:
-+		return "x22";
-+	case PERF_REG_ARM64_X23:
-+		return "x23";
-+	case PERF_REG_ARM64_X24:
-+		return "x24";
-+	case PERF_REG_ARM64_X25:
-+		return "x25";
-+	case PERF_REG_ARM64_X26:
-+		return "x26";
-+	case PERF_REG_ARM64_X27:
-+		return "x27";
-+	case PERF_REG_ARM64_X28:
-+		return "x28";
-+	case PERF_REG_ARM64_X29:
-+		return "x29";
-+	case PERF_REG_ARM64_SP:
-+		return "sp";
-+	case PERF_REG_ARM64_LR:
-+		return "lr";
-+	case PERF_REG_ARM64_PC:
-+		return "pc";
-+	default:
-+		return NULL;
-+	}
-+
-+	return NULL;
++	return _ion_heap_freelist_drain(heap, size, false);
 +}
 +
-+#endif /* ARCH_PERF_REGS_H */
-diff --git a/tools/perf/arch/arm64/util/dwarf-regs.c b/tools/perf/arch/arm64/util/dwarf-regs.c
-new file mode 100644
-index 0000000..d49efeb
---- /dev/null
-+++ b/tools/perf/arch/arm64/util/dwarf-regs.c
-@@ -0,0 +1,80 @@
-+/*
-+ * Mapping of DWARF debug register numbers into register names.
-+ *
-+ * Copyright (C) 2010 Will Deacon, ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++size_t ion_heap_freelist_shrink(struct ion_heap *heap, size_t size)
++{
++	return _ion_heap_freelist_drain(heap, size, true);
++}
++
+ static int ion_heap_deferred_free(void *data)
+ {
+ 	struct ion_heap *heap = data;
+@@ -278,10 +291,10 @@ static unsigned long ion_heap_shrink_scan(struct shrinker *shrinker,
+ 
+ 	/*
+ 	 * shrink the free list first, no point in zeroing the memory if we're
+-	 * just going to reclaim it
++	 * just going to reclaim it. Also, skip any possible page pooling.
+ 	 */
+ 	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+-		freed = ion_heap_freelist_drain(heap, to_scan * PAGE_SIZE) /
++		freed = ion_heap_freelist_shrink(heap, to_scan * PAGE_SIZE) /
+ 				PAGE_SIZE;
+ 
+ 	to_scan -= freed;
+diff --git a/drivers/staging/android/ion/ion_priv.h b/drivers/staging/android/ion/ion_priv.h
+index a8d0ed7..fef0b6f 100644
+--- a/drivers/staging/android/ion/ion_priv.h
++++ b/drivers/staging/android/ion/ion_priv.h
+@@ -37,6 +37,7 @@ struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
+  * @dev:		back pointer to the ion_device
+  * @heap:		back pointer to the heap the buffer came from
+  * @flags:		buffer specific flags
++ * @private_flags:	internal buffer specific flags
+  * @size:		size of the buffer
+  * @priv_virt:		private data to the buffer representable as
+  *			a void *
+@@ -65,6 +66,7 @@ struct ion_buffer {
+ 	struct ion_device *dev;
+ 	struct ion_heap *heap;
+ 	unsigned long flags;
++	unsigned long private_flags;
+ 	size_t size;
+ 	union {
+ 		void *priv_virt;
+@@ -97,7 +99,11 @@ void ion_buffer_destroy(struct ion_buffer *buffer);
+  * @map_user		map memory to userspace
+  *
+  * allocate, phys, and map_user return 0 on success, -errno on error.
+- * map_dma and map_kernel return pointer on success, ERR_PTR on error.
++ * map_dma and map_kernel return pointer on success, ERR_PTR on
++ * error. @free will be called with ION_PRIV_FLAG_SHRINKER_FREE set in
++ * the buffer's private_flags when called from a shrinker. In that
++ * case, the pages being free'd must be truly free'd back to the
++ * system, not put in a page pool or otherwise cached.
+  */
+ struct ion_heap_ops {
+ 	int (*allocate) (struct ion_heap *heap,
+@@ -122,6 +128,17 @@ struct ion_heap_ops {
+ #define ION_HEAP_FLAG_DEFER_FREE (1 << 0)
+ 
+ /**
++ * private flags - flags internal to ion
 + */
-+
-+#include <stddef.h>
-+#include <dwarf-regs.h>
-+
-+struct pt_regs_dwarfnum {
-+	const char *name;
-+	unsigned int dwarfnum;
-+};
-+
-+#define STR(s) #s
-+#define REG_DWARFNUM_NAME(r, num) {.name = r, .dwarfnum = num}
-+#define GPR_DWARFNUM_NAME(num) \
-+	{.name = STR(%x##num), .dwarfnum = num}
-+#define REG_DWARFNUM_END {.name = NULL, .dwarfnum = 0}
-+
 +/*
-+ * Reference:
-+ * http://infocenter.arm.com/help/topic/com.arm.doc.ihi0057b/IHI0057B_aadwarf64.pdf
++ * Buffer is being freed from a shrinker function. Skip any possible
++ * heap-specific caching mechanism (e.g. page pools). Guarantees that
++ * any buffer storage that came from the system allocator will be
++ * returned to the system allocator.
 + */
-+static const struct pt_regs_dwarfnum regdwarfnum_table[] = {
-+	GPR_DWARFNUM_NAME(0),
-+	GPR_DWARFNUM_NAME(1),
-+	GPR_DWARFNUM_NAME(2),
-+	GPR_DWARFNUM_NAME(3),
-+	GPR_DWARFNUM_NAME(4),
-+	GPR_DWARFNUM_NAME(5),
-+	GPR_DWARFNUM_NAME(6),
-+	GPR_DWARFNUM_NAME(7),
-+	GPR_DWARFNUM_NAME(8),
-+	GPR_DWARFNUM_NAME(9),
-+	GPR_DWARFNUM_NAME(10),
-+	GPR_DWARFNUM_NAME(11),
-+	GPR_DWARFNUM_NAME(12),
-+	GPR_DWARFNUM_NAME(13),
-+	GPR_DWARFNUM_NAME(14),
-+	GPR_DWARFNUM_NAME(15),
-+	GPR_DWARFNUM_NAME(16),
-+	GPR_DWARFNUM_NAME(17),
-+	GPR_DWARFNUM_NAME(18),
-+	GPR_DWARFNUM_NAME(19),
-+	GPR_DWARFNUM_NAME(20),
-+	GPR_DWARFNUM_NAME(21),
-+	GPR_DWARFNUM_NAME(22),
-+	GPR_DWARFNUM_NAME(23),
-+	GPR_DWARFNUM_NAME(24),
-+	GPR_DWARFNUM_NAME(25),
-+	GPR_DWARFNUM_NAME(26),
-+	GPR_DWARFNUM_NAME(27),
-+	GPR_DWARFNUM_NAME(28),
-+	GPR_DWARFNUM_NAME(29),
-+	REG_DWARFNUM_NAME("%lr", 30),
-+	REG_DWARFNUM_NAME("%sp", 31),
-+	REG_DWARFNUM_END,
-+};
++#define ION_PRIV_FLAG_SHRINKER_FREE (1 << 0)
 +
 +/**
-+ * get_arch_regstr() - lookup register name from it's DWARF register number
-+ * @n:	the DWARF register number
-+ *
-+ * get_arch_regstr() returns the name of the register in struct
-+ * regdwarfnum_table from it's DWARF register number. If the register is not
-+ * found in the table, this returns NULL;
-+ */
-+const char *get_arch_regstr(unsigned int n)
-+{
-+	const struct pt_regs_dwarfnum *roff;
-+	for (roff = regdwarfnum_table; roff->name != NULL; roff++)
-+		if (roff->dwarfnum == n)
-+			return roff->name;
-+	return NULL;
-+}
-diff --git a/tools/perf/arch/arm64/util/unwind.c b/tools/perf/arch/arm64/util/unwind.c
-new file mode 100644
-index 0000000..8d37a4c
---- /dev/null
-+++ b/tools/perf/arch/arm64/util/unwind.c
-@@ -0,0 +1,82 @@
-+
-+#include <errno.h>
-+#include <libunwind.h>
-+#include "perf_regs.h"
-+#include "../../util/unwind.h"
-+
-+int unwind__arch_reg_id(int regnum)
-+{
-+	switch (regnum) {
-+	case UNW_AARCH64_X0:
-+		return PERF_REG_ARM64_X0;
-+	case UNW_AARCH64_X1:
-+		return PERF_REG_ARM64_X1;
-+	case UNW_AARCH64_X2:
-+		return PERF_REG_ARM64_X2;
-+	case UNW_AARCH64_X3:
-+		return PERF_REG_ARM64_X3;
-+	case UNW_AARCH64_X4:
-+		return PERF_REG_ARM64_X4;
-+	case UNW_AARCH64_X5:
-+		return PERF_REG_ARM64_X5;
-+	case UNW_AARCH64_X6:
-+		return PERF_REG_ARM64_X6;
-+	case UNW_AARCH64_X7:
-+		return PERF_REG_ARM64_X7;
-+	case UNW_AARCH64_X8:
-+		return PERF_REG_ARM64_X8;
-+	case UNW_AARCH64_X9:
-+		return PERF_REG_ARM64_X9;
-+	case UNW_AARCH64_X10:
-+		return PERF_REG_ARM64_X10;
-+	case UNW_AARCH64_X11:
-+		return PERF_REG_ARM64_X11;
-+	case UNW_AARCH64_X12:
-+		return PERF_REG_ARM64_X12;
-+	case UNW_AARCH64_X13:
-+		return PERF_REG_ARM64_X13;
-+	case UNW_AARCH64_X14:
-+		return PERF_REG_ARM64_X14;
-+	case UNW_AARCH64_X15:
-+		return PERF_REG_ARM64_X15;
-+	case UNW_AARCH64_X16:
-+		return PERF_REG_ARM64_X16;
-+	case UNW_AARCH64_X17:
-+		return PERF_REG_ARM64_X17;
-+	case UNW_AARCH64_X18:
-+		return PERF_REG_ARM64_X18;
-+	case UNW_AARCH64_X19:
-+		return PERF_REG_ARM64_X19;
-+	case UNW_AARCH64_X20:
-+		return PERF_REG_ARM64_X20;
-+	case UNW_AARCH64_X21:
-+		return PERF_REG_ARM64_X21;
-+	case UNW_AARCH64_X22:
-+		return PERF_REG_ARM64_X22;
-+	case UNW_AARCH64_X23:
-+		return PERF_REG_ARM64_X23;
-+	case UNW_AARCH64_X24:
-+		return PERF_REG_ARM64_X24;
-+	case UNW_AARCH64_X25:
-+		return PERF_REG_ARM64_X25;
-+	case UNW_AARCH64_X26:
-+		return PERF_REG_ARM64_X26;
-+	case UNW_AARCH64_X27:
-+		return PERF_REG_ARM64_X27;
-+	case UNW_AARCH64_X28:
-+		return PERF_REG_ARM64_X28;
-+	case UNW_AARCH64_X29:
-+		return PERF_REG_ARM64_X29;
-+	case UNW_AARCH64_X30:
-+		return PERF_REG_ARM64_LR;
-+	case UNW_AARCH64_SP:
-+		return PERF_REG_ARM64_SP;
-+	case UNW_AARCH64_PC:
-+		return PERF_REG_ARM64_PC;
-+	default:
-+		pr_err("unwind: invalid reg id %d\n", regnum);
-+		return -EINVAL;
-+	}
-+
-+	return -EINVAL;
-+}
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index c48d449..5c0a6ed 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -29,11 +29,17 @@ ifeq ($(ARCH),x86)
-   endif
-   NO_PERF_REGS := 0
- endif
-+
- ifeq ($(ARCH),arm)
-   NO_PERF_REGS := 0
-   LIBUNWIND_LIBS = -lunwind -lunwind-arm
- endif
+  * struct ion_heap - represents a heap in the system
+  * @node:		rb node to put the heap on the device's tree of heaps
+  * @dev:		back pointer to the ion_device
+@@ -257,6 +274,29 @@ void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer);
+ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size);
  
-+ifeq ($(ARCH),arm64)
-+  NO_PERF_REGS := 0
-+  LIBUNWIND_LIBS = -lunwind -lunwind-aarch64
-+endif
+ /**
++ * ion_heap_freelist_shrink - drain the deferred free
++ *				list, skipping any heap-specific
++ *				pooling or caching mechanisms
++ *
++ * @heap:		the heap
++ * @size:		amount of memory to drain in bytes
++ *
++ * Drains the indicated amount of memory from the deferred freelist immediately.
++ * Returns the total amount freed.  The total freed may be higher depending
++ * on the size of the items in the list, or lower if there is insufficient
++ * total memory on the freelist.
++ *
++ * Unlike with @ion_heap_freelist_drain, don't put any pages back into
++ * page pools or otherwise cache the pages. Everything must be
++ * genuinely free'd back to the system. If you're free'ing from a
++ * shrinker you probably want to use this. Note that this relies on
++ * the heap.ops.free callback honoring the ION_PRIV_FLAG_SHRINKER_FREE
++ * flag.
++ */
++size_t ion_heap_freelist_shrink(struct ion_heap *heap,
++					size_t size);
 +
- ifeq ($(LIBUNWIND_LIBS),)
-   NO_LIBUNWIND := 1
- else
-@@ -327,7 +333,7 @@ ifndef NO_LIBUNWIND
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
-     NO_LIBUNWIND := 1
-   else
--    ifeq ($(ARCH),arm)
-+    ifeq ($(ARCH),$(filter $(ARCH),arm arm64))
-       $(call feature_check,libunwind-debug-frame)
-       ifneq ($(feature-libunwind-debug-frame), 1)
-         msg := $(warning No debug_frame support found in libunwind);
++/**
+  * ion_heap_freelist_size - returns the size of the freelist in bytes
+  * @heap:		the heap
+  */
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index f453d97..c923633 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -90,7 +90,7 @@ static void free_buffer_page(struct ion_system_heap *heap,
+ {
+ 	bool cached = ion_buffer_cached(buffer);
+ 
+-	if (!cached) {
++	if (!cached && !(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) {
+ 		struct ion_page_pool *pool = heap->pools[order_to_index(order)];
+ 		ion_page_pool_free(pool, page);
+ 	} else {
+@@ -209,7 +209,7 @@ static void ion_system_heap_free(struct ion_buffer *buffer)
+ 
+ 	/* uncached pages come from the page pools, zero them before returning
+ 	   for security purposes (other allocations are zerod at alloc time */
+-	if (!cached)
++	if (!cached && !(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE))
+ 		ion_heap_buffer_zero(buffer);
+ 
+ 	for_each_sg(table->sgl, sg, table->nents, i)
 -- 
-1.7.11.7
+1.8.3.2
 
