@@ -1,102 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaBCQlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:41:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36177 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752816AbaBCQlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:41:49 -0500
-Date: Mon, 3 Feb 2014 17:41:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC 1/5] memcg: cleanup charge routines
-Message-ID: <20140203164147.GK2495@dhcp22.suse.cz>
-References: <1387295130-19771-1-git-send-email-mhocko@suse.cz>
- <1387295130-19771-2-git-send-email-mhocko@suse.cz>
- <20140130171837.GD6963@cmpxchg.org>
- <20140203132001.GE2495@dhcp22.suse.cz>
- <20140203155127.GI6963@cmpxchg.org>
+	id S1753218AbaBCQoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:44:12 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:59685 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaBCQoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:44:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203155127.GI6963@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52EB804C.2090506@canonical.com>
+References: <52EB804C.2090506@canonical.com>
+Date: Mon, 3 Feb 2014 17:44:09 +0100
+Message-ID: <CANq1E4QbCn5hLX67pEyo-=KCO5TDjSg13bcSznRg1Ti_f1iOag@mail.gmail.com>
+Subject: Re: drm/cirrus: Ignore busy mem region when mapping VRAM
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Dave Airlie <airlied@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-02-14 10:51:27, Johannes Weiner wrote:
-> On Mon, Feb 03, 2014 at 02:20:01PM +0100, Michal Hocko wrote:
-> > On Thu 30-01-14 12:18:37, Johannes Weiner wrote:
-> > > On Tue, Dec 17, 2013 at 04:45:26PM +0100, Michal Hocko wrote:
-> > [...]
-> > > > -static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> > > > -				   gfp_t gfp_mask,
-> > > > +static int __mem_cgroup_try_charge_memcg(gfp_t gfp_mask,
-> > > >  				   unsigned int nr_pages,
-> > > > -				   struct mem_cgroup **ptr,
-> > > > +				   struct mem_cgroup *memcg,
-> > > >  				   bool oom)
-> > > 
-> > > Why not keep the __mem_cgroup_try_charge() name?  It's shorter and
-> > > just as descriptive.
-> > 
-> > I wanted to have 2 different names with clear reference to _what_ is
-> > going to be charged. But I am always open to naming suggestions.
-> >
-> > > > +/*
-> > > > + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
-> > > > + * if mm is NULL). Returns NULL if memcg is under OOM.
-> > > > + */
-> > > > +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
-> > > > +				   gfp_t gfp_mask,
-> > > > +				   unsigned int nr_pages,
-> > > > +				   bool oom)
-> > > 
-> > > We already have a try_get_mem_cgroup_from_mm().
-> > >
-> > > After this series, this function basically duplicates that and it
-> > > would be much cleaner if we only had one try_charge() function and let
-> > > all the callers use the appropriate try_get_mem_cgroup_from_wherever()
-> > > themselves.
-> > 
-> > try_get_mem_cgroup_from_mm doesn't charge memory itself. It just tries
-> > to get memcg from the given mm. It is called also from a context which
-> > doesn't charge any memory (task_in_mem_cgroup). Or have I misunderstood
-> > you?
-> 
-> Your mem_cgroup_try_charge_mm() looks up a memcg from mm and calls
-> try_charge().  But we have try_get_mem_cgroup_from_mm() to do the
-> first half, so why not have the current callers of
-> mem_cgroup_try_charge_mm() just use try_get_mem_cgroup_from_mm() and
-> try_charge()?  Why is charging through an mm - as opposed to through a
-> page or through the task - special?
+Hi
 
-OK, I thought it would be easier to follow those two different ways of
-charging (known memcg vs. current mm - I needed that when tracking some
-issue and ended up quite despair from all the different combinations)
-but that is probably not that interesting and what you are proposing
-reduces even more code. OK I will play with this some more.
+On Fri, Jan 31, 2014 at 11:51 AM, Stefan Bader
+<stefan.bader@canonical.com> wrote:
+> I know this is a gross hack but something like that currently is required to
+> avoid a KVM guest booted from graphical grub mode (so simplefb is taking effect)
+> getting into a state where there is no framebuffer in use at all (since simplefb
+> was removed but cirrus fails to acquire VRAM resources which are held by the
+> platform device). _Guests in that stage appear to be frozen but can be reached
+> via network login with no problems.
+>
+> It would be possible to release the mem region in the simplefb driver when
+> unmapping but that sounds equally bad. Is someone already looking into some
+> better solution here? Should the platform device be removed or what would be a
+> good way to go forward here?
+>
+> -Stefan
+>
+> --
+>
+> From 5eaa87a69bb40ffeec759b6e5aeec1a26bba1680 Mon Sep 17 00:00:00 2001
+> From: Stefan Bader <stefan.bader@canonical.com>
+> Date: Wed, 29 Jan 2014 16:45:12 +0000
+> Subject: [PATCH] drm/cirrus: Ignore busy mem region when mapping VRAM
+>
+> Since 29d274b8d3e2404cd1832b3a999b12f9d1e1d895 ("x86/simplefb: Mark
+> framebuffer mem-resources as IORESOURCE_BUSY to avoid bootup warning")
+> the messages for real hw drivers mapping the same region as the simple-
+> framebuffer are gone. But now the cirrus drm driver will always fail
+> to initialize its VRAM because the region is busy. Removing the
+> conflicting framebuffer only can stop simplefb from using the memory
+> and unmap it but it is the platform device which has the region assined
+> to itself.
+> As the comment of the above patch indicates there is currently no sane
+> way to get rid of the platform device. So at least for now accept that
+> the region can appear busy. It is usuable nonetheless.
+> This will fix VMs using the cirrus gfx emulation to appear locked up
+> when booting from GRUB gfx mode.
+>
+> BugLink: http://bugs.launchpad.net/bugs/1269401
+>
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 
-> Most callsites already do the lookups themselves:
-> 
-> try_charge_swapin:	uses try_get_mem_cgroup_from_page()
-> kmem_newpage_charge:	uses try_get_mem_cgroup_from_mm()
-> precharge:		uses mem_cgroup_from_task()
-> 
-> So just let these two do the same:
-> 
-> newpage_charge:		could use try_get_mem_cgroup_from_mm()
-> cache_charge:		could use try_get_mem_cgroup_from_mm()
-> 
-> And then provide one try_charge() that always takes a non-null memcg.
+This should be fixed by patches #1+#2 in this series:
+  http://lists.freedesktop.org/archives/dri-devel/2014-January/052584.html
 
-Thanks!
+I hope we can get it applied this week. Just waiting for a rough
+review from airlied. As a workaround, you can always disable
+CONFIG_X86_SYSFB. There is no reason to activate it right now (until
+SimpleDRM gets merged..).
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks
+David
+
+> ---
+>  drivers/gpu/drm/cirrus/cirrus_main.c | 11 +++++++++--
+>  1 file changed, 9 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/cirrus/cirrus_main.c
+> b/drivers/gpu/drm/cirrus/cirrus_main.c
+> index 557d094..9f0193f 100644
+> --- a/drivers/gpu/drm/cirrus/cirrus_main.c
+> +++ b/drivers/gpu/drm/cirrus/cirrus_main.c
+> @@ -101,8 +101,15 @@ static int cirrus_vram_init(struct cirrus_device *cdev)
+>
+>         if (!request_mem_region(cdev->mc.vram_base, cdev->mc.vram_size,
+>                                 "cirrusdrmfb_vram")) {
+> -               DRM_ERROR("can't reserve VRAM\n");
+> -               return -ENXIO;
+> +               /*
+> +                * With the simple-framebuffer now marking the region
+> +                * busy there is no way of this succeeding with having
+> +                * the framebuffer active. Getting here means the old
+> +                * one has been kicked and the region is unmapped but
+> +                * there is no way to eject the platform device to get
+> +                * the request_region undone.
+> +                */
+> +               DRM_ERROR("can't reserve VRAM (ignored)\n");
+>         }
+>
+>         return 0;
+> --
+> 1.8.3.2
