@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaBCVnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:43:00 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:45919 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaBCVm6 (ORCPT
+	id S1753804AbaBCVnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:43:07 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42486 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaBCVnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:42:58 -0500
-X-IronPort-AV: E=Sophos;i="4.95,774,1384329600"; 
-   d="scan'208";a="12923353"
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: Linux GPIO List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] gpio: bcm281xx: Update MODULE_AUTHOR
-Date: Mon, 3 Feb 2014 13:43:00 -0800
-Message-ID: <1391463780-19840-1-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 3 Feb 2014 16:43:03 -0500
+Date: Mon, 3 Feb 2014 21:42:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140203214258.GB10323@ZenIV.linux.org.uk>
+References: <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+ <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+ <20140203211955.GY10323@ZenIV.linux.org.uk>
+ <20140203212447.GA4843@infradead.org>
+ <20140203213153.GZ10323@ZenIV.linux.org.uk>
+ <CA+55aFwsZtgsgirO0LJu4D1ZqQkgLBZcMk_w_7BTHeysz==gEw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwsZtgsgirO0LJu4D1ZqQkgLBZcMk_w_7BTHeysz==gEw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Broadcom's upstreaming mailing list address to MODULE_AUTHOR.
+On Mon, Feb 03, 2014 at 01:37:03PM -0800, Linus Torvalds wrote:
+> On Mon, Feb 3, 2014 at 1:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Yes, and...?  CIFS also doesn't have hardlinks, so _there_ d_find_alias()
+> > is just fine.
+> 
+> Hmm? I'm pretty sure cifs can actually have hardlinks.
 
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
----
- drivers/gpio/gpio-bcm-kona.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+*UGH*
 
-diff --git a/drivers/gpio/gpio-bcm-kona.c b/drivers/gpio/gpio-bcm-kona.c
-index 233d088..f32357e 100644
---- a/drivers/gpio/gpio-bcm-kona.c
-+++ b/drivers/gpio/gpio-bcm-kona.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (C) 2012-2013 Broadcom Corporation
-+ * Copyright (C) 2012-2014 Broadcom Corporation
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License as
-@@ -657,6 +657,6 @@ static struct platform_driver bcm_kona_gpio_driver = {
- 
- module_platform_driver(bcm_kona_gpio_driver);
- 
--MODULE_AUTHOR("Broadcom");
-+MODULE_AUTHOR("Broadcom Corporation <bcm-kernel-feedback-list@broadcom.com>");
- MODULE_DESCRIPTION("Broadcom Kona GPIO Driver");
- MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+How the hell does it...  Oh, right - samba on Unix server.  I really wonder
+how well do Windows clients deal with those...
 
+Crap...  I reall hate that prototype change ;-/
