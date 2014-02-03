@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaBCUYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:24:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61430 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114AbaBCUYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:24:17 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH] audit: Only use the syscall slowpath when syscall audit rules exist
-Date: Mon, 03 Feb 2014 15:23:59 -0500
-Message-ID: <1400745.hJLGxDlRLu@x2>
-Organization: Red Hat
-User-Agent: KMail/4.11.5 (Linux/3.12.9-301.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <a8356e46aed7213128e84a888170391adb6afe30.1391449825.git.luto@amacapital.net>
-References: <a8356e46aed7213128e84a888170391adb6afe30.1391449825.git.luto@amacapital.net>
+	id S1753584AbaBCUZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:25:40 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55977 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751195AbaBCUZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 15:25:39 -0500
+Date: Mon, 3 Feb 2014 20:25:21 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viro Alexander <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: NFS client broken in Linus' tip
+Message-ID: <20140203202521.GM26684@n2100.arm.linux.org.uk>
+References: <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org> <20140203080325.GB806@infradead.org> <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com> <20140203145759.GA30263@infradead.org> <3003D7E5-93F8-4B32-ACDB-07ED3F6CE70D@primarydata.com> <1391458935.17089.1.camel@leira.trondhjem.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1391458935.17089.1.camel@leira.trondhjem.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 03, 2014 09:53:23 AM Andy Lutomirski wrote:
-> This toggles TIF_SYSCALL_AUDIT as needed when rules change instead of
-> leaving it set whenever rules might be set in the future.  This reduces
-> syscall latency from >60ns to closer to 40ns on my laptop.
+On Mon, Feb 03, 2014 at 03:22:15PM -0500, Trond Myklebust wrote:
+> On Mon, 2014-02-03 at 10:45 -0500, Trond Myklebust wrote:
+> > On Feb 3, 2014, at 9:57, Christoph Hellwig <hch@infradead.org> wrote:
+> > 
+> > > On Mon, Feb 03, 2014 at 09:17:30AM -0500, Trond Myklebust wrote:
+> > >> As I said above, that causes posix_acl_xattr_get() to return the wrong answer (ENODATA instead of EOPNOTSUPP).
+> > > 
+> > > Is it really the wrong answer?  How does userspace care wether this
+> > > server doesn't support ACLs at all or none is set?  The resulting
+> > > behavior is the same.
+> > 
+> > It will certainly cause acl_get_file() to behave differently than previously. I’ve no idea how that will affect applications, though.
+> > 
+> > > If there's a good reason to care we might have to go with your patch,
+> > > but if we can avoid it I'd prefer to keep things simple.
+> > 
+> > One alternative is to simply wrap posix_acl_xattr_get() in fs/nfs/nfs3acl.c, and have it check the value of nfs_server_capable(inode, NFS_CAP_ACLS) before returning ENODATA. That’s rather ugly too...
+> 
+> FWIW, here is the alternative patch. I've tested it, and it seems to
+> work.
 
-Does this mean that we have processes that don't have the  TIF_SYSCALL_AUDIT 
-flag set? When rules get loaded, how do we get the flag put back into all 
-processes?
+Thanks.
 
-The theory of ops is supposed to be that for anyone not needing audit, there 
-is only the cost of  "if (tif & TIF_SYSCALL_AUDIT)". That should be it. If you 
-have audit enabled or had it enabled (which means it might be loaded with new 
-rules), we want to inspect the syscall. There should be a short circuit based 
-on checking that any rules has ever been loaded or are currently loaded before 
-doing any real collection.
+As there's now two fixes, which would you like me to test?
 
--Steve
+One comment on this patch though:
 
+> +static int
+> +nfs_posix_acl_xattr_get(struct dentry *dentry, const char *name,
+> +		void *value, size_t size, int type)
+> +{
+> +	int ret;
+> +
+> +	ret = posix_acl_xattr_get(dentry, name, value, size, type);
+> +	/*
+> +	 * This check is needed to override the ENODATA error that
+> +	 * posix_acl_xattr_get will return if the acl probe fails.
+> +	 */
+> +	if (!nfs_server_capable(dentry->d_inode, NFS_CAP_ACLS))
+> +		ret = -EOPNOTSUPP;
 
+I'm not familiar with this code, but the above looks slightly weird,
+and a little suspicious - especially with the lack of blank line
+before the comment.  Is the above actually intended?
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
