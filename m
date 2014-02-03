@@ -1,108 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaBCTUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:20:01 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:58845 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaBCTT7 (ORCPT
+	id S1753252AbaBCTXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:23:51 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:58250 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903AbaBCTXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:19:59 -0500
+	Mon, 3 Feb 2014 14:23:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4RWXXXYMSHFnrMubvqjJDu4tE3ikKsrhNfEUXdNASdcgA@mail.gmail.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<CANq1E4RWXXXYMSHFnrMubvqjJDu4tE3ikKsrhNfEUXdNASdcgA@mail.gmail.com>
-Date: Mon, 3 Feb 2014 14:19:57 -0500
-Message-ID: <CAN+gG=FtkmTKNTwM3Jbb4Cfw0g5kgz2aaGN-mWU0FfHmTnW1BQ@mail.gmail.com>
-Subject: Re: [PATCH 00/11] HID: spring cleaning
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140129174106.15476.7075.stgit@bhelgaas-glaptop.roam.corp.google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 3 Feb 2014 12:23:28 -0700
+Message-ID: <CAErSpo5whsUH0aM8iocKdn4FOQLEjCQoM+ShjVjzWDxSWTzQnA@mail.gmail.com>
+Subject: Re: [PATCH 00/17] x86, ia64 NUMA cleanup
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 11:48 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
+[+cc Tony]
+
+On Wed, Jan 29, 2014 at 11:17 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> This is all cleanup: it adds no new functionality and should make no
+> functional difference at all except a printk change or two.
 >
-> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> Hi guys,
->>
->> This is an attempt to complete the branch for-3.15/ll-driver-new-callbacks:
->> - try to implement as much as possible ll_driver callbacks (some are still
->>   missing, but I did not had the time to complete it)
->> - add inliners hid_hw_* for all the ll_driver callbacks
->> - remove transport dependant callbacks in struct hid_device
->> - remove the so called "obsolete" hidinput_input_event handler which was used
->>   in 2/4 transport drivers
->>
->> Bonus point: 14 files changed, 213 insertions(+), 272 deletions(-)
->> Yay!
->>
->> I made sure I kept the PS3 controller working and the LEDs (on logitech-dj and
->> on bluetooth keyboard) working. The rest do not mostly need further testing,
->> the code path did not changed. But still, a review (and some tests) would be a
->> good idea :)
+> The main ideas are:
 >
-> Thanks a lot! Looks all good except for the uhid and i2c changes. But
-> I have commented on those.
-
-Thanks David for the review. Very appreciated.
-
-Jiri, I think the simpler way to handle this is that I send out a v2
-of the patches with the reviewed-by David:
-I will drop 1, 2 and 11 and rework a little on 4 (hid-logitech-dj).
-
-Then, I'll send out the second series where I will remove
-hid_output_raw_report, implement a generic .request() on top of
-.raw_request(), and I have some more cleanup to come (less aggressive
-this time I think).
-
-Cheers,
-Benjamin
-
+>   - Clean up the x86 PCI bus scanning interfaces.  We had:
+>       struct pci_bus *pci_scan_bus_on_node(int bus, struct pci_ops *, int node)
+>       struct pci_bus *pcibios_scan_root(int bus)
+>       struct pci_bus *pci_scan_bus_with_sysdata(int bus)
+>       void pcibios_scan_specific_bus(int bus)
+>     These were all basically the same, so I kept only pcibios_scan_root().
 >
-> Cheers
-> David
+>   - Get rid of mp_bus_to_node[].  This was basically a way of passing node
+>     info from the AMD "native host bridg driver" (amd_bus.c) into the PCI
+>     core.  It was clunky and inconsistent between x86-64 and i386.  I
+>     replaced it with x86_pci_root_bus_node(), analogous to the existing
+>     x86_pci_root_bus_resources().
 >
->> Cheers,
->> Benjamin
->>
->> PS: obviously, this goes on top on the branch for-3.15/ll-driver-new-callbacks
->>
->> Benjamin Tissoires (11):
->>   HID: uHID: implement .raw_request
->>   HID: i2c-hid: implement ll_driver transport-layer callbacks
->>   HID: add inliners for ll_driver transport-layer callbacks
->>   HID: logitech-dj: remove hidinput_input_event
->>   HID: HIDp: remove hidp_hidinput_event
->>   HID: remove hidinput_input_event handler
->>   HID: HIDp: remove duplicated coded
->>   HID: usbhid: remove duplicated code
->>   HID: remove hid_get_raw_report in struct hid_device
->>   HID: introduce helper to access hid_output_raw_report()
->>   HID: move hid_output_raw_report to hid_ll_driver
->>
->>  drivers/hid/hid-input.c        |  12 ++---
->>  drivers/hid/hid-lg.c           |   6 ++-
->>  drivers/hid/hid-logitech-dj.c  | 101 +++++++++++++---------------------
->>  drivers/hid/hid-magicmouse.c   |   2 +-
->>  drivers/hid/hid-sony.c         |  19 +++++--
->>  drivers/hid/hid-thingm.c       |   4 +-
->>  drivers/hid/hid-wacom.c        |  16 +++---
->>  drivers/hid/hid-wiimote-core.c |   4 +-
->>  drivers/hid/hidraw.c           |  11 ++--
->>  drivers/hid/i2c-hid/i2c-hid.c  |  27 +++++++++-
->>  drivers/hid/uhid.c             |  20 ++++++-
->>  drivers/hid/usbhid/hid-core.c  |  67 +++++------------------
->>  include/linux/hid.h            |  77 ++++++++++++++++++++++----
->>  net/bluetooth/hidp/core.c      | 119 +++++------------------------------------
->>  14 files changed, 213 insertions(+), 272 deletions(-)
->>
->> --
->> 1.8.3.1
->>
+>   - Remove _PXM knowledge from the PCI host bridge, IOMMU, and APIC code.
+>     They really only care about the NUMA node number, not the raw _PXM
+>     value.
+>
+> ---
+>
+> Bjorn Helgaas (17):
+>       x86/PCI: Drop pcibios_scan_root() check for bus already scanned
+>       x86/PCI: Use pcibios_scan_root() instead of pci_scan_bus_with_sysdata()
+>       x86/PCI: Use pcibios_scan_root() instead of pci_scan_bus_on_node()
+>       x86/PCI: Merge pci_scan_bus_on_node() into pcibios_scan_root()
+>       x86/PCI: Drop return value of pcibios_scan_root()
+>       x86/PCI: Add x86_pci_root_bus_node() to look up NUMA node from PCI bus
+>       x86/PCI: Use x86_pci_root_bus_node() instead of get_mp_bus_to_node()
+>       x86/PCI: Remove mp_bus_to_node[], set_mp_bus_to_node(), get_mp_bus_to_node()
+>       x86/PCI: Remove unnecessary list_empty(&pci_root_infos) check
+>       x86/PCI: Use NUMA_NO_NODE, not -1, for unknown node
+>       x86/PCI: Remove acpi_get_pxm() usage
+>       ia64 / sba_iommu: Use NUMA_NO_NODE, not MAX_NUMNODES, for unknown node
+>       ia64: Remove acpi_get_pxm() usage
+>       ACPI / numa: Fix acpi_get_node() prototype
+>       ACPI / numa: Simplify acpi_get_node() style
+>       ACPI / numa: Make __acpi_map_pxm_to_node(), acpi_get_pxm() static
+>       ACPI / numa: Use __weak, not the gcc-specific version
+>
+>
+>  arch/ia64/hp/common/sba_iommu.c |   32 +++-------
+>  arch/ia64/include/asm/pci.h     |    2 -
+>  arch/ia64/kernel/acpi.c         |   28 ++-------
+>  arch/ia64/pci/pci.c             |   10 +--
+>  arch/x86/include/asm/pci.h      |    7 --
+>  arch/x86/include/asm/topology.h |   14 ----
+>  arch/x86/pci/acpi.c             |   29 ++-------
+>  arch/x86/pci/amd_bus.c          |   10 ---
+>  arch/x86/pci/bus_numa.c         |   13 +++-
+>  arch/x86/pci/common.c           |  128 +++++----------------------------------
+>  arch/x86/pci/fixup.c            |    6 +-
+>  arch/x86/pci/irq.c              |    6 --
+>  arch/x86/pci/legacy.c           |    4 -
+>  arch/x86/pci/numaq_32.c         |    6 +-
+>  arch/x86/pci/visws.c            |    4 +
+>  drivers/acpi/numa.c             |   16 ++---
+>  include/acpi/acpi_numa.h        |    1
+>  include/linux/acpi.h            |    9 +--
+>  18 files changed, 75 insertions(+), 250 deletions(-)
+
+I added this series to my "next" branch for v3.14.  Tony, let me know
+if you see any ia64 issues.
+
+Bjorn
