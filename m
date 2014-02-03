@@ -1,67 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaBCTMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:12:02 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48466 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495AbaBCTJ0 (ORCPT
+	id S1753881AbaBCTMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:12:00 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:49300 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529AbaBCTJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:09:26 -0500
-Message-ID: <52EFE980.7070607@kernel.org>
-Date: Mon, 03 Feb 2014 19:09:52 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] iio: mxs-lradc: remove useless check
-References: <1390071918-10622-1-git-send-email-alexandre.belloni@free-electrons.com> <201401182133.15839.marex@denx.de>
-In-Reply-To: <201401182133.15839.marex@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Feb 2014 14:09:27 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 05/10] kernfs: allow nodes to be created in the deactivated state
+Date: Mon,  3 Feb 2014 14:09:12 -0500
+Message-Id: <1391454557-32376-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391454557-32376-1-git-send-email-tj@kernel.org>
+References: <1391454557-32376-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently, kernfs_nodes are made visible to userland on creation,
+which makes it difficult for kernfs users to atomically succeed or
+fail creation of multiple nodes.  In addition, if something fails
+after creating some nodes, the created nodes might already be in use
+and their active refs need to be drained for removal, which has the
+potential to introduce tricky reverse locking dependency on active_ref
+depending on how the error path is synchronized.
 
+This patch introduces per-root flag KERNFS_ROOT_CREATE_DEACTIVATED.
+If set, all nodes under the root are created in the deactivated state
+and stay invisible to userland until explicitly enabled by the new
+kernfs_activate() API.  Also, nodes which have never been activated
+are guaranteed to bypass draining on removal thus allowing error paths
+to not worry about lockding dependency on active_ref draining.
 
-On 18/01/14 20:33, Marek Vasut wrote:
-> On Saturday, January 18, 2014 at 08:05:18 PM, Alexandre Belloni wrote:
->> Checking the channel number is useless since mxs_lradc_read_raw() is called
->> from a controlled environment and the driver is responsible for filing the
->> struct iio_chan_spec.
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->> ---
->>   drivers/staging/iio/adc/mxs-lradc.c | 4 ----
->>   1 file changed, 4 deletions(-)
->
-> Changelog's missing ;-)
->
-> Acked-by: Marek Vasut <marex@denx.de>
-Applied to the togreg branch of iio.git - will be pushed out as testing for
-the autobuilders to play with it.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/kernfs/dir.c        | 71 +++++++++++++++++++++++++++++++++++++++++++++-----
+ fs/sysfs/mount.c       |  2 +-
+ include/linux/kernfs.h | 15 +++++++++--
+ 3 files changed, 78 insertions(+), 10 deletions(-)
 
-Thanks.
->
->> diff --git a/drivers/staging/iio/adc/mxs-lradc.c
->> b/drivers/staging/iio/adc/mxs-lradc.c index 7fc66a6a6e36..d304156ca2f7
->> 100644
->> --- a/drivers/staging/iio/adc/mxs-lradc.c
->> +++ b/drivers/staging/iio/adc/mxs-lradc.c
->> @@ -897,10 +897,6 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->>   {
->>   	struct mxs_lradc *lradc = iio_priv(iio_dev);
->>
->> -	/* Check for invalid channel */
->> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
->> -		return -EINVAL;
->> -
->>   	switch (m) {
->>   	case IIO_CHAN_INFO_RAW:
->>   		if (chan->type == IIO_TEMP)
->
-> Best regards,
-> Marek Vasut
->
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 89f8462..3cff0a2 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -435,7 +435,7 @@ int kernfs_add_one(struct kernfs_node *kn)
+ 		goto out_unlock;
+ 
+ 	ret = -ENOENT;
+-	if (!kernfs_active(parent))
++	if ((parent->flags & KERNFS_ACTIVATED) && !kernfs_active(parent))
+ 		goto out_unlock;
+ 
+ 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
+@@ -451,9 +451,19 @@ int kernfs_add_one(struct kernfs_node *kn)
+ 		ps_iattrs->ia_ctime = ps_iattrs->ia_mtime = CURRENT_TIME;
+ 	}
+ 
+-	/* Mark the entry added into directory tree */
+-	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
+-	ret = 0;
++	mutex_unlock(&kernfs_mutex);
++
++	/*
++	 * Activate the new node unless CREATE_DEACTIVATED is requested.
++	 * If not activated here, the kernfs user is responsible for
++	 * activating the node with kernfs_activate().  A node which hasn't
++	 * been activated is not visible to userland and its removal won't
++	 * trigger deactivation.
++	 */
++	if (!(kernfs_root(kn)->flags & KERNFS_ROOT_CREATE_DEACTIVATED))
++		kernfs_activate(kn);
++	return 0;
++
+ out_unlock:
+ 	mutex_unlock(&kernfs_mutex);
+ 	return ret;
+@@ -528,13 +538,14 @@ EXPORT_SYMBOL_GPL(kernfs_find_and_get_ns);
+ /**
+  * kernfs_create_root - create a new kernfs hierarchy
+  * @scops: optional syscall operations for the hierarchy
++ * @flags: KERNFS_ROOT_* flags
+  * @priv: opaque data associated with the new directory
+  *
+  * Returns the root of the new hierarchy on success, ERR_PTR() value on
+  * failure.
+  */
+ struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
+-				       void *priv)
++				       unsigned int flags, void *priv)
+ {
+ 	struct kernfs_root *root;
+ 	struct kernfs_node *kn;
+@@ -553,14 +564,17 @@ struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+-	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
+ 	kn->priv = priv;
+ 	kn->dir.root = root;
+ 
+ 	root->syscall_ops = scops;
++	root->flags = flags;
+ 	root->kn = kn;
+ 	init_waitqueue_head(&root->deactivate_waitq);
+ 
++	if (!(root->flags & KERNFS_ROOT_CREATE_DEACTIVATED))
++		kernfs_activate(kn);
++
+ 	return root;
+ }
+ 
+@@ -783,6 +797,40 @@ static struct kernfs_node *kernfs_next_descendant_post(struct kernfs_node *pos,
+ 	return pos->parent;
+ }
+ 
++/**
++ * kernfs_activate - activate a node which started deactivated
++ * @kn: kernfs_node whose subtree is to be activated
++ *
++ * If the root has KERNFS_ROOT_CREATE_DEACTIVATED set, a newly created node
++ * needs to be explicitly activated.  A node which hasn't been activated
++ * isn't visible to userland and deactivation is skipped during its
++ * removal.  This is useful to construct atomic init sequences where
++ * creation of multiple nodes should either succeed or fail atomically.
++ *
++ * The caller is responsible for ensuring that this function is not called
++ * after kernfs_remove*() is invoked on @kn.
++ */
++void kernfs_activate(struct kernfs_node *kn)
++{
++	struct kernfs_node *pos;
++
++	mutex_lock(&kernfs_mutex);
++
++	pos = NULL;
++	while ((pos = kernfs_next_descendant_post(pos, kn))) {
++		if (!pos || (pos->flags & KERNFS_ACTIVATED))
++			continue;
++
++		WARN_ON_ONCE(pos->parent && RB_EMPTY_NODE(&pos->rb));
++		WARN_ON_ONCE(atomic_read(&pos->active) != KN_DEACTIVATED_BIAS);
++
++		atomic_sub(KN_DEACTIVATED_BIAS, &pos->active);
++		pos->flags |= KERNFS_ACTIVATED;
++	}
++
++	mutex_unlock(&kernfs_mutex);
++}
++
+ static void __kernfs_remove(struct kernfs_node *kn)
+ {
+ 	struct kernfs_node *pos;
+@@ -817,7 +865,16 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 		 */
+ 		kernfs_get(pos);
+ 
+-		kernfs_drain(pos);
++		/*
++		 * Drain iff @kn was activated.  This avoids draining and
++		 * its lockdep annotations for nodes which have never been
++		 * activated and allows embedding kernfs_remove() in create
++		 * error paths without worrying about draining.
++		 */
++		if (kn->flags & KERNFS_ACTIVATED)
++			kernfs_drain(pos);
++		else
++			WARN_ON_ONCE(atomic_read(&kn->active) != KN_DEACTIVATED_BIAS);
+ 
+ 		/*
+ 		 * kernfs_unlink_sibling() succeeds once per node.  Use it
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 6211230..5c7fdd9 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -62,7 +62,7 @@ int __init sysfs_init(void)
+ {
+ 	int err;
+ 
+-	sysfs_root = kernfs_create_root(NULL, NULL);
++	sysfs_root = kernfs_create_root(NULL, 0, NULL);
+ 	if (IS_ERR(sysfs_root))
+ 		return PTR_ERR(sysfs_root);
+ 
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 5d5b7e9..4520c86 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -38,6 +38,7 @@ enum kernfs_node_type {
+ #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
+ 
+ enum kernfs_node_flag {
++	KERNFS_ACTIVATED	= 0x0010,
+ 	KERNFS_NS		= 0x0020,
+ 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
+ 	KERNFS_HAS_MMAP		= 0x0080,
+@@ -47,6 +48,11 @@ enum kernfs_node_flag {
+ 	KERNFS_SUICIDED		= 0x0800,
+ };
+ 
++/* @flags for kernfs_create_root() */
++enum kernfs_root_flag {
++	KERNFS_ROOT_CREATE_DEACTIVATED = 0x0001,
++};
++
+ /* type-specific structures for kernfs_node union members */
+ struct kernfs_elem_dir {
+ 	unsigned long		subdirs;
+@@ -128,6 +134,7 @@ struct kernfs_syscall_ops {
+ struct kernfs_root {
+ 	/* published fields */
+ 	struct kernfs_node	*kn;
++	unsigned int		flags;	/* KERNFS_ROOT_* flags */
+ 
+ 	/* private fields, do not use outside kernfs proper */
+ 	struct ida		ino_ida;
+@@ -223,7 +230,7 @@ void kernfs_get(struct kernfs_node *kn);
+ void kernfs_put(struct kernfs_node *kn);
+ 
+ struct kernfs_root *kernfs_create_root(struct kernfs_syscall_ops *scops,
+-				       void *priv);
++				       unsigned int flags, void *priv);
+ void kernfs_destroy_root(struct kernfs_root *root);
+ 
+ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+@@ -239,6 +246,7 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
+ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       const char *name,
+ 				       struct kernfs_node *target);
++void kernfs_activate(struct kernfs_node *kn);
+ void kernfs_remove(struct kernfs_node *kn);
+ void kernfs_break_active_protection(struct kernfs_node *kn);
+ void kernfs_unbreak_active_protection(struct kernfs_node *kn);
+@@ -276,7 +284,8 @@ static inline void kernfs_get(struct kernfs_node *kn) { }
+ static inline void kernfs_put(struct kernfs_node *kn) { }
+ 
+ static inline struct kernfs_root *
+-kernfs_create_root(struct kernfs_syscall_ops *scops, void *priv)
++kernfs_create_root(struct kernfs_syscall_ops *scops, unsigned int flags,
++		   void *priv)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline void kernfs_destroy_root(struct kernfs_root *root) { }
+@@ -298,6 +307,8 @@ kernfs_create_link(struct kernfs_node *parent, const char *name,
+ 		   struct kernfs_node *target)
+ { return ERR_PTR(-ENOSYS); }
+ 
++static inline void kernfs_activate(struct kernfs_node *kn) { }
++
+ static inline void kernfs_remove(struct kernfs_node *kn) { }
+ 
+ static inline bool kernfs_remove_self(struct kernfs_node *kn)
+-- 
+1.8.5.3
+
