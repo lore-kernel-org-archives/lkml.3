@@ -1,133 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaBCQHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 11:07:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949AbaBCQHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 11:07:44 -0500
-Date: Mon, 3 Feb 2014 11:06:59 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Will.Deacon@arm.com, arndb@arndb.de,
-        linux-kernel@vger.kernel.org,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        viro@zeniv.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
-Message-ID: <20140203160659.GA19292@madcap2.tricolour.ca>
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
- <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
- <20140123141808.GD27520@arm.com>
- <52E5EAC1.2070306@linaro.org>
- <20140129202127.GA24068@madcap2.tricolour.ca>
- <20140129223652.GA13702@madcap2.tricolour.ca>
- <52EF304F.80202@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753174AbaBCQIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 11:08:41 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:54828 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaBCQIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 11:08:39 -0500
+Date: Mon, 3 Feb 2014 17:08:38 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: Sohny Thomas <sthomas@linux.vnet.ibm.com>, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org,
+        davem@davemloft.net, kumuda <kumuda@linux.vnet.ibm.com>
+Subject: Re: [PATCH] ipv6: default route for link local address is not added while assigning a address
+Message-ID: <20140203160838.GA17999@order.stressinduktion.org>
+Mail-Followup-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+	Sohny Thomas <sthomas@linux.vnet.ibm.com>,
+	netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
+	yoshfuji@linux-ipv6.org, davem@davemloft.net,
+	kumuda <kumuda@linux.vnet.ibm.com>
+References: <52E8A2AA.3090507@linux.vnet.ibm.com> <52E8DA37.7010208@6wind.com> <20140130232909.GH25336@order.stressinduktion.org> <52EF42FF.60907@linux.vnet.ibm.com> <52EFB454.1040908@6wind.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52EF304F.80202@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52EFB454.1040908@6wind.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/03, AKASHI Takahiro wrote:
-> Richard,
+Hello!
 
-Takahiro,
+On Mon, Feb 03, 2014 at 04:23:00PM +0100, Nicolas Dichtel wrote:
+> Le 03/02/2014 08:19, Sohny Thomas a écrit :
+> >
+> >>Actually I am not so sure, there is no defined semantic of flush. I would
+> >>be ok with all three solutions: leave it as is, always add link-local
+> >>address (it does not matter if we don't have a link-local address on
+> It matters. This address is required.
+> RFC 4291
+> Section 2.1:
+>    All interfaces are required to have at least one Link-Local unicast
+>    address (see Section 2.8 for additional required addresses).
+> Section 2.8:
+>       o Its required Link-Local address for each interface.
 
-> On 01/30/2014 07:36 AM, Richard Guy Briggs wrote:
-> >On 14/01/29, Richard Guy Briggs wrote:
-> >>On 14/01/27, AKASHI Takahiro wrote:
-> >>>[To audit maintainers]
-> >>>
-> >>>On 01/23/2014 11:18 PM, Catalin Marinas wrote:
-> >>>>On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
-> >>>>>--- a/include/uapi/linux/audit.h
-> >>>>>+++ b/include/uapi/linux/audit.h
-> >>>>>@@ -327,6 +327,8 @@ enum {
-> >>>>>  /* distinguish syscall tables */
-> >>>>>  #define __AUDIT_ARCH_64BIT 0x80000000
-> >>>>>  #define __AUDIT_ARCH_LE	   0x40000000
-> >>>>>+#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> >>>>>+#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
-> >>>>>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> >>>>>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
-> >>>>>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
-> >>>>>diff --git a/init/Kconfig b/init/Kconfig
-> >>>>>index 79383d3..3aae602 100644
-> >>>>>--- a/init/Kconfig
-> >>>>>+++ b/init/Kconfig
-> >>>>>@@ -284,7 +284,7 @@ config AUDIT
-> >>>>>
-> >>>>>  config AUDITSYSCALL
-> >>>>>  	bool "Enable system-call auditing support"
-> >>>>>-	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-> >>>>>+	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
-> >>>>
-> >>>>The usual comment for such changes: could you please clean this up and
-> >>>>just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
-> >>>
-> >>>Do you agree to this change?
-> >>>
-> >>>If so, I can create a patch, but have some concerns:
-> >>>1) I can't verify it on other architectures than (arm &) arm64.
-> >>>2) Some architectures (microblaze, mips, openrisc) are not listed here, but
-> >>>    their ptrace.c have a call to audit_syscall_entry/exit().
-> >>>    (audit_syscall_entry/exit are null if !AUDITSYSCALL, though)
-> >>
-> >>I can try: ppc s390 x86_64 ppc64 i686 s390x
-> >
-> >These arches above all pass compile and basic tests with the following patches applied:
-> >
-> >	audit: correct a type mismatch in audit_syscall_exit() pending (already upstream)
-> >
-> >	audit: Modify a set of system calls in audit class definitions (already upstream)
-> >
-> >	[PATCH v3] audit: Add generic compat syscall support
-> >
-> >	[PATCH v2] audit: Enable arm64 support
-> >	[PATCH v2] arm64: Add regs_return_value() in syscall.h
-> >	[PATCH v2] arm64: Add audit support
-> >	[PATCH v2] arm64: audit: Add 32-bit (compat) syscall support
-> >	[PATCH v2] arm64: audit: Add makefile rule to create unistd_32.h for compat syscalls
-> >	[PATCH v2] arm64: audit: Add audit hook in ptrace/syscall_trace
-> 
-> I think that you missed Catalin's suggestion.
+Yes, sure, it is required. But you also can manually delete the LL address and
+we don't guard against that.
 
-I didn't miss his suggestions.  I think they are a good way to go, but I
-wanted to make a test at referrable point in time to validate the work
-to that point and to avoid introducing errors by mis-interpreting ideas
-that were not yet fully-formed patches.
-
-> Please use the patch I will post after this message and try it again, please?
-
-I was certainly intending to do so.
-
-> Thanks,
-> -Takahiro AKASHI
-> 
-> >>>So I'm afraid that the change might break someone's assumption.
-> >>>
-> >>>Thanks,
-> >>>-Takahiro AKASHI
-> >>
-> >>- RGB
+> >>that interface, as a global scoped one is just fine enough) or make flush 
+> >>not
+> >>remove the link-local address (but this seems a bit too special cased for 
+> >>me).
 > >
-> >- RGB
+> >1) In case if we leave it as it is, there is rfc 6724 rule 2 to be 
+> >considered (
+> >previously rfc 3484)
 > >
-> >--
-> >Richard Guy Briggs <rbriggs@redhat.com>
-> >Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> >Remote, Ottawa, Canada
-> >Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> >Rule 2: Prefer appropriate scope.
+> >    If Scope(SA) < Scope(SB): If Scope(SA) < Scope(D), then prefer SB and
+> >    otherwise prefer SA.  Similarly, if Scope(SB) < Scope(SA): If
+> >    Scope(SB) < Scope(D), then prefer SA and otherwise prefer SB.
 > >
+> >Test:
+> >
+> >    Destination: fe80::2(LS)
+> >     Candidate Source Addresses: 3ffe::1(GS) or fec0::1(SS) or LLA(LS)
+> >     Result: LLA(LS)
+> >     Scope(LLA) < Scope(fec0::1): If Scope(LLA) < Scope(fe80::2),  no, 
+> >     prefer LLA
+> >     Scope(LLA) < Scope(3ffe::1): If Scope(LLA) < Scope(fe80::2),  no, 
+> >     prefer LLA
+> >
+> >
+> >Now the above test fails since the route itself is not present, and the 
+> >test
+> >assumes that the route gets added since the LLA is not removed during the 
+> >test
+> In your scenario, the link local route has been removed manually, not by the
+> kernel. What is your network manager?
 
-- RGB
+The test scenario is outlined here:
+<https://bugzilla.kernel.org/show_bug.cgi?id=68511>
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Basically, the command in question is this one:
+
+	[root@localhost ~]# ip -6 -statistics -statistics route flush dev eth0
+
+which removes the fe80::/64 route.
+
+> >2) having a LLA always helps in NDP i think
+> A link-local Address yes, it's a MUST. But having only the link local route 
+> will
+> not help.
+
+Agreed, the LL address should be available, too. I currently don't know
+what will break if LL address is not available. I guess MLD won't work
+properly and thus even basic connectivity won't work with some switches.
+
+> >3) making flush not remove link-local address will be chnaging 
+> >functionality of
+> >ip flush command
+> You can flush by specifying the prototype:
+> ip -6 route flush proto static
+
+So we have four possiblities now:
+
+1) leave it as is
+
+	seems still acceptable to me
+
+2) add fe80::/64 route unconditionally if any address gets added
+
+	Sohny's patch already looks good in doing so at first look.
+
+3) add fe80::/64 route in case LL address gets added via inet6_rtm_newaddr
+
+	would be ok, too. I tend towards this solution somehow by now.
+
+4) make flush not remove the fe80::/64 address
+
+	Least favourable to me. I guess this also woud need iproute change
+	and seems most difficult to do.
+
+Any opionions?
+
+Greetings,
+
+  Hannes
+
