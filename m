@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaBCPpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:45:52 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:40536 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaBCPpv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:45:51 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: NFS client broken in Linus' tip
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <20140203145759.GA30263@infradead.org>
-Date: Mon, 3 Feb 2014 10:45:48 -0500
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linuxnfs <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Viro Alexander <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3003D7E5-93F8-4B32-ACDB-07ED3F6CE70D@primarydata.com>
-References: <20140130140834.GW15937@n2100.arm.linux.org.uk> <20140130141405.GA23985@infradead.org> <20140130142752.GX15937@n2100.arm.linux.org.uk> <20140130143208.GB9573@infradead.org> <20140130153812.GA15937@n2100.arm.linux.org.uk> <1391201970.6978.1.camel@leira.trondhjem.org> <20140203080325.GB806@infradead.org> <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com> <20140203145759.GA30263@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-X-Mailer: Apple Mail (2.1827)
+	id S1753021AbaBCPqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:46:08 -0500
+Received: from www.aws-it.at ([83.218.181.38]:56308 "EHLO bigboss.aws-it.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752962AbaBCPqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 10:46:04 -0500
+Date: Mon, 03 Feb 2014 16:46:01 +0100
+Message-ID: <20140203164601.Horde.d6qSBqHukBoUna_PtOIzfA6@aws-it.at>
+From: astx <astx@aws-it.at>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
+ Mobile
+References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@bigboss.aws-it.at>
+ <20140131125014.Horde.G2TRlt-60JJ0Nl_3Y8IniQ2@bigboss.aws-it.at>
+ <20140131170402.Horde.yIFUeQVjLycuS_8PGQoKmg5@aws-it.at>
+ <20140203121415.GA12777@localhost>
+In-Reply-To: <20140203121415.GA12777@localhost>
+User-Agent: Internet Messaging Program (IMP) H5 (6.0.4)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Test results / tested kernel versions:
 
-On Feb 3, 2014, at 9:57, Christoph Hellwig <hch@infradead.org> wrote:
+3.2.54
+3.8.13
+3.10.28
 
-> On Mon, Feb 03, 2014 at 09:17:30AM -0500, Trond Myklebust wrote:
->> As I said above, that causes posix_acl_xattr_get() to return the wrong answer (ENODATA instead of EOPNOTSUPP).
-> 
-> Is it really the wrong answer?  How does userspace care wether this
-> server doesn't support ACLs at all or none is set?  The resulting
-> behavior is the same.
+Above kernel versions without patch are dying with same error on  
+trying to start h323 connections using "Polycom RealPresence Mobile".
 
-It will certainly cause acl_get_file() to behave differently than previously. I’ve no idea how that will affect applications, though.
+I can confirm that with this patch all three kernel versions are  
+pretty stable now again.
 
-> If there's a good reason to care we might have to go with your patch,
-> but if we can avoid it I'd prefer to keep things simple.
+Thank you all for your fast and competent help.
 
-One alternative is to simply wrap posix_acl_xattr_get() in fs/nfs/nfs3acl.c, and have it check the value of nfs_server_capable(inode, NFS_CAP_ACLS) before returning ENODATA. That’s rather ugly too...
+Best Regards,
 
---
-Trond Myklebust
-Linux NFS client maintainer
+Toni
+
+
+Zitat von Pablo Neira Ayuso <pablo@netfilter.org>:
+
+> On Fri, Jan 31, 2014 at 05:04:02PM +0100, astx wrote:
+>> Dear Alexey,
+>>
+>> seems to help. Thank you for your quick response. Kernel 3.10.28 is
+>> now stable using h323 / Polycom.
+>
+> Thanks, if no objection, will pass this patch to David.
+
+
 
