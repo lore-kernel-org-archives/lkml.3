@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaBCNku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 08:40:50 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:36243 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaBCNkr (ORCPT
+	id S1752415AbaBCNkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 08:40:46 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45861 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356AbaBCNkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 08:40:47 -0500
+	Mon, 3 Feb 2014 08:40:43 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Jonathan Cameron <jic23@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -23,9 +23,9 @@ Cc: Linux IIO List <linux-iio@vger.kernel.org>,
         Linux PWM List <linux-pwm@vger.kernel.org>,
         Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 6/6] ARM: dts: AM33XX: Add ecap interrupt properties
-Date: Mon,  3 Feb 2014 08:40:32 -0500
-Message-Id: <1391434832-23807-7-git-send-email-mporter@linaro.org>
+Subject: [PATCH v2 3/6] iio: enable selection and build of pulse drivers
+Date: Mon,  3 Feb 2014 08:40:29 -0500
+Message-Id: <1391434832-23807-4-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1391434832-23807-1-git-send-email-mporter@linaro.org>
 References: <1391434832-23807-1-git-send-email-mporter@linaro.org>
@@ -33,45 +33,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing interrupt properties to the ecap0, ecap1, and ecap2
-nodes.
+Add the pulse driver subdirectory when configuring and building
+IIO.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
 ---
- arch/arm/boot/dts/am33xx.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/iio/Kconfig  | 1 +
+ drivers/iio/Makefile | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 6d95d3d..b4139ba 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -582,6 +582,8 @@
- 				compatible = "ti,am33xx-ecap";
- 				#pwm-cells = <3>;
- 				reg = <0x48300100 0x80>;
-+				interrupts = <31>;
-+				interrupt-names = "ecap0";
- 				ti,hwmods = "ecap0";
- 				status = "disabled";
- 			};
-@@ -610,6 +612,8 @@
- 				compatible = "ti,am33xx-ecap";
- 				#pwm-cells = <3>;
- 				reg = <0x48302100 0x80>;
-+				interrupts = <47>;
-+				interrupt-names = "ecap1";
- 				ti,hwmods = "ecap1";
- 				status = "disabled";
- 			};
-@@ -638,6 +642,8 @@
- 				compatible = "ti,am33xx-ecap";
- 				#pwm-cells = <3>;
- 				reg = <0x48304100 0x80>;
-+				interrupts = <61>;
-+				interrupt-names = "ecap2";
- 				ti,hwmods = "ecap2";
- 				status = "disabled";
- 			};
+diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
+index 5dd0e12..286acc3 100644
+--- a/drivers/iio/Kconfig
++++ b/drivers/iio/Kconfig
+@@ -74,6 +74,7 @@ if IIO_TRIGGER
+    source "drivers/iio/trigger/Kconfig"
+ endif #IIO_TRIGGER
+ source "drivers/iio/pressure/Kconfig"
++source "drivers/iio/pulse/Kconfig"
+ source "drivers/iio/temperature/Kconfig"
+ 
+ endif # IIO
+diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
+index 887d390..9a953c9 100644
+--- a/drivers/iio/Makefile
++++ b/drivers/iio/Makefile
+@@ -24,5 +24,6 @@ obj-y += light/
+ obj-y += magnetometer/
+ obj-y += orientation/
+ obj-y += pressure/
++obj-y += pulse/
+ obj-y += temperature/
+ obj-y += trigger/
 -- 
 1.8.4
 
