@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaBCLNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 06:13:39 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41188 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaBCLNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 06:13:37 -0500
-Date: Mon, 3 Feb 2014 11:13:27 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-Message-ID: <20140203111326.GV10323@ZenIV.linux.org.uk>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
- <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
- <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
- <20140130075421.GA10050@infradead.org>
- <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
- <20140203102943.GF11829@infradead.org>
+	id S1752655AbaBCLNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 06:13:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:20110 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415AbaBCLNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 06:13:45 -0500
+X-IronPort-AV: E=Sophos;i="4.95,771,1384300800"; 
+   d="scan'208";a="99161694"
+Date: Mon, 3 Feb 2014 11:13:35 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Julien Grall <julien.grall@linaro.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <jonathan.davies@citrix.com>, <wei.liu2@citrix.com>,
+        <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Subject: Re: [Xen-devel] [PATCH v6] xen/grant-table: Avoid m2p_override during
+ mapping
+In-Reply-To: <52EF7618.7030402@citrix.com>
+Message-ID: <alpine.DEB.2.02.1402031103070.4373@kaball.uk.xensource.com>
+References: <1390512224-27296-1-git-send-email-zoltan.kiss@citrix.com> <alpine.DEB.2.02.1401232333280.15917@kaball.uk.xensource.com> <52EE1E26.2040308@linaro.org> <52EE93F0.1020508@citrix.com> <52EF7618.7030402@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203102943.GF11829@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="1342847746-1122221688-1391425897=:4373"
+Content-ID: <alpine.DEB.2.02.1402031111440.4373@kaball.uk.xensource.com>
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 02:29:43AM -0800, Christoph Hellwig wrote:
-> On Thu, Jan 30, 2014 at 02:01:38PM -0800, Linus Torvalds wrote:
-> > In the end, all the original call-sites should have a dentry, and none
-> > of this is "fundamental". But you're right, it looks like an absolute
-> > nightmare to add the dentry pointer through the whole chain. Damn.
-> > 
-> > So I'm not thrilled about it, but maybe that "d_find_alias(inode)" to
-> > find the dentry is good enough in practice. It feels very much
-> > incorrect (it could find a dentry with a path that you cannot actually
-> > access on the server, and result in user-visible errors), but I
-> > definitely see your argument. It may just not be worth the pain for
-> > this odd ceph case.
-> 
-> It's not just ceph.  9p fundamentally needs it and I really want to
-> convert 9p to the new code so that we can get rid of the lower level
-> interfaces entirely and eventually move ACL dispatching entirely
-> into the VFS.  The same d_find_alias hack should work for 9p as well,
-> although spreading this even more gets uglier and uglier.  Similarly
-> for CIFS which pretends to understand the Posix ACL xattrs, but doesn't
-> use any of the infrastructure as it seems to rely on server side
-> enforcement.
+--1342847746-1122221688-1391425897=:4373
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.DEB.2.02.1402031111441.4373@kaball.uk.xensource.com>
 
-9P is going to be fun to deal with; that's why I've ended up abandoning
-vfs.git#experimental-xattr last year.  We probably want to move FIDs
-from dentries to inodes there, and rely in ->getxattr() et.al. upon
-having already done ->d_revalidate() on some dentry for that inode.
+On Mon, 3 Feb 2014, David Vrabel wrote:
+> On 02/02/14 18:52, Zoltan Kiss wrote:
+> > On 02/02/14 11:29, Julien Grall wrote:
+> >> Hello,
+> >>
+> >> This patch is breaking Linux compilation on ARM:
+> >>
+> >> drivers/xen/grant-table.c: In function =E2=80=98__gnttab_map_refs=E2=
+=80=99:
+> >> drivers/xen/grant-table.c:989:3: error: implicit declaration of
+> >> function =E2=80=98FOREIGN_FRAME=E2=80=99 [-Werror=3Dimplicit-function-=
+declaration]
+> >>     if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn)))) {
+> >>     ^
+> >> drivers/xen/grant-table.c: In function =E2=80=98__gnttab_unmap_refs=E2=
+=80=99:
+> >> drivers/xen/grant-table.c:1054:3: error: implicit declaration of
+> >> function =E2=80=98get_phys_to_machine=E2=80=99 [-Werror=3Dimplicit-fun=
+ction-declaration]
+> >>     mfn =3D get_phys_to_machine(pfn);
+> >>     ^
+> >> drivers/xen/grant-table.c:1055:43: error: =E2=80=98FOREIGN_FRAME_BIT=
+=E2=80=99
+> >> undeclared (first use in this function)
+> >>     if (mfn =3D=3D INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT)) {
+> >>                                             ^
+> >> drivers/xen/grant-table.c:1055:43: note: each undeclared identifier is
+> >> reported only once for each function it appears in
+> >> drivers/xen/grant-table.c:1068:9: error: too many arguments to
+> >> function =E2=80=98m2p_remove_override=E2=80=99
+> >>           mfn);
+> >>           ^
+> >> In file included from include/xen/page.h:4:0,
+> >>                   from drivers/xen/grant-table.c:48:
+> >> /local/home/julien/works/midway/linux/arch/arm/include/asm/xen/page.h:=
+106:19:
+> >> note: declared here
+> >>   static inline int m2p_remove_override(struct page *page, bool
+> >> clear_pte)
+> >>                     ^
+> >> cc1: some warnings being treated as errors
+> >=20
+> > Hi,
+> >=20
+> > That's bad indeed. I think the best solution is to put those parts
+> > behind an #ifdef x86. The ones moved from x86/p2m.c to grant-table.c.
+> > David, Stefano, what do you think?
+>=20
+> I don't think we want (more) #ifdef CONFIG_X86 in grant-table.c and the
+> arch-specific bits will have to factored out into their own functions
+> with suitable stubs provided for ARM.
 
-Another pile of fun is fsnotify_xattr() call in __vfs_setxattr_noperm()
-and the whole misbegotten IMA/EVM mess ;-/  
+We certainly don't want more ifdefs like that.
 
-See #experimental-xattr - a lot of stuff in that direction is sitting there;
-might turn out to be useful.
+
+> But, this patch went in late and it's clearly not ready. So I think it
+> should be reverted and we should aim to get it sorted out for 3.15.
+>=20
+> Konrad/Stefano (if you agree) please revert
+> 08ece5bb2312b4510b161a6ef6682f37f4eac8a1 and send a pull request.
+
+Unfortunately I have to agree: fixing the prototype of
+m2p_remove_override and replacing get_phys_to_machine with pfn_to_mfn is
+easy.
+However FOREIGN_FRAME is an x86-ism and I don't feel confortable with
+adding yet another #define under arch/arm/xen just to deal with x86
+stuff that spill on common code.
+
+Sorry for not spotting this earlier.
+
+
+> Konrad, I also think you should look at adding an ARM build to your test
+> system (I thought you had this already).
+
+Let's talk about how to set it up offline.
+--1342847746-1122221688-1391425897=:4373--
