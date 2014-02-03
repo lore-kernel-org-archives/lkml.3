@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaBCX3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:29:09 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54097 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753844AbaBCX2c (ORCPT
+	id S1754029AbaBCX3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:29:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47293 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaBCX31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:28:32 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: [PATCH 1/24][Resend] ACPI / hotplug / PCI: Remove entries from bus->devices in reverse order
-Date: Tue, 04 Feb 2014 00:14:48 +0100
-Message-ID: <1839968.W3QXGMsfBF@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <7532948.aJNUotNMpR@vostro.rjw.lan>
-References: <2217793.001RY6hKlo@vostro.rjw.lan> <20140203104408.GQ18029@intel.com> <7532948.aJNUotNMpR@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 3 Feb 2014 18:29:27 -0500
+Date: Mon, 3 Feb 2014 15:29:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Weijie Yang <weijie.yang@samsung.com>, hughd@google.com,
+        "'Minchan Kim'" <minchan@kernel.org>, shli@kernel.org,
+        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        "'Seth Jennings'" <sjennings@variantweb.net>,
+        "'Heesub Shin'" <heesub.shin@samsung.com>, mquzik@redhat.com,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 2/8] mm/swap: fix race on swap_info reuse between
+ swapoff and swapon
+Message-Id: <20140203152925.89360139306d143f5360fa07@linux-foundation.org>
+In-Reply-To: <20140203152340.b28bb35698ee75615eb23041@linux-foundation.org>
+References: <000d01cf1b47$f12e11f0$d38a35d0$%yang@samsung.com>
+	<20140203152340.b28bb35698ee75615eb23041@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, 3 Feb 2014 15:23:40 -0800 Andrew Morton <akpm@linux-foundation.org> wrote:
 
-According to the changelog of commit 29ed1f29b68a (PCI: pciehp: Fix null
-pointer deref when hot-removing SR-IOV device) it is unsafe to walk the
-bus->devices list of a PCI bus and remove devices from it in direct order,
-because that may lead to NULL pointer dereferences related to virtual
-functions.
+> On Mon, 27 Jan 2014 18:03:04 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+> 
+> > swapoff clear swap_info's SWP_USED flag prematurely and free its resources
+> > after that. A concurrent swapon will reuse this swap_info while its previous
+> > resources are not cleared completely.
+> > 
+> > These late freed resources are:
+> >  - p->percpu_cluster
+> >  - swap_cgroup_ctrl[type]
+> >  - block_device setting
+> >  - inode->i_flags &= ~S_SWAPFILE
+> > 
+> > This patch clear SWP_USED flag after all its resources freed, so that swapon
+> > can reuse this swap_info by alloc_swap_info() safely.
+> > 
+> > This patch is just for a rare scenario, aim to correct of code.
+> 
+> I believe that
+> http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
+> makes this patch redundant?
+> 
 
-For this reason, change all of the bus->devices list walks in
-acpiphp_glue.c during which devices may be removed to be carried out in
-reverse order.
+oop, hang on.  This patch *is* a stealth-updated version of
+http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/pci/hotplug/acpiphp_glue.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Undocumented removals of si->swap_map have been added.  What's going on
+there?
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -742,7 +742,7 @@ static void trim_stale_devices(struct pc
- 
- 		/* The device is a bridge. so check the bus below it. */
- 		pm_runtime_get_sync(&dev->dev);
--		list_for_each_entry_safe(child, tmp, &bus->devices, bus_list)
-+		list_for_each_entry_safe_reverse(child, tmp, &bus->devices, bus_list)
- 			trim_stale_devices(child);
- 
- 		pm_runtime_put(&dev->dev);
-@@ -773,8 +773,8 @@ static void acpiphp_check_bridge(struct
- 			; /* do nothing */
- 		} else if (get_slot_status(slot) == ACPI_STA_ALL) {
- 			/* remove stale devices if any */
--			list_for_each_entry_safe(dev, tmp, &bus->devices,
--						 bus_list)
-+			list_for_each_entry_safe_reverse(dev, tmp,
-+							 &bus->devices, bus_list)
- 				if (PCI_SLOT(dev->devfn) == slot->device)
- 					trim_stale_devices(dev);
- 
-@@ -805,7 +805,7 @@ static void acpiphp_sanitize_bus(struct
- 	int i;
- 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM;
- 
--	list_for_each_entry_safe(dev, tmp, &bus->devices, bus_list) {
-+	list_for_each_entry_safe_reverse(dev, tmp, &bus->devices, bus_list) {
- 		for (i=0; i<PCI_BRIDGE_RESOURCES; i++) {
- 			struct resource *res = &dev->resource[i];
- 			if ((res->flags & type_mask) && !res->start &&
+I think I'll stick with the original patch for now.  If you see
+additional optimisations or changes, let's address that separately?
+
