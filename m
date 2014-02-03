@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaBCSQy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 13:16:54 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:43959 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaBCSQw (ORCPT
+	id S1753548AbaBCSRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 13:17:17 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:9889 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753289AbaBCSRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 13:16:52 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 14/16] staging: ion: Fix ION_IOC_FREE compat ioctl
-Date: Mon,  3 Feb 2014 10:16:26 -0800
-Message-Id: <1391451388-23906-15-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
-References: <1391451388-23906-1-git-send-email-john.stultz@linaro.org>
+	Mon, 3 Feb 2014 13:17:15 -0500
+Message-ID: <52EFDD80.4050800@fb.com>
+Date: Mon, 3 Feb 2014 13:18:40 -0500
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: <dsterba@suse.cz>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs
+References: <52EAC9B6.7090603@fb.com> <20140203175405.GL1364@twin.jikos.cz>
+In-Reply-To: <20140203175405.GL1364@twin.jikos.cz>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Spam-Reason: safe
+X-FB-Internal: Safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-03_02:2014-01-31,2014-02-03,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laura Abbott <lauraa@codeaurora.org>
+On Mon 03 Feb 2014 12:54:05 PM EST, David Sterba wrote:
+> On Thu, Jan 30, 2014 at 04:52:54PM -0500, Chris Mason wrote:
+>> Chris Mason (3) commits (+64/-32):
+>>      Btrfs: setup inode location during btrfs_init_inode_locked (+9/-9)
+>>      Btrfs: don't use ram_bytes for uncompressed inline items (+52/-22)
+>
+> The patches are CC: stable, but haven't gone through the mailinglist.
+> Are they still going to be picked by stable?
 
-The compat ioctl for ION_IOC_FREE currently passes allocation data
-instead of the free data. Correct this.
+We do need both in -stable, I'll help with backports.
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-[jstultz: Folded in a small build fix]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/ion/compat_ion.c | 26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/android/ion/compat_ion.c b/drivers/staging/android/ion/compat_ion.c
-index af6cd37..ee3a738 100644
---- a/drivers/staging/android/ion/compat_ion.c
-+++ b/drivers/staging/android/ion/compat_ion.c
-@@ -35,9 +35,14 @@ struct compat_ion_custom_data {
- 	compat_ulong_t arg;
- };
- 
-+struct compat_ion_handle_data {
-+	compat_int_t handle;
-+};
-+
- #define COMPAT_ION_IOC_ALLOC	_IOWR(ION_IOC_MAGIC, 0, \
- 				      struct compat_ion_allocation_data)
--#define COMPAT_ION_IOC_FREE	_IOWR(ION_IOC_MAGIC, 1, struct ion_handle_data)
-+#define COMPAT_ION_IOC_FREE	_IOWR(ION_IOC_MAGIC, 1, \
-+				      struct compat_ion_handle_data)
- #define COMPAT_ION_IOC_CUSTOM	_IOWR(ION_IOC_MAGIC, 6, \
- 				      struct compat_ion_custom_data)
- 
-@@ -64,6 +69,19 @@ static int compat_get_ion_allocation_data(
- 	return err;
- }
- 
-+static int compat_get_ion_handle_data(
-+			struct compat_ion_handle_data __user *data32,
-+			struct ion_handle_data __user *data)
-+{
-+	compat_int_t i;
-+	int err;
-+
-+	err = get_user(i, &data32->handle);
-+	err |= put_user(i, &data->handle);
-+
-+	return err;
-+}
-+
- static int compat_put_ion_allocation_data(
- 			struct compat_ion_allocation_data __user *data32,
- 			struct ion_allocation_data __user *data)
-@@ -132,8 +150,8 @@ long compat_ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	}
- 	case COMPAT_ION_IOC_FREE:
- 	{
--		struct compat_ion_allocation_data __user *data32;
--		struct ion_allocation_data __user *data;
-+		struct compat_ion_handle_data __user *data32;
-+		struct ion_handle_data __user *data;
- 		int err;
- 
- 		data32 = compat_ptr(arg);
-@@ -141,7 +159,7 @@ long compat_ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		if (data == NULL)
- 			return -EFAULT;
- 
--		err = compat_get_ion_allocation_data(data32, data);
-+		err = compat_get_ion_handle_data(data32, data);
- 		if (err)
- 			return err;
- 
--- 
-1.8.3.2
+-chris
 
