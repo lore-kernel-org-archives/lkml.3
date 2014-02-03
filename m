@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaBCOtH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:49:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072AbaBCOtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:49:04 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Oleg Nesterov <oleg@redhat.com>, Eric Paris <eparis@redhat.com>,
-        linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Why is syscall auditing on with no rules?
-Date: Mon, 03 Feb 2014 09:49:02 -0500
-Message-ID: <1583474.SDnjg18Qf7@x2>
-Organization: Red Hat
-User-Agent: KMail/4.11.5 (Linux/3.12.9-301.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CALCETrX+crm9ubMqimSdzfALEniefKcAWZz3AhZ7zioy7dVKzQ@mail.gmail.com>
-References: <CALCETrUEZiqQ7be5E7cBEmFEKqvwJ_eCxpE-hiGZ94Hkd4Q54Q@mail.gmail.com> <CALCETrX+crm9ubMqimSdzfALEniefKcAWZz3AhZ7zioy7dVKzQ@mail.gmail.com>
+	id S1752394AbaBCOwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:52:25 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49352 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaBCOwX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 09:52:23 -0500
+Date: Mon, 3 Feb 2014 09:52:05 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
+        "linux-pci @ vger . kernel . org" <linux-pci@vger.kernel.org>,
+        linux-ia64@vger.kernel.org
+Subject: Re: [PATCH v2] Setting the IORESOURCE_ROM_SHADOW flag on a VGA card
+ other than the primary prevents it from reading it's own rom. It will get
+ the content of the shadowrom at C000 instead, which is of the primary VGA
+ card and the driver of the secondary card will bail out.
+Message-ID: <20140203145205.GB2992@phenom.dumpdata.com>
+References: <20140130000831.GJ16825@google.com>
+ <1391160503-11122-1-git-send-email-linux@eikelenboom.it>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391160503-11122-1-git-send-email-linux@eikelenboom.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 01, 2014 06:51:56 PM Andy Lutomirski wrote:
-> On Sat, Feb 1, 2014 at 6:32 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On a stock Fedora installation:
-> > 
-> > $ sudo auditctl -l
-> > No rules
-
-What rules would you want? The audit package ships with several which affects 
-performance to varying degrees. The default one affects it the least. If you 
-don't want auditing, don't install the audit package.
-
-
-> > Nonetheless TIF_SYSCALL_AUDIT is set and the __audit_syscall_entry and
-> > __audit_syscall_exit account for >20% of syscall overhead according to
-> > perf.
-> > 
-> > This sucks.  Unless I'm missing something, syscall auditing is *off*.
-
-The audit daemon enables auditing unless you add -s=nochange to the daemon's 
-commandline parameters. The rules are loaded by a separate process so the 
-deamon just enables auditing so that any selinux AVCs have more information 
-and in case auditctl loads rules. If you don't want auditing, simply don't 
-install it and things will be OK.
-
-
-> > How hard would it be to arrange for TIF_SYSCALL_AUDIT to be cleared
-> > when there are no syscall rules?
-
-This only gets set if auditing is enabled. What if in the future someone loads 
-rules? For example, what if you reload audit rules? The first thing that 
-happens is it clears any previous rules. If we did what you suggested, then 
-any process that runs between the time the rules were deleted and a rule gets 
-loaded will never be auditable. We can't have that. Sometimes admins stop the 
-audit daemon to do some looking around. Usually audit rules are cleared when 
-its stopped. Once again you have a window where processes will become 
-inauditable. 
-
-We take the point of view that if you want auditing and all that it brings 
-with it, this will be setup by the audit daemon. If you want no auditing and 
-no performance hit, simply don't install it or disable it from starting and 
-all will be fine.
-
-
-> > (This is extra bad in kernels before 3.13, where the clear call for
-> > TIF_SYSCALL_AUDIT was completely missing.)
+On Fri, Jan 31, 2014 at 10:28:22AM +0100, Sander Eikelenboom wrote:
+> Hi Bjorn / Tony,
 > 
-> The current code seems to have really odd effects.  For example,
-> processes that are created before the very first auditctl -e 1 (or
-> auditd) invocation will never be subject to syscall auditing.
-
-This is correct. Its also why we have a audit=1 boot command. Anyone needing 
-audit must have that boot configuration or they will have inauditable 
-processes. This is documented in the auditd man page.
-
-
-> But auditctl -e 1; auditctl -e 0 will cause all subsequently started
-> processes to have audit contexts allocated and therefore to be subject
-> to syscall auditing.
+> I fixed up ia64 as well and brought it inline again with the x86 code,
+> but i don't have a ia64 machine, so that part is untested.
+> Perhaps Tony is able to review/test it ?
 > 
-> I doubt that this behavior is considered desirable.
+> Sander
+> 
+> 
+> 
+> Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the primary
+> prevents it from reading it's own rom. It will get the content of the shadowrom
+> at C000 instead, which is of the primary VGA card and the driver of the
+> secondary card will bail out.
+> 
+> Fix this by checking if the arch code or vga-arbitration has already
+> determined the vga_default_device, if so only apply the fix to this
+> primary video device and let the comment reflect this.
+> 
+> v2:
+>     - Fix pci_fixup_video both in x86 and ia64
+> 
+> 
+> Sander Eikelenboom (1):
+>   Setting the IORESOURCE_ROM_SHADOW flag on a VGA card other than the
+>     primary     prevents it from reading it's own rom. It will get the
+>     content of the shadowrom     at C000 instead, which is of the
+>     primary VGA card and the driver of the     secondary card will bail
+>     out.
 
-What you are describing is the compromise between no performance hit and 
-auditing. If you want it to work right, you have to set it up right. The 
-audit=1 commandline prompt is in security docs like the NSA SNAC guide and 
-encoded into security scanners that process STIG or USGCB content. I also 
-believe its mentioned in Common criteria docs that any distribution that has 
-been certified publishes.
+Your editor mutilated your subject line. It ought to have been just
+one line.
 
-HTH...
+Anyhow, you can also add 'Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com'
+on the patch for the x86 part.
 
--Steve
+The ia64 "looks" OK to me, but my ia64 box won't boot v3.11 or later
+so I can't give it a 'Tested-by' yet.
+
+> 
+>  arch/ia64/pci/fixup.c |   24 +++++++++++++-----------
+>  arch/x86/pci/fixup.c  |   18 ++++++++++--------
+>  2 files changed, 23 insertions(+), 19 deletions(-)
+> 
+> -- 
+> 1.7.10.4
+> 
