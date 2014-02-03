@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaBCXEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:04:53 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:57266 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaBCXEw (ORCPT
+	id S1753451AbaBCXFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:05:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46034 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaBCXF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:04:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <87mwi8x27b.fsf@devron.myhome.or.jp>
-References: <1387953065-2726-1-git-send-email-linkinjeon@gmail.com>
-	<87mwi8x27b.fsf@devron.myhome.or.jp>
-Date: Tue, 4 Feb 2014 08:04:50 +0900
-Message-ID: <CAKYAXd_EYrfF0iQVw5FJRHkGCeMTUoQdx+BogV+-g9vqXeGZdw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/6] fat: add fat_fallocate operation
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Feb 2014 18:05:28 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        dmaengine@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [Patch v4 2/2] dmaengine: qcom_bam_dma: Add device tree binding
+Date: Mon,  3 Feb 2014 17:04:47 -0600
+Message-Id: <1391468687-4347-3-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391468687-4347-1-git-send-email-agross@codeaurora.org>
+References: <1391468687-4347-1-git-send-email-agross@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-03, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->
-> Sorry for long delay.
->
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> +	if (mode & FALLOC_FL_KEEP_SIZE) {
->> +		/* First compute the number of clusters to be allocated */
->> +		mm_bytes = offset + len - round_up(MSDOS_I(inode)->mmu_private,
->> +			sbi->cluster_size);
->
-Hi OGAWA.
-> This should use ->i_disksize?
-Right, I will fix it.
->
-> [...]
->
->> +		/* Release unwritten fallocated blocks on inode eviction. */
->> +		if (MSDOS_I(inode)->mmu_private < MSDOS_I(inode)->i_disksize) {
->> +			int err;
->> +			fat_truncate_blocks(inode, MSDOS_I(inode)->mmu_private);
->> +			/* Fallocate results in updating the i_start/iogstart
->> +			 * for the zero byte file. So, make it return to
->> +			 * original state during evict and commit it
->> +			 * synchrnously to avoid any corruption on the next
->> +			 * access to the cluster chain for the file.
->> +			 */
->> +			err = fat_sync_inode(inode);
->
-> Ah, good catch. We have to update i_size. I was forgetting about this.
-> Well, sync inode unconditionally would not be good. Maybe, we better to
-> use __fat_write_inode() with inode_needs_sync() or such.
-Okay, I will change it.
+Add device tree binding support for the QCOM BAM DMA driver.
 
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Signed-off-by: Andy Gross <agross@codeaurora.org>
+---
+ .../devicetree/bindings/dma/qcom_bam_dma.txt       |   48 ++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+
+diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+new file mode 100644
+index 0000000..86344f1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+@@ -0,0 +1,48 @@
++QCOM BAM DMA controller
++
++Required properties:
++- compatible:	Must be "qcom,bam-v1.4.0" for MSM8974 V1
++		Must be "qcom,bam-v1.4.1" for MSM8974 V2
++- reg: Address range for DMA registers
++- interrupts: single interrupt for this controller
++- #dma-cells: must be <1>
++- clocks: required clock
++- clock-names: name of clock
++- qcom,ee : indicates the active Execution Environment identifier (0-7)
++
++Example:
++
++	uart-bam: dma@f9984000 = {
++		compatible = "qcom,bam-v1.4.1";
++		reg = <0xf9984000 0x15000>;
++		interrupts = <0 94 0>;
++		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
++		clock-names = "bam_clk";
++		#dma-cells = <1>;
++		qcom,ee = <0>;
++	};
++
++Client:
++Required properties:
++- dmas: List of dma channel requests
++- dma-names: Names of aforementioned requested channels
++
++Clients must use the format described in the dma.txt file, using a two cell
++specifier for each channel.
++
++The three cells in order are:
++  1. A phandle pointing to the DMA controller
++  2. The channel number
++
++Example:
++	serial@f991e000 {
++		compatible = "qcom,msm-uart";
++		reg = <0xf991e000 0x1000>
++			<0xf9944000 0x19000>;
++		interrupts = <0 108 0>;
++		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
++		clock-names = "core", "iface";
++
++		dmas = <&uart-bam 0>, <&uart-bam 1>;
++		dma-names = "rx", "tx";
++	};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
