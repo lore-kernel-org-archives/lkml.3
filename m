@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaBCNlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 08:41:19 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:59007 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375AbaBCNkq (ORCPT
+	id S1752308AbaBCNkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 08:40:43 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:46911 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaBCNkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 08:40:46 -0500
+	Mon, 3 Feb 2014 08:40:39 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Jonathan Cameron <jic23@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -23,38 +23,55 @@ Cc: Linux IIO List <linux-iio@vger.kernel.org>,
         Linux PWM List <linux-pwm@vger.kernel.org>,
         Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 5/6] pwm: enable TI PWMSS if the IIO tiecap driver is selected
-Date: Mon,  3 Feb 2014 08:40:31 -0500
-Message-Id: <1391434832-23807-6-git-send-email-mporter@linaro.org>
+Subject: [PATCH v2 0/6] IIO pulse capture support for TI ECAP
+Date: Mon,  3 Feb 2014 08:40:26 -0500
+Message-Id: <1391434832-23807-1-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1391434832-23807-1-git-send-email-mporter@linaro.org>
-References: <1391434832-23807-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IIO TI ECAP driver depends on the TI PWMSS management
-driver in this subsystem. Enable PWMSS when the IIO TI ECAP
-driver is selected.
+Changes since v1:
+	- Rebased to 3.14-rc1
+	- Renamed in_pulse_polarity to pulse_polarity
+	- Added ABI entries for pulse devices and TI ECAP
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- drivers/pwm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This series adds support for PWM capture devices within IIO and
+adds a TI ECAP IIO driver.
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 22f2f28..bd3cc65 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -219,7 +219,7 @@ config  PWM_TIEHRPWM
- 
- config  PWM_TIPWMSS
- 	bool
--	default y if SOC_AM33XX && (PWM_TIECAP || PWM_TIEHRPWM)
-+	default y if SOC_AM33XX && (IIO_TIECAP || PWM_TIECAP || PWM_TIEHRPWM)
- 	help
- 	  PWM Subsystem driver support for AM33xx SOC.
- 
+PWM capture devices are supported using a new IIO "pulse" channel type.
+
+The IIO ECAP driver implements interrupt driven triggered buffer capture
+only as raw sample reads are not applicable to this hardware.
+Initially, the driver supports a single pulse width measurement with
+configurable polarity. The ECAP hardware can support measurement of a
+complete period and duty cycle but this is not yet implemented.
+
+Matt Porter (6):
+  iio: add support for pulse width capture devices
+  iio: pulse: add TI ECAP driver
+  iio: enable selection and build of pulse drivers
+  iio: Add ABI docs for pulse capture devices
+  pwm: enable TI PWMSS if the IIO tiecap driver is selected
+  ARM: dts: AM33XX: Add ecap interrupt properties
+
+ Documentation/ABI/testing/sysfs-bus-iio            |  18 +
+ .../ABI/testing/sysfs-bus-iio-pulse-tiecap         |   9 +
+ arch/arm/boot/dts/am33xx.dtsi                      |   6 +
+ drivers/iio/Kconfig                                |   1 +
+ drivers/iio/Makefile                               |   1 +
+ drivers/iio/industrialio-core.c                    |   1 +
+ drivers/iio/pulse/Kconfig                          |  20 +
+ drivers/iio/pulse/Makefile                         |   6 +
+ drivers/iio/pulse/tiecap.c                         | 493 +++++++++++++++++++++
+ drivers/pwm/Kconfig                                |   2 +-
+ include/linux/iio/types.h                          |   1 +
+ 11 files changed, 557 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-pulse-tiecap
+ create mode 100644 drivers/iio/pulse/Kconfig
+ create mode 100644 drivers/iio/pulse/Makefile
+ create mode 100644 drivers/iio/pulse/tiecap.c
+
 -- 
 1.8.4
 
