@@ -1,237 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578AbaBCUgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 15:36:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61939 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112AbaBCUgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 15:36:05 -0500
-Message-ID: <1391459750.13157.16.camel@localhost>
-Subject: Re: [PATCH v2.1] audit: Only use the syscall slowpath when syscall
- audit rules exist
-From: Eric Paris <eparis@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>
-Date: Mon, 03 Feb 2014 15:35:50 -0500
-In-Reply-To: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
-References: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753601AbaBCUij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 15:38:39 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:59234 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaBCUii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 15:38:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1391445367.3509.30.camel@linaro1.home>
+References: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
+ <1390507559-4697-16-git-send-email-dave.long@linaro.org> <1391445367.3509.30.camel@linaro1.home>
+From: Rabin Vincent <rabin@rab.in>
+Date: Mon, 3 Feb 2014 21:37:56 +0100
+X-Google-Sender-Auth: d6fKqShFfh7I15T5wB7hxN3nOac
+Message-ID: <CAH+eYFAW=6+bzS7fiPM6G+b3GA6HMf7pOVxEusFSGHmGmZG1RQ@mail.gmail.com>
+Subject: Re: [PATCH v5 15/16] ARM: add uprobes support
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>, David Long <dave.long@linaro.org>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        davem@davemloft.net, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmmmm,
+2014-02-03 Jon Medhurst (Tixy) <tixy@linaro.org>:
+> On Thu, 2014-01-23 at 15:05 -0500, David Long wrote:
+> > From: "David A. Long" <dave.long@linaro.org>
+> >
+> > Using Rabin Vincent's ARM uprobes patches as a base, enable uprobes
+> > support on ARM.
+> >
+> > Caveats:
+> >
+> >  - Thumb is not supported
+> >
+> > Signed-off-by: David A. Long <dave.long@linaro.org>
+>
+> As this is based on Rabin's work, and the new files have his Copyright,
+> then this patch also needs his 'Signed-off-by'. Rabin, I assume that you
+> agree?
 
-My problem with doing this has always actually been because of SELinux.
-Knowing syscall information with AVCs can be a huge help running down
-problems.  We already make people load rules if they want to get
-pathname type records, so maybe this is fine.  Or we could make SELinux
-take a reference on the number of audit rules, but that was your
-particular use case.  Not sure how I feel about losing syscall
-information by default on AVCs...
+Don't know if it's needed, but if it is, you may certainly add it to
+this patch, David:
 
-Do we always have audit_context allocated?  I need to look how the TIF
-and audit_context are correlated.
-
-For a completely seperate non-audit patch idea I've toyed with making
-the arch/syscall_nr a0,a1,a2,a3 stored in task struct rather than audit
-context.  Would mean that recording that information on syscall entry
-could be fast/easy and done quickly in syscall entry assembly code.
-Then on entry we could track only if there are rules on the 'entry' list
-and skip if none.  On exit we could do the same only with exit rules.
-Right now all 3 of those different things are tracked in
-TIF_SYSCALL_AUDIT (As I recall the slow path is usually a lot of things
-other than audit, but audit is what forces us onto the slow patch)
-
-On Mon, 2014-02-03 at 11:11 -0800, Andy Lutomirski wrote:
-> This toggles TIF_SYSCALL_AUDIT as needed when rules change instead of
-> leaving it set whenever rules might be set in the future.  This reduces
-> syscall latency from >60ns to closer to 40ns on my laptop.
-> 
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Steve Grubb <sgrubb@redhat.com>
-> Cc: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> This brown paper bag release is brought to you by git commit's -a flag.
-> 
-> Changes from v2: Contains the correct patch
-> 
-> Changes from v1:
->  - For new tasks, set flags in a new audit_sync_flags callback instead of
->    in audit_alloc (thanks, Oleg).
->  - Rework locking.
->  - Use irqsave/irqrestore to avoid having to think about who else might have
->    taken spinlocks.
-> 
->  include/linux/audit.h | 11 ++++++++--
->  kernel/auditfilter.c  |  4 ++--
->  kernel/auditsc.c      | 57 +++++++++++++++++++++++++++++++++++++++++++++------
->  kernel/fork.c         |  3 +++
->  4 files changed, 65 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/audit.h b/include/linux/audit.h
-> index a406419..a81f498 100644
-> --- a/include/linux/audit.h
-> +++ b/include/linux/audit.h
-> @@ -298,7 +298,9 @@ static inline void audit_mmap_fd(int fd, int flags)
->  		__audit_mmap_fd(fd, flags);
->  }
->  
-> -extern int audit_n_rules;
-> +extern void audit_inc_n_rules(void);
-> +extern void audit_dec_n_rules(void);
-> +extern void audit_sync_flags(struct task_struct *tsk);
->  extern int audit_signals;
->  #else /* CONFIG_AUDITSYSCALL */
->  static inline int audit_alloc(struct task_struct *task)
-> @@ -404,7 +406,12 @@ static inline void audit_mmap_fd(int fd, int flags)
->  { }
->  static inline void audit_ptrace(struct task_struct *t)
->  { }
-> -#define audit_n_rules 0
-> +static inline void audit_inc_n_rules(void)
-> +{ }
-> +static inline void audit_dec_n_rules(void)
-> +{ }
-> +static inline void audit_sync_flags(struct task_struct *tsk)
-> +{ }
->  #define audit_signals 0
->  #endif /* CONFIG_AUDITSYSCALL */
->  
-> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> index 51f3fd4..0ce531d 100644
-> --- a/kernel/auditfilter.c
-> +++ b/kernel/auditfilter.c
-> @@ -903,7 +903,7 @@ static inline int audit_add_rule(struct audit_entry *entry)
->  	}
->  #ifdef CONFIG_AUDITSYSCALL
->  	if (!dont_count)
-> -		audit_n_rules++;
-> +		audit_inc_n_rules();
->  
->  	if (!audit_match_signal(entry))
->  		audit_signals++;
-> @@ -955,7 +955,7 @@ static inline int audit_del_rule(struct audit_entry *entry)
->  
->  #ifdef CONFIG_AUDITSYSCALL
->  	if (!dont_count)
-> -		audit_n_rules--;
-> +		audit_dec_n_rules();
->  
->  	if (!audit_match_signal(entry))
->  		audit_signals--;
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index 90594c9..cd44c88 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -79,8 +79,13 @@
->  /* no execve audit message should be longer than this (userspace limits) */
->  #define MAX_EXECVE_AUDIT_LEN 7500
->  
-> -/* number of audit rules */
-> -int audit_n_rules;
-> +/*
-> + * number of audit rules
-> + *
-> + * To change this, you must hold audit_filter_mutex *and* have a read lock
-> + * on tasklist_lock.
-> + */
-> +static int audit_n_rules;
->  
->  /* determines whether we collect data for signals sent */
->  int audit_signals;
-> @@ -911,6 +916,40 @@ static inline struct audit_context *audit_alloc_context(enum audit_state state)
->  	return context;
->  }
->  
-> +void audit_inc_n_rules()
-> +{
-> +	struct task_struct *p, *g;
-> +	unsigned long flags;
-> +
-> +	read_lock_irqsave(&tasklist_lock, flags);
-> +	if (audit_n_rules++ == 0) {
-> +		do_each_thread(g, p) {
-> +			if (p->audit_context)
-> +				set_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-> +		} while_each_thread(g, p);
-> +	}
-> +	read_unlock_irqrestore(&tasklist_lock, flags);
-> +}
-> +
-> +void audit_dec_n_rules()
-> +{
-> +	struct task_struct *p, *g;
-> +	unsigned long flags;
-> +
-> +	read_lock_irqsave(&tasklist_lock, flags);
-> +
-> +	--audit_n_rules;
-> +	BUG_ON(audit_n_rules < 0);
-> +
-> +	if (audit_n_rules == 0) {
-> +		do_each_thread(g, p) {
-> +			clear_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-> +		} while_each_thread(g, p);
-> +	}
-> +
-> +	read_unlock_irqrestore(&tasklist_lock, flags);
-> +}
-> +
->  /**
->   * audit_alloc - allocate an audit context block for a task
->   * @tsk: task
-> @@ -930,10 +969,8 @@ int audit_alloc(struct task_struct *tsk)
->  		return 0; /* Return if not auditing. */
->  
->  	state = audit_filter_task(tsk, &key);
-> -	if (state == AUDIT_DISABLED) {
-> -		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-> +	if (state == AUDIT_DISABLED)
->  		return 0;
-> -	}
->  
->  	if (!(context = audit_alloc_context(state))) {
->  		kfree(key);
-> @@ -943,10 +980,18 @@ int audit_alloc(struct task_struct *tsk)
->  	context->filterkey = key;
->  
->  	tsk->audit_context  = context;
-> -	set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
->  	return 0;
->  }
->  
-> +void audit_sync_flags(struct task_struct *tsk)
-> +{
-> +	/* The caller has a write lock on tasklist_lock. */
-> +	if (audit_n_rules && tsk->audit_context)
-> +		set_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-> +	else
-> +		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
-> +}
-> +
->  static inline void audit_free_context(struct audit_context *context)
->  {
->  	audit_free_names(context);
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index dfa736c..3f28173 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1479,6 +1479,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  
->  	total_forks++;
->  	spin_unlock(&current->sighand->siglock);
-> +
-> +	audit_sync_flags(p);
-> +
->  	write_unlock_irq(&tasklist_lock);
->  	proc_fork_connector(p);
->  	cgroup_post_fork(p);
-
-
+  Signed-off-by: Rabin Vincent <rabin@rab.in>
