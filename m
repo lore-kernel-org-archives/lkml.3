@@ -1,92 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaBCHlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 02:41:46 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:45207 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaBCHlp (ORCPT
+	id S1752966AbaBCHnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 02:43:53 -0500
+Received: from www84.your-server.de ([213.133.104.84]:56242 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaBCHnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 02:41:45 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-d2-52ef48388a4f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt \(Red Hat\)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip v2 1/8] [BUGFIX] perf-probe: Fix to do exit call for symbol maps
-References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-	<20140129091452.22141.36766.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-Date: Mon, 03 Feb 2014 16:41:43 +0900
-In-Reply-To: <20140129091452.22141.36766.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp>
-	(Masami Hiramatsu's message of "Wed, 29 Jan 2014 09:14:52 +0000")
-Message-ID: <87iosw3ao8.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Feb 2014 02:43:52 -0500
+Message-ID: <1391413467.965.21.camel@wall-e.seibold.net>
+Subject: Re: [PATCH 7/8] Add 32 bit VDSO time support for 32 bit kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Mon, 03 Feb 2014 08:44:27 +0100
+In-Reply-To: <CALCETrX2K6DeGO7v+8Qed03xbKd0dcsoWVPg6fp6+KNGHnC+eA@mail.gmail.com>
+References: <1391340435-5130-1-git-send-email-stefani@seibold.net>
+	 <1391340435-5130-8-git-send-email-stefani@seibold.net>
+	 <CALCETrXNVoJBUncHbWWuQ7LAf2ZoWOY8uJBeg_VD1+MmwJ07Rg@mail.gmail.com>
+	 <1391377190.9266.6.camel@wall-e.seibold.net>
+	 <CALCETrX2K6DeGO7v+8Qed03xbKd0dcsoWVPg6fp6+KNGHnC+eA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+Am Sonntag, den 02.02.2014, 16:12 -0800 schrieb Andy Lutomirski:
+> On Sun, Feb 2, 2014 at 1:39 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> > Am Sonntag, den 02.02.2014, 08:46 -0800 schrieb Andy Lutomirski:
+> >> On Sun, Feb 2, 2014 at 3:27 AM,  <stefani@seibold.net> wrote:
+> >> > From: Stefani Seibold <stefani@seibold.net>
+> >> >
+> >> > This patch add the time support for 32 bit a VDSO to a 32 bit kernel.
+> >>
+> >> [...]
+> >>
+> >> Can you address the review comments from last time around?  For
+> >> example, this still seems to have redundant vvar and hpet mappings, it
+> >> doesn't use the VVAR macro, it moves the 32-bit compat vDSO, etc.
+> >>
+> >
+> > I will address the compat VDSO issue.
+> >
+> > But the VVAR macro will be not a part of this patch set. If you depend
+> > on this, feel free to create one. From my point of view this is not
+> > feasible without a macro hacking, because the address accessing the vvar
+> > area differs in kernel and VDSO user mode.
+> 
+> Sorry, but "I will make the code messier for no apparent reason and I
+> will not offer to fix it in the same series" gets my NAK.
+> 
+> Hint: I'm talking about two or three lines of code in vvar.h.
+> 
 
-On Wed, 29 Jan 2014 09:14:52 +0000, Masami Hiramatsu wrote:
-> Some perf-probe commands do symbol_init() but doesn't
-> do exit call. This fixes that to call symbol_exit()
-> and relase machine if needed.
-> This also merges init_vmlinux() and init_user_exec()
-> because both of them are doing similar things.
-> (init_user_exec() just skips init vmlinux related
->  symbol maps)
->
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
->  tools/perf/util/probe-event.c |  110 +++++++++++++++++++++++------------------
->  1 file changed, 61 insertions(+), 49 deletions(-)
->
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index a8a9b6c..14c649df 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -73,31 +73,35 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp);
->  static int convert_name_to_addr(struct perf_probe_event *pev,
->  				const char *exec);
->  static void clear_probe_trace_event(struct probe_trace_event *tev);
-> -static struct machine machine;
-> +static struct machine *host_machine;
->  
->  /* Initialize symbol maps and path of vmlinux/modules */
-> -static int init_vmlinux(void)
-> +static int init_symbol_maps(bool user_only)
->  {
->  	int ret;
->  
->  	symbol_conf.sort_by_name = true;
-> -	if (symbol_conf.vmlinux_name == NULL)
-> -		symbol_conf.try_vmlinux_path = true;
-> -	else
-> -		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
-> +	if (user_only)
-> +		symbol_conf.try_vmlinux_path = false;
-> +	else {
-> +		if (symbol_conf.vmlinux_name == NULL)
-> +			symbol_conf.try_vmlinux_path = true;
+A hint back: if you threat me with a NAK for a requested code sequence
+which currently no user, this is far away from professional. I am not
+your trainee.
 
-This looks unnecessary and duplicate since we already have following
-code in __cmd_probe().
+BTW: If it is so easy, send me the two or three lines and i will merge
+it ;-)
 
-	/*
-	 * Only consider the user's kernel image path if given.
-	 */
-	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
+> >
+> > I also see no redundant mapping. There are two modes, one is the map of
+> > the kernel area the other maps the VDSO into the user space area. This
+> > is exactly the behaviour of the origin VDSO implementation.
+> 
+> No.
+> 
+> In your series there are *three* mappings.  There are:
+> 
+>  - The linear mapping that the kernel loader sets up (the writable
+> mapping used in the kernel).  This is implicit and, of course, fine.
+>  - There's the fixmap page, which aliases the normal kernel mapping at
+> a fixed address with the user, ro, and nx attributes.  The 64-bit vDSO
+> uses that mapping.  See vdso.h -- it's all arranged pretty clearly.
+> Your code, for no discernible reason, sets up a fixmap entry on
+> *32-bit* kernels.
+>  - The vma that you're setting up adjacent to the actual vdso text.
+> This is what you are using.
+> 
+> Please choose *one* user-readable mapping for the 32-bit vdso and
+> stick with it.  If the 64-bit vdso can use it to and userspace doesn't
+> break, even better.  But a pointless set of extra fixmap entries is
+> not okay.
+> 
 
-Thanks,
-Namhyung
+Again: I wrote that there are two modes for a 32 bit kernel and
+therefore there are two mappings at the same time. Since there are both
+ways available in a 32 bit kernel via the vdso32= kernel parameter, both
+must be supported.
+
+Due the lack of a real fixmap for a 32 bit kernel (FIXADDR_TOP is a
+variable), the HPET and VVAR Page can only relative addressed. So this
+pages must located before or after the VDSO. 
+
+This is why i need to setup this pages into the fixmap area, this is the
+compat mode "vdso32=2".
+
+For "vdso32=1" i need to map the VDSO Page together with the HPET and
+VVAR into the user space.
+
+For compability reasons both mappings are required.
+
+There is only one binary for the VDSO page, regardless of the vdso=
+kernel parameter and this code can only do a relative addressing.
+
+A 64 bit kernel can do it in an other way, because there is a real
+fixmap area, so this special handling is not needed.
+
+- Stefani
 
 
-> +		else
-> +			pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
-> +	}
