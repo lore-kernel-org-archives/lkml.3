@@ -1,97 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaBCTaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:30:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18933 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaBCTaK (ORCPT
+	id S1753283AbaBCTbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:31:39 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60607 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaBCTbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:30:10 -0500
-Date: Mon, 3 Feb 2014 11:30:01 -0800
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, roger.pau@citrix.com,
-        Xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pvh: set cr4 flags for APs
-Message-ID: <20140203113001.2433a77c@mantra.us.oracle.com>
-In-Reply-To: <20140203114914.GA3350@phenom.dumpdata.com>
-References: <1391040918-11722-1-git-send-email-mukesh.rathor@oracle.com>
-	<1391040918-11722-2-git-send-email-mukesh.rathor@oracle.com>
-	<20140203114914.GA3350@phenom.dumpdata.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 3 Feb 2014 14:31:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from device tree
+Date: Mon, 03 Feb 2014 20:31:31 +0100
+Message-ID: <3523674.i9iUPinOAk@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20140203190649.GB4889@e106497-lin.cambridge.arm.com>
+References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com> <7398333.9L5KlyFggU@wuerfel> <20140203190649.GB4889@e106497-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SW6cvttCreB4vx9iIe6HkXqwWee7VGHxB8xByTgjWK+
+ ZVQqsdWiuLwRVyPOi5rg2q23Si8REKvMct6zqOUctVu2h623WT
+ qNIqhJ90vyD9aPrM62YhODkDRUbFtkDsRMv3zwlORZXGTngs29
+ cIk2CA+bktwLCp5go4+DuFBI8U6pp6d1j1vffgArWYrf66CIlP
+ HuUKYWsePAsCejKOPPF89pjxIiXF5lCBlXi1ED6WIEvca6CyZ4
+ 38Je1/AKuO82xYTe+FfT8ceybQtE5NKc6Jf9TlXU2PKwqIrV+M
+ 4XGpruHyfYCKQTViIAuv7tKKcJv05stOCICCYDWnNO3a7qmZgW
+ uMLUxtJTIEXu/T+K6mqc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Feb 2014 06:49:14 -0500
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On Monday 03 February 2014 19:06:49 Liviu Dudau wrote:
+> On Mon, Feb 03, 2014 at 06:46:10PM +0000, Arnd Bergmann wrote:
+> > On Monday 03 February 2014 18:33:48 Liviu Dudau wrote:
+> > > +/**
+> > > + * pci_host_bridge_of_get_ranges - Parse PCI host bridge resources from DT
+> > > + * @dev: device node of the host bridge having the range property
+> > > + * @resources: list where the range of resources will be added after DT parsing
+> > > + *
+> > > + * This function will parse the "ranges" property of a PCI host bridge device
+> > > + * node and setup the resource mapping based on its content. It is expected
+> > > + * that the property conforms with the Power ePAPR document.
+> > > + *
+> > > + * Each architecture will then apply their filtering based on the limitations
+> > > + * of each platform. One general restriction seems to be the number of IO space
+> > > + * ranges, the PCI framework makes intensive use of struct resource management,
+> > > + * and for IORESOURCE_IO types they can only be requested if they are contained
+> > > + * within the global ioport_resource, so that should be limited to one IO space
+> > > + * range.
+> >
+> > Actually we have quite a different set of restrictions around I/O space on ARM32
+> > at the moment: Each host bridge can have its own 64KB range in an arbitrary
+> > location on MMIO space, and the total must not exceed 2MB of I/O space.
+> 
+> And that is why the filtering is not (yet) imposed in the generic code. But once
+> you use pci_request_region, that will call request_region which will check
+> against ioport_resource as parent for the requested resource. That should fail
+> if is is not in the correct range, so I don't know how arm arch code manages
+> multiple IO ranges.
 
-> On Wed, Jan 29, 2014 at 04:15:18PM -0800, Mukesh Rathor wrote:
-> > We need to set cr4 flags for APs that are already set for BSP.
-> 
-> The title is missing the 'xen' part.
+Let's try to come up with nomenclature so we can talk about this better
 
-The patch is for linux, not xen.
+The ioport_resource is in "logical I/O space", which is a Linux fiction,
+it goes from 0 to IO_SPACE_LIMIT (2MB on ARM) and is mapped into "virtual
+I/O space", which start at (void __iomem *)PCI_IO_VIRT_BASE.
 
-> I rewrote it a bit and I think this should go in 3.14.
-> 
-> David, Boris: It is not the full fix as there are other parts to
-> make an PVH guest use 2MB or 1GB pages- but this fixes an obvious
-> bug.
-> 
-> 
-> 
-> From 797ea6812ff0a90cce966a4ff6bad57cbadc43b5 Mon Sep 17 00:00:00 2001
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Date: Wed, 29 Jan 2014 16:15:18 -0800
-> Subject: [PATCH] xen/pvh: set CR4 flags for APs
-> 
-> The Xen ABI sets said flags for the BSP, but it does
+Each PCI domain can have its own "bus I/O aperture", which is typically
+between 0x1000 and 0xffff and reflects the address that is used in PCI
+transactions and in BARs. The aperture here reflects the subset of the
+4GB bus I/O space that is actually mapped into a CPU visible "physical
+I/O aperture" using an inbound mapping of the host bridge. The physical
+I/O aperture in turn gets mapped to the virtual I/O space using 
+pci_ioremap_io. The difference between a bus I/O address and a logical
+I/O address is stored in the io_offset.
 
-NO it does not. I said it few times, it's set by probe_page_size_mask
-(which is in linux) for the BSP. The comment below also says it.
+So much for basic definitions. When a device driver calls pci_request_region,
+the port number it sees is the bus I/O port number adjusted using the
+io_offset to turn it into a logical I/O port number, which should
+always be within the host bridge window, which in turn is a subset
+of the ioport_resource.
 
-thanks
-mukesh
-
-> not do that for the CR4. As such fix it up to make
-> sure we have that flag set.
+> > > +static int pci_host_bridge_of_get_ranges(struct device_node *dev,
+> > > +                                   struct list_head *resources)
+> > > +{
+> > > +   struct resource *res;
+> > > +   struct of_pci_range range;
+> > > +   struct of_pci_range_parser parser;
+> > > +   int err;
+> > > +
+> > > +   pr_info("PCI host bridge %s ranges:\n", dev->full_name);
+> > > +
+> > > +   /* Check for ranges property */
+> > > +   err = of_pci_range_parser_init(&parser, dev);
+> > > +   if (err)
+> > > +           return err;
+> > > +
+> > > +   pr_debug("Parsing ranges property...\n");
+> > > +   for_each_of_pci_range(&parser, &range) {
+> > > +           /* Read next ranges element */
+> > > +           pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+> > > +                           range.pci_space, range.pci_addr);
+> > > +           pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+> > > +                                   range.cpu_addr, range.size);
+> > > +
+> > > +           /* If we failed translation or got a zero-sized region
+> > > +            * (some FW try to feed us with non sensical zero sized regions
+> > > +            * such as power3 which look like some kind of attempt
+> > > +            * at exposing the VGA memory hole) then skip this range
+> > > +            */
+> > > +           if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+> > > +                   continue;
+> > > +
+> > > +           res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> > > +           if (!res) {
+> > > +                   err = -ENOMEM;
+> > > +                   goto bridge_ranges_nomem;
+> > > +           }
+> > > +
+> > > +           of_pci_range_to_resource(&range, dev, res);
+> > > +
+> > > +           pci_add_resource_offset(resources, res,
+> > > +                           range.cpu_addr - range.pci_addr);
+> > > +   }
+> >
+> > I believe of_pci_range_to_resource() will return the MMIO aperture for the
+> > I/O space window here, which is not what you are supposed to pass into
+> > pci_add_resource_offset.
 > 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/enlighten.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index a4d7b64..201d09a 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1473,6 +1473,18 @@ static void xen_pvh_set_cr_flags(int cpu)
->  	 * X86_CR0_TS, X86_CR0_PE, X86_CR0_ET are set by Xen for HVM
-> guests
->  	 * (which PVH shared codepaths), while X86_CR0_PG is for
-> PVH. */ write_cr0(read_cr0() | X86_CR0_MP | X86_CR0_NE | X86_CR0_WP |
-> X86_CR0_AM); +
-> +	if (!cpu)
-> +		return;
-> +	/*
-> +	 * For BSP, PSE PGE are set in probe_page_size_mask(), for
-> APs
-> +	 * set them here. For all, OSFXSR OSXMMEXCPT are set in
-> fpu_init.
-> +	*/
-> +	if (cpu_has_pse)
-> +		set_in_cr4(X86_CR4_PSE);
-> +
-> +	if (cpu_has_pge)
-> +		set_in_cr4(X86_CR4_PGE);
->  }
->  
->  /*
+> And that is why the code in probe.c has been added to deal with that. It is
+> too early to do the adjustments here as all we have is the list of resources
+> and that might get culled by the architecture fixup code. Remembering the
+> io_offset will happen once the pci_host_bridge gets created, and the resources
+> are then adjusted.
 
+So you want to register an incorrect I/O resource first and then
+have it fixed up later, rather than registering the correct
+one from the start as everyone else?
+
+> > > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> > > index 6e34498..16febae 100644
+> > > --- a/drivers/pci/probe.c
+> > > +++ b/drivers/pci/probe.c
+> > > @@ -1787,6 +1787,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> > >     list_for_each_entry_safe(window, n, resources, list) {
+> > >             list_move_tail(&window->list, &bridge->windows);
+> > >             res = window->res;
+> > > +           /*
+> > > +            * IO resources are stored in the kernel with a CPU start
+> > > +            * address of zero. Adjust the data accordingly and remember
+> > > +            * the offset
+> > > +            */
+> > > +           if (resource_type(res) == IORESOURCE_IO) {
+> > > +                   bridge->io_offset = res->start;
+> > > +                   res->end -= res->start;
+> > > +                   window->offset -= res->start;
+> > > +                   res->start = 0;
+> > > +           }
+> > >             offset = window->offset;
+> > >             if (res->flags & IORESOURCE_BUS)
+> >
+> > Won't this break all existing host bridges?
+> 
+> I am not sure. I believe not, due to what I've explained earlier, but you might be right.
+> 
+> The adjustment happens before the resource is added to the host bridge windows and translates
+> it from MMIO range into IO range.
+
+AFAICT, the resource_type of the resource you register above should be
+IORESOURCE_MEM, so you are not actually matching it here.
+
+	Arnd
