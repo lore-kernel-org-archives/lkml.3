@@ -1,142 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaBCBRf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 20:17:35 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:58504 "EHLO
+	id S1752797AbaBCBRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 20:17:52 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:58503 "EHLO
 	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaBCBRc (ORCPT
+	with ESMTP id S1752649AbaBCBR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 20:17:32 -0500
+	Sun, 2 Feb 2014 20:17:27 -0500
 From: David Fries <David@Fries.net>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 1/4] w1: fix netlink refcnt leak on error path
-Date: Sun,  2 Feb 2014 19:15:00 -0600
-Message-Id: <1391390104-31154-2-git-send-email-David@Fries.net>
+Subject: [PATCH 3/4] w1: document struct w1_netlink_msg and struct w1_netlink_cmd
+Date: Sun,  2 Feb 2014 19:15:02 -0600
+Message-Id: <1391390104-31154-4-git-send-email-David@Fries.net>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1391390104-31154-1-git-send-email-David@Fries.net>
 References: <1391390104-31154-1-git-send-email-David@Fries.net>
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 02 Feb 2014 19:15:19 -0600 (CST)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 02 Feb 2014 19:15:23 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the message type is W1_MASTER_CMD or W1_SLAVE_CMD, then a reference
-is taken when searching for the slave or master device.  If there
-isn't any following data m->len (mlen is a copy) is 0 and packing up
-the message for later execution is skipped leaving nothing to
-decrement the reference counts.
-
-Way back when, m->len was checked before the search that increments the
-reference count, but W1_LIST_MASTERS has no additional data, the check
-was moved in 9be62e0b2fadaf5ff causing this bug.
-
-This change reorders to put the check before the reference count is
-incremented avoiding the problem.
+I wasn't sure on the length, so I looked it up and documented it.
 
 Signed-off-by: David Fries <David@Fries.net>
 ---
- drivers/w1/w1_netlink.c |   44 ++++++++++++++++++++++++++------------------
- 1 file changed, 26 insertions(+), 18 deletions(-)
+ drivers/w1/w1_netlink.h |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
-index 5234964..a02704a 100644
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -300,12 +300,6 @@ static int w1_process_command_root(struct cn_msg *msg,
- 	struct w1_netlink_msg *w;
- 	u32 *id;
+diff --git a/drivers/w1/w1_netlink.h b/drivers/w1/w1_netlink.h
+index 1e9504e..c646a98 100644
+--- a/drivers/w1/w1_netlink.h
++++ b/drivers/w1/w1_netlink.h
+@@ -49,6 +49,19 @@ enum w1_netlink_message_types {
+ 	W1_LIST_MASTERS,
+ };
  
--	if (mcmd->type != W1_LIST_MASTERS) {
--		printk(KERN_NOTICE "%s: msg: %x.%x, wrong type: %u, len: %u.\n",
--			__func__, msg->id.idx, msg->id.val, mcmd->type, mcmd->len);
--		return -EPROTO;
--	}
--
- 	cn = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	if (!cn)
- 		return -ENOMEM;
-@@ -441,6 +435,9 @@ static void w1_process_cb(struct w1_master *dev, struct w1_async_cmd *async_cmd)
- 		w1_netlink_send_error(&node->block->msg, node->m, cmd,
- 			node->block->portid, err);
++/**
++ * struct w1_netlink_msg - holds w1 message type, id, and result
++ *
++ * @type: one of enum w1_netlink_message_types
++ * @status: kernel feedback for success 0 or errno failure value
++ * @len: length of data following w1_netlink_msg
++ * @id: union holding master bus id (msg.id) and slave device id (id[8]).
++ * @data: start address of any following data
++ *
++ * The base message structure for w1 messages over netlink.
++ * The netlink connector data sequence is, struct nlmsghdr, struct cn_msg,
++ * then one or more struct w1_netlink_msg (each with optional data).
++ */
+ struct w1_netlink_msg
+ {
+ 	__u8				type;
+@@ -66,6 +79,7 @@ struct w1_netlink_msg
  
-+	/* ref taken in w1_search_slave or w1_search_master_id when building
-+	 * the block
-+	 */
- 	if (sl)
- 		w1_unref_slave(sl);
- 	else
-@@ -503,30 +500,42 @@ static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+ /**
+  * enum w1_commands - commands available for master or slave operations
++ *
+  * @W1_CMD_READ: read len bytes
+  * @W1_CMD_WRITE: write len bytes
+  * @W1_CMD_SEARCH: initiate a standard search, returns only the slave
+@@ -93,6 +107,17 @@ enum w1_commands {
+ 	W1_CMD_MAX
+ };
  
- 	msg_len = msg->len;
- 	while (msg_len && !err) {
--		struct w1_reg_num id;
--		u16 mlen = m->len;
- 
- 		dev = NULL;
- 		sl = NULL;
- 
--		memcpy(&id, m->id.id, sizeof(id));
--#if 0
--		printk("%s: %02x.%012llx.%02x: type=%02x, len=%u.\n",
--				__func__, id.family, (unsigned long long)id.id, id.crc, m->type, m->len);
--#endif
- 		if (m->len + sizeof(struct w1_netlink_msg) > msg_len) {
- 			err = -E2BIG;
- 			break;
- 		}
- 
-+		/* execute on this thread, no need to process later */
-+		if (m->type == W1_LIST_MASTERS) {
-+			err = w1_process_command_root(msg, m, nsp->portid);
-+			goto out_cont;
-+		}
-+
-+		/* All following message types require additional data,
-+		 * check here before references are taken.
-+		 */
-+		if (!m->len) {
-+			err = -EPROTO;
-+			goto out_cont;
-+		}
-+
-+		/* both search calls take reference counts */
- 		if (m->type == W1_MASTER_CMD) {
- 			dev = w1_search_master_id(m->id.mst.id);
- 		} else if (m->type == W1_SLAVE_CMD) {
--			sl = w1_search_slave(&id);
-+			sl = w1_search_slave((struct w1_reg_num *)m->id.id);
- 			if (sl)
- 				dev = sl->master;
- 		} else {
--			err = w1_process_command_root(msg, m, nsp->portid);
-+			printk(KERN_NOTICE
-+				"%s: msg: %x.%x, wrong type: %u, len: %u.\n",
-+				__func__, msg->id.idx, msg->id.val,
-+				m->type, m->len);
-+			err = -EPROTO;
- 			goto out_cont;
- 		}
- 
-@@ -536,8 +545,6 @@ static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 		}
- 
- 		err = 0;
--		if (!mlen)
--			goto out_cont;
- 
- 		atomic_inc(&block->refcnt);
- 		node->async.cb = w1_process_cb;
-@@ -557,7 +564,8 @@ out_cont:
- 		if (err)
- 			w1_netlink_send_error(msg, m, NULL, nsp->portid, err);
- 		msg_len -= sizeof(struct w1_netlink_msg) + m->len;
--		m = (struct w1_netlink_msg *)(((u8 *)m) + sizeof(struct w1_netlink_msg) + m->len);
-+		m = (struct w1_netlink_msg *)(((u8 *)m) +
-+			sizeof(struct w1_netlink_msg) + m->len);
- 
- 		/*
- 		 * Let's allow requests for nonexisting devices.
++/**
++ * struct w1_netlink_cmd - holds the command and data
++ *
++ * @cmd: one of enum w1_commands
++ * @res: reserved
++ * @len: length of data following w1_netlink_cmd
++ * @data: start address of any following data
++ *
++ * One or more struct w1_netlink_cmd is placed starting at w1_netlink_msg.data
++ * each with optional data.
++ */
+ struct w1_netlink_cmd
+ {
+ 	__u8				cmd;
 -- 
 1.7.10.4
 
