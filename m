@@ -1,189 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaBCRFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 12:05:50 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:38369 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067AbaBCRFp (ORCPT
+	id S1753031AbaBCRHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 12:07:36 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:61572 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908AbaBCRHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 12:05:45 -0500
-Message-ID: <52EFCC66.9020304@lwfinger.net>
-Date: Mon, 03 Feb 2014 11:05:42 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Feb 2014 12:07:35 -0500
 MIME-Version: 1.0
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>, Dave Jones <davej@redhat.com>
-CC: gregkh@linuxfoundation.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-wireless@vger.kernel.org,
-        Andrea Merello <andrea.merello@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Subject: Re: rtl8821ae.
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail> <20140202160512.GA4946@redhat.com> <201402021807.37772.s.L-H@gmx.de>
-In-Reply-To: <201402021807.37772.s.L-H@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAN+gG=EesWpKiz-M4LrLTM0ne+o8=XE3vdQnwBPuHOyEgwEJKw@mail.gmail.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-5-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4Rn=rijG8Xv97okj2k4iv=ZG6wa30xQrxgjhutQovD+dg@mail.gmail.com>
+	<CAN+gG=EesWpKiz-M4LrLTM0ne+o8=XE3vdQnwBPuHOyEgwEJKw@mail.gmail.com>
+Date: Mon, 3 Feb 2014 18:07:34 +0100
+Message-ID: <CANq1E4SMp6080REEbHriy6gE6pivoLbr9KzmpzJiFffK7QyJ2w@mail.gmail.com>
+Subject: Re: [PATCH 04/11] HID: logitech-dj: remove hidinput_input_event
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2014 12:07 PM, Stefan Lippers-Hollmann wrote:
-> Hi
->
-> [ CC'ing the relevant parties ]
->
-> On Sunday 02 February 2014, Dave Jones wrote:
->> On Sun, Feb 02, 2014 at 03:41:27AM -0800, scan-admin@coverity.com wrote:
->>   >
->>   > Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
->>   >
->>   > Defect(s) Reported-by: Coverity Scan
->>   > Showing 20 of 83 defect(s)
+Hi
+
+On Mon, Feb 3, 2014 at 5:21 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Mon, Feb 3, 2014 at 11:06 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Hi
 >>
->> Ugh, this is even worse than the usual realtek drivers. (With the exception of rtl8188eu)
->> All 83 of those new defects came from this new driver, and while there's
->> a bunch of "who cares" type things in there, there's a load of stuff that
->> needs fixing a lot more urgently than CodingStyle issues or anything else in the TODO
->> for that driver.
+>> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+>> <benjamin.tissoires@redhat.com> wrote:
+>>> hid-logitech-dj uses its own ->hidinput_input_event() instead of
+>>> the generic binding in hid-input.
+>>> Moving the handling of LEDs towards logi_dj_output_hidraw_report()
+>>> allows two things:
+>>> - remove hidinput_input_event in struct hid_device
+>>> - hidraw user space programs can also set the LEDs
+>>>
+>>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>>> ---
+>>>  drivers/hid/hid-logitech-dj.c | 99 +++++++++++++++----------------------------
+>>>  1 file changed, 35 insertions(+), 64 deletions(-)
+>>>
+>>> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+>>> index f45279c..61d2bbf 100644
+>>> --- a/drivers/hid/hid-logitech-dj.c
+>>> +++ b/drivers/hid/hid-logitech-dj.c
+>>> @@ -44,14 +44,6 @@ static const char kbd_descriptor[] = {
+>>>         0x19, 0xE0,             /*   USAGE_MINIMUM (Left Control)   */
+>>>         0x29, 0xE7,             /*   USAGE_MAXIMUM (Right GUI)      */
+>>>         0x81, 0x02,             /*   INPUT (Data,Var,Abs)       */
+>>> -       0x95, 0x05,             /*   REPORT COUNT (5)           */
+>>> -       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
+>>> -       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
+>>> -       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
+>>> -       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
+>>> -       0x95, 0x01,             /*   REPORT COUNT (1)           */
+>>> -       0x75, 0x03,             /*   REPORT SIZE (3)            */
+>>> -       0x91, 0x01,             /*   OUTPUT (Constant)          */
+>>>         0x95, 0x06,             /*   REPORT_COUNT (6)           */
+>>>         0x75, 0x08,             /*   REPORT_SIZE (8)            */
+>>>         0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
+>>> @@ -60,6 +52,18 @@ static const char kbd_descriptor[] = {
+>>>         0x19, 0x00,             /*   USAGE_MINIMUM (no event)       */
+>>>         0x2A, 0xFF, 0x00,       /*   USAGE_MAXIMUM (reserved)       */
+>>>         0x81, 0x00,             /*   INPUT (Data,Ary,Abs)       */
+>>> +       0x85, 0x0e,             /* REPORT_ID (14)               */
+>>> +       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
+>>> +       0x95, 0x05,             /*   REPORT COUNT (5)           */
+>>> +       0x75, 0x01,             /*   REPORT SIZE (1)            */
+>>> +       0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
+>>> +       0x25, 0x01,             /*   LOGICAL_MAXIMUM (1)        */
+>>> +       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
+>>> +       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
+>>> +       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
+>>> +       0x95, 0x01,             /*   REPORT COUNT (1)           */
+>>> +       0x75, 0x03,             /*   REPORT SIZE (3)            */
+>>> +       0x91, 0x01,             /*   OUTPUT (Constant)          */
+>>>         0xC0
+>>>  };
+>>>
+>>> @@ -544,10 +548,30 @@ static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
+>>>                                         size_t count,
+>>>                                         unsigned char report_type)
+>>>  {
+>>> -       /* Called by hid raw to send data */
+>>> -       dbg_hid("%s\n", __func__);
+>>> +       struct dj_device *djdev = hid->driver_data;
+>>> +       struct dj_receiver_dev *djrcv_dev = djdev->dj_receiver_dev;
+>>> +       u8 *out_buf;
+>>> +       int ret;
+>>>
+>>> -       return 0;
+>>> +       if (buf[0] != REPORT_TYPE_LEDS)
+>>> +               return -EINVAL;
+>>> +
+>>> +       out_buf = kzalloc(DJREPORT_SHORT_LENGTH, GFP_ATOMIC);
+>>> +       if (!out_buf)
+>>> +               return -ENOMEM;
+>>> +
+>>> +       if (count < DJREPORT_SHORT_LENGTH - 2)
+>>> +               count = DJREPORT_SHORT_LENGTH - 2;
+>>> +
+>>> +       out_buf[0] = REPORT_ID_DJ_SHORT;
+>>> +       out_buf[1] = djdev->device_index;
+>>> +       memcpy(out_buf + 2, buf, count);
+>>> +
+>>> +       ret = djrcv_dev->hdev->hid_output_raw_report(djrcv_dev->hdev, out_buf,
+>>> +               DJREPORT_SHORT_LENGTH, report_type);
 >>
->> A bigger problem though, is what is the plan for these realtek drivers ?
->> They've been in staging forever. rtl8187se has been there for _five_ years with
->> no indication it's ever getting promoted to first class status.
+>> Strictly speaking the code below uses HID_REQ_SET_REPORT and you
+>> replace it with hid_output_raw_report() here (which at least for BTHID
+>> is not equivalent). Anyhow, HID-core uses hid_output_raw_report(),
+>> too, so this should be fine.
 >
-> Actually rtl8187se (aka rtl8185b) seems to have gotten some attention
-> recently:
+> Yes, you are right. This fires back on me yesterday when I tried to
+> remove the hid_output_raw_report() calls.
+> It occurs it works because usbhid_out_raw_report() uses set_report
+> when there is no urbout, which is the case with logitech receivers.
+> So I guess an ideal solution would be to implement a hid_hw_request call.
 >
-> http://lkml.kernel.org/r/CAN8YU5PGkx9s9deWpFTO_ZtDr-+wDD5cX2JRv1zd1m1Q0BpkCw@mail.gmail.com
->
->> The git logs are littered mostly with CodingStyle cleanups, sparse cleanups and such,
->> meanwhile for five years they've had out of bounds reads, overflows, and such
->> for this whole time.  Even worse, when one of the drivers gets fixes for actual
->> problems like this, they never make it back to Realtek, who clone the same
->> old shitty driver they shipped last time, and reintroduce new variants of the
->> same damn bugs, and then we import the new turd into staging and start all over again.
->>
->> I get the whole "a shit driver is better than no driver", but there's no discernable
->> effort to ever improve this pile, just to keep adding to it.
->>
->> 	Dave
->
-> I think there are mostly two major problems with these drivers, besides
-> RealTek still working on a non-mac80211 codebase for USB based devices.
->
-> The sheer number of slightly different RealTek drivers for similar
-> chipsets, for which RealTek as forked off a dedicated driver each,
-> rather than extending the existing ones. With the other, probably even
-> larger, problem being that it isn't possible to port wireless drivers
-> from non-mac80111 to mac80211 in a gradual fashion, it's always a
-> parallel re-implementation. Just look at the recent history of staging
-> wireless drivers:
->
-> the successful ones:
-> - csr --> /dev/null
-> - otus --> ar9170 --> carl9170
-> - ( rt2870 && rt3070 ) --> rt2800usb
-> - rt2870 --> rt2800pci
-> - [ at76c503a --> ] at76_usb --> at76c50x-usb   [*] not in staging
->
-> the pending ones
-> - rtl8187se [ --> rtl8180 ]   [*] hopefully soon
-> - rtl8188eu --> ?
-> - [ rtl8192du --> ? ]   [*] not in staging, [1]
-> - rtl8192e --> ?
-> - rtl8192u --> ?
-> - rtl8192su --> rtl8712 --> ? [ r92su[2] would add cfg80211 support,
->                                  but it being a fullmac like
->                                  re-implementation doesn't get it
->                                  anywhere ]
-> - rtl8821ae [ --> mac80211 port planned for 3.15[3]? ]
->
-> these devices are, besides rtl8187se (802.11g) and rtl8821ae
-> (802.11ac), all 802.11n compatible, but were quickly EOLed by the
-> vendor, probably making it hard to get enough traction for a proper
-> mac80211 port. Coincidentally these chipsets are also very popular,
-> rtl8187se being the chipset of the early netbook craze, rtl8188eu
-> pretty ubiquitous on embedded platforms, the others making the bulk
-> of aftermarket USB devices.
->
-> ancient hardware, probably not going anywhere:
-> - vt6655 --> ?
-> - vt6656 --> ?
-> - wlags49_h2 --> ?
-> - wlags49_h25 --> ?
-> - wlan-ng --> ?
->
-> This likely leaves staging wireless drivers to small corrections and
-> bugfixes. In the hope that the devices will get enough traction that
-> someone takes up the effort of doing a parallel re-implementation of a
-> proper mac80211 based driver, using the staging source only as
-> reference.
->
-> Regards
-> 	Stefan Lippers-Hollmann
->
-> [1]	https://github.com/lwfinger/rtl8192du
-> [2]	https://github.com/chunkeey/rtl8192su/tree/master/r92su
-> [3]	http://lkml.kernel.org/r/52E066A1.9010009@lwfinger.net
-> 	http://lkml.kernel.org/r/52E7D9F6.5070402@lwfinger.net
->
+> However, the only concern I have with hid_hw_request is that it does
+> not allow hidraw to play with the LEDs given that hidraw does not have
+> an ioctl for SET_REPORT (or GET_REPORT). I already seen this issue
+> regarding i2c_hid at some point, but it was "solved" in i2c_hid by
+> using the same ugly trick that we have in USB-hid.
 
-There are many issues here. I will try to address them without writing something 
-so long that no one reads it. Just to be clear, my work with Realtek drivers is 
-as a volunteer and is done to provide a service to Linux users. The only thing I 
-get from Realtek is advance copies of drivers (sometimes), and sample cards for 
-PCI devices. With one exception, the USB devices in my possession have have been 
-purchased with my own funds.
+Hah! That's why it worked all the years, USB-HID checks for !urbout..
+and yeah, that's what I just criticized in your i2c-hid patch.. Ok,
+I'm fine if we make output_report() fall back to SET_REPORT if not
+output-channel is supported. But we it gets ugly if we rely on that
+from the upper stack... hmm, don't know how to make that work but
+adding a hid quirk to use SET_REPORT for hidinput_input_report().
 
-1. Coverity errors in rtl8821ae: This driver was added to staging with 
-essentially no cleanup for several reasons. The first was as a favor to GregKH, 
-Linus, and roughly 1000 other users who recently got this hardware and want a 
-driver in 3.14. The second reason is that I do not yet have this hardware and 
-did not want to make any changes as all testing would have to be conducted by 
-Greg, and I think he has enough to do already. The driver uses mac80211, and it 
-should be ready to be submitted to the regular tree in time for 3.15. Most of 
-that cleanup has already been done. I should have sample hardware in the next 
-few weeks for testing.
-
-2. rtl8187se: Andrea Morello has done the port to mac80211. I have tested that 
-version and found it stable. It should be in the regular wireless tree soon.
-
-3. r8712u: This is the roughest of the drivers. As noted above, there is an 
-ongoing effort to add cfg80211 capability, but not to convert it to mac80211. It 
-is a softmac device, should be able to share code with rtl8192se, and it should 
-be converted to mac80211. I have no idea if and when that will happen. I am busy 
-with drivers for devices that are not otherwise supported in Linux. As to 
-littering the git logs with cleanups for this driver, I am not doing such 
-changes. I do not NACK other peoples efforts, but I do not participate.
-
-4. Lack of response of Realtek to feedback: Development of drivers at Realtek is 
-split into two groups. The one that works with PCI devices is in China. They 
-have been very receptive to suggested changes, and I suspect that they study the 
-versions that have been committed as I see their unprompted implementation of 
-some of my changes. In addition, all new PCI-based drivers are mac80211 based. 
-The USB group is in Taiwan. Despite my efforts, very few, if any, of my 
-suggested changes have been adopted by them. None of their new drivers use mac80211.
-
-5. Separate drivers for each chip: As I do not have, nor want, an NDA with 
-Realtek, I have no knowledge of the internal workings of the chips. As such, it 
-would be very difficult for me to write a combined driver for all the 802.11n 
-chips. I do notice that there are fundamental differences such as different 
-layouts of the DMA descriptors. A combined driver would require very many 
-branches based on chip number and would certainly execute much more slowly.
-
-6. Staging drivers rtl8192e and rtl8192u: These drivers predate any association 
-I have with Realtek. In keeping with the Linux tradition of supporting old 
-hardware, they probably need to be kept. Driver rtl8192e is particularly 
-frustrating as it has a PCI ID in common with rtl8192ce. As the information 
-needed to determine which driver applies cannot be read from the PCI interface, 
-both drivers have to be loaded, tested, and the wrong one rejected late in the 
-module probe code.
-
-I am trying to improve the quality of this pile of ****, but I am only one 
-person who was a life-long Fortran-coding scientist until I retired 15 years 
-ago. Since then, I have been learning C and kernel-style coding practices. 
-Certainly there is both a lot to do and a lot to learn.
-
-Thanks for reading this far,
-
-Larry
-
+Thanks
+David
