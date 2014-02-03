@@ -1,128 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaBCXJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:09:00 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46471 "EHLO
+	id S1753873AbaBCXJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:09:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46524 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaBCXI4 (ORCPT
+	with ESMTP id S1752576AbaBCXJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:08:56 -0500
+	Mon, 3 Feb 2014 18:09:00 -0500
 From: Josh Cartwright <joshc@codeaurora.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
+        Mark Brown <broonie@kernel.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
         Sagar Dharia <sdharia@codeaurora.org>,
         Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Subject: [PATCH v5 0/6] Add support for the System Power Management Interface (SPMI)
-Date: Mon,  3 Feb 2014 17:05:32 -0600
-Message-Id: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
+        Michael Bohan <mbohan@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 6/6] regmap: spmi: support base and extended register spaces
+Date: Mon,  3 Feb 2014 17:05:38 -0600
+Message-Id: <1391468739-20987-7-git-send-email-joshc@codeaurora.org>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
+References: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The System Power Management Interface (SPMI) is a high-speed,
-low-latency, bi-directional, two-wire serial bus suitable for real-time
-control of voltage and frequency scaled multi-core application
-processors and its power management of auxiliary components. SPMI
-obsoletes a number of legacy, custom point-to-point interfaces and
-provides a low pin count, high-speed control bus for up to 4 Master and
-16 Slave devices.
+SPMI states that a slave may contain two register spaces, the Base
+register space is a 5-bit byte-addressable space accessed via the
+Register Read/Write and Register Zero Write command sequences, and the
+Extended register space: a 16-bit byte-addressable space accessed via
+the Extended Read/Write and Extended Read/Write Long command sequences.
 
-SPMI is specified by the MIPI (Mobile Industry Process Interface)
-Alliance [1].
+Provide support for accessing both of these spaces, taking advantage of
+the more bandwidth-efficient commands ('Register 0 Write' vs 'Register
+Write', and 'Extended Register Read/Write' vs 'Extended Register
+Read/Write Long') when possible.
 
-This patchset is intended both to provide a core implementation of SPMI and
-also to provide a controller driver implementation.
-  - Patches 1-2 implement the SPMI core functionality and provide basic
-    DT binding documentation
-  - Patches 3-5 provide an implementation of an SPMI controller, the
-    Qualcomm SPMI PMIC Arbiter, currently used on the 8x74 SoCs.
-  - Patch 6 rounds out regmap support for SPMI
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+Acked-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/base/regmap/regmap-spmi.c | 228 ++++++++++++++++++++++++++++++++------
+ include/linux/regmap.h            |  12 +-
+ 2 files changed, 205 insertions(+), 35 deletions(-)
 
-Changes from v4[2]:
-  - Fixed a few minor error-handling bugs found with further testing
-  - Addressed Courtney Cavin's feedback regarding device tree bindings
-  - Reworked Kconfig options a bit (allow for building PMIC arb when COMPILE_TEST=y)
-
-Changes from v3[3]:
-  - Dropped the pm8x41 PMIC driver and pm8xxx-rtc changes as part of this patchset.
-     (will be sent out separately)
-  - Rebased on v3.13-rc2
-  - Move to simple_ida_* for controller ID allocation
-  - Addressed documentation fixes and nits
-  - Provide pm_runtime implementation, which leverages SPMI's SLEEP and WAKEUP
-    commands
-  - Address spmi_controller object lifetime issues
-
-Changes from v2[4]:
-  - Dropped RFC.
-  - Add basic regmap support at Mark Brown's suggestion
-  - Drop debugfs interface.  Debugging SPMI accesses can happen via the regmap
-    debugfs interface if necessary.
-  - Add second address-cell in SPMI generic device tree binding, encoding the
-    address type (suggestion by Stephen Warren)
-  - Implement interrupt handling functionality within the PMIC Arbiter driver
-  - Provide basic MFD driver for the PMIC8x41 PMICs, demonstrating SPMI regmap
-    client use
-  - Adapt existing pm8xxx-rtc driver to work as a child of the PM8x41 mfd device
-
-Changes from v1[5]:
-  - Adopted patch (1/5) to #define for_each_available_node() shim
-    in the !CONFIG_OF case
-  - Moved device tree logic out of drivers/of and into spmi.c core (this
-    mirrors what SPI is doing, and what i2c will soon be doing)
-  - Move of_spmi_add_devices() call into spmi_device_add(), so drivers don't
-    have to call it explicitly
-  - Unconditionally build in debugfs code (rely on the underlying
-    CONFIG_DEBUG_FS switch to throw unused code away)
-  - Change pr_* print functions to their dev_* equivalents
-  - Fix copy_{to,from}_user error handling
-  - Renamed "board_lock" to "ctrl_idr_lock" to better describe it's purpose
-  - Rework device object lifetime management
-  - Rename PMIC arb binding document, add description of PMIC arb
-  - Add generic SPMI device tree bindings
-
-[1]: http://www.mipi.org/specifications/system-power-management-interface
-[2]: http://lkml.kernel.org/r/cover.1389738151.git.joshc@codeaurora.org
-[3]: http://lkml.kernel.org/r/cover.1382985169.git.joshc@codeaurora.org
-[4]: http://lkml.kernel.org/r/cover.1377202730.git.joshc@codeaurora.org
-[5]: http://lkml.kernel.org/r/cover.1376596224.git.joshc@codeaurora.org
-
-Josh Cartwright (4):
-  spmi: add generic SPMI controller binding documentation
-  spmi: pmic_arb: add support for interrupt handling
-  spmi: document the PMIC arbiter SPMI bindings
-  regmap: spmi: support base and extended register spaces
-
-Kenneth Heitke (2):
-  spmi: Linux driver framework for SPMI
-  spmi: Add MSM PMIC Arbiter SPMI controller
-
- .../bindings/spmi/qcom,spmi-pmic-arb.txt           |  60 ++
- Documentation/devicetree/bindings/spmi/spmi.txt    |  41 ++
- drivers/Kconfig                                    |   2 +
- drivers/Makefile                                   |   1 +
- drivers/base/regmap/regmap-spmi.c                  | 228 +++++-
- drivers/spmi/Kconfig                               |  24 +
- drivers/spmi/Makefile                              |   6 +
- drivers/spmi/spmi-pmic-arb.c                       | 778 +++++++++++++++++++++
- drivers/spmi/spmi.c                                | 609 ++++++++++++++++
- include/dt-bindings/spmi/spmi.h                    |  18 +
- include/linux/mod_devicetable.h                    |   8 +
- include/linux/regmap.h                             |  12 +-
- include/linux/spmi.h                               | 191 +++++
- 13 files changed, 1943 insertions(+), 35 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
- create mode 100644 Documentation/devicetree/bindings/spmi/spmi.txt
- create mode 100644 drivers/spmi/Kconfig
- create mode 100644 drivers/spmi/Makefile
- create mode 100644 drivers/spmi/spmi-pmic-arb.c
- create mode 100644 drivers/spmi/spmi.c
- create mode 100644 include/dt-bindings/spmi/spmi.h
- create mode 100644 include/linux/spmi.h
-
+diff --git a/drivers/base/regmap/regmap-spmi.c b/drivers/base/regmap/regmap-spmi.c
+index ac23910..d7026dc 100644
+--- a/drivers/base/regmap/regmap-spmi.c
++++ b/drivers/base/regmap/regmap-spmi.c
+@@ -22,69 +22,235 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ 
+-static int regmap_spmi_read(void *context,
+-			    const void *reg, size_t reg_size,
+-			    void *val, size_t val_size)
++static int regmap_spmi_base_read(void *context,
++				 const void *reg, size_t reg_size,
++				 void *val, size_t val_size)
+ {
++	u8 addr = *(u8 *)reg;
++	int err = 0;
++
++	BUG_ON(reg_size != 1);
++
++	while (val_size-- && !err)
++		err = spmi_register_read(context, addr++, val++);
++
++	return err;
++}
++
++static int regmap_spmi_base_gather_write(void *context,
++					 const void *reg, size_t reg_size,
++					 const void *val, size_t val_size)
++{
++	const u8 *data = val;
++	u8 addr = *(u8 *)reg;
++	int err = 0;
++
++	BUG_ON(reg_size != 1);
++
++	/*
++	 * SPMI defines a more bandwidth-efficient 'Register 0 Write' sequence,
++	 * use it when possible.
++	 */
++	if (addr == 0 && val_size) {
++		err = spmi_register_zero_write(context, *data);
++		if (err)
++			goto err_out;
++
++		data++;
++		addr++;
++		val_size--;
++	}
++
++	while (val_size) {
++		err = spmi_register_write(context, addr, *data);
++		if (err)
++			goto err_out;
++
++		data++;
++		addr++;
++		val_size--;
++	}
++
++err_out:
++	return err;
++}
++
++static int regmap_spmi_base_write(void *context, const void *data,
++				  size_t count)
++{
++	BUG_ON(count < 1);
++	return regmap_spmi_base_gather_write(context, data, 1, data + 1,
++					     count - 1);
++}
++
++static struct regmap_bus regmap_spmi_base = {
++	.read				= regmap_spmi_base_read,
++	.write				= regmap_spmi_base_write,
++	.gather_write			= regmap_spmi_base_gather_write,
++	.reg_format_endian_default	= REGMAP_ENDIAN_NATIVE,
++	.val_format_endian_default	= REGMAP_ENDIAN_NATIVE,
++};
++
++/**
++ * regmap_init_spmi_base(): Create regmap for the Base register space
++ * @sdev:	SPMI device that will be interacted with
++ * @config:	Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer to
++ * a struct regmap.
++ */
++struct regmap *regmap_init_spmi_base(struct spmi_device *sdev,
++				     const struct regmap_config *config)
++{
++	return regmap_init(&sdev->dev, &regmap_spmi_base, sdev, config);
++}
++EXPORT_SYMBOL_GPL(regmap_init_spmi_base);
++
++/**
++ * devm_regmap_init_spmi_base(): Create managed regmap for Base register space
++ * @sdev:	SPMI device that will be interacted with
++ * @config:	Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap.  The regmap will be automatically freed by the
++ * device management code.
++ */
++struct regmap *devm_regmap_init_spmi_base(struct spmi_device *sdev,
++					  const struct regmap_config *config)
++{
++	return devm_regmap_init(&sdev->dev, &regmap_spmi_base, sdev, config);
++}
++EXPORT_SYMBOL_GPL(devm_regmap_init_spmi_base);
++
++static int regmap_spmi_ext_read(void *context,
++				const void *reg, size_t reg_size,
++				void *val, size_t val_size)
++{
++	int err = 0;
++	size_t len;
++	u16 addr;
++
+ 	BUG_ON(reg_size != 2);
+-	return spmi_ext_register_readl(context, *(u16 *)reg,
+-				       val, val_size);
++
++	addr = *(u16 *)reg;
++
++	/*
++	 * Split accesses into two to take advantage of the more
++	 * bandwidth-efficient 'Extended Register Read' command when possible
++	 */
++	while (addr <= 0xFF && val_size) {
++		len = min_t(size_t, val_size, 16);
++
++		err = spmi_ext_register_read(context, addr, val, len);
++		if (err)
++			goto err_out;
++
++		addr += len;
++		val += len;
++		val_size -= len;
++	}
++
++	while (val_size) {
++		len = min_t(size_t, val_size, 8);
++
++		err = spmi_ext_register_readl(context, addr, val, val_size);
++		if (err)
++			goto err_out;
++
++		addr += len;
++		val += len;
++		val_size -= len;
++	}
++
++err_out:
++	return err;
+ }
+ 
+-static int regmap_spmi_gather_write(void *context,
+-				    const void *reg, size_t reg_size,
+-				    const void *val, size_t val_size)
++static int regmap_spmi_ext_gather_write(void *context,
++					const void *reg, size_t reg_size,
++					const void *val, size_t val_size)
+ {
++	int err = 0;
++	size_t len;
++	u16 addr;
++
+ 	BUG_ON(reg_size != 2);
+-	return spmi_ext_register_writel(context, *(u16 *)reg, val, val_size);
++
++	addr = *(u16 *)reg;
++
++	while (addr <= 0xFF && val_size) {
++		len = min_t(size_t, val_size, 16);
++
++		err = spmi_ext_register_write(context, addr, val, len);
++		if (err)
++			goto err_out;
++
++		addr += len;
++		val += len;
++		val_size -= len;
++	}
++
++	while (val_size) {
++		len = min_t(size_t, val_size, 8);
++
++		err = spmi_ext_register_writel(context, addr, val, len);
++		if (err)
++			goto err_out;
++
++		addr += len;
++		val += len;
++		val_size -= len;
++	}
++
++err_out:
++	return err;
+ }
+ 
+-static int regmap_spmi_write(void *context, const void *data,
+-			     size_t count)
++static int regmap_spmi_ext_write(void *context, const void *data,
++				 size_t count)
+ {
+ 	BUG_ON(count < 2);
+-	return regmap_spmi_gather_write(context, data, 2, data + 2, count - 2);
++	return regmap_spmi_ext_gather_write(context, data, 2, data + 2,
++					    count - 2);
+ }
+ 
+-static struct regmap_bus regmap_spmi = {
+-	.read				= regmap_spmi_read,
+-	.write				= regmap_spmi_write,
+-	.gather_write			= regmap_spmi_gather_write,
++static struct regmap_bus regmap_spmi_ext = {
++	.read				= regmap_spmi_ext_read,
++	.write				= regmap_spmi_ext_write,
++	.gather_write			= regmap_spmi_ext_gather_write,
+ 	.reg_format_endian_default	= REGMAP_ENDIAN_NATIVE,
+ 	.val_format_endian_default	= REGMAP_ENDIAN_NATIVE,
+ };
+ 
+ /**
+- * regmap_init_spmi(): Initialize register map
+- *
+- * @sdev: Device that will be interacted with
+- * @config: Configuration for register map
++ * regmap_init_spmi_ext(): Create regmap for Ext register space
++ * @sdev:	Device that will be interacted with
++ * @config:	Configuration for register map
+  *
+  * The return value will be an ERR_PTR() on error or a valid pointer to
+  * a struct regmap.
+  */
+-struct regmap *regmap_init_spmi(struct spmi_device *sdev,
+-				const struct regmap_config *config)
++struct regmap *regmap_init_spmi_ext(struct spmi_device *sdev,
++				    const struct regmap_config *config)
+ {
+-	return regmap_init(&sdev->dev, &regmap_spmi, sdev, config);
++	return regmap_init(&sdev->dev, &regmap_spmi_ext, sdev, config);
+ }
+-EXPORT_SYMBOL_GPL(regmap_init_spmi);
++EXPORT_SYMBOL_GPL(regmap_init_spmi_ext);
+ 
+ /**
+- * devm_regmap_init_spmi(): Initialise managed register map
+- *
+- * @sdev: Device that will be interacted with
+- * @config: Configuration for register map
++ * devm_regmap_init_spmi_ext(): Create managed regmap for Ext register space
++ * @sdev:	SPMI device that will be interacted with
++ * @config:	Configuration for register map
+  *
+  * The return value will be an ERR_PTR() on error or a valid pointer
+  * to a struct regmap.  The regmap will be automatically freed by the
+  * device management code.
+  */
+-struct regmap *devm_regmap_init_spmi(struct spmi_device *sdev,
++struct regmap *devm_regmap_init_spmi_ext(struct spmi_device *sdev,
+ 				     const struct regmap_config *config)
+ {
+-	return devm_regmap_init(&sdev->dev, &regmap_spmi, sdev, config);
++	return devm_regmap_init(&sdev->dev, &regmap_spmi_ext, sdev, config);
+ }
+-EXPORT_SYMBOL_GPL(devm_regmap_init_spmi);
++EXPORT_SYMBOL_GPL(devm_regmap_init_spmi_ext);
+ 
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 4149f1a..8cc73ac 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -321,8 +321,10 @@ struct regmap *regmap_init_i2c(struct i2c_client *i2c,
+ 			       const struct regmap_config *config);
+ struct regmap *regmap_init_spi(struct spi_device *dev,
+ 			       const struct regmap_config *config);
+-struct regmap *regmap_init_spmi(struct spmi_device *dev,
+-			       const struct regmap_config *config);
++struct regmap *regmap_init_spmi_base(struct spmi_device *dev,
++				     const struct regmap_config *config);
++struct regmap *regmap_init_spmi_ext(struct spmi_device *dev,
++				    const struct regmap_config *config);
+ struct regmap *regmap_init_mmio_clk(struct device *dev, const char *clk_id,
+ 				    void __iomem *regs,
+ 				    const struct regmap_config *config);
+@@ -335,8 +337,10 @@ struct regmap *devm_regmap_init_i2c(struct i2c_client *i2c,
+ 				    const struct regmap_config *config);
+ struct regmap *devm_regmap_init_spi(struct spi_device *dev,
+ 				    const struct regmap_config *config);
+-struct regmap *devm_regmap_init_spmi(struct spmi_device *dev,
+-				     const struct regmap_config *config);
++struct regmap *devm_regmap_init_spmi_base(struct spmi_device *dev,
++					  const struct regmap_config *config);
++struct regmap *devm_regmap_init_spmi_ext(struct spmi_device *dev,
++					 const struct regmap_config *config);
+ struct regmap *devm_regmap_init_mmio_clk(struct device *dev, const char *clk_id,
+ 					 void __iomem *regs,
+ 					 const struct regmap_config *config);
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
