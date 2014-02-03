@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaBCNmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 08:42:23 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:57886 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069AbaBCNkk (ORCPT
+	id S1752238AbaBCNqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 08:46:13 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:34490 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaBCNqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 08:40:40 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: Linux IIO List <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 1/6] iio: add support for pulse width capture devices
-Date: Mon,  3 Feb 2014 08:40:27 -0500
-Message-Id: <1391434832-23807-2-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1391434832-23807-1-git-send-email-mporter@linaro.org>
-References: <1391434832-23807-1-git-send-email-mporter@linaro.org>
+	Mon, 3 Feb 2014 08:46:11 -0500
+Message-ID: <52EF9D9F.5020600@codeaurora.org>
+Date: Mon, 03 Feb 2014 08:46:07 -0500
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: document "mach-virt" platform.
+References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com> <52EA83D6.9050506@codeaurora.org> <20140203045638.GB4167@cbox>
+In-Reply-To: <20140203045638.GB4167@cbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a channel type to support pulse width capture devices.
-These devices capture the timing of a PWM signal based on a
-configurable trigger
+Hi Christoffer,
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- drivers/iio/industrialio-core.c | 1 +
- include/linux/iio/types.h       | 1 +
- 2 files changed, 2 insertions(+)
+On 02/02/2014 11:56 PM, Christoffer Dall wrote:
+> On Thu, Jan 30, 2014 at 11:54:46AM -0500, Christopher Covington wrote:
+>> I think it would be informative to provide pointers here to commonly used
+>> paravirtualized devices, especially VirtIO PCI/MMIO.
+> 
+> I disagree: that would only encourage limited testing or assumptions
+> about these specific devices when really this platform is just a
+> bare-bones platform driven by device tree which should make no
+> preference, whatsoever, about which devices are used with the platform.
 
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index acc911a..6ea0cf8 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
- 	[IIO_CCT] = "cct",
- 	[IIO_PRESSURE] = "pressure",
- 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
-+	[IIO_PULSE] = "pulse",
- };
- 
- static const char * const iio_modifier_names[] = {
-diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-index 084d882..4fa8840 100644
---- a/include/linux/iio/types.h
-+++ b/include/linux/iio/types.h
-@@ -30,6 +30,7 @@ enum iio_chan_type {
- 	IIO_CCT,
- 	IIO_PRESSURE,
- 	IIO_HUMIDITYRELATIVE,
-+	IIO_PULSE,
- };
- 
- enum iio_modifier {
+I'd be all for clearly stating that no assumptions can be made. Perhaps you
+can explain though how providing less documentation will result in more
+testing? The assertion does not currently make sense to me.
+
+Thanks,
+Christopher
+
 -- 
-1.8.4
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
