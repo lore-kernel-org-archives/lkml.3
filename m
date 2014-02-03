@@ -1,109 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaBCIp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 03:45:57 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:39538 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbaBCIpx (ORCPT
+	id S1751726AbaBCIrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 03:47:32 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:44858 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaBCIra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 03:45:53 -0500
-Message-ID: <52EF573B.2000701@monstr.eu>
-Date: Mon, 03 Feb 2014 09:45:47 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 3 Feb 2014 03:47:30 -0500
+Date: Mon, 3 Feb 2014 09:47:25 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
+        SH-Linux <linux-sh@vger.kernel.org>, devicetree@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] spi: rspi: fix build error when CONFIG_OF is not set
+In-Reply-To: <52EEF452.4060205@renesas.com>
+Message-ID: <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
+References: <52EEF452.4060205@renesas.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 10/10] watchdog: xilinx: Enable this driver for Zynq
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <f7bdfada576e93eaab8f6dc2ecd881da8f43911c.1391177880.git.michal.simek@xilinx.com> <52EBB897.6040300@roeck-us.net> <52EF3ECF.4010006@monstr.eu> <52EF52A8.4080400@roeck-us.net>
-In-Reply-To: <52EF52A8.4080400@roeck-us.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="VxjsieEpO8aKvrtlcOSt3lKOdFSktdSJU"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---VxjsieEpO8aKvrtlcOSt3lKOdFSktdSJU
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+	Hi Shimoda-san,
 
-On 02/03/2014 09:26 AM, Guenter Roeck wrote:
-> On 02/02/2014 11:01 PM, Michal Simek wrote:
->> On 01/31/2014 03:52 PM, Guenter Roeck wrote:
->>> On 01/31/2014 06:18 AM, Michal Simek wrote:
->>>> Enable this driver for Zynq.
->>>> Move it to architecture independent Kconfig part.
->>>>
->>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->>>> ---
->>>>
->>>> Build tested by zero day testing system.
->>>> ---
->>>>    drivers/watchdog/Kconfig | 22 +++++++++-------------
->>>>    1 file changed, 9 insertions(+), 13 deletions(-)
->>>>
->>>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
->>>> index 9db5d3c..6120403 100644
->>>> --- a/drivers/watchdog/Kconfig
->>>> +++ b/drivers/watchdog/Kconfig
->>>> @@ -111,6 +111,15 @@ config WM8350_WATCHDOG
->>>>          Support for the watchdog in the WM8350 AudioPlus PMIC.  Whe=
-n
->>>>          the watchdog triggers the system will be reset.
->>>>
->>>> +config XILINX_WATCHDOG
->>>> +    tristate "Xilinx Watchdog timer"
->>>> +    select WATCHDOG_CORE
->>>
->>> This needs to depend on HAS_IOMEM.
->>
->> Are you sure?
->> I have no problem to do this change.
->> Zero day testing system doesn't report any problem with it.
->>
->> I have checked dependencies and only score, tile and um has NO_IOMEM o=
-ption
->> enables. And below in log is tile with allyesconfig that's why I belie=
-ve
->> this driver has been also tested without any issue.
->>
->=20
-> https://lkml.org/lkml/2014/1/31/123
->=20
-> I would have assumed the same applies here, but if you are sure that it=
- doesn't I am fine.
+On Mon, 3 Feb 2014, Shimoda, Yoshihiro wrote:
+> This patch fixes an issue that the following build error happens when
+> the CONFIG_OF is not set:
+> 
+> drivers/spi/spi-rspi.c: In function 'rspi_probe':
+> drivers/spi/spi-rspi.c:1203:26: error: 'rspi_of_match' undeclared (first use in this function)
+> 
+> Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+> ---
+>  This patch is based on the latest origin/topic/rspi branch in the spi.git.
+> 
+>  drivers/spi/spi-rspi.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+> index 34ad4bc..e5cfc3d 100644
+> --- a/drivers/spi/spi-rspi.c
+> +++ b/drivers/spi/spi-rspi.c
+> @@ -1164,6 +1164,7 @@ static int rspi_parse_dt(struct device *dev, struct spi_master *master)
+>  	return 0;
+>  }
+>  #else
+> +#define rspi_of_match	NULL
+>  static inline int rspi_parse_dt(struct device *dev, struct spi_master *master)
+>  {
+>  	return -EINVAL;
+> -- 
+> 1.7.1
 
-I am not 100% sure because I didn't compile it myself for that 3 archs
-but one was just fine.
+Thanks, obviously I missed that of_match_device() still uses the ID table
+parameter if CONFIG_OF=n :-(
 
-Thanks,
-Michal
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Below I have two alternative solutions:
+  1. Uses rspi_of_match() to nullify the ID table pointer, like is done in
+     the platform_driver structure,
+  2. Fixes it at the OF subsystem level, by nullifying the ID table pointer
+     inside of_match_device().
+
+If 2 is accepted, drivers don't have to care about this anymore.
+
+What do you think?
+
+>From 060b8577e95441ee3b29e966a9fdd19b2a870bdf Mon Sep 17 00:00:00 2001
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Date: Mon, 3 Feb 2014 09:22:06 +0100
+Subject: [PATCH 1/2] spi: rspi: fix build error when CONFIG_OF is not set
+
+If CONFIG_OF=n:
+
+drivers/spi/spi-rspi.c: In function 'rspi_probe':
+drivers/spi/spi-rspi.c:1203:26: error: 'rspi_of_match' undeclared (first use in this function)
+drivers/spi/spi-rspi.c:1203:26: note: each undeclared identifier is reported only once for each function it appears in
+
+Use of_match_ptr() to fix this.
+
+Reported-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ drivers/spi/spi-rspi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+index 1c3aed63a2e0..df637184f6f0 100644
+--- a/drivers/spi/spi-rspi.c
++++ b/drivers/spi/spi-rspi.c
+@@ -1200,7 +1200,7 @@ static int rspi_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	of_id = of_match_device(rspi_of_match, &pdev->dev);
++	of_id = of_match_device(of_match_ptr(rspi_of_match), &pdev->dev);
+ 	if (of_id) {
+ 		ops = of_id->data;
+ 		ret = rspi_parse_dt(&pdev->dev, master);
+-- 
+1.7.9.5
 
 
+>From 477ab825d43524959d68c3974e6e9536bd83bcde Mon Sep 17 00:00:00 2001
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Date: Mon, 3 Feb 2014 09:27:40 +0100
+Subject: [PATCH 2/2] [RFC] of/device: Nullify match table in
+ of_match_device() for CONFIG_OF=n
 
---VxjsieEpO8aKvrtlcOSt3lKOdFSktdSJU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+If the of_device_id table inside a device driver is protected by #ifdef
+CONFIG_OF, the driver still has to provide a dummy declaration of the
+table, or wrap it inside of_match_ptr(), when calling of_match_device()
+in the CONFIG_OF=n case, else the driver fails to compile with e.g.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+drivers/spi/spi-rspi.c: In function 'rspi_probe':
+drivers/spi/spi-rspi.c:1203:26: error: 'rspi_of_match' undeclared (first use in this function)
+drivers/spi/spi-rspi.c:1203:26: note: each undeclared identifier is reported only once for each function it appears in
 
-iEYEARECAAYFAlLvVzsACgkQykllyylKDCE1jQCfYJtdx7go5wLO7gHOvmHXyikZ
-4mQAoJyWFRdWQSUy2ux/bJlXcks8iI8f
-=uQJN
------END PGP SIGNATURE-----
+Make of_match_device() nullify the table pointer if CONFIG_OF=n to fix
+this.
 
---VxjsieEpO8aKvrtlcOSt3lKOdFSktdSJU--
+Reported-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ include/linux/of_device.h |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+index 82ce324fdce7..dac8bd2890ca 100644
+--- a/include/linux/of_device.h
++++ b/include/linux/of_device.h
+@@ -72,11 +72,13 @@ static inline int of_device_uevent_modalias(struct device *dev,
+ 
+ static inline void of_device_node_put(struct device *dev) { }
+ 
+-static inline const struct of_device_id *of_match_device(
++static inline const struct of_device_id *__of_match_device(
+ 		const struct of_device_id *matches, const struct device *dev)
+ {
+ 	return NULL;
+ }
++#define of_match_device(matches, dev)	\
++	__of_match_device(of_match_ptr(matches), (dev))
+ 
+ static inline struct device_node *of_cpu_device_node_get(int cpu)
+ {
+-- 
+1.7.9.5
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
