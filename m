@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaBCMOn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 07:14:43 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:43497 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbaBCMOi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 07:14:38 -0500
+	id S1751574AbaBCMU5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 07:20:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58944 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751039AbaBCMUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 07:20:55 -0500
+Date: Mon, 3 Feb 2014 13:20:52 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org
+Subject: Re: Need help in bug in isolate_migratepages_range
+Message-ID: <20140203122052.GC2495@dhcp22.suse.cz>
+References: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de>
 MIME-Version: 1.0
-In-Reply-To: <CAC5umyjJfO9UyAkoG-bEX-vdO+X0fM_YD2dwj2AHT6T7hKgv0A@mail.gmail.com>
-References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
-	<1389708830-5841-2-git-send-email-akinobu.mita@gmail.com>
-	<52E66527.8010000@samsung.com>
-	<20140127152342.GC20968@phenom.dumpdata.com>
-	<CAC5umyjJfO9UyAkoG-bEX-vdO+X0fM_YD2dwj2AHT6T7hKgv0A@mail.gmail.com>
-Date: Mon, 3 Feb 2014 21:14:37 +0900
-Message-ID: <CAC5umyiFfrfe2MVMi-PJW6g8SXJvAsLzdy7vX-VPKhPuXFSbcw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] x86: make dma_alloc_coherent() return zeroed
- memory if CMA is enabled
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-29 Akinobu Mita <akinobu.mita@gmail.com>:
-> 2014-01-28 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>:
->> On Mon, Jan 27, 2014 at 02:54:47PM +0100, Marek Szyprowski wrote:
->>> Hello,
->>>
->>> On 2014-01-14 15:13, Akinobu Mita wrote:
->>> >Calling dma_alloc_coherent() with __GFP_ZERO must return zeroed memory.
->>> >
->>> >But when the contiguous memory allocator (CMA) is enabled on x86 and
->>> >the memory region is allocated by dma_alloc_from_contiguous(), it
->>> >doesn't return zeroed memory.  Because dma_generic_alloc_coherent()
->>> >forgot to fill the memory region with zero if it was allocated by
->>> >dma_alloc_from_contiguous()
->>>
->>> I just wonder how it will work with high mem? I've didn't check the x86
->>> dma mapping code yet, but page_address() works only for pages, which comes
->>> from low memory. In other patches you have added an option to place CMA
->>> area anywhere in the memory. Is the x86 pci dma code ready for the case
->>> when cma area is put into high mem and direct mappings are not available?
->>
->> Yes and no. The swiotbl_bounce does have the code to take that into account.
->> But that is it - nothing else does - so I think you would run in the
->> possiblity of 'page_address' not providing an correct virtual address.
->
-> Thanks for spotting the issue.  I haven't much tested on x86_32.
-> I'll go through it and try to find the solution.
+[CCing linux-mm]
 
-I have confirmed that locating CMA on highmem range with a
-'cma=size@start-end' kernel parameter by this patch set caused the
-issue on x86_32.
+Does this ring bells? I haven't checked very deeply but it doesn't seem
+to be fixed since 3.12.
 
-This can be fixed by limiting CMA area upto max_low_pfn to prevent
-from locating it on highmem at arch/x86/kernel/setup.c:setup_arch()
+Hoolger, could you post your config, please?
 
--       dma_contiguous_reserve(0);
-+       dma_contiguous_reserve(max_low_pfn << PAGE_SHIFT);
+On Fri 31-01-14 21:12:27, Holger Kiehl wrote:
+> Hello,
+> 
+> today one of our system got a kernel bug message. It kept on running
+> but more and more process begin to be stuck in D state (eg. a simple w
+> command would never return) and I eventually had to reboot. Here the
+> full message:
+> 
+>    Jan 31 13:07:43 asterix kernel: BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
+>    Jan 31 13:07:43 asterix kernel: IP: [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
+>    Jan 31 13:07:43 asterix kernel: PGD 7d3074067 PUD 7d3073067 PMD 0
+>    Jan 31 13:07:43 asterix kernel: Oops: 0000 [#1] SMP
+>    Jan 31 13:07:43 asterix kernel: Modules linked in: drbd lru_cache coretemp ipmi_devintf bonding nf_conntrack_ftp binfmt_misc usbhid i2c_i801 sg ehci_pci i2c_core ehci_hcd uhci_hcd i5000_edac i5k_amb ipmi_si ipmi_msghandler usbcore usb_common [last unloaded: microcode]
+>    Jan 31 13:07:43 asterix kernel: CPU: 5 PID: 14164 Comm: java Not tainted 3.12.9 #1
+>    Jan 31 13:07:43 asterix kernel: Hardware name: FUJITSU SIEMENS PRIMERGY RX300 S4             /D2519, BIOS 4.06  Rev. 1.04.2519             07/30/2008
+>    Jan 31 13:07:43 asterix kernel: task: ffff8807d30b08c0 ti: ffff8807d30b2000 task.ti: ffff8807d30b2000
+>    Jan 31 13:07:43 asterix kernel: RIP: 0010:[<ffffffff810af0ac>]  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
+>    Jan 31 13:07:43 asterix kernel: RSP: 0000:ffff8807d30b3928  EFLAGS: 00010286
+>    Jan 31 13:07:43 asterix kernel: RAX: 0000000000000000 RBX: 000000000020ec09 RCX: 0000000000000002
+>    Jan 31 13:07:43 asterix kernel: RDX: 2c00000000008000 RSI: 0000000000000004 RDI: 000000000000006c
+>    Jan 31 13:07:43 asterix kernel: RBP: ffff8807d30b39f8 R08: ffff88083fbde390 R09: 0000000000000001
+>    Jan 31 13:07:43 asterix kernel: R10: 0000000000000000 R11: ffffea000733a000 R12: ffff8807d30b3a58
+>    Jan 31 13:07:43 asterix kernel: R13: ffffea000733a1f8 R14: 0000000000000000 R15: ffff88083ffe1d80
+>    Jan 31 13:07:43 asterix kernel: FS:  00007f9d9e72f910(0000) GS:ffff88083fd40000(0000) knlGS:0000000000000000
+>    Jan 31 13:07:43 asterix kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c CR3: 00000007d3070000 CR4: 00000000000407e0
+>    Jan 31 13:07:43 asterix kernel: Stack:
+>    Jan 31 13:07:43 asterix kernel: 0000000000000009 ffff88083ffe16c0 ffffea00002e6af0 ffff8807d30b3998
+>    Jan 31 13:07:43 asterix kernel: ffff8807d30b2010 00ff8807d30b08c0 ffff8807d30b08c0 000000000020f000
+>    Jan 31 13:07:43 asterix kernel: 0000000000000000 000000000000083b 000000000000000a ffff8807d30b3a68
+>    Jan 31 13:07:43 asterix kernel: Call Trace:
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810a161f>] ? lru_add_drain_cpu+0x25/0x97
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810af687>] compact_zone+0x2b5/0x319
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810da586>] ? put_super+0x20/0x2c
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810afa4d>] compact_zone_order+0xad/0xc4
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810afaf5>] try_to_compact_pages+0x91/0xe8
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff8109b92d>] ? page_alloc_cpu_notify+0x3e/0x3e
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff8109da34>] __alloc_pages_direct_compact+0xae/0x195
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff8109e45d>] __alloc_pages_nodemask+0x772/0x7b5
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810c85a3>] alloc_pages_vma+0xd6/0x101
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810d47e3>] do_huge_pmd_anonymous_page+0x199/0x2ee
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810b3884>] handle_mm_fault+0x1b7/0xceb
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff8105dedc>] ? __dequeue_entity+0x2e/0x33
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8c3>] __do_page_fault+0x3bd/0x3e4
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810bbe1a>] ? mprotect_fixup+0x1c9/0x1fb
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810aa0f0>] ? vm_mmap_pgoff+0x6d/0x8f
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff810795f5>] ? SyS_futex+0x103/0x13d
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff8102d8f3>] do_page_fault+0x9/0xb
+>    Jan 31 13:07:43 asterix kernel: [<ffffffff813d3672>] page_fault+0x22/0x30
+>    Jan 31 13:07:43 asterix kernel: Code: 00 41 f7 45 00 ff ff ff 01 0f 85 43 02 00 00 41 8b 45 18 85 c0 0f 89 37 02 00 00 49 8b 55 00 4c 89 e8 66 85 d2 79 04 49 8b 45 30 <8b> 40 1c 83 f8 01 0f 85 1b 02 00 00 49 8b 55 08 30 c0 48 85 d2
+>    Jan 31 13:07:43 asterix kernel: RIP  [<ffffffff810af0ac>] isolate_migratepages_range+0x32d/0x653
+>    Jan 31 13:07:43 asterix kernel: RSP <ffff8807d30b3928>
+>    Jan 31 13:07:43 asterix kernel: CR2: 000000000000001c
+>    Jan 31 13:07:43 asterix kernel: ---[ end trace fba75c5b0b9175ea ]---
+> 
+> Kernel is a plain kernel.org kernel 3.12.9 and it uses drbd to replicate
+> data to another host. Any idea what the cause of this bug is? Could it be
+> hardware? The system has been running now for five years without any problems.
+> 
+> Please CC me since I am not on the list.
+> 
+> Many thanks in advance.
+> 
+> Regards,
+> Holger
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I'm going to inlcude this change in this patch set.
+-- 
+Michal Hocko
+SUSE Labs
