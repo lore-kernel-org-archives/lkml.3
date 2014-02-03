@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaBCTde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:33:34 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:37765 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559AbaBCTdd (ORCPT
+	id S1753506AbaBCTej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:34:39 -0500
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:39925 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903AbaBCTeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:33:33 -0500
-Message-ID: <52EFEF0A.9080101@amacapital.net>
-Date: Mon, 03 Feb 2014 11:33:30 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 3 Feb 2014 14:34:37 -0500
 MIME-Version: 1.0
-To: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>, viro@zeniv.linux.org.uk
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
+In-Reply-To: <52EF64CE.90506@ladisch.de>
 References: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
-In-Reply-To: <1391393832-8754-1-git-send-email-n1ght.4nd.d4y@gmail.com>
+	<52EF64CE.90506@ladisch.de>
+Date: Mon, 3 Feb 2014 11:34:36 -0800
+Message-ID: <CAJ3m7BohjBxGE4UmjEibhB0ndv+9sK6A-C8y3JiHWHUdFtEhwQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] epoll: read(),write(),ioctl() interface
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2014 06:17 PM, Nathaniel Yazdani wrote:
-> Hi everyone,
-> 
-> This patch series adds support for read(), write(), and ioctl() operations
-> on eventpolls as well as an associated userspace structure to format the
-> eventpoll entries delivered via read()/write() buffers. The new structure,
-> struct epoll, differs from struct epoll_event mainly in that it also holds
-> the associated file descriptor. Using the normal I/O interface to manipulate
-> eventpolls is much neater than using epoll-specific syscalls while also
-> allowing for greater flexibility (theoretically, pipes could be used to
-> filter access). Specifically, write() creates, modifies, and/or removes event
-> entries stored in the supplied buffer, using the userspace identifier to
-> check whether an entry exists and removing it if no events are set to trigger
-> it, while read() simply waits for enough events to fill the provided buffer.
-> As timeout control is essential for polling to be practical, ioctl() is used
-> to configure an optional timeout, which is infinite by default.
+On 2/3/14, Clemens Ladisch <clemens@ladisch.de> wrote:
+> Nathaniel Yazdani wrote:
+>> Using the normal I/O interface to manipulate eventpolls is much neater
+>> than using epoll-specific syscalls
+>
+> But it introduces a _second_ API, which is epoll-specific too, and does
+> not use the standard semantics either.
+>
+>> while also allowing for greater flexibility (theoretically, pipes could
+>> be used to filter access).
+>
+> I do not understand this.
 
-If major changes are made to the epoll API, I want a way to do a bunch
-of EPOLL_CTL_MODs and a wait, all in one syscall.  Even better: allow
-more flexible timeouts (CLOCK_MONOTONIC, CLOCK_REALTIME, etc) at the
-same time.
+The idea here was that if epoll is controlled by read()/write(), then
+a program could be written so that it expects the epoll to dup()ed
+to a second file descriptor, using one exclusively for writing & the
+other exclusively for reading. That way, if an application is in
+debug mode, for example, it could start up a thread to replace
+those two file descriptors with pipes, so that thread would then
+be able to tee, preprocess, or do whatever else to the epoll
+streams.
 
-Since this can't do that, I'm not terribly inspired.
+>> read() simply waits for enough events to fill the provided buffer.
+>
+> The usual semantics of read() are to return a partially filled buffer if
+> it would block otherwise, i.e., blocking is done only if the returned
+> buffer would have been empty.
+>
+>> As timeout control is essential for polling to be practical, ioctl() is
+>> used to configure an optional timeout
+>
+> This is what the timeout parameter of poll() and friends is for.
 
---Andy
+I admit that part of this approach isn't the best.
 
-> 
->  Documentation/ioctl/ioctl-number.txt |   1 +
->  fs/eventpoll.c                       | 534 ++++++++++++++++++++++++-----------
->  include/uapi/linux/eventpoll.h       |  10 +
->  3 files changed, 384 insertions(+), 161 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+Either way I appreciate your feedback,
+Nathaniel Yazdani
