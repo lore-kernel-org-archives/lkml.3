@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaBCVin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 16:38:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753735AbaBCViV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 16:38:21 -0500
-Date: Mon, 3 Feb 2014 16:38:13 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg Pearson <greg.pearson@hp.com>
-Cc: akpm@linux-foundation.org, d.hatayama@jp.fujitsu.com,
-        holzheu@linux.vnet.ibm.com, dhowells@redhat.com,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during
- header update
-Message-ID: <20140203213813.GH10795@redhat.com>
-References: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
+	id S1753987AbaBCVjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 16:39:36 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42427 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168AbaBCVjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 16:39:35 -0500
+Date: Mon, 3 Feb 2014 21:39:26 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140203213926.GA10323@ZenIV.linux.org.uk>
+References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
+ <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+ <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+ <20140203211955.GY10323@ZenIV.linux.org.uk>
+ <CA+55aFyfPVgGXn_hSBnnVyzWn4AbZQ40MPk_AoKB_6uC6LJqPg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
+In-Reply-To: <CA+55aFyfPVgGXn_hSBnnVyzWn4AbZQ40MPk_AoKB_6uC6LJqPg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 01:18:38PM -0700, Greg Pearson wrote:
+On Mon, Feb 03, 2014 at 01:31:19PM -0800, Linus Torvalds wrote:
 
-[..]
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 2ca7ba0..051c803 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -468,12 +468,14 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
->  			return rc;
->  		}
->  		nhdr_ptr = notes_section;
-> -		while (real_sz < max_sz) {
-> -			if (nhdr_ptr->n_namesz == 0)
-> -				break;
-> +		while (nhdr_ptr->n_namesz != 0) {
->  			sz = sizeof(Elf64_Nhdr) +
->  				((nhdr_ptr->n_namesz + 3) & ~3) +
->  				((nhdr_ptr->n_descsz + 3) & ~3);
-> +			if ((real_sz + sz) > max_sz) {
-> +				pr_warn("Warning: dropping PT_NOTE entry\n");
-> +				break;
-> +			}
+> If the protocol is path-based (and it happens, and it's actually the
+> *correct* thing to do for a network filesystem, rather than the
+> idiotic "file handle" crap that tries to emulate the unix inode
+> semantics in the protocol), then the inode is simply not sufficient.
+> 
+> And no, d_find_alias() is not correct or sufficient either. It can
+> work in practice (and probably does perfectly fine 99.9% of the time),
+> but it can equally well give the *wrong* dentry: yes, the dentry it
+> returns would have been a valid dentry for somebody at some time, but
+> it might be a stale dentry *now*, and it might be the wrong dentry for
+> the current user (because the current user may not have permissions to
+> that particular path, even if the user has permissions through his
+> *own* path).
+> 
+> So I really think you're *fundamentally* incorrect when you say
+> "result *is* a function of inode alone".
 
-Hi Greg,
+Which fs are you talking about?  For 9P it *is* a function of inode alone.
+For CIFS there's no wrong dentry to pick - it doesn't have links to start
+with.
 
-Couple of minor nits.
-
-I think it is a good idea to give more data in warning which tells why
-are we dropping a note entry. May be something like.
-
-"Warning: Total note entry size exceeded PT_NOTE memsz. Dropping PT_NOTE entry, n_namesz=<> n_descsz=<>".
-
-Secondly, if there is only on note entry in a PT_NOTE header and we drop
-it, then that PT_NOTE header is empty and needs to be cleaned up.
-
-I think you will have to modify get_note_number_and_size_elf64() and
-other relevant functions which are not expecting ->p_memsz=0.
-
-Thanks
-Vivek
+If we really have hardlinks, the result of permission check would better
+be a function of inode itself - as in, "if it gives different results
+for two pathnames reachable for the same user, we have a bug".
