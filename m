@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295AbaBCRlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 12:41:22 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36313 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaBCRlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 12:41:20 -0500
-Date: Mon, 3 Feb 2014 09:41:25 -0800
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: document "mach-virt" platform.
-Message-ID: <20140203174125.GH4167@cbox>
-References: <1391098262-15944-1-git-send-email-ian.campbell@citrix.com>
- <52EA83D6.9050506@codeaurora.org>
- <20140203045638.GB4167@cbox>
- <52EF9D9F.5020600@codeaurora.org>
+	id S1752819AbaBCRrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 12:47:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912AbaBCRrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 12:47:20 -0500
+Date: Mon, 3 Feb 2014 18:46:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Jiang Liu <liuj97@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Robin Holt <holt@sgi.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        liguang <lig.fnst@cn.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] Add VM_INIT_DEF_MASK and PRCTL_THP_DISABLE
+Message-ID: <20140203174650.GA27592@redhat.com>
+References: <1391192628-113858-1-git-send-email-athorlton@sgi.com> <1391192628-113858-5-git-send-email-athorlton@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52EF9D9F.5020600@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1391192628-113858-5-git-send-email-athorlton@sgi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 08:46:07AM -0500, Christopher Covington wrote:
-> Hi Christoffer,
-> 
-> On 02/02/2014 11:56 PM, Christoffer Dall wrote:
-> > On Thu, Jan 30, 2014 at 11:54:46AM -0500, Christopher Covington wrote:
-> >> I think it would be informative to provide pointers here to commonly used
-> >> paravirtualized devices, especially VirtIO PCI/MMIO.
-> > 
-> > I disagree: that would only encourage limited testing or assumptions
-> > about these specific devices when really this platform is just a
-> > bare-bones platform driven by device tree which should make no
-> > preference, whatsoever, about which devices are used with the platform.
-> 
-> I'd be all for clearly stating that no assumptions can be made. Perhaps you
-> can explain though how providing less documentation will result in more
-> testing? The assertion does not currently make sense to me.
-> 
-If the documentation states that this is commonly used with virtio/xen
-pv drivers, then I'm afraid people will just assume that's the only
-devices the platform is used with.
+On 01/31, Alex Thorlton wrote:
+>
+> This patch adds a VM_INIT_DEF_MASK,
 
-Any mention of specific devices or features steers the attention away
-from the essential point of this documentation.
+Perhaps it makes sense to tell a bit more... We add this mask to preserve
+VM_NOHUGEPAGE after fork/exec. And this is obviously affects s390, say the
+result of KVM_S390_ENABLE_SIE will be preserved.
 
-I don't see how adding this text helps.  Such documentation should go
-elsewhere, in QEMU, or a Xen/KVM web page or something like that.
+I hope this is fine, but should be documented and it would be nice to have
+the acks from Gerald.
 
-Anyway, I'm not religious about this point.
 
--Christoffer
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -1996,6 +1996,23 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+>  		if (arg2 || arg3 || arg4 || arg5)
+>  			return -EINVAL;
+>  		return current->no_new_privs ? 1 : 0;
+> +	case PR_GET_THP_DISABLE:
+> +		if (arg2 || arg3 || arg4 || arg5)
+> +			return -EINVAL;
+
+Cosmetic, but PR_GET_THP_DISABLE only needs to check arg2.
+
+OTOH,
+
+> +	case PR_SET_THP_DISABLE:
+> +		if (arg3 || arg4 || arg5)
+> +			return -EINVAL;
+> +		down_write(&me->mm->mmap_sem);
+> +		if (option == PR_SET_THP_DISABLE) {
+> +			if (arg2)
+> +				me->mm->def_flags |= VM_NOHUGEPAGE;
+> +			else
+> +				me->mm->def_flags &= ~VM_NOHUGEPAGE;
+> +		} else {
+> +			error = !!(me->mm->def_flags & VM_NOHUGEPAGE);
+> +		}
+> +		up_write(&me->mm->mmap_sem);
+> +		break;
+
+Perhaps _GET_ doesn't even need ->mmap_sem, I do not see how the lockless
+"&" can get the inconsistent result. But I am fine either way.
+
+Oleg.
+
