@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaBCCnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Feb 2014 21:43:25 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:61119 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675AbaBCCnX convert rfc822-to-8bit (ORCPT
+	id S1752790AbaBCCon (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Feb 2014 21:44:43 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4359 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675AbaBCCol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Feb 2014 21:43:23 -0500
-Message-ID: <1391395399.5357.16.camel@marge.simpson.net>
-Subject: Re: [PATCH 1/2] irq_work: allow certain work in hard irq context
-From: Mike Galbraith <bitbucket@online.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de
-Date: Mon, 03 Feb 2014 03:43:19 +0100
-In-Reply-To: <52EEA643.1010200@linutronix.de>
-References: <1391178845-15837-1-git-send-email-bigeasy@linutronix.de>
-	 <1391314950.5444.18.camel@marge.simpson.net>
-	 <52EEA643.1010200@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:GP2LuTMC4MF05olRrtYJnxkFCSJ3PHuQJgQIqYZ5QJP
- I0t7CBYfvKhLxqcpAbH3BhcdXUE42GqluiIGKakxrVcIlsj3TS
- k4ZG4nNiKjdEq3Sb7lPelbWQ7u8VnUnwVhnon4Zpe7X5dkxvOw
- WiJftoeR+NJkVfaynKMGWv5XAqfXCJP2RTyATGyz7qj3YjT87C
- Ti3mxXKlDlKgiGBR0kGCmm3ZriUAOtDlE6jkj1piakjb3SNlYT
- tIliCiLNwVYdh6DBr0CaljN78pv2LLxOZ3w4Mm/5mBd1ZT300a
- xNqdHUymQeFsAqE/o4VYm4o/iyvj6DvWBOV+QJEBDnjrvJlaG2
- XapgKr1W58AA0Rav9DlgnCf4bbhntDrNxwXidKZYQ/hM0P7yM1
- kBxPsSD5c67+w==
+	Sun, 2 Feb 2014 21:44:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 02 Feb 2014 18:43:20 -0800
+Message-ID: <52EF0294.2090103@nvidia.com>
+Date: Mon, 3 Feb 2014 11:44:36 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+CC: Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Eric Brower <ebrower@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>
+Subject: Re: [RFC 00/16] drm/nouveau: initial support for GK20A (Tegra K1)
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com> <CAKb7Uvg4Bqy1tHetVZBe=aekFDbgrGygc-evnSXxsoGqgoTA8A@mail.gmail.com>
+In-Reply-To: <CAKb7Uvg4Bqy1tHetVZBe=aekFDbgrGygc-evnSXxsoGqgoTA8A@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-02 at 21:10 +0100, Sebastian Andrzej Siewior wrote:
+On 02/03/2014 04:10 AM, Ilia Mirkin wrote:
+> Hi Alexandre,
+>
+> On Fri, Jan 31, 2014 at 10:16 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> I guess my email address might surprise some of you, so let me anticipate some
+>> questions you might have. :P Yes, this work is endorsed by NVIDIA. Several other
+>> NVIDIAns (CC'd), including core GPU experts, have provided significant technical
+>> guidance and will continue their involvement. Special thanks go to Terje
+>> Bergstrom and Ken Adams for their invaluable GPU expertise, and Thierry Reding
+>> (at FOSDEM this weekend) for help with debugging and user-space testing.
+>>
+>> Let me also stress that although very exciting, this effort is still
+>> experimental, so I would like to make sure that nobody makes excessive
+>> expectations based on these few patches. The scope of this work is strictly
+>> limited to Tegra (although given the similarities desktop GPU support will
+>> certainly benefit from it indirectly), and we do not have any plan to work on
+>> user-space support. So do not uninstall that proprietary driver just yet. ;)
+>>
+>> With this being clarified, we are looking forward to getting your feedback and
+>> working with you guys to bring and improve Tegra K1 support into Nouveau! :)
+>
+> I've sent a couple of fairly trivial comments, as you saw, and I
+> suspect that others with a better understanding of the guts will have
+> more substantial architectural feedback, esp after the weekend/FOSDEM.
+> However, since no one's said it already -- welcome to Nouveau!
 
-> So CPU5 & CPU52 were eating 100% CPU doing "nothing" instead of running
-> cc1 & objdump right?
+Thanks! ^_^v
 
-Yeah.
+One beginner question: is it appropriate to send kernel patches to the 
+nouveau list in addition to dri-devel? The moderation messages I receive 
+make me think that this list might rather be intended for general 
+discussion.
 
-> According to the backtrace both of them are trying to access the
-> per-cpu hrtimer (sched_timer) in order to cancel but they seem to fail
-> to get the timer lock here. They shouldn't spin there for minutes, I
-> have no idea why they did so…
+>  From the looks of it, you could bring up a full open-source stack with
+> your patches (i.e. Xorg + nouveau DDX + mesa) and use PRIME to render
+> stuff (assuming the actual display hw has an X ddx).  Although I
+> suspect that you're going to want to use your own drivers. Still a
+> little curious if you've tried the open-source stack and whether it
+> worked. [Not sure what the status is of render-node support is in
+> mesa, but perhaps it's enough to try running piglit tests, if you
+> can't get X going with the display HW.]
 
-I dumped it for later-guy.. but he tends to get busy doing other crap,
-and just whacks my carefully saved data ;-)
+We are still testing things at libdrm level, but are eventually 
+interested in bringing up the existing open-source stack. Our guess (and 
+hope) is that it will work nicely almost as-is, minus the fact that the 
+display hardware is not handled by Nouveau and we only support render 
+nodes (I have yet to look at what the state of render nodes in Mesa is).
 
-> I guess this problem does not occur without -RT and before that patch
-> you saw only that one warning from can_stop_full_tick()?
+For X, Thierry is IIUC working on the display driver, and at some point 
+these efforts should join to connect tegradrm and Nouveau using PRIME. 
+We are not quite there yet, and since we are working with limited 
+resources it will likely require some time, but the fact we could bring 
+up a (seemingly) working Nouveau kernel driver with so little code is 
+encouraging.
 
-I didn't try it without -RT, and yes, without, you just get the warning.
-
--Mike
+Thanks,
+Alex.
 
