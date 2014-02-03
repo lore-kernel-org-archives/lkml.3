@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaBCWJG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:09:06 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:48681 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaBCWJE (ORCPT
+	id S1753067AbaBCWME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:12:04 -0500
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:50716 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaBCWMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:09:04 -0500
+	Mon, 3 Feb 2014 17:12:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <1400745.hJLGxDlRLu@x2>
-References: <a8356e46aed7213128e84a888170391adb6afe30.1391449825.git.luto@amacapital.net>
- <1400745.hJLGxDlRLu@x2>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 3 Feb 2014 14:08:43 -0800
-Message-ID: <CALCETrWFAKVLxXnOijvkL01niRvrQzxroDZYQ9BrUMFOer0-bQ@mail.gmail.com>
-Subject: Re: [PATCH] audit: Only use the syscall slowpath when syscall audit
- rules exist
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: linux-audit@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140203215908.GD10323@ZenIV.linux.org.uk>
+References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
+	<1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+	<CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+	<20140130075421.GA10050@infradead.org>
+	<CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+	<20140203102943.GF11829@infradead.org>
+	<CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+	<20140203215908.GD10323@ZenIV.linux.org.uk>
+Date: Mon, 3 Feb 2014 14:12:00 -0800
+X-Google-Sender-Auth: kYEzAi10lGHzNAeC_9bREWNiW3w
+Message-ID: <CA+55aFz3PyyCqOLs_SBRS3cbGxWd5ez4Svz2+xK+4KtCez8iGw@mail.gmail.com>
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 12:23 PM, Steve Grubb <sgrubb@redhat.com> wrote:
-> On Monday, February 03, 2014 09:53:23 AM Andy Lutomirski wrote:
->> This toggles TIF_SYSCALL_AUDIT as needed when rules change instead of
->> leaving it set whenever rules might be set in the future.  This reduces
->> syscall latency from >60ns to closer to 40ns on my laptop.
+On Mon, Feb 3, 2014 at 1:59 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Feb 03, 2014 at 01:03:32PM -0800, Linus Torvalds wrote:
 >
-> Does this mean that we have processes that don't have the  TIF_SYSCALL_AUDIT
-> flag set? When rules get loaded, how do we get the flag put back into all
-> processes?
-
-By looping over all processes and setting the flag, which is what my patch does.
-
+>> -     err = vfs_mkdir(path.dentry->d_inode, dentry, mode);
+>> +     err = vfs_mkdir(path.dentry, dentry, mode);
 >
-> The theory of ops is supposed to be that for anyone not needing audit, there
-> is only the cost of  "if (tif & TIF_SYSCALL_AUDIT)".
+> Pointless - path.dentry == dentry->d_parent anyway.
 
-On current kernels *all* processes have TIF_SYSCALL_AUDIT, even if
-they don't need auditing because there's nothing to audit.  So
-everything pays the full cost.
+Heh. It's no less redundant than it used to be.
 
-> That should be it. If you
-> have audit enabled or had it enabled (which means it might be loaded with new
-> rules), we want to inspect the syscall.
+But if you want to clean up the vfs_xyzzy() ones further, I'm
+perfectly fine with that.
+
+>> -     err = ll_vfs_rename(dir->d_inode, dchild_old, mnt,
+>> -                         dir->d_inode, dchild_new, mnt, NULL);
+>> +     err = ll_vfs_rename(dir, dchild_old, mnt,
+>> +                         dir, dchild_new, mnt, NULL);
 >
+>
+> ... and again, that's completely pointless.
 
-My point is that there's nothing to inspect -- there are no rules.
-Unless the audit code needs to do something just in case a non-syscall
-audit event gets written, in which case the audit code should IMO be
-fixed.  (This is what Eric is talking about, I think.)
+Minimal patch.. I really didn't want to check what the heck lustre
+does with the insane ll_vfs thing.
 
---Andy
+>> -int afs_permission(struct inode *inode, int mask)
+>> +int afs_permission(struct dentry *dentry, struct inode *inode, int mask)
+>
+> Oh, _lovely_.  So not only do we pass dentry, the arguments are redundant
+> as well.
+
+Note that *not* passing in inode would make the patch much bigger,
+because now every filesystem would have to add the
+
+       struct inode *inode = dentry->d_inode;
+
+at the top.
+
+Also, I'm not actually convinced it is redundant at all. Remember the
+RCU lookup case? dentry->d_inode is not safe.
+
+The RCU case actually does
+
+  inode_permission(nd->path.dentry, nd->inode, ..)
+
+and here the difference between nd->inode and dentry->d_inode are
+relevant, I think.
+
+>> +static int gfs2_vfs_permission(struct dentry *dentry, struct inode *inode, int mask)
+>> +{
+>> +     return gfs2_permission(inode, mask);
+>> +}
+>
+> Er...  You do realize that callers of gfs2_permission() tend to have
+> the dentry in question, either directly or as ->d_parent of something
+> they have?
+
+Not true. Look closer.
+
+Look at gfs2_lookupi() in particular, and check how it is called.
+
+I did hate that part of the patch, and I did mention the kinds of
+problems this will cause if the next phase passes in dentry to
+"generic_permission()".
+
+                Linus
