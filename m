@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaBCT2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 14:28:00 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48687 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191AbaBCT16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 14:27:58 -0500
-Message-ID: <52EFEDD7.7030300@kernel.org>
-Date: Mon, 03 Feb 2014 19:28:23 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753275AbaBCTaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 14:30:06 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:36233 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643AbaBCTaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 14:30:04 -0500
+Date: Mon, 3 Feb 2014 20:30:00 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH -v2] x86, microcode, AMD: Sanity-check initrd image
+Message-ID: <20140203193000.GD4281@pd.tnic>
+References: <52E81B90.8040604@oracle.com>
+ <20140128213030.GM815@pd.tnic>
+ <52E8230F.7080300@oracle.com>
+ <52E83903.5040908@oracle.com>
+ <20140128232219.GO815@pd.tnic>
+ <20140130151321.GC23342@pd.tnic>
+ <52EAAAD5.2010301@oracle.com>
+ <20140130195413.GH23342@pd.tnic>
+ <20140203175526.GB4281@pd.tnic>
+ <52EFEA57.4000709@oracle.com>
 MIME-Version: 1.0
-To: Johannes Thumshirn <morbidrsa@gmail.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: adc: viperboard: Drop platform_set_drvdata call
-References: <1391266364-14383-1-git-send-email-morbidrsa@gmail.com>
-In-Reply-To: <1391266364-14383-1-git-send-email-morbidrsa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52EFEA57.4000709@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 03, 2014 at 02:13:27PM -0500, Boris Ostrovsky wrote:
+> I thought that it may be sufficient to check for !container in
+> save_microcode_in_initrd_amd() before performing relocation. If the
+> signature was wrong, we would have found out about it in
+> load_ucode_bsp() -> apply_ucode_in_initrd() and returned right away,
 
+Your original test case which exploded had exactly that scenario - it
+was pointing to Intel ucode so container wasn't NULL. Thus we need to
+check the sig in find_ucode_in_initrd().
 
-On 01/02/14 14:52, Johannes Thumshirn wrote:
-> Drop call to platform_set_drvdata as driver data is not used anywhere in the
-> driver
->
-> Signed-off-by: Johannes Thumshirn <morbidrsa@gmail.com>
-Applied to the togreg branch of iio.git
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
-> ---
->   drivers/iio/adc/viperboard_adc.c | 2 --
->   1 file changed, 2 deletions(-)
->
-> diff --git a/drivers/iio/adc/viperboard_adc.c b/drivers/iio/adc/viperboard_adc.c
-> index d0add8f..9acf6b6 100644
-> --- a/drivers/iio/adc/viperboard_adc.c
-> +++ b/drivers/iio/adc/viperboard_adc.c
-> @@ -139,8 +139,6 @@ static int vprbrd_adc_probe(struct platform_device *pdev)
->   		return ret;
->   	}
->
-> -	platform_set_drvdata(pdev, indio_dev);
-> -
->   	return 0;
->   }
->
->
+Sent from a fat crate under my desk. Formatting is fine.
+--
