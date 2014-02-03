@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaBCO5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 09:57:36 -0500
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:53795 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678AbaBCO5f (ORCPT
+	id S1752922AbaBCO6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 09:58:06 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:36440 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaBCO6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 09:57:35 -0500
-Message-ID: <1391439425.3509.16.camel@linaro1.home>
-Subject: Re: [PATCH v5 07/16] ARM: Remove use of struct kprobe from generic
- probes code
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        davem@davemloft.net, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Date: Mon, 03 Feb 2014 14:57:05 +0000
-In-Reply-To: <1390507559-4697-8-git-send-email-dave.long@linaro.org>
-References: <1390507559-4697-1-git-send-email-dave.long@linaro.org>
-	 <1390507559-4697-8-git-send-email-dave.long@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
+	Mon, 3 Feb 2014 09:58:04 -0500
+Date: Mon, 3 Feb 2014 06:57:59 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linuxnfs <linux-nfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Viro Alexander <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: NFS client broken in Linus' tip
+Message-ID: <20140203145759.GA30263@infradead.org>
+References: <20140130140834.GW15937@n2100.arm.linux.org.uk>
+ <20140130141405.GA23985@infradead.org>
+ <20140130142752.GX15937@n2100.arm.linux.org.uk>
+ <20140130143208.GB9573@infradead.org>
+ <20140130153812.GA15937@n2100.arm.linux.org.uk>
+ <1391201970.6978.1.camel@leira.trondhjem.org>
+ <20140203080325.GB806@infradead.org>
+ <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <85AAFCF5-60EE-42E5-B103-37A4613C5947@primarydata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-23 at 15:05 -0500, David Long wrote:
-> From: "David A. Long" <dave.long@linaro.org>
-> 
-> Change the generic ARM probes code to pass in the opcode and architecture-specific
-> structure separately instead of using struct kprobe, so we do not pollute
-> code being used only for uprobes or other non-kprobes instruction
-> interpretation.
-> 
-> Signed-off-by: David A. Long <dave.long@linaro.org>
-> ---
+On Mon, Feb 03, 2014 at 09:17:30AM -0500, Trond Myklebust wrote:
+> As I said above, that causes posix_acl_xattr_get() to return the wrong answer (ENODATA instead of EOPNOTSUPP).
 
-One minor nit-pick...
+Is it really the wrong answer?  How does userspace care wether this
+server doesn't support ACLs at all or none is set?  The resulting
+behavior is the same.
 
-[...]
-> diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-> index c7ee290..cea707a 100644
-> --- a/arch/arm/kernel/kprobes-thumb.c
-> +++ b/arch/arm/kernel/kprobes-thumb.c
-[...]
-> @@ -593,7 +590,7 @@ t16_emulate_pop_pc(struct kprobe *p, struct pt_regs *regs)
->  	bx_write_pc(pc, regs);
->  }
->  
-> -static enum kprobe_insn __kprobes
-> +enum kprobe_insn __kprobes
->  t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi,
->  		struct decode_header *d)
->  {
-
-The above removal of 'static' appears to be an unneeded accidental
-change?
-
--- 
-Tixy
-
+If there's a good reason to care we might have to go with your patch,
+but if we can avoid it I'd prefer to keep things simple.
