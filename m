@@ -1,81 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaBCPRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:17:42 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34733 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaBCPRk (ORCPT
+	id S1752639AbaBCPTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:19:06 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:59949 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaBCPTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:17:40 -0500
-Date: Mon, 3 Feb 2014 15:17:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-spi@vger.kernel.org,
-        SH-Linux <linux-sh@vger.kernel.org>, devicetree@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Message-ID: <20140203151721.GA22609@sirena.org.uk>
-References: <52EEF452.4060205@renesas.com>
- <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
+	Mon, 3 Feb 2014 10:19:04 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9989e9MCpLPr9Uiv"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: rspi: fix build error when CONFIG_OF is not set
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAN+gG=G3njr09E3Q_6kd1SSp5k-Wcn1+aeHee5-Q6tWwFtuA1w@mail.gmail.com>
+References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1391316630-29541-8-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4S6jCc4Kd2EKoG0SgSc68TrBBSfnKChGV6Tn3fGKGRnSQ@mail.gmail.com>
+	<CAN+gG=G3njr09E3Q_6kd1SSp5k-Wcn1+aeHee5-Q6tWwFtuA1w@mail.gmail.com>
+Date: Mon, 3 Feb 2014 16:19:04 +0100
+Message-ID: <CANq1E4TUaiHi3y1Nk+HObpMP3Q2m8HnrmX_fPT=4x1-3c2zhnw@mail.gmail.com>
+Subject: Re: [PATCH 07/11] HID: HIDp: remove duplicated coded
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---9989e9MCpLPr9Uiv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Feb 3, 2014 at 4:11 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Mon, Feb 3, 2014 at 10:02 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Hi
+>>
+>> On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
+>> <benjamin.tissoires@redhat.com> wrote:
+>>> - Move hidp_output_report() above
+>>> - Removed duplicated code in hidp_output_raw_report()
+>>>
+>>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>>> ---
+>>>  net/bluetooth/hidp/core.c | 68 ++++++++---------------------------------------
+>>>  1 file changed, 11 insertions(+), 57 deletions(-)
+>>>
+>>> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+>>> index 469e61b..02670b3 100644
+>>> --- a/net/bluetooth/hidp/core.c
+>>> +++ b/net/bluetooth/hidp/core.c
+>>> @@ -373,62 +373,25 @@ err:
+>>>         return ret;
+>>>  }
+>>>
+>>> -static int hidp_output_raw_report(struct hid_device *hid, unsigned char *data, size_t count,
+>>> -               unsigned char report_type)
+>>> +static int hidp_output_report(struct hid_device *hid, __u8 *data, size_t count)
+>>>  {
+>>>         struct hidp_session *session = hid->driver_data;
+>>> -       int ret;
+>>>
+>>> +       return hidp_send_intr_message(session,
+>>> +                                     HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT,
+>>> +                                     data, count);
+>>> +}
+>>> +
+>>> +static int hidp_output_raw_report(struct hid_device *hid, unsigned char *data,
+>>> +               size_t count, unsigned char report_type)
+>>> +{
+>>>         if (report_type == HID_OUTPUT_REPORT) {
+>>> -               report_type = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
+>>> -               return hidp_send_intr_message(session, report_type,
+>>> -                                             data, count);
+>>> +               return hidp_output_report(hid, data, count);
+>>
+>> NAK, that does not work with BT. hidp_output_raw_report() can do both,
+>> a synchronous SET_REPORT and an async OUTPUT_REPORT. It's currently
+>> screwed up, as for RTYPE_OUTPUT it uses the intr-channel, for
+>> RTYPE_FEATURE the ctrl-channel.
+>
+> David, please, re-review it carefully, and see that there is _no_
+> change in the code path with this refactoring:
+> hidp_output_report() calls exactly one hidp_send_intr_message() with
+> the same arguments.
+>
+> And for the rest, you will see that the code path is still the same also.
 
-On Mon, Feb 03, 2014 at 09:47:25AM +0100, Geert Uytterhoeven wrote:
+Sorry, my bad. I thought you changed hidp_output_raw_report() to call
+hidp_output_report() unconditionally. You're indeed right, the
+code-paths are the same and they now highlight the very horrible hack
+hid_output_raw_report() has been in the past for HIDP.
 
-> Thanks, obviously I missed that of_match_device() still uses the ID table
-> parameter if CONFIG_OF=n :-(
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-> Below I have two alternative solutions:
->   1. Uses rspi_of_match() to nullify the ID table pointer, like is done in
->      the platform_driver structure,
->   2. Fixes it at the OF subsystem level, by nullifying the ID table pointer
->      inside of_match_device().
+Thanks
+David
 
-> If 2 is accepted, drivers don't have to care about this anymore.
-
-I think if we can fix it at the subsystem level that's clearly nicer
-since it means nothing else will run into the same issue.  Your patch
-looks OK to me, I'd suggest submitting it.
-
---9989e9MCpLPr9Uiv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS77L+AAoJELSic+t+oim9zuoP/2cjnKAG84aAxFK/gcB7lzHd
-iPdkAwcBIgGY8dDqxaMSVJVbRQflKHO2UXimmClAf1kmU4Xg386bWrNoPHuATdy3
-5M07hQlzBnCeJkPWkizvr/0viJn3bW/HAv0eJPcVzWpHBpNSKq03U5C/WFtYS8VL
-2nBAf/qYitKX73dT2AiD3DJETr2TgtAQkA1Zfvm0JC9pZa7Ayx/OpDvrLl3wH6zg
-E4lmPVdhG14N/pYQ4EsnGLvQV3Y1wBwVvxei23yA5blgf5tu/vmHW5CS08lGNQJr
-9RyFETv45blrQQyqg9fpxw98krahGAHEDrrrdfMi+jdMCq5L4/Mr0cAQx3kkMyNs
-1C+CF/YLIakGD+WyAA2YJ+RcS0BjnP+JXjAaUR2YyasK9xs/8dW8RMto2p6mx2Ea
-dfUA4nRT47KG9WDDvk9DDuzTqikuYXHQ+n+DbOM8HYq5pdVVssKIiGvl1ZMhDctW
-CbH1LSZ/DllDa9YfCb+q+qxt8OAhBdHB5+eIj+wEwFKRWBw7ITA/NCCE6+a/pHvd
-zmV46VkjEnCFXrvJNJjMcqYqOUtgPk6352H7t2EExoLExXXmNxncdNO8RB+yq5y1
-Pv1ucKVSpYlAzIEroPsG5UjlU0hEHjTnWXeGX26vie75n0kaVjDRzf87pco0ZWIw
-eE3CanuYUNvpzTKjp6yA
-=GCNg
------END PGP SIGNATURE-----
-
---9989e9MCpLPr9Uiv--
+>>
+>> This function is exactly the reason why we added raw_report() and
+>> output_report(). So I'd like to keep it as it and just remove it once
+>> we have no more users of hidp_output_raw_report().
+>
+> I worked on that yesterday, so I can make this happening soon (not
+> today though).
+>
+> Cheers,
+> Benjamin
+>
+>>
+>> Thanks
+>> David
+>>
+>>>         } else if (report_type != HID_FEATURE_REPORT) {
+>>>                 return -EINVAL;
+>>>         }
+>>>
+>>> -       if (mutex_lock_interruptible(&session->report_mutex))
+>>> -               return -ERESTARTSYS;
+>>> -
+>>> -       /* Set up our wait, and send the report request to the device. */
+>>> -       set_bit(HIDP_WAITING_FOR_SEND_ACK, &session->flags);
+>>> -       report_type = HIDP_TRANS_SET_REPORT | HIDP_DATA_RTYPE_FEATURE;
+>>> -       ret = hidp_send_ctrl_message(session, report_type, data, count);
+>>> -       if (ret)
+>>> -               goto err;
+>>> -
+>>> -       /* Wait for the ACK from the device. */
+>>> -       while (test_bit(HIDP_WAITING_FOR_SEND_ACK, &session->flags) &&
+>>> -              !atomic_read(&session->terminate)) {
+>>> -               int res;
+>>> -
+>>> -               res = wait_event_interruptible_timeout(session->report_queue,
+>>> -                       !test_bit(HIDP_WAITING_FOR_SEND_ACK, &session->flags)
+>>> -                               || atomic_read(&session->terminate),
+>>> -                       10*HZ);
+>>> -               if (res == 0) {
+>>> -                       /* timeout */
+>>> -                       ret = -EIO;
+>>> -                       goto err;
+>>> -               }
+>>> -               if (res < 0) {
+>>> -                       /* signal */
+>>> -                       ret = -ERESTARTSYS;
+>>> -                       goto err;
+>>> -               }
+>>> -       }
+>>> -
+>>> -       if (!session->output_report_success) {
+>>> -               ret = -EIO;
+>>> -               goto err;
+>>> -       }
+>>> -
+>>> -       ret = count;
+>>> -
+>>> -err:
+>>> -       clear_bit(HIDP_WAITING_FOR_SEND_ACK, &session->flags);
+>>> -       mutex_unlock(&session->report_mutex);
+>>> -       return ret;
+>>> +       return hidp_set_raw_report(hid, data[0], data, count, report_type);
+>>>  }
+>>>
+>>>  static int hidp_raw_request(struct hid_device *hid, unsigned char reportnum,
+>>> @@ -445,15 +408,6 @@ static int hidp_raw_request(struct hid_device *hid, unsigned char reportnum,
+>>>         }
+>>>  }
+>>>
+>>> -static int hidp_output_report(struct hid_device *hid, __u8 *data, size_t count)
+>>> -{
+>>> -       struct hidp_session *session = hid->driver_data;
+>>> -
+>>> -       return hidp_send_intr_message(session,
+>>> -                                     HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT,
+>>> -                                     data, count);
+>>> -}
+>>> -
+>>>  static void hidp_idle_timeout(unsigned long arg)
+>>>  {
+>>>         struct hidp_session *session = (struct hidp_session *) arg;
+>>> --
+>>> 1.8.3.1
+>>>
