@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbaBCMy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 07:54:56 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:25710 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750967AbaBCMyy (ORCPT
+	id S1752009AbaBCM4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 07:56:01 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58373 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025AbaBCMz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 07:54:54 -0500
-Date: Mon, 3 Feb 2014 12:54:41 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        Preeti Murthy <preeti.lkml@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct rq
-Message-ID: <20140203125441.GD19029@e103034-lin>
-References: <52EA7D8A.6080604@linaro.org>
- <20140130163501.GG5002@laptop.programming.kicks-ass.net>
- <52EA8B07.6020206@linaro.org>
- <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com>
- <20140131090230.GM5002@laptop.programming.kicks-ass.net>
- <52EB6F65.8050008@linux.vnet.ibm.com>
- <52EBBC23.8020603@linux.intel.com>
- <52EBC33A.6080101@linaro.org>
- <52EBC645.2040607@linux.intel.com>
- <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Feb 2014 07:55:59 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ak@linux.intel.com,
+        zheng.z.yan@intel.com
+Subject: [PATCH v1 00/10] perf/x86/uncore: add support for SNB/IVB/HSW integrated memory controller PMU
+Date: Mon,  3 Feb 2014 13:55:32 +0100
+Message-Id: <1391432142-18723-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 31, 2014 at 06:19:26PM +0000, Nicolas Pitre wrote:
-> Right now (on ARM at least but I imagine this is pretty universal), the 
-> biggest impact on information accuracy for a CPU depends on what the 
-> other CPUs are doing.  The most obvious example is cluster power down.  
-> For a cluster to be powered down, all the CPUs sharing this cluster must 
-> also be powered down.  And all those CPUs must have agreed to a possible 
-> cluster power down in advance as well.  But it is not because an idle 
-> CPU has agreed to the extra latency imposed by a cluster power down that 
-> the cluster has actually powered down since another CPU in that cluster 
-> might still be running, in which case the recorded latency information 
-> for that idle CPU would be higher than it would be in practice at that 
-> moment.
-> 
-> A cluster should map naturally to a scheduling domain.  If we need to 
-> wake up a CPU, it is quite obvious that we should prefer an idle CPU 
-> from a scheduling domain which load is not zero.  If the load is not 
-> zero then this means that any idle CPU in that domain, even if it 
-> indicated it was ready for a cluster power down, will not require the 
-> cluster power-up latency as some other CPUs must still be running.  But 
-> we already know that of course even if the recorded latency might not 
-> say so.
-> 
-> In other words, the hardware latency information is dynamic of course.  
-> But we might not _need_ to have it reflected at the scheduler domain all 
-> the time as in this case it can be inferred by the scheduling domain 
-> load.
+This patch series adds support for SandyBridge, IvyBridge, Haswell client (desktop/mobile)
+processor PCI-based integrated memory controller PMU. This PMU provides a few free running
+32-bit counters which can be used to determine memory bandwidth utilization.
 
-I agree that the existing sched domain hierarchy should be used to
-represent the power topology. But, it is not clear to me how much we can say
-about the C-state of cpu without checking the load of the entire cluster
-every time?
+The code is based on the documentation at:
+http://software.intel.com/en-us/articles/monitoring-integrated-memory-controller-requests-in-the-2nd-3rd-and-4th-generation-intel
 
-We would need to know which C-states (index) that are per cpu and per
-cluster and ignore the cluster states when the cluster load is non-zero.
+The patches implement a new uncore PMU called uncore_imc.
+It exports its format and events in sysfs as usual.
 
-Current sched domain load is not maintained in the scheduler, it is only
-produced when needed. But I guess you could derive the necessary
-information from the idle cpu masks.
+The following events are currently defined:
+  - name: uncore_imc/data_reads/
+  - code: 0x1
+  - unit: 64 bytes
+  - number of full cacheline (64 bytes) read requests to the IMC
 
-> 
-> Within a scheduling domain it is OK to pick up the best idle CPU by 
-> looking at the index as it is best to leave those CPUs ready for a 
-> cluster power down set to that state and prefer one which is not.  And a 
-> scheduling domain with a load of zero should be left alone if idle CPUs 
-> are found in another domain which load is not zero, irrespective of 
-> absolute latency information. So all the existing heuristics already in 
-> place to optimize cache utilization and so on will make things just work 
-> for idle as well.
+  - name: uncore_imc/data_writes/
+  - code: 0x2
+  - unit: 64 bytes
+  - number of full cacheline (64 bytes) write requests to the IMC
 
-IIUC, you propose to only use the index when picking an idle cpu inside
-an already busy sched domain and leave idle sched domains alone if
-possible. It may work for homogeneous SMP systems, but I don't think it
-will work for heterogeneous systems like big.LITTLE.
+The unit and scale of each event are also exposed in sysfs and
+are picked up by perf stat (needs v3.13).
 
-If the little cluster has zero load and the big has stuff running, it
-doesn't mean that it is a good idea to wake up another big cpu. It may
-be more power efficient to wake up the little cluster. Comparing idle
-state index of a big and little cpu won't help us in making that choice
-as the clusters may have different idle states and the costs associated
-with each state are different.
+The uncore_imc PMU is by construction system-wide only and counting
+mode only. There is no priv level filtering. The kernel enforces
+those restrictions. Counters are 32-bit and do not generate overflow
+interrupts, therefore the kernel uses a hrtimer to poll the counters
+and avoid missing an overflow.
 
-I'm therefore not convinced that idle state index is the right thing to
-give the scheduler. Using a cost metric would be better in my
-opinion.
+The series includes an optional patch to alter the unit of the event
+to be Mebibytes in perf stat. The kernel still exports counts as
+64 bytes increments (raw value of the counter).
 
-Morten
+To use the PMU with perf stat:
+ # perf stat -a -e uncore_imc/data_reads/,uncore_imc/data_writes/ -I 1000 sleep 100
+   #           time             counts unit events
+        1.000169151             180.62 MiB  uncore_imc/data_reads/
+        1.000169151               0.14 MiB  uncore_imc/data_writes/  
+        2.000506913             180.37 MiB  uncore_imc/data_reads/   
+        2.000506913               0.02 MiB  uncore_imc/data_writes/  
+        3.000748105             180.32 MiB  uncore_imc/data_reads/   
+        3.000748105               0.02 MiB  uncore_imc/data_writes/  
+        4.000991441             180.30 MiB  uncore_imc/data_reads/   
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Stephane Eranian (10):
+  perf/x86/uncore: fix initialization of cpumask
+  perf/x86/uncore: add ability to customize pmu callbacks
+  perf/x86/uncore: do not assume PCI fixed ctrs have more than 32 bits
+  perf/x86/uncore: add PCI ids for SNB/IVB/HSW IMC
+  perf/x86/uncore: make hrtimer timeout configurable per box
+  perf/x86/uncore: move uncore_event_to_box() and uncore_pmu_to_box()
+  perf/x86/uncore: allow more than one fixed counter per box
+  perf/x86/uncore: add SNB/IVB/HSW client uncore memory controller support
+  perf/x86/uncore: add hrtimer to SNB uncore IMC PMU
+  perf/x86/uncore: use MiB unit for events for SNB/IVB/HSW IMC
+
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  550 +++++++++++++++++++++----
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h |   48 ++-
+ include/linux/pci_ids.h                       |    3 +
+ 3 files changed, 513 insertions(+), 88 deletions(-)
+
+-- 
+1.7.9.5
 
