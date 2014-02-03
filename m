@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaBCP0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 10:26:23 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:46384 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaBCP0V (ORCPT
+	id S1752221AbaBCP2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 10:28:09 -0500
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:38400 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaBCP2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 10:26:21 -0500
+	Mon, 3 Feb 2014 10:28:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <1391316630-29541-2-git-send-email-benjamin.tissoires@redhat.com>
-References: <1391316630-29541-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1391316630-29541-2-git-send-email-benjamin.tissoires@redhat.com>
-Date: Mon, 3 Feb 2014 16:26:21 +0100
-Message-ID: <CANq1E4RD0OVTSVOXHPTchop0Y0q0p1_NEZZexSE4kvkp-17TKw@mail.gmail.com>
-Subject: Re: [PATCH 01/11] HID: uHID: implement .raw_request
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Frank Praznik <frank.praznik@oh.rr.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAN7rbOti4ODDz9h_oMQpqdB5JWwL0wpB-7rzcbKxho_46pKawg@mail.gmail.com>
+References: <1390252922-25889-1-git-send-email-jean.pihet@linaro.org>
+	<CAN7rbOstSYgZ39o68AA+z62Uj6KYzNhDkyX+sbHPr=xc-rRjRg@mail.gmail.com>
+	<CAFrcx1nSDD4Sts7uDxxyG9LpyQiwFhby8oLEpWW-qotyWPpGpw@mail.gmail.com>
+	<CAN7rbOti4ODDz9h_oMQpqdB5JWwL0wpB-7rzcbKxho_46pKawg@mail.gmail.com>
+Date: Mon, 3 Feb 2014 16:28:06 +0100
+Message-ID: <CAFrcx1mdRb6M24TsNWaZ6eEp2QFke3xvxqC2F96G7mdJ29t7JQ@mail.gmail.com>
+Subject: Re: [Libunwind-devel] [RFC PATCH 0/3] Add support for dwarf compat
+ mode unwinding
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Arun Sharma <arun@sharma-home.net>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        libunwind-devel <libunwind-devel@nongnu.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Arun,
 
-On Sun, Feb 2, 2014 at 5:50 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> It was missing, so adding it.
+On 22 January 2014 06:15, Arun Sharma <arun@sharma-home.net> wrote:
+> On Tue, Jan 21, 2014 at 12:16 AM, Jean Pihet <jean.pihet@linaro.org> wrote:
 >
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/uhid.c | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
+>>>> This is the case when e.g. profiling an ARMv7 binary that runs on an
+>>>> ARMv8 (aka AARCH64) platform.
+>>>
+>>> Why not configure libunwind for ARMv7 in that case?
+>>>
+>>> I'm trying to understand how is your use case different from using
+>>> x86_32 libunwind to do local unwinding on a x86_64 machine.
+>> Can you give more details on the use case and how to configure
+>> libunwind?
 >
-> diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-> index f5a2b19..438c9f1 100644
-> --- a/drivers/hid/uhid.c
-> +++ b/drivers/hid/uhid.c
-> @@ -270,6 +270,22 @@ static int uhid_hid_output_report(struct hid_device *hid, __u8 *buf,
->         return count;
->  }
+> You could either build libunwind on a ARMv7 machine and copy it over
+> or setup a 32 bit chroot on a 64 bit kernel and compile libunwind
+> inside that.
 >
-> +static int uhid_raw_request(struct hid_device *hid, unsigned char reportnum,
-> +                           __u8 *buf, size_t len, unsigned char rtype,
-> +                           int reqtype)
-> +{
-> +       switch (reqtype) {
-> +       case HID_REQ_GET_REPORT:
-> +               return uhid_hid_get_raw(hid, reportnum, buf, len, rtype);
-> +       case HID_REQ_SET_REPORT:
-> +               if (buf[0] != reportnum)
-> +                       return -EINVAL;
-> +               return uhid_hid_output_raw(hid, buf, len, rtype);
+>> The provided patches dynamically detect the target binary
+>> address size and parse the debug info accordingly, all that in a
+>> single library.
+>
+> This is generally called cross-unwinding in libunwind lingo. Some
+> description here:
+>
+> http://www.nongnu.org/libunwind/man/libunwind%283%29.html#section_4
+>
+>>
+>> Note: my use case is to call libunwind from the perf utility in order
+>> to unwind from the dwarf info.
+>>
+>
+> You could link in two copies of libunwind into the perf binary:
+> * libunwind.a for local (host == target) unwinding
+> * libunwind-arm.a for 32 bit cross-unwinding
+>
+> Doing cross-unwinding requires you to write a bunch of "accessors" on
+> how to access the address space of a non-local thread.
+>
+> Something like ./configure --target=arm on aarch64.
 
-But that one looks wrong. UHID does not have any SET_REPORT query in
-the protocol, yet. You turn a SET_REPORT into an OUTPUT_REPORT here.
-So if user-space gets the UHID_OUTPUT event, it doesn't know whether
-to send a SET_REPORT@ctrl to the device, or an async
-OUTPUT_REPORT@intr. This at least matters for low-energy BT in bluez,
-which uses uhid.
+Thanks for the link and info.
 
-So we'd have to add an UHID_SET_REPORT event. Note that currently
-UHID_FEATURE is the equivalent of UHID_GET_REPORT, but just horribly
-named..
+Is there a concrete example of cross-unwinding with multiple targets,
+for example on x86_64 using native and x86_32 libunwind libraries
+simultaneously?
+I am trying to assess the impact of multiple unwinding libs in the perf code.
 
-Thanks
-David
+Jiri, Arnaldo,
+How is that done on x86? I do not think this can be done with the
+current perf code, am I correct?
 
-> +       default:
-> +               return -EIO;
-> +       }
-> +}
-> +
->  static struct hid_ll_driver uhid_hid_driver = {
->         .start = uhid_hid_start,
->         .stop = uhid_hid_stop,
-> @@ -277,6 +293,7 @@ static struct hid_ll_driver uhid_hid_driver = {
->         .close = uhid_hid_close,
->         .parse = uhid_hid_parse,
->         .output_report = uhid_hid_output_report,
-> +       .raw_request = uhid_raw_request,
->  };
 >
->  #ifdef CONFIG_COMPAT
-> --
-> 1.8.3.1
->
+>  -Arun
+
+Regards,
+Jean
