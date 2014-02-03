@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaBCW5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 17:57:33 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59433 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaBCW5a (ORCPT
+	id S1753536AbaBCW6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 17:58:48 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:38023 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaBCW6q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 17:57:30 -0500
-Date: Mon, 3 Feb 2014 14:57:25 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, cl@linux-foundation.org, penberg@kernel.org,
-        mpm@selenic.com, peterz@infradead.org
-Subject: [PATCH] Fix lockdep false positive in add_full()
-Message-ID: <20140203225725.GA4069@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Mon, 3 Feb 2014 17:58:46 -0500
+From: "Pearson, Greg" <greg.pearson@hp.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
+        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during
+ header update
+Thread-Topic: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during
+ header update
+Thread-Index: AQHPISg9LvBzMOIrUUOU6K2ntVTGwpqkJHGA
+Date: Mon, 3 Feb 2014 22:57:58 +0000
+Message-ID: <52F01EF5.506@hp.com>
+References: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
+ <20140203213813.GH10795@redhat.com>
+In-Reply-To: <20140203213813.GH10795@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
+ Thunderbird/17.0.5
+x-originating-ip: [16.216.198.110]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <9EE68DECD1A545409772CE931FCEE066@Compaq.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020322-0928-0000-0000-0000063B268F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On 02/03/2014 02:38 PM, Vivek Goyal wrote:
+> On Mon, Feb 03, 2014 at 01:18:38PM -0700, Greg Pearson wrote:
+>
+> [..]
+>> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+>> index 2ca7ba0..051c803 100644
+>> --- a/fs/proc/vmcore.c
+>> +++ b/fs/proc/vmcore.c
+>> @@ -468,12 +468,14 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
+>>   			return rc;
+>>   		}
+>>   		nhdr_ptr = notes_section;
+>> -		while (real_sz < max_sz) {
+>> -			if (nhdr_ptr->n_namesz == 0)
+>> -				break;
+>> +		while (nhdr_ptr->n_namesz != 0) {
+>>   			sz = sizeof(Elf64_Nhdr) +
+>>   				((nhdr_ptr->n_namesz + 3) & ~3) +
+>>   				((nhdr_ptr->n_descsz + 3) & ~3);
+>> +			if ((real_sz + sz) > max_sz) {
+>> +				pr_warn("Warning: dropping PT_NOTE entry\n");
+>> +				break;
+>> +			}
+> Hi Greg,
+>
+> Couple of minor nits.
+>
+> I think it is a good idea to give more data in warning which tells why
+> are we dropping a note entry. May be something like.
+>
+> "Warning: Total note entry size exceeded PT_NOTE memsz. Dropping PT_NOTE entry, n_namesz=<> n_descsz=<>".
 
-The add_full() function currently has a lockdep_assert_held() requiring
-that the kmem_cache_node structure's ->list_lock be held.  However,
-this lock is not acquired by add_full()'s caller deactivate_slab()
-in the full-node case unless debugging is enabled.  Because full nodes
-are accessed only by debugging code, this state of affairs results in
-lockdep false-positive splats like the following:
+Sounds good I'll add more information to the pr_warn().
 
-[   43.942868] WARNING: CPU: 0 PID: 698 at /home/paulmck/public_git/linux-rcu/mm/slub.c:1007 deactivate_slab+0x509/0x720()
-[   43.943016] Modules linked in:
-[   43.943016] CPU: 0 PID: 698 Comm: torture_onoff Not tainted 3.14.0-rc1+ #1
-[   43.943016] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[   43.943016]  00000000000003ef ffff88001e3f5ba8 ffffffff818952ec 0000000000000046
-[   43.943016]  0000000000000000 ffff88001e3f5be8 ffffffff81049517 ffffea0000784e00
-[   43.943016]  0000000000000000 ffffea00007a9000 0000000000000002 0000000000000000
-[   43.943016] Call Trace:
-[   43.943016]  [<ffffffff818952ec>] dump_stack+0x46/0x58
-[   43.943016]  [<ffffffff81049517>] warn_slowpath_common+0x87/0xb0
-[   43.943016]  [<ffffffff81049555>] warn_slowpath_null+0x15/0x20
-[   43.943016]  [<ffffffff8116e679>] deactivate_slab+0x509/0x720
-[   43.943016]  [<ffffffff8116eebb>] ? slab_cpuup_callback+0x3b/0x100
-[   43.943016]  [<ffffffff8116ef52>] ? slab_cpuup_callback+0xd2/0x100
-[   43.943016]  [<ffffffff8116ef24>] slab_cpuup_callback+0xa4/0x100
-[   43.943016]  [<ffffffff818a4c14>] notifier_call_chain+0x54/0x110
-[   43.943016]  [<ffffffff81075b79>] __raw_notifier_call_chain+0x9/0x10
-[   43.943016]  [<ffffffff8104963b>] __cpu_notify+0x1b/0x30
-[   43.943016]  [<ffffffff81049720>] cpu_notify_nofail+0x10/0x20
-[   43.943016]  [<ffffffff8188cc5d>] _cpu_down+0x10d/0x2e0
-[   43.943016]  [<ffffffff8188ce60>] cpu_down+0x30/0x50
-[   43.943016]  [<ffffffff811205f3>] torture_onoff+0xd3/0x3c0
-[   43.943016]  [<ffffffff81120520>] ? torture_onoff_stats+0x90/0x90
-[   43.943016]  [<ffffffff810710df>] kthread+0xdf/0x100
-[   43.943016]  [<ffffffff818a09cb>] ? _raw_spin_unlock_irq+0x2b/0x40
-[   43.943016]  [<ffffffff81071000>] ? flush_kthread_worker+0x130/0x130
-[   43.943016]  [<ffffffff818a983c>] ret_from_fork+0x7c/0xb0
-[   43.943016]  [<ffffffff81071000>] ? flush_kthread_worker+0x130/0x130
+>
+> Secondly, if there is only on note entry in a PT_NOTE header and we drop
+> it, then that PT_NOTE header is empty and needs to be cleaned up.
+>
+> I think you will have to modify get_note_number_and_size_elf64() and
+> other relevant functions which are not expecting ->p_memsz=0.
 
-This commit therefore does the lockdep check only if debuggging is
-enabled, thus avoiding the false positives.
+What about treating this as an error condition and adding a check to the 
+update_note_header_size_elf32()/update_note_header_size_elf64() routines 
+that would return a failure, something like the following at the end of 
+the routine:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org
-Cc: cl@linux-foundation.org
-Cc: penberg@kernel.org
-Cc: mpm@selenic.com
+     if (real_sz == 0)
+         return -EINVAL
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 7e3e0458bce4..6fff4d980b7c 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1004,7 +1004,8 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
- static void add_full(struct kmem_cache *s,
- 	struct kmem_cache_node *n, struct page *page)
- {
--	lockdep_assert_held(&n->list_lock);
-+	if (kmem_cache_debug(s))
-+		lockdep_assert_held(&n->list_lock);
- 
- 	if (!(s->flags & SLAB_STORE_USER))
- 		return;
+I could also add a pr_warn() with a message indicating no PT_NOTE 
+entries were found.
+
+This seems like a lower risk change to handle the case I'm currently 
+seeing as opposed to changing the code to handle a p_memsz==0.
+
+Thoughts?
+
+--
+Greg
+
+
+
+
 
