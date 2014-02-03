@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaBCK3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 05:29:48 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:35659 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489AbaBCK3q (ORCPT
+	id S1751686AbaBCKaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 05:30:39 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:40020 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaBCKah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 05:29:46 -0500
-Date: Mon, 3 Feb 2014 02:29:43 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-Message-ID: <20140203102943.GF11829@infradead.org>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
- <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
- <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
- <20140130075421.GA10050@infradead.org>
- <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+	Mon, 3 Feb 2014 05:30:37 -0500
+Message-ID: <52EF6FCE.8090704@gmail.com>
+Date: Mon, 03 Feb 2014 18:30:38 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: James Hogan <james.hogan@imgtec.com>
+CC: David Laight <David.Laight@ACULAB.COM>,
+        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "bergwolf@gmail.com" <bergwolf@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "oleg.drokin@intel.com" <oleg.drokin@intel.com>,
+        "jacques-charles.lafoucriere@cea.fr" 
+	<jacques-charles.lafoucriere@cea.fr>,
+        "jinshan.xiong@intel.com" <jinshan.xiong@intel.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>
+Subject: Re: [PATCH] drivers: staging: lustre: lustre: include: add "__attribute__((packed))"
+ for the related union
+References: <20140118142404.GT7444@mwanda> <52DBA3D4.3090308@gmail.com> <52DD0EFF.2010305@imgtec.com> <20140120123045.GV7444@mwanda> <52DD18A5.1090308@imgtec.com> <20140120125603.GD4815@mwanda> <20140120211356.GG4815@mwanda> <52DE4DA3.7090301@imgtec.com> <52E3A642.7010307@gmail.com> <52ECFD53.7010401@gmail.com> <20140203085855.GA26722@mwanda> <063D6719AE5E284EB5DD2968C1650D6D0F6B772B@AcuExch.aculab.com> <52EF6DCC.6040807@imgtec.com>
+In-Reply-To: <52EF6DCC.6040807@imgtec.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 02:01:38PM -0800, Linus Torvalds wrote:
-> In the end, all the original call-sites should have a dentry, and none
-> of this is "fundamental". But you're right, it looks like an absolute
-> nightmare to add the dentry pointer through the whole chain. Damn.
+On 02/03/2014 06:22 PM, James Hogan wrote:
+> On 03/02/14 10:05, David Laight wrote:
+>> From: Dan Carpenter
+>>> On Sat, Feb 01, 2014 at 09:57:39PM +0800, Chen Gang wrote:
+>>>> It seems, our kernel still stick to treate 'pack' region have effect
+>>>> with both 'align' and 'sizeof'.
+>>>
+>>> It's not about packed regions.  It's about unions.  It's saying the
+>>> sizeof() a union is a multiple of 4 unless it's packed.
+>>>
+>>> union foo {
+>>> 	short x;
+>>> 	short y;
+>>> };
+>>>
+>>> The author intended the sizeof(union foo) to be 2 but on metag arch then
+>>> it is 4.
+>>
+>> The same is probably be true of: struct foo { _u16 bar; };
 > 
-> So I'm not thrilled about it, but maybe that "d_find_alias(inode)" to
-> find the dentry is good enough in practice. It feels very much
-> incorrect (it could find a dentry with a path that you cannot actually
-> access on the server, and result in user-visible errors), but I
-> definitely see your argument. It may just not be worth the pain for
-> this odd ceph case.
+> Yes indeed.
+> 
+>> Architectures that define such alignment rules are a right PITA.
+>> You either need to get the size to 2 without using 'packed', or
+>> just not define such structures.
+>> It is worth seeing if adding aligned(2) will change the size - I'm
+>> not sure.
+> 
+> __aligned(2) alone doesn't seem to have any effect on sizeof() or
+> __alignof__() unless it is accompanied by __packed. x86_64 is similar in
+> that respect (it just packs sanely in the first place).
+> 
+> Combining __packed with __aligned(2) does the trick though (__packed
+> alone sets __aligned(1) which is obviously going to be suboptimal).
+> 
 
-It's not just ceph.  9p fundamentally needs it and I really want to
-convert 9p to the new code so that we can get rid of the lower level
-interfaces entirely and eventually move ACL dispatching entirely
-into the VFS.  The same d_find_alias hack should work for 9p as well,
-although spreading this even more gets uglier and uglier.  Similarly
-for CIFS which pretends to understand the Posix ACL xattrs, but doesn't
-use any of the infrastructure as it seems to rely on server side
-enforcement.
+Oh, thank you for your explanation.
 
+And hope this feature issue can be fixed, and satisfy both kernel and
+ABI. :-)
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share and attitude like air, water and life which God blessed
