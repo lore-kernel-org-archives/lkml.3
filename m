@@ -1,269 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaBCXRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 18:17:23 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:35108 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaBCXRV (ORCPT
+	id S1753305AbaBCXTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 18:19:33 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:51379 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751195AbaBCXTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 18:17:21 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH] of: restructure for_each macros to fix compile warnings
-Date: Mon,  3 Feb 2014 17:17:04 -0600
-Message-Id: <1391469424-5245-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 3 Feb 2014 18:19:31 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtsIAHgj8FJ5LGaB/2dsb2JhbABZgwyDPrYRhVKBDBd0giUBAQUnExwjEAgDDgcDCSUPBSUDIROIBM4fFxaOcgeEOASYKZIig0Eo
+Date: Tue, 4 Feb 2014 10:17:37 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: viro@zeniv.linux.org.uk, bpm@sgi.com, tytso@mit.edu,
+        adilger.kernel@dilger.ca, jack@suse.cz, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH RESEND 5/10] xfstest: shared/001: Standard collapse range
+ tests
+Message-ID: <20140203231737.GV13997@dastard>
+References: <1391319958-3275-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391319958-3275-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+On Sun, Feb 02, 2014 at 02:45:58PM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> This testcase(001) tries to test various corner cases
+> for fcollapse range functionality over different type of extents.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 
-Commit 00b2c76a6a "include/linux/of.h: make for_each_child_of_node()
-reference its args when CONFIG_OF=n" fixed warnings for unused
-variables, but introduced variable "used uninitialized" warnings.
-Simply initializing the variables would result in "set but not used"
-warnings with W=1.
+Couple of things:
 
-Fix both types of warnings by making all the for_each macros
-unconditional and rely on the dummy static inline functions to
-initialize and reference any variables.
+>  			-c "$map_cmd -v" $testfile | $filter_cmd
+>  		[ $? -ne 0 ] && die_now
+>  		_md5_checksum $testfile
+> @@ -415,10 +425,10 @@ _test_generic_punch()
+>  		if [ "$remove_testfile" ]; then
+>  			rm -f $testfile
+>  		fi
+> -		$XFS_IO_PROG -f -c "truncate 20k" \
+> -			-c "$alloc_cmd 0 8k" \
+> -			-c "pwrite 8k 8k" $sync_cmd \
+> -			-c "$zero_cmd 4k 8k" \
+> +		$XFS_IO_PROG -f -c "truncate $(($multiple * 20))k" \
+> +			-c "$alloc_cmd 0 $(($multiple * 8))k" \
+> +			-c "pwrite $(($multiple * 8))k $(($multiple * 8))k" $sync_cmd \
+> +			-c "$zero_cmd $(($multiple * 4))k $(($multiple * 8))k" \
+>  			-c "$map_cmd -v" $testfile | $filter_cmd
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Rob Herring <robh@kernel.org>
----
- include/linux/of.h | 153 +++++++++++++++++++++++++++++------------------------
- 1 file changed, 84 insertions(+), 69 deletions(-)
+This is unreadable, and therefore I'd consider that these changes
+render _test_generic_punch unmaintainable.
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 70c64ba..435cb99 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -169,35 +169,15 @@ static inline const char *of_node_full_name(const struct device_node *np)
- 
- extern struct device_node *of_find_node_by_name(struct device_node *from,
- 	const char *name);
--#define for_each_node_by_name(dn, name) \
--	for (dn = of_find_node_by_name(NULL, name); dn; \
--	     dn = of_find_node_by_name(dn, name))
- extern struct device_node *of_find_node_by_type(struct device_node *from,
- 	const char *type);
--#define for_each_node_by_type(dn, type) \
--	for (dn = of_find_node_by_type(NULL, type); dn; \
--	     dn = of_find_node_by_type(dn, type))
- extern struct device_node *of_find_compatible_node(struct device_node *from,
- 	const char *type, const char *compat);
--#define for_each_compatible_node(dn, type, compatible) \
--	for (dn = of_find_compatible_node(NULL, type, compatible); dn; \
--	     dn = of_find_compatible_node(dn, type, compatible))
- extern struct device_node *of_find_matching_node_and_match(
- 	struct device_node *from,
- 	const struct of_device_id *matches,
- 	const struct of_device_id **match);
--static inline struct device_node *of_find_matching_node(
--	struct device_node *from,
--	const struct of_device_id *matches)
--{
--	return of_find_matching_node_and_match(from, matches, NULL);
--}
--#define for_each_matching_node(dn, matches) \
--	for (dn = of_find_matching_node(NULL, matches); dn; \
--	     dn = of_find_matching_node(dn, matches))
--#define for_each_matching_node_and_match(dn, matches, match) \
--	for (dn = of_find_matching_node_and_match(NULL, matches, match); \
--	     dn; dn = of_find_matching_node_and_match(dn, matches, match))
-+
- extern struct device_node *of_find_node_by_path(const char *path);
- extern struct device_node *of_find_node_by_phandle(phandle handle);
- extern struct device_node *of_get_parent(const struct device_node *node);
-@@ -209,43 +189,11 @@ extern struct device_node *of_get_next_available_child(
- 
- extern struct device_node *of_get_child_by_name(const struct device_node *node,
- 					const char *name);
--#define for_each_child_of_node(parent, child) \
--	for (child = of_get_next_child(parent, NULL); child != NULL; \
--	     child = of_get_next_child(parent, child))
--
--#define for_each_available_child_of_node(parent, child) \
--	for (child = of_get_next_available_child(parent, NULL); child != NULL; \
--	     child = of_get_next_available_child(parent, child))
--
--static inline int of_get_child_count(const struct device_node *np)
--{
--	struct device_node *child;
--	int num = 0;
--
--	for_each_child_of_node(np, child)
--		num++;
--
--	return num;
--}
--
--static inline int of_get_available_child_count(const struct device_node *np)
--{
--	struct device_node *child;
--	int num = 0;
--
--	for_each_available_child_of_node(np, child)
--		num++;
--
--	return num;
--}
- 
- /* cache lookup */
- extern struct device_node *of_find_next_cache_node(const struct device_node *);
- extern struct device_node *of_find_node_with_property(
- 	struct device_node *from, const char *prop_name);
--#define for_each_node_with_property(dn, prop_name) \
--	for (dn = of_find_node_with_property(NULL, prop_name); dn; \
--	     dn = of_find_node_with_property(dn, prop_name))
- 
- extern struct property *of_find_property(const struct device_node *np,
- 					 const char *name,
-@@ -367,42 +315,53 @@ static inline struct device_node *of_find_node_by_name(struct device_node *from,
- 	return NULL;
- }
- 
--static inline struct device_node *of_get_parent(const struct device_node *node)
-+static inline struct device_node *of_find_node_by_type(struct device_node *from,
-+	const char *type)
- {
- 	return NULL;
- }
- 
--static inline bool of_have_populated_dt(void)
-+static inline struct device_node *of_find_matching_node_and_match(
-+	struct device_node *from,
-+	const struct of_device_id *matches,
-+	const struct of_device_id **match)
- {
--	return false;
-+	return NULL;
- }
- 
--/* Kill an unused variable warning on a device_node pointer */
--static inline void __of_use_dn(const struct device_node *np)
-+static inline struct device_node *of_get_parent(const struct device_node *node)
- {
-+	return NULL;
- }
- 
--#define for_each_child_of_node(parent, child) \
--	while (__of_use_dn(parent), __of_use_dn(child), 0)
-+static inline struct device_node *of_get_next_child(
-+	const struct device_node *node, struct device_node *prev)
-+{
-+	return NULL;
-+}
- 
--#define for_each_available_child_of_node(parent, child) \
--	while (0)
-+static inline struct device_node *of_get_next_available_child(
-+	const struct device_node *node, struct device_node *prev)
-+{
-+	return NULL;
-+}
- 
--static inline struct device_node *of_get_child_by_name(
--					const struct device_node *node,
--					const char *name)
-+static inline struct device_node *of_find_node_with_property(
-+	struct device_node *from, const char *prop_name)
- {
- 	return NULL;
- }
- 
--static inline int of_get_child_count(const struct device_node *np)
-+static inline bool of_have_populated_dt(void)
- {
--	return 0;
-+	return false;
- }
- 
--static inline int of_get_available_child_count(const struct device_node *np)
-+static inline struct device_node *of_get_child_by_name(
-+					const struct device_node *node,
-+					const char *name)
- {
--	return 0;
-+	return NULL;
- }
- 
- static inline int of_device_is_compatible(const struct device_node *device,
-@@ -569,6 +528,13 @@ extern int of_node_to_nid(struct device_node *np);
- static inline int of_node_to_nid(struct device_node *device) { return 0; }
- #endif
- 
-+static inline struct device_node *of_find_matching_node(
-+	struct device_node *from,
-+	const struct of_device_id *matches)
-+{
-+	return of_find_matching_node_and_match(from, matches, NULL);
-+}
-+
- /**
-  * of_property_read_bool - Findfrom a property
-  * @np:		device node from which the property value is to be read.
-@@ -618,6 +584,55 @@ static inline int of_property_read_u32(const struct device_node *np,
- 		s;						\
- 		s = of_prop_next_string(prop, s))
- 
-+#define for_each_node_by_name(dn, name) \
-+	for (dn = of_find_node_by_name(NULL, name); dn; \
-+	     dn = of_find_node_by_name(dn, name))
-+#define for_each_node_by_type(dn, type) \
-+	for (dn = of_find_node_by_type(NULL, type); dn; \
-+	     dn = of_find_node_by_type(dn, type))
-+#define for_each_compatible_node(dn, type, compatible) \
-+	for (dn = of_find_compatible_node(NULL, type, compatible); dn; \
-+	     dn = of_find_compatible_node(dn, type, compatible))
-+#define for_each_matching_node(dn, matches) \
-+	for (dn = of_find_matching_node(NULL, matches); dn; \
-+	     dn = of_find_matching_node(dn, matches))
-+#define for_each_matching_node_and_match(dn, matches, match) \
-+	for (dn = of_find_matching_node_and_match(NULL, matches, match); \
-+	     dn; dn = of_find_matching_node_and_match(dn, matches, match))
-+
-+#define for_each_child_of_node(parent, child) \
-+	for (child = of_get_next_child(parent, NULL); child != NULL; \
-+	     child = of_get_next_child(parent, child))
-+#define for_each_available_child_of_node(parent, child) \
-+	for (child = of_get_next_available_child(parent, NULL); child != NULL; \
-+	     child = of_get_next_available_child(parent, child))
-+
-+#define for_each_node_with_property(dn, prop_name) \
-+	for (dn = of_find_node_with_property(NULL, prop_name); dn; \
-+	     dn = of_find_node_with_property(dn, prop_name))
-+
-+static inline int of_get_child_count(const struct device_node *np)
-+{
-+	struct device_node *child;
-+	int num = 0;
-+
-+	for_each_child_of_node(np, child)
-+		num++;
-+
-+	return num;
-+}
-+
-+static inline int of_get_available_child_count(const struct device_node *np)
-+{
-+	struct device_node *child;
-+	int num = 0;
-+
-+	for_each_available_child_of_node(np, child)
-+		num++;
-+
-+	return num;
-+}
-+
- #if defined(CONFIG_PROC_FS) && defined(CONFIG_PROC_DEVICETREE)
- extern void proc_device_tree_add_node(struct device_node *, struct proc_dir_entry *);
- extern void proc_device_tree_add_prop(struct proc_dir_entry *pde, struct property *prop);
+Either it needs tobe factored to be more readable, or we need a more
+readable way of representing the offsets and sizes if we want them
+to be variable. For example:
+
+_4k="$((multiple * 4))k"
+_8k="$((multiple * 8))k"
+_20k="$((multiple * 20))k"
+
+leads to:
+
+		$XFS_IO_PROG -f -c "truncate $_20k" \
+			-c "$alloc_cmd 0 $_8k" \
+			-c "pwrite $_8k $_8k" $sync_cmd \
+			-c "$zero_cmd $_4k $_8k" \
+			-c "$map_cmd -v" $testfile | $filter_cmd
+
+which is still readable and allows us to arbitrarily scale the
+parameters. It even allows us to handle different filesystem block
+sizes if we really want to....
+
+>  		-c "$map_cmd -v" $testfile | $filter_cmd
+>  	[ $? -ne 0 ] && die_now
+>  	_md5_checksum $testfile
+>  
+> +	# If zero_cmd is fcollpase, don't check unaligned offsets
+> +	if [ "$zero_cmd" == "fcollapse" ]; then
+> +		if [ "$remove_testfile" ]; then
+> +			rm -f $testfile
+> +			rm -f $testfile.2
+> +		fi
+> +		return
+> +	fi
+
+No need to remove the test files here - we remove them at
+test startup to ensure we have a known initial state....
+
+> +0: [0..63]: extent
+> +bb7df04e1b0a2570657527a7e108ae23
+> +	13. data -> unwritten -> data
+> +0: [0..63]: extent
+> +0f0151cbed83e4bf6e5bde26e82ab115
+> +	14. data -> hole @ EOF
+> +fallocate: Invalid argument
+> +0: [0..159]: extent
+
+This error appears in all the golden outputs. If it's correct, then
+perhaps it should be filtered out or commented somewhere to explain
+why it is expected.
+
+Cheers,
+
+Dave.
 -- 
-1.8.3.2
-
+Dave Chinner
+david@fromorbit.com
