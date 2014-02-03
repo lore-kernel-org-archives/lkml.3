@@ -1,122 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472AbaBCMNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 07:13:51 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:57345 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaBCMNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 07:13:50 -0500
-Message-ID: <52EF87EA.4010501@monstr.eu>
-Date: Mon, 03 Feb 2014 13:13:30 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752415AbaBCMOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 07:14:25 -0500
+Received: from mail.us.es ([193.147.175.20]:52727 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751678AbaBCMOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 07:14:23 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.1/18431. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.8/7.5):. 
+ Processed in 1.884359 secs); 03 Feb 2014 12:14:21 -0000
+X-Spam-ASN: AS3209 94.216.0.0/13
+X-Envelope-From: pneira@us.es
+Date: Mon, 3 Feb 2014 13:14:15 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: astx <astx@aws-it.at>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        netfilter-devel <netfilter-devel@vger.kernel.org>
+Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
+ Mobile
+Message-ID: <20140203121415.GA12777@localhost>
+References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@bigboss.aws-it.at>
+ <20140131125014.Horde.G2TRlt-60JJ0Nl_3Y8IniQ2@bigboss.aws-it.at>
+ <20140131170402.Horde.yIFUeQVjLycuS_8PGQoKmg5@aws-it.at>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: Reserve not DMAable space in front of the
- kernel
-References: <780bb8c8fd752eeace2fd2fbe1d8ed8572dc0d76.1391170073.git.michal.simek@xilinx.com> <CAL_Jsq+4Ea7=WP+mj_k1Q3q7DKm-hk6WXpv2DOBQwefp-zxzjg@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+4Ea7=WP+mj_k1Q3q7DKm-hk6WXpv2DOBQwefp-zxzjg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="aKWpx9fns61hIoKCC8WimMEoTFMO5pB00"
+Content-Type: multipart/mixed; boundary="bp/iNruPH9dso1Pn"
+Content-Disposition: inline
+In-Reply-To: <20140131170402.Horde.yIFUeQVjLycuS_8PGQoKmg5@aws-it.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---aKWpx9fns61hIoKCC8WimMEoTFMO5pB00
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 01/31/2014 06:38 PM, Rob Herring wrote:
-> On Fri, Jan 31, 2014 at 6:08 AM, Michal Simek <michal.simek@xilinx.com>=
- wrote:
->> Reserve space from 0x0 - __pa(swapper_pg_dir),
->> if kernel is loaded from 0, which is not DMAable.
->> It is causing problem with MMC driver and others
->> which want to add dma buffers to this space.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->> Jason: I don't think it is worth to bring 0x8000 magic
->> value and count minimum from it and phys_addr of swapper_pg_dir.
->> Full 512k of memory shouldn't be used by DMA.
->>
->> ---
->>  arch/arm/mach-zynq/common.c | 14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
->=20
-> The existing DT reserved range can't be used for this purpose?
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I expect you are talking about memreserve.
+On Fri, Jan 31, 2014 at 05:04:02PM +0100, astx wrote:
+> Dear Alexey,
+> 
+> seems to help. Thank you for your quick response. Kernel 3.10.28 is
+> now stable using h323 / Polycom.
 
-Two cases which are valid for us which have the same DTS file
-with this setup.
+Thanks, if no objection, will pass this patch to David.
 
-memreserve 0 - 0x4000
-memory node 0x0 - 0x40000000
+--bp/iNruPH9dso1Pn
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-netfilter-nf_nat_h323-fix-crash-in-nf_ct_unlink_expe.patch"
+
+>From d98506139d6e192705422ffba13bc2ff476ac513 Mon Sep 17 00:00:00 2001
+From: Alexey Dobriyan <adobriyan@gmail.com>
+Date: Mon, 3 Feb 2014 13:07:24 +0100
+Subject: [PATCH] netfilter: nf_nat_h323: fix crash in
+ nf_ct_unlink_expect_report()
+
+Similar bug fixed in SIP module in 3f509c6 ("netfilter: nf_nat_sip: fix
+incorrect handling of EBUSY for RTCP expectation").
+
+BUG: unable to handle kernel paging request at 00100104
+IP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
+...
+Call Trace:
+  [<c0244bd8>] ? del_timer+0x48/0x70
+  [<f8215687>] nf_ct_remove_expectations+0x47/0x60 [nf_conntrack]
+  [<f8211c99>] nf_ct_delete_from_lists+0x59/0x90 [nf_conntrack]
+  [<f8212e5e>] death_by_timeout+0x14e/0x1c0 [nf_conntrack]
+  [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
+  [<c024442d>] call_timer_fn+0x1d/0x80
+  [<c024461e>] run_timer_softirq+0x18e/0x1a0
+  [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
+  [<c023e6f3>] __do_softirq+0xa3/0x170
+  [<c023e650>] ? __local_bh_enable+0x70/0x70
+  <IRQ>
+  [<c023e587>] ? irq_exit+0x67/0xa0
+  [<c0202af6>] ? do_IRQ+0x46/0xb0
+  [<c027ad05>] ? clockevents_notify+0x35/0x110
+  [<c066ac6c>] ? common_interrupt+0x2c/0x40
+  [<c056e3c1>] ? cpuidle_enter_state+0x41/0xf0
+  [<c056e6fb>] ? cpuidle_idle_call+0x8b/0x100
+  [<c02085f8>] ? arch_cpu_idle+0x8/0x30
+  [<c027314b>] ? cpu_idle_loop+0x4b/0x140
+  [<c0273258>] ? cpu_startup_entry+0x18/0x20
+  [<c066056d>] ? rest_init+0x5d/0x70
+  [<c0813ac8>] ? start_kernel+0x2ec/0x2f2
+  [<c081364f>] ? repair_env_string+0x5b/0x5b
+  [<c0813269>] ? i386_start_kernel+0x33/0x35
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/ipv4/netfilter/nf_nat_h323.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/netfilter/nf_nat_h323.c b/net/ipv4/netfilter/nf_nat_h323.c
+index 9eea059d..574f7eb 100644
+--- a/net/ipv4/netfilter/nf_nat_h323.c
++++ b/net/ipv4/netfilter/nf_nat_h323.c
+@@ -229,7 +229,10 @@ static int nat_rtp_rtcp(struct sk_buff *skb, struct nf_conn *ct,
+ 			ret = nf_ct_expect_related(rtcp_exp);
+ 			if (ret == 0)
+ 				break;
+-			else if (ret != -EBUSY) {
++			else if (ret == -EBUSY) {
++				nf_ct_unexpect_related(rtp_exp);
++				continue;
++			} else if (ret < 0) {
+ 				nf_ct_unexpect_related(rtp_exp);
+ 				nated_port = 0;
+ 				break;
+-- 
+1.7.10.4
 
 
-1. standard
-kernel starting addr is 0x8000 and kernel is using 1GB memory which just =
-works
-
-2. AMP which we are also using
-kernel starting for example from 0x10008000 and use just 768MB, 256MB for=
- remoteproc.
-With memreserve in DTS this ends in mark_bootmem BUG because reserved mem=
-ory is not in memory
-which Linux can handle (at least this is my theory).
-
-Case 2 require one small fix which Russell is aware of,
-I have to check status on it.
-
-But with this current implementation both cases just work
-without changing dts file because for both cases
-dts file is just the same and user decides where kernel is placed
-and how much memory user wants to use.
-
-If you know how to fix this with any better dt description please
-let me know. I am not aware about it.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---aKWpx9fns61hIoKCC8WimMEoTFMO5pB00
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlLvh+oACgkQykllyylKDCFdQgCdGPGIAM3sipfzWJMwNQcU6mB0
-CHMAoIXaVySlTeimXEg+8ZidSq1seb6t
-=n2u8
------END PGP SIGNATURE-----
-
---aKWpx9fns61hIoKCC8WimMEoTFMO5pB00--
+--bp/iNruPH9dso1Pn--
