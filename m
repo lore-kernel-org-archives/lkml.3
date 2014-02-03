@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaBCIfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 03:35:31 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:49318 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181AbaBCIf3 (ORCPT
+	id S1751037AbaBCIpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 03:45:20 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40529 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaBCIpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 03:35:29 -0500
-Message-ID: <52EF546D.7070900@st.com>
-Date: Mon, 3 Feb 2014 09:33:49 +0100
-From: Alexandre Torgue <alexandre.torgue@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 3 Feb 2014 03:45:17 -0500
+Message-ID: <52EF588B.4050904@linux.vnet.ibm.com>
+Date: Mon, 03 Feb 2014 14:21:23 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        srinivas kandagatla <srinivas.kandagatla@st.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, <kernel@stlinux.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        <linux-kernel@vger.kernel.org>, Stuart Menefy <stuart.menefy@st.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, <maxime.coquelin@st.com>
-Subject: Re: [PATCH 1/4] ARM: STi: add stid127 soc support
-References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <201401301939.08302.arnd@arndb.de> <52EB96BB.6070800@st.com> <201401312115.33731.arnd@arndb.de>
-In-Reply-To: <201401312115.33731.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.82]
+To: Waiman Long <waiman.long@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Alexander Fyodorov <halcy@yandex.ru>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+Subject: Re: [PATCH v3 0/2] qspinlock: Introducing a 4-byte queue spinlock
+References: <1390933151-1797-1-git-send-email-Waiman.Long@hp.com> <52EA139C.8040106@linux.vnet.ibm.com> <52EA71F8.7070308@hp.com> <52EA9ECA.5040400@linux.vnet.ibm.com>
+In-Reply-To: <52EA9ECA.5040400@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020308-0260-0000-0000-0000044DA960
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2014 09:15 PM, Arnd Bergmann wrote:
-> On Friday 31 January 2014, srinivas kandagatla wrote:
+On 01/31/2014 12:19 AM, Raghavendra K T wrote:
+> On 01/30/2014 09:08 PM, Waiman Long wrote:
+>> On 01/30/2014 03:55 AM, Raghavendra K T wrote:
+>>> On 01/28/2014 11:49 PM, Waiman Long wrote:
+> [...]
+>                    from kernel/bounds.c:9:
+>>> include/linux/log2.h: In function ‘__ilog2_u32’:
+>>> include/linux/log2.h:34:2: error: implicit declaration of function
+>>> ‘fls’ [-Werror=implicit-function-declaration]
+>>> include/linux/log2.h: In function ‘__ilog2_u64’:
+>>> include/linux/log2.h:42:2: error: implicit declaration of function
+>>> ‘fls64’ [-Werror=implicit-function-declaration]
+>>> include/linux/log2.h: In function ‘__roundup_pow_of_two’:
+>>> .
+>>> .
+>>> [trimmed]
+>>>
+>>
+>> The code will need to be compiled in either the latest linux tree as the
+>> patches have dependency on some new memory barrier that are in 3.14.
+>> Alternatively, you can compile with the latest tip tree.
+>>
+>> If you have already done that, please send me your config file so that I
+>> can reproduce the compilation error in my build environment.
+>>
 >
->>> Sorry if I missed the initial review, but can you explain
->>> why this is needed to start with?
->> On ST SoCs the default value for L2 AUX_CTRL register is 0x0, so we  set
->> the way-size explicit here.
-> Unfortunately, we keep going back and forth on the L2 cache controller
-> setup between "it should work automatically" and "we don't want to
-> have configuration data in DT", where my personal opinion is that
-> the first one is more important here.
+> I did compile on latest linux tree which had barrier.txt. May be I 'll
+> recheck if I am missing something obvious.
 >
-> Now, there are a couple of properties that are defined in
-> Documentation/devicetree/bindings/arm/l2cc.txt to let some of the
-> things get set up automatically already. Can you check which bits
-> are missing there, if any? Are they better described as "configuration"
-> or "hardware" settings?
-Hi Arnd,
+> Here is .config attached
 
-Thanks for remarks. I will a have a look on it, but unfortunately not 
-before 2 weeks.
+An Update:
+The reason for failure was that I was compiling for guest. and
+CONFIG_PARAVIRT was enabled.
 
 
-Alex.
-
->
-> 	Arnd
 
