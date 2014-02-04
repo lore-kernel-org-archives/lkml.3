@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935777AbaBDWTq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:19:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56633 "EHLO
+	id S934757AbaBDWUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:20:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56654 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933945AbaBDVId (ORCPT
+	with ESMTP id S933928AbaBDVIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:33 -0500
+	Tue, 4 Feb 2014 16:08:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [PATCH 3.12 054/133] mei: use hbm idle state to prevent spurious resets
-Date: Tue,  4 Feb 2014 13:07:35 -0800
-Message-Id: <20140204210738.560000226@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.12 051/133] staging: r8712u: Set device type to wlan
+Date: Tue,  4 Feb 2014 13:07:32 -0800
+Message-Id: <20140204210738.477324658@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,154 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 66ae460b13c31a176b41550259683c841a62af3e upstream.
+commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
 
-When reset is caused by hbm protocol mismatch or timeout
-we might end up in an endless reset loop and hbm protocol
-will never sync
+The latest version of NetworkManager does not recognize the device as wireless
+without this change.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hbm.c       |   19 +++++++++++++++++++
- drivers/misc/mei/hbm.h       |    1 +
- drivers/misc/mei/init.c      |   12 ++++++++----
- drivers/misc/mei/interrupt.c |   25 +++++++++++++++----------
- 4 files changed, 43 insertions(+), 14 deletions(-)
+ drivers/staging/rtl8712/usb_intf.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -128,6 +128,17 @@ static bool is_treat_specially_client(st
- 	return false;
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -358,6 +358,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
+ 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
  }
  
-+/**
-+ * mei_hbm_idle - set hbm to idle state
-+ *
-+ * @dev: the device structure
-+ */
-+void mei_hbm_idle(struct mei_device *dev)
-+{
-+	dev->init_clients_timer = 0;
-+	dev->hbm_state = MEI_HBM_IDLE;
-+}
++static const struct device_type wlan_type = {
++	.name = "wlan",
++};
 +
- int mei_hbm_start_wait(struct mei_device *dev)
- {
- 	int ret;
-@@ -577,6 +588,14 @@ void mei_hbm_dispatch(struct mei_device
- 	mei_read_slots(dev, dev->rd_msg_buf, hdr->length);
- 	mei_msg = (struct mei_bus_message *)dev->rd_msg_buf;
- 
-+	/* ignore spurious message and prevent reset nesting
-+	 * hbm is put to idle during system reset
-+	 */
-+	if (dev->hbm_state == MEI_HBM_IDLE) {
-+		dev_dbg(&dev->pdev->dev, "hbm: state is idle ignore spurious messages\n");
-+		return 0;
-+	}
-+
- 	switch (mei_msg->hbm_cmd) {
- 	case HOST_START_RES_CMD:
- 		version_res = (struct hbm_host_version_response *)mei_msg;
---- a/drivers/misc/mei/hbm.h
-+++ b/drivers/misc/mei/hbm.h
-@@ -49,6 +49,7 @@ static inline void mei_hbm_hdr(struct me
- 	hdr->reserved = 0;
- }
- 
-+void mei_hbm_idle(struct mei_device *dev);
- int mei_hbm_start_req(struct mei_device *dev);
- int mei_hbm_start_wait(struct mei_device *dev);
- int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl);
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -139,14 +139,19 @@ void mei_reset(struct mei_device *dev, i
- 			dev->dev_state != MEI_DEV_POWER_DOWN &&
- 			dev->dev_state != MEI_DEV_POWER_UP);
- 
-+	/* we're already in reset, cancel the init timer
-+	 * if the reset was called due the hbm protocol error
-+	 * we need to call it before hw start
-+	 * so the hbm watchdog won't kick in
-+	 */
-+	mei_hbm_idle(dev);
-+
- 	ret = mei_hw_reset(dev, interrupts_enabled);
- 	if (ret) {
- 		dev_err(&dev->pdev->dev, "hw reset failed disabling the device\n");
- 		interrupts_enabled = false;
--		dev->dev_state = MEI_DEV_DISABLED;
- 	}
- 
--	dev->hbm_state = MEI_HBM_IDLE;
- 
- 	if (dev->dev_state != MEI_DEV_INITIALIZING &&
- 	    dev->dev_state != MEI_DEV_POWER_UP) {
-@@ -175,8 +180,6 @@ void mei_reset(struct mei_device *dev, i
- 		memset(&dev->wr_ext_msg, 0, sizeof(dev->wr_ext_msg));
- 	}
- 
--	/* we're already in reset, cancel the init timer */
--	dev->init_clients_timer = 0;
- 
- 	dev->me_clients_num = 0;
- 	dev->rd_msg_hdr = 0;
-@@ -188,6 +191,7 @@ void mei_reset(struct mei_device *dev, i
- 
- 	if (!interrupts_enabled) {
- 		dev_dbg(&dev->pdev->dev, "intr not enabled end of reset\n");
-+		dev->dev_state = MEI_DEV_DISABLED;
- 		return;
- 	}
- 
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -536,7 +536,6 @@ EXPORT_SYMBOL_GPL(mei_irq_write_handler)
+ /*
+  * drv_init() - a device potentially for us
   *
-  * @work: pointer to the work_struct structure
-  *
-- * NOTE: This function is called by timer interrupt work
-  */
- void mei_timer(struct work_struct *work)
- {
-@@ -551,18 +550,24 @@ void mei_timer(struct work_struct *work)
- 
- 
- 	mutex_lock(&dev->device_lock);
--	if (dev->dev_state != MEI_DEV_ENABLED) {
--		if (dev->dev_state == MEI_DEV_INIT_CLIENTS) {
--			if (dev->init_clients_timer) {
--				if (--dev->init_clients_timer == 0) {
--					dev_err(&dev->pdev->dev, "reset: init clients timeout hbm_state = %d.\n",
--						dev->hbm_state);
--					mei_reset(dev, 1);
--				}
-+
-+	/* Catch interrupt stalls during HBM init handshake */
-+	if (dev->dev_state == MEI_DEV_INIT_CLIENTS &&
-+	    dev->hbm_state != MEI_HBM_IDLE) {
-+
-+		if (dev->init_clients_timer) {
-+			if (--dev->init_clients_timer == 0) {
-+				dev_err(&dev->pdev->dev, "timer: init clients timeout hbm_state = %d.\n",
-+					dev->hbm_state);
-+				mei_reset(dev, 1);
-+				goto out;
- 			}
- 		}
--		goto out;
- 	}
-+
-+	if (dev->dev_state != MEI_DEV_ENABLED)
-+		goto out;
-+
- 	/*** connect/disconnect timeouts ***/
- 	list_for_each_entry_safe(cl_pos, cl_next, &dev->file_list, link) {
- 		if (cl_pos->timer_count) {
+@@ -393,6 +397,7 @@ static int r871xu_drv_init(struct usb_in
+ 	padapter->pusb_intf = pusb_intf;
+ 	usb_set_intfdata(pusb_intf, pnetdev);
+ 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
++	pnetdev->dev.type = &wlan_type;
+ 	/* step 2. */
+ 	padapter->dvobj_init = &r8712_usb_dvobj_init;
+ 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
 
 
