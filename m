@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964908AbaBDW4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:56:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56144 "EHLO
+	id S935972AbaBDW4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:56:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56148 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933198AbaBDVCN (ORCPT
+	with ESMTP id S933218AbaBDVCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:02:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        yury <urykhy@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 038/104] b43: Fix lockdep splat
-Date: Tue,  4 Feb 2014 13:01:41 -0800
-Message-Id: <20140204210223.810035112@linuxfoundation.org>
+Subject: [PATCH 3.10 039/104] b43: Fix unload oops if firmware is not available
+Date: Tue,  4 Feb 2014 13:01:42 -0800
+Message-Id: <20140204210223.837300221@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -31,101 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
+commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
 
-In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
-when b43 is used with hostapd, and rfkill is used to kill the radio output.
+The asyncronous firmware load uses a completion struct to hold firmware
+processing until the user-space routines are up and running. There is.
+however, a problem in that the waiter is nevered canceled during teardown.
+As a result, unloading the driver when firmware is not available causes an oops.
 
-The lockdep splat (in part) is as follows:
+To be able to access the completion structure at teardown, it had to be moved
+into the b43_wldev structure.
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.12.0 #1 Not tainted
--------------------------------------------------------
-rfkill/10040 is trying to acquire lock:
- (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
+This patch also fixes a typo in a comment.
 
-but task is already holding lock:
- (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
-
---snip--
-
-Chain exists of:
-  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
-
-The fix is to move the initialization of the hardware random number generator
-outside the code range covered by the rtnl_mutex.
-
-Reported-by: yury <urykhy@gmail.com>
-Tested-by: yury <urykhy@gmail.com>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/main.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/net/wireless/b43/b43.h  |    4 ++--
+ drivers/net/wireless/b43/main.c |   10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -731,8 +731,6 @@ enum b43_firmware_file_type {
+ struct b43_request_fw_context {
+ 	/* The device we are requesting the fw for. */
+ 	struct b43_wldev *dev;
+-	/* a completion event structure needed if this call is asynchronous */
+-	struct completion fw_load_complete;
+ 	/* a pointer to the firmware object */
+ 	const struct firmware *blob;
+ 	/* The type of firmware to request. */
+@@ -809,6 +807,8 @@ enum {
+ struct b43_wldev {
+ 	struct b43_bus_dev *dev;
+ 	struct b43_wl *wl;
++	/* a completion event structure needed if this call is asynchronous */
++	struct completion fw_load_complete;
+ 
+ 	/* The device initialization status.
+ 	 * Use b43_status() to query. */
 --- a/drivers/net/wireless/b43/main.c
 +++ b/drivers/net/wireless/b43/main.c
-@@ -2422,6 +2422,7 @@ error:
+@@ -2068,6 +2068,7 @@ void b43_do_release_fw(struct b43_firmwa
  
- static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
- static void b43_one_core_detach(struct b43_bus_dev *dev);
-+static int b43_rng_init(struct b43_wl *wl);
- 
- static void b43_request_firmware(struct work_struct *work)
+ static void b43_release_firmware(struct b43_wldev *dev)
  {
-@@ -2473,6 +2474,10 @@ start_ieee80211:
- 		goto err_one_core_detach;
- 	wl->hw_registred = true;
- 	b43_leds_register(wl->current_dev);
-+
-+	/* Register HW RNG driver */
-+	b43_rng_init(wl);
-+
- 	goto out;
++	complete(&dev->fw_load_complete);
+ 	b43_do_release_fw(&dev->fw.ucode);
+ 	b43_do_release_fw(&dev->fw.pcm);
+ 	b43_do_release_fw(&dev->fw.initvals);
+@@ -2093,7 +2094,7 @@ static void b43_fw_cb(const struct firmw
+ 	struct b43_request_fw_context *ctx = context;
  
- err_one_core_detach:
-@@ -4634,9 +4639,6 @@ static void b43_wireless_core_exit(struc
- 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
- 		return;
+ 	ctx->blob = firmware;
+-	complete(&ctx->fw_load_complete);
++	complete(&ctx->dev->fw_load_complete);
+ }
  
--	/* Unregister HW RNG driver */
--	b43_rng_exit(dev->wl);
--
- 	b43_set_status(dev, B43_STAT_UNINIT);
- 
- 	/* Stop the microcode PSM. */
-@@ -4779,9 +4781,6 @@ static int b43_wireless_core_init(struct
- 
- 	b43_set_status(dev, B43_STAT_INITIALIZED);
- 
--	/* Register HW RNG driver */
--	b43_rng_init(dev->wl);
--
- out:
- 	return err;
- 
-@@ -5442,6 +5441,9 @@ static void b43_bcma_remove(struct bcma_
- 
- 	b43_one_core_detach(wldev->dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	b43_leds_unregister(wl);
- 
- 	ieee80211_free_hw(wl->hw);
-@@ -5519,6 +5521,9 @@ static void b43_ssb_remove(struct ssb_de
- 
- 	b43_one_core_detach(dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	if (list_empty(&wl->devlist)) {
- 		b43_leds_unregister(wl);
- 		/* Last core on the chip unregistered.
+ int b43_do_request_fw(struct b43_request_fw_context *ctx,
+@@ -2140,7 +2141,7 @@ int b43_do_request_fw(struct b43_request
+ 	}
+ 	if (async) {
+ 		/* do this part asynchronously */
+-		init_completion(&ctx->fw_load_complete);
++		init_completion(&ctx->dev->fw_load_complete);
+ 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
+ 					      ctx->dev->dev->dev, GFP_KERNEL,
+ 					      ctx, b43_fw_cb);
+@@ -2148,12 +2149,11 @@ int b43_do_request_fw(struct b43_request
+ 			pr_err("Unable to load firmware\n");
+ 			return err;
+ 		}
+-		/* stall here until fw ready */
+-		wait_for_completion(&ctx->fw_load_complete);
++		wait_for_completion(&ctx->dev->fw_load_complete);
+ 		if (ctx->blob)
+ 			goto fw_ready;
+ 	/* On some ARM systems, the async request will fail, but the next sync
+-	 * request works. For this reason, we dall through here
++	 * request works. For this reason, we fall through here
+ 	 */
+ 	}
+ 	err = request_firmware(&ctx->blob, ctx->fwname,
 
 
