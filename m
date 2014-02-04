@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaBDDU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 22:20:57 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:56053 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaBDDU4 (ORCPT
+	id S1752896AbaBDDsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 22:48:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55238 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394AbaBDDsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 22:20:56 -0500
+	Mon, 3 Feb 2014 22:48:07 -0500
+Date: Mon, 3 Feb 2014 19:47:21 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Rientjes <rientjes@google.com>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, compaction: avoid isolating pinned pages fix
+In-Reply-To: <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
+Message-ID: <alpine.LSU.2.11.1402031933400.29601@eggly.anvils>
+References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com> <20140203095329.GH6732@suse.de> <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com> <20140204000237.GA17331@lge.com> <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
+ <20140204015332.GA14779@lge.com> <alpine.DEB.2.02.1402031755440.26347@chino.kir.corp.google.com> <20140204021533.GA14924@lge.com> <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140203153413.GA12991@kria>
-References: <20140203153413.GA12991@kria>
-Date: Tue, 4 Feb 2014 13:20:54 +1000
-Message-ID: <CAPM=9twWniCmKNb1vxjS_PbsTqimX6EWVusA_+GZ7H9fdhQj3A@mail.gmail.com>
-Subject: Re: [3.14-rc1] cirrus driver problem (qemu)
-From: Dave Airlie <airlied@gmail.com>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: Dave Airlie <airlied@redhat.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a1135e0f4c9153104f18c20dc
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a1135e0f4c9153104f18c20dc
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, 3 Feb 2014, David Rientjes wrote:
+> On Tue, 4 Feb 2014, Joonsoo Kim wrote:
+> 
+> > > > Okay. It can't fix your situation. Anyway, *normal* anon pages may be mapped
+> > > > and have positive page_count(), so your code such as
+> > > > '!page_mapping(page) && page_count(page)' makes compaction skip these *normal*
+> > > > anon pages and this is incorrect behaviour.
+> > > > 
+> > > 
+> > > So how does that work with migrate_page_move_mapping() which demands 
+> > > page_count(page) == 1 and the get_page_unless_zero() in 
+> > > __isolate_lru_page()?
+> > 
+> > Before doing migrate_page_move_mapping(), try_to_unmap() is called so that all
+> > mapping is unmapped. Then, remained page_count() is 1 which is grabbed by
+> > __isolate_lru_page(). Am I missing something?
+> > 
+> 
+> Ah, good point.  I wonder if we can get away with 
+> page_count(page) - page_mapcount(page) > 1 to avoid the get_user_pages() 
+> pin?
 
-On Tue, Feb 4, 2014 at 1:34 AM, Sabrina Dubroca <sd@queasysnail.net> wrote:
-> When I boot 3.14-rc1 in qemu, I get the trace below. The console stops
-> updating and I don't get a login prompt. I can login, but I can't see
-> what I'm doing. I can login normally via SSH.
->
-> If I revert the last commit in drivers/gpu/drm/cirrus:
->
-> f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 drm: ast,cirrus,mgag200: use drm_can_sleep
->
-> the problem is solved.
->
+Something like that.  But please go back to migrate_page_move_mapping()
+to factor in what it's additionally considering.  Whether you can share
+code with it, I don't know - it has to do some things under a lock you
+cannot take at the preliminary stage - you haven't isolated or locked
+the page yet.
 
-Hi does the attach patch fix it?
+There is a separate issue, that a mapping may supply its own non-default
+mapping->a_ops->migratepage(): can we assume that the page_counting is
+the same whatever migratepage() is in use?  I'm not sure.
 
-Dave.
+If you stick to special-casing PageAnon pages, you won't face that
+issue; but your proposed change would be a lot more satisfying if we
+can convince ourselves that it's good for !PageAnon too.  May need a
+trawl through the different migratepage() methods that exist in tree.
 
---001a1135e0f4c9153104f18c20dc
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-drm-add-in_interrupt-to-drm_can_sleep-list-of-things.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-add-in_interrupt-to-drm_can_sleep-list-of-things.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hr8lo1mg0
-
-RnJvbSBjNmZlYjg4MWUwMGM4ZGI5ZjlmNzNkMDk5YTA4ZTg2YzVhZjc5ZDUwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
-OiBUdWUsIDQgRmViIDIwMTQgMTM6MTk6MDggKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm06IGFk
-ZCBpbl9pbnRlcnJ1cHQgdG8gZHJtX2Nhbl9zbGVlcCBsaXN0IG9mIHRoaW5ncwoKVGhpcyBzaG91
-bGQgc3RvcCB1cyB0YWtpbmcgbG9ja3Mgd2hlbiB3ZSBzaG91bGRuJ3QgaW4gdGhlIGNvbnNvbGUg
-ZHJpdmVycywKClsgICAgMS43NDkzNDFdIC0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0t
-LS0tLQpbICAgIDEuNzQ5MzQ3XSBXQVJOSU5HOiBDUFU6IDAgUElEOiAwIGF0IGtlcm5lbC9sb2Nr
-aW5nL211dGV4LmM6ODU2IG11dGV4X3RyeWxvY2srMHgxZTUvMHgyNTAoKQpbICAgIDEuNzQ5MzQ4
-XSBERUJVR19MT0NLU19XQVJOX09OKGluX2ludGVycnVwdCgpKQpbICAgIDEuNzQ5MzYwXSBNb2R1
-bGVzIGxpbmtlZCBpbjogcHBkZXYgY2lycnVzIHN5c2NvcHlhcmVhIHN5c2ZpbGxyZWN0IHN5c2lt
-Z2JsdCBkcm1fa21zX2hlbHBlciBldmRldiBwc21vdXNlIG1pY3JvY29kZSBzZXJpb19yYXcgcGNz
-cGtyIHR0bSBlMTAwMCBwYXJwb3J0X3BjIHBhcnBvcnQgcHJvY2Vzc29yIGJ1dHRvbiBpbnRlbF9h
-Z3AgZHJtIGludGVsX2d0dCBpMmNfcGlpeDQgaXB2NiBleHQ0IGNyYzE2IG1iY2FjaGUgamJkMiBz
-ZF9tb2Qgc3JfbW9kIGNkcm9tIGF0YV9nZW5lcmljIHBhdGFfYWNwaSBhdGFfcGlpeCA5cG5ldF92
-aXJ0aW8gOXBuZXQgbGliYXRhIHNjc2lfbW9kClsgICAgMS43NDkzNjJdIENQVTogMCBQSUQ6IDAg
-Q29tbTogc3dhcHBlci8wIE5vdCB0YWludGVkIDMuMTQuMC1yYzEtdDEgIzM0ClsgICAgMS43NDkz
-NjRdIEhhcmR3YXJlIG5hbWU6IEJvY2hzIEJvY2hzLCBCSU9TIEJvY2hzIDAxLzAxLzIwMTEKWyAg
-ICAxLjc0OTM2Nl0gIDAwMDAwMDAwMDAwMDAwMDkgZmZmZjg4MDAxZmMwMzhjOCBmZmZmZmZmZjgx
-NGU4NDU2IGZmZmY4ODAwMWZjMDM5MTAKWyAgICAxLjc0OTM2N10gIGZmZmY4ODAwMWZjMDM5MDAg
-ZmZmZmZmZmY4MTA2YTBkZCBmZmZmODgwMDFkM2ZmOTkwIDAwMDAwMDAwMDAwMDAwMTAKWyAgICAx
-Ljc0OTM2OF0gIDAwMDAwMDAwMDAwMDAwMDAgMDAwMDAwMDAwMDAwMDFlMCBmZmZmODgwMDFjYzNi
-MDAwIGZmZmY4ODAwMWZjMDM5NjAKWyAgICAxLjc0OTM2OV0gQ2FsbCBUcmFjZToKWyAgICAxLjc0
-OTM3Ml0gIDxJUlE+ICBbPGZmZmZmZmZmODE0ZTg0NTY+XSBkdW1wX3N0YWNrKzB4NGQvMHg2Zgpb
-ICAgIDEuNzQ5Mzc0XSAgWzxmZmZmZmZmZjgxMDZhMGRkPl0gd2Fybl9zbG93cGF0aF9jb21tb24r
-MHg3ZC8weGEwClsgICAgMS43NDkzNzVdICBbPGZmZmZmZmZmODEwNmExNGM+XSB3YXJuX3Nsb3dw
-YXRoX2ZtdCsweDRjLzB4NTAKWyAgICAxLjc0OTM3N10gIFs8ZmZmZmZmZmY4MTRlYmY0NT5dIG11
-dGV4X3RyeWxvY2srMHgxZTUvMHgyNTAKWyAgICAxLjc0OTM4MF0gIFs8ZmZmZmZmZmZhMDM3ODg4
-Yz5dIGNpcnJ1c19kaXJ0eV91cGRhdGUrMHg3Yy8weDJmMCBbY2lycnVzXQpbICAgIDEuNzQ5Mzgx
-XSAgWzxmZmZmZmZmZmEwMzc4YjJmPl0gY2lycnVzX2ltYWdlYmxpdCsweDJmLzB4NDAgW2NpcnJ1
-c10KWyAgICAxLjc0OTM4OF0gIFs8ZmZmZmZmZmY4MTMxODhmND5dIHNvZnRfY3Vyc29yKzB4MWI0
-LzB4MjUwClsgICAgMS43NDkzOTBdICBbPGZmZmZmZmZmODEzMTgxYTM+XSBiaXRfY3Vyc29yKzB4
-NjEzLzB4NjUwClsgICAgMS43NDkzOTFdICBbPGZmZmZmZmZmODEzMTM4OTE+XSA/IGdldF9jb2xv
-ci5pc3JhLjE1KzB4MzEvMHgxNDAKClJlcG9ydGVkLWJ5OiBTYWJyaW5hIER1YnJvY2EgPHNkQHF1
-ZWFzeXNuYWlsLm5ldD4KU2lnbmVkLW9mZi1ieTogRGF2ZSBBaXJsaWUgPGFpcmxpZWRAcmVkaGF0
-LmNvbT4KLS0tCiBpbmNsdWRlL2RybS9kcm1QLmggfCAyICstCiAxIGZpbGUgY2hhbmdlZCwgMSBp
-bnNlcnRpb24oKyksIDEgZGVsZXRpb24oLSkKCmRpZmYgLS1naXQgYS9pbmNsdWRlL2RybS9kcm1Q
-LmggYi9pbmNsdWRlL2RybS9kcm1QLmgKaW5kZXggMWQ0YTkyMC4uM2E5ODY2NCAxMDA2NDQKLS0t
-IGEvaW5jbHVkZS9kcm0vZHJtUC5oCisrKyBiL2luY2x1ZGUvZHJtL2RybVAuaApAQCAtMTY2NSw3
-ICsxNjY1LDcgQEAgZXh0ZXJuIHZvaWQgZHJtX3BsYXRmb3JtX2V4aXQoc3RydWN0IGRybV9kcml2
-ZXIgKmRyaXZlciwgc3RydWN0IHBsYXRmb3JtX2RldmljZQogLyogcmV0dXJucyB0cnVlIGlmIGN1
-cnJlbnRseSBva2F5IHRvIHNsZWVwICovCiBzdGF0aWMgX19pbmxpbmVfXyBib29sIGRybV9jYW5f
-c2xlZXAodm9pZCkKIHsKLQlpZiAoaW5fYXRvbWljKCkgfHwgaW5fZGJnX21hc3RlcigpIHx8IGly
-cXNfZGlzYWJsZWQoKSkKKwlpZiAoaW5fYXRvbWljKCkgfHwgaW5fZGJnX21hc3RlcigpIHx8IGlu
-X2ludGVycnVwdCgpIHx8IGlycXNfZGlzYWJsZWQoKSkKIAkJcmV0dXJuIGZhbHNlOwogCXJldHVy
-biB0cnVlOwogfQotLSAKMS44LjQuMgoK
---001a1135e0f4c9153104f18c20dc--
+Hugh
