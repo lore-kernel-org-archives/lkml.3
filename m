@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730AbaBDVGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:06:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56431 "EHLO
+	id S933029AbaBDVGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:06:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56420 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933551AbaBDVDE (ORCPT
+	with ESMTP id S933555AbaBDVDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:03:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Uosis <uosisl@gmail.com>,
         Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3.10 094/104] ALSA: hda - hdmi: introduce patch_nvhdmi()
-Date: Tue,  4 Feb 2014 13:02:37 -0800
-Message-Id: <20140204210225.376601012@linuxfoundation.org>
+Subject: [PATCH 3.10 095/104] ALSA: hda/hdmi - allow PIN_OUT to be dynamically enabled
+Date: Tue,  4 Feb 2014 13:02:38 -0800
+Message-Id: <20140204210225.408431071@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,110 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Stephen Warren <swarren@nvidia.com>
 
-(This is a backport of *part* of upstream 611885bc963a "ALSA: hda -
-hdmi: Disallow unsupported 2ch remapping on NVIDIA codecs" to stable
-3.10 through 3.12. Later stable already contain all of the original
-patch.)
+(This is upstream 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
+dynamically enabled", backported to stable 3.10 through 3.12. 3.13 and
+later can take the original patch.)
 
-Mainline commit 611885bc963a "ALSA: hda - hdmi: Disallow unsupported 2ch
-remapping on NVIDIA codecs" introduces function patch_nvhdmi(). That
-function is edited by 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
-dynamically enabled". In order to backport the PIN_OUT patch, I am first
-back-porting just the addition of function patch_nvhdmi(), so that the
-conflicts applying the PIN_OUT patch are simplified.
+Commit 384a48d71520 "ALSA: hda: HDMI: Support codecs with fewer cvts
+than pins" dynamically enabled each pin widget's PIN_OUT only when the
+pin was actively in use. This was required on certain NVIDIA CODECs for
+correct operation. Specifically, if multiple pin widgets each had their
+mux input select the same audio converter widget and each pin widget had
+PIN_OUT enabled, then only one of the pin widgets would actually receive
+the audio, and often not the one the user wanted!
 
-Ideally, one might backport all of 611885bc963a. However, that commit
-doesn't apply to stable kernels, since it relies on a chain of other
-patches which implement new features.
+However, this apparently broke some Intel systems, and commit
+6169b673618b "ALSA: hda - Always turn on pins for HDMI/DP" reverted the
+dynamic setting of PIN_OUT. This in turn broke the afore-mentioned NVIDIA
+CODECs.
 
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[swarren, extracted just a small part of the original patch]
+This change supports either dynamic or static handling of PIN_OUT,
+selected by a flag set up during CODEC initialization. This flag is
+enabled for all recent NVIDIA GPUs.
+
+Reported-by: Uosis <uosisl@gmail.com>
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   60 +++++++++++++++++++++++++++------------------
- 1 file changed, 37 insertions(+), 23 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   40 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 36 insertions(+), 4 deletions(-)
 
 --- a/sound/pci/hda/patch_hdmi.c
 +++ b/sound/pci/hda/patch_hdmi.c
-@@ -2476,6 +2476,20 @@ static int patch_nvhdmi_8ch_7x(struct hd
- 	return 0;
+@@ -86,6 +86,9 @@ struct hdmi_spec {
+ 	unsigned int channels_max; /* max over all cvts */
+ 
+ 	struct hdmi_eld temp_eld;
++
++	bool dyn_pin_out;
++
+ 	/*
+ 	 * Non-generic ATI/NVIDIA specific
+ 	 */
+@@ -450,15 +453,25 @@ static void hdmi_write_dip_byte(struct h
+ 
+ static void hdmi_init_pin(struct hda_codec *codec, hda_nid_t pin_nid)
+ {
++	struct hdmi_spec *spec = codec->spec;
++	int pin_out;
++
+ 	/* Unmute */
+ 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
+ 		snd_hda_codec_write(codec, pin_nid, 0,
+ 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
+-	/* Enable pin out: some machines with GM965 gets broken output when
+-	 * the pin is disabled or changed while using with HDMI
+-	 */
++
++	if (spec->dyn_pin_out)
++		/* Disable pin out until stream is active */
++		pin_out = 0;
++	else
++		/* Enable pin out: some machines with GM965 gets broken output
++		 * when the pin is disabled or changed while using with HDMI
++		 */
++		pin_out = PIN_OUT;
++
+ 	snd_hda_codec_write(codec, pin_nid, 0,
+-			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
++			    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_out);
  }
  
-+static int patch_nvhdmi(struct hda_codec *codec)
-+{
-+	struct hdmi_spec *spec;
-+	int err;
+ static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
+@@ -1473,6 +1486,7 @@ static int generic_hdmi_playback_pcm_pre
+ 	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
+ 	hda_nid_t pin_nid = per_pin->pin_nid;
+ 	bool non_pcm;
++	int pinctl;
+ 
+ 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
+ 	per_pin->channels = substream->runtime->channels;
+@@ -1482,6 +1496,14 @@ static int generic_hdmi_playback_pcm_pre
+ 
+ 	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
+ 
++	if (spec->dyn_pin_out) {
++		pinctl = snd_hda_codec_read(codec, pin_nid, 0,
++					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++		snd_hda_codec_write(codec, pin_nid, 0,
++				    AC_VERB_SET_PIN_WIDGET_CONTROL,
++				    pinctl | PIN_OUT);
++	}
 +
-+	err = patch_generic_hdmi(codec);
-+	if (err)
-+		return err;
+ 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
+ }
+ 
+@@ -1501,6 +1523,7 @@ static int hdmi_pcm_close(struct hda_pcm
+ 	int cvt_idx, pin_idx;
+ 	struct hdmi_spec_per_cvt *per_cvt;
+ 	struct hdmi_spec_per_pin *per_pin;
++	int pinctl;
+ 
+ 	if (hinfo->nid) {
+ 		cvt_idx = cvt_nid_to_cvt_index(spec, hinfo->nid);
+@@ -1517,6 +1540,14 @@ static int hdmi_pcm_close(struct hda_pcm
+ 			return -EINVAL;
+ 		per_pin = get_pin(spec, pin_idx);
+ 
++		if (spec->dyn_pin_out) {
++			pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
++					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++			snd_hda_codec_write(codec, per_pin->pin_nid, 0,
++					    AC_VERB_SET_PIN_WIDGET_CONTROL,
++					    pinctl & ~PIN_OUT);
++		}
 +
-+	spec = codec->spec;
-+
-+	return 0;
-+}
-+
- /*
-  * ATI-specific implementations
-  *
-@@ -2548,30 +2562,30 @@ static const struct hda_codec_preset snd
- { .id = 0x10de0005, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
- { .id = 0x10de0006, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
- { .id = 0x10de0007, .name = "MCP79/7A HDMI",	.patch = patch_nvhdmi_8ch_7x },
--{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_generic_hdmi },
--{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_generic_hdmi },
-+{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_nvhdmi },
-+{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_nvhdmi },
- /* 17 is known to be absent */
--{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
-+{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
+ 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
+ 		per_pin->chmap_set = false;
+ 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
+@@ -2486,6 +2517,7 @@ static int patch_nvhdmi(struct hda_codec
+ 		return err;
+ 
+ 	spec = codec->spec;
++	spec->dyn_pin_out = true;
+ 
+ 	return 0;
+ }
 
 
