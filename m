@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934481AbaBDVLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:11:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57111 "EHLO
+	id S934555AbaBDVMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934391AbaBDVLZ (ORCPT
+	with ESMTP id S934439AbaBDVLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:25 -0500
+	Tue, 4 Feb 2014 16:11:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 036/140] rtlwifi: rtl8192cu: Fix some code in RF handling
-Date: Tue,  4 Feb 2014 13:10:23 -0800
-Message-Id: <20140204211037.992653128@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Du, Changbin" <changbinx.du@intel.com>
+Subject: [PATCH 3.13 024/140] USB: fix race between hub_disconnect and recursively_mark_NOTATTACHED
+Date: Tue,  4 Feb 2014 13:10:11 -0800
+Message-Id: <20140204211037.653499397@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,69 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit e9b0784bb9de3152e787ee779868c626b137fb3b upstream.
+commit 543d7784b07ffd16cc82a9cb4e1e0323fd0040f1 upstream.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+There is a race in the hub driver between hub_disconnect() and
+recursively_mark_NOTATTACHED().  This race can be triggered if the
+driver is unbound from a device at the same time as the bus's root hub
+is removed.  When the race occurs, it can cause an oops:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000015c
+IP: [<c16d5fb0>] recursively_mark_NOTATTACHED+0x20/0x60
+Call Trace:
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
+ [<c16d6082>] usb_set_device_state+0x92/0x120
+ [<c16d862b>] usb_disconnect+0x2b/0x1a0
+ [<c16dd4c0>] usb_remove_hcd+0xb0/0x160
+ [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+ [<c1704efc>] ehci_mid_remove+0x1c/0x30
+ [<c1704f26>] ehci_mid_stop_host+0x16/0x30
+ [<c16f7698>] penwell_otg_work+0xd28/0x3520
+ [<c19c945b>] ? __schedule+0x39b/0x7f0
+ [<c19cdb9d>] ? sub_preempt_count+0x3d/0x50
+ [<c125e97d>] process_one_work+0x11d/0x3d0
+ [<c19c7f4d>] ? mutex_unlock+0xd/0x10
+ [<c125e0e5>] ? manage_workers.isra.24+0x1b5/0x270
+ [<c125f009>] worker_thread+0xf9/0x320
+ [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+ [<c125ef10>] ? rescuer_thread+0x2b0/0x2b0
+ [<c1264ac4>] kthread+0x94/0xa0
+ [<c19d0f77>] ret_from_kernel_thread+0x1b/0x28
+ [<c1264a30>] ? kthread_create_on_node+0xc0/0xc0
+
+One problem is that recursively_mark_NOTATTACHED() uses the intfdata
+value and hub->hdev->maxchild while hub_disconnect() is clearing them.
+Another problem is that it uses hub->ports[i] while the port device is
+being released.
+
+To fix this race, we need to hold the device_state_lock while
+hub_disconnect() changes the values.  (Note that usb_disconnect()
+and hub_port_connect_change() already acquire this lock at similar
+critical times during a USB device's life cycle.)  We also need to
+remove the port devices after maxchild has been set to 0, instead of
+before.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: "Du, Changbin" <changbinx.du@intel.com>
+Tested-by: "Du, Changbin" <changbinx.du@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |   29 +++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+ drivers/usb/core/hub.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-@@ -85,17 +85,15 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
- 	if (mac->act_scanning) {
- 		tx_agc[RF90_PATH_A] = 0x3f3f3f3f;
- 		tx_agc[RF90_PATH_B] = 0x3f3f3f3f;
--		if (turbo_scanoff) {
--			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
--				tx_agc[idx1] = ppowerlevel[idx1] |
--				    (ppowerlevel[idx1] << 8) |
--				    (ppowerlevel[idx1] << 16) |
--				    (ppowerlevel[idx1] << 24);
--				if (rtlhal->interface == INTF_USB) {
--					if (tx_agc[idx1] > 0x20 &&
--					    rtlefuse->external_pa)
--						tx_agc[idx1] = 0x20;
--				}
-+		for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
-+			tx_agc[idx1] = ppowerlevel[idx1] |
-+			    (ppowerlevel[idx1] << 8) |
-+			    (ppowerlevel[idx1] << 16) |
-+			    (ppowerlevel[idx1] << 24);
-+			if (rtlhal->interface == INTF_USB) {
-+				if (tx_agc[idx1] > 0x20 &&
-+				    rtlefuse->external_pa)
-+					tx_agc[idx1] = 0x20;
- 			}
- 		}
- 	} else {
-@@ -107,7 +105,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
- 			   TXHIGHPWRLEVEL_LEVEL2) {
- 			tx_agc[RF90_PATH_A] = 0x00000000;
- 			tx_agc[RF90_PATH_B] = 0x00000000;
--		} else{
-+		} else {
- 			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
- 				tx_agc[idx1] = ppowerlevel[idx1] |
- 				    (ppowerlevel[idx1] << 8) |
-@@ -373,7 +371,12 @@ static void _rtl92c_write_ofdm_power_reg
- 			    regoffset == RTXAGC_B_MCS07_MCS04)
- 				regoffset = 0xc98;
- 			for (i = 0; i < 3; i++) {
--				writeVal = (writeVal > 6) ? (writeVal - 6) : 0;
-+				if (i != 2)
-+					writeVal = (writeVal > 8) ?
-+						   (writeVal - 8) : 0;
-+				else
-+					writeVal = (writeVal > 6) ?
-+						   (writeVal - 6) : 0;
- 				rtl_write_byte(rtlpriv, (u32)(regoffset + i),
- 					      (u8)writeVal);
- 			}
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1607,7 +1607,7 @@ static void hub_disconnect(struct usb_in
+ {
+ 	struct usb_hub *hub = usb_get_intfdata(intf);
+ 	struct usb_device *hdev = interface_to_usbdev(intf);
+-	int i;
++	int port1;
+ 
+ 	/* Take the hub off the event list and don't let it be added again */
+ 	spin_lock_irq(&hub_event_lock);
+@@ -1622,11 +1622,15 @@ static void hub_disconnect(struct usb_in
+ 	hub->error = 0;
+ 	hub_quiesce(hub, HUB_DISCONNECT);
+ 
+-	usb_set_intfdata (intf, NULL);
++	/* Avoid races with recursively_mark_NOTATTACHED() */
++	spin_lock_irq(&device_state_lock);
++	port1 = hdev->maxchild;
++	hdev->maxchild = 0;
++	usb_set_intfdata(intf, NULL);
++	spin_unlock_irq(&device_state_lock);
+ 
+-	for (i = 0; i < hdev->maxchild; i++)
+-		usb_hub_remove_port_device(hub, i + 1);
+-	hub->hdev->maxchild = 0;
++	for (; port1 > 0; --port1)
++		usb_hub_remove_port_device(hub, port1);
+ 
+ 	if (hub->hdev->speed == USB_SPEED_HIGH)
+ 		highspeed_hubs--;
 
 
