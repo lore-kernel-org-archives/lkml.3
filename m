@@ -1,28 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833AbaBDVAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:00:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55925 "EHLO
+	id S932926AbaBDVA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:00:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102AbaBDVAY (ORCPT
+	with ESMTP id S1755194AbaBDVAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:24 -0500
+	Tue, 4 Feb 2014 16:00:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Khalid Aziz <khalid.aziz@oracle.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Pravin Shelar <pshelar@nicira.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Christoph Lameter <cl@linux.com>, Johannes Weiner <jweiner@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guillaume Morin <guillaume@morinfr.org>
-Subject: [PATCH 3.4 02/37] mm: hugetlbfs: fix hugetlbfs optimization
-Date: Tue,  4 Feb 2014 13:00:38 -0800
-Message-Id: <20140204210056.070697121@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.4 17/37] staging: r8712u: Set device type to wlan
+Date: Tue,  4 Feb 2014 13:00:53 -0800
+Message-Id: <20140204210056.491855606@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -37,271 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 27c73ae759774e63313c1fbfeb17ba076cea64c5 upstream.
+commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
 
-Commit 7cb2ef56e6a8 ("mm: fix aio performance regression for database
-caused by THP") can cause dereference of a dangling pointer if
-split_huge_page runs during PageHuge() if there are updates to the
-tail_page->private field.
+The latest version of NetworkManager does not recognize the device as wireless
+without this change.
 
-Also it is repeating compound_head twice for hugetlbfs and it is running
-compound_head+compound_trans_head for THP when a single one is needed in
-both cases.
-
-The new code within the PageSlab() check doesn't need to verify that the
-THP page size is never bigger than the smallest hugetlbfs page size, to
-avoid memory corruption.
-
-A longstanding theoretical race condition was found while fixing the
-above (see the change right after the skip_unlock label, that is
-relevant for the compound_lock path too).
-
-By re-establishing the _mapcount tail refcounting for all compound
-pages, this also fixes the below problem:
-
-  echo 0 >/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-
-  BUG: Bad page state in process bash  pfn:59a01
-  page:ffffea000139b038 count:0 mapcount:10 mapping:          (null) index:0x0
-  page flags: 0x1c00000000008000(tail)
-  Modules linked in:
-  CPU: 6 PID: 2018 Comm: bash Not tainted 3.12.0+ #25
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x55/0x76
-    bad_page+0xd5/0x130
-    free_pages_prepare+0x213/0x280
-    __free_pages+0x36/0x80
-    update_and_free_page+0xc1/0xd0
-    free_pool_huge_page+0xc2/0xe0
-    set_max_huge_pages.part.58+0x14c/0x220
-    nr_hugepages_store_common.isra.60+0xd0/0xf0
-    nr_hugepages_store+0x13/0x20
-    kobj_attr_store+0xf/0x20
-    sysfs_write_file+0x189/0x1e0
-    vfs_write+0xc5/0x1f0
-    SyS_write+0x55/0xb0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Tested-by: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: Pravin Shelar <pshelar@nicira.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guillaume Morin <guillaume@morinfr.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- include/linux/hugetlb.h |    6 ++
- mm/hugetlb.c            |   17 +++++++
- mm/swap.c               |  107 ++++++++++++++++++++++++++++++++++--------------
- 3 files changed, 101 insertions(+), 29 deletions(-)
+ drivers/staging/rtl8712/usb_intf.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -24,6 +24,7 @@ struct hugepage_subpool *hugepage_new_su
- void hugepage_put_subpool(struct hugepage_subpool *spool);
- 
- int PageHuge(struct page *page);
-+int PageHeadHuge(struct page *page_head);
- 
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-@@ -84,6 +85,11 @@ static inline int PageHuge(struct page *
- {
- 	return 0;
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -361,6 +361,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
+ 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
  }
-+
-+static inline int PageHeadHuge(struct page *page_head)
-+{
-+	return 0;
-+}
  
- static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
- {
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -679,6 +679,23 @@ int PageHuge(struct page *page)
- }
- EXPORT_SYMBOL_GPL(PageHuge);
- 
-+/*
-+ * PageHeadHuge() only returns true for hugetlbfs head page, but not for
-+ * normal or transparent huge pages.
-+ */
-+int PageHeadHuge(struct page *page_head)
-+{
-+	compound_page_dtor *dtor;
++static const struct device_type wlan_type = {
++	.name = "wlan",
++};
 +
-+	if (!PageHead(page_head))
-+		return 0;
-+
-+	dtor = get_compound_page_dtor(page_head);
-+
-+	return dtor == free_huge_page;
-+}
-+EXPORT_SYMBOL_GPL(PageHeadHuge);
-+
- pgoff_t __basepage_index(struct page *page)
- {
- 	struct page *page_head = compound_head(page);
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -77,18 +77,6 @@ static void __put_compound_page(struct p
- 
- static void put_compound_page(struct page *page)
- {
--	/*
--	 * hugetlbfs pages cannot be split from under us.  If this is a
--	 * hugetlbfs page, check refcount on head page and release the page if
--	 * the refcount becomes zero.
--	 */
--	if (PageHuge(page)) {
--		page = compound_head(page);
--		if (put_page_testzero(page))
--			__put_compound_page(page);
--		return;
--	}
--
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -96,6 +84,35 @@ static void put_compound_page(struct pag
- 		if (likely(page != page_head &&
- 			   get_page_unless_zero(page_head))) {
- 			unsigned long flags;
-+
-+			 if (PageHeadHuge(page_head)) {
-+				if (likely(PageTail(page))) {
-+					/*
-+					 * __split_huge_page_refcount
-+					 * cannot race here.
-+					 */
-+					VM_BUG_ON(!PageHead(page_head));
-+					atomic_dec(&page->_mapcount);
-+					if (put_page_testzero(page_head))
-+						VM_BUG_ON(1);
-+					if (put_page_testzero(page_head))
-+						__put_compound_page(page_head);
-+					return;
-+				} else {
-+					/*
-+					 * __split_huge_page_refcount
-+					 * run before us, "page" was a
-+					 * THP tail. The split
-+					 * page_head has been freed
-+					 * and reallocated as slab or
-+					 * hugetlbfs page of smaller
-+					 * order (only possible if
-+					 * reallocated as slab on
-+					 * x86).
-+					 */
-+					goto skip_lock;
-+				}
-+			}
- 			/*
- 			 * page_head wasn't a dangling pointer but it
- 			 * may not be a head page anymore by the time
-@@ -107,9 +124,29 @@ static void put_compound_page(struct pag
- 				/* __split_huge_page_refcount run before us */
- 				compound_unlock_irqrestore(page_head, flags);
- 				VM_BUG_ON(PageHead(page_head));
--				if (put_page_testzero(page_head))
--					__put_single_page(page_head);
--			out_put_single:
-+skip_lock:
-+				if (put_page_testzero(page_head)) {
-+					/*
-+					 * The head page may have been
-+					 * freed and reallocated as a
-+					 * compound page of smaller
-+					 * order and then freed again.
-+					 * All we know is that it
-+					 * cannot have become: a THP
-+					 * page, a compound page of
-+					 * higher order, a tail page.
-+					 * That is because we still
-+					 * hold the refcount of the
-+					 * split THP tail and
-+					 * page_head was the THP head
-+					 * before the split.
-+					 */
-+					if (PageHead(page_head))
-+						__put_compound_page(page_head);
-+					else
-+						__put_single_page(page_head);
-+				}
-+out_put_single:
- 				if (put_page_testzero(page))
- 					__put_single_page(page);
- 				return;
-@@ -173,21 +210,34 @@ bool __get_page_tail(struct page *page)
- 	 */
- 	unsigned long flags;
- 	bool got = false;
--	struct page *page_head;
-+	struct page *page_head = compound_trans_head(page);
- 
--	/*
--	 * If this is a hugetlbfs page it cannot be split under us.  Simply
--	 * increment refcount for the head page.
--	 */
--	if (PageHuge(page)) {
--		page_head = compound_head(page);
--		atomic_inc(&page_head->_count);
--		got = true;
--		goto out;
--	}
--
--	page_head = compound_trans_head(page);
- 	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		/* Ref to put_compound_page() comment. */
-+		if (PageHeadHuge(page_head)) {
-+			if (likely(PageTail(page))) {
-+				/*
-+				 * This is a hugetlbfs
-+				 * page. __split_huge_page_refcount
-+				 * cannot race here.
-+				 */
-+				VM_BUG_ON(!PageHead(page_head));
-+				__get_page_tail_foll(page, false);
-+				return true;
-+			} else {
-+				/*
-+				 * __split_huge_page_refcount run
-+				 * before us, "page" was a THP
-+				 * tail. The split page_head has been
-+				 * freed and reallocated as slab or
-+				 * hugetlbfs page of smaller order
-+				 * (only possible if reallocated as
-+				 * slab on x86).
-+				 */
-+				put_page(page_head);
-+				return false;
-+			}
-+		}
- 		/*
- 		 * page_head wasn't a dangling pointer but it
- 		 * may not be a head page anymore by the time
-@@ -204,7 +254,6 @@ bool __get_page_tail(struct page *page)
- 		if (unlikely(!got))
- 			put_page(page_head);
- 	}
--out:
- 	return got;
- }
- EXPORT_SYMBOL(__get_page_tail);
+ /*
+  * drv_init() - a device potentially for us
+  *
+@@ -396,6 +400,7 @@ static int r871xu_drv_init(struct usb_in
+ 	padapter->pusb_intf = pusb_intf;
+ 	usb_set_intfdata(pusb_intf, pnetdev);
+ 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
++	pnetdev->dev.type = &wlan_type;
+ 	/* step 2. */
+ 	padapter->dvobj_init = &r8712_usb_dvobj_init;
+ 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
 
 
