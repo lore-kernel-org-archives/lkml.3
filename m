@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964806AbaBDWWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:22:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56621 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933903AbaBDVIX (ORCPT
+	id S935823AbaBDWWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:22:36 -0500
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:36739 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933903AbaBDWWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:23 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Pham <jackp@codeaurora.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.12 024/133] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
-Date: Tue,  4 Feb 2014 13:07:05 -0800
-Message-Id: <20140204210737.716058005@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
-References: <20140204210737.008598235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 17:22:32 -0500
+Date: Tue, 4 Feb 2014 23:22:05 +0100
+From: Guillaume Morin <guillaume@morinfr.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
+Message-ID: <20140204222203.GA6688@bender.morinfr.org>
+Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+	john.stultz@linaro.org
+References: <20140204210055.992134150@linuxfoundation.org>
+ <20140204215221.GA2127@bender.morinfr.org>
+ <20140204221109.GA906@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140204221109.GA906@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 04 Feb 14:11, Greg Kroah-Hartman wrote:
+> > > Borislav Petkov <bp@alien8.de>
+> > >     rtc-cmos: Add an alarm disable quirk
+> > 
+> > This is just one of the 3 patches posted by John Stultz on
+> > http://git.linaro.org/people/john.stultz/linux.git/shortlog/refs/heads/stable/3.4/timefix
+> 
+> I have no idea what that tree is, nor what I am supposed to do with it.
 
-------------------
+Ok, sorry. This is all coming from 
+http://article.gmane.org/gmane.linux.kernel.stable/77575/
 
-From: Jack Pham <jackp@codeaurora.org>
+I assumed you were aware of it because you participated in the thread
+and one of the patch mentioned in this message (Borislav's change) is
+applied to the 3.4 branch
 
-commit 9005355af23856c55a5538c9024355785424821b upstream.
+> > The other 2 are backports of 6fdda9a9c5db367130cf32df5d6618d08b89f46a
+> > (timekeeping: Avoid possible deadlock from clock_was_set_delayed) and
+> > ec145babe754f9ea1079034a108104b6001e001c (timekeeping: fix 32-bit
+> > overflow in get_monotonic_boottime)
+> > 
+> > Could you explain why there were not included?
+> 
+> Can you explain why I would include them?
 
-If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
-doesn't try to free a bogus PCI IRQ or dereference an invalid
-pci_dev when the xHCI device is actually a platform_device.
+:) they seem to fix important issues and you seemed to be ok with
+including them in stable trees at some point:
+http://article.gmane.org/gmane.linux.kernel.stable/77261/
 
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
-"xhci-plat: Don't enable legacy PCI interrupts."
+Note that I am not pushing for anything.  I was just under the
+(incorrect) impression that you would apply them to the 3.4 branch and
+was surprised when it did not happen
 
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I hope the situation is a bit clearer.
 
----
- drivers/usb/host/xhci.c |    3 +++
- 1 file changed, 3 insertions(+)
+Guillaume.
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -321,6 +321,9 @@ static void xhci_cleanup_msix(struct xhc
- 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
- 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
- 
-+	if (xhci->quirks & XHCI_PLAT)
-+		return;
-+
- 	xhci_free_irq(xhci);
- 
- 	if (xhci->msix_entries) {
-
-
+-- 
+Guillaume Morin <guillaume@morinfr.org>
