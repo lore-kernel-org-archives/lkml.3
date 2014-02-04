@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935972AbaBDW4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:56:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56148 "EHLO
+	id S935785AbaBDW5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:57:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56133 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933218AbaBDVCN (ORCPT
+	with ESMTP id S933066AbaBDVCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:13 -0500
+	Tue, 4 Feb 2014 16:02:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 039/104] b43: Fix unload oops if firmware is not available
-Date: Tue,  4 Feb 2014 13:01:42 -0800
-Message-Id: <20140204210223.837300221@linuxfoundation.org>
+Subject: [PATCH 3.10 035/104] mwifiex: add missing endian conversion for fw_tsf
+Date: Tue,  4 Feb 2014 13:01:38 -0800
+Message-Id: <20140204210223.727952447@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,91 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
+commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
 
-The asyncronous firmware load uses a completion struct to hold firmware
-processing until the user-space routines are up and running. There is.
-however, a problem in that the waiter is nevered canceled during teardown.
-As a result, unloading the driver when firmware is not available causes an oops.
+It is u64 data received from firmware. Little endian to cpu
+conversion is required here.
 
-To be able to access the completion structure at teardown, it had to be moved
-into the b43_wldev structure.
-
-This patch also fixes a typo in a comment.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/b43.h  |    4 ++--
- drivers/net/wireless/b43/main.c |   10 +++++-----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/wireless/mwifiex/scan.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -731,8 +731,6 @@ enum b43_firmware_file_type {
- struct b43_request_fw_context {
- 	/* The device we are requesting the fw for. */
- 	struct b43_wldev *dev;
--	/* a completion event structure needed if this call is asynchronous */
--	struct completion fw_load_complete;
- 	/* a pointer to the firmware object */
- 	const struct firmware *blob;
- 	/* The type of firmware to request. */
-@@ -809,6 +807,8 @@ enum {
- struct b43_wldev {
- 	struct b43_bus_dev *dev;
- 	struct b43_wl *wl;
-+	/* a completion event structure needed if this call is asynchronous */
-+	struct completion fw_load_complete;
- 
- 	/* The device initialization status.
- 	 * Use b43_status() to query. */
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2068,6 +2068,7 @@ void b43_do_release_fw(struct b43_firmwa
- 
- static void b43_release_firmware(struct b43_wldev *dev)
- {
-+	complete(&dev->fw_load_complete);
- 	b43_do_release_fw(&dev->fw.ucode);
- 	b43_do_release_fw(&dev->fw.pcm);
- 	b43_do_release_fw(&dev->fw.initvals);
-@@ -2093,7 +2094,7 @@ static void b43_fw_cb(const struct firmw
- 	struct b43_request_fw_context *ctx = context;
- 
- 	ctx->blob = firmware;
--	complete(&ctx->fw_load_complete);
-+	complete(&ctx->dev->fw_load_complete);
- }
- 
- int b43_do_request_fw(struct b43_request_fw_context *ctx,
-@@ -2140,7 +2141,7 @@ int b43_do_request_fw(struct b43_request
- 	}
- 	if (async) {
- 		/* do this part asynchronously */
--		init_completion(&ctx->fw_load_complete);
-+		init_completion(&ctx->dev->fw_load_complete);
- 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
- 					      ctx->dev->dev->dev, GFP_KERNEL,
- 					      ctx, b43_fw_cb);
-@@ -2148,12 +2149,11 @@ int b43_do_request_fw(struct b43_request
- 			pr_err("Unable to load firmware\n");
- 			return err;
- 		}
--		/* stall here until fw ready */
--		wait_for_completion(&ctx->fw_load_complete);
-+		wait_for_completion(&ctx->dev->fw_load_complete);
- 		if (ctx->blob)
- 			goto fw_ready;
- 	/* On some ARM systems, the async request will fail, but the next sync
--	 * request works. For this reason, we dall through here
-+	 * request works. For this reason, we fall through here
- 	 */
- 	}
- 	err = request_firmware(&ctx->blob, ctx->fwname,
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1622,7 +1622,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		const u8 *ie_buf;
+ 		size_t ie_len;
+ 		u16 channel = 0;
+-		u64 fw_tsf = 0;
++		__le64 fw_tsf = 0;
+ 		u16 beacon_size = 0;
+ 		u32 curr_bcn_bytes;
+ 		u32 freq;
+@@ -1749,7 +1749,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 					      ie_buf, ie_len, rssi, GFP_KERNEL);
+ 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
+ 				bss_priv->band = band;
+-				bss_priv->fw_tsf = fw_tsf;
++				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
+ 				if (priv->media_connected &&
+ 				    !memcmp(bssid,
+ 					    priv->curr_bss_params.bss_descriptor
 
 
