@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935511AbaBDV53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:57:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56972 "EHLO
+	id S935497AbaBDV51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:57:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56974 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934221AbaBDVJc (ORCPT
+	with ESMTP id S934224AbaBDVJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:09:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Holger Eitzenberger <holger@eitzenberger.org>,
+        Annie Li <annie.li@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 113/133] net: Fix memory leak if TPROXY used with TCP early demux
-Date: Tue,  4 Feb 2014 13:08:34 -0800
-Message-Id: <20140204210740.220769184@linuxfoundation.org>
+Subject: [PATCH 3.12 114/133] xen-netfront: fix resource leak in netfront
+Date: Tue,  4 Feb 2014 13:08:35 -0800
+Message-Id: <20140204210740.254100466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,96 +29,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Holger Eitzenberger <holger@eitzenberger.org>
+From: Annie Li <annie.li@oracle.com>
 
-[ Upstream commit a452ce345d63ddf92cd101e4196569f8718ad319 ]
+[ Upstream commit cefe0078eea52af17411eb1248946a94afb84ca5 ]
 
-I see a memory leak when using a transparent HTTP proxy using TPROXY
-together with TCP early demux and Kernel v3.8.13.15 (Ubuntu stable):
+This patch removes grant transfer releasing code from netfront, and uses
+gnttab_end_foreign_access to end grant access since
+gnttab_end_foreign_access_ref may fail when the grant entry is
+currently used for reading or writing.
 
-unreferenced object 0xffff88008cba4a40 (size 1696):
-  comm "softirq", pid 0, jiffies 4294944115 (age 8907.520s)
-  hex dump (first 32 bytes):
-    0a e0 20 6a 40 04 1b 37 92 be 32 e2 e8 b4 00 00  .. j@..7..2.....
-    02 00 07 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff810b710a>] kmem_cache_alloc+0xad/0xb9
-    [<ffffffff81270185>] sk_prot_alloc+0x29/0xc5
-    [<ffffffff812702cf>] sk_clone_lock+0x14/0x283
-    [<ffffffff812aaf3a>] inet_csk_clone_lock+0xf/0x7b
-    [<ffffffff8129a893>] netlink_broadcast+0x14/0x16
-    [<ffffffff812c1573>] tcp_create_openreq_child+0x1b/0x4c3
-    [<ffffffff812c033e>] tcp_v4_syn_recv_sock+0x38/0x25d
-    [<ffffffff812c13e4>] tcp_check_req+0x25c/0x3d0
-    [<ffffffff812bf87a>] tcp_v4_do_rcv+0x287/0x40e
-    [<ffffffff812a08a7>] ip_route_input_noref+0x843/0xa55
-    [<ffffffff812bfeca>] tcp_v4_rcv+0x4c9/0x725
-    [<ffffffff812a26f4>] ip_local_deliver_finish+0xe9/0x154
-    [<ffffffff8127a927>] __netif_receive_skb+0x4b2/0x514
-    [<ffffffff8127aa77>] process_backlog+0xee/0x1c5
-    [<ffffffff8127c949>] net_rx_action+0xa7/0x200
-    [<ffffffff81209d86>] add_interrupt_randomness+0x39/0x157
+* clean up grant transfer code kept from old netfront(2.6.18) which grants
+pages for access/map and transfer. But grant transfer is deprecated in current
+netfront, so remove corresponding release code for transfer.
 
-But there are many more, resulting in the machine going OOM after some
-days.
+* fix resource leak, release grant access (through gnttab_end_foreign_access)
+and skb for tx/rx path, use get_page to ensure page is released when grant
+access is completed successfully.
 
->From looking at the TPROXY code, and with help from Florian, I see
-that the memory leak is introduced in tcp_v4_early_demux():
+Xen-blkfront/xen-tpmfront/xen-pcifront also have similar issue, but patches
+for them will be created separately.
 
-  void tcp_v4_early_demux(struct sk_buff *skb)
-  {
-    /* ... */
+V6: Correct subject line and commit message.
 
-    iph = ip_hdr(skb);
-    th = tcp_hdr(skb);
+V5: Remove unecessary change in xennet_end_access.
 
-    if (th->doff < sizeof(struct tcphdr) / 4)
-        return;
+V4: Revert put_page in gnttab_end_foreign_access, and keep netfront change in
+single patch.
 
-    sk = __inet_lookup_established(dev_net(skb->dev), &tcp_hashinfo,
-                       iph->saddr, th->source,
-                       iph->daddr, ntohs(th->dest),
-                       skb->skb_iif);
-    if (sk) {
-        skb->sk = sk;
+V3: Changes as suggestion from David Vrabel, ensure pages are not freed untill
+grant acess is ended.
 
-where the socket is assigned unconditionally to skb->sk, also bumping
-the refcnt on it.  This is problematic, because in our case the skb
-has already a socket assigned in the TPROXY target.  This then results
-in the leak I see.
+V2: Improve patch comments.
 
-The very same issue seems to be with IPv6, but haven't tested.
-
-Reviewed-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Holger Eitzenberger <holger@eitzenberger.org>
+Signed-off-by: Annie Li <annie.li@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_input.c  |    2 +-
- net/ipv6/ip6_input.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/xen-netfront.c |   88 +++++++++++++--------------------------------
+ 1 file changed, 26 insertions(+), 62 deletions(-)
 
---- a/net/ipv4/ip_input.c
-+++ b/net/ipv4/ip_input.c
-@@ -314,7 +314,7 @@ static int ip_rcv_finish(struct sk_buff
- 	const struct iphdr *iph = ip_hdr(skb);
- 	struct rtable *rt;
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -117,6 +117,7 @@ struct netfront_info {
+ 	} tx_skbs[NET_TX_RING_SIZE];
+ 	grant_ref_t gref_tx_head;
+ 	grant_ref_t grant_tx_ref[NET_TX_RING_SIZE];
++	struct page *grant_tx_page[NET_TX_RING_SIZE];
+ 	unsigned tx_skb_freelist;
  
--	if (sysctl_ip_early_demux && !skb_dst(skb)) {
-+	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
- 		const struct net_protocol *ipprot;
- 		int protocol = iph->protocol;
+ 	spinlock_t   rx_lock ____cacheline_aligned_in_smp;
+@@ -395,6 +396,7 @@ static void xennet_tx_buf_gc(struct net_
+ 			gnttab_release_grant_reference(
+ 				&np->gref_tx_head, np->grant_tx_ref[id]);
+ 			np->grant_tx_ref[id] = GRANT_INVALID_REF;
++			np->grant_tx_page[id] = NULL;
+ 			add_id_to_freelist(&np->tx_skb_freelist, np->tx_skbs, id);
+ 			dev_kfree_skb_irq(skb);
+ 		}
+@@ -451,6 +453,7 @@ static void xennet_make_frags(struct sk_
+ 		gnttab_grant_foreign_access_ref(ref, np->xbdev->otherend_id,
+ 						mfn, GNTMAP_readonly);
  
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -49,7 +49,7 @@
++		np->grant_tx_page[id] = virt_to_page(data);
+ 		tx->gref = np->grant_tx_ref[id] = ref;
+ 		tx->offset = offset;
+ 		tx->size = len;
+@@ -496,6 +499,7 @@ static void xennet_make_frags(struct sk_
+ 							np->xbdev->otherend_id,
+ 							mfn, GNTMAP_readonly);
  
- int ip6_rcv_finish(struct sk_buff *skb)
++			np->grant_tx_page[id] = page;
+ 			tx->gref = np->grant_tx_ref[id] = ref;
+ 			tx->offset = offset;
+ 			tx->size = bytes;
+@@ -595,6 +599,7 @@ static int xennet_start_xmit(struct sk_b
+ 	mfn = virt_to_mfn(data);
+ 	gnttab_grant_foreign_access_ref(
+ 		ref, np->xbdev->otherend_id, mfn, GNTMAP_readonly);
++	np->grant_tx_page[id] = virt_to_page(data);
+ 	tx->gref = np->grant_tx_ref[id] = ref;
+ 	tx->offset = offset;
+ 	tx->size = len;
+@@ -1119,10 +1124,11 @@ static void xennet_release_tx_bufs(struc
+ 			continue;
+ 
+ 		skb = np->tx_skbs[i].skb;
+-		gnttab_end_foreign_access_ref(np->grant_tx_ref[i],
+-					      GNTMAP_readonly);
+-		gnttab_release_grant_reference(&np->gref_tx_head,
+-					       np->grant_tx_ref[i]);
++		get_page(np->grant_tx_page[i]);
++		gnttab_end_foreign_access(np->grant_tx_ref[i],
++					  GNTMAP_readonly,
++					  (unsigned long)page_address(np->grant_tx_page[i]));
++		np->grant_tx_page[i] = NULL;
+ 		np->grant_tx_ref[i] = GRANT_INVALID_REF;
+ 		add_id_to_freelist(&np->tx_skb_freelist, np->tx_skbs, i);
+ 		dev_kfree_skb_irq(skb);
+@@ -1131,78 +1137,35 @@ static void xennet_release_tx_bufs(struc
+ 
+ static void xennet_release_rx_bufs(struct netfront_info *np)
  {
--	if (sysctl_ip_early_demux && !skb_dst(skb)) {
-+	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
- 		const struct inet6_protocol *ipprot;
+-	struct mmu_update      *mmu = np->rx_mmu;
+-	struct multicall_entry *mcl = np->rx_mcl;
+-	struct sk_buff_head free_list;
+-	struct sk_buff *skb;
+-	unsigned long mfn;
+-	int xfer = 0, noxfer = 0, unused = 0;
+ 	int id, ref;
  
- 		ipprot = rcu_dereference(inet6_protos[ipv6_hdr(skb)->nexthdr]);
+-	dev_warn(&np->netdev->dev, "%s: fix me for copying receiver.\n",
+-			 __func__);
+-	return;
+-
+-	skb_queue_head_init(&free_list);
+-
+ 	spin_lock_bh(&np->rx_lock);
+ 
+ 	for (id = 0; id < NET_RX_RING_SIZE; id++) {
+-		ref = np->grant_rx_ref[id];
+-		if (ref == GRANT_INVALID_REF) {
+-			unused++;
+-			continue;
+-		}
++		struct sk_buff *skb;
++		struct page *page;
+ 
+ 		skb = np->rx_skbs[id];
+-		mfn = gnttab_end_foreign_transfer_ref(ref);
+-		gnttab_release_grant_reference(&np->gref_rx_head, ref);
+-		np->grant_rx_ref[id] = GRANT_INVALID_REF;
+-
+-		if (0 == mfn) {
+-			skb_shinfo(skb)->nr_frags = 0;
+-			dev_kfree_skb(skb);
+-			noxfer++;
++		if (!skb)
+ 			continue;
+-		}
+ 
+-		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+-			/* Remap the page. */
+-			const struct page *page =
+-				skb_frag_page(&skb_shinfo(skb)->frags[0]);
+-			unsigned long pfn = page_to_pfn(page);
+-			void *vaddr = page_address(page);
++		ref = np->grant_rx_ref[id];
++		if (ref == GRANT_INVALID_REF)
++			continue;
+ 
+-			MULTI_update_va_mapping(mcl, (unsigned long)vaddr,
+-						mfn_pte(mfn, PAGE_KERNEL),
+-						0);
+-			mcl++;
+-			mmu->ptr = ((u64)mfn << PAGE_SHIFT)
+-				| MMU_MACHPHYS_UPDATE;
+-			mmu->val = pfn;
+-			mmu++;
++		page = skb_frag_page(&skb_shinfo(skb)->frags[0]);
+ 
+-			set_phys_to_machine(pfn, mfn);
+-		}
+-		__skb_queue_tail(&free_list, skb);
+-		xfer++;
+-	}
+-
+-	dev_info(&np->netdev->dev, "%s: %d xfer, %d noxfer, %d unused\n",
+-		 __func__, xfer, noxfer, unused);
++		/* gnttab_end_foreign_access() needs a page ref until
++		 * foreign access is ended (which may be deferred).
++		 */
++		get_page(page);
++		gnttab_end_foreign_access(ref, 0,
++					  (unsigned long)page_address(page));
++		np->grant_rx_ref[id] = GRANT_INVALID_REF;
+ 
+-	if (xfer) {
+-		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+-			/* Do all the remapping work and M2P updates. */
+-			MULTI_mmu_update(mcl, np->rx_mmu, mmu - np->rx_mmu,
+-					 NULL, DOMID_SELF);
+-			mcl++;
+-			HYPERVISOR_multicall(np->rx_mcl, mcl - np->rx_mcl);
+-		}
++		kfree_skb(skb);
+ 	}
+ 
+-	__skb_queue_purge(&free_list);
+-
+ 	spin_unlock_bh(&np->rx_lock);
+ }
+ 
+@@ -1349,6 +1312,7 @@ static struct net_device *xennet_create_
+ 	for (i = 0; i < NET_RX_RING_SIZE; i++) {
+ 		np->rx_skbs[i] = NULL;
+ 		np->grant_rx_ref[i] = GRANT_INVALID_REF;
++		np->grant_tx_page[i] = NULL;
+ 	}
+ 
+ 	/* A grant for every tx ring slot */
 
 
