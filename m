@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111AbaBDVCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
+	id S936486AbaBDXB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:01:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056AbaBDVBy (ORCPT
+	with ESMTP id S933085AbaBDVCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:01:54 -0500
+	Tue, 4 Feb 2014 16:02:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 016/104] USB: cypress_m8: fix ring-indicator detection and reporting
-Date: Tue,  4 Feb 2014 13:01:19 -0800
-Message-Id: <20140204210223.202337287@linuxfoundation.org>
+        Jan Prinsloo <janroot@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 022/104] rtlwifi: rtl8192cu: Add new device ID
+Date: Tue,  4 Feb 2014 13:01:25 -0800
+Message-Id: <20140204210223.366404541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,33 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 440ebadeae9298d7de3d4d105342691841ec88d0 upstream.
+commit f87f960b2fb802f26ee3b00c19320e57a9c583ff upstream.
 
-Fix ring-indicator (RI) status-bit definition, which was defined as CTS,
-effectively preventing RI-changes from being detected while reporting
-false RI status.
-
-This bug predates git.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Jan Prinsloo <janroot@gmail.com>
+Tested-by: Jan Prinsloo <janroot@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cypress_m8.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/cypress_m8.h
-+++ b/drivers/usb/serial/cypress_m8.h
-@@ -63,7 +63,7 @@
- #define UART_DSR	0x20	/* data set ready - flow control - device to host */
- #define CONTROL_RTS	0x10	/* request to send - flow control - host to device */
- #define UART_CTS	0x10	/* clear to send - flow control - device to host */
--#define UART_RI		0x10	/* ring indicator - modem - device to host */
-+#define UART_RI		0x80	/* ring indicator - modem - device to host */
- #define UART_CD		0x40	/* carrier detect - modem - device to host */
- #define CYP_ERROR	0x08	/* received from input report - device to host */
- /* Note - the below has nothing to do with the "feature report" reset */
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -306,6 +306,7 @@ static struct usb_device_id rtl8192c_usb
+ 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
++	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
+ 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
+ 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
+ 	/* HP - Lite-On ,8188CUS Slim Combo */
 
 
