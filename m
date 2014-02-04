@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926AbaBDVA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:00:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55923 "EHLO
+	id S932992AbaBDVBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:01:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55997 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194AbaBDVAW (ORCPT
+	with ESMTP id S932802AbaBDVAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:22 -0500
+	Tue, 4 Feb 2014 16:00:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.4 17/37] staging: r8712u: Set device type to wlan
-Date: Tue,  4 Feb 2014 13:00:53 -0800
-Message-Id: <20140204210056.491855606@linuxfoundation.org>
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 3.4 20/37] ARM: at91: smc: bug fix in sam9_smc_cs_read()
+Date: Tue,  4 Feb 2014 13:00:56 -0800
+Message-Id: <20140204210056.582017248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -28,40 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 
-commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
+commit 1588c51cf6d782e63a8719681d905ef0ac22ee62 upstream.
 
-The latest version of NetworkManager does not recognize the device as wireless
-without this change.
+There was a copy/paste error when reading the nwe_pulse value.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/usb_intf.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-at91/sam9_smc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -361,6 +361,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
- 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
- }
+--- a/arch/arm/mach-at91/sam9_smc.c
++++ b/arch/arm/mach-at91/sam9_smc.c
+@@ -101,7 +101,7 @@ static void sam9_smc_cs_read(void __iome
+ 	/* Pulse register */
+ 	val = __raw_readl(base + AT91_SMC_PULSE);
  
-+static const struct device_type wlan_type = {
-+	.name = "wlan",
-+};
-+
- /*
-  * drv_init() - a device potentially for us
-  *
-@@ -396,6 +400,7 @@ static int r871xu_drv_init(struct usb_in
- 	padapter->pusb_intf = pusb_intf;
- 	usb_set_intfdata(pusb_intf, pnetdev);
- 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
-+	pnetdev->dev.type = &wlan_type;
- 	/* step 2. */
- 	padapter->dvobj_init = &r8712_usb_dvobj_init;
- 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
+-	config->nwe_setup = val & AT91_SMC_NWEPULSE;
++	config->nwe_pulse = val & AT91_SMC_NWEPULSE;
+ 	config->ncs_write_pulse = (val & AT91_SMC_NCS_WRPULSE) >> 8;
+ 	config->nrd_pulse = (val & AT91_SMC_NRDPULSE) >> 16;
+ 	config->ncs_read_pulse = (val & AT91_SMC_NCS_RDPULSE) >> 24;
 
 
