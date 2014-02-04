@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936552AbaBDXEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:04:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56059 "EHLO
+	id S932891AbaBDVA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:00:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932539AbaBDVBv (ORCPT
+	with ESMTP id S932109AbaBDVAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:01:51 -0500
+	Tue, 4 Feb 2014 16:00:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 012/104] KVM: x86: limit PIT timer frequency
-Date: Tue,  4 Feb 2014 13:01:15 -0800
-Message-Id: <20140204210223.085877416@linuxfoundation.org>
+        Aristeu Rozanski <aris@redhat.com>, mark gross <mark.gross@intel.com>,
+        Borislav Petkov <bp@suse.de>, Jean Delvare <jdelvare@suse.de>
+Subject: [PATCH 3.4 03/37] e752x_edac: Fix pci_dev usage count
+Date: Tue,  4 Feb 2014 13:00:39 -0800
+Message-Id: <20140204210056.105099797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
+In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
+References: <20140204210055.992134150@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,96 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Aristeu Rozanski <aris@redhat.com>
 
-commit 9ed96e87c5748de4c2807ef17e81287c7304186c upstream.
+commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
 
-Limit PIT timer frequency similarly to the limit applied by
-LAPIC timer.
+In case the device 0, function 1 is not found using pci_get_device(),
+pci_scan_single_device() will be used but, differently than
+pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
+count on the pci_dev and after few module removals and loads the pci_dev
+will be freed.
 
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+Reviewed-by: mark gross <mark.gross@intel.com>
+Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/i8254.c |   18 ++++++++++++++++++
- arch/x86/kvm/lapic.c |    3 ---
- arch/x86/kvm/x86.c   |    3 +++
- arch/x86/kvm/x86.h   |    2 ++
- 4 files changed, 23 insertions(+), 3 deletions(-)
+ drivers/edac/e752x_edac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -37,6 +37,7 @@
+--- a/drivers/edac/e752x_edac.c
++++ b/drivers/edac/e752x_edac.c
+@@ -1145,9 +1145,11 @@ static int e752x_get_devs(struct pci_dev
+ 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				pvt->dev_info->err_dev, pvt->bridge_ck);
  
- #include "irq.h"
- #include "i8254.h"
-+#include "x86.h"
- 
- #ifndef CONFIG_X86_64
- #define mod_64(x, y) ((x) - (y) * div64_u64(x, y))
-@@ -349,6 +350,23 @@ static void create_pit_timer(struct kvm
- 	atomic_set(&ps->pending, 0);
- 	ps->irq_ack = 1;
- 
-+	/*
-+	 * Do not allow the guest to program periodic timers with small
-+	 * interval, since the hrtimers are not throttled by the host
-+	 * scheduler.
-+	 */
-+	if (ps->is_periodic) {
-+		s64 min_period = min_timer_period_us * 1000LL;
-+
-+		if (ps->period < min_period) {
-+			pr_info_ratelimited(
-+			    "kvm: requested %lld ns "
-+			    "i8254 timer period limited to %lld ns\n",
-+			    ps->period, min_period);
-+			ps->period = min_period;
-+		}
+-	if (pvt->bridge_ck == NULL)
++	if (pvt->bridge_ck == NULL) {
+ 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
+ 							PCI_DEVFN(0, 1));
++		pci_dev_get(pvt->bridge_ck);
 +	}
-+
- 	hrtimer_start(&ps->timer, ktime_add_ns(ktime_get(), interval),
- 		      HRTIMER_MODE_ABS);
- }
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -71,9 +71,6 @@
- #define VEC_POS(v) ((v) & (32 - 1))
- #define REG_POS(v) (((v) >> 5) << 4)
  
--static unsigned int min_timer_period_us = 500;
--module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
--
- static inline void apic_set_reg(struct kvm_lapic *apic, int reg_off, u32 val)
- {
- 	*((u32 *) (apic->regs + reg_off)) = val;
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -94,6 +94,9 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
- static bool ignore_msrs = 0;
- module_param(ignore_msrs, bool, S_IRUGO | S_IWUSR);
- 
-+unsigned int min_timer_period_us = 500;
-+module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
-+
- bool kvm_has_tsc_control;
- EXPORT_SYMBOL_GPL(kvm_has_tsc_control);
- u32  kvm_max_guest_tsc_khz;
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -124,5 +124,7 @@ int kvm_write_guest_virt_system(struct x
- 
- extern u64 host_xcr0;
- 
-+extern unsigned int min_timer_period_us;
-+
- extern struct static_key kvm_no_apic_vcpu;
- #endif
+ 	if (pvt->bridge_ck == NULL) {
+ 		e752x_printk(KERN_ERR, "error reporting device not found:"
 
 
