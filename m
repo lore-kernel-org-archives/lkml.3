@@ -1,75 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaBDRht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:37:49 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35343 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaBDRhq (ORCPT
+	id S932117AbaBDRmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:42:51 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:17422 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431AbaBDRmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:37:46 -0500
-Date: Tue, 4 Feb 2014 17:37:33 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20140204173733.GI22609@sirena.org.uk>
-References: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
+	Tue, 4 Feb 2014 12:42:49 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: add Atmel's SAMA5D3 Xplained board
+Date: Tue, 4 Feb 2014 18:42:47 +0100
+Message-ID: <1391535767-30749-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xgjcSYp0bZmR6cI7"
-Content-Disposition: inline
-In-Reply-To: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 00/11] ARM: shmobile: RSPI RZ and QSPI SoC and board
- integration
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add DT file for new SAMA5D3 Xpained board.
+This board is based on Atmel's SAMA5D36 Cortex-A5 SoC.
 
---xgjcSYp0bZmR6cI7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/boot/dts/at91-sama5d3_xplained.dts | 233 ++++++++++++++++++++++++++++
+ 1 file changed, 233 insertions(+)
+ create mode 100644 arch/arm/boot/dts/at91-sama5d3_xplained.dts
 
-On Tue, Feb 04, 2014 at 04:23:54PM +0100, Geert Uytterhoeven wrote:
-> 	Hi Simon, Magnus,
->=20
-> This patch series contains SoC and board integration for
->   1. RSPI in the r7s72100 aka RZ/A1H SoC on the Genmai reference board,
->   2. QSPI in the r8a7791 aka R-Car M2 SoC on the Koelsch reference board.
-> It was rebased on top of renesas-devel-v3.14-rc1-20140204.
+diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+new file mode 100644
+index 000000000000..fb1349ca60a4
+--- /dev/null
++++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+@@ -0,0 +1,233 @@
++/*
++ * at91-sama5d3_xplained.dts - Device Tree file for the SAMA5D3 Xplained board
++ *
++ *  Copyright (C) 2014 Atmel,
++ *		  2014 Nicolas Ferre <nicolas.ferre@atmel.com>
++ *
++ * Licensed under GPLv2 or later.
++ */
++/dts-v1/;
++#include "sama5d36.dtsi"
++
++/ {
++	model = "SAMA5D3 Xplained";
++	compatible = "atmel,sama5d3-xplained", "atmel,sama5d3", "atmel,sama5";
++
++	chosen {
++		bootargs = "console=ttyS0,115200";
++	};
++
++	memory {
++		reg = <0x20000000 0x10000000>;
++	};
++
++	ahb {
++		apb {
++			mmc0: mmc@f0000000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_dat4_7 &pinctrl_mmc0_cd>;
++				status = "okay";
++				slot@0 {
++					reg = <0>;
++					bus-width = <8>;
++					cd-gpios = <&pioE 0 GPIO_ACTIVE_LOW>;
++				};
++			};
++
++			spi0: spi@f0004000 {
++				cs-gpios = <&pioD 13 0>, <0>, <0>, <0>;
++				status = "okay";
++			};
++
++			can0: can@f000c000 {
++				status = "okay";
++			};
++
++			i2c0: i2c@f0014000 {
++				status = "okay";
++			};
++
++			i2c1: i2c@f0018000 {
++				status = "okay";
++			};
++
++			macb0: ethernet@f0028000 {
++				phy-mode = "rgmii";
++				status = "okay";
++			};
++
++			usart0: serial@f001c000 {
++				status = "okay";
++			};
++
++			usart1: serial@f0020000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_usart1 &pinctrl_usart1_rts_cts>;
++				status = "okay";
++			};
++
++			uart0: serial@f0024000 {
++				status = "okay";
++			};
++
++			mmc1: mmc@f8000000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_mmc1_clk_cmd_dat0 &pinctrl_mmc1_dat1_3 &pinctrl_mmc1_cd>;
++				status = "okay";
++				slot@0 {
++					reg = <0>;
++					bus-width = <4>;
++					cd-gpios = <&pioE 1 GPIO_ACTIVE_HIGH>;
++				};
++			};
++
++			spi1: spi@f8008000 {
++				cs-gpios = <&pioC 25 0>, <0>, <0>, <&pioD 16 0>;
++				status = "okay";
++			};
++
++			adc0: adc@f8018000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <
++					&pinctrl_adc0_adtrg
++					&pinctrl_adc0_ad0
++					&pinctrl_adc0_ad1
++					&pinctrl_adc0_ad2
++					&pinctrl_adc0_ad3
++					&pinctrl_adc0_ad4
++					&pinctrl_adc0_ad5
++					&pinctrl_adc0_ad6
++					&pinctrl_adc0_ad7
++					&pinctrl_adc0_ad8
++					&pinctrl_adc0_ad9
++					>;
++				status = "okay";
++			};
++
++			i2c2: i2c@f801c000 {
++				dmas = <0>, <0>;	/* Do not use DMA for i2c2 */
++				status = "okay";
++			};
++
++			macb1: ethernet@f802c000 {
++				phy-mode = "rmii";
++				status = "okay";
++			};
++
++			dbgu: serial@ffffee00 {
++				status = "okay";
++			};
++
++			pinctrl@fffff200 {
++				board {
++					pinctrl_mmc0_cd: mmc0_cd {
++						atmel,pins =
++							<AT91_PIOE 0 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
++					};
++
++					pinctrl_mmc1_cd: mmc1_cd {
++						atmel,pins =
++							<AT91_PIOE 1 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
++					};
++
++					pinctrl_usba_vbus: usba_vbus {
++						atmel,pins =
++							<AT91_PIOE 9 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;	/* PE9, conflicts with A9 */
++					};
++				};
++			};
++
++			pmc: pmc@fffffc00 {
++				main: mainck {
++					clock-frequency = <12000000>;
++				};
++			};
++		};
++
++		nand0: nand@60000000 {
++			nand-bus-width = <8>;
++			nand-ecc-mode = "hw";
++			atmel,has-pmecc;
++			atmel,pmecc-cap = <4>;
++			atmel,pmecc-sector-size = <512>;
++			nand-on-flash-bbt;
++			status = "okay";
++
++			at91bootstrap@0 {
++				label = "at91bootstrap";
++				reg = <0x0 0x40000>;
++			};
++
++			bootloader@40000 {
++				label = "bootloader";
++				reg = <0x40000 0x80000>;
++			};
++
++			bootloaderenv@c0000 {
++				label = "bootloader env";
++				reg = <0xc0000 0xc0000>;
++			};
++
++			dtb@180000 {
++				label = "device tree";
++				reg = <0x180000 0x80000>;
++			};
++
++			kernel@200000 {
++				label = "kernel";
++				reg = <0x200000 0x600000>;
++			};
++
++			rootfs@800000 {
++				label = "rootfs";
++				reg = <0x800000 0x0f800000>;
++			};
++		};
++
++		usb0: gadget@00500000 {
++			atmel,vbus-gpio = <&pioE 9 GPIO_ACTIVE_HIGH>;	/* PE9, conflicts with A9 */
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_usba_vbus>;
++			status = "okay";
++		};
++
++		usb1: ohci@00600000 {
++			num-ports = <3>;
++			atmel,vbus-gpio = <0
++					   &pioE 3 GPIO_ACTIVE_LOW
++					   &pioE 4 GPIO_ACTIVE_LOW
++					  >;
++			status = "okay";
++		};
++
++		usb2: ehci@00700000 {
++			status = "okay";
++		};
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++
++		bp3 {
++			label = "PB_USER";
++			gpios = <&pioE 29 GPIO_ACTIVE_LOW>;
++			linux,code = <0x104>;
++			gpio-key,wakeup;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		d2 {
++			label = "d2";
++			gpios = <&pioE 23 GPIO_ACTIVE_LOW>;	/* PE23, conflicts with A23, CTS2 */
++			linux,default-trigger = "heartbeat";
++		};
++
++		d3 {
++			label = "d3";
++			gpios = <&pioE 24 GPIO_ACTIVE_HIGH>;
++		};
++	};
++};
+-- 
+1.8.2.2
 
-Can you please stop CCing arch/arm only patch serieses like this to the
-SPI list - they just mean I have to go through patchwork and mark them
-as not applicable.
-
---xgjcSYp0bZmR6cI7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS8SVaAAoJELSic+t+oim9dtEP/2/JmuBcFthd862KIXt2EU7R
-cLvKHGcxhuKBKXksQWBAYPAQ2S6oUqoIqnfTEO+9ffFT7ZU+MlqDxxcrpZEgS7IE
-w3ZFlwt7FoEK0GR2iFAp9FoGKq0rFqcv2e6sO5dOT2CVLUCWIuCXLZeJs5fjmaJQ
-LmFsJt3L3kvUaKtFdqmhd9SBakg9bAUhrq8L+LgvLUfO4A/g6P8NXlFzWJp23G51
-koeV7sqQmX2Tp2BgwJl78CGBiPArxB8A3vURSktqwewsP7xEcSP+DfeqJ3SF0YOI
-kI9i4L8oLyFgOISmf7ZpM554VAZgs68UNdkZ3Zv67rZ80xkCZ6zIBUtfVh5TFt/D
-Nc2vNEzCFMJkbU64iLah4eL6jUmBb7LZECL96k4ey5FSqBikSe8AXVeSkV6kR+sd
-BUYw3Y4xTYkvPMTKo7fSm6qTfs/AJM/R8/RBXjSmPCcVuHT2bT44jCFMSimGy6wM
-Dv0FYCLF5uho/hAxtNShCce5Xh0yeveHD+F7HCUJUBvzOtXvuCpUOBgvVICGkiGs
-2E0OC04+/KT0lh/1XBvRC2Bz+wqiAQ2/CnnnasoC+VwsoqCyk92jNB1H9XpY5sez
-122OpCt1CVXyBMAE0JoeO6svYgYch1nz8cjhUl9CcNbopev7JCjfAWUSWM2qrFnO
-fHZnBcj4J6S8xx9Ztt+N
-=lvIT
------END PGP SIGNATURE-----
-
---xgjcSYp0bZmR6cI7--
