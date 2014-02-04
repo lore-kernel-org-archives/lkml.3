@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaBDMrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:47:09 -0500
-Received: from mail.eperm.de ([89.247.134.16]:34118 "EHLO mail.eperm.de"
+	id S1754431AbaBDMrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:47:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45725 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaBDMrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:47:08 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
-        blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
-        tg@mirbsd.de, sandyinchina@gmail.com
-Subject: [PATCH 4/5] CPU Jitter RNG: provide status proc files
-Date: Tue, 04 Feb 2014 13:41:31 +0100
-Message-ID: <2094293.CMEsWJt2a2@myon.chronox.de>
-User-Agent: KMail/4.11.5 (Linux/3.12.8-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2039634.jSmQAS6tdi@myon.chronox.de>
-References: <2039634.jSmQAS6tdi@myon.chronox.de>
+	id S1754350AbaBDMrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 07:47:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,779,1384329600"; 
+   d="scan'208";a="469625535"
+Date: Tue, 4 Feb 2014 14:47:07 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/6] x86: Add Intel graphics stolen memory quirk for
+ gen2 platforms
+Message-ID: <20140204124707.GG3891@intel.com>
+References: <1386085793-317-3-git-send-email-ville.syrjala@linux.intel.com>
+ <1389108512-20039-1-git-send-email-ville.syrjala@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389108512-20039-1-git-send-email-ville.syrjala@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi x86 folks,
 
-After successful initialization of the CPU Jitter RNG as part of the
-Linux RNG, the two variables defining the memory size of the memory
-chunk used for measuring memory access times are set. In case the Jitter
-RNG does not successfully initialize, these variables are set to zero.
+Ping on getting the gen2 stolen memory early quirk patches into the x86
+tree.
 
-These two variables can be exported to user space to allow user space to
-check whether the CPU Jitter RNG is operational and which memory values
-are used. Note, according to tests, the size of the memory chunk has a
-direct impact on the execution timing variations.
+>From our side Daniel and Chris both seemed happy with them, so I'd like
+to get them in at some point.
 
-The exported variables are all read only and can be found at:
-/proc/sys/kernel/random. The files are:
-
-jent_memblocksize -- size of one memory block in bytes
-jent_memblocks -- number of memory blocks used
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- drivers/char/random.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index eb4fe99..4b2267b 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1703,6 +1703,20 @@ struct ctl_table random_table[] = {
- 		.mode		= 0444,
- 		.proc_handler	= proc_do_uuid,
- 	},
-+	{
-+		.procname	= "jent_memblocksize",
-+		.maxlen		= sizeof(int),
-+		.mode		= 0444,
-+		.proc_handler	= proc_dointvec,
-+		.data		= &input_pool.jent_ec.memblocksize,
-+	},
-+	{
-+		.procname	= "jent_memblocks",
-+		.maxlen		= sizeof(int),
-+		.mode		= 0444,
-+		.proc_handler	= proc_dointvec,
-+		.data		= &input_pool.jent_ec.memblocks,
-+	},
- 	{ }
- };
- #endif 	/* CONFIG_SYSCTL */
 -- 
-1.8.5.3
-
-
+Ville Syrjälä
+Intel OTC
