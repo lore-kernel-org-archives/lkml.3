@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934089AbaBDVkm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:40:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933586AbaBDVLs (ORCPT
+	id S934702AbaBDVk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:40:57 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52330 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933586AbaBDVkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:48 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Roszko <mark.roszko@gmail.com>,
-        Leilei Zhao <leilei.zhao@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.13 056/140] tty/serial: at91: fix race condition in atmel_serial_remove
-Date: Tue,  4 Feb 2014 13:10:43 -0800
-Message-Id: <20140204211038.566954391@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 16:40:51 -0500
+Message-ID: <1391550040.3003.28.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
+ from device tree
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Date: Tue, 04 Feb 2014 21:40:40 +0000
+In-Reply-To: <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
+References: <7510122.cayuQ6qt8r@wuerfel>
+	 <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
+	 <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Cl4GTycUti78AzhdcRFk"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.239
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--=-Cl4GTycUti78AzhdcRFk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-From: Marek Roszko <mark.roszko@gmail.com>
+On Tue, 2014-02-04 at 12:39 -0800, Florian Fainelli wrote:
+> 2014-01-17 Matthew Garrett <matthew.garrett@nebula.com>:
+> > Some hardware may be broken in interesting and board-specific ways, suc=
+h
+> > that various bits of functionality don't work. This patch provides a
+> > mechanism for overriding mii registers during init based on the content=
+s of
+> > the device tree data, allowing board-specific fixups without having to
+> > pollute generic code.
+>=20
+> It would be good to explain exactly how your hardware is broken
+> exactly. I really do not think that such a fine-grained setting where
+> you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
+> remain usable makes that much sense. In general, Gigabit might be
+> badly broken, but 100 and 10Mbits/sec should work fine. How about the
+> MASTER-SLAVE bit, is overriding it really required?
 
-commit f50c995f9ebf064cea1368bf361c4e29679415b4 upstream.
+Yes, it is entirely possible that one or other of the clock modes
+(locally generated vs recovered) is not reliable.
 
-The _remove callback could be called when a tasklet is scheduled. tasklet_kill
-was called inside the function in order to free up any scheduled tasklets.
-However it was called after uart_remove_one_port which destroys tty references
-needed in the port for atmel_tasklet_func.
-Simply putting the tasklet_kill at the start of the function will prevent this
-conflict.
+> Is not a PHY fixup registered for a specific OUI the solution you are
+> looking for?
+[...]
 
-Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
-Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The fault is in the board, not the PHY.
 
----
- drivers/tty/serial/atmel_serial.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Ben.
 
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -2447,11 +2447,12 @@ static int atmel_serial_remove(struct pl
- 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
- 	int ret = 0;
- 
-+	tasklet_kill(&atmel_port->tasklet);
-+
- 	device_init_wakeup(&pdev->dev, 0);
- 
- 	ret = uart_remove_one_port(&atmel_uart, port);
- 
--	tasklet_kill(&atmel_port->tasklet);
- 	kfree(atmel_port->rx_ring.buf);
- 
- 	/* "port" is allocated statically, so we shouldn't free it */
+--=20
+Ben Hutchings
+One of the nice things about standards is that there are so many of them.
 
+--=-Cl4GTycUti78AzhdcRFk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAUvFeWOe/yOyVhhEJAQpirA/+PmyKReUFK6DjC7cFUusU3xKKTESbGss9
+fOMUi5Cb218mFx6bJi6AYqaK7W9EimD0SjzsV1E2NzAE+120/FcETG+nftYkhXjR
+7/Zzyoxg2HFKAx/EhRznb1pmr0zS0b0ixQAI7Yc9MvV3pLUQwqrX2I8vcWHr0eyf
+ggdTO7NRe2CQZf8WRXrY4WGfNge6bVm95LmqP2cyMknMLNL8sip3G0I0V8CW/ni8
+57d+0UTI128jNsNFtVIGgivyz5N4u727lexAFIvxStUuH3JN907YkKDTPRIJK78S
+5qf57AdJNUJfgIhpzgnKFTG1+lXXf8ZYlBzTSp1pqdcXKHf2w9D6kLg1om1ZSgdl
+bOl0PWbtdqc7FU4cVrB0lAJluEy6ABSQSzZaMDlWT4NHR8gqRu5IaY68vib+AxyS
+odynOkWwY6b+hTSV9r2JCapcCd/2mcNgQ9E5N5pepO4bSL8CNlH5/m/PQnvjlxiq
+cWdaiHxu4wOxlAPnwScM2jgeFHOksLnCdFNQNFev9TUAgye7jYOiWgk5o/7E+lM1
+hcGpA047u41ul6FLMMUuNnlbJV6aGnBNgjdEJiLqUbLYrA9MefcgJVWN90Wrcabk
+ftBseLlr/Jc8RNHr9fwPqOTaKxPotq6acquvrrsFfWsjWsTM+BI1Hs8REUTApahW
+blwiyDniAuQ=
+=fXK0
+-----END PGP SIGNATURE-----
+
+--=-Cl4GTycUti78AzhdcRFk--
