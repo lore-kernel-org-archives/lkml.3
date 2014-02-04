@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679AbaBDVJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56785 "EHLO
+	id S1755268AbaBDV6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:58:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934075AbaBDVI6 (ORCPT
+	with ESMTP id S934207AbaBDVJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:58 -0500
+	Tue, 4 Feb 2014 16:09:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 3.12 093/133] bcache: Data corruption fix
-Date: Tue,  4 Feb 2014 13:08:14 -0800
-Message-Id: <20140204210739.661051174@linuxfoundation.org>
+        David Sterba <dsterba@suse.cz>, Josef Bacik <jbacik@fb.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.12 131/133] btrfs: restrict snapshotting to own subvolumes
+Date: Tue,  4 Feb 2014 13:08:52 -0800
+Message-Id: <20140204210740.738966779@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,92 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: David Sterba <dsterba@suse.cz>
 
-commit ef71ec00002d92a08eb27e9d036e3d48835b6597 upstream.
+commit d024206133ce21936b3d5780359afc00247655b7 upstream.
 
-The code that handles overlapping extents that we've just read back in from disk
-was depending on the behaviour of the code that handles overlapping extents as
-we're inserting into a btree node in the case of an insert that forced an
-existing extent to be split: on insert, if we had to split we'd also insert a
-new extent to represent the top part of the old extent - and then that new
-extent would get written out.
+Currently, any user can snapshot any subvolume if the path is accessible and
+thus indirectly create and keep files he does not own under his direcotries.
+This is not possible with traditional directories.
 
-The code that read the extents back in thus not bother with splitting extents -
-if it saw an extent that ovelapped in the middle of an older extent, it would
-trim the old extent to only represent the bottom part, assuming that the
-original insert would've inserted a new extent to represent the top part.
+In security context, a user can snapshot root filesystem and pin any
+potentially buggy binaries, even if the updates are applied.
 
-I still haven't figured out _how_ it can happen, but I'm now pretty convinced
-(and testing has confirmed) that there's some kind of an obscure corner case
-(probably involving extent merging, and multiple overwrites in different sets)
-that breaks this. The fix is to change the mergesort fixup code to split extents
-itself when required.
+All the snapshots are visible to the administrator, so it's possible to
+verify if there are suspicious snapshots.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Another more practical problem is that any user can pin the space used
+by eg. root and cause ENOSPC.
+
+Original report:
+https://bugs.launchpad.net/ubuntu/+source/apparmor/+bug/484786
+
+Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/bset.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ fs/btrfs/ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/md/bcache/bset.c
-+++ b/drivers/md/bcache/bset.c
-@@ -935,7 +935,7 @@ static void sort_key_next(struct btree_i
- 		*i = iter->data[--iter->used];
- }
- 
--static void btree_sort_fixup(struct btree_iter *iter)
-+static struct bkey *btree_sort_fixup(struct btree_iter *iter, struct bkey *tmp)
- {
- 	while (iter->used > 1) {
- 		struct btree_iter_set *top = iter->data, *i = top + 1;
-@@ -963,9 +963,22 @@ static void btree_sort_fixup(struct btre
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1548,6 +1548,12 @@ static noinline int btrfs_ioctl_snap_cre
+ 			printk(KERN_INFO "btrfs: Snapshot src from "
+ 			       "another FS\n");
+ 			ret = -EINVAL;
++		} else if (!inode_owner_or_capable(src_inode)) {
++			/*
++			 * Subvolume creation is not restricted, but snapshots
++			 * are limited to own subvolumes only
++			 */
++			ret = -EPERM;
  		} else {
- 			/* can't happen because of comparison func */
- 			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
--			bch_cut_back(&START_KEY(i->k), top->k);
-+
-+			if (bkey_cmp(i->k, top->k) < 0) {
-+				bkey_copy(tmp, top->k);
-+
-+				bch_cut_back(&START_KEY(i->k), tmp);
-+				bch_cut_front(i->k, top->k);
-+				heap_sift(iter, 0, btree_iter_cmp);
-+
-+				return tmp;
-+			} else {
-+				bch_cut_back(&START_KEY(i->k), top->k);
-+			}
- 		}
- 	}
-+
-+	return NULL;
- }
- 
- static void btree_mergesort(struct btree *b, struct bset *out,
-@@ -973,15 +986,20 @@ static void btree_mergesort(struct btree
- 			    bool fixup, bool remove_stale)
- {
- 	struct bkey *k, *last = NULL;
-+	BKEY_PADDED(k) tmp;
- 	bool (*bad)(struct btree *, const struct bkey *) = remove_stale
- 		? bch_ptr_bad
- 		: bch_ptr_invalid;
- 
- 	while (!btree_iter_end(iter)) {
- 		if (fixup && !b->level)
--			btree_sort_fixup(iter);
-+			k = btree_sort_fixup(iter, &tmp.k);
-+		else
-+			k = NULL;
-+
-+		if (!k)
-+			k = bch_btree_iter_next(iter);
- 
--		k = bch_btree_iter_next(iter);
- 		if (bad(b, k))
- 			continue;
- 
+ 			ret = btrfs_mksubvol(&file->f_path, name, namelen,
+ 					     BTRFS_I(src_inode)->root,
 
 
