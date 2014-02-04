@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935101AbaBDVWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:22:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57659 "EHLO
+	id S935055AbaBDVV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:21:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935074AbaBDVWN (ORCPT
+	with ESMTP id S934730AbaBDVMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:22:13 -0500
+	Tue, 4 Feb 2014 16:12:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonathan Woithe <jwoithe@just42.net>
-Subject: [PATCH 3.13 066/140] serial: 8250: Fix initialisation of Quatech cards with the AMCC PCI chip
-Date: Tue,  4 Feb 2014 13:10:53 -0800
-Message-Id: <20140204211038.842788973@linuxfoundation.org>
+        Vijaya Mohan Guvva <vmohan@brocade.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.13 131/140] SCSI: bfa: Chinook quad port 16G FC HBA claim issue
+Date: Tue,  4 Feb 2014 13:11:58 -0800
+Message-Id: <20140204211040.708708688@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,34 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Woithe <jwoithe@just42.net>
+From: Vijaya Mohan Guvva <vmohan@brocade.com>
 
-commit 9c5320f8d7d9a2cf623e65d50e1113f34d9b9eb1 upstream.
+commit dcaf9aed995c2b2a49fb86bbbcfa2f92c797ab5d upstream.
 
-Fix the initialisation of older Quatech serial cards which are fitted with
-the AMCC PCI Matchmaker interface chip.
+Bfa driver crash is observed while pushing the firmware on to chinook
+quad port card due to uninitialized bfi_image_ct2 access which gets
+initialized only for CT2 ASIC based cards after request_firmware().
+For quard port chinook (CT2 ASIC based), bfi_image_ct2 is not getting
+initialized as there is no check for chinook PCI device ID before
+request_firmware and instead bfi_image_cb is initialized as it is the
+default case for card type check.
 
-Signed-off-by: Jonathan Woithe (jwoithe@just42.net)
+This patch includes changes to read the right firmware for quad port chinook.
+
+Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/bfa/bfad.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1259,10 +1259,10 @@ static int pci_quatech_init(struct pci_d
- 		unsigned long base = pci_resource_start(dev, 0);
- 		if (base) {
- 			u32 tmp;
--			outl(inl(base + 0x38), base + 0x38);
-+			outl(inl(base + 0x38) | 0x00002000, base + 0x38);
- 			tmp = inl(base + 0x3c);
- 			outl(tmp | 0x01000000, base + 0x3c);
--			outl(tmp, base + 0x3c);
-+			outl(tmp &= ~0x01000000, base + 0x3c);
- 		}
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1802,7 +1802,7 @@ out:
+ static u32 *
+ bfad_load_fwimg(struct pci_dev *pdev)
+ {
+-	if (pdev->device == BFA_PCI_DEVICE_ID_CT2) {
++	if (bfa_asic_id_ct2(pdev->device)) {
+ 		if (bfi_image_ct2_size == 0)
+ 			bfad_read_firmware(pdev, &bfi_image_ct2,
+ 				&bfi_image_ct2_size, BFAD_FW_FILE_CT2);
+@@ -1812,12 +1812,14 @@ bfad_load_fwimg(struct pci_dev *pdev)
+ 			bfad_read_firmware(pdev, &bfi_image_ct,
+ 				&bfi_image_ct_size, BFAD_FW_FILE_CT);
+ 		return bfi_image_ct;
+-	} else {
++	} else if (bfa_asic_id_cb(pdev->device)) {
+ 		if (bfi_image_cb_size == 0)
+ 			bfad_read_firmware(pdev, &bfi_image_cb,
+ 				&bfi_image_cb_size, BFAD_FW_FILE_CB);
+ 		return bfi_image_cb;
  	}
- 	return 0;
++
++	return NULL;
+ }
+ 
+ static void
 
 
