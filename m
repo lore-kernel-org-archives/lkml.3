@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933810AbaBDVIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56473 "EHLO
+	id S933917AbaBDVI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:08:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933787AbaBDVHv (ORCPT
+	with ESMTP id S933787AbaBDVIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:07:51 -0500
+	Tue, 4 Feb 2014 16:08:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 011/133] KVM: x86: limit PIT timer frequency
-Date: Tue,  4 Feb 2014 13:06:52 -0800
-Message-Id: <20140204210737.339912254@linuxfoundation.org>
+        David Ertman <davidx.m.ertman@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 3.12 006/133] e1000e: fix compiler warnings
+Date: Tue,  4 Feb 2014 13:06:47 -0800
+Message-Id: <20140204210737.204219911@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,92 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: David Ertman <davidx.m.ertman@intel.com>
 
-commit 9ed96e87c5748de4c2807ef17e81287c7304186c upstream.
+commit 9e6c3b63399dd424d33a34e08b77f2cab0b84cdc upstream.
 
-Limit PIT timer frequency similarly to the limit applied by
-LAPIC timer.
+This patch is to fix a compiler warning of __bad_udelay due to a value
+of >999 being passed as a parameter to udelay() in the function
+e1000e_phy_has_link_generic().  This affects the gcc compiler when
+it is given a flag of -O3 and the icc compiler.
 
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+This patch is also making the change from mdelay() to msleep() in the
+same function, since it was determined though code inspection that this
+function is never called in atomic context.
+
+Signed-off-by: David Ertman <davidx.m.ertman@intel.com>
+Acked-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/i8254.c |   18 ++++++++++++++++++
- arch/x86/kvm/lapic.c |    3 ---
- arch/x86/kvm/x86.c   |    3 +++
- arch/x86/kvm/x86.h   |    2 ++
- 4 files changed, 23 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/intel/e1000e/phy.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -37,6 +37,7 @@
- 
- #include "irq.h"
- #include "i8254.h"
-+#include "x86.h"
- 
- #ifndef CONFIG_X86_64
- #define mod_64(x, y) ((x) - (y) * div64_u64(x, y))
-@@ -349,6 +350,23 @@ static void create_pit_timer(struct kvm
- 	atomic_set(&ps->pending, 0);
- 	ps->irq_ack = 1;
- 
-+	/*
-+	 * Do not allow the guest to program periodic timers with small
-+	 * interval, since the hrtimers are not throttled by the host
-+	 * scheduler.
-+	 */
-+	if (ps->is_periodic) {
-+		s64 min_period = min_timer_period_us * 1000LL;
-+
-+		if (ps->period < min_period) {
-+			pr_info_ratelimited(
-+			    "kvm: requested %lld ns "
-+			    "i8254 timer period limited to %lld ns\n",
-+			    ps->period, min_period);
-+			ps->period = min_period;
+--- a/drivers/net/ethernet/intel/e1000e/phy.c
++++ b/drivers/net/ethernet/intel/e1000e/phy.c
+@@ -1757,19 +1757,23 @@ s32 e1000e_phy_has_link_generic(struct e
+ 		 * it across the board.
+ 		 */
+ 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
+-		if (ret_val)
++		if (ret_val) {
+ 			/* If the first read fails, another entity may have
+ 			 * ownership of the resources, wait and try again to
+ 			 * see if they have relinquished the resources yet.
+ 			 */
+-			udelay(usec_interval);
++			if (usec_interval >= 1000)
++				msleep(usec_interval / 1000);
++			else
++				udelay(usec_interval);
 +		}
-+	}
-+
- 	hrtimer_start(&ps->timer, ktime_add_ns(ktime_get(), interval),
- 		      HRTIMER_MODE_ABS);
- }
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -71,9 +71,6 @@
- #define VEC_POS(v) ((v) & (32 - 1))
- #define REG_POS(v) (((v) >> 5) << 4)
- 
--static unsigned int min_timer_period_us = 500;
--module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
--
- static inline void apic_set_reg(struct kvm_lapic *apic, int reg_off, u32 val)
- {
- 	*((u32 *) (apic->regs + reg_off)) = val;
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -94,6 +94,9 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
- static bool ignore_msrs = 0;
- module_param(ignore_msrs, bool, S_IRUGO | S_IWUSR);
- 
-+unsigned int min_timer_period_us = 500;
-+module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
-+
- bool kvm_has_tsc_control;
- EXPORT_SYMBOL_GPL(kvm_has_tsc_control);
- u32  kvm_max_guest_tsc_khz;
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -124,5 +124,7 @@ int kvm_write_guest_virt_system(struct x
- 
- extern u64 host_xcr0;
- 
-+extern unsigned int min_timer_period_us;
-+
- extern struct static_key kvm_no_apic_vcpu;
- #endif
+ 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
+ 		if (ret_val)
+ 			break;
+ 		if (phy_status & BMSR_LSTATUS)
+ 			break;
+ 		if (usec_interval >= 1000)
+-			mdelay(usec_interval / 1000);
++			msleep(usec_interval / 1000);
+ 		else
+ 			udelay(usec_interval);
+ 	}
 
 
