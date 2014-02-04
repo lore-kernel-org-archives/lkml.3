@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060AbaBDTJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:09:06 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:44156 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300AbaBDTJE (ORCPT
+	id S1755078AbaBDTKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:10:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48664 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984AbaBDTKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:09:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140204181831.GP22609@sirena.org.uk>
-References: <1391493268-3242-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<20140204110531.GR22609@sirena.org.uk>
-	<CAJAp7OjCnJ=P9Gi20=D9gybREiSaqd1CaQ0K=9fGbCzU1gTFLw@mail.gmail.com>
-	<20140204181831.GP22609@sirena.org.uk>
-Date: Tue, 4 Feb 2014 11:09:03 -0800
-Message-ID: <CAJAp7Ohn3ch2nK_S8j9ieRBzNeyt6OJmumEhRXXykB9RgMJsQg@mail.gmail.com>
-Subject: Re: [PATCH] regulator: core: Make regulator object reflect configured voltage
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
+	Tue, 4 Feb 2014 14:10:04 -0500
+Date: Tue, 4 Feb 2014 20:10:05 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Chew <AChew@nvidia.com>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "abrestic@chromium.org" <abrestic@chromium.org>,
+        "dgreid@chromium.org" <dgreid@chromium.org>,
+        "katierh@chromium.org" <katierh@chromium.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: RE: [PATCH v1] clocksource: tegra: Add nvidia,tegra30-timer compat
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F763863199852C7@HQMAIL03.nvidia.com>
+Message-ID: <alpine.DEB.2.02.1402042004000.24986@ionos.tec.linutronix.de>
+References: <1391203779-5676-1-git-send-email-achew@nvidia.com> <52EFC652.9000209@linaro.org> <643E69AA4436674C8F39DCC2C05F763863199852C7@HQMAIL03.nvidia.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 10:18 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Feb 04, 2014 at 10:02:14AM -0800, Bjorn Andersson wrote:
->> On Tue, Feb 4, 2014 at 3:05 AM, Mark Brown <broonie@kernel.org> wrote:
->
->> > Why not do this at the time we apply the voltage?  That would seem to be
->> > more robust, doing it in a separate place means that we might update one
->> > bit of code and not the other or might change the execution path so that
->> > one gets run and the other doesn't.
->
->> I do share your concerns about having this logic mirrored here is
->> risky, unfortunately the regulator object is created upon request from
->> a consumer; so it is not available when regulator_register() calls
->> set_machine_constraints().
->
-> Oh, hang on - that's what you mean by a regulator object...   I don't
-> think this fixes the problem you think it does.  What is the actual
-> problem you're trying to fix here?  The min_uV and max_uV on a consumer
-> struct are supposed to be the request from that consumer, they should
-> only be set if the consumer actually made a request for a voltage range.
+On Mon, 3 Feb 2014, Andrew Chew wrote:
 
-I have a regulator that's being configured from DT as:
-regulator-min-microvolt = <2950000>;
-regulator-max-microvolt = <2950000>;
+> > From: Daniel Lezcano [mailto:daniel.lezcano@linaro.org]
+> > Sent: Monday, February 03, 2014 8:40 AM
+> > To: Andrew Chew; tglx@linutronix.de; swarren@wwwdotorg.org;
+> > thierry.reding@gmail.com; abrestic@chromium.org; dgreid@chromium.org;
+> > katierh@chromium.org
+> > Cc: linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org
+> > Subject: Re: [PATCH v1] clocksource: tegra: Add nvidia,tegra30-timer compat
+> > 
+> > On 01/31/2014 10:29 PM, Andrew Chew wrote:
+> > > There are some differences between tegra20's timer registers and
+> > > tegra30's (and later).  For one thing, the watchdogs don't seem to be
+> > > present in tegra20.
+> > 
+> > "don't seem", so it is an assumption ?
+> 
+> No, this is not an assumption.  It has been verified by other NVIDIA engineers
+> since I proposed this change.
 
-In the consumer I do regulator_set_voltage(2.95V).
+So why is your changelog saying "don't seem to be" ?
+  
+> > > Add this compatibility string in order to be able to distinguish
+> > > whether the watchdogs are there or not.
+> > 
+> > Sorry but I don't get the connection between declaring the tegra30_timer
+> > and the log. Can you elaborate please ?
+> 
+> I don't know what you mean by "the log".  Was that a typo?  Anyway, I
 
-As min == max the voltage is applied by the regulator framework on registration
-of the regulator; and the regulator_set_voltage() fails as
-REGULATOR_CHANGE_VOLTAGE is not set for this regulator.
+Daniel refers to the changelog.
 
-This makes sense, until I change regulator-min-microvolt to say 2000000 then
-the regulator_set_voltage() succeeds; and the call is required for the device to
-function properly.
+> have a watchdog driver that I intend to follow up with, that binds
+> with tegra30-timer.  I don't want this driver to be able to bind with
+> tegra20-timer, because the driver won't actually work on tegra20.
 
-So in the consumer I get different behavior depending on how the regulator is
-configured in DT.
+So the changelog should say:
 
+  Tegra30 and later have more timer functionality than Tegra20, but
+  share the clocksource core code.
 
-The proposed fix solves this by making the consumer object aware of
-the initialized
-voltage (as it's fixed in this case), making it okay for calls to
-regulator_set_voltage()
-given that it's the same value as the configured value; failing for others.
+  Add a separate devicetree entry which defaults to the tegra20 code
+  for now. This is preparatory work for adding new tegra30 specific
+  functionality.
 
->
->> An alternative is to drop the conditional setting of
->> REGULATOR_CHANGE_VOLTAGE from of_regulator.c and force the regulator
->> drivers to set this flag explicitly; to avoid the difference in
->> behavior depending on configuration.
->
-> Why would having each individual driver open code things help?
+Thanks,
 
-Without this fix I explicitly need to add REGULATOR_CHANGE_VOLTAGE to the
-valid_ops_mask of my regulators, ignoring the fact that
-of_get_regulation_constraints()
-does apply some logic in this area.
-
-Regards,
-Bjorn
+	tglx
