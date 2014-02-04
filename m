@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885AbaBDTSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:18:48 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:47638 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaBDTSp (ORCPT
+	id S1754999AbaBDTTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:19:06 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:63321 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827AbaBDTTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:18:45 -0500
-Message-ID: <52F13D11.8090009@gmail.com>
-Date: Tue, 04 Feb 2014 19:18:41 +0000
-From: Aaron Jones <aaronmdjones@gmail.com>
+	Tue, 4 Feb 2014 14:19:02 -0500
+X-IronPort-AV: E=Sophos;i="4.95,781,1384300800"; 
+   d="scan'208";a="97909537"
+Message-ID: <52F13D24.5090405@citrix.com>
+Date: Tue, 4 Feb 2014 19:19:00 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: File capabilities are not 'working' and I have no idea why
-References: <52DE7557.3000500@gmail.com>
-In-Reply-To: <52DE7557.3000500@gmail.com>
-X-Enigmail-Version: 1.6
-OpenPGP: id=AAD4CEA4
-Content-Type: text/plain; charset=UTF-8
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH net-next v2] xen-netback: Rework rx_work_todo
+References: <1389805867-22409-1-git-send-email-zoltan.kiss@citrix.com> <20140120163814.GE11681@zion.uk.xensource.com>
+In-Reply-To: <20140120163814.GE11681@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+On 20/01/14 16:38, Wei Liu wrote:
+> On Wed, Jan 15, 2014 at 05:11:07PM +0000, Zoltan Kiss wrote:
+>> The recent patch to fix receive side flow control (11b57f) solved the spinning
+>> thread problem, however caused an another one. The receive side can stall, if:
+>> - [THREAD] xenvif_rx_action sets rx_queue_stopped to true
+>> - [INTERRUPT] interrupt happens, and sets rx_event to true
+>> - [THREAD] then xenvif_kthread sets rx_event to false
+>> - [THREAD] rx_work_todo doesn't return true anymore
+>>
+>> Also, if interrupt sent but there is still no room in the ring, it take quite a
+>> long time until xenvif_rx_action realize it. This patch ditch that two variable,
+>> and rework rx_work_todo. If the thread finds it can't fit more skb's into the
+>> ring, it saves the last slot estimation into rx_last_skb_slots, otherwise it's
+>> kept as 0. Then rx_work_todo will check if:
+>> - there is something to send to the ring (like before)
+>> - there is space for the topmost packet in the queue
+>>
+>> I think that's more natural and optimal thing to test than two bool which are
+>> set somewhere else.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>
+> Sorry for the delay.
+>
+> Paul, thanks for reviewing.
+>
+> Acked-by: Wei Liu <wei.liu2@citrix.com>
 
-I have isolated the problem. File capabilities are not assigned when
-the program being executed is located on a filesystem mounted with
-the "nosuid" option.
+Hi,
 
-This seems counter-intuitive; a fully capability-based system would
-not use setuid binaries... so a logical thing to do would be to
-prevent the setuid bits from doing anything, which is what the
-nosuid flag is for, no?
+This patch haven't made it to net-next yet, maybe because the subject 
+doesn't suggest that this is a bugfix. I suggest to apply it as soon as 
+possible, otherwise netback will be quite broken.
 
-Or am I missing something?
+Zoli
 
-Can we get a config flag to toggle this behaviour?
-
-
-
-Aaron Jones.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBCAAGBQJS8T0RAAoJEG6FTA+q1M6knGgP/i6UattzXwpFM80Q32GelaTe
-cu8JQLY/BCjN/vICit7VTyAFkxxy5sKxBZB/YYBRa9AlRiMR0MjPb2lhL0q1HJeW
-1hl0/91/Mq7jDRC31y5UXCLv9P2iqoM4gZP4eh2b0xOXtZhOPstX24lIxTWIxQ/6
-rDJkW6pht9x2NWZIlpuxW8qFpaTZ7iw9zAYEs8Jm/PyXaRi07vY2CJhk+WzdrUZq
-+NKA9H5ZmaQlyyjBEHA5AEPm2xqxGz8PvI4UhKAzxTC2dBeGL26zYmIxXWsTnq5Z
-reyM0vqGzqLPyYh02mUz+8f72UtYEogZQGdhlfyqEObcXM5FW7JyA+NWi7UIxVB4
-qJaUX/h/CllIXapDklMpfxpWeM/0lI8vOnF6z+PFBhJFN7+2bEnmPHWvVPqYr3Uu
-EhkOjHYT5GNX0s42jR6Y3etWNel+whISyDAYd203lewqFmAKapoDSJgY8+wYdq/Y
-s6kiSMupkXcS1vC4qDAprpcXGOBjzSNL+iiwYKgzStuTXNEvRqn4eS955UwCI1/k
-PzYbXMDUuqZbL8446IrSpYnmzwy3YJvNqFX5kpFdvmwk1j75oXkJ/09O+hN4L2bZ
-45teFqvTw4FrZGltvKt52iZC8+gkuPnpY1nujSpLnQMM28zSn1TNYXScmaQinjVb
-TjuUQDZ3NlE7XSZp20Jp
-=LOIA
------END PGP SIGNATURE-----
