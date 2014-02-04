@@ -1,60 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaBDOvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:51:00 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:50656 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaBDOu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:50:57 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 1/6] fat: add i_disksize to represent uninitialized size
-References: <1387953050-2692-1-git-send-email-linkinjeon@gmail.com>
-	<87ioswx1xq.fsf@devron.myhome.or.jp>
-	<CAKYAXd91w8rtXpq45Ckj+6kGWAnn9Gj80EezpomyXO6+yggivQ@mail.gmail.com>
-Date: Tue, 04 Feb 2014 23:50:53 +0900
-In-Reply-To: <CAKYAXd91w8rtXpq45Ckj+6kGWAnn9Gj80EezpomyXO6+yggivQ@mail.gmail.com>
-	(Namjae Jeon's message of "Tue, 4 Feb 2014 19:20:27 +0900")
-Message-ID: <87y51rue2a.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1754531AbaBDOwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:52:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56630 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165AbaBDOwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 09:52:13 -0500
+Date: Tue, 4 Feb 2014 15:52:10 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
+        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
+Message-ID: <20140204145210.GH4890@dhcp22.suse.cz>
+References: <cover.1391356789.git.vdavydov@parallels.com>
+ <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Sun 02-02-14 20:33:48, Vladimir Davydov wrote:
+> Suppose we are creating memcg cache A that could be merged with cache B
+> of the same memcg. Since any memcg cache has the same parameters as its
+> parent cache, parent caches PA and PB of memcg caches A and B must be
+> mergeable too. That means PA was merged with PB on creation or vice
+> versa, i.e. PA = PB. From that it follows that A = B, and we couldn't
+> even try to create cache B, because it already exists - a contradiction.
 
-> 2014-02-03, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>> From: Namjae Jeon <namjae.jeon@samsung.com>
->>>
->>> Add i_disksize to represent uninitialized allocated size.
->>> And mmu_private represent initialized allocated size.
->>
->> Don't we need to update ->i_disksize after cont_write_begin()?
-> We don't need to update i_disksize after cont_write_begin.
-> It is taken care by the fat_get_block after the allocation.
-> For all write paths we align the mmu_private and i_disksize from
-> fat_fill_inode and fat_get_block.
+I cannot tell I understand the above but I am totally not sure about the
+statement bellow.
 
-fat_fill_inode() just set i_disksize to i_size. So, it is not aligned by
-cluster size or block size.
+> So let's remove unused code responsible for merging memcg caches.
 
-E.g. ->mmu_private = 500. Then, cont_write_begin() can set ->mmu_private
-to 512 on some case. In this case, fat_get_block() will not be called,
-because no new allocation.
+How come the code was unused? find_mergeable called cache_match_memcg...
 
-If this is true, it would be possible to have ->mmu_private == 512 and
-->i_disksize == 500. 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  mm/slab.h        |   21 ++++-----------------
+>  mm/slab_common.c |    8 +++++---
+>  mm/slub.c        |   19 +++++++++----------
+>  3 files changed, 18 insertions(+), 30 deletions(-)
+> 
+> diff --git a/mm/slab.h b/mm/slab.h
+> index 8184a7cde272..3045316b7c9d 100644
+> --- a/mm/slab.h
+> +++ b/mm/slab.h
+> @@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
+>  struct mem_cgroup;
+>  #ifdef CONFIG_SLUB
+>  struct kmem_cache *
+> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+> -		   size_t align, unsigned long flags, void (*ctor)(void *));
+> +__kmem_cache_alias(const char *name, size_t size, size_t align,
+> +		   unsigned long flags, void (*ctor)(void *));
+>  #else
+>  static inline struct kmem_cache *
+> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+> -		   size_t align, unsigned long flags, void (*ctor)(void *))
+> +__kmem_cache_alias(const char *name, size_t size, size_t align,
+> +		   unsigned long flags, void (*ctor)(void *))
+>  { return NULL; }
+>  #endif
+>  
+> @@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+>  	return !s->memcg_params || s->memcg_params->is_root_cache;
+>  }
+>  
+> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
+> -				     struct mem_cgroup *memcg)
+> -{
+> -	return (is_root_cache(cachep) && !memcg) ||
+> -				(cachep->memcg_params->memcg == memcg);
+> -}
+> -
+>  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+>  {
+>  	if (!is_root_cache(s))
+> @@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+>  	return true;
+>  }
+>  
+> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
+> -				     struct mem_cgroup *memcg)
+> -{
+> -	return true;
+> -}
+> -
+>  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+>  {
+>  }
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 152d9b118b7a..a75834bb966d 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>  	 */
+>  	flags &= CACHE_CREATE_MASK;
+>  
+> -	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+> -	if (s)
+> -		goto out_unlock;
+> +	if (!memcg) {
+> +		s = __kmem_cache_alias(name, size, align, flags, ctor);
+> +		if (s)
+> +			goto out_unlock;
+> +	}
+>  
+>  	err = -ENOMEM;
+>  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 2b1a6970e46f..962abfdfde06 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3686,9 +3686,8 @@ static int slab_unmergeable(struct kmem_cache *s)
+>  	return 0;
+>  }
+>  
+> -static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+> -		size_t align, unsigned long flags, const char *name,
+> -		void (*ctor)(void *))
+> +static struct kmem_cache *find_mergeable(size_t size, size_t align,
+> +		unsigned long flags, const char *name, void (*ctor)(void *))
+>  {
+>  	struct kmem_cache *s;
+>  
+> @@ -3707,11 +3706,14 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>  		if (slab_unmergeable(s))
+>  			continue;
+>  
+> +		if (!is_root_cache(s))
+> +			continue;
+> +
+>  		if (size > s->size)
+>  			continue;
+>  
+>  		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
+> -				continue;
+> +			continue;
+>  		/*
+>  		 * Check if alignment is compatible.
+>  		 * Courtesy of Adrian Drzewiecki
+> @@ -3722,21 +3724,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>  		if (s->size - size >= sizeof(void *))
+>  			continue;
+>  
+> -		if (!cache_match_memcg(s, memcg))
+> -			continue;
+> -
+>  		return s;
+>  	}
+>  	return NULL;
+>  }
+>  
+>  struct kmem_cache *
+> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+> -		   size_t align, unsigned long flags, void (*ctor)(void *))
+> +__kmem_cache_alias(const char *name, size_t size, size_t align,
+> +		   unsigned long flags, void (*ctor)(void *))
+>  {
+>  	struct kmem_cache *s;
+>  
+> -	s = find_mergeable(memcg, size, align, flags, name, ctor);
+> +	s = find_mergeable(size, align, flags, name, ctor);
+>  	if (s) {
+>  		s->refcount++;
+>  		/*
+> -- 
+> 1.7.10.4
+> 
 
-I'm missing something?
-
-Thanks.
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Michal Hocko
+SUSE Labs
