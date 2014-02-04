@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935442AbaBDWRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:17:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56627 "EHLO
+	id S935521AbaBDWSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:18:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57893 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933650AbaBDVIg (ORCPT
+	with ESMTP id S934246AbaBDWSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:36 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Deneen <mdeneen@gmail.com>, Leilei Zhao <leilei.zhao@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.12 057/133] tty/serial: at91: reset rx_ring when port is shutdown
-Date: Tue,  4 Feb 2014 13:07:38 -0800
-Message-Id: <20140204210738.643731956@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
-References: <20140204210737.008598235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 17:18:50 -0500
+Date: Tue, 4 Feb 2014 14:18:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 6/8] zram: report failed read and write stats
+Message-Id: <20140204141849.d530625a13e80708446ac426@linux-foundation.org>
+In-Reply-To: <1389877936-15543-7-git-send-email-sergey.senozhatsky@gmail.com>
+References: <1389877936-15543-1-git-send-email-sergey.senozhatsky@gmail.com>
+	<1389877936-15543-7-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 16 Jan 2014 16:12:14 +0300 Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
-------------------
+> zram accounted but did not report numbers of failed read
+> and write queries. make these stats available as failed_reads
+> and failed_writes attrs.
+> 
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> Acked-by: Jerome Marchand <jmarchan@redhat.com>
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  drivers/block/zram/zram_drv.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index e7102f1..9d67fbf 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -728,6 +728,8 @@ static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+>  
+>  ZRAM_ATTR_RO(num_reads);
+>  ZRAM_ATTR_RO(num_writes);
+> +ZRAM_ATTR_RO(failed_reads);
+> +ZRAM_ATTR_RO(failed_writes);
+>  ZRAM_ATTR_RO(invalid_io);
+>  ZRAM_ATTR_RO(notify_free);
+>  ZRAM_ATTR_RO(zero_pages);
+> @@ -739,6 +741,8 @@ static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_reset.attr,
+>  	&dev_attr_num_reads.attr,
+>  	&dev_attr_num_writes.attr,
+> +	&dev_attr_failed_reads.attr,
+> +	&dev_attr_failed_writes.attr,
+>  	&dev_attr_invalid_io.attr,
+>  	&dev_attr_notify_free.attr,
+>  	&dev_attr_zero_pages.attr,
 
-From: Mark Deneen <mdeneen@gmail.com>
-
-commit bb7e73c598fb226c75f7625088a8f6a45a0fc892 upstream.
-
-When using RX DMA, the driver won't pass any data to the uart layer
-until the buffer is flipped. When the port is shutdown, the dma buffers
-are unmapped, but the head and tail of the ring buffer are not reseted.
-Since the serial console will keep the port open, this will only
-present itself when the uart is not shared.
-
-To reproduce the issue, with an unpatched driver, run a getty on /dev/ttyS0
-with no serial console and exit. Getty will exit, and when the new one returns
-you will be unable to log in.  If you hold down a key long enough to fill the
-DMA buffer and flip it, you can then log in.
-
-Signed-off-by: Mark Deneen <mdeneen@gmail.com>
-Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
-[nicolas.ferre@atmel.com: adapt to mainline kernel, handle !DMA case]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/serial/atmel_serial.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1660,6 +1660,12 @@ static void atmel_shutdown(struct uart_p
- 		atmel_port->release_tx(port);
- 
- 	/*
-+	 * Reset ring buffer pointers
-+	 */
-+	atmel_port->rx_ring.head = 0;
-+	atmel_port->rx_ring.tail = 0;
-+
-+	/*
- 	 * Free the interrupt
- 	 */
- 	free_irq(port->irq, port);
-
+Documentation/blockdev/zram.txt and
+Documentation/ABI/testing/sysfs-block-zram need updating...
 
