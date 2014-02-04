@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934681AbaBDVMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:12:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57236 "EHLO
+	id S935134AbaBDV0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:26:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57457 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934520AbaBDVLw (ORCPT
+	with ESMTP id S934520AbaBDVMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:52 -0500
+	Tue, 4 Feb 2014 16:12:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philip Pokorny <ppokorny@penguincomputing.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.13 061/140] hwmon: (k10temp) Add support for Kaveri CPUs
-Date: Tue,  4 Feb 2014 13:10:48 -0800
-Message-Id: <20140204211038.704383459@linuxfoundation.org>
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Chuanxiao Dong <chuanxiao.dong@intel.com>,
+        Dong Aisheng <b29396@freescale.com>, Chris Ball <chris@printf.net>
+Subject: [PATCH 3.13 120/140] mmc: sdhci-pci: add broken HS200 quirk for Intel Merrifield
+Date: Tue,  4 Feb 2014 13:11:47 -0800
+Message-Id: <20140204211040.397901186@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,29 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Pokorny <ppokorny@penguincomputing.com>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
-commit d303b1b5fbb688282bbf72a534b9dfed7af9fe4f upstream.
+commit 390145f9adcf2730fcee81c8a51fd7c6c08f705f upstream.
 
-Add new PCI ID to support new model "Kaveri" family.
+Due to unknown hw issue so far, Merrifield is unable to enable HS200
+support. This patch adds quirk to avoid SDHCI to initialize with error
+below:
 
-Signed-off-by: Philip Pokorny <ppokorny@penguincomputing.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+[   53.850132] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G W
+3.12.0-rc6-00037-g3d7c8d9-dirty #36
+[   53.850150] Hardware name: Intel Corporation Merrifield/SALT BAY,
+BIOS 397 2013.09.12:11.51.40
+[   53.850167]  00000000 00000000 ee409e48 c18816d2 00000000 ee409e78
+c123e254 c1acc9b0
+[   53.850227]  00000000 00000000 c1b14148 000003de c16c03bf c16c03bf
+ee75b480 ed97c54c
+[   53.850282]  ee75b480 ee409e88 c123e292 00000009 00000000 ee409ef8
+c16c03bf c1207fac
+[   53.850339] Call Trace:
+[   53.850376]  [<c18816d2>] dump_stack+0x4b/0x79
+[   53.850408]  [<c123e254>] warn_slowpath_common+0x84/0xa0
+[   53.850436]  [<c16c03bf>] ? sdhci_send_command+0xb4f/0xc50
+[   53.850462]  [<c16c03bf>] ? sdhci_send_command+0xb4f/0xc50
+[   53.850490]  [<c123e292>] warn_slowpath_null+0x22/0x30
+[   53.850516]  [<c16c03bf>] sdhci_send_command+0xb4f/0xc50
+[   53.850545]  [<c1207fac>] ? native_sched_clock+0x2c/0xb0
+[   53.850575]  [<c14c1f93>] ? delay_tsc+0x73/0xb0
+[   53.850601]  [<c14c1ebe>] ? __const_udelay+0x1e/0x20
+[   53.850626]  [<c16bdeb3>] ? sdhci_reset+0x93/0x190
+[   53.850654]  [<c16c05b0>] sdhci_finish_data+0xf0/0x2e0
+[   53.850683]  [<c16c130f>] sdhci_irq+0x31f/0x930
+[   53.850713]  [<c12cb080>] ? __buffer_unlock_commit+0x10/0x20
+[   53.850740]  [<c12cbcd7>] ? trace_buffer_unlock_commit+0x37/0x50
+[   53.850773]  [<c1288f3c>] handle_irq_event_percpu+0x5c/0x220
+[   53.850800]  [<c128bc96>] ? handle_fasteoi_irq+0x16/0xd0
+[   53.850827]  [<c128913a>] handle_irq_event+0x3a/0x60
+[   53.850852]  [<c128bc80>] ? unmask_irq+0x30/0x30
+[   53.850878]  [<c128bcce>] handle_fasteoi_irq+0x4e/0xd0
+[   53.850895]  <IRQ>  [<c1890b52>] ? do_IRQ+0x42/0xb0
+[   53.850943]  [<c1890a31>] ? common_interrupt+0x31/0x38
+[   53.850973]  [<c12b00d8>] ? cgroup_mkdir+0x4e8/0x580
+[   53.851001]  [<c1208d32>] ? default_idle+0x22/0xf0
+[   53.851029]  [<c1209576>] ? arch_cpu_idle+0x26/0x30
+[   53.851054]  [<c1288505>] ? cpu_startup_entry+0x65/0x240
+[   53.851082]  [<c18793d5>] ? rest_init+0xb5/0xc0
+[   53.851108]  [<c1879320>] ? __read_lock_failed+0x18/0x18
+[   53.851138]  [<c1bf6a15>] ? start_kernel+0x31b/0x321
+[   53.851164]  [<c1bf652f>] ? repair_env_string+0x51/0x51
+[   53.851190]  [<c1bf6363>] ? i386_start_kernel+0x139/0x13c
+[   53.851209] ---[ end trace 92777f5fe48d33f2 ]---
+[   53.853449] mmcblk0: error -84 transferring data, sector 11142162, nr
+304, cmd response 0x0, card status 0x0
+[   53.853476] mmcblk0: retrying using single block read
+[   55.937863] sdhci: Timeout waiting for Buffer Read Ready interrupt
+during tuning procedure, falling back to fixed sampling clock
+[   56.207951] sdhci: Timeout waiting for Buffer Read Ready interrupt
+during tuning procedure, falling back to fixed sampling clock
+[   66.228785] mmc0: Timeout waiting for hardware interrupt.
+[   66.230855] ------------[ cut here ]------------
+
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Reviewed-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
+Acked-by: Dong Aisheng <b29396@freescale.com>
+Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/k10temp.c |    1 +
+ drivers/mmc/host/sdhci-pci.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -210,6 +210,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_i
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -381,6 +381,7 @@ static int intel_mrfl_mmc_probe_slot(str
+ 
+ static const struct sdhci_pci_fixes sdhci_intel_mrfl_mmc = {
+ 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
++	.quirks2	= SDHCI_QUIRK2_BROKEN_HS200,
+ 	.probe_slot	= intel_mrfl_mmc_probe_slot,
  };
+ 
 
 
