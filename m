@@ -1,283 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaBDRPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:15:21 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:43859 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaBDRPQ (ORCPT
+	id S932364AbaBDRQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:16:00 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:54920 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932132AbaBDRP6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:15:16 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration from device tree
-To: Matthew Garrett <matthew.garrett@nebula.com>, netdev@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org, kishon@ti.com,
-        Matthew Garrett <matthew.garrett@nebula.com>
-In-Reply-To: <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-References: <7510122.cayuQ6qt8r@wuerfel> < 1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-Date: Tue, 04 Feb 2014 17:15:08 +0000
-Message-Id: <20140204171508.4E169C4050F@trevor.secretlab.ca>
+	Tue, 4 Feb 2014 12:15:58 -0500
+Date: Tue, 4 Feb 2014 18:16:05 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, Dave Airlie <airlied@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 2/5] ASoC: tda998x: add a codec driver for the
+ TDA998x
+Message-ID: <20140204181605.5b837a70@armhf>
+In-Reply-To: <20140204133014.GA22609@sirena.org.uk>
+References: <cover.1391274627.git.moinejf@free.fr>
+ <ae68394f080f0ea5acaf3377cb1d18f29e42c646.1391274628.git.moinejf@free.fr>
+ <20140204133014.GA22609@sirena.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014 17:57:39 -0500, Matthew Garrett <matthew.garrett@nebula.com> wrote:
-> Some hardware may be broken in interesting and board-specific ways, such
-> that various bits of functionality don't work. This patch provides a
-> mechanism for overriding mii registers during init based on the contents of
-> the device tree data, allowing board-specific fixups without having to
-> pollute generic code.
+On Tue, 4 Feb 2014 13:30:14 +0000
+Mark Brown <broonie@kernel.org> wrote:
+
+> On Sun, Jan 26, 2014 at 07:45:36PM +0100, Jean-Francois Moine wrote:
 > 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-
-I've got no problems in principle with the feature. I think it is a good
-change. The binding itself feels too verbose to me. As an alternative,
-how about the following:
-
-	phy-mii-advertise = "10half", "!10full", "!100base4"
-
-So it is a list of features. Prepending a '!' makes it disabled. And we
-could add something like "nodefault" to clear the probed settings
-entirely before listing the modes we want.
-
-g.
-
-> ---
+> > +	/* load the optional CODEC */
+> > +	of_platform_populate(np, NULL, NULL, &client->dev);
+> > +
 > 
-> V3: Break the main function out into some helper functions and store the
-> values in some structs.
-> 
->  Documentation/devicetree/bindings/net/phy.txt | 21 +++++++
->  drivers/net/phy/phy_device.c                  | 29 ++++++++-
->  drivers/of/of_net.c                           | 87 +++++++++++++++++++++++++++
->  include/linux/of_net.h                        | 12 ++++
->  4 files changed, 148 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-> index 7cd18fb..fc50f02 100644
-> --- a/Documentation/devicetree/bindings/net/phy.txt
-> +++ b/Documentation/devicetree/bindings/net/phy.txt
-> @@ -23,6 +23,21 @@ Optional Properties:
->    assume clause 22. The compatible list may also contain other
->    elements.
->  
-> +The following properties may be added to either the phy node or the parent
-> +ethernet device. If not present, the hardware defaults will be used.
-> +
-> +- phy-mii-advertise-10half: 1 to advertise half-duplex 10MBit, 0 to disable
-> +- phy-mii-advertise-10full: 1 to advertise full-duplex 10MBit, 0 to disable
-> +- phy-mii-advertise-100half: 1 to advertise half-duplex 100MBit, 0 to disable
-> +- phy-mii-advertise-100full: 1 to advertise full-duplex 100MBit, 0 to disable
-> +- phy-mii-advertise-100base4: 1 to advertise 100base4, 0 to disable
-> +- phy-mii-advertise-1000half: 1 to advertise half-duplex 1000MBit, 0 to disable
-> +- phy-mii-advertise-1000full: 1 to advertise full-duplex 1000MBit, 0 to disable
-> +- phy-mii-manual-master: 1 to enable manual master/slave configuration, 0
-> +  to disable manual master/slave configuration
-> +- phy-mii-as-master: 1 to configure phy to act as master, 0 to configure phy
-> +  to act as slave. Ignored if manual master/slave configuration is not enabled.
-> +
->  Example:
->  
->  ethernet-phy@0 {
-> @@ -32,4 +47,10 @@ ethernet-phy@0 {
->  	interrupts = <35 1>;
->  	reg = <0>;
->  	device_type = "ethernet-phy";
-> +	// Disable advertising of full duplex 1000MBit
-> +	phy-mii-advertise-1000full = <0>;
-> +	// Force manual phy master/slave configuration
-> +	phy-mii-manual-master = <1>;
-> +	// Forcibly configure phy as slave
-> +	phy-mii-as-master = <0>;
->  };
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index d6447b3..91793bc 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -33,6 +33,7 @@
->  #include <linux/mii.h>
->  #include <linux/ethtool.h>
->  #include <linux/phy.h>
-> +#include <linux/of_net.h>
->  
->  #include <asm/io.h>
->  #include <asm/irq.h>
-> @@ -497,6 +498,28 @@ void phy_disconnect(struct phy_device *phydev)
->  }
->  EXPORT_SYMBOL(phy_disconnect);
->  
-> +int phy_override_from_of(struct phy_device *phydev)
-> +{
-> +	int reg, regval;
-> +	u16 val, mask;
-> +
-> +	/* Check for phy register overrides from OF */
-> +	for (reg = 0; reg < 16; reg++) {
-> +		if (!of_get_mii_register(phydev, reg, &val, &mask)) {
-> +			if (!mask)
-> +				continue;
-> +			regval = phy_read(phydev, reg);
-> +			if (regval < 0)
-> +				continue;
-> +			regval &= ~mask;
-> +			regval |= val;
-> +			phy_write(phydev, reg, regval);
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  int phy_init_hw(struct phy_device *phydev)
->  {
->  	int ret;
-> @@ -508,7 +531,11 @@ int phy_init_hw(struct phy_device *phydev)
->  	if (ret < 0)
->  		return ret;
->  
-> -	return phydev->drv->config_init(phydev);
-> +	ret = phydev->drv->config_init(phydev);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return phy_override_from_of(phydev);
->  }
->  
->  /**
-> diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-> index 8f9be2e..75751b7 100644
-> --- a/drivers/of/of_net.c
-> +++ b/drivers/of/of_net.c
-> @@ -93,3 +93,90 @@ const void *of_get_mac_address(struct device_node *np)
->  	return NULL;
->  }
->  EXPORT_SYMBOL(of_get_mac_address);
-> +
-> +struct mii_override {
-> +	char *prop;
-> +	u32 supported;
-> +	u16 value;
-> +};
-> +
-> +static struct mii_override mii_advertise_override[] = {
-> +	{ "phy-mii-advertise-10half", SUPPORTED_10baseT_Half,
-> +	  ADVERTISE_10HALF },
-> +	{ "phy-mii-advertise-10full", SUPPORTED_10baseT_Full,
-> +	  ADVERTISE_10FULL },
-> +	{ "phy-mii-advertise-100half", SUPPORTED_100baseT_Half,
-> +	  ADVERTISE_100HALF },
-> +	{ "phy-mii-advertise-100full", SUPPORTED_100baseT_Full,
-> +	  ADVERTISE_100FULL },
-> +	{ "phy-mii-advertise-100base4", 0, ADVERTISE_100BASE4 },
-> +	{ NULL },
-> +};
-> +
-> +static struct mii_override mii_gigabit_override[] = {
-> +	{ "phy-mii-advertise-1000half", SUPPORTED_1000baseT_Half,
-> +	  ADVERTISE_1000HALF },
-> +	{ "phy-mii-advertise-1000full", SUPPORTED_1000baseT_Full,
-> +	  ADVERTISE_1000FULL },
-> +	{ "phy-mii-as-master", 0, CTL1000_AS_MASTER },
-> +	{ "phy-mii-manual-master", 0, CTL1000_ENABLE_MASTER },
-> +	{ NULL },
-> +};
-> +
-> +static void mii_handle_override(struct mii_override *override_list,
-> +				struct phy_device *phydev, u16 *val, u16 *mask)
-> +{
-> +	struct device *dev = &phydev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	struct mii_override *override;
-> +	u32 tmp;
-> +
-> +	if (!np && dev->parent->of_node)
-> +		np = dev->parent->of_node;
-> +
-> +	if (!np)
-> +		return;
-> +
-> +	for (override = &override_list[0]; override->prop != NULL; override++) {
-> +		if (!of_property_read_u32(np, override->prop, &tmp)) {
-> +			if (tmp) {
-> +				*val |= override->value;
-> +				phydev->advertising |= override->supported;
-> +			} else {
-> +				phydev->advertising &= ~(override->supported);
-> +			}
-> +
-> +			*mask |= override->value;
-> +		}
-> +	}
-> +
-> +	return;
-> +}
-> +
-> +/**
-> + * Provide phy register overrides from the device tree. Some hardware may
-> + * be broken in interesting and board-specific ways, so we want a mechanism
-> + * for the board data to provide overrides for default values. This should be
-> + * called during phy init.
-> + */
-> +int of_get_mii_register(struct phy_device *phydev, int reg, u16 *val,
-> +			u16 *mask)
-> +{
-> +	*val = 0;
-> +	*mask = 0;
-> +
-> +	switch (reg) {
-> +	case MII_ADVERTISE:
-> +		mii_handle_override(mii_advertise_override, phydev, val, mask);
-> +		break;
-> +
-> +	case MII_CTRL1000:
-> +		mii_handle_override(mii_gigabit_override, phydev, val, mask);
-> +		break;
-> +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(of_get_mii_register);
-> diff --git a/include/linux/of_net.h b/include/linux/of_net.h
-> index 34597c8..2e478bc 100644
-> --- a/include/linux/of_net.h
-> +++ b/include/linux/of_net.h
-> @@ -7,10 +7,14 @@
->  #ifndef __LINUX_OF_NET_H
->  #define __LINUX_OF_NET_H
->  
-> +#include <linux/phy.h>
-> +
->  #ifdef CONFIG_OF_NET
->  #include <linux/of.h>
->  extern int of_get_phy_mode(struct device_node *np);
->  extern const void *of_get_mac_address(struct device_node *np);
-> +extern int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-> +			       u16 *mask);
->  #else
->  static inline int of_get_phy_mode(struct device_node *np)
->  {
-> @@ -21,6 +25,14 @@ static inline const void *of_get_mac_address(struct device_node *np)
->  {
->  	return NULL;
->  }
-> +static inline int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-> +				      u16 *mask)
-> +{
-> +	*val = 0;
-> +	*mask = 0;
-> +
-> +	return -EINVAL;
-> +}
->  #endif
->  
->  #endif /* __LINUX_OF_NET_H */
-> -- 
-> 1.8.4.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Why is this using of_platform_populate()?  That's a very odd way of
+> doing things.
 
+The i2c does not populate the subnodes in the DT. I did not find why,
+but, what is sure is that if of_platform_populate() is not called, the
+tda CODEC module is not loaded.
+
+You may find an other example in drivers/mfd/twl-core.c.
+
+> > +config SND_SOC_TDA998X
+> > +	tristate
+> > +	depends on OF
+> > +	default y if DRM_I2C_NXP_TDA998X=y
+> > +	default m if DRM_I2C_NXP_TDA998X=m
+> > +
+> 
+> Make this visible if it can be selected from DT so it can be used with
+> generic cards.
+
+I don't understand. The tda CODEC can only be used with the TDA998x I2C
+driver. It might have been included in the tda998x source as well.
+
+> > +static int tda_get_encoder(struct tda_priv *priv)
+> > +{
+> > +	struct snd_soc_codec *codec = priv->codec;
+> > +	struct device_node *np;
+> > +
+> > +	/* get the parent tda998x device */
+> > +	np = of_get_parent(codec->dev->of_node);
+> > +	if (!np || !of_device_is_compatible(np, "nxp,tda998x")) {
+> > +		dev_err(codec->dev, "no or bad parent!\n");
+> > +		return -EINVAL;
+> > +	}
+> > +	priv->i2c_client = of_find_i2c_device_by_node(np);
+> > +	of_node_put(np);
+> > +	return 0;
+> > +}
+> 
+> Why does this need to be checked like this?  We don't normally have this
+> sort of code to check that the parent is correct.
+
+In my previous submit, the tda CODEC was not declared inside the
+tda998x I2c device, so, its location was searched from  phandle.
+
+Now, the CODEC is declared inside the tda998x as a node child. But, in
+a bad DT, the tda CODEC could be declared anywhere, even inside a other
+DRM I2C slave encoder, in which case, bad things would happen...
+
+> > +static int tda_start_stop(struct tda_priv *priv)
+> > +{
+> > +	int port;
+> > +
+> > +	/* give the audio parameters to the HDMI encoder */
+> > +	if (priv->dai_id == AFMT_I2S)
+> > +		port = priv->ports[0];
+> > +	else
+> > +		port = priv->ports[1];
+> > +	tda998x_audio_update(priv->i2c_client, priv->dai_id, port);
+> > +	return 0;
+> > +}
+> 
+> What does this actually do?  No information is being passed in to the
+> core function here, not even any information on if it's starting or
+> stopping.  Looking at the rest of the code I can't help thinking it
+> might be clearer to inline this possibly with a lookup helper, the code
+> is very small and the lack of parameters makes it hard to follow.
+
+I thought it was simple enough. The function tda_start_stop() is called
+from 2 places:
+
+- on audio start in tda_startup with the audio type (DAI id)
+	priv->dai_id = dai->id;
+
+- on audio stop with a null audio type
+	priv->dai_id = 0;		/* streaming stop */
+
+On stream start, the DAI id is never null, as explained in the patch 1:
+
+	The audio format values in the encoder configuration interface  are
+	changed to non null values so that the value 0 is used in the audio
+	function to indicate that audio streaming is stopped.
+
+and on streaming stop the port is not meaningful.
+
+I will add a null item in the enum (AFMT_NO_AUDIO).
+
+> > +static const struct snd_soc_dapm_route tda_routes[] = {
+> > +	{ "hdmi-out", NULL, "HDMI I2S Playback" },
+> > +	{ "hdmi-out", NULL, "HDMI SPDIF Playback" },
+> > +};
+> 
+> S/PDIF.
+
+Did you ever try that with debugfs?
+
+BTW, this patch series may be delayed for some time: the tda998x driver
+has to be reworked for DT support.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
