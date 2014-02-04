@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935547AbaBDW2R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:28:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56540 "EHLO
+	id S934551AbaBDW3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:29:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56549 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933304AbaBDVIK (ORCPT
+	with ESMTP id S933844AbaBDVIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:10 -0500
+	Tue, 4 Feb 2014 16:08:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 036/133] rtlwifi: rtl8192cu: Update the power index registers
-Date: Tue,  4 Feb 2014 13:07:17 -0800
-Message-Id: <20140204210738.054643242@linuxfoundation.org>
+Subject: [PATCH 3.12 034/133] rtlwifi: Increase the RX queue length for USB drivers
+Date: Tue,  4 Feb 2014 13:07:15 -0800
+Message-Id: <20140204210737.995782213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -31,45 +31,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9806eacf5de27ab01d680c5d75c92a3a89734e4f upstream.
+commit dc6405712268fe514d3dd89aa936c4397b0871b9 upstream.
 
-This patch uses the newly introduced power index register routines.
+The current number of RX buffers queued is 32, which is too small under
+heavy load. That number is doubled.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/dm.c |    9 +++++++++
- drivers/net/wireless/rtlwifi/rtl8192cu/dm.h |    3 +++
- 2 files changed, 12 insertions(+)
+ drivers/net/wireless/rtlwifi/usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/dm.c
-@@ -101,6 +101,15 @@ void rtl92cu_dm_dynamic_txpower(struct i
- 			 "PHY_SetTxPowerLevel8192S() Channel = %d\n",
- 			 rtlphy->current_channel);
- 		rtl92c_phy_set_txpower_level(hw, rtlphy->current_channel);
-+		if (rtlpriv->dm.dynamic_txhighpower_lvl ==
-+		    TXHIGHPWRLEVEL_NORMAL)
-+			dm_restorepowerindex(hw);
-+		else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
-+			 TXHIGHPWRLEVEL_LEVEL1)
-+			dm_writepowerindex(hw, 0x14);
-+		else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
-+			 TXHIGHPWRLEVEL_LEVEL2)
-+			dm_writepowerindex(hw, 0x10);
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -557,7 +557,7 @@ static void _rtl_rx_pre_process(struct i
  	}
+ }
  
- 	rtlpriv->dm.last_dtp_lvl = rtlpriv->dm.dynamic_txhighpower_lvl;
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/dm.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/dm.h
-@@ -30,3 +30,6 @@
- #include "../rtl8192ce/dm.h"
+-#define __RX_SKB_MAX_QUEUED	32
++#define __RX_SKB_MAX_QUEUED	64
  
- void rtl92cu_dm_dynamic_txpower(struct ieee80211_hw *hw);
-+void dm_savepowerindex(struct ieee80211_hw *hw);
-+void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
-+void dm_restorepowerindex(struct ieee80211_hw *hw);
+ static void _rtl_rx_work(unsigned long param)
+ {
 
 
