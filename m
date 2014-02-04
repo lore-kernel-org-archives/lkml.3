@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935128AbaBDVZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:25:18 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:62880 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933612AbaBDVZO (ORCPT
+	id S934869AbaBDVYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:24:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57478 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934698AbaBDVMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:25:14 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH v7 3/3] PM / Hibernate: use name_to_dev_t to parse resume
-Date: Tue, 04 Feb 2014 22:39:43 +0100
-Message-ID: <1498007.FMXxByppC2@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1391546631-7715-4-git-send-email-sebastian.capella@linaro.org>
-References: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org> <1391546631-7715-4-git-send-email-sebastian.capella@linaro.org>
+	Tue, 4 Feb 2014 16:12:37 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
+Subject: [PATCH 3.13 125/140] parisc: fix cache-flushing
+Date: Tue,  4 Feb 2014 13:11:52 -0800
+Message-Id: <20140204211040.542649214@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
+References: <20140204211036.967663852@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 04, 2014 12:43:51 PM Sebastian Capella wrote:
-> Use the name_to_dev_t call to parse the device name echo'd to
-> to /sys/power/resume.  This imitates the method used in hibernate.c
-> in software_resume, and allows the resume partition to be specified
-> using other equivalent device formats as well.  By allowing
-> /sys/debug/resume to accept the same syntax as the resume=device
-> parameter, we can parse the resume=device in the init script and
-> use the resume device directly from the kernel command line.
-> 
-> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> ---
->  kernel/power/hibernate.c |   33 +++++++++++++++++----------------
->  1 file changed, 17 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> index cd1e30c..3abd192 100644
-> --- a/kernel/power/hibernate.c
-> +++ b/kernel/power/hibernate.c
-> @@ -970,26 +970,27 @@ static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
->  static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
->  			    const char *buf, size_t n)
->  {
-> -	unsigned int maj, min;
->  	dev_t res;
-> -	int ret = -EINVAL;
-> +	char *name = kstrdup_trimnl(buf, GFP_KERNEL);
->  
-> -	if (sscanf(buf, "%u:%u", &maj, &min) != 2)
-> -		goto out;
-> +	if (name == NULL)
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-What about "if (!name)"?
+------------------
 
-> +		return -ENOMEM;
->  
-> -	res = MKDEV(maj,min);
-> -	if (maj != MAJOR(res) || min != MINOR(res))
-> -		goto out;
-> +	res = name_to_dev_t(name);
->  
-> -	lock_system_sleep();
-> -	swsusp_resume_device = res;
-> -	unlock_system_sleep();
-> -	pr_info("PM: Starting manual resume from disk\n");
-> -	noresume = 0;
-> -	software_resume();
-> -	ret = n;
-> - out:
-> -	return ret;
-> +	if (res != 0) {
+From: Helge Deller <deller@gmx.de>
 
-What about "if (res)"?
+commit 57737c49dd72c96cfbcd4f66559f3ffc399aeb4f upstream.
 
-> +		lock_system_sleep();
-> +		swsusp_resume_device = res;
-> +		unlock_system_sleep();
-> +		pr_info("PM: Starting manual resume from disk\n");
-> +		noresume = 0;
-> +		software_resume();
-> +	} else {
-> +		n = -EINVAL;
-> +	}
-> +
-> +	kfree(name);
-> +	return n;
->  }
->  
->  power_attr(resume);
-> 
+This commit:
+f8dae00684d678afa13041ef170cecfd1297ed40: parisc: Ensure full cache coherency for kmap/kunmap
+caused negative caching side-effects, e.g. hanging processes with expect and
+too many inequivalent alias messages from flush_dcache_page() on Debian 5 systems.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This patch now partly reverts it and has been in production use on our debian buildd
+makeservers since a week without any major problems.
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/parisc/include/asm/cacheflush.h |    2 --
+ arch/parisc/include/asm/page.h       |    3 ++-
+ arch/parisc/kernel/cache.c           |   14 ++++++++++++++
+ 3 files changed, 16 insertions(+), 3 deletions(-)
+
+--- a/arch/parisc/include/asm/cacheflush.h
++++ b/arch/parisc/include/asm/cacheflush.h
+@@ -132,7 +132,6 @@ void mark_rodata_ro(void);
+ static inline void *kmap(struct page *page)
+ {
+ 	might_sleep();
+-	flush_dcache_page(page);
+ 	return page_address(page);
+ }
+ 
+@@ -144,7 +143,6 @@ static inline void kunmap(struct page *p
+ static inline void *kmap_atomic(struct page *page)
+ {
+ 	pagefault_disable();
+-	flush_dcache_page(page);
+ 	return page_address(page);
+ }
+ 
+--- a/arch/parisc/include/asm/page.h
++++ b/arch/parisc/include/asm/page.h
+@@ -29,7 +29,8 @@ struct page;
+ void clear_page_asm(void *page);
+ void copy_page_asm(void *to, void *from);
+ #define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
+-#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
++void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++			struct page *pg);
+ 
+ /* #define CONFIG_PARISC_TMPALIAS */
+ 
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -388,6 +388,20 @@ void flush_kernel_dcache_page_addr(void
+ }
+ EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
+ 
++void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++	struct page *pg)
++{
++       /* Copy using kernel mapping.  No coherency is needed (all in
++	  kunmap) for the `to' page.  However, the `from' page needs to
++	  be flushed through a mapping equivalent to the user mapping
++	  before it can be accessed through the kernel mapping. */
++	preempt_disable();
++	flush_dcache_page_asm(__pa(vfrom), vaddr);
++	preempt_enable();
++	copy_page_asm(vto, vfrom);
++}
++EXPORT_SYMBOL(copy_user_page);
++
+ void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
+ {
+ 	unsigned long flags;
+
+
