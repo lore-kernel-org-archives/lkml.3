@@ -1,156 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771AbaBDPZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:25:56 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:43885 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264AbaBDPYO (ORCPT
+	id S1754073AbaBDP11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:27:27 -0500
+Received: from relay.parallels.com ([195.214.232.42]:44946 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931AbaBDP1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:24:14 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        devicetree@vger.kernel.org
-Subject: [PATCH v5 05/11] ARM: shmobile: r7s72100 dtsi: Add RSPI nodes
-Date: Tue,  4 Feb 2014 16:23:59 +0100
-Message-Id: <1391527445-14881-6-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
-References: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
+	Tue, 4 Feb 2014 10:27:23 -0500
+Message-ID: <52F106D7.3060802@parallels.com>
+Date: Tue, 4 Feb 2014 19:27:19 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <penberg@kernel.org>,
+        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
+References: <cover.1391356789.git.vdavydov@parallels.com> <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com> <20140204145210.GH4890@dhcp22.suse.cz> <52F1004B.90307@parallels.com> <20140204151145.GI4890@dhcp22.suse.cz>
+In-Reply-To: <20140204151145.GI4890@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+On 02/04/2014 07:11 PM, Michal Hocko wrote:
+> On Tue 04-02-14 18:59:23, Vladimir Davydov wrote:
+>> On 02/04/2014 06:52 PM, Michal Hocko wrote:
+>>> On Sun 02-02-14 20:33:48, Vladimir Davydov wrote:
+>>>> Suppose we are creating memcg cache A that could be merged with cache B
+>>>> of the same memcg. Since any memcg cache has the same parameters as its
+>>>> parent cache, parent caches PA and PB of memcg caches A and B must be
+>>>> mergeable too. That means PA was merged with PB on creation or vice
+>>>> versa, i.e. PA = PB. From that it follows that A = B, and we couldn't
+>>>> even try to create cache B, because it already exists - a contradiction.
+>>> I cannot tell I understand the above but I am totally not sure about the
+>>> statement bellow.
+>>>
+>>>> So let's remove unused code responsible for merging memcg caches.
+>>> How come the code was unused? find_mergeable called cache_match_memcg...
+>> Oh, sorry for misleading comment. I mean the code handling merging of
+>> per-memcg caches is useless, AFAIU: if we find an alias for a per-memcg
+>> cache on kmem_cache_create_memcg(), the parent of the found alias must
+>> be the same as the parent_cache passed to kmem_cache_create_memcg(), but
+>> if it were so, we would never proceed to the memcg cache creation,
+>> because the cache we want to create already exists.
+> I am still not sure I understand this correctly. So the outcome of this
+> patch is that compatible caches of different memcgs can be merged
+> together? Sorry if this is a stupid question but I am not that familiar
+> with this area much I am just seeing that cache_match_memcg goes away
+> and my understanding of the function is that it should prevent from
+> different memcg's caches merging.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Cc: devicetree@vger.kernel.org
----
-v5:
-  - Rebased on top of renesas-devel-v3.14-rc1-20140204
-v4:
-  - Switch to named IRQs
-v3:
-  - No changes
-v2:
-  - No changes
+Let me try to explain how I understand it.
 
- arch/arm/boot/dts/r7s72100-genmai-reference.dts |    2 +-
- arch/arm/boot/dts/r7s72100.dtsi                 |   75 +++++++++++++++++++++++
- 2 files changed, 76 insertions(+), 1 deletion(-)
+What is cache merging/aliasing? When we create a cache
+(kmem_cache_create()), we first try to find a compatible cache that
+already exists and can handle requests from the new cache. If it is, we
+do not create any new caches, instead we simply increment the old cache
+refcount and return it.
 
-diff --git a/arch/arm/boot/dts/r7s72100-genmai-reference.dts b/arch/arm/boot/dts/r7s72100-genmai-reference.dts
-index da19c70ed82b..0849017e9d2f 100644
---- a/arch/arm/boot/dts/r7s72100-genmai-reference.dts
-+++ b/arch/arm/boot/dts/r7s72100-genmai-reference.dts
-@@ -9,7 +9,7 @@
-  */
- 
- /dts-v1/;
--/include/ "r7s72100.dtsi"
-+#include "r7s72100.dtsi"
- 
- / {
- 	model = "Genmai";
-diff --git a/arch/arm/boot/dts/r7s72100.dtsi b/arch/arm/boot/dts/r7s72100.dtsi
-index 46b82aa7dc4e..9be67a16fc6f 100644
---- a/arch/arm/boot/dts/r7s72100.dtsi
-+++ b/arch/arm/boot/dts/r7s72100.dtsi
-@@ -8,12 +8,22 @@
-  * kind, whether express or implied.
-  */
- 
-+#include <dt-bindings/interrupt-controller/irq.h>
-+
- / {
- 	compatible = "renesas,r7s72100";
- 	interrupt-parent = <&gic>;
- 	#address-cells = <1>;
- 	#size-cells = <1>;
- 
-+	aliases {
-+		spi0 = &spi0;
-+		spi1 = &spi1;
-+		spi2 = &spi2;
-+		spi3 = &spi3;
-+		spi4 = &spi4;
-+	};
-+
- 	cpus {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
-@@ -33,4 +43,69 @@
- 		reg = <0xe8201000 0x1000>,
- 			<0xe8202000 0x1000>;
- 	};
-+
-+	spi0: spi@e800c800 {
-+		compatible = "renesas,rspi-r7s72100", "renesas,rspi-rz";
-+		reg = <0xe800c800 0x24>;
-+		interrupts = <0 238 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 239 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 240 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-names = "error", "rx", "tx";
-+		num-cs = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi1: spi@e800d000 {
-+		compatible = "renesas,rspi-r7s72100", "renesas,rspi-rz";
-+		reg = <0xe800d000 0x24>;
-+		interrupts = <0 241 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 242 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 243 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-names = "error", "rx", "tx";
-+		num-cs = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi2: spi@e800d800 {
-+		compatible = "renesas,rspi-r7s72100", "renesas,rspi-rz";
-+		reg = <0xe800d800 0x24>;
-+		interrupts = <0 244 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 245 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 246 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-names = "error", "rx", "tx";
-+		num-cs = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi3: spi@e800e000 {
-+		compatible = "renesas,rspi-r7s72100", "renesas,rspi-rz";
-+		reg = <0xe800e000 0x24>;
-+		interrupts = <0 247 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 248 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 249 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-names = "error", "rx", "tx";
-+		num-cs = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi4: spi@e800e800 {
-+		compatible = "renesas,rspi-r7s72100", "renesas,rspi-rz";
-+		reg = <0xe800e800 0x24>;
-+		interrupts = <0 250 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 251 IRQ_TYPE_LEVEL_HIGH>,
-+			     <0 252 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-names = "error", "rx", "tx";
-+		num-cs = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
- };
--- 
-1.7.9.5
+What about memcgs? Currently, it operates in the same way, i.e. on memcg
+cache creation we also try to find a compatible cache of the same memcg
+first. But if there were such a cache, they parents would have been
+merged (i.e. it would be the same cache). That means we would not even
+get to this memcg cache creation, because it already exists. That's why
+the code handling memcg caches merging seems pointless to me.
 
+What does this patch change? Actually, it introduces no functional
+changes - it only remove the code trying to find an alias for a memcg
+cache, because it will fail anyway. So this is rather a cleanup.
+
+Thanks.
