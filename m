@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935663AbaBDWKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:10:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57876 "EHLO
+	id S934068AbaBDVI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:08:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56687 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934289AbaBDWKD (ORCPT
+	with ESMTP id S933482AbaBDVIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:10:03 -0500
-Date: Tue, 4 Feb 2014 14:11:09 -0800
+	Tue, 4 Feb 2014 16:08:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
-Message-ID: <20140204221109.GA906@kroah.com>
-References: <20140204210055.992134150@linuxfoundation.org>
- <20140204215221.GA2127@bender.morinfr.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        jidanni@jidanni.org, Ben Hutchings <ben@decadent.org.uk>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.12 062/133] xhci: Avoid infinite loop when sg urb requires too many trbs
+Date: Tue,  4 Feb 2014 13:07:43 -0800
+Message-Id: <20140204210738.782301870@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
+References: <20140204210737.008598235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204215221.GA2127@bender.morinfr.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:52:21PM +0100, Guillaume Morin wrote:
-> On 04 Feb 13:00, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.4.79 release.
-> > There are 37 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > (snip)
-> > Borislav Petkov <bp@alien8.de>
-> >     rtc-cmos: Add an alarm disable quirk
-> 
-> This is just one of the 3 patches posted by John Stultz on
-> http://git.linaro.org/people/john.stultz/linux.git/shortlog/refs/heads/stable/3.4/timefix
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I have no idea what that tree is, nor what I am supposed to do with it.
+------------------
 
-> The other 2 are backports of 6fdda9a9c5db367130cf32df5d6618d08b89f46a
-> (timekeeping: Avoid possible deadlock from clock_was_set_delayed) and
-> ec145babe754f9ea1079034a108104b6001e001c (timekeeping: fix 32-bit
-> overflow in get_monotonic_boottime)
-> 
-> Could you explain why there were not included?
+From: Ben Hutchings <ben@decadent.org.uk>
 
-Can you explain why I would include them?
+commit d6c9ea9069af684358efedcaf2f2f687f51c58ee upstream.
 
-> Are you simply planning to include these in 3.4.80?
+Currently prepare_ring() returns -ENOMEM if the urb won't fit into a
+single ring segment.  usb_sg_wait() treats this error as a temporary
+condition and will keep retrying until something else goes wrong.
 
-I have no idea what people send me in the future...
+The number of retries should be limited in usb_sg_wait(), but also
+prepare_ring() should not return an error code that suggests it might
+be worth retrying.  Change it to -EINVAL.
 
-> Sorry if this was discussed somewhere but the original thread does not
-> say when/if they are going to be included in 3.4.
+Reported-by: jidanni@jidanni.org
+References: http://bugs.debian.org/733907
+Fixes: 35773dac5f86 ('usb: xhci: Link TRB must not occur within a USB payload burst')
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-What original thread?
+---
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-confused,
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2964,7 +2964,7 @@ static int prepare_ring(struct xhci_hcd
+ 			if (num_trbs >= TRBS_PER_SEGMENT) {
+ 				xhci_err(xhci, "Too many fragments %d, max %d\n",
+ 						num_trbs, TRBS_PER_SEGMENT - 1);
+-				return -ENOMEM;
++				return -EINVAL;
+ 			}
+ 
+ 			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
 
-greg k-h
+
