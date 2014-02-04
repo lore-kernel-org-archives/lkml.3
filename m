@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935689AbaBDWLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:11:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56758 "EHLO
+	id S935674AbaBDWLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:11:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934048AbaBDVIx (ORCPT
+	with ESMTP id S934050AbaBDVIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:53 -0500
+	Tue, 4 Feb 2014 16:08:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lior Amsalem <alior@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Simon Guinot <simon.guinot@sequanux.org>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 087/133] ata: sata_mv: fix disk hotplug for Armada 370/XP SoCs
-Date: Tue,  4 Feb 2014 13:08:08 -0800
-Message-Id: <20140204210739.488462475@linuxfoundation.org>
+        Lior Amsalem <alior@marvell.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 088/133] ARM: mvebu: update the SATA compatible string for Armada 370/XP
+Date: Tue,  4 Feb 2014 13:08:09 -0800
+Message-Id: <20140204210739.516350139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -34,95 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lior Amsalem <alior@marvell.com>
+From: Simon Guinot <simon.guinot@sequanux.org>
 
-commit 9013d64e661fc2a37a1742670202171c27fef4b5 upstream.
+commit a96cc303e42ad7830dde929aad0046e448a05505 upstream.
 
-On Armada 370/XP SoCs, once a disk is removed from a SATA port, then the
-re-plug events are not detected by the sata_mv driver. This patch fixes
-the issue by updating the PHY speed in the LP_PHY_CTL register (0x58)
-according to the SControl speed.
+This patch updates the Armada 370/XP SATA node with the new compatible
+string "marvell,armada-370-sata".
 
-Note that this fix is only applied if the compatible string
-"marvell,armada-370-sata" is found in the SATA DT node.
-
-Fixes: 9ae6f740b49f ("arm: mach-mvebu: add support for Armada 370 and Armada XP with DT")
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Nadav Haklai <nadavh@marvell.com>
 Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: Gregory Clement <gregory.clement@free-electrons.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Lior Amsalem <alior@marvell.com>
 Acked-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_mv.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ arch/arm/boot/dts/armada-370-xp.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/sata_mv.c
-+++ b/drivers/ata/sata_mv.c
-@@ -304,6 +304,7 @@ enum {
- 	MV5_LTMODE		= 0x30,
- 	MV5_PHY_CTL		= 0x0C,
- 	SATA_IFCFG		= 0x050,
-+	LP_PHY_CTL		= 0x058,
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -143,7 +143,7 @@
+ 			};
  
- 	MV_M2_PREAMP_MASK	= 0x7e0,
- 
-@@ -431,6 +432,7 @@ enum {
- 	MV_HP_CUT_THROUGH	= (1 << 10),	/* can use EDMA cut-through */
- 	MV_HP_FLAG_SOC		= (1 << 11),	/* SystemOnChip, no PCI */
- 	MV_HP_QUIRK_LED_BLINK_EN = (1 << 12),	/* is led blinking enabled? */
-+	MV_HP_FIX_LP_PHY_CTL	= (1 << 13),	/* fix speed in LP_PHY_CTL ? */
- 
- 	/* Port private flags (pp_flags) */
- 	MV_PP_FLAG_EDMA_EN	= (1 << 0),	/* is EDMA engine enabled? */
-@@ -1358,6 +1360,7 @@ static int mv_scr_write(struct ata_link
- 
- 	if (ofs != 0xffffffffU) {
- 		void __iomem *addr = mv_ap_base(link->ap) + ofs;
-+		struct mv_host_priv *hpriv = link->ap->host->private_data;
- 		if (sc_reg_in == SCR_CONTROL) {
- 			/*
- 			 * Workaround for 88SX60x1 FEr SATA#26:
-@@ -1374,6 +1377,18 @@ static int mv_scr_write(struct ata_link
- 			 */
- 			if ((val & 0xf) == 1 || (readl(addr) & 0xf) == 1)
- 				val |= 0xf000;
-+
-+			if (hpriv->hp_flags & MV_HP_FIX_LP_PHY_CTL) {
-+				void __iomem *lp_phy_addr =
-+					mv_ap_base(link->ap) + LP_PHY_CTL;
-+				/*
-+				 * Set PHY speed according to SControl speed.
-+				 */
-+				if ((val & 0xf0) == 0x10)
-+					writelfl(0x7, lp_phy_addr);
-+				else
-+					writelfl(0x227, lp_phy_addr);
-+			}
- 		}
- 		writelfl(val, addr);
- 		return 0;
-@@ -4110,6 +4125,15 @@ static int mv_platform_probe(struct plat
- 	if (rc)
- 		goto err;
- 
-+	/*
-+	 * To allow disk hotplug on Armada 370/XP SoCs, the PHY speed must be
-+	 * updated in the LP_PHY_CTL register.
-+	 */
-+	if (pdev->dev.of_node &&
-+		of_device_is_compatible(pdev->dev.of_node,
-+					"marvell,armada-370-sata"))
-+		hpriv->hp_flags |= MV_HP_FIX_LP_PHY_CTL;
-+
- 	/* initialize adapter */
- 	rc = mv_init_host(host);
- 	if (rc)
+ 			sata@a0000 {
+-				compatible = "marvell,orion-sata";
++				compatible = "marvell,armada-370-sata";
+ 				reg = <0xa0000 0x5000>;
+ 				interrupts = <55>;
+ 				clocks = <&gateclk 15>, <&gateclk 30>;
 
 
