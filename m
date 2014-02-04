@@ -1,161 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaBDMmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:42:00 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45830 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaBDMl6 (ORCPT
+	id S1754493AbaBDMmx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:42:53 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59202 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753738AbaBDMmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:41:58 -0500
-From: Grant Likely <grant.likely@linaro.org>
-To: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@linaro.org>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: [PATCH] kbuild: dtbs_install: new make target
-Date: Tue,  4 Feb 2014 12:41:40 +0000
-Message-Id: <1391517700-13103-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <20140110182923.GM19878@titan.lakedaemon.net>
-References: <20140110182923.GM19878@titan.lakedaemon.net>
+	Tue, 4 Feb 2014 07:42:51 -0500
+Message-ID: <52F0E043.3090205@hurleysoftware.com>
+Date: Tue, 04 Feb 2014 07:42:43 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Pavel Roskin <proski@gnu.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: serial8250: bogus low_latency destabilizes kernel, need sanity
+ check
+References: <20140113193547.47b7a646@IRBT4585>	<20140114120811.648571ea@alan.etchedpixels.co.uk>	<20140114112457.q54ujbz9c444s040-cebfxv@webmail.spamcop.net>	<52ED0E0F.5050300@hurleysoftware.com> <20140203111040.4cafe560@alan.etchedpixels.co.uk>
+In-Reply-To: <20140203111040.4cafe560@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Cooper <jason@lakedaemon.net>
+On 02/03/2014 06:10 AM, One Thousand Gnomes wrote:
+> On Sat, 01 Feb 2014 10:09:03 -0500
+> Peter Hurley <peter@hurleysoftware.com> wrote:
+>
+>> On 01/14/2014 11:24 AM, Pavel Roskin wrote:
+>>> Hi Alan,
+>>>
+>>> Quoting One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>:
+>>>
+>>>>> Maybe we should unset the low_latency flag as soon as DMA fails?  There
+>>>>> are two flags, one is state->uart_port->flags and the other is
+>>>>> port->low_latency.  I guess we need to unset both.
+>>>>
+>>>> Well low latency and DMA are pretty much exclusive in the real world so
+>>>> probably DMA ports shouldn't allow low_latency to be set at all in DMA
+>>>> mode.
+>>>
+>>> That's a useful insight.  I assumed exactly the opposite.
+>>
+>> The meaning of low_latency has migrated since 2.6.28
+>
+> Not really. The meaning of low latency was always "get the turn around
+> time for command/response protocols down as low as possible". DMA driven
+> serial usually reports a transfer completion on a watermark or a timeout,
+> so tends to work very badly within the Linux definition of 'low latency'
+> for tty.
+>
+> What it does has certainly changed but thats implementation detail.
 
-Unlike other build products in the Linux kernel, there is no 'make
-*install' mechanism to put devicetree blobs in a standard place.
+I meant the meaning as interpreted by the kernel, not the ideal meaning nor
+its original intent.
 
-This commit adds a new 'dtbs_install' make target which copies all of
-the dtbs into the INSTALL_DTBS_PATH directory. INSTALL_DTBS_PATH can be
-set before calling make to change the default install directory. If not
-set then it defaults to:
+>> Perhaps we should unconditionally unset low_latency (or remove it entirely).
+>> Real low latency can be addressed by using the -RT kernel.
+>
+> Just saying "use -RT" would be a regression and actually hurt quite a few
+> annoying "simple protocol" using tools for all sorts of control systems.
+> We are talking about milliseconds not microseconds here.
 
-	$INSTALL_PATH/dtbs/$KERNELRELEASE.
+Ok, fair enough.
 
-This is done to keep dtbs from different kernel versions separate until
-things have settled down.  Once the dtbs are stable, and not so strongly
-linked to the kernel version, the devicetree files will most likely move
-to their own repo.  Users will need to upgrade install scripts at that
-time.
+[Although my gut feeling is that nominal overhead is more like sub 10 usecs,
+  and only when the scheduler is I/O-bound does worst case get near 1 msec.]
 
-v7: (reworked by Grant Likely)
-- Moved rules from arch/arm/Makefile to arch/arm/boot/dts/Makefile so
-  that each dtb install could have a separate target and be reported as
-  part of the make output.
-- Fixed dependency problem to ensure $KERNELRELEASE is calculated before
-  attempting to install
-- Removed option to call external script. Copying the files should be
-  sufficient and a build system can post-process the install directory.
-  Despite the fact an external script is used for installing the kernel,
-  I don't think that is a pattern that should be encouraged. I would
-  rather see buildroot type tools post process the install directory to
-  rename or move dtb files after installing to a staging directory.
-  - Plus it is easy to add a hook after the fact without blocking the
-    rest of this feature.
-- Move the helper targets into scripts/Makefile.lib with the rest of the
-  common dtb rules
+> The expected behaviour in low_latency is probably best described as
+>
+> data arrives
+> processed
+> wakeup
 
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <robh+dt@kernel.org>
----
- Makefile                   |  7 +++++++
- arch/arm/Makefile          |  7 ++++---
- arch/arm/boot/dts/Makefile |  4 +++-
- scripts/Makefile.lib       | 12 ++++++++++++
- 4 files changed, 26 insertions(+), 4 deletions(-)
+low_latency cannot guarantee that data will be processed, only that
+it will not wait.
 
-diff --git a/Makefile b/Makefile
-index 606ef7c4a544..90556da6959d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -727,6 +727,13 @@ export KBUILD_IMAGE ?= vmlinux
- export	INSTALL_PATH ?= /boot
- 
- #
-+# INSTALL_DTBS_PATH specifies a prefix for relocations required by build roots.
-+# Like INSTALL_MOD_PATH, it isn't defined in the Makefile, but can be passed as
-+# an argument if needed. Otherwise it defaults to the kernel install path
-+#
-+export INSTALL_DTBS_PATH ?= $(INSTALL_PATH)/dtbs/$(KERNELRELEASE)
-+
-+#
- # INSTALL_MOD_PATH specifies a prefix to MODLIB for module directory
- # relocations required by build roots.  This is not defined in the
- # makefile but the argument can be passed to make if needed.
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 08a9ef58d9c3..fddf4beaee45 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -310,9 +310,9 @@ $(INSTALL_TARGETS):
- %.dtb: | scripts
- 	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
- 
--PHONY += dtbs
--dtbs: scripts
--	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) dtbs
-+PHONY += dtbs dtbs_install
-+dtbs dtbs_install: prepare scripts
-+	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
- 
- # We use MRPROPER_FILES and CLEAN_FILES now
- archclean:
-@@ -331,6 +331,7 @@ define archhelp
-   echo  '  bootpImage    - Combined zImage and initial RAM disk'
-   echo  '                  (supply initrd image via make variable INITRD=<path>)'
-   echo  '* dtbs          - Build device tree blobs for enabled boards'
-+  echo  '  dtbs_install  - Install dtbs to $(INSTALL_DTBS_PATH)'
-   echo  '  install       - Install uncompressed kernel'
-   echo  '  zinstall      - Install compressed kernel'
-   echo  '  uinstall      - Install U-Boot wrapped compressed kernel'
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b9d6a8b485e0..649c8e345ac5 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -321,7 +321,7 @@ dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
- 	zynq-zc706.dtb \
- 	zynq-zed.dtb
- 
--targets += dtbs
-+targets += dtbs dtbs_install
- targets += $(dtb-y)
- endif
- 
-@@ -331,3 +331,5 @@ dtbs: $(addprefix $(obj)/, $(dtb-y))
- 	$(Q)rm -f $(obj)/../*.dtb
- 
- clean-files := *.dtb
-+
-+dtbs_install: $(addsuffix _dtbinst_, $(dtb-y))
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 49392ecbef17..d0c17a55a2f5 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -273,6 +273,18 @@ $(obj)/%.dtb: $(src)/%.dts FORCE
- 
- dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
- 
-+# Helper targets for Installing DTBs into the boot directory
-+quiet_cmd_dtb_install =	INSTALL $<
-+      cmd_dtb_install =	cp $< $(2)
-+
-+_dtbinst_pre_:
-+	$(Q)if [ -d $(INSTALL_DTBS_PATH).old ]; then rm -rf $(INSTALL_DTBS_PATH).old; fi
-+	$(Q)if [ -d $(INSTALL_DTBS_PATH) ]; then mv $(INSTALL_DTBS_PATH) $(INSTALL_DTBS_PATH).old; fi
-+	$(Q)mkdir -p $(INSTALL_DTBS_PATH)
-+
-+%.dtb_dtbinst_: $(obj)/%.dtb _dtbinst_pre_
-+	$(call cmd,dtb_install,$(INSTALL_DTBS_PATH))
-+
- # Bzip2
- # ---------------------------------------------------------------------------
- 
--- 
-1.8.3.2
+Examples:
+  1) SLIP is changing the mtu size. In this case, data will be dropped
+     because, since the net queue is stopped, no data is taken up but any
+     data passed to the receive_buf() is assumed to have been consumed.
+  2) tty buffers are being flushed. There may or may not be any data to
+     process but there's no way to know without waiting.
+  3) termios is changing/has been changed. Depending on the line
+     discipline, data may or may not be processed until termios changes
+     complete.
+
+etc.
+
+> and to avoid the case of
+>
+> data arrives
+> queued for back end
+> [up to 10mS delay, but typically 1-2mS]
+> processed
+> wakeup
+>
+>
+> which multipled over a 50,000 S record download is a lot of time
+>
+> Everything else is not user visible so can be changed freely to get that
+> assumption to work (including ending up not needing it in the first
+> place).
+>
+> Getting tty to the point everything but N_TTY canonical mode is a fast
+> path would probably eliminate the need nicely - I don't know of any use
+> cases that expect ICANON, ECHO or I*/O* processing for low latency.
+
+Easier said than done.
+
+For example, what happens if termios is changing?
+Presumably, data cannot be processed at that time. So the line discipline
+returns early without having processed the data. [For example, the
+receive_buf() path could use trylocks and abort, rather than waiting.]
+
+But then, what restarts the attempt to process the data and can that wait?
+
+Similarly for throttling. Unthrottling may be in progress; and even though
+in progress, the condition that prompted the unthrottle may no longer be
+true and throttling must be done. Ok, it can't happen right
+now, but then when?
+
+Regards,
+Peter Hurley
+
 
