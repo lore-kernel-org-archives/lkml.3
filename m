@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaBDGCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 01:02:11 -0500
-Received: from relmlor3.renesas.com ([210.160.252.173]:42024 "EHLO
-	relmlie2.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750754AbaBDGCD (ORCPT
+	id S1752394AbaBDGDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 01:03:36 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:38258 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaBDGDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 01:02:03 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Feb 2014 01:02:02 EST
-X-IronPort-AV: E=Sophos;i="4.95,777,1384268400"; 
-   d="scan'";a="153517693"
-Message-ID: <52F08118.2080904@renesas.com>
-Date: Tue, 4 Feb 2014 14:56:40 +0900
-From: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Mark Brown <broonie@kernel.org>, <linux-spi@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] spi: rspi: fix build error when CONFIG_OF is not set
-References: <52EEF452.4060205@renesas.com> <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
-In-Reply-To: <alpine.DEB.2.02.1402030939520.25794@ayla.of.borg>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 4 Feb 2014 01:03:31 -0500
+Message-ID: <1391493806.3692.11.camel@europa>
+Subject: Re: [PATCH] Make math_state_restore() save and restore the
+ interrupt flag
+From: Suresh Siddha <sbsiddha@gmail.com>
+Reply-To: sbsiddha@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nate Eldredge <nate@thatsmathematics.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
+        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
+Date: Mon, 03 Feb 2014 22:03:26 -0800
+In-Reply-To: <CA+55aFyrUTshLPk=21H+6ySOeEVS_zVUAK=2QPrq0aqdQ=3_zg@mail.gmail.com>
+References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
+	 <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
+	 <CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>
+	 <CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
+	 <CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>
+	 <1391325599.6481.5.camel@europa>
+	 <CA+55aFzz8a7K+KSB_TkGb1ih1hAg09-0TQusQgE5vwMJGegHDw@mail.gmail.com>
+	 <1391410583.3801.6.camel@europa>
+	 <CA+55aFyrUTshLPk=21H+6ySOeEVS_zVUAK=2QPrq0aqdQ=3_zg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [211.11.155.148]
-X-ClientProxiedBy: SINPR01CA003.apcprd01.prod.exchangelabs.com
- (10.242.48.13) To HKXPR06MB007.apcprd06.prod.outlook.com (10.242.98.21)
-X-Forefront-PRVS: 01128BA907
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(6049001)(199002)(189002)(479174003)(24454002)(51704005)(164054003)(19580405001)(19580395003)(4396001)(87976001)(83322001)(80316001)(81542001)(74876001)(47776003)(63696002)(51856001)(74706001)(46102001)(85306002)(79102001)(36756003)(33656001)(90146001)(81342001)(93136001)(85852003)(65956001)(65806001)(86362001)(80022001)(56816005)(93516002)(47736001)(64126003)(80976001)(42186004)(76482001)(50986001)(54356001)(59896001)(77982001)(54316002)(59766001)(94946001)(56776001)(77096001)(53806001)(74662001)(92726001)(47976001)(76796001)(74366001)(83072002)(94316002)(92566001)(23756003)(66066001)(49866001)(74502001)(83506001)(69226001)(47446002)(81816001)(81686001)(76786001)(50466002)(31966008);DIR:OUT;SFP:1101;SCL:1;SRVR:HKXPR06MB007;H:[10.161.41.115];CLIP:211.11.155.148;FPR:EEE2704D.2E026DCA.41C5A67B.84E5D2E1.20288;InfoNoRecordsA:1;MX:1;LANG:en;
-X-OriginatorOrg: renesas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert-san,
+On Mon, 2014-02-03 at 10:20 -0800, Linus Torvalds wrote:
+> Thinking about it some more, this patch is *almost* not needed at all.
+> 
+> I'm wondering if you should just change the first patch to just always
+> initialize the fpu when it is allocated, and at execve() time (ie in
+> flush_thread()).
+> 
 
-(2014/02/03 17:47), Geert Uytterhoeven wrote:
-> 	Hi Shimoda-san,
-> 
-> On Mon, 3 Feb 2014, Shimoda, Yoshihiro wrote:
->> This patch fixes an issue that the following build error happens when
->> the CONFIG_OF is not set:
->>
->> drivers/spi/spi-rspi.c: In function 'rspi_probe':
->> drivers/spi/spi-rspi.c:1203:26: error: 'rspi_of_match' undeclared (first use in this function)
->>
->> Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
->> ---
->>  This patch is based on the latest origin/topic/rspi branch in the spi.git.
->>
->>  drivers/spi/spi-rspi.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
->> index 34ad4bc..e5cfc3d 100644
->> --- a/drivers/spi/spi-rspi.c
->> +++ b/drivers/spi/spi-rspi.c
->> @@ -1164,6 +1164,7 @@ static int rspi_parse_dt(struct device *dev, struct spi_master *master)
->>  	return 0;
->>  }
->>  #else
->> +#define rspi_of_match	NULL
->>  static inline int rspi_parse_dt(struct device *dev, struct spi_master *master)
->>  {
->>  	return -EINVAL;
->> -- 
->> 1.7.1
-> 
-> Thanks, obviously I missed that of_match_device() still uses the ID table
-> parameter if CONFIG_OF=n :-(
-> 
-> Below I have two alternative solutions:
->   1. Uses rspi_of_match() to nullify the ID table pointer, like is done in
->      the platform_driver structure,
->   2. Fixes it at the OF subsystem level, by nullifying the ID table pointer
->      inside of_match_device().
-> 
-> If 2 is accepted, drivers don't have to care about this anymore.
-> 
-> What do you think?
+We already do this for eager-fpu case, in eager_fpu_init() during boot
+and in drop_init_fpu() during flush_thread().
 
-Thank you for the reply.
-I think the 2nd one is a nice idea.
-If I applied it without my patch, the build error disappeared.
+> If we do that, then this:
+> 
+> +       if (!tsk_used_math(tsk))
+> +               init_fpu(tsk);
+> 
+> can be dropped entirely from math_state_restore(). 
 
-Best regards,
-Yoshihiro Shimoda
+yeah, probably for eager-fpu, but:
+
+> And quite frankly,
+> at that point, I think all the changes to __kernel_fpu_end() can go
+> away, because at that point math_state_restore() really does the right
+> thing - all the allocations are gone, and all the async task state
+> games are gone, only the "restore state" remains.
+> 
+> Hmm? So the only thing needed would be to add that "init_fpu()" to the
+> initial bootmem allocation path and to change flush_thread() (it
+> currently does "drop_init_fpu()", let's just make it initialize the
+> FPU state using fpu_finit()), and then we could remove the whole
+> "used_math" bit entirely, and just say that the FPU is always
+> initialized.
+> 
+> What do you guys think?
+
+No. as I mentioned in the changelog, there is one more path which does
+drop_fpu() and we still depend on this used_math bit for eager-fpu.
+
+in signal restore path for 32-bit app, where we copy the sig-context
+state from the user stack to the kernel manually (because of legacy
+reasons where fsave state is followed by fxsave state etc in the 32-bit
+signal handler context and we have to go through convert_to_fxsr() etc).
+
+from __restore_xstate_sig() :
+
+                /*
+                 * Drop the current fpu which clears used_math(). This ensures
+                 * that any context-switch during the copy of the new state,
+                 * avoids the intermediate state from getting restored/saved.
+                 * Thus avoiding the new restored state from getting corrupted.
+                 * We will be ready to restore/save the state only after
+                 * set_used_math() is again set.
+                 */
+                drop_fpu(tsk);
+
+
+thanks,
+suresh
+
