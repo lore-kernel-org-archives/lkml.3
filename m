@@ -1,121 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaBDKSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:18:08 -0500
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:3653 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869AbaBDKR4 (ORCPT
+	id S1754207AbaBDKSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:18:23 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45298 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869AbaBDKSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:17:56 -0500
-Message-ID: <52F0BD4B.2020701@xs4all.nl>
-Date: Tue, 04 Feb 2014 11:13:31 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Tue, 4 Feb 2014 05:18:16 -0500
+Date: Tue, 4 Feb 2014 11:18:02 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
+        galak@kernel.crashing.org, paul.gortmaker@windriver.com,
+        paulus@samba.org, mingo@kernel.org, mikey@neuling.org,
+        shangw@linux.vnet.ibm.com, rafael.j.wysocki@intel.com, agraf@suse.de,
+        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
+        john.stultz@linaro.org, anton@samba.org, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V2 2/2] tick/cpuidle: Initialize hrtimer mode of
+ broadcast
+In-Reply-To: <20140124065820.17564.83076.stgit@preeti>
+Message-ID: <alpine.DEB.2.02.1402041101330.24986@ionos.tec.linutronix.de>
+References: <20140124065501.17564.39363.stgit@preeti.in.ibm.com> <20140124065820.17564.83076.stgit@preeti>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Amit Grover <amit.grover@samsung.com>
-CC: linux-media@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kyungmin.park@samsung.com, k.debski@samsung.com,
-        prabhakar.csengg@gmail.com, s.nawrocki@samsung.com,
-        hans.verkuil@cisco.com, swaminath.p@samsung.com, jtp.park@samsung.com,
-        Rrob@landley.net, andrew.smirnov@gmail.com, anatol.pomozov@gmail.com,
-        jmccrohan@gmail.com, joe@perches.com, awalls@md.metrocast.net,
-        arun.kk@samsung.com, austin.lobo@samsung.com
-Subject: Re: [PATCH 1/2] [media] v4l2: Add settings for Horizontal and Vertical
- MV Search Range
-References: <52E0ED10.2020901@samsung.com> <1391507999-31437-1-git-send-email-amit.grover@samsung.com> <1391507999-31437-2-git-send-email-amit.grover@samsung.com>
-In-Reply-To: <1391507999-31437-2-git-send-email-amit.grover@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+> +++ b/kernel/time/tick-broadcast-hrtimer.c
+> +/*
+> + * This is called from the guts of the broadcast code when the cpu
+> + * which is about to enter idle has the earliest broadcast timer event.
+> + */
+> +static int bc_set_next(ktime_t expires, struct clock_event_device *bc)
+> +{
+> +	ktime_t now, interval;
+> +	/*
+> +	 * We try to cancel the timer first. If the callback is on
+> +	 * flight on some other cpu then we let it handle it. If we
+> +	 * were able to cancel the timer nothing can rearm it as we
+> +	 * own broadcast_lock.
+> +	 *
+> +	 * However if we are called from the hrtimer interrupt handler
+> +	 * itself, reprogram it.
+> +	 */
+> +	if (hrtimer_try_to_cancel(&bctimer) >= 0) {
+> +		hrtimer_start(&bctimer, expires, HRTIMER_MODE_ABS_PINNED);
+> +		/* Bind the "device" to the cpu */
+> +		bc->bound_on = smp_processor_id();
+> +	} else if (bc->bound_on == smp_processor_id()) {
 
-Regards,
+This part really wants a proper comment. It took me a while to figure
+out why this is correct and what the call chain is.
 
-	Hans
 
-On 02/04/14 10:59, Amit Grover wrote:
-> Adding V4L2 controls for horizontal and vertical search range in pixels
-> for motion estimation module in video encoder.
-> 
-> Signed-off-by: Swami Nathan <swaminath.p@samsung.com>
-> Signed-off-by: Amit Grover <amit.grover@samsung.com>
-> ---
->  Documentation/DocBook/media/v4l/controls.xml |   20 ++++++++++++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c         |    6 ++++++
->  include/uapi/linux/v4l2-controls.h           |    2 ++
->  3 files changed, 28 insertions(+)
-> 
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index a5a3188..0e1770c 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -2258,6 +2258,26 @@ Applicable to the MPEG1, MPEG2, MPEG4 encoders.</entry>
->  VBV buffer control.</entry>
->  	      </row>
->  
-> +		  <row><entry></entry></row>
-> +	      <row id=""v4l2-mpeg-video-hor-search-range">
-> +		<entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE</constant>&nbsp;</entry>
-> +		<entry>integer</entry>
-> +	      </row>
-> +		<row><entry spanname="descr">Horizontal search range defines maximum horizontal search area in pixels
-> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
-> +horizontal search range for motion estimation module in video encoder.</entry>
-> +	      </row>
-> +
-> +		 <row><entry></entry></row>
-> +	      <row id="v4l2-mpeg-video-vert-search-range">
-> +		<entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE</constant>&nbsp;</entry>
-> +		<entry>integer</entry>
-> +	      </row>
-> +		<row><entry spanname="descr">Vertical search range defines maximum vertical search area in pixels
-> +to search and match for the present Macroblock (MB) in the reference picture. This V4L2 control macro is used to set
-> +vertical search range for motion estimation module in video encoder.</entry>
-> +	      </row>
-> +
->  	      <row><entry></entry></row>
->  	      <row>
->  		<entry spanname="id"><constant>V4L2_CID_MPEG_VIDEO_H264_CPB_SIZE</constant>&nbsp;</entry>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index 6ff002b..e9e12c4 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -735,6 +735,8 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_MPEG_VIDEO_DEC_PTS:			return "Video Decoder PTS";
->  	case V4L2_CID_MPEG_VIDEO_DEC_FRAME:			return "Video Decoder Frame Count";
->  	case V4L2_CID_MPEG_VIDEO_VBV_DELAY:			return "Initial Delay for VBV Control";
-> +	case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:		return "Horizontal MV Search Range";
-> +	case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:		return "Vertical MV Search Range";
->  	case V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER:		return "Repeat Sequence Header";
->  
->  	/* VPX controls */
-> @@ -910,6 +912,10 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
->  		*min = 0;
->  		*max = *step = 1;
->  		break;
-> +	case V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE:
-> +	case V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE:
-> +		*type = V4L2_CTRL_TYPE_INTEGER;
-> +		break;
->  	case V4L2_CID_PAN_RESET:
->  	case V4L2_CID_TILT_RESET:
->  	case V4L2_CID_FLASH_STROBE:
-> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-> index 2cbe605..cda6fa0 100644
-> --- a/include/uapi/linux/v4l2-controls.h
-> +++ b/include/uapi/linux/v4l2-controls.h
-> @@ -376,6 +376,8 @@ enum v4l2_mpeg_video_multi_slice_mode {
->  #define V4L2_CID_MPEG_VIDEO_DEC_FRAME			(V4L2_CID_MPEG_BASE+224)
->  #define V4L2_CID_MPEG_VIDEO_VBV_DELAY			(V4L2_CID_MPEG_BASE+225)
->  #define V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER		(V4L2_CID_MPEG_BASE+226)
-> +#define V4L2_CID_MPEG_VIDEO_MV_H_SEARCH_RANGE		(V4L2_CID_MPEG_BASE+227)
-> +#define V4L2_CID_MPEG_VIDEO_MV_V_SEARCH_RANGE		(V4L2_CID_MPEG_BASE+228)
->  
->  #define V4L2_CID_MPEG_VIDEO_H263_I_FRAME_QP		(V4L2_CID_MPEG_BASE+300)
->  #define V4L2_CID_MPEG_VIDEO_H263_P_FRAME_QP		(V4L2_CID_MPEG_BASE+301)
-> 
+> +		now = ktime_get();
+> +		interval = ktime_sub(expires, now);
+> +		hrtimer_forward_now(&bctimer, interval);
 
+We are in the event handler called from bc_handler() and expires is
+absolute time. So what's wrong with calling
+hrtimer_set_expires(&bctimer, expires)?
+
+> +static enum hrtimer_restart bc_handler(struct hrtimer *t)
+> +{
+> +	ce_broadcast_hrtimer.event_handler(&ce_broadcast_hrtimer);
+> +	return HRTIMER_RESTART;
+
+We probably want to check whether the timer needs to be restarted at
+all.
+
+	if (ce_broadcast_timer.next_event.tv64 == KTIME_MAX)
+	   return HRTIMER_NORESTART;
+
+	return HRTIMER_RESTART;
+
+Hmm?
+
+Thanks,
+
+	tglx
