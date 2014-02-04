@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbaBDSyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 13:54:09 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:32612 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115AbaBDSyF (ORCPT
+	id S932257AbaBDSyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 13:54:55 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:39087 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932115AbaBDSyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 13:54:05 -0500
-X-IronPort-AV: E=Sophos;i="4.95,781,1384300800"; 
-   d="scan'208";a="97897742"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <xen-devel@lists.xen.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] xen-blkfront: handle backend CLOSED without CLOSING
-Date: Tue, 4 Feb 2014 18:53:56 +0000
-Message-ID: <1391540036-31087-1-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 4 Feb 2014 13:54:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <20140204173733.GI22609@sirena.org.uk>
+References: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
+	<20140204173733.GI22609@sirena.org.uk>
+Date: Tue, 4 Feb 2014 19:54:51 +0100
+X-Google-Sender-Auth: DCpfHIZR6eHtHDSAIRfmCn4yReA
+Message-ID: <CAMuHMdUHP8ptyjXh1n+iucygfAEAZCuwwe1tB1JjrTuGrhD3Pg@mail.gmail.com>
+Subject: Re: [PATCH 00/11] ARM: shmobile: RSPI RZ and QSPI SoC and board integration
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Vrabel <david.vrabel@citrix.com>
+Hi Mark,
 
-Backend drivers shouldn't transistion to CLOSED unless the frontend is
-CLOSED.  If a backend does transition to CLOSED too soon then the
-frontend may not see the CLOSING state and will not properly shutdown.
+On Tue, Feb 4, 2014 at 6:37 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Feb 04, 2014 at 04:23:54PM +0100, Geert Uytterhoeven wrote:
+>>       Hi Simon, Magnus,
+>>
+>> This patch series contains SoC and board integration for
+>>   1. RSPI in the r7s72100 aka RZ/A1H SoC on the Genmai reference board,
+>>   2. QSPI in the r8a7791 aka R-Car M2 SoC on the Koelsch reference board.
+>> It was rebased on top of renesas-devel-v3.14-rc1-20140204.
+>
+> Can you please stop CCing arch/arm only patch serieses like this to the
+> SPI list - they just mean I have to go through patchwork and mark them
+> as not applicable.
 
-So, treat an unexpected backend CLOSED state the same as CLOSING.
+Sorry, you're right. Only a few of them contained SPI-specific code.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: stable@vger.kernel.org
----
-Cc: Jens Axboe <axboe@kernel.dk>
----
- drivers/block/xen-blkfront.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 8dcfb54..0471d63 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1904,13 +1904,16 @@ static void blkback_changed(struct xenbus_device *dev,
- 	case XenbusStateReconfiguring:
- 	case XenbusStateReconfigured:
- 	case XenbusStateUnknown:
--	case XenbusStateClosed:
- 		break;
- 
- 	case XenbusStateConnected:
- 		blkfront_connect(info);
- 		break;
- 
-+	case XenbusStateClosed:
-+		if (dev->state == XenbusStateClosed)
-+			break;
-+		/* Missed the backend's Closing state -- fallthrough */
- 	case XenbusStateClosing:
- 		blkfront_closing(info);
- 		break;
--- 
-1.7.2.5
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
