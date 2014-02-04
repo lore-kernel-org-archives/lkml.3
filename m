@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935222AbaBDWOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:14:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56705 "EHLO
+	id S935400AbaBDWPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:15:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933998AbaBDVIn (ORCPT
+	with ESMTP id S933918AbaBDVIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:08:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Magnus Reftel <magnus.reftel@lockless.no>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 076/133] ASoC: adau1701: Fix ADAU1701_SEROCTL_WORD_LEN_16 constant
-Date: Tue,  4 Feb 2014 13:07:57 -0800
-Message-Id: <20140204210739.181792967@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.12 075/133] mfd: max77686: Fix regmap resource leak on driver remove
+Date: Tue,  4 Feb 2014 13:07:56 -0800
+Message-Id: <20140204210739.150919219@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,32 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit e20970ada3f699c113fe64b04492af083d11a7d8 upstream.
+commit 74142ffc0b52cfe6f9d2f6f34a5f3eedbfe3ce51 upstream.
 
-The driver defines ADAU1701_SEROCTL_WORD_LEN_16 as 0x10 while it should be b10,
-so 0x2. This patch fixes it.
+The regmap used by max77686 MFD driver was not freed with regmap_exit()
+on driver exit. This lead to leak of resources.
 
-Reported-by: Magnus Reftel <magnus.reftel@lockless.no>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Replace regmap_init_i2c() call in driver probe with initialization of
+managed register map so the regmap will be properly freed by the device
+management code.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/adau1701.c |    2 +-
+ drivers/mfd/max77686.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/adau1701.c
-+++ b/sound/soc/codecs/adau1701.c
-@@ -71,7 +71,7 @@
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -103,7 +103,7 @@ static int max77686_i2c_probe(struct i2c
+ 	max77686->irq_gpio = pdata->irq_gpio;
+ 	max77686->irq = i2c->irq;
  
- #define ADAU1701_SEROCTL_WORD_LEN_24	0x0000
- #define ADAU1701_SEROCTL_WORD_LEN_20	0x0001
--#define ADAU1701_SEROCTL_WORD_LEN_16	0x0010
-+#define ADAU1701_SEROCTL_WORD_LEN_16	0x0002
- #define ADAU1701_SEROCTL_WORD_LEN_MASK	0x0003
- 
- #define ADAU1701_AUXNPOW_VBPD		0x40
+-	max77686->regmap = regmap_init_i2c(i2c, &max77686_regmap_config);
++	max77686->regmap = devm_regmap_init_i2c(i2c, &max77686_regmap_config);
+ 	if (IS_ERR(max77686->regmap)) {
+ 		ret = PTR_ERR(max77686->regmap);
+ 		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
 
 
