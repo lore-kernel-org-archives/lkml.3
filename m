@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbaBDTU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:20:26 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:33503 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079AbaBDTUV (ORCPT
+	id S932489AbaBDTVB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:21:01 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35471 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079AbaBDTU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:20:21 -0500
+	Tue, 4 Feb 2014 14:20:57 -0500
+Date: Tue, 4 Feb 2014 19:20:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-mmc@vger.kernel.org
+Message-ID: <20140204192041.GW22609@sirena.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+ <1391529538-21685-11-git-send-email-ulf.hansson@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAHA+R7Omv++NCg=nocVsW+tM=Zv_qCNhX1JjtFTuCzfz9B3Cig@mail.gmail.com>
-References: <CAMuHMdVCeFek2LX0_AnA8zg_yYhXvzw19rH8OsqbWWb-rb9w-A@mail.gmail.com>
-	<CAHA+R7Omv++NCg=nocVsW+tM=Zv_qCNhX1JjtFTuCzfz9B3Cig@mail.gmail.com>
-Date: Tue, 4 Feb 2014 20:20:20 +0100
-X-Google-Sender-Auth: psEAw3wi17gRKPWDp9xywt0svNI
-Message-ID: <CAMuHMdWUR-x=fwG26xg8AsUQwL+FXLaQAnkaWHbrVaep0QzHJQ@mail.gmail.com>
-Subject: Re: [bisected] Re: WARNING: at net/ipv4/devinet.c:1599
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Cong Wang <cwang@twopensource.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/z4P6UMu7uOEsbeQ"
+Content-Disposition: inline
+In-Reply-To: <1391529538-21685-11-git-send-email-ulf.hansson@linaro.org>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 10/17] spi: pl022: Remove redundant pinctrl to default
+ state in probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 7:08 PM, Cong Wang <cwang@twopensource.com> wrote:
-> On Tue, Feb 4, 2014 at 6:19 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>
->> Anyone with a clue?
->>
->
-> Looks like we need:
->
-> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-> index ac2dff3..bdbf68b 100644
-> --- a/net/ipv4/devinet.c
-> +++ b/net/ipv4/devinet.c
-> @@ -1443,7 +1443,8 @@ static size_t inet_nlmsg_size(void)
->                + nla_total_size(4) /* IFA_LOCAL */
->                + nla_total_size(4) /* IFA_BROADCAST */
->                + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
-> -              + nla_total_size(4);  /* IFA_FLAGS */
-> +              + nla_total_size(4)  /* IFA_FLAGS */
-> +              + nla_total_size(sizeof(struct ifa_cacheinfo)); /*
-> IFA_CACHEINFO */
->  }
 
-Thanks for your suggestion, but it doesn't help :-(
+--/z4P6UMu7uOEsbeQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Gr{oetje,eeting}s,
+On Tue, Feb 04, 2014 at 04:58:51PM +0100, Ulf Hansson wrote:
+> The driver core is now taking care of putting our pins into default
+> state at probe. Thus we can remove the redundant call for it in probe.
 
-                        Geert
+I applied this one too, as with the last patch it looks independant of
+the runtime PM stuff.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+--/z4P6UMu7uOEsbeQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8T2GAAoJELSic+t+oim9MWgQAIJUzM6v/rxDmFZOtPEr9BkH
+CWEZ2pLg5tHvcD3YkzFSJaIXsHXpru24Qp7v1zVazJ0ZBDKuvcjMkTERbTvwVVl3
+A+3d52Mi5SjEDTm6JnaOlta4PsF94HG4ofHKHhisPmK88tOHlrWvTVKpVw5o+Rxu
+TsaBw5hy+fx2qRs3H9gVOlBaTCYrYC93gI1R5IcI1ovE84JJaHCc8ib8UiQmWxRy
+G7QPDrqU+zi56yPS0TT9mEYUWcuT+TpDWXUJUTyy59H15P7NVsPit4afpFDNL9GO
+koSgDNJME7BB0ZoC80xcEq0HbDqHmZeoH8hyeg5b57TlURbxD41wpzlMdZni0GFt
+Z5KidIjR++JLERPiWyO782zAcAsP2MZ15gEbL7FgUB8JaOWJYA9skDfM8owX8UXd
+TSk/n1kF0uq+Yn8K6t7FWMwAHNbluxCpsjyd2QI/X8XHkaiTKdUGazjiHbSblL2A
+m5Hz2M4bgA3PZfXqvofZuDR6o7zIteWRFk1X7LOUDwuAOM4g6ipfGHYs0YlUYeAq
+1nARTNtoOWVuSZY2tkxwaO3l1oLQkuk0d/1y/HqiEkmA3qeWi+LuRhJWlmieZVJU
+vpSFPiV1XpTFjLEGcTzbOfO/tKLQxZEwufBVdzjYQpEsWXKAjlyREaiIdHLWNtXL
+eOaQw3KUxdu0rORzgEdh
+=miYw
+-----END PGP SIGNATURE-----
+
+--/z4P6UMu7uOEsbeQ--
