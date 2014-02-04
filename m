@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaBDA11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 19:27:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:55751 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678AbaBDA1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 19:27:25 -0500
-Date: Tue, 4 Feb 2014 11:27:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Helge Deller <deller@gmx.de>, Parisc List <linux-parisc@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the parisc-hd tree with Linus' tree
-Message-Id: <20140204112718.160f82c52d5219ef8dd3a924@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Feb_2014_11_27_18_+1100_XE09MJpGW_2=fNSM"
+	id S1753047AbaBDAzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 19:55:47 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49519 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317AbaBDAzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 19:55:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140128152457.GB16534@redhat.com>
+References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1390899916-23566-3-git-send-email-tangchen@cn.fujitsu.com>
+	<20140128152457.GB16534@redhat.com>
+Date: Mon, 3 Feb 2014 19:55:38 -0500
+X-Google-Sender-Auth: nIY0rQOGCFTNtuYLqC0OxvfGUjA
+Message-ID: <CA+5PVA5M=NK2VrCL+FaVruCeT7BDzx-+gXGXERpFeonPLKOaHg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] numa, mem-hotplug: Fix array index overflow when
+ synchronizing nid to memblock.reserved.
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Dave Jones <davej@redhat.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, zhangyanfei@cn.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, x86 <x86@kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Feb_2014_11_27_18_+1100_XE09MJpGW_2=fNSM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 28, 2014 at 10:24 AM, Dave Jones <davej@redhat.com> wrote:
+> On Tue, Jan 28, 2014 at 05:05:16PM +0800, Tang Chen wrote:
+>  > The following path will cause array out of bound.
+>  >
+>  > memblock_add_region() will always set nid in memblock.reserved to MAX_NUMNODES.
+>  > In numa_register_memblks(), after we set all nid to correct valus in memblock.reserved,
+>  > we called setup_node_data(), and used memblock_alloc_nid() to allocate memory, with
+>  > nid set to MAX_NUMNODES.
+>  >
+>  > The nodemask_t type can be seen as a bit array. And the index is 0 ~ MAX_NUMNODES-1.
+>  >
+>  > After that, when we call node_set() in numa_clear_kernel_node_hotplug(), the nodemask_t
+>  > got an index of value MAX_NUMNODES, which is out of [0 ~ MAX_NUMNODES-1].
+>  >
+>  > See below:
+>  >
+>  > numa_init()
+>  >  |---> numa_register_memblks()
+>  >  |      |---> memblock_set_node(memory)              set correct nid in memblock.memory
+>  >  |      |---> memblock_set_node(reserved)    set correct nid in memblock.reserved
+>  >  |      |......
+>  >  |      |---> setup_node_data()
+>  >  |             |---> memblock_alloc_nid()    here, nid is set to MAX_NUMNODES (1024)
+>  >  |......
+>  >  |---> numa_clear_kernel_node_hotplug()
+>  >         |---> node_set()                     here, we have an index 1024, and overflowed
+>  >
+>  > This patch moves nid setting to numa_clear_kernel_node_hotplug() to fix this problem.
+>  >
+>  > Reported-by: Dave Jones <davej@redhat.com>
+>  > Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+>  > Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>  > ---
+>  >  arch/x86/mm/numa.c | 19 +++++++++++--------
+>  >  1 file changed, 11 insertions(+), 8 deletions(-)
+>
+> This does seem to solve the problem (In conjunction with David's variant of the other patch).
 
-Hi all,
+Is this (and the first in the series) going to land in Linus' tree
+soon?  I don't see them in -rc1 and people are still hitting the early
+oops Dave did without this.
 
-Today's linux-next merge of the parisc-hd tree got a conflict in
-arch/parisc/include/asm/elf.h between commit 9dabf60dc4ab ("parisc: add
-flexible mmap memory layout support") from Linus' tree and commit
-13de8ec38997 ("parisc: add flexible mmap memory layout support") from the
-parisc-hd tree.
-
-It seems that this tree was rebased before being sent to Linus (I
-understand why) so I will just drop the whole parisc tree for today.
-Please just tidy up.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__4_Feb_2014_11_27_18_+1100_XE09MJpGW_2=fNSM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS8DPqAAoJEMDTa8Ir7ZwVA0sP/0WeKpX6WvOCngdYLFudOrAV
-Pv1Qf+W39Dh6UBsmsE1DK4abYUlL+C5iZmS51bmPLeOZy/57ijBnHueATfhrcpQ0
-sWcZmGzJ5TRmXNTB2ORg264KWreyGe7YN/VwXnPxhcan2L0cMwQ2zQqk6skA+zuM
-FChqDxaVQKpEgig/SudvY1GBfzlDcUfwnXiknX7fm0vkUWnIeFrFCo5p8YDM1jtW
-F3CEhwfGGqNey6xX2a/yPherxpNNB0ymm4vAYNVGGLa/uqm+n+YaPHn010imgUeU
-Ny9jDi1uftDKsyvWV13pfcq272v7UeyO9fKxIYDnIZ65HWoZddg6miioWimGpntO
-JCLzbXS157xORvREn3fPeBLJ4TrDwMb/w6Arb9OE3jysDzldf4NhrLZXjX3Btny1
-uraTHSrzhcCMwAIey6c4nCm/8awHHE4nppbqto5uZ6FMWh3v1/r0TyGZUh/fQEpn
-gwek9IH7efdnJh8rWjyuKrRYClzKSQwbNeKe8P0AanUYugJKqoO5hm8II2XQRp8w
-+BahgLW5/cdb5rgt0sceHBJQhg0DbaFxeK44+VOZqsCWDe0DadDTYulq6R+27pgS
-EVMEikIz7tcImiOV9TD2nGDoCaZnGYYPKRNw4MMxjQSu5fEtaDwVFymDZT9bZBDj
-nKk9+V1aQuTYzN8IHrTF
-=nDKS
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Feb_2014_11_27_18_+1100_XE09MJpGW_2=fNSM--
+josh
