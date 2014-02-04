@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935360AbaBDViP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:38:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57263 "EHLO
+	id S934537AbaBDVL4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:11:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57154 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934542AbaBDVL6 (ORCPT
+	with ESMTP id S934329AbaBDVLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:58 -0500
+	Tue, 4 Feb 2014 16:11:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.13 077/140] pinctrl: sunxi: Honor GPIO output initial vaules
-Date: Tue,  4 Feb 2014 13:11:04 -0800
-Message-Id: <20140204211039.159710977@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 049/140] ath9k: Disable cross-band FCC
+Date: Tue,  4 Feb 2014 13:10:36 -0800
+Message-Id: <20140204211038.358386179@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,50 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen-Yu Tsai <wens@csie.org>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit fa8cf57c923e86a693a85aff1df579245a27cbb3 upstream.
+commit 1e2f9295f4c657500111514f92a3d3894d0e05b4 upstream.
 
-Some GPIO users, such as fixed-regulator, request GPIO output with
-initial value of 1. This was ignored by sunxi driver.
+Fast Channel Change across bands was enabled for
+AR9462 recently, but this is causing baseband issues.
+Disable it until this feature is tested well. Also,
+remove the feature bit for AR9565 since it is
+a single-band card and doesn't support this feature.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Reported-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/pinctrl-sunxi.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -469,12 +469,6 @@ static int sunxi_pinctrl_gpio_get(struct
- 	return val;
- }
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -2608,13 +2608,6 @@ int ath9k_hw_fill_cap_info(struct ath_hw
+ 	    ah->eep_ops->get_eeprom(ah, EEP_PAPRD))
+ 			pCap->hw_caps |= ATH9K_HW_CAP_PAPRD;
  
--static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
--					unsigned offset, int value)
--{
--	return pinctrl_gpio_direction_output(chip->base + offset);
--}
+-	/*
+-	 * Fast channel change across bands is available
+-	 * only for AR9462 and AR9565.
+-	 */
+-	if (AR_SREV_9462(ah) || AR_SREV_9565(ah))
+-		pCap->hw_caps |= ATH9K_HW_CAP_FCC_BAND_SWITCH;
 -
- static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
- 				unsigned offset, int value)
- {
-@@ -498,6 +492,13 @@ static void sunxi_pinctrl_gpio_set(struc
- 	spin_unlock_irqrestore(&pctl->lock, flags);
+ 	return 0;
  }
  
-+static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned offset, int value)
-+{
-+	sunxi_pinctrl_gpio_set(chip, offset, value);
-+	return pinctrl_gpio_direction_output(chip->base + offset);
-+}
-+
- static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
- 				const struct of_phandle_args *gpiospec,
- 				u32 *flags)
 
 
