@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaBDLVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 06:21:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079AbaBDLPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 06:15:41 -0500
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, Hiral Patel <hiralpat@cisco.com>,
-        Suma Ramars <sramars@cisco.com>, Brian Uchino <buchino@cisco.com>,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 07/22] fnic: Use pci_enable_msix_range()
-Date: Tue,  4 Feb 2014 12:16:53 +0100
-Message-Id: <01c54a9cf2e52395c59bd663766c8d1071da0a33.1391512266.git.agordeev@redhat.com>
-In-Reply-To: <cover.1391512266.git.agordeev@redhat.com>
-References: <cover.1391512266.git.agordeev@redhat.com>
+	id S1753378AbaBDLcD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 06:32:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:55666 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079AbaBDLbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 06:31:53 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <daniel.lezcano@linaro.org>,
+        <tglx@linutronix.de>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v4 0/3] Introduce clocksource driver for Keystone platform
+Date: Tue, 4 Feb 2014 13:30:50 +0200
+Message-ID: <1391513453-21140-1-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range() and pci_enable_msix_range()
-interfaces.
+Add a broadcast timer64 based clockevent driver for keystone arch.
+This driver uses timer in 64-bit general purpose mode as clock event
+device.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Hiral Patel <hiralpat@cisco.com>
-Cc: Suma Ramars <sramars@cisco.com>
-Cc: Brian Uchino <buchino@cisco.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/fnic/fnic_isr.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Documentation:
+    http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
 
-diff --git a/drivers/scsi/fnic/fnic_isr.c b/drivers/scsi/fnic/fnic_isr.c
-index 7d9b54a..0031c3e 100644
---- a/drivers/scsi/fnic/fnic_isr.c
-+++ b/drivers/scsi/fnic/fnic_isr.c
-@@ -257,8 +257,8 @@ int fnic_set_intr_mode(struct fnic *fnic)
- 	    fnic->raw_wq_count >= m &&
- 	    fnic->wq_copy_count >= o &&
- 	    fnic->cq_count >= n + m + o) {
--		if (!pci_enable_msix(fnic->pdev, fnic->msix_entry,
--				    n + m + o + 1)) {
-+		if (pci_enable_msix_range(fnic->pdev, fnic->msix_entry,
-+				          n + m + o + 1, n + m + o + 1) > 0) {
- 			fnic->rq_count = n;
- 			fnic->raw_wq_count = m;
- 			fnic->wq_copy_count = o;
+Based on
+git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+keystone/master
+
+v3..v4:
+	rebased on latest of linux-keystone.git keystone/master
+
+v2..v3:
+- clocksource: timer-keystone: introduce clocksource driver for
+	changed "u64" type to "unsigned long" for hz_period as more appropriate
+	hz_period rounded up by DIV_ROUND_UP(rate, HZ)
+	corrected comments
+
+v1..v2:
+- clocksource: timer-keystone: introduce clocksource driver for
+	renamed timer on "timer-keystone"
+	in keystone_timer_interrupt() evet pointer is passed via "dev_id"
+	used __relaxed variants of writel/readl and added explicit barriers
+	added "keystone_timer_disable()" for using in keystone_set_mode()
+	keystone_timer_config() is not used for disabling the timer any more
+	in case of an unsupported mode the keystone_timer_config() returns -1.
+	used request_irq() instead of setup_irq()
+	assigned irq for event_device in event_dev->irq
+	calculated timer.hz_period for CLOCK_EVT_MODE_PERIODIC at init
+	deleted spare call of keystone_timer_config() in keystone_timer_init()
+*
+
+Ivan Khoronzhuk (3):
+  clocksource: timer-keystone: introduce clocksource driver for Keystone
+  clocksource: keystone: add bindings for keystone timer
+  arm: dts: keystone: add keystone timer entry
+
+ .../bindings/timer/ti,keystone-timer.txt           |  29 +++
+ arch/arm/boot/dts/keystone-clocks.dtsi             |  10 +
+ arch/arm/boot/dts/keystone.dtsi                    |   7 +
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/timer-keystone.c               | 233 +++++++++++++++++++++
+ 5 files changed, 280 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
+ create mode 100644 drivers/clocksource/timer-keystone.c
+
 -- 
-1.7.7.6
+1.8.3.2
 
