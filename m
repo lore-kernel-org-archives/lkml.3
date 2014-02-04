@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaBDPVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:21:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41575 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaBDPVv (ORCPT
+	id S1754610AbaBDPYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:24:20 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:47271 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDPYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:21:51 -0500
-Date: Tue, 4 Feb 2014 15:20:56 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] mfd: add bcm59056 pmu driver
-Message-ID: <20140204152056.GB3154@lee--X1>
-References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
- <1391516352-32359-4-git-send-email-mporter@linaro.org>
- <20140204132951.GE13529@lee--X1>
- <20140204143119.GA4627@beef>
- <20140204144731.GA3154@lee--X1>
- <20140204150156.GC4627@beef>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140204150156.GC4627@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Feb 2014 10:24:12 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH v3 03/11] ARM: shmobile: genmai defconfig: Enable RSPI
+Date: Tue,  4 Feb 2014 16:23:57 +0100
+Message-Id: <1391527445-14881-4-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
+References: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > ... then you'll still need this.
-> 
-> Yes, I was far too vague..I'm going to stop explicitly populating the
-> data field.
-> 
-> static const struct of_device_id bcm59056_of_match[] = {
-> 	{ .compatible = "brcm,bcm59056"},
-> 	{ }
-> };
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-+1
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+v3:
+  - Rebased on top of renesas-devel-v3.14-rc1-20140204
+v2:
+  - No changes
 
-> > And I don't think you can drop this, as the I2C subsystem still
-> > insists on it.
-> 
-> Agreed. I'm just dropping explicit population of the driver_data field
-> here.
-> 
-> static const struct i2c_device_id bcm59056_i2c_id[] = {
-> 	{ "bcm59056" },
-> 	{ }
-> };
+ arch/arm/configs/genmai_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-+1
-
-> > I think you need to keep this to supply the silly I2C ID table.
-> > 
-> > I would just omit the '.data = (void *) VERSION' from the
-> > of_match_table until you require it. 
-> 
-> Well, it's not even necessary for I2C ID table. the I2C subsystem is
-> happy with just a matching entry on the i2c_device_id name field and
-> NULL driver_data. palmas is implemented in this manner.
-
-Guess what? +1 :)
-
+diff --git a/arch/arm/configs/genmai_defconfig b/arch/arm/configs/genmai_defconfig
+index c56a7ff1dcd7..5ee6ac0931f7 100644
+--- a/arch/arm/configs/genmai_defconfig
++++ b/arch/arm/configs/genmai_defconfig
+@@ -81,6 +81,8 @@ CONFIG_SERIAL_SH_SCI_NR_UARTS=10
+ CONFIG_SERIAL_SH_SCI_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
+ CONFIG_I2C_SH_MOBILE=y
++CONFIG_SPI=y
++CONFIG_SPI_RSPI=y
+ # CONFIG_HWMON is not set
+ CONFIG_THERMAL=y
+ CONFIG_RCAR_THERMAL=y
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
