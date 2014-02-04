@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935220AbaBDVuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:50:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57105 "EHLO
+	id S935435AbaBDVvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:51:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57095 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934378AbaBDVLX (ORCPT
+	with ESMTP id S934371AbaBDVLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:23 -0500
+	Tue, 4 Feb 2014 16:11:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 034/140] rtlwifi: rtl8192c: Add routines to save/restore power index registers
-Date: Tue,  4 Feb 2014 13:10:21 -0800
-Message-Id: <20140204211037.937795216@linuxfoundation.org>
+Subject: [PATCH 3.13 031/140] rtlwifi: Set the link state
+Date: Tue,  4 Feb 2014 13:10:18 -0800
+Message-Id: <20140204211037.854216832@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -31,60 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 97204e93f01868eeba6ae5c4f3270f32905bb418 upstream.
+commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
+
+The present code fails to set the linked state when an interface is
+added.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   36 ++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ drivers/net/wireless/rtlwifi/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
-@@ -158,6 +158,42 @@ static const u8 cckswing_table_ch14[CCK_
- 	{0x09, 0x08, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00}
- };
- 
-+static u32 power_index_reg[6] = {0xc90, 0xc91, 0xc92, 0xc98, 0xc99, 0xc9a};
-+
-+void dm_restorepowerindex(struct ieee80211_hw *hw)
-+{
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+	u8	index;
-+
-+	for (index = 0; index < 6; index++)
-+		rtl_write_byte(rtlpriv, power_index_reg[index],
-+			       rtlpriv->dm.powerindex_backup[index]);
-+}
-+EXPORT_SYMBOL_GPL(dm_restorepowerindex);
-+
-+void dm_writepowerindex(struct ieee80211_hw *hw, u8 value)
-+{
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+	u8 index;
-+
-+	for (index = 0; index < 6; index++)
-+		rtl_write_byte(rtlpriv, power_index_reg[index], value);
-+}
-+EXPORT_SYMBOL_GPL(dm_writepowerindex);
-+
-+void dm_savepowerindex(struct ieee80211_hw *hw)
-+{
-+	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+	u8 index;
-+	u8 tmp;
-+
-+	for (index = 0; index < 6; index++) {
-+		tmp = rtl_read_byte(rtlpriv, power_index_reg[index]);
-+		rtlpriv->dm.powerindex_backup[index] = tmp;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(dm_savepowerindex);
-+
- static void rtl92c_dm_diginit(struct ieee80211_hw *hw)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -194,6 +194,7 @@ static int rtl_op_add_interface(struct i
+ 					rtlpriv->cfg->maps
+ 					[RTL_IBSS_INT_MASKS]);
+ 		}
++		mac->link_state = MAC80211_LINKED;
+ 		break;
+ 	case NL80211_IFTYPE_ADHOC:
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
 
 
