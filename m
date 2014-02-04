@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaBDWYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:24:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56615 "EHLO
+	id S964824AbaBDWYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:24:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56607 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933899AbaBDVIW (ORCPT
+	with ESMTP id S933896AbaBDVIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:22 -0500
+	Tue, 4 Feb 2014 16:08:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikhail Zolotaryov <lebon@lebon.org.ua>
-Subject: [PATCH 3.12 023/133] USB: Nokia 502 is an unusual device
-Date: Tue,  4 Feb 2014 13:07:04 -0800
-Message-Id: <20140204210737.681741554@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 048/133] ath9k: Use correct channel for RX packets
+Date: Tue,  4 Feb 2014 13:07:29 -0800
+Message-Id: <20140204210738.393897903@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,42 +30,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikhail Zolotaryov <lebon@lebon.org.ua>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 0e16114f2db4838251fb64f3b550996ad3585890 upstream.
+commit ff9a93f2ebb88ac7aab9568de80b64b92078e96d upstream.
 
-The USB storage operation of Nokia Asha 502 Dual SIM smartphone running Asha
-Platform 1.1.1 is unreliable in respect of data consistency (i.e. transfered
-files are corrupted). A similar issue is described here:
-http://discussions.nokia.com/t5/Asha-and-other-Nokia-Series-30/Nokia-301-USB-transfers-and-corrupted-files/td-p/1974170
+Accessing the current channel definition in mac80211
+when processing RX packets is problematic because it
+could have been updated when a scan is issued. Since a
+channel change involves flushing the existing packets
+in the RX queue before a chip-reset is done, they would
+be processed using the wrong band/channel information.
 
-The workaround is (MAX_SECTORS_64):
-   rmmod usb_storage && modprobe usb_storage quirks=0421:06aa:m
+To avoid this, use the current channel information
+maintained in the driver.
 
-The patch adds the tested device to the unusual list permanently.
-
-Signed-off-by: Mikhail Zolotaryov <lebon@lebon.org.ua>
+Reported-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/wireless/ath/ath9k/recv.c |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 ),
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -848,20 +848,15 @@ static int ath9k_process_rate(struct ath
+ 	enum ieee80211_band band;
+ 	unsigned int i = 0;
+ 	struct ath_softc __maybe_unused *sc = common->priv;
++	struct ath_hw *ah = sc->sc_ah;
  
-+/* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
-+UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
-+		"Nokia",
-+		"502",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
+-	band = hw->conf.chandef.chan->band;
++	band = ah->curchan->chan->band;
+ 	sband = hw->wiphy->bands[band];
+ 
+-	switch (hw->conf.chandef.width) {
+-	case NL80211_CHAN_WIDTH_5:
++	if (IS_CHAN_QUARTER_RATE(ah->curchan))
+ 		rxs->flag |= RX_FLAG_5MHZ;
+-		break;
+-	case NL80211_CHAN_WIDTH_10:
++	else if (IS_CHAN_HALF_RATE(ah->curchan))
+ 		rxs->flag |= RX_FLAG_10MHZ;
+-		break;
+-	default:
+-		break;
+-	}
+ 
+ 	if (rx_stats->rs_rate & 0x80) {
+ 		/* HT rate */
+@@ -1175,6 +1170,14 @@ static int ath9k_rx_skb_preprocess(struc
+ 		ath_start_rx_poll(sc, 3);
+ 	}
+ 
++	/*
++	 * This shouldn't happen, but have a safety check anyway.
++	 */
++	if (WARN_ON(!ah->curchan)) {
++		ret = -EINVAL;
++		goto exit;
++	}
 +
- #ifdef NO_SDDR09
- UNUSUAL_DEV(  0x0436, 0x0005, 0x0100, 0x0100,
- 		"Microtech",
+ 	if (ath9k_process_rate(common, hw, rx_stats, rx_status)) {
+ 		ret =-EINVAL;
+ 		goto exit;
+@@ -1182,8 +1185,8 @@ static int ath9k_rx_skb_preprocess(struc
+ 
+ 	ath9k_process_rssi(common, hw, rx_stats, rx_status);
+ 
+-	rx_status->band = hw->conf.chandef.chan->band;
+-	rx_status->freq = hw->conf.chandef.chan->center_freq;
++	rx_status->band = ah->curchan->chan->band;
++	rx_status->freq = ah->curchan->chan->center_freq;
+ 	rx_status->antenna = rx_stats->rs_antenna;
+ 	rx_status->flag |= RX_FLAG_MACTIME_END;
+ 
 
 
