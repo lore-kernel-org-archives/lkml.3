@@ -1,241 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899AbaBDMHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:07:16 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:52428 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaBDMHO (ORCPT
+	id S1754174AbaBDMIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:08:13 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46706 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaBDMIK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:07:14 -0500
-Message-ID: <52F0D7F3.7000901@gmail.com>
-Date: Tue, 04 Feb 2014 20:07:15 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 4 Feb 2014 07:08:10 -0500
+Date: Tue, 4 Feb 2014 12:08:02 +0000
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from
+ device tree
+Message-ID: <20140204120801.GB27975@e106497-lin.cambridge.arm.com>
+Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Catalin Marinas <Catalin.Marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	linaro-kernel <linaro-kernel@lists.linaro.org>
+References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com>
+ <3523674.i9iUPinOAk@wuerfel>
+ <20140203221743.GB24036@e106497-lin.cambridge.arm.com>
+ <4524393.8AzpATULMB@wuerfel>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
- to CONFIG_KRETPROBES enabled area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com>
-In-Reply-To: <52F09404.3060502@hitachi.com>
+In-Reply-To: <4524393.8AzpATULMB@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 04 Feb 2014 12:08:02.0398 (UTC) FILETIME=[C0BB37E0:01CF21A1]
+X-MC-Unique: 114020412080401101
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
-> (2014/02/04 14:16), Chen Gang wrote:
->> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
->> are useless, so need move them to CONFIG_KPROBES enabled area.
->>
->> Now, *kretprobe* generic implementation are all implemented in 2 files:
->>
->>  - in "include/linux/kprobes.h":
->>
->>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
->>      move some *kprobe() declarations which kretprobe*() call, to front.
->>      not touch kretprobe_blacklist[] which is architecture's variable.
->>
->>  - in "kernel/kprobes.c":
->>
->>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
->>      define kretprobe_flush_task() to let kprobe_flush_task() call.
->>      define init_kretprobes() to let init_kprobes() call.
->>
->> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
->> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
->> bzImage and Modpost modules) under x86_64 defconfig.
->
-> Thanks for the fix! and I have some comments below.
->
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  include/linux/kprobes.h |  58 +++++----
->>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
->>  2 files changed, 222 insertions(+), 164 deletions(-)
->>
->> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
->> index 925eaf2..c0d1212 100644
->> --- a/include/linux/kprobes.h
->> +++ b/include/linux/kprobes.h
->> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
->>   return 1;
->>  }
->>  
->> +int disable_kprobe(struct kprobe *kp);
->> +int enable_kprobe(struct kprobe *kp);
->> +
->> +void dump_kprobe(struct kprobe *kp);
->> +
->> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
->> +
->>  #ifdef CONFIG_KRETPROBES
->>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
->>     struct pt_regs *regs);
->>  extern int arch_trampoline_kprobe(struct kprobe *p);
->> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
->> + unsigned long orig_ret_address, unsigned long trampoline_address)
->> +{
->> + if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->> + printk(KERN_ERR
->> + "kretprobe BUG!: Processing kretprobe %p @ %p\n",
->> + ri->rp, ri->rp->kp.addr);
->> + BUG();
->> + }
->> +}
->> +static inline int disable_kretprobe(struct kretprobe *rp)
->> +{
->> + return disable_kprobe(&rp->kp);
->> +}
->> +static inline int enable_kretprobe(struct kretprobe *rp)
->> +{
->> + return enable_kprobe(&rp->kp);
->> +}
->> +
->>  #else /* CONFIG_KRETPROBES */
->>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
->>   struct pt_regs *regs)
->> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
->>  {
->>   return 0;
->>  }
->> -#endif /* CONFIG_KRETPROBES */
->> -
->> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
->> -
->>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
->>   unsigned long orig_ret_address, unsigned long trampoline_address)
->>  {
->> - if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->> - printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
->> - ri->rp, ri->rp->kp.addr);
->> - BUG();
->> - }
->>  }
->> +static inline int disable_kretprobe(struct kretprobe *rp)
->> +{
->> + return 0;
->> +}
->> +static inline int enable_kretprobe(struct kretprobe *rp)
->> +{
->> + return 0;
->> +}
->
-> No, these should returns -EINVAL or -ENOSYS, since these are user API.
+On Tue, Feb 04, 2014 at 10:09:44AM +0000, Arnd Bergmann wrote:
+> On Monday 03 February 2014 22:17:44 Liviu Dudau wrote:
+> > On Mon, Feb 03, 2014 at 07:31:31PM +0000, Arnd Bergmann wrote:
+> > > Let's try to come up with nomenclature so we can talk about this better
+> > >
+> > > The ioport_resource is in "logical I/O space", which is a Linux fiction,
+> > > it goes from 0 to IO_SPACE_LIMIT (2MB on ARM) and is mapped into "virtual
+> > > I/O space", which start at (void __iomem *)PCI_IO_VIRT_BASE.
+> > >
+> > > Each PCI domain can have its own "bus I/O aperture", which is typically
+> > > between 0x1000 and 0xffff and reflects the address that is used in PCI
+> > > transactions and in BARs.
+> > 
+> > Actually, the bus I/O aperture can start from 0x0000 if you are talking about
+> > PCI bus addresses.
+> 
+> Right.
+> 
+> > > The aperture here reflects the subset of the
+> > > 4GB bus I/O space that is actually mapped into a CPU visible "physical
+> > > I/O aperture" using an inbound mapping of the host bridge. The physical
+> > > I/O aperture in turn gets mapped to the virtual I/O space using
+> > > pci_ioremap_io.
+> > 
+> > Agree.
+> > 
+> > > The difference between a bus I/O address and a logical
+> > > I/O address is stored in the io_offset.
+> > 
+> > Not exactly. If that would be true that means that for an I/O range that
+> > start at bus I/O address zero but physical I/O apperture starts at
+> > 0x40000000 the io_offset is zero. For me, the io_offset should be 0x40000000.
+> 
+> That's not how we do it on any of the existing host controllers.
+> Typically the io_offset is zero for the first one, and may be
+> either zero for all the others (meaning BARs get > 64KB values
+> for secondary buses) or between 64KB and 2MB (meaning each bus
+> starts at I/O port number 0).
 
-OK, thanks, it sounds reasonable to me.
+In that case it is probably worth to rename my variable into phys_io_offset.
 
-> Anyway, I don't think those inlined functions to be changed, because
-> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
-> be ignored.
->
+I need to go back over my driver code. My assumptions were probably wrong
+wrt to meaning of the io_offset.
 
-In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
-disable_kretprobe(), and enable_kretprobe() are not ignored.
+> 
+> > Let me see if I can summarise this correctly, using only CPU addresses:
+> > 
+> > 0x0000 - IO_SPACE_LIMIT           <-  logical I/O address
+> > 0xPPPPPPPP - 0xPPPPPPPP+IO_SIZE   <-  physical address for PCI I/O space
+> > 0xVVVVVVVV - 0xVVVVVVVV+IO_SPACE_LIMIT <- virtual address for I/O
+> > 
+> > The io_offset then is 0xPPPPPPPP - logical I/O address. At least that is
+> > the intent of the io_offset variable that I introduced in pci_host_bridge.
+> 
+> That is highly confusing then, because we already have something called
+> io_offset with a different meaning. I would call 0xPPPPPPPP the io_phys_base
+> if I had to come up with a variable name for it.
+> 
+> > The bus I/O address is generated by the host bridge, I think we can ignore
+> > it here as it tends to confuse the message.
+> 
+> No, it's important because the PCI core code has to transform between
+> bus I/O address and logical I/O address when accessing the BARs.
+> 
+> > > So much for basic definitions. When a device driver calls pci_request_region,
+> > > the port number it sees is the bus I/O port number adjusted using the
+> > > io_offset to turn it into a logical I/O port number, which should
+> > > always be within the host bridge window, which in turn is a subset
+> > > of the ioport_resource.
+> > 
+> > My understanding is that device drivers all user port numbers that are logical
+> > I/O numbers, so no io_offset needs to be applied here. It is only when one
+> > wants to access the port, that the translation happens. First, inb or outb
+> > will add the PCI_IO_VIRT_BASE to generate the virtual address, the MMU will
+> > then convert that address to physical address and the host bridge will
+> > then translate the physical address into bus address.
+> 
+> This is correct. The bus I/O number is not visible to the device driver,
+> but it is what you put into the 'ranges' property in DT, and it gets
+> used during PCI resource scanning.
+> 
+> 
+> > > > And that is why the code in probe.c has been added to deal with that. It is
+> > > > too early to do the adjustments here as all we have is the list of resources
+> > > > and that might get culled by the architecture fixup code. Remembering the
+> > > > io_offset will happen once the pci_host_bridge gets created, and the resources
+> > > > are then adjusted.
+> > >
+> > > So you want to register an incorrect I/O resource first and then
+> > > have it fixed up later, rather than registering the correct
+> > > one from the start as everyone else?
+> > 
+> > The incorrect I/O resource is added to a temporary list of resources, it has not
+> > been attached yet to the list of windows in the bridge. What gets added is the
+> > I/O resource as described if it would be an ordinary resource.
+> 
+> I'm not completely sure I'm following here, but let's work out the
+> other things first, this will probably get clearer then.
+> 
+> > > > > > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> > > > > > index 6e34498..16febae 100644
+> > > > > > --- a/drivers/pci/probe.c
+> > > > > > +++ b/drivers/pci/probe.c
+> > > > > > @@ -1787,6 +1787,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+> > > > > >     list_for_each_entry_safe(window, n, resources, list) {
+> > > > > >             list_move_tail(&window->list, &bridge->windows);
+> > > > > >             res = window->res;
+> > > > > > +           /*
+> > > > > > +            * IO resources are stored in the kernel with a CPU start
+> > > > > > +            * address of zero. Adjust the data accordingly and remember
+> > > > > > +            * the offset
+> > > > > > +            */
+> > > > > > +           if (resource_type(res) == IORESOURCE_IO) {
+> > > > > > +                   bridge->io_offset = res->start;
+> > > > > > +                   res->end -= res->start;
+> > > > > > +                   window->offset -= res->start;
+> > > > > > +                   res->start = 0;
+> > > > > > +           }
+> > 
+> > Here, we correct for the fact that IORESOURCE_IO is not a normal resource, because Linux wants
+> > a logical I/O as start and end address, not the physical CPU address. We adjust to that and
+> > remember the offset.
+> 
+> But the offset (phys_base) doesn't actually matter to the PCI core or
+> the driver. Why save it?
 
-> So, I think you don't need to change kprobes.h.
->
+Because I need it later for the host bridge ATR setup.
 
-So "kprobes.h" still need be changed.
+> 
+> > > > > >             offset = window->offset;
+> > > > > >             if (res->flags & IORESOURCE_BUS)
+> > > > >
+> > > > > Won't this break all existing host bridges?
+> > > >
+> > > > I am not sure. I believe not, due to what I've explained earlier, but you might be right.
+> > > >
+> > > > The adjustment happens before the resource is added to the host bridge windows and translates
+> > > > it from MMIO range into IO range.
+> > >
+> > > AFAICT, the resource_type of the resource you register above should be
+> > > IORESOURCE_MEM, so you are not actually matching it here.
+> > 
+> > No, all resources are added here. For IORESOURCE_IO we do an adjustment.
+> 
+> But there should never be an IORESOURCE_IO resource structure that is
+> not in IO space, i.e. within ioport_resource. Doing an "adjustment"
+> is not an operation defined on this structure. What I meant above is that
+> the pci range parser gets this right and gives you a resource that looks
+> like { .flags = IORESOURCE_MEM, .start = phys_base, .end = phys_base +
+> size - 1}, while the resource we want to register is { .flags = IORESOURCE_IO,
+> .start = log_base, .end = log_base + size -1}. In the of_pci_range struct for
+> the I/O space, the "pci_space" is IORESOURCE_IO (for the pci_addr), while the
+> "flags" are IORESOURCE_MEM, to go along with the cpu_addr.
 
->> +
->> +#endif /* CONFIG_KRETPROBES */
->>  
->>  #ifdef CONFIG_KPROBES_SANITY_TEST
->>  extern int init_test_probes(void);
->> @@ -379,11 +406,6 @@ void unregister_kretprobes(struct kretprobe **rps, int num);
->>  void kprobe_flush_task(struct task_struct *tk);
->>  void recycle_rp_inst(struct kretprobe_instance *ri, struct hlist_head *head);
->>  
->> -int disable_kprobe(struct kprobe *kp);
->> -int enable_kprobe(struct kprobe *kp);
->> -
->> -void dump_kprobe(struct kprobe *kp);
->> -
->>  #else /* !CONFIG_KPROBES: */
->>  
->>  static inline int kprobes_built_in(void)
->> @@ -459,14 +481,6 @@ static inline int enable_kprobe(struct kprobe *kp)
->>   return -ENOSYS;
->>  }
->>  #endif /* CONFIG_KPROBES */
->> -static inline int disable_kretprobe(struct kretprobe *rp)
->> -{
->> - return disable_kprobe(&rp->kp);
->> -}
->> -static inline int enable_kretprobe(struct kretprobe *rp)
->> -{
->> - return enable_kprobe(&rp->kp);
->> -}
->>  static inline int disable_jprobe(struct jprobe *jp)
->>  {
->>   return disable_kprobe(&jp->kp);
->> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->> index ceeadfc..e305a81 100644
->> --- a/kernel/kprobes.c
->> +++ b/kernel/kprobes.c
-> [...]
->> @@ -1936,8 +1955,44 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->>   return 0;
->>  }
->>  
->> +void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
->> + struct hlist_head *head)
->> +{
->> +}
->> +
->> +void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
->> + struct hlist_head **head, unsigned long *flags)
->> +__acquires(hlist_lock)
->> +{
->> +}
->> +
->> +void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
->> + unsigned long *flags)
->> +__releases(hlist_lock)
->> +{
->> +}
->> +
->
->> +static void __kprobes kretprobe_flush_task(struct task_struct *tk)
->> +{
->> +}
->> +
->> +static void __init init_kretprobes(void)
->> +{
->> +}
->
-> These should be macros, as I did for optprobe functions
-> with !CONFIG_OPTPROBES.
->
+The pci range parser gives me a range with .flags = IORESOURCE_IO for IO space. It
+does not convert it to IORESOURCE_MEM. Hence the need for adjustment.
 
-OK, thanks, it sounds reasonable to me.
+Best regards,
+Liviu
 
- - For new added static functions: kretprobe_flush_task(), and
-   init_kretprobes() need be changed to macros
+> 
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
- - For extern functions: recycle_rp_inst(), kretprobe_hash_lock(), and
-   kretprobe_has_unlock(), need use dummy functions.
-
- - For original static function: pre_handler_kretprobe(), need still
-   use dummy function (for function pointer comparing).
-
-
-> Other parts looks good to me!;)
->
-> Thank you!
->
->
-
-Thanks.
 -- 
-Chen Gang
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-Open, share and attitude like air, water and life which God blessed
