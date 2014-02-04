@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933833AbaBDVIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56477 "EHLO
+	id S935925AbaBDW3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:29:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56540 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933535AbaBDVHw (ORCPT
+	with ESMTP id S933838AbaBDVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:07:52 -0500
+	Tue, 4 Feb 2014 16:08:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        mtosatti@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 012/133] x86, kvm: cache the base of the KVM cpuid leaves
-Date: Tue,  4 Feb 2014 13:06:53 -0800
-Message-Id: <20140204210737.369034392@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 032/133] rtlwifi: Set the link state
+Date: Tue,  4 Feb 2014 13:07:13 -0800
+Message-Id: <20140204210737.938237684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,103 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 1c300a40772dae829b91dad634999a6a522c0829 upstream.
+commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
 
-It is unnecessary to go through hypervisor_cpuid_base every time
-a leaf is found (which will be every time a feature is requested
-after the next patch).
+The present code fails to set the linked state when an interface is
+added.
 
-Fixes: 1085ba7f552d84aa8ac0ae903fa8d0cc2ff9f79d
-Cc: mtosatti@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_para.h |   22 ++++++----------------
- arch/x86/kernel/kvm.c           |   27 +++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+), 16 deletions(-)
+ drivers/net/wireless/rtlwifi/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -85,28 +85,13 @@ static inline long kvm_hypercall4(unsign
- 	return ret;
- }
- 
--static inline uint32_t kvm_cpuid_base(void)
--{
--	if (boot_cpu_data.cpuid_level < 0)
--		return 0;	/* So we don't blow up on old processors */
--
--	if (cpu_has_hypervisor)
--		return hypervisor_cpuid_base("KVMKVMKVM\0\0\0", 0);
--
--	return 0;
--}
--
--static inline bool kvm_para_available(void)
--{
--	return kvm_cpuid_base() != 0;
--}
--
- static inline unsigned int kvm_arch_para_features(void)
- {
- 	return cpuid_eax(KVM_CPUID_FEATURES);
- }
- 
- #ifdef CONFIG_KVM_GUEST
-+bool kvm_para_available(void);
- void __init kvm_guest_init(void);
- void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
-@@ -126,6 +111,11 @@ static inline void kvm_spinlock_init(voi
- #define kvm_async_pf_task_wait(T) do {} while(0)
- #define kvm_async_pf_task_wake(T) do {} while(0)
- 
-+static inline bool kvm_para_available(void)
-+{
-+	return 0;
-+}
-+
- static inline u32 kvm_read_and_reset_pf_reason(void)
- {
- 	return 0;
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -500,6 +500,33 @@ void __init kvm_guest_init(void)
- #endif
- }
- 
-+static noinline uint32_t __kvm_cpuid_base(void)
-+{
-+	if (boot_cpu_data.cpuid_level < 0)
-+		return 0;	/* So we don't blow up on old processors */
-+
-+	if (cpu_has_hypervisor)
-+		return hypervisor_cpuid_base("KVMKVMKVM\0\0\0", 0);
-+
-+	return 0;
-+}
-+
-+static inline uint32_t kvm_cpuid_base(void)
-+{
-+	static int kvm_cpuid_base = -1;
-+
-+	if (kvm_cpuid_base == -1)
-+		kvm_cpuid_base = __kvm_cpuid_base();
-+
-+	return kvm_cpuid_base;
-+}
-+
-+bool kvm_para_available(void)
-+{
-+	return kvm_cpuid_base() != 0;
-+}
-+EXPORT_SYMBOL_GPL(kvm_para_available);
-+
- static uint32_t __init kvm_detect(void)
- {
- 	return kvm_cpuid_base();
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -194,6 +194,7 @@ static int rtl_op_add_interface(struct i
+ 					rtlpriv->cfg->maps
+ 					[RTL_IBSS_INT_MASKS]);
+ 		}
++		mac->link_state = MAC80211_LINKED;
+ 		break;
+ 	case NL80211_IFTYPE_ADHOC:
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
 
 
