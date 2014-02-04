@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934896AbaBDVN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:13:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57451 "EHLO
+	id S934872AbaBDVNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:13:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934682AbaBDVMb (ORCPT
+	with ESMTP id S934650AbaBDVMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:31 -0500
+	Tue, 4 Feb 2014 16:12:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shane Huang <shane.huang@amd.com>, Jean Delvare <khali@linux-fr.org>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.13 111/140] i2c: piix4: Add support for AMD ML and CZ SMBus changes
-Date: Tue,  4 Feb 2014 13:11:38 -0800
-Message-Id: <20140204211040.145270037@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.13 108/140] ARM: mvebu: Add quirk for i2c for the OpenBlocks AX3-4 board
+Date: Tue,  4 Feb 2014 13:11:35 -0800
+Message-Id: <20140204211040.060961336@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,107 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 032f708bc4f6da868ec49dac48ddf3670d8035d3 upstream.
+commit 85e618a1be2b2092318178d1d66bdad49cbbeeeb upstream.
 
-The locations of SMBus register base address and enablement bit are changed
-from AMD ML, which need this patch to be supported.
+The first variants of Armada XP SoCs (A0 stepping) have issues related
+to the i2c controller which prevent to use the offload mechanism and
+lead to a kernel hang during boot.
 
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+This commit add quirk in the mvebu platform code to check the SoC
+version and then update the compatible string for the i2c controller
+according to the revision of the SoC. Currently only some OpenBlocks
+AX3-4 boards are known to use an A0 revision so the check is done only
+for these boards.
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/i2c/busses/i2c-piix4 |    2 +-
- drivers/i2c/busses/Kconfig         |    1 +
- drivers/i2c/busses/i2c-piix4.c     |   28 +++++++++++++++++++++++-----
- 3 files changed, 25 insertions(+), 6 deletions(-)
+ arch/arm/mach-mvebu/armada-370-xp.c |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
---- a/Documentation/i2c/busses/i2c-piix4
-+++ b/Documentation/i2c/busses/i2c-piix4
-@@ -13,7 +13,7 @@ Supported adapters:
-   * AMD SP5100 (SB700 derivative found on some server mainboards)
-     Datasheet: Publicly available at the AMD website
-     http://support.amd.com/us/Embedded_TechDocs/44413.pdf
--  * AMD Hudson-2, CZ
-+  * AMD Hudson-2, ML, CZ
-     Datasheet: Not publicly available
-   * Standard Microsystems (SMSC) SLC90E66 (Victory66) southbridge
-     Datasheet: Publicly available at the SMSC website http://www.smsc.com
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -152,6 +152,7 @@ config I2C_PIIX4
- 	    ATI SB700/SP5100
- 	    ATI SB800
- 	    AMD Hudson-2
-+	    AMD ML
- 	    AMD CZ
- 	    Serverworks OSB4
- 	    Serverworks CSB5
---- a/drivers/i2c/busses/i2c-piix4.c
-+++ b/drivers/i2c/busses/i2c-piix4.c
-@@ -22,7 +22,7 @@
- 	Intel PIIX4, 440MX
- 	Serverworks OSB4, CSB5, CSB6, HT-1000, HT-1100
- 	ATI IXP200, IXP300, IXP400, SB600, SB700/SP5100, SB800
--	AMD Hudson-2, CZ
-+	AMD Hudson-2, ML, CZ
- 	SMSC Victory66
+--- a/arch/arm/mach-mvebu/armada-370-xp.c
++++ b/arch/arm/mach-mvebu/armada-370-xp.c
+@@ -21,6 +21,7 @@
+ #include <linux/clocksource.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/mbus.h>
++#include <linux/slab.h>
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -28,6 +29,7 @@
+ #include "armada-370-xp.h"
+ #include "common.h"
+ #include "coherency.h"
++#include "mvebu-soc-id.h"
  
-    Note: we assume there can only be one device, with one or more
-@@ -235,7 +235,8 @@ static int piix4_setup_sb800(struct pci_
+ static void __init armada_370_xp_map_io(void)
  {
- 	unsigned short piix4_smba;
- 	unsigned short smba_idx = 0xcd6;
--	u8 smba_en_lo, smba_en_hi, i2ccfg, i2ccfg_offset = 0x10, smb_en;
-+	u8 smba_en_lo, smba_en_hi, smb_en, smb_en_status;
-+	u8 i2ccfg, i2ccfg_offset = 0x10;
+@@ -45,8 +47,38 @@ static void __init armada_370_xp_timer_a
+ #endif
+ }
  
- 	/* SB800 and later SMBus does not support forcing address */
- 	if (force || force_addr) {
-@@ -245,7 +246,15 @@ static int piix4_setup_sb800(struct pci_
- 	}
- 
- 	/* Determine the address of the SMBus areas */
--	smb_en = (aux) ? 0x28 : 0x2c;
-+	if ((PIIX4_dev->vendor == PCI_VENDOR_ID_AMD &&
-+	     PIIX4_dev->device == PCI_DEVICE_ID_AMD_HUDSON2_SMBUS &&
-+	     PIIX4_dev->revision >= 0x41) ||
-+	    (PIIX4_dev->vendor == PCI_VENDOR_ID_AMD &&
-+	     PIIX4_dev->device == 0x790b &&
-+	     PIIX4_dev->revision >= 0x49))
-+		smb_en = 0x00;
-+	else
-+		smb_en = (aux) ? 0x28 : 0x2c;
- 
- 	if (!request_region(smba_idx, 2, "smba_idx")) {
- 		dev_err(&PIIX4_dev->dev, "SMBus base address index region "
-@@ -258,13 +267,22 @@ static int piix4_setup_sb800(struct pci_
- 	smba_en_hi = inb_p(smba_idx + 1);
- 	release_region(smba_idx, 2);
- 
--	if ((smba_en_lo & 1) == 0) {
-+	if (!smb_en) {
-+		smb_en_status = smba_en_lo & 0x10;
-+		piix4_smba = smba_en_hi << 8;
-+		if (aux)
-+			piix4_smba |= 0x20;
-+	} else {
-+		smb_en_status = smba_en_lo & 0x01;
-+		piix4_smba = ((smba_en_hi << 8) | smba_en_lo) & 0xffe0;
-+	}
++static void __init i2c_quirk(void)
++{
++	struct device_node *np;
++	u32 dev, rev;
 +
-+	if (!smb_en_status) {
- 		dev_err(&PIIX4_dev->dev,
- 			"Host SMBus controller not enabled!\n");
- 		return -ENODEV;
- 	}
- 
--	piix4_smba = ((smba_en_hi << 8) | smba_en_lo) & 0xffe0;
- 	if (acpi_check_region(piix4_smba, SMBIOSIZE, piix4_driver.name))
- 		return -ENODEV;
++	/*
++	 * Only revisons more recent than A0 support the offload
++	 * mechanism. We can exit only if we are sure that we can
++	 * get the SoC revision and it is more recent than A0.
++	 */
++	if (mvebu_get_soc_id(&rev, &dev) == 0 && dev > MV78XX0_A0_REV)
++		return;
++
++	for_each_compatible_node(np, NULL, "marvell,mv78230-i2c") {
++		struct property *new_compat;
++
++		new_compat = kzalloc(sizeof(*new_compat), GFP_KERNEL);
++
++		new_compat->name = kstrdup("compatible", GFP_KERNEL);
++		new_compat->length = sizeof("marvell,mv78230-a0-i2c");
++		new_compat->value = kstrdup("marvell,mv78230-a0-i2c",
++						GFP_KERNEL);
++
++		of_update_property(np, new_compat);
++	}
++	return;
++}
++
+ static void __init armada_370_xp_dt_init(void)
+ {
++	if (of_machine_is_compatible("plathome,openblocks-ax3-4"))
++		i2c_quirk();
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
  
 
 
