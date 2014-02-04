@@ -1,88 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936588AbaBDXIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:08:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58319 "EHLO
+	id S936160AbaBDXHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:07:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716AbaBDXH7 (ORCPT
+	with ESMTP id S932766AbaBDVAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:07:59 -0500
-Date: Tue, 4 Feb 2014 15:07:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Bob Liu <bob.liu@oracle.com>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 10/10] mm: keep page cache radix tree nodes in check
-Message-Id: <20140204150756.d7f46af4385026ce61c89c55@linux-foundation.org>
-In-Reply-To: <1391475222-1169-11-git-send-email-hannes@cmpxchg.org>
-References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
-	<1391475222-1169-11-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Feb 2014 16:00:41 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 26/37] ALSA: Enable CONFIG_ZONE_DMA for smaller PCI DMA masks
+Date: Tue,  4 Feb 2014 13:01:02 -0800
+Message-Id: <20140204210056.747720283@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
+References: <20140204210055.992134150@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  3 Feb 2014 19:53:42 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Previously, page cache radix tree nodes were freed after reclaim
-> emptied out their page pointers.  But now reclaim stores shadow
-> entries in their place, which are only reclaimed when the inodes
-> themselves are reclaimed.  This is problematic for bigger files that
-> are still in use after they have a significant amount of their cache
-> reclaimed, without any of those pages actually refaulting.  The shadow
-> entries will just sit there and waste memory.  In the worst case, the
-> shadow entries will accumulate until the machine runs out of memory.
-> 
-> To get this under control, the VM will track radix tree nodes
-> exclusively containing shadow entries on a per-NUMA node list.
-> Per-NUMA rather than global because we expect the radix tree nodes
-> themselves to be allocated node-locally and we want to reduce
-> cross-node references of otherwise independent cache workloads.  A
-> simple shrinker will then reclaim these nodes on memory pressure.
-> 
-> A few things need to be stored in the radix tree node to implement the
-> shadow node LRU and allow tree deletions coming from the list:
-> 
-> 1. There is no index available that would describe the reverse path
->    from the node up to the tree root, which is needed to perform a
->    deletion.  To solve this, encode in each node its offset inside the
->    parent.  This can be stored in the unused upper bits of the same
->    member that stores the node's height at no extra space cost.
-> 
-> 2. The number of shadow entries needs to be counted in addition to the
->    regular entries, to quickly detect when the node is ready to go to
->    the shadow node LRU list.  The current entry count is an unsigned
->    int but the maximum number of entries is 64, so a shadow counter
->    can easily be stored in the unused upper bits.
-> 
-> 3. Tree modification needs tree lock and tree root, which are located
->    in the address space, so store an address_space backpointer in the
->    node.  The parent pointer of the node is in a union with the 2-word
->    rcu_head, so the backpointer comes at no extra cost as well.
-> 
-> 4. The node needs to be linked to an LRU list, which requires a list
->    head inside the node.  This does increase the size of the node, but
->    it does not change the number of objects that fit into a slab page.
+------------------
 
-changelog forgot to mention that this reclaim is performed via a
-shrinker...
+From: Takashi Iwai <tiwai@suse.de>
 
-How expensive is that list walk in scan_shadow_nodes()?  I assume in
-the best case it will bale out after nr_to_scan iterations?
+commit 80ab8eae70e51d578ebbeb228e0f7a562471b8b7 upstream.
+
+The PCI devices with DMA masks smaller than 32bit should enable
+CONFIG_ZONE_DMA.  Since the recent change of page allocator, page
+allocations via dma_alloc_coherent() with the limited DMA mask bits
+may fail more frequently, ended up with no available buffers, when
+CONFIG_ZONE_DMA isn't enabled.  With CONFIG_ZONE_DMA, the system has
+much more chance to obtain such pages.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=68221
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/Kconfig |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+--- a/sound/pci/Kconfig
++++ b/sound/pci/Kconfig
+@@ -30,6 +30,7 @@ config SND_ALS300
+ 	select SND_PCM
+ 	select SND_AC97_CODEC
+ 	select SND_OPL3_LIB
++	select ZONE_DMA
+ 	help
+ 	  Say 'Y' or 'M' to include support for Avance Logic ALS300/ALS300+
+ 
+@@ -54,6 +55,7 @@ config SND_ALI5451
+ 	tristate "ALi M5451 PCI Audio Controller"
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for the integrated AC97 sound
+ 	  device on motherboards using the ALi M5451 Audio Controller
+@@ -158,6 +160,7 @@ config SND_AZT3328
+ 	select SND_PCM
+ 	select SND_RAWMIDI
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for Aztech AZF3328 (PCI168)
+ 	  soundcards.
+@@ -463,6 +466,7 @@ config SND_EMU10K1
+ 	select SND_HWDEP
+ 	select SND_RAWMIDI
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y to include support for Sound Blaster PCI 512, Live!,
+ 	  Audigy and E-mu APS (partially supported) soundcards.
+@@ -478,6 +482,7 @@ config SND_EMU10K1X
+ 	tristate "Emu10k1X (Dell OEM Version)"
+ 	select SND_AC97_CODEC
+ 	select SND_RAWMIDI
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for the Dell OEM version of the
+ 	  Sound Blaster Live!.
+@@ -511,6 +516,7 @@ config SND_ES1938
+ 	select SND_OPL3_LIB
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on ESS Solo-1
+ 	  (ES1938, ES1946, ES1969) chips.
+@@ -522,6 +528,7 @@ config SND_ES1968
+ 	tristate "ESS ES1968/1978 (Maestro-1/2/2E)"
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on ESS Maestro
+ 	  1/2/2E chips.
+@@ -602,6 +609,7 @@ config SND_ICE1712
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
+ 	select BITREVERSE
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on the
+ 	  ICE1712 (Envy24) chip.
+@@ -688,6 +696,7 @@ config SND_LX6464ES
+ config SND_MAESTRO3
+ 	tristate "ESS Allegro/Maestro3"
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on ESS Maestro 3
+ 	  (Allegro) chips.
+@@ -782,6 +791,7 @@ config SND_SIS7019
+ 	tristate "SiS 7019 Audio Accelerator"
+ 	depends on X86 && !X86_64
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for the SiS 7019 Audio Accelerator.
+ 
+@@ -793,6 +803,7 @@ config SND_SONICVIBES
+ 	select SND_OPL3_LIB
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on the S3
+ 	  SonicVibes chip.
+@@ -804,6 +815,7 @@ config SND_TRIDENT
+ 	tristate "Trident 4D-Wave DX/NX; SiS 7018"
+ 	select SND_MPU401_UART
+ 	select SND_AC97_CODEC
++	select ZONE_DMA
+ 	help
+ 	  Say Y here to include support for soundcards based on Trident
+ 	  4D-Wave DX/NX or SiS 7018 chips.
+
 
