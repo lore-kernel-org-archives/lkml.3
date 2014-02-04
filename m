@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaBDPzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:55:18 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:57214 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaBDPzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:55:16 -0500
-Date: Tue, 4 Feb 2014 10:55:08 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH -v2 1/6] memcg: do not replicate
- try_get_mem_cgroup_from_mm in __mem_cgroup_try_charge
-Message-ID: <20140204155508.GM6963@cmpxchg.org>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-2-git-send-email-mhocko@suse.cz>
+	id S1754473AbaBDP5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:57:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54965 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaBDP5K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 10:57:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from device tree
+Date: Tue, 4 Feb 2014 16:56:58 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>
+References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com> <4524393.8AzpATULMB@wuerfel> <20140204120801.GB27975@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20140204120801.GB27975@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391520540-17436-2-git-send-email-mhocko@suse.cz>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402041656.59165.arnd@arndb.de>
+X-Provags-ID: V02:K0:MbP4ZjWJT1/5JGpi4i4R+67bPfxFMGpz4W3wknoRDf9
+ lOCWbGku3lUHM1Ue2DDkuYdb51xfGWBbeVG1Kqhswmex2qVOoh
+ J5DYLeVWphiLdj3Vxw1N9eLuzrFRklw9DQec9nHpEHAV3Warja
+ l0iyi2I3wW+xWOp43Iu2fPka4SuxDINTtk6K5KAy0YNmHtCm8L
+ V48kNKqvx+FD7pmxdsSYGu2IWeq47HAejNHKEDT/Lzwc2/2l/I
+ 8iPk9OESiHg5xTF9yprh/BNU+zrX+1FHuugiIHJdFbQt1veUrC
+ W6vl95gRfmkYDQiIZpXsJgXVbCUnFvu1pE7N6mQCNjFYw7YF11
+ c1QbIpIQ7lGbkOcysru85KDYVcp6QpJAASsbuekV3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 02:28:55PM +0100, Michal Hocko wrote:
-> Johannes Weiner has pointed out that __mem_cgroup_try_charge duplicates
-> try_get_mem_cgroup_from_mm for charges which came without a memcg. The
-> only reason seems to be a tiny optimization when css_tryget is not
-> called if the charge can be consumed from the stock. Nevertheless
-> css_tryget is very cheap since it has been reworked to use per-cpu
-> counting so this optimization doesn't give us anything these days.
+On Tuesday 04 February 2014, Liviu Dudau wrote:
+> On Tue, Feb 04, 2014 at 10:09:44AM +0000, Arnd Bergmann wrote:
+> > On Monday 03 February 2014 22:17:44 Liviu Dudau wrote:
+> > > On Mon, Feb 03, 2014 at 07:31:31PM +0000, Arnd Bergmann wrote:
+> > > > The aperture here reflects the subset of the
+> > > > 4GB bus I/O space that is actually mapped into a CPU visible "physical
+> > > > I/O aperture" using an inbound mapping of the host bridge. The physical
+> > > > I/O aperture in turn gets mapped to the virtual I/O space using
+> > > > pci_ioremap_io.
+> > >
+> > > Agree.
+> > >
+> > > > The difference between a bus I/O address and a logical
+> > > > I/O address is stored in the io_offset.
+> > >
+> > > Not exactly. If that would be true that means that for an I/O range that
+> > > start at bus I/O address zero but physical I/O apperture starts at
+> > > 0x40000000 the io_offset is zero. For me, the io_offset should be 0x40000000.
+> >
+> > That's not how we do it on any of the existing host controllers.
+> > Typically the io_offset is zero for the first one, and may be
+> > either zero for all the others (meaning BARs get > 64KB values
+> > for secondary buses) or between 64KB and 2MB (meaning each bus
+> > starts at I/O port number 0).
 > 
-> So let's drop the code duplication so that the code is more readable.
-> While we are at it also remove a very confusing comment in
-> try_get_mem_cgroup_from_mm.
+> In that case it is probably worth to rename my variable into phys_io_offset.
 > 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c | 49 ++++++++-----------------------------------------
->  1 file changed, 8 insertions(+), 41 deletions(-)
+> I need to go back over my driver code. My assumptions were probably wrong
+> wrt to meaning of the io_offset.
+
+Ok. I'd still call it 'base' rather than 'offset', although the meaning
+isn't all that different.
+
+> > But there should never be an IORESOURCE_IO resource structure that is
+> > not in IO space, i.e. within ioport_resource. Doing an "adjustment"
+> > is not an operation defined on this structure. What I meant above is that
+> > the pci range parser gets this right and gives you a resource that looks
+> > like { .flags = IORESOURCE_MEM, .start = phys_base, .end = phys_base +
+> > size - 1}, while the resource we want to register is { .flags = IORESOURCE_IO,
+> > .start = log_base, .end = log_base + size -1}. In the of_pci_range struct for
+> > the I/O space, the "pci_space" is IORESOURCE_IO (for the pci_addr), while the
+> > "flags" are IORESOURCE_MEM, to go along with the cpu_addr.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 53385cd4e6f0..042e4ff36c05 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1081,11 +1081,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
->  
->  	if (!mm)
->  		return NULL;
+> The pci range parser gives me a range with .flags = IORESOURCE_IO for IO space. It
+> does not convert it to IORESOURCE_MEM. Hence the need for adjustment.
 
-While you're at it, this check also seems unnecessary.
+Ah, I see that now in the code too. This seems to be a bug in the range parser
+though: range->flags should not be initialized to
+of_bus_pci_get_flags(parser->range).
 
-> -	/*
-> -	 * Because we have no locks, mm->owner's may be being moved to other
-> -	 * cgroup. We use css_tryget() here even if this looks
-> -	 * pessimistic (rather than adding locks here).
-> -	 */
-> +
->  	rcu_read_lock();
->  	do {
->  		memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
-> @@ -2759,45 +2755,15 @@ again:
->  			goto done;
->  		css_get(&memcg->css);
->  	} else {
-> -		struct task_struct *p;
-> -
-> -		rcu_read_lock();
-> -		p = rcu_dereference(mm->owner);
-> -		/*
-> -		 * Because we don't have task_lock(), "p" can exit.
-> -		 * In that case, "memcg" can point to root or p can be NULL with
-> -		 * race with swapoff. Then, we have small risk of mis-accouning.
-> -		 * But such kind of mis-account by race always happens because
-> -		 * we don't have cgroup_mutex(). It's overkill and we allo that
-> -		 * small race, here.
-> -		 * (*) swapoff at el will charge against mm-struct not against
-> -		 * task-struct. So, mm->owner can be NULL.
-> -		 */
-> -		memcg = mem_cgroup_from_task(p);
-> -		if (!memcg)
-> +		memcg = try_get_mem_cgroup_from_mm(mm);
-> +		if (!memcg) {
->  			memcg = root_mem_cgroup;
-> -		if (mem_cgroup_is_root(memcg)) {
-> -			rcu_read_unlock();
-> -			goto done;
-> -		}
-> -		if (consume_stock(memcg, nr_pages)) {
-> -			/*
-> -			 * It seems dagerous to access memcg without css_get().
-> -			 * But considering how consume_stok works, it's not
-> -			 * necessary. If consume_stock success, some charges
-> -			 * from this memcg are cached on this cpu. So, we
-> -			 * don't need to call css_get()/css_tryget() before
-> -			 * calling consume_stock().
-> -			 */
-> -			rcu_read_unlock();
->  			goto done;
->  		}
-> -		/* after here, we may be blocked. we need to get refcnt */
-> -		if (!css_tryget(&memcg->css)) {
-> -			rcu_read_unlock();
-> -			goto again;
-> -		}
-> -		rcu_read_unlock();
-> +		if (mem_cgroup_is_root(memcg))
-> +			goto done_put;
-> +		if (consume_stock(memcg, nr_pages))
-> +			goto done_put;
-
-These two are actually the same in the if (*ptr) branch.
+	Arnd
