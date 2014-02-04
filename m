@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbaBDEDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 23:03:19 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:40076 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773AbaBDEDR (ORCPT
+	id S1753769AbaBDEOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 23:14:55 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:53140 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960AbaBDEOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 23:03:17 -0500
+	Mon, 3 Feb 2014 23:14:47 -0500
+Date: Mon, 3 Feb 2014 20:14:01 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Weijie Yang <weijie.yang@samsung.com>, hughd@google.com,
+        Minchan Kim <minchan@kernel.org>, shli@kernel.org,
+        Bob Liu <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        Seth Jennings <sjennings@variantweb.net>,
+        Heesub Shin <heesub.shin@samsung.com>, mquzik@redhat.com,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 2/8] mm/swap: fix race on swap_info reuse between swapoff
+ and swapon
+In-Reply-To: <20140203152925.89360139306d143f5360fa07@linux-foundation.org>
+Message-ID: <alpine.LSU.2.11.1402032010180.29889@eggly.anvils>
+References: <000d01cf1b47$f12e11f0$d38a35d0$%yang@samsung.com> <20140203152340.b28bb35698ee75615eb23041@linux-foundation.org> <20140203152925.89360139306d143f5360fa07@linux-foundation.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <87a9e7wq6w.fsf@devron.myhome.or.jp>
-References: <1387953112-2828-1-git-send-email-linkinjeon@gmail.com>
-	<87eh3kx1n6.fsf@devron.myhome.or.jp>
-	<CAKYAXd9mm6KmMu6XvQoFynQtyAC8yR5rCd12SMoB_PFgojbEiw@mail.gmail.com>
-	<87a9e7wq6w.fsf@devron.myhome.or.jp>
-Date: Tue, 4 Feb 2014 13:03:16 +0900
-Message-ID: <CAKYAXd8K9tO2zyZvHtMRA54=XvWowaA3SVa2H6_R5bnmKgG5Dg@mail.gmail.com>
-Subject: Re: [PATCH v3 5/6] fat: permit to return phy block number by fibmap
- in fallocated region
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-04, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>>  	/* fat_get_cluster() assumes the requested blocknr isn't truncated.
->>>> */
->>>>  	down_read(&MSDOS_I(mapping->host)->truncate_lock);
->>>> +	/* To get block number beyond file size in fallocated region */
->>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 1);
->>>>  	blocknr = generic_block_bmap(mapping, block, fat_get_block);
->>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 0);
->>>>  	up_read(&MSDOS_I(mapping->host)->truncate_lock);
->>>
->>> This is racy. While user is using bmap, kernel can allocate new blocks.
->>> We should use another function for this.
->> I understand that fat can map fallocated blocks in read case while
->> user is using bmap.
->> But I can not find the case allocate new blocks.
->> If I am missing something, Could you please elaborate more ?
->> Is it a case of _bmap request returning the block number for block
->> allocated in parallel write path ?
->
-> ->beyond_size is global for inode. So, write(2) path on same inode with
-> bmap() also can see 1 set by bmap() while another process is using bmap().
-'create' flag  will be 1 in write(2) path. ->beyond_isize will only be
-checked when 'create' flag is 0. Is there any case to be racy by
-beyond_isize in write(2) path ?
+On Mon, 3 Feb 2014, Andrew Morton wrote:
+> On Mon, 3 Feb 2014 15:23:40 -0800 Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Mon, 27 Jan 2014 18:03:04 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+> > 
+> > > swapoff clear swap_info's SWP_USED flag prematurely and free its resources
+> > > after that. A concurrent swapon will reuse this swap_info while its previous
+> > > resources are not cleared completely.
+> > > 
+> > > These late freed resources are:
+> > >  - p->percpu_cluster
+> > >  - swap_cgroup_ctrl[type]
+> > >  - block_device setting
+> > >  - inode->i_flags &= ~S_SWAPFILE
+> > > 
+> > > This patch clear SWP_USED flag after all its resources freed, so that swapon
+> > > can reuse this swap_info by alloc_swap_info() safely.
+> > > 
+> > > This patch is just for a rare scenario, aim to correct of code.
+> > 
+> > I believe that
+> > http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
+> > makes this patch redundant?
+> > 
+> 
+> oop, hang on.  This patch *is* a stealth-updated version of
+> http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch.
+> 
+> Undocumented removals of si->swap_map have been added.  What's going on
+> there?
+> 
+> I think I'll stick with the original patch for now.  If you see
+> additional optimisations or changes, let's address that separately?
 
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Correct decision, thanks: I explained in an answer when Acking the
+previous version why I dislike this version (it would prevent you
+from watching the slow progress of swapoff).
+
+Hugh
