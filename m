@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416AbaBDXvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:51:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36835 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933157AbaBDXvK convert rfc822-to-8bit (ORCPT
+	id S933453AbaBDXv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:51:26 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:62760 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933419AbaBDXvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:51:10 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH v2 2/5] clocksource: qcom: Move clocksource code out of mach-msm
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20140204230956.GE20528@codeaurora.org>
-Date: Tue, 4 Feb 2014 17:51:06 -0600
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EE8EC898-CFE4-4953-968A-ECCEEB09DE76@codeaurora.org>
-References: <1391553532-27001-1-git-send-email-galak@codeaurora.org> <1391553532-27001-3-git-send-email-galak@codeaurora.org> <20140204230956.GE20528@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1827)
+	Tue, 4 Feb 2014 18:51:21 -0500
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 4 Feb 2014 15:50:46 -0800
+Message-ID: <CALCETrU6M=Abo1z2cRoZy07-=3bwKiK84gCSMcBPLA1TkXPb8A@mail.gmail.com>
+Subject: [ARCH question] Do syscall_get_nr and syscall_get_arguments always work?
+To: Oleg Nesterov <oleg@redhat.com>, linux-arch <linux-arch@vger.kernel.org>
+Cc: linux-audit@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 4, 2014 at 11:32 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Now we get rid of __audit_syscall_entry.  (This speeds up even the
+> auditing-is-on case.)  Instead we have __audit_start_record, which
+> does more or less the same thing, except that (a) it doesn't BUG if
+> in_syscall and (b) it *sets* TIF_SYSCALL_AUDIT.  This relies on the
+> fact that syscall_get_nr and syscall_get_arguments are reliable on
+> x86_64.  I suspect that they're reliable everywhere else, too.  The
+> idea is that there's nothing wrong with calling __audit_start_record
+> more than once.  (Maybe it should be called
+> __audit_record_this_syscall.)
 
-On Feb 4, 2014, at 5:09 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+I'd like to make a change that can result in syscall_get_nr and
+syscall_get_arguments being called (on current and
+task_pt_regs(current)) from any system call (as opposed to being
+called only from the audit/trace slowpaths).  Is this safe?
 
-> On 02/04, Kumar Gala wrote:
->> We intent to share the clocksource code for MSM platforms between legacy
-> 
-> s/intent/intend/
-> 
->> and multiplatform supported qcom SoCs.
->> 
->> Acked-by: Olof Johansson <olof@lixom.net>
->> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> 
->> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
->> index cd6950f..81caa16 100644
->> --- a/drivers/clocksource/Kconfig
->> +++ b/drivers/clocksource/Kconfig
->> @@ -140,3 +140,7 @@ config VF_PIT_TIMER
->> 	bool
->> 	help
->> 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
->> +
->> +config CLKSRC_QCOM
->> +	bool
->> +	depends on ARCH_MSM
-> 
-> It would be a a little less noisy if  you left this as MSM_TIMER
-> (msm is all over the code in that file anyway). Also, why do we
-> care about depending on ARCH_MSM here? This is a hidden Kconfig
-> option anyway.
+Here's my somewhat clueless analysis:
 
-I will drop the depends, but not sure what point in leaving this as MSM_TIMER.
+On x86_64, I've tested it, and it works.  The entry code saves all of
+the argument registers, even in the fast path.
 
-- k
+i386 and ia32_compat look okay, too.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+If "stmia    sp, {r0 - r12}            @ Calling r0 - r12" does what I
+think it does, then arm should be okay.
 
+I'm totally guessing here, but e10_sync on aarch64 seems to save
+enough registers.  I admit to being a little bit surprised, though --
+aarch64 is new, and if I were designing an ABI, I specify that
+syscalls *don't* save registers.
+
+ia64 has a comment in ivt.S that streamlined syscalls save nr in r15.
+The rest come from unwind info (!).  I assume this has something to do
+with the magic ia64 register rotation thing.  I have no idea what
+happens if there's a NaT in an argument register.
+
+I can't even find the system call entry point on mips.
+
+
+Is there a semi-official answer here?
+
+
+--Andy
