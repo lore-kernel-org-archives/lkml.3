@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935699AbaBDWNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:13:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56714 "EHLO
+	id S935405AbaBDWNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:13:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934008AbaBDVIp (ORCPT
+	with ESMTP id S934011AbaBDVIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:45 -0500
+	Tue, 4 Feb 2014 16:08:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Aristov <aristov.alexander@gmail.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 078/133] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
-Date: Tue,  4 Feb 2014 13:07:59 -0800
-Message-Id: <20140204210739.236960883@linuxfoundation.org>
+Subject: [PATCH 3.12 079/133] ALSA: hda - Correct AD1986A 3stack pin configs
+Date: Tue,  4 Feb 2014 13:08:00 -0800
+Message-Id: <20140204210739.264460571@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -31,30 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+commit ed0e0d0617a8dc3d8b82c6e54827f269f2247b07 upstream.
 
-The lack of comma leads to the wrong channel for an SPDIF channel.
-Unfortunately this wasn't caught by compiler because it's still a
-valid expression.
+The 3stack pin configs for AD1986A codec had incorrect values that
+resulted in broken mic and line-in.
 
-Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/rme9652/rme9652.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_analog.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/sound/pci/rme9652/rme9652.c
-+++ b/sound/pci/rme9652/rme9652.c
-@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
- 	/* ADAT channels are remapped */
- 	1, 3, 5, 7, 9, 11, 13, 15,
- 	/* channels 8 and 9 are S/PDIF */
--	24, 25
-+	24, 25,
- 	/* others don't exist */
- 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
- };
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -264,11 +264,11 @@ static const struct hda_fixup ad1986a_fi
+ 		.v.pins = (const struct hda_pintbl[]) {
+ 			{ 0x1a, 0x02214021 }, /* headphone */
+ 			{ 0x1b, 0x01014011 }, /* front */
+-			{ 0x1c, 0x01013012 }, /* surround */
+-			{ 0x1d, 0x01019015 }, /* clfe */
++			{ 0x1c, 0x01813030 }, /* line-in */
++			{ 0x1d, 0x01a19020 }, /* rear mic */
+ 			{ 0x1e, 0x411111f0 }, /* N/A */
+ 			{ 0x1f, 0x02a190f0 }, /* mic */
+-			{ 0x20, 0x018130f0 }, /* line-in */
++			{ 0x20, 0x411111f0 }, /* N/A */
+ 			{}
+ 		},
+ 	},
 
 
