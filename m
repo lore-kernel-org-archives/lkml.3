@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935240AbaBDWoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:44:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56313 "EHLO
+	id S935670AbaBDWoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:44:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933448AbaBDVCl (ORCPT
+	with ESMTP id S933437AbaBDVCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:41 -0500
+	Tue, 4 Feb 2014 16:02:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Falken <NetFestivalHaveFun@gmx.com>,
-        Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
-        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Michal Schmidt <mschmidt@redhat.com>,
         Eric Dumazet <edumazet@google.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 077/104] net: avoid reference counter overflows on fib_rules in multicast forwarding
-Date: Tue,  4 Feb 2014 13:02:20 -0800
-Message-Id: <20140204210224.890246916@linuxfoundation.org>
+Subject: [PATCH 3.10 074/104] bnx2x: fix DMA unmapping of TSO split BDs
+Date: Tue,  4 Feb 2014 13:02:17 -0800
+Message-Id: <20140204210224.808170143@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -33,73 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-[ Upstream commit 95f4a45de1a0f172b35451fc52283290adb21f6e ]
+[ Upstream commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 ]
 
-Bob Falken reported that after 4G packets, multicast forwarding stopped
-working. This was because of a rule reference counter overflow which
-freed the rule as soon as the overflow happend.
+bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
 
-This patch solves this by adding the FIB_LOOKUP_NOREF flag to
-fib_rules_lookup calls. This is safe even from non-rcu locked sections
-as in this case the flag only implies not taking a reference to the rule,
-which we don't need at all.
+  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
+  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
+  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
+  [unmap size=66 bytes]
 
-Rules only hold references to the namespace, which are guaranteed to be
-available during the call of the non-rcu protected function reg_vif_xmit
-because of the interface reference which itself holds a reference to
-the net namespace.
+The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
+using one DMA mapping for both, but it uses only the length of the first
+BD when unmapping.
 
-Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
-Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
-Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+This patch fixes the bug by unmapping the whole length of the two BDs.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ipmr.c  |    7 +++++--
- net/ipv6/ip6mr.c |    7 +++++--
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -157,9 +157,12 @@ static struct mr_table *ipmr_get_table(s
- static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
- 			   struct mr_table **mrt)
- {
--	struct ipmr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ipmr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -153,6 +153,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	struct sk_buff *skb = tx_buf->skb;
+ 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
+ 	int nbd;
++	u16 split_bd_len = 0;
  
- 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
- 			       flowi4_to_flowi(flp4), 0, &arg);
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -141,9 +141,12 @@ static struct mr6_table *ip6mr_get_table
- static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
- 			    struct mr6_table **mrt)
- {
--	struct ip6mr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ip6mr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+ 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
+ 	prefetch(&skb->end);
+@@ -160,10 +161,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
+ 	   txdata->txq_index, idx, tx_buf, skb);
  
- 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
- 			       flowi6_to_flowi(flp6), 0, &arg);
+-	/* unmap first bd */
+ 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
+-	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
+-			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
+ 
+ 
+ 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
+@@ -182,12 +180,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
+-	/* ...and the TSO split header bd since they have no mapping */
++	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
++		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
++		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
+ 		--nbd;
+ 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 	}
+ 
++	/* unmap first bd */
++	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
++			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
++			 DMA_TO_DEVICE);
++
+ 	/* now free frags */
+ 	while (nbd > 0) {
+ 
 
 
