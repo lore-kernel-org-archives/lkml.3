@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934354AbaBDVLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:11:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57003 "EHLO
+	id S935024AbaBDVwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:52:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57078 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933570AbaBDVLD (ORCPT
+	with ESMTP id S933570AbaBDVLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:03 -0500
+	Tue, 4 Feb 2014 16:11:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.13 010/140] usb: chipidea: add freescale imx28 special write register method
-Date: Tue,  4 Feb 2014 13:09:57 -0800
-Message-Id: <20140204211037.262973962@linuxfoundation.org>
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.13 007/140] KVM: x86: limit PIT timer frequency
+Date: Tue,  4 Feb 2014 13:09:54 -0800
+Message-Id: <20140204211037.179791595@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,126 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit ed8f8318d2ef3e5f9e4ddf79349508c116b68d7f upstream.
+commit 9ed96e87c5748de4c2807ef17e81287c7304186c upstream.
 
-According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
-register error issue", All USB register write operations must
-use the ARM SWP instruction. So, we implement special hw_write
-and hw_test_and_clear for imx28.
+Limit PIT timer frequency similarly to the limit applied by
+LAPIC timer.
 
-Discussion for it at below:
-http://marc.info/?l=linux-usb&m=137996395529294&w=2
-
-This patch is needed for stable tree 3.11+.
-
-Cc: robert.hodaszi@digi.com
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/ci.h    |   26 ++++++++++++++++++++++++--
- drivers/usb/chipidea/core.c  |    2 ++
- drivers/usb/chipidea/host.c  |    1 +
- include/linux/usb/chipidea.h |    1 +
- 4 files changed, 28 insertions(+), 2 deletions(-)
+ arch/x86/kvm/i8254.c |   18 ++++++++++++++++++
+ arch/x86/kvm/lapic.c |    3 ---
+ arch/x86/kvm/x86.c   |    3 +++
+ arch/x86/kvm/x86.h   |    2 ++
+ 4 files changed, 23 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/chipidea/ci.h
-+++ b/drivers/usb/chipidea/ci.h
-@@ -135,6 +135,7 @@ struct hw_bank {
-  * @id_event: indicates there is an id event, and handled at ci_otg_work
-  * @b_sess_valid_event: indicates there is a vbus event, and handled
-  * at ci_otg_work
-+ * @imx28_write_fix: Freescale imx28 needs swp instruction for writing
-  */
- struct ci_hdrc {
- 	struct device			*dev;
-@@ -173,6 +174,7 @@ struct ci_hdrc {
- 	struct dentry			*debugfs;
- 	bool				id_event;
- 	bool				b_sess_valid_event;
-+	bool				imx28_write_fix;
- };
+--- a/arch/x86/kvm/i8254.c
++++ b/arch/x86/kvm/i8254.c
+@@ -37,6 +37,7 @@
  
- static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci)
-@@ -253,6 +255,26 @@ static inline u32 hw_read(struct ci_hdrc
- 	return ioread32(ci->hw_bank.regmap[reg]) & mask;
- }
+ #include "irq.h"
+ #include "i8254.h"
++#include "x86.h"
  
-+#ifdef CONFIG_SOC_IMX28
-+static inline void imx28_ci_writel(u32 val, volatile void __iomem *addr)
-+{
-+	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
-+}
-+#else
-+static inline void imx28_ci_writel(u32 val, volatile void __iomem *addr)
-+{
-+}
-+#endif
+ #ifndef CONFIG_X86_64
+ #define mod_64(x, y) ((x) - (y) * div64_u64(x, y))
+@@ -349,6 +350,23 @@ static void create_pit_timer(struct kvm
+ 	atomic_set(&ps->pending, 0);
+ 	ps->irq_ack = 1;
+ 
++	/*
++	 * Do not allow the guest to program periodic timers with small
++	 * interval, since the hrtimers are not throttled by the host
++	 * scheduler.
++	 */
++	if (ps->is_periodic) {
++		s64 min_period = min_timer_period_us * 1000LL;
 +
-+static inline void __hw_write(struct ci_hdrc *ci, u32 val,
-+		void __iomem *addr)
-+{
-+	if (ci->imx28_write_fix)
-+		imx28_ci_writel(val, addr);
-+	else
-+		iowrite32(val, addr);
-+}
++		if (ps->period < min_period) {
++			pr_info_ratelimited(
++			    "kvm: requested %lld ns "
++			    "i8254 timer period limited to %lld ns\n",
++			    ps->period, min_period);
++			ps->period = min_period;
++		}
++	}
 +
- /**
-  * hw_write: writes to a hw register
-  * @reg:  register index
-@@ -266,7 +288,7 @@ static inline void hw_write(struct ci_hd
- 		data = (ioread32(ci->hw_bank.regmap[reg]) & ~mask)
- 			| (data & mask);
- 
--	iowrite32(data, ci->hw_bank.regmap[reg]);
-+	__hw_write(ci, data, ci->hw_bank.regmap[reg]);
+ 	hrtimer_start(&ps->timer, ktime_add_ns(ktime_get(), interval),
+ 		      HRTIMER_MODE_ABS);
  }
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -71,9 +71,6 @@
+ #define VEC_POS(v) ((v) & (32 - 1))
+ #define REG_POS(v) (((v) >> 5) << 4)
  
- /**
-@@ -281,7 +303,7 @@ static inline u32 hw_test_and_clear(stru
+-static unsigned int min_timer_period_us = 500;
+-module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
+-
+ static inline void apic_set_reg(struct kvm_lapic *apic, int reg_off, u32 val)
  {
- 	u32 val = ioread32(ci->hw_bank.regmap[reg]) & mask;
+ 	*((u32 *) (apic->regs + reg_off)) = val;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -94,6 +94,9 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
+ static bool ignore_msrs = 0;
+ module_param(ignore_msrs, bool, S_IRUGO | S_IWUSR);
  
--	iowrite32(val, ci->hw_bank.regmap[reg]);
-+	__hw_write(ci, val, ci->hw_bank.regmap[reg]);
- 	return val;
- }
++unsigned int min_timer_period_us = 500;
++module_param(min_timer_period_us, uint, S_IRUGO | S_IWUSR);
++
+ bool kvm_has_tsc_control;
+ EXPORT_SYMBOL_GPL(kvm_has_tsc_control);
+ u32  kvm_max_guest_tsc_khz;
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -125,5 +125,7 @@ int kvm_write_guest_virt_system(struct x
+ #define KVM_SUPPORTED_XCR0	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+ extern u64 host_xcr0;
  
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -554,6 +554,8 @@ static int ci_hdrc_probe(struct platform
- 
- 	ci->dev = dev;
- 	ci->platdata = dev->platform_data;
-+	ci->imx28_write_fix = !!(ci->platdata->flags &
-+		CI_HDRC_IMX28_WRITE_FIX);
- 
- 	ret = hw_device_init(ci, base);
- 	if (ret < 0) {
---- a/drivers/usb/chipidea/host.c
-+++ b/drivers/usb/chipidea/host.c
-@@ -65,6 +65,7 @@ static int host_start(struct ci_hdrc *ci
- 	ehci->caps = ci->hw_bank.cap;
- 	ehci->has_hostpc = ci->hw_bank.lpm;
- 	ehci->has_tdi_phy_lpm = ci->hw_bank.lpm;
-+	ehci->imx28_write_fix = ci->imx28_write_fix;
- 
- 	if (ci->platdata->reg_vbus) {
- 		ret = regulator_enable(ci->platdata->reg_vbus);
---- a/include/linux/usb/chipidea.h
-+++ b/include/linux/usb/chipidea.h
-@@ -24,6 +24,7 @@ struct ci_hdrc_platform_data {
- 	 * but otg is not supported (no register otgsc).
- 	 */
- #define CI_HDRC_DUAL_ROLE_NOT_OTG	BIT(4)
-+#define CI_HDRC_IMX28_WRITE_FIX		BIT(5)
- 	enum usb_dr_mode	dr_mode;
- #define CI_HDRC_CONTROLLER_RESET_EVENT		0
- #define CI_HDRC_CONTROLLER_STOPPED_EVENT	1
++extern unsigned int min_timer_period_us;
++
+ extern struct static_key kvm_no_apic_vcpu;
+ #endif
 
 
