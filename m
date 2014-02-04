@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206AbaBDTGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:06:06 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55165 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaBDTGA (ORCPT
+	id S1754938AbaBDTGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:06:20 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40973 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683AbaBDTGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:06:00 -0500
-Date: Tue, 4 Feb 2014 20:05:35 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: mips octeon memory model questions
-Message-ID: <20140204190535.GC5002@laptop.programming.kicks-ass.net>
-References: <20140204184150.GB5002@laptop.programming.kicks-ass.net>
- <CA+55aFz9+AtK_OnUhH0gspUsXLxZN-MRwKVR5zVPsVGmGpBqxg@mail.gmail.com>
+	Tue, 4 Feb 2014 14:06:18 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+6S+D4g2p0AL7PgxSU7FJtITHChHfuviU=
+X-DKIM: OpenDKIM Filter v2.0.1 titan A242E51D489
+Date: Tue, 4 Feb 2014 14:05:58 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
+Message-ID: <20140204190558.GJ8533@titan.lakedaemon.net>
+References: <20131201172914.GV2879@titan.lakedaemon.net>
+ <20131211175037.GY10053@titan.lakedaemon.net>
+ <20140110183430.GO19878@titan.lakedaemon.net>
+ <20140128173531.GT29184@titan.lakedaemon.net>
+ <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFz9+AtK_OnUhH0gspUsXLxZN-MRwKVR5zVPsVGmGpBqxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:58:40AM -0800, Linus Torvalds wrote:
-> On Tue, Feb 4, 2014 at 10:41 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > Still doesn't make sense, because if we need the first sync to stop
-> > writes from being re-ordered with the ll-sc, we also need the second
-> > sync to avoid the same.
+On Tue, Feb 04, 2014 at 07:59:58PM +0100, Thomas Gleixner wrote:
+> On Tue, 28 Jan 2014, Jason Cooper wrote:
+> > I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
+> > near to the end of the merge window and there's been no activity on this
+> > pull request.
+> > 
+> > Please let us know if there's anything we can do to assist.
 > 
-> Presumably octeon doesn't do speculative writes, only *buffered* writes.
+> Nah. I simply forgot about it. About to send a pull request to Linus.
 
-Speculative writes are bad.. :-)
+Great, thanks!
 
-> So writes move down, not up.
-
-Right, but the ll-sc store might move down over a later store. Say
-because the ll-sc needs to first get exclusive ownership of the
-cacheline where the later store would be to an already owned line.
-
-
+Jason.
