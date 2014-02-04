@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935087AbaBDWQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:16:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:60350 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933980AbaBDWQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:16:32 -0500
-Message-ID: <52F1668B.9040507@ti.com>
-Date: Tue, 4 Feb 2014 17:15:39 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S935731AbaBDWQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:16:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56658 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933868AbaBDVIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 16:08:37 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marek Roszko <mark.roszko@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 3.12 058/133] tty/serial: at91: disable uart timer at start of shutdown
+Date: Tue,  4 Feb 2014 13:07:39 -0800
+Message-Id: <20140204210738.671590494@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
+References: <20140204210737.008598235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <daniel.lezcano@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v4 1/3] clocksource: timer-keystone: introduce clocksource
- driver for Keystone
-References: <1391513453-21140-1-git-send-email-ivan.khoronzhuk@ti.com> <1391513453-21140-2-git-send-email-ivan.khoronzhuk@ti.com> <alpine.DEB.2.02.1402041715220.24986@ionos.tec.linutronix.de> <52F11B5C.40407@ti.com> <alpine.DEB.2.02.1402042113270.24986@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1402042113270.24986@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 February 2014 03:17 PM, Thomas Gleixner wrote:
-> On Tue, 4 Feb 2014, Ivan Khoronzhuk wrote:
-> 
-> Please do not top post.
-> 
->> It was so in v1. But it was decided to use explicit memory barriers,
->> because we're always sure the memory barriers are there and that
->> they're properly documented. Also in this case I don't need to add
->> keystone readl/writel relaxed function variants and to use mixed calls of
->> writel/writel_relaxed functions.
->>
->> See:
->> http://www.spinics.net/lists/arm-kernel/msg294941.html
-> 
-> Fair enough, but we want a proper explanation for explicit barriers in
-> the code and not in some random discussion of patch version X on some
-> random mailing list.
-> 
-> Aside of that it should be iowmb(), but I might miss something ...
-> 
-Agree. __iowmb() seems to be more appropriate.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Regards,
-Santosh
+------------------
+
+From: Marek Roszko <mark.roszko@gmail.com>
+
+commit 8bc661bfc0c2d221e209f4205bdaaf574d50100c upstream.
+
+The uart timer will schedule a tasklet when it fires. It is possible that it
+can fire inside _shutdown before it is killed in the dma and pdc cleanup
+routines. This causes a tasklet that exists after the port is shutdown, so when
+the kernel finally executes it, it panics as the tty port is NULL.
+
+This is a somewhat rare condition but its possible if a program keeps on
+opening/closing the port. It has been observed in particular with systemd
+boot messages that were causing a kernel panic because of this behavior.
+
+Moving the timer deletion to the beginning of the function stops a tasklet from
+being scheduled unexpectedly.
+
+Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+[nicolas.ferre@atmel.com: modify commit message, call setup_timer() in any case]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/tty/serial/atmel_serial.c |   22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -824,9 +824,6 @@ static void atmel_release_rx_dma(struct
+ 	atmel_port->desc_rx = NULL;
+ 	atmel_port->chan_rx = NULL;
+ 	atmel_port->cookie_rx = -EINVAL;
+-
+-	if (!atmel_port->is_usart)
+-		del_timer_sync(&atmel_port->uart_timer);
+ }
+ 
+ static void atmel_rx_from_dma(struct uart_port *port)
+@@ -1228,9 +1225,6 @@ static void atmel_release_rx_pdc(struct
+ 				 DMA_FROM_DEVICE);
+ 		kfree(pdc->buf);
+ 	}
+-
+-	if (!atmel_port->is_usart)
+-		del_timer_sync(&atmel_port->uart_timer);
+ }
+ 
+ static void atmel_rx_from_pdc(struct uart_port *port)
+@@ -1587,12 +1581,13 @@ static int atmel_startup(struct uart_por
+ 	/* enable xmit & rcvr */
+ 	UART_PUT_CR(port, ATMEL_US_TXEN | ATMEL_US_RXEN);
+ 
++	setup_timer(&atmel_port->uart_timer,
++			atmel_uart_timer_callback,
++			(unsigned long)port);
++
+ 	if (atmel_use_pdc_rx(port)) {
+ 		/* set UART timeout */
+ 		if (!atmel_port->is_usart) {
+-			setup_timer(&atmel_port->uart_timer,
+-					atmel_uart_timer_callback,
+-					(unsigned long)port);
+ 			mod_timer(&atmel_port->uart_timer,
+ 					jiffies + uart_poll_timeout(port));
+ 		/* set USART timeout */
+@@ -1607,9 +1602,6 @@ static int atmel_startup(struct uart_por
+ 	} else if (atmel_use_dma_rx(port)) {
+ 		/* set UART timeout */
+ 		if (!atmel_port->is_usart) {
+-			setup_timer(&atmel_port->uart_timer,
+-					atmel_uart_timer_callback,
+-					(unsigned long)port);
+ 			mod_timer(&atmel_port->uart_timer,
+ 					jiffies + uart_poll_timeout(port));
+ 		/* set USART timeout */
+@@ -1635,6 +1627,12 @@ static void atmel_shutdown(struct uart_p
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 
+ 	/*
++	 * Prevent any tasklets being scheduled during
++	 * cleanup
++	 */
++	del_timer_sync(&atmel_port->uart_timer);
++
++	/*
+ 	 * Clear out any scheduled tasklets before
+ 	 * we destroy the buffers
+ 	 */
+
 
