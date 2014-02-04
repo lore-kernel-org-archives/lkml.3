@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934956AbaBDV34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:29:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57390 "EHLO
+	id S934616AbaBDVMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57177 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934636AbaBDVMV (ORCPT
+	with ESMTP id S934463AbaBDVLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:21 -0500
+	Tue, 4 Feb 2014 16:11:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 3.13 104/140] bcache: Data corruption fix
-Date: Tue,  4 Feb 2014 13:11:31 -0800
-Message-Id: <20140204211039.947949536@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 029/140] rtlwifi: rtl8192cu: Add new firmware
+Date: Tue,  4 Feb 2014 13:10:16 -0800
+Message-Id: <20140204211037.798648266@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,92 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit ef71ec00002d92a08eb27e9d036e3d48835b6597 upstream.
+commit 62009b7f12793c932aaba0df946b04cb4a77d022 upstream.
 
-The code that handles overlapping extents that we've just read back in from disk
-was depending on the behaviour of the code that handles overlapping extents as
-we're inserting into a btree node in the case of an insert that forced an
-existing extent to be split: on insert, if we had to split we'd also insert a
-new extent to represent the top part of the old extent - and then that new
-extent would get written out.
+Vendor driver rtl8188C_8192C_8192D_usb_linux_v3.4.2_3727.20120404 introduced
+new firmware for these chips. The code try for the new file, and fall back to
+the original firmware if the new file is not available.
 
-The code that read the extents back in thus not bother with splitting extents -
-if it saw an extent that ovelapped in the middle of an older extent, it would
-trim the old extent to only represent the bottom part, assuming that the
-original insert would've inserted a new extent to represent the top part.
-
-I still haven't figured out _how_ it can happen, but I'm now pretty convinced
-(and testing has confirmed) that there's some kind of an obscure corner case
-(probably involving extent merging, and multiple overwrites in different sets)
-that breaks this. The fix is to change the mergesort fixup code to split extents
-itself when required.
-
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/bset.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rtlwifi/core.c         |   10 ++++++++++
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   16 +++++++++++++---
+ drivers/net/wireless/rtlwifi/wifi.h         |    1 +
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
---- a/drivers/md/bcache/bset.c
-+++ b/drivers/md/bcache/bset.c
-@@ -955,7 +955,7 @@ static void sort_key_next(struct btree_i
- 		*i = iter->data[--iter->used];
- }
- 
--static void btree_sort_fixup(struct btree_iter *iter)
-+static struct bkey *btree_sort_fixup(struct btree_iter *iter, struct bkey *tmp)
- {
- 	while (iter->used > 1) {
- 		struct btree_iter_set *top = iter->data, *i = top + 1;
-@@ -983,9 +983,22 @@ static void btree_sort_fixup(struct btre
- 		} else {
- 			/* can't happen because of comparison func */
- 			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
--			bch_cut_back(&START_KEY(i->k), top->k);
-+
-+			if (bkey_cmp(i->k, top->k) < 0) {
-+				bkey_copy(tmp, top->k);
-+
-+				bch_cut_back(&START_KEY(i->k), tmp);
-+				bch_cut_front(i->k, top->k);
-+				heap_sift(iter, 0, btree_iter_cmp);
-+
-+				return tmp;
-+			} else {
-+				bch_cut_back(&START_KEY(i->k), top->k);
-+			}
- 		}
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -46,10 +46,20 @@ void rtl_fw_cb(const struct firmware *fi
+ 			 "Firmware callback routine entered!\n");
+ 	complete(&rtlpriv->firmware_loading_complete);
+ 	if (!firmware) {
++		if (rtlpriv->cfg->alt_fw_name) {
++			err = request_firmware(&firmware,
++					       rtlpriv->cfg->alt_fw_name,
++					       rtlpriv->io.dev);
++			pr_info("Loading alternative firmware %s\n",
++				rtlpriv->cfg->alt_fw_name);
++			if (!err)
++				goto found_alt;
++		}
+ 		pr_err("Firmware %s not available\n", rtlpriv->cfg->fw_name);
+ 		rtlpriv->max_fw_size = 0;
+ 		return;
  	}
-+
-+	return NULL;
++found_alt:
+ 	if (firmware->size > rtlpriv->max_fw_size) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 "Firmware is too big!\n");
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -50,6 +50,9 @@ MODULE_AUTHOR("Larry Finger	<Larry.Finge
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Realtek 8192C/8188C 802.11n USB wireless");
+ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_A.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_B.bin");
++MODULE_FIRMWARE("rtlwifi/rtl8192cufw_TMSC.bin");
+ 
+ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ {
+@@ -69,14 +72,21 @@ static int rtl92cu_init_sw_vars(struct i
+ 			 "Can't alloc buffer for fw\n");
+ 		return 1;
+ 	}
+-
++	if (IS_VENDOR_UMC_A_CUT(rtlpriv->rtlhal.version) &&
++	    !IS_92C_SERIAL(rtlpriv->rtlhal.version)) {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_A.bin";
++	} else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlpriv->rtlhal.version)) {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_B.bin";
++	} else {
++		rtlpriv->cfg->fw_name = "rtlwifi/rtl8192cufw_TMSC.bin";
++	}
++	/* provide name of alternative file */
++	rtlpriv->cfg->alt_fw_name = "rtlwifi/rtl8192cufw.bin";
+ 	pr_info("Loading firmware %s\n", rtlpriv->cfg->fw_name);
+ 	rtlpriv->max_fw_size = 0x4000;
+ 	err = request_firmware_nowait(THIS_MODULE, 1,
+ 				      rtlpriv->cfg->fw_name, rtlpriv->io.dev,
+ 				      GFP_KERNEL, hw, rtl_fw_cb);
+-
+-
+ 	return err;
  }
  
- static void btree_mergesort(struct btree *b, struct bset *out,
-@@ -993,15 +1006,20 @@ static void btree_mergesort(struct btree
- 			    bool fixup, bool remove_stale)
- {
- 	struct bkey *k, *last = NULL;
-+	BKEY_PADDED(k) tmp;
- 	bool (*bad)(struct btree *, const struct bkey *) = remove_stale
- 		? bch_ptr_bad
- 		: bch_ptr_invalid;
- 
- 	while (!btree_iter_end(iter)) {
- 		if (fixup && !b->level)
--			btree_sort_fixup(iter);
-+			k = btree_sort_fixup(iter, &tmp.k);
-+		else
-+			k = NULL;
-+
-+		if (!k)
-+			k = bch_btree_iter_next(iter);
- 
--		k = bch_btree_iter_next(iter);
- 		if (bad(b, k))
- 			continue;
- 
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1804,6 +1804,7 @@ struct rtl_hal_cfg {
+ 	bool write_readback;
+ 	char *name;
+ 	char *fw_name;
++	char *alt_fw_name;
+ 	struct rtl_hal_ops *ops;
+ 	struct rtl_mod_params *mod_params;
+ 	struct rtl_hal_usbint_cfg *usb_interface_cfg;
 
 
