@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaBDIQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 03:16:20 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:56269 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042AbaBDIQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 03:16:14 -0500
-X-IronPort-AV: E=Sophos;i="4.95,778,1384300800"; 
-   d="scan'208";a="99546463"
-Message-ID: <52F0A1C7.2010607@citrix.com>
-Date: Tue, 4 Feb 2014 09:16:07 +0100
-From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753630AbaBDIUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 03:20:08 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:25385 "EHLO
+	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752269AbaBDIUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 03:20:00 -0500
+Message-ID: <52F0A29C.9000604@gaisler.com>
+Date: Tue, 04 Feb 2014 09:19:40 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
-        DavidVrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen-blkback: fix shutdown race
-References: <1390931015-5490-1-git-send-email-roger.pau@citrix.com> <1390931015-5490-4-git-send-email-roger.pau@citrix.com> <52E8CF540200007800117D88@nat28.tlf.novell.com> <52EFCACF.6080604@citrix.com> <52F0AC990200007800118E09@nat28.tlf.novell.com>
-In-Reply-To: <52F0AC990200007800118E09@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA2
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/5] can: sja1000: cleanups and new OF property
+References: <1391175277-19833-1-git-send-email-florian.vaussard@epfl.ch> <52EBA7E2.6090007@pengutronix.de> <52EBAA28.1070307@gaisler.com>
+In-Reply-To: <52EBAA28.1070307@gaisler.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/14 09:02, Jan Beulich wrote:
->>>> On 03.02.14 at 17:58, Roger Pau Monné<roger.pau@citrix.com> wrote:
->> On 29/01/14 09:52, Jan Beulich wrote:
->>>>>> On 28.01.14 at 18:43, Roger Pau Monne <roger.pau@citrix.com> wrote:
->>>> +		free_req(blkif, pending_req);
->>>> +		/*
->>>> +		 * Make sure the request is freed before releasing blkif,
->>>> +		 * or there could be a race between free_req and the
->>>> +		 * cleanup done in xen_blkif_free during shutdown.
->>>> +		 *
->>>> +		 * NB: The fact that we might try to wake up pending_free_wq
->>>> +		 * before drain_complete (in case there's a drain going on)
->>>> +		 * it's not a problem with our current implementation
->>>> +		 * because we can assure there's no thread waiting on
->>>> +		 * pending_free_wq if there's a drain going on, but it has
->>>> +		 * to be taken into account if the current model is changed.
->>>> +		 */
->>>> +		xen_blkif_put(blkif);
->>>> +		if (atomic_read(&blkif->refcnt) <= 2) {
->>>> +			if (atomic_read(&blkif->drain))
->>>> +				complete(&blkif->drain_complete);
->>>>  		}
->>>> -		free_req(pending_req->blkif, pending_req);
->>>>  	}
->>>>  }
+On 2014-01-31 14:50, Andreas Larsson wrote:
+> On 2014-01-31 14:40, Marc Kleine-Budde wrote:
+>> On 01/31/2014 02:34 PM, Florian Vaussard wrote:
+>>> Hello,
 >>>
->>> The put is still too early imo - you're explicitly accessing field in the
->>> structure immediately afterwards. This may not be an issue at
->>> present, but I think it's at least a latent one.
+>>> (could someone with a SJA1000 on SPARC perform a functional test
+>>> to see if interrupts are working? it would be great :-)
 >>>
->>> Apart from that, the two if()s would - at least to me - be more
->>> clear if combined into one.
+>>> Changes since v2:
+>>> - Dropped patch 1 "can: sja1000: remove unused defines"
+>>> - Addressed Marc's comments on patch 4 and 6 (now 3 and 5)
+>>>
+>>> Changes since v1:
+>>> - Merge sja1000_of_platform.c into sja1000_platform.c (patch 4)
+>>>
+>>> The first part of this series performs serveral small cleanups
+>>> (patches 1 and 2).
+>>>
+>>> Patch 3 merges sja1000_of_platform.c into sja1000_platform.c.
+>>> Changes are pretty conservatives (mostly copy/paste/move). IRQ
+>>> is treated differently in the OF and non-OF versions, thus this
+>>> is where the fused version differs the most.
+>>>
+>>> The final part introduces the 'reg-io-width' binding (already used
+>>> by some other drivers) to perform a similar job as what was done
+>>> with IORESOURCE_MEM_XXBIT. This is needed on my system to correctly
+>>> take into account the aliasing of the address bus.
+>>>
+>>> All patches were tested using OF boot on my OMAP3 system with a
+>>> memory-mapped SJA1000. Thus, the non-OF path is not tested, as
+>>> I do not have a platform data at hand.
 >>
->> In order to get rid of the race I had to introduce yet another atomic_t 
->> in xen_blkif struct, which is something I don't really like, but I 
->> could not see any other way to solve this. If that's fine I will resend 
->> the series, here is the reworked patch:
-> 
-> Mind explaining why you can't simply move the xen_blkif_put()
-> down between the if() and the free_ref().
+>> Nice, looks good now. I'll give Andreas some time to test on sparc and
+>> then apply the patches.
+>
+>
+> I am on it. I will dig up some hardware for this on Monday to test it.
 
-You mean doing something like:
+Works splendidly. You can add:
 
-if (atomic_read(&blkif->refcnt) <= 3) {
-	if (atomic_read(&blkif->drain))
-		complete(&blkif->drain_complete);
-}
-xen_blkif_put(blkif);
-free_req(blkif, pending_req);
+Tested-by: Andreas Larsson <andreas@gaisler.com>
 
-This would not be safe, because we are comparing refcnt before
-decrementing it, and also we are not doing it atomically (the dec and
-compare). If for example we have two inflight requests, both could
-perform the atomic_read of refcnt, see there's still another inflight
-request, and then both decrement, without anyone calling complete.
-
-There's also the issue that with this approach as we are freeing the
-request after we have put blkif, which is a race with the cleanup being
-done in xen_blkif_free.
-
-Roger.
+Cheers,
+Andreas Larsson
 
