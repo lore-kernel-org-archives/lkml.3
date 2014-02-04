@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaBDASY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 19:18:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47568 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886AbaBDASX (ORCPT
+	id S1753920AbaBDAV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 19:21:29 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34846 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427AbaBDAV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 19:18:23 -0500
-Date: Mon, 3 Feb 2014 16:18:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, iamjoonsoo.kim@lge.com,
-        riel@redhat.com, mgorman@suse.de, mhocko@suse.cz,
-        aneesh.kumar@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
-        hughd@google.com, david@gibson.dropbear.id.au, js1304@gmail.com,
-        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
-        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] mm, hugetlb: fix race in region tracking
-Message-Id: <20140203161821.85b6754226ce7feaadc37810@linux-foundation.org>
-In-Reply-To: <1390958378.11839.37.camel@buesod1.americas.hpqcorp.net>
-References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
-	<1390794746-16755-4-git-send-email-davidlohr@hp.com>
-	<1390856576-ud1qp3fm-mutt-n-horiguchi@ah.jp.nec.com>
-	<1390859042.27421.4.camel@buesod1.americas.hpqcorp.net>
-	<1390874021-48f5mo0m-mutt-n-horiguchi@ah.jp.nec.com>
-	<1390876457.27421.19.camel@buesod1.americas.hpqcorp.net>
-	<1390955806-ljm7w9nq-mutt-n-horiguchi@ah.jp.nec.com>
-	<1390958378.11839.37.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Feb 2014 19:21:27 -0500
+Date: Tue, 4 Feb 2014 00:21:10 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Message-ID: <20140204002110.GP22609@sirena.org.uk>
+References: <1391165752-1819-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1391165752-1819-4-git-send-email-maxime.ripard@free-electrons.com>
+ <20140131124809.GE22609@sirena.org.uk>
+ <20140131224704.GI2950@lukather>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4xvrXxpSOutbQOB9"
+Content-Disposition: inline
+In-Reply-To: <20140131224704.GI2950@lukather>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 3/5] spi: sunxi: Add Allwinner A31 SPI controller
+ driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014 17:19:38 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-> On Tue, 2014-01-28 at 19:36 -0500, Naoya Horiguchi wrote:
-> > On Mon, Jan 27, 2014 at 06:34:17PM -0800, Davidlohr Bueso wrote:
-> [...]
-> > > > If this retry is really essential for the fix, please comment the reason
-> > > > both in patch description and inline comment. It's very important for
-> > > > future code maintenance.
-> > > 
-> > > So we locate the corresponding region in the reserve map, and if we are
-> > > below the current region, then we allocate a new one. Since we dropped
-> > > the lock to allocate memory, we have to make sure that we still need the
-> > > new region and that we don't race with the new status of the reservation
-> > > map. This is the whole point of the retry, and I don't see it being
-> > > suboptimal.
-> > 
-> > I'm afraid that you don't explain why you need drop the lock for memory
-> > allocation. Are you saying that this unlocking comes from the difference
-> > between rwsem and spin lock?
-> 
-> Because you cannot go to sleep while holding a spinlock, which is
-> exactly what kmalloc(GFP_KERNEL) can do. We *might* get a way with it
-> with GFP_ATOMIC, I dunno, but I certainly prefer this approach better.
+--4xvrXxpSOutbQOB9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-yup.  You could do
+On Fri, Jan 31, 2014 at 11:47:04PM +0100, Maxime Ripard wrote:
+> On Fri, Jan 31, 2014 at 12:48:09PM +0000, Mark Brown wrote:
+> > On Fri, Jan 31, 2014 at 11:55:50AM +0100, Maxime Ripard wrote:
 
-	foo = kmalloc(size, GFP_NOWAIT);
-	if (!foo) {
-		spin_unlock(...);
-		foo = kmalloc(size, GFP_KERNEL);
-		if (!foo)
-			...
-		spin_lock(...);
-	}
+> > > +	pm_runtime_enable(&pdev->dev);
+> > > +	if (!pm_runtime_enabled(&pdev->dev)) {
+> > > +		ret = sun6i_spi_runtime_resume(&pdev->dev);
+> > > +		if (ret) {
+> > > +			dev_err(&pdev->dev, "Couldn't resume the device\n");
+> > > +			return ret;
+> > > +		}
+> > > +	}
 
-that avoids the lock/unlock once per allocation.  But it also increases
-the lock's average hold times....
+> > No, as discussed don't do this - notice how other drivers aren't written
+> > this way either.  Like I said leave the device powered on startup and
+> > then let it be idled by runtime PM.
 
-		
+> Well, some SPI drivers are actually written like that (all the tegra
+
+It's not been done consistently, no - that should be fixed.
+
+> SPI drivers for example). It's not an excuse, but waking up the device
+> only to put it back in suspend right away seems kind of
+
+It isn't awesome, no.  Ideally the runtime PM code would do this but
+then you couldn't ifdef the operations which as far as I can tell is the
+main thing people want from disabling it and it gets complicated for
+devices that genuinely do power up on startup so here we are.
+
+> inefficient. Plus, the pm_runtime_idle callback you suggested are
+> actually calling runtime_idle, while we want to call runtime_suspend.
+
+Yeah, I didn't actually check if I was looking at the right call there.
+
+--4xvrXxpSOutbQOB9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8DJyAAoJELSic+t+oim9sG0P/2nOyF7gVt73C5f6UGLn9sUC
+rUbhIwsFP8Id9mnbIXQ0DaF1aPw3wuwlIt1JB393+syeO6z3MlozdTySZTp3DdYw
+U1AJ82s7dKC6rGgK2IF2gi/QV0P8zqf0MiUWQlGbJ1Bv37LOX2X0Et2Je7uXgyph
+jRndtefN/VGYKCB82xs68Cp8q/UDzCJdoqT4RyslliBo4O3OY4LhlZkQfn4KQhfY
+Nll8TVuXs7+MR4MoCIfwqmYrvjYMJ1etqHZYotSSf5QSmMhBQ6lLDtmKa3rGaKGS
+VnCyYmY0DZsWoNF8UX/etfDyaJKHMd6twR7OVf/uORRlnS94fdFR2MRZ8Y1Y7rXQ
+zimm3sb4p5hCwmtZeIFKZJYgEnxqNTuNiBpXBGIHHYrYQrmLhSUU2WqnkzQOzBFD
+89eQWWCBKMukBPsqwTrQa0TWsppiq+tYtRHX/TA7x1rzxyEgp3k8ZIpj2ptGeDpK
+rCZ/cvnqxa6OHv69knY1NSGwtIlmUID7Uu6AAvAHzAoMtNkTlaBxjInQFRkbFF9R
+5MuRxoDJj9jDh0AHw/MAFAJtfUCMU8iu3LrAN6VrT2blTJ6YC/TRUx/lazTFcyTN
+QB/UL23bBP6N1l05yCf3/1bI8SW9GNmKfPdiI6i6tbTxD3RbyU/55wGQX4C9MM/y
+4xMLaTZIbUPcOdpsjPQK
+=CUIv
+-----END PGP SIGNATURE-----
+
+--4xvrXxpSOutbQOB9--
