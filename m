@@ -1,62 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaBDJjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 04:39:37 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41449 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751374AbaBDJj3 (ORCPT
+	id S1753899AbaBDJpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 04:45:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60822 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553AbaBDJpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 04:39:29 -0500
-Date: Tue, 4 Feb 2014 09:38:44 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Colin Cross <ccross@android.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Tue, 4 Feb 2014 04:45:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        "open list:SECURITY SUBSYSTEM" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] security: select correct default LSM_MMAP_MIN_ADDR on
- arm on arm64
-Message-ID: <20140204093843.GB16708@mudshark.cambridge.arm.com>
-References: <1391480133-27149-1-git-send-email-ccross@android.com>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: Add architecture support for PCI
+Date: Tue, 04 Feb 2014 10:44:52 +0100
+Message-ID: <13031998.NR888KZWhk@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20140203233137.GH2519@obsidianresearch.com>
+References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqL+3S8w=_Fb-t0rVcq0sDiPSDM6nqn3mR2DHKw=VTffsg@mail.gmail.com> <20140203233137.GH2519@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391480133-27149-1-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:jfVENLrAKIRzQJuXdzfgDYsisV6HPfTUWvo6hf1lokR
+ xi1bfIZChuYi/rvNn85EiwyO8WfaouSKGVLgD0JYYX30hF9fnk
+ babZPPAb8rdiEzQNlhP0mxblabvHL/Nxn/G7fkYTdEj8nm2XFM
+ 8KonUnxQqqJCz5if02wlNjza0O1B4b/5TCn6DLS8vucpKOiDO/
+ vDY45CrmXgXTVxj9x3kQghVQC9YKljakkZxjc7hK4FVbXHntTC
+ RG92XuUGJvl+rSwJfYlCeMY8LhOrxqfSkFThmz7pW81vL0p8dx
+ bv1i50e3Bc+tws6WQSHROTWUGk0Ci8bruCWE4szdEaucfd5mwF
+ RMtqi57DJUaKrtyY3JVM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 02:15:32AM +0000, Colin Cross wrote:
-> Binaries compiled for arm may run on arm64 if CONFIG_COMPAT is
-> selected.  Set LSM_MMAP_MIN_ADDR to 32768 if ARM64 && COMPAT to
-> prevent selinux failures launching 32-bit static executables that
-> are mapped at 0x8000.
+On Monday 03 February 2014 16:31:37 Jason Gunthorpe wrote:
+> Specifying 'use EHCI, AHCI, etc' - which are all PCI based standards
+> without clearly specifying exactly how PCI is suppose to work is
+> completely bonkers.
 > 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  security/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> What is needed is a spec that says:
+>  1) Here is how you generate config TLPs. A MMIO region that
+>     conforms to the already specified x86 ECAM would
+>     be perfect
+>  2) Here is a dword by dword break down of the entire config space in
+>     a SOC. Here is where a on-board AHCI controller must show up in
+>     config space. Here is how an external PCI-E port must show
+>     up. Etc. Most of this is already specified, but it clearly needs
+>     to be layed out explicitly for ARM SOCs to actually follow it.
+>  3) Here is how you specify the aperture(s) associated with PCI BAR's
+>     and bridge windows in config space. And yes: The CONFIG SPACE
+>     BARS MUST WORK.
+>  4) Here is how MSI works, these are the values you put in the
+>     address/data and here is how you collect the interrupt.
+>  5) Here is how Legacy INTx must be mapped into the GIC.
 > 
-> diff --git a/security/Kconfig b/security/Kconfig
-> index e9c6ac724fef..beb86b500adf 100644
-> --- a/security/Kconfig
-> +++ b/security/Kconfig
-> @@ -103,7 +103,7 @@ config INTEL_TXT
->  config LSM_MMAP_MIN_ADDR
->  	int "Low address space for LSM to protect from user allocation"
->  	depends on SECURITY && SECURITY_SELINUX
-> -	default 32768 if ARM
-> +	default 32768 if ARM || (ARM64 && COMPAT)
->  	default 65536
->  	help
->  	  This is the portion of low virtual memory which should be protected
+> This is what x86 does, and they have been doing it well for 10
+> years. If you want to play in the server game you have to properly
+> implement PCI.
 
-Since ARM64 && COMPAT implies 4k pages, this change looks ok to me.
+I'm pretty sure the authors of the SBSA actually thought that was
+what they wrote, by referring to external specifications (pci-3.0,
+ehci, ahci, ...).  However, it seems they were either foolish enough
+to believe that hardware designers would follow these specs, or
+they were intentionally misled and got talked into putting ambiguous
+terminology in because there were already hardware designs that
+are not exactly in line with the spirit of the SBSA but can be
+argued to be conforming to the text for a lax interpretation.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+I think EHCI is a much better example than PCI here, because the
+spec has exactly one line to say about it, where it spends a whole
+chapter on PCI.
 
-Will
+Here is how a sane person would read SBSA to create a compliant
+implementation:
+
+  I have to use EHCI version 1.1 to provide USB-2.0 support. EHCI
+  is a PCI device, so I'll put it behind a PCIe port that complies
+  to the PCIe section of the SBSA. Since EHCI by itself only provides
+  high-speed USB, and USB-2.0 mandates I provide low-speed and
+  full-speed as well, I have to add a USB hub device. It would have
+  been easier to just use OHCI for these, but SBSA says I can't.
+  Now I want to integrate the EHCI into my SoC and not waste one
+  of my precious PCIe root ports, so I have to create another PCI
+  domain with its own ECAM compliant config space to put it into.
+  Fortunately SBSA lets me add an arbitrary number of PCI domains,
+  as long as they are all strictly compliant. To software it will
+  look exactly as if it was on an external card, I just have to
+  ensure the boot loader correctly sets up the clocks and the phy
+  before an SBSA compliant OS gets loaded, all runtime power
+  management will get handled through the EHCI-1.1 energy-efficiency
+  extensions.
+
+Here is how a crazy person would read the same sentence in the SBSA:
+
+  I have an IP block that implements the EHCI register set, that
+  should be good enough. It's not a fast device, so I can put it
+  on a non-coherent bus. Since the SoC will be used for networking,
+  I'll put the registers into big-endian configuration to make it
+  easier for the OS to access. I'm not allowed to have USB-1.1
+  according to SBSA, so I can get away without a hub or an extra
+  OHCI. I can't support MSI because it's not a PCI device, and
+  the GIC is pretty full, so I'll just connect the IRQ line to
+  the GPIO controller. In order to do better power management,
+  I'll design a fancy PHY that the device driver will manage
+  for implementing autosuspend. I should also give the OS
+  fine-grained control over the clocks, but it will have to share
+  the clock domain with the other devices on the same edge of the
+  chip. The EHCI device is not part of PCI, which measn I don't
+  have to use the standard SMMU. However, my EHCI implementation
+  can only do 32-bit DMA, and I'll have to design my own IOMMU
+  to let it access the entire memory range. USB-OTG is a great
+  feature and we already paid for having this in our EHCI
+  implementation, better make sure it comes up in endpoint mode
+  after waking up from power saving.
+
+	Arnd
