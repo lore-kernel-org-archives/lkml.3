@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaBDR5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:57:42 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:63734 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431AbaBDR5k (ORCPT
+	id S1754858AbaBDR6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:58:22 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:32835 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753542AbaBDR6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:57:40 -0500
-Message-ID: <52F12A10.3020600@lwfinger.net>
-Date: Tue, 04 Feb 2014 11:57:36 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
+	Tue, 4 Feb 2014 12:58:19 -0500
+Message-ID: <52F12A66.3000707@fb.com>
+Date: Tue, 4 Feb 2014 12:59:02 -0500
+From: Chris Mason <clm@fb.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: andrea.merello@gmail.com, Dan Carpenter <dan.carpenter@oracle.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Subject: Re: rtl8821ae.
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail> <20140202160512.GA4946@redhat.com> <201402021807.37772.s.L-H@gmx.de> <52EFCC66.9020304@lwfinger.net> <20140203201228.GE26722@mwanda> <CA+55aFyHZfw9rtZQJ9i2p7MQAVX4iM0QCdzRZzaivD2nRDHeLQ@mail.gmail.com> <CAN8YU5PJWqnaBN_oaZ-yZjV-s9oCkKPa4ebk-kNbhPSgpd3_wQ@mail.gmail.com> <20140204092836.GG26776@mwanda> <CAN8YU5PfJ2ijHzghJ-FJPYJeFwTfoGN-qpJ5R5ctYp3R1p13hA@mail.gmail.com>
-In-Reply-To: <CAN8YU5PfJ2ijHzghJ-FJPYJeFwTfoGN-qpJ5R5ctYp3R1p13hA@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-02-04_06:2014-02-04,2014-02-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1402040087
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea,
 
-After applying the latest patch, I get the following warning and errors when 
-building the USB driver rtl8187:
+Hi Linus,
 
-   CC      drivers/video/fbmon.o
-drivers/net/wireless/rtl818x/rtl8187/dev.c: In function ‘rtl8187_set_anaparam’:
-drivers/net/wireless/rtl818x/rtl8187/dev.c:595:3: warning: passing argument 2 of 
-‘rtl818x_iowrite8’ from incompatible pointer type [enabled by default]
-    rtl818x_iowrite8(priv, &priv->map->ANAPARAM3, anaparam3);
-    ^
-In file included from drivers/net/wireless/rtl818x/rtl8187/dev.c:31:0:
-drivers/net/wireless/rtl818x/rtl8187/rtl8187.h:237:20: note: expected ‘u8 *’ but 
-argument is of type ‘__le16 *’
-  static inline void rtl818x_iowrite8(struct rtl8187_priv *priv, u8 *addr, u8 val)
-                     ^
-drivers/net/wireless/rtl818x/rtl8187/dev.c: In function ‘rtl8187b_init_hw’:
-drivers/net/wireless/rtl818x/rtl8187/dev.c:788:9: error: 
-‘RTL818X_CW_CONF_PERPACKET_RETRY_SHIFT’ undeclared (first use in this function)
-   reg |= RTL818X_CW_CONF_PERPACKET_RETRY_SHIFT;
-          ^
-drivers/net/wireless/rtl818x/rtl8187/dev.c:788:9: note: each undeclared 
-identifier is reported only once for each function it appears in
-drivers/net/wireless/rtl818x/rtl8187/dev.c: In function ‘rtl8187_start’: 
+Please pull my for-linus:
 
-drivers/net/wireless/rtl818x/rtl8187/dev.c:946:11: error: 
-‘RTL818X_TX_AGC_CTL_PERPACKET_GAIN_SHIFT’ undeclared (first use in this 
-function)
-    reg &= ~RTL818X_TX_AGC_CTL_PERPACKET_GAIN_SHIFT; 
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-            ^
-drivers/net/wireless/rtl818x/rtl8187/dev.c:947:11: error: 
-‘RTL818X_TX_AGC_CTL_PERPACKET_ANTSEL_SHIFT’ undeclared (first use in this function)
-    reg &= ~RTL818X_TX_AGC_CTL_PERPACKET_ANTSEL_SHIFT;
-            ^
-drivers/net/wireless/rtl818x/rtl8187/dev.c:952:7: error: 
-‘RTL818X_TX_CONF_HW_SEQNUM’ undeclared (first use in this function)
-        RTL818X_TX_CONF_HW_SEQNUM |
-        ^
-drivers/net/wireless/rtl818x/rtl8187/dev.c:989:10: error: 
-‘RTL818X_CW_CONF_PERPACKET_CW_SHIFT’ undeclared (first use in this function)
-   reg &= ~RTL818X_CW_CONF_PERPACKET_CW_SHIFT;
-           ^
-drivers/net/wireless/rtl818x/rtl8187/dev.c:990:9: error: 
-‘RTL818X_CW_CONF_PERPACKET_RETRY_SHIFT’ undeclared (first use in this function)
-   reg |= RTL818X_CW_CONF_PERPACKET_RETRY_SHIFT;
+Filipe is fixing compile and boot problems with our crc32c rework, and
+Josef has disabled snapshot aware defrag for now.  As the number of
+snapshots increases, we're hitting OOM.  For the short term we're
+disabling things until a bigger fix is ready.
 
-The warning is fixed by
+Filipe David Borba Manana (2) commits (+7/-7):
+    Btrfs: use btrfs_crc32c everywhere instead of libcrc32c (+6/-6)
+    Btrfs: use late_initcall instead of module_init (+1/-1)
 
-Index: wireless-testing/drivers/net/wireless/rtl818x/rtl8187/dev.c
-===================================================================
---- wireless-testing.orig/drivers/net/wireless/rtl818x/rtl8187/dev.c
-+++ wireless-testing/drivers/net/wireless/rtl818x/rtl8187/dev.c
-@@ -593,7 +593,7 @@ static void rtl8187_set_anaparam(struct
-         rtl818x_iowrite32(priv, &priv->map->ANAPARAM, anaparam);
-         rtl818x_iowrite32(priv, &priv->map->ANAPARAM2, anaparam2);
-         if (priv->is_rtl8187b)
--               rtl818x_iowrite8(priv, &priv->map->ANAPARAM3, anaparam3);
-+               rtl818x_iowrite16(priv, &priv->map->ANAPARAM3, anaparam3);
-         reg &= ~RTL818X_CONFIG3_ANAPARAM_WRITE;
-         rtl818x_iowrite8(priv, &priv->map->CONFIG3, reg);
-         rtl818x_iowrite8(priv, &priv->map->EEPROM_CMD,
+Josef Bacik (1) commits (+1/-1):
+    Btrfs: disable snapshot aware defrag for now
 
-For testing purposes, I have turned on the build for rtl8187.
+Total: (3) commits (+8/-8)
 
-Larry
-
+ fs/btrfs/check-integrity.c | 4 ++--
+ fs/btrfs/disk-io.c         | 4 ++--
+ fs/btrfs/inode.c           | 2 +-
+ fs/btrfs/send.c            | 4 ++--
+ fs/btrfs/super.c           | 2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
