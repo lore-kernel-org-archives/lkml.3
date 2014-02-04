@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677AbaBDIJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 03:09:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44887 "EHLO mx2.suse.de"
+	id S1753409AbaBDIQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 03:16:20 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:56269 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291AbaBDIJt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 03:09:49 -0500
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] PPC: KVM: fix VCPU run for HV KVM
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <52F09EC0.60201@ozlabs.ru>
-Date: Tue, 4 Feb 2014 09:09:44 +0100
-Cc: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        kvm-ppc <kvm-ppc@vger.kernel.org>,
-        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <D4E5BCE4-99BA-40B3-8726-71E71168FC54@suse.de>
-References: <1389338467-26303-1-git-send-email-aik@ozlabs.ru> <AF6669B4-EF1A-44BD-9034-8824EFD94B5B@suse.de> <52F09EC0.60201@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-X-Mailer: Apple Mail (2.1827)
+	id S1752042AbaBDIQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 03:16:14 -0500
+X-IronPort-AV: E=Sophos;i="4.95,778,1384300800"; 
+   d="scan'208";a="99546463"
+Message-ID: <52F0A1C7.2010607@citrix.com>
+Date: Tue, 4 Feb 2014 09:16:07 +0100
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
+        DavidVrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen-blkback: fix shutdown race
+References: <1390931015-5490-1-git-send-email-roger.pau@citrix.com> <1390931015-5490-4-git-send-email-roger.pau@citrix.com> <52E8CF540200007800117D88@nat28.tlf.novell.com> <52EFCACF.6080604@citrix.com> <52F0AC990200007800118E09@nat28.tlf.novell.com>
+In-Reply-To: <52F0AC990200007800118E09@nat28.tlf.novell.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/02/14 09:02, Jan Beulich wrote:
+>>>> On 03.02.14 at 17:58, Roger Pau Monné<roger.pau@citrix.com> wrote:
+>> On 29/01/14 09:52, Jan Beulich wrote:
+>>>>>> On 28.01.14 at 18:43, Roger Pau Monne <roger.pau@citrix.com> wrote:
+>>>> +		free_req(blkif, pending_req);
+>>>> +		/*
+>>>> +		 * Make sure the request is freed before releasing blkif,
+>>>> +		 * or there could be a race between free_req and the
+>>>> +		 * cleanup done in xen_blkif_free during shutdown.
+>>>> +		 *
+>>>> +		 * NB: The fact that we might try to wake up pending_free_wq
+>>>> +		 * before drain_complete (in case there's a drain going on)
+>>>> +		 * it's not a problem with our current implementation
+>>>> +		 * because we can assure there's no thread waiting on
+>>>> +		 * pending_free_wq if there's a drain going on, but it has
+>>>> +		 * to be taken into account if the current model is changed.
+>>>> +		 */
+>>>> +		xen_blkif_put(blkif);
+>>>> +		if (atomic_read(&blkif->refcnt) <= 2) {
+>>>> +			if (atomic_read(&blkif->drain))
+>>>> +				complete(&blkif->drain_complete);
+>>>>  		}
+>>>> -		free_req(pending_req->blkif, pending_req);
+>>>>  	}
+>>>>  }
+>>>
+>>> The put is still too early imo - you're explicitly accessing field in the
+>>> structure immediately afterwards. This may not be an issue at
+>>> present, but I think it's at least a latent one.
+>>>
+>>> Apart from that, the two if()s would - at least to me - be more
+>>> clear if combined into one.
+>>
+>> In order to get rid of the race I had to introduce yet another atomic_t 
+>> in xen_blkif struct, which is something I don't really like, but I 
+>> could not see any other way to solve this. If that's fine I will resend 
+>> the series, here is the reworked patch:
+> 
+> Mind explaining why you can't simply move the xen_blkif_put()
+> down between the if() and the free_ref().
 
-On 04.02.2014, at 09:03, Alexey Kardashevskiy <aik@ozlabs.ru> wrote:
+You mean doing something like:
 
-> On 01/13/2014 02:44 AM, Alexander Graf wrote:
->> 
->> On 10.01.2014, at 08:21, Alexey Kardashevskiy <aik@ozlabs.ru> wrote:
->> 
->>> When write to MMIO happens and there is an ioeventfd for that and
->>> is handled successfully, ioeventfd_write() returns 0 (success) and
->>> kvmppc_handle_store() returns EMULATE_DONE. Then kvmppc_emulate_mmio()
->>> converts EMULATE_DONE to RESUME_GUEST_NV and this broke from the loop.
->>> 
->>> This adds handling of RESUME_GUEST_NV in kvmppc_vcpu_run_hv().
->>> 
->>> Cc: Michael S. Tsirkin <mst@redhat.com>
->>> Suggested-by: Paul Mackerras <paulus@samba.org>
->>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>> ---
->>> 
->>> This definitely needs a better commit message. Please, help.
->>> ps. it seems like ioeventfd never worked on ppc64. hm.
->>> 
->>> ---
->>> arch/powerpc/kvm/book3s_hv.c | 2 +-
->>> 1 file changed, 1 insertion(+), 1 deletion(-)
->>> 
->>> diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
->>> index 072287f..24f363f 100644
->>> --- a/arch/powerpc/kvm/book3s_hv.c
->>> +++ b/arch/powerpc/kvm/book3s_hv.c
->>> @@ -1569,7 +1569,7 @@ static int kvmppc_vcpu_run_hv(struct kvm_run *run, struct kvm_vcpu *vcpu)
->>> 				vcpu->arch.fault_dar, vcpu->arch.fault_dsisr);
->>> 			srcu_read_unlock(&vcpu->kvm->srcu, srcu_idx);
->>> 		}
->>> -	} while (r == RESUME_GUEST);
->>> +	} while ((r == RESUME_GUEST_NV) || (r == RESUME_GUEST));
->> 
->> How about
->> 
->>  while(!(r & RESUME_FLAG_HOST));
-> 
-> 
-> Rather "while(!(r & RESUME_FLAG_HOST) && (r > 0));" and still not obvious
-> that this is really better.
-> 
-> Paul agrees with the original patch (and made a better commit message for
-> our internal tree) but I just cannot make him reply in this thread, keep
-> constantly asking him but to no avail :)
-> 
-> 
->> That should cover all RESUME_GUEST_XXX cases just fine. Apart from that
->> I agree that we should check for ! FLAG_HOST bit rather than the actual
->> RESUME_GUEST value in all case where we check for it (read: please
->> update all places).
-> 
-> There are 3 places remotely similar to this and none of them requires a fix
-> like above.
-
-Not today. Then someone goes in and realizes that CEDE advanced version 8 should clear r15 at which point you have to set RESUME_GUEST_NV and are in the same mess again. Let's just always treat RESUME_GUEST_NV and RESUME_GUEST as identical when checking for it.
-
-If you like, add a small helper like
-
-static inline bool is_resume_guest(int r) {
-  return (r == RESUME_GUEST || r == RESUME_GUEST_NV);
+if (atomic_read(&blkif->refcnt) <= 3) {
+	if (atomic_read(&blkif->drain))
+		complete(&blkif->drain_complete);
 }
+xen_blkif_put(blkif);
+free_req(blkif, pending_req);
 
-in a header and use that one instead. That way we're guaranteed to be consistent.
+This would not be safe, because we are comparing refcnt before
+decrementing it, and also we are not doing it atomically (the dec and
+compare). If for example we have two inflight requests, both could
+perform the atomic_read of refcnt, see there's still another inflight
+request, and then both decrement, without anyone calling complete.
 
+There's also the issue that with this approach as we are freeing the
+request after we have put blkif, which is a race with the cleanup being
+done in xen_blkif_free.
 
-Alex
+Roger.
 
