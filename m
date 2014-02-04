@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114AbaBDVmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:42:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57195 "EHLO
+	id S934771AbaBDVn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:43:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934484AbaBDVLp (ORCPT
+	with ESMTP id S934474AbaBDVLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:45 -0500
+	Tue, 4 Feb 2014 16:11:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.13 052/140] staging: vt6656: [BUG] BBvUpdatePreEDThreshold Always set sensitivity on bScanning
-Date: Tue,  4 Feb 2014 13:10:39 -0800
-Message-Id: <20140204211038.447639272@linuxfoundation.org>
+        Heinrich Siebmanns <H.Siebmanns@t-online.de>,
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.13 021/140] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
+Date: Tue,  4 Feb 2014 13:10:08 -0800
+Message-Id: <20140204211037.570089790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,48 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit 8f248dae133668bfb8e9379b4b3f0571c858b24a upstream.
+commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
 
-byBBPreEDIndex value is initially 0, this means that from
-cold BBvUpdatePreEDThreshold is never set.
+Genuine FTDI chips support only CS7/8. A previous fix in commit
+8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
+setting") enforced this limitation and reported it back to userspace.
 
-This means that sensitivity may be in an ambiguous state,
-failing to scan any wireless points or at least distant ones.
+However, certain types of smartcard readers depend on specific
+driver behaviour that requests 0 data bits (not 5) to change into a
+different operating mode if CS5 has been set.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+This patch reenables this behaviour for all FTDI devices.
+
+Tagged to be added to stable, because it affects a lot of users of
+embedded systems which rely on these readers to work properly.
+
+Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
+Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/baseband.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -1464,7 +1464,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2124,10 +2124,20 @@ static void ftdi_set_termios(struct tty_
+ 	}
  
-             if( bScanning )
-             {   // need Max sensitivity //RSSI -69, -70,....
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x30); //CR206(0xCE)
-@@ -1607,7 +1606,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
+ 	/*
+-	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
++	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
+ 	 * support CS5/6 and revert the CSIZE setting instead.
++	 *
++	 * CS5 however is used to control some smartcard readers which abuse
++	 * this limitation to switch modes. Original FTDI chips fall back to
++	 * eight data bits.
++	 *
++	 * TODO: Implement a quirk to only allow this with mentioned
++	 *       readers. One I know of (Argolis Smartreader V1)
++	 *       returns "USB smartcard server" as iInterface string.
++	 *       The vendor didn't bother with a custom VID/PID of
++	 *       course.
+ 	 */
+-	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
++	if (C_CSIZE(tty) == CS6) {
+ 		dev_warn(ddev, "requested CSIZE setting not supported\n");
  
-             if( bScanning )
-             {   // need Max sensitivity  //RSSI -69, -70, ...
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x24); //CR206(0xCE)
-@@ -1759,7 +1757,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
-         case RF_VT3342A0: //RobertYu:20060627, testing table
-             if( bScanning )
-             {   // need Max sensitivity  //RSSI -67, -68, ...
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x38); //CR206(0xCE)
+ 		termios->c_cflag &= ~CSIZE;
+@@ -2174,6 +2184,9 @@ no_skip:
+ 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+ 	}
+ 	switch (cflag & CSIZE) {
++	case CS5:
++		dev_dbg(ddev, "Setting CS5 quirk\n");
++		break;
+ 	case CS7:
+ 		urb_value |= 7;
+ 		dev_dbg(ddev, "Setting CS7\n");
 
 
