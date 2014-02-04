@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936185AbaBDXLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:11:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55985 "EHLO
+	id S936658AbaBDXLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:11:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605AbaBDVAf (ORCPT
+	with ESMTP id S932597AbaBDVAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:35 -0500
+	Tue, 4 Feb 2014 16:00:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.4 35/37] target/iscsi: Fix network portal creation race
-Date: Tue,  4 Feb 2014 13:01:11 -0800
-Message-Id: <20140204210056.999860369@linuxfoundation.org>
+        Thomas Pugliese <thomas.pugliese@gmail.com>
+Subject: [PATCH 3.4 33/37] usb: core: get config and string descriptors for unauthorized devices
+Date: Tue,  4 Feb 2014 13:01:09 -0800
+Message-Id: <20140204210056.945701560@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -29,150 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
+commit 83e83ecb79a8225e79bc8e54e9aff3e0e27658a2 upstream.
 
-When creating network portals rapidly, such as when restoring a
-configuration, LIO's code to reuse existing portals can return a false
-negative if the thread hasn't run yet and set np_thread_state to
-ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
-when attempting to bind to the same address/port.
+There is no need to skip querying the config and string descriptors for
+unauthorized WUSB devices when usb_new_device is called.  It is allowed
+by WUSB spec.  The only action that needs to be delayed until
+authorization time is the set config.  This change allows user mode
+tools to see the config and string descriptors earlier in enumeration
+which is needed for some WUSB devices to function properly on Android
+systems.  It also reduces the amount of divergent code paths needed
+for WUSB devices.
 
-This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
-so even if the thread hasn't run yet, iscsit_get_np will return the
-existing np.
-
-Also, convert np_lock -> np_mutex + hold across adding new net portal
-to g_np_list to prevent a race where two threads may attempt to create
-the same network portal, resulting in one of them failing.
-
-(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
-(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
-
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |   34 +++++++++++++++++++++-------------
- 1 file changed, 21 insertions(+), 13 deletions(-)
+ drivers/usb/core/config.c |    7 -------
+ drivers/usb/core/hub.c    |   40 +++++++---------------------------------
+ 2 files changed, 7 insertions(+), 40 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -50,7 +50,7 @@
- static LIST_HEAD(g_tiqn_list);
- static LIST_HEAD(g_np_list);
- static DEFINE_SPINLOCK(tiqn_lock);
--static DEFINE_SPINLOCK(np_lock);
-+static DEFINE_MUTEX(np_lock);
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -651,10 +651,6 @@ void usb_destroy_configuration(struct us
+  *
+  * hub-only!! ... and only in reset path, or usb_new_device()
+  * (used by real hubs and virtual root hubs)
+- *
+- * NOTE: if this is a WUSB device and is not authorized, we skip the
+- *       whole thing. A non-authorized USB device has no
+- *       configurations.
+  */
+ int usb_get_configuration(struct usb_device *dev)
+ {
+@@ -666,8 +662,6 @@ int usb_get_configuration(struct usb_dev
+ 	struct usb_config_descriptor *desc;
  
- static struct idr tiqn_idr;
- struct idr sess_idr;
-@@ -262,6 +262,9 @@ int iscsit_deaccess_np(struct iscsi_np *
+ 	cfgno = 0;
+-	if (dev->authorized == 0)	/* Not really an error */
+-		goto out_not_authorized;
+ 	result = -ENOMEM;
+ 	if (ncfg > USB_MAXCONFIG) {
+ 		dev_warn(ddev, "too many configurations: %d, "
+@@ -749,7 +743,6 @@ int usb_get_configuration(struct usb_dev
+ 
+ err:
+ 	kfree(desc);
+-out_not_authorized:
+ 	dev->descriptor.bNumConfigurations = cfgno;
+ err2:
+ 	if (result == -ENOMEM)
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1919,18 +1919,13 @@ static int usb_enumerate_device(struct u
+ 			goto fail;
+ 		}
+ 	}
+-	if (udev->wusb == 1 && udev->authorized == 0) {
+-		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	}
+-	else {
+-		/* read the standard strings and cache them if present */
+-		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
+-		udev->manufacturer = usb_cache_string(udev,
+-						      udev->descriptor.iManufacturer);
+-		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+-	}
++
++	/* read the standard strings and cache them if present */
++	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
++	udev->manufacturer = usb_cache_string(udev,
++					      udev->descriptor.iManufacturer);
++	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
++
+ 	err = usb_enumerate_device_otg(udev);
+ fail:
+ 	return err;
+@@ -2084,16 +2079,6 @@ int usb_deauthorize_device(struct usb_de
+ 	usb_dev->authorized = 0;
+ 	usb_set_configuration(usb_dev, -1);
+ 
+-	kfree(usb_dev->product);
+-	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-
+-	usb_destroy_configuration(usb_dev);
+-	usb_dev->descriptor.bNumConfigurations = 0;
+-
+ out_unauthorized:
+ 	usb_unlock_device(usb_dev);
  	return 0;
- }
- 
-+/*
-+ * Called with mutex np_lock held
-+ */
- static struct iscsi_np *iscsit_get_np(
- 	struct __kernel_sockaddr_storage *sockaddr,
- 	int network_transport)
-@@ -272,11 +275,10 @@ static struct iscsi_np *iscsit_get_np(
- 	int ip_match = 0;
- 	u16 port;
- 
--	spin_lock_bh(&np_lock);
- 	list_for_each_entry(np, &g_np_list, np_list) {
--		spin_lock(&np->np_thread_lock);
-+		spin_lock_bh(&np->np_thread_lock);
- 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
--			spin_unlock(&np->np_thread_lock);
-+			spin_unlock_bh(&np->np_thread_lock);
- 			continue;
- 		}
- 
-@@ -309,13 +311,11 @@ static struct iscsi_np *iscsit_get_np(
- 			 * while iscsi_tpg_add_network_portal() is called.
- 			 */
- 			np->np_exports++;
--			spin_unlock(&np->np_thread_lock);
--			spin_unlock_bh(&np_lock);
-+			spin_unlock_bh(&np->np_thread_lock);
- 			return np;
- 		}
--		spin_unlock(&np->np_thread_lock);
-+		spin_unlock_bh(&np->np_thread_lock);
+@@ -2121,17 +2106,7 @@ int usb_authorize_device(struct usb_devi
+ 		goto error_device_descriptor;
  	}
--	spin_unlock_bh(&np_lock);
  
- 	return NULL;
- }
-@@ -329,16 +329,22 @@ struct iscsi_np *iscsit_add_np(
- 	struct sockaddr_in6 *sock_in6;
- 	struct iscsi_np *np;
- 	int ret;
-+
-+	mutex_lock(&np_lock);
-+
- 	/*
- 	 * Locate the existing struct iscsi_np if already active..
+-	kfree(usb_dev->product);
+-	usb_dev->product = NULL;
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = NULL;
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = NULL;
+-
+ 	usb_dev->authorized = 1;
+-	result = usb_enumerate_device(usb_dev);
+-	if (result < 0)
+-		goto error_enumerate;
+ 	/* Choose and set the configuration.  This registers the interfaces
+ 	 * with the driver core and lets interface drivers bind to them.
  	 */
- 	np = iscsit_get_np(sockaddr, network_transport);
--	if (np)
-+	if (np) {
-+		mutex_unlock(&np_lock);
- 		return np;
-+	}
- 
- 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
- 	if (!np) {
- 		pr_err("Unable to allocate memory for struct iscsi_np\n");
-+		mutex_unlock(&np_lock);
- 		return ERR_PTR(-ENOMEM);
+@@ -2147,7 +2122,6 @@ int usb_authorize_device(struct usb_devi
  	}
+ 	dev_info(&usb_dev->dev, "authorized to connect\n");
  
-@@ -361,6 +367,7 @@ struct iscsi_np *iscsit_add_np(
- 	ret = iscsi_target_setup_login_socket(np, sockaddr);
- 	if (ret != 0) {
- 		kfree(np);
-+		mutex_unlock(&np_lock);
- 		return ERR_PTR(ret);
- 	}
- 
-@@ -369,6 +376,7 @@ struct iscsi_np *iscsit_add_np(
- 		pr_err("Unable to create kthread: iscsi_np\n");
- 		ret = PTR_ERR(np->np_thread);
- 		kfree(np);
-+		mutex_unlock(&np_lock);
- 		return ERR_PTR(ret);
- 	}
- 	/*
-@@ -379,10 +387,10 @@ struct iscsi_np *iscsit_add_np(
- 	 * point because iscsi_np has not been added to g_np_list yet.
- 	 */
- 	np->np_exports = 1;
-+	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
- 
--	spin_lock_bh(&np_lock);
- 	list_add_tail(&np->np_list, &g_np_list);
--	spin_unlock_bh(&np_lock);
-+	mutex_unlock(&np_lock);
- 
- 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
- 		np->np_ip, np->np_port, (np->np_network_transport == ISCSI_TCP) ?
-@@ -453,9 +461,9 @@ int iscsit_del_np(struct iscsi_np *np)
- 	}
- 	iscsit_del_np_comm(np);
- 
--	spin_lock_bh(&np_lock);
-+	mutex_lock(&np_lock);
- 	list_del(&np->np_list);
--	spin_unlock_bh(&np_lock);
-+	mutex_unlock(&np_lock);
- 
- 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
- 		np->np_ip, np->np_port, (np->np_network_transport == ISCSI_TCP) ?
+-error_enumerate:
+ error_device_descriptor:
+ 	usb_autosuspend_device(usb_dev);
+ error_autoresume:
 
 
