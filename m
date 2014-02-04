@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933654AbaBDVDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56413 "EHLO
+	id S933625AbaBDVD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933442AbaBDVDA (ORCPT
+	with ESMTP id S933513AbaBDVCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:03:00 -0500
+	Tue, 4 Feb 2014 16:02:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 104/104] powerpc: Make sure "cache" directory is removed when offlining cpu
-Date: Tue,  4 Feb 2014 13:02:47 -0800
-Message-Id: <20140204210225.669182585@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 3.10 044/104] staging: vt6656: CARDqGetNextTBTT correct uLowNextTBTT
+Date: Tue,  4 Feb 2014 13:01:47 -0800
+Message-Id: <20140204210223.976130299@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,50 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
+commit 9acec059c0cef0bf086c738f4c0b1f4447782a48 upstream.
 
-The code in remove_cache_dir() is supposed to remove the "cache"
-subdirectory from the sysfs directory for a CPU when that CPU is
-being offlined.  It tries to do this by calling kobject_put() on
-the kobject for the subdirectory.  However, the subdirectory only
-gets removed once the last reference goes away, and the reference
-being put here may well not be the last reference.  That means
-that the "cache" subdirectory may still exist when the offlining
-operation has finished.  If the same CPU subsequently gets onlined,
-the code tries to add a new "cache" subdirectory.  If the old
-subdirectory has not yet been removed, we get a WARN_ON in the
-sysfs code, with stack trace, and an error message printed on the
-console.  Further, we ultimately end up with an online cpu with no
-"cache" subdirectory.
+value uLowNextTBTT yields wrong value.
 
-This fixes it by doing an explicit kobject_del() at the point where
-we want the subdirectory to go away.  kobject_del() removes the sysfs
-directory even though the object still exists in memory.  The object
-will get freed at some point in the future.  A subsequent onlining
-operation can create a new sysfs directory, even if the old object
-still exists in memory, without causing any problems.
+ULL is needed with qwTSF
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/cacheinfo.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/vt6656/card.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/cacheinfo.c
-+++ b/arch/powerpc/kernel/cacheinfo.c
-@@ -788,6 +788,9 @@ static void remove_cache_dir(struct cach
- {
- 	remove_index_dirs(cache_dir);
+--- a/drivers/staging/vt6656/card.c
++++ b/drivers/staging/vt6656/card.c
+@@ -761,7 +761,7 @@ u64 CARDqGetNextTBTT(u64 qwTSF, u16 wBea
  
-+	/* Remove cache dir from sysfs */
-+	kobject_del(cache_dir->kobj);
-+
- 	kobject_put(cache_dir->kobj);
- 
- 	kfree(cache_dir);
+     uBeaconInterval = wBeaconInterval * 1024;
+     // Next TBTT = ((local_current_TSF / beacon_interval) + 1 ) * beacon_interval
+-	uLowNextTBTT = ((qwTSF & 0xffffffffU) >> 10) << 10;
++	uLowNextTBTT = ((qwTSF & 0xffffffffULL) >> 10) << 10;
+ 	uLowRemain = (uLowNextTBTT) % uBeaconInterval;
+ 	uHighRemain = ((0x80000000 % uBeaconInterval) * 2 * (u32)(qwTSF >> 32))
+ 		% uBeaconInterval;
 
 
