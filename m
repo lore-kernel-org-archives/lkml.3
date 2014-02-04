@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964901AbaBDWzb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:55:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56159 "EHLO
+	id S964887AbaBDWz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:55:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56162 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933225AbaBDVCP (ORCPT
+	with ESMTP id S933229AbaBDVCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:15 -0500
+	Tue, 4 Feb 2014 16:02:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        ZHAO Gang <gamerh2o@gmail.com>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 040/104] b43legacy: Fix unload oops if firmware is not available
-Date: Tue,  4 Feb 2014 13:01:43 -0800
-Message-Id: <20140204210223.864517762@linuxfoundation.org>
+Subject: [PATCH 3.10 041/104] b43: fix the wrong assignment of status.freq in b43_rx()
+Date: Tue,  4 Feb 2014 13:01:44 -0800
+Message-Id: <20140204210223.894308089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,32 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: ZHAO Gang <gamerh2o@gmail.com>
 
-commit 452028665312672c6ba9e16a19248ee00ead9400 upstream.
+commit 64e5acb09ca6b50c97299cff9ef51299470b29f2 upstream.
 
-The asyncronous firmware load uses a completion struct to hold firmware
-processing until the user-space routines are up and running. There is.
-however, a problem in that the waiter is nevered canceled during teardown.
-As a result, unloading the driver when firmware is not available causes an oops.
+Use the right function to update frequency value.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+If rx skb is probe response or beacon, the wrong frequency value can
+cause problem that bss info can't be updated when it should be.
+
+Fixes: 8318d78a44d4 ("cfg80211 API for channels/bitrates, mac80211 and driver conversion")
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43legacy/main.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/b43/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/b43legacy/main.c
-+++ b/drivers/net/wireless/b43legacy/main.c
-@@ -3919,6 +3919,7 @@ static void b43legacy_remove(struct ssb_
- 	 * as the ieee80211 unreg will destroy the workqueue. */
- 	cancel_work_sync(&wldev->restart_work);
- 	cancel_work_sync(&wl->firmware_load);
-+	complete(&wldev->fw_load_complete);
- 
- 	B43legacy_WARN_ON(!wl);
- 	if (!wldev->fw.ucode)
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -821,10 +821,10 @@ void b43_rx(struct b43_wldev *dev, struc
+ 		 * channel number in b43. */
+ 		if (chanstat & B43_RX_CHAN_5GHZ) {
+ 			status.band = IEEE80211_BAND_5GHZ;
+-			status.freq = b43_freq_to_channel_5ghz(chanid);
++			status.freq = b43_channel_to_freq_5ghz(chanid);
+ 		} else {
+ 			status.band = IEEE80211_BAND_2GHZ;
+-			status.freq = b43_freq_to_channel_2ghz(chanid);
++			status.freq = b43_channel_to_freq_2ghz(chanid);
+ 		}
+ 		break;
+ 	default:
 
 
