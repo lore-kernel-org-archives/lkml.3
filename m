@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752AbaBDKFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:05:42 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34211 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaBDKFe (ORCPT
+	id S1753955AbaBDKGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:06:37 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:41540 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaBDKG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:05:34 -0500
-Message-ID: <52F0BB60.8020402@hitachi.com>
-Date: Tue, 04 Feb 2014 19:05:20 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: Re: [PATCH -tip v2 4/8] perf-probe: Use _stext based address
- instead of the symbol name
-References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <20140129091459.22141.29467.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <87d2j43aav.fsf@sejong.aot.lge.com> <52EF541E.8040802@hitachi.com> <52F0B7C5.8080609@hitachi.com>
-In-Reply-To: <52F0B7C5.8080609@hitachi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Feb 2014 05:06:28 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH] spi: rspi: Only enable interrupts when there's a need to wait
+Date: Tue,  4 Feb 2014 11:06:24 +0100
+Message-Id: <1391508384-5013-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/04 18:49), Masami Hiramatsu wrote:
->>> Couldn't we just use kmap->ref_reloc_sym instead of the hard-coded
->>> "_stext"?  You might want to check the Adrian's recent kaslr fixes (now
->>> in tip/perf/urgent).
->>
->> Yeah, I just found Adrian's work and this series must be updated for that,
->> because symbol's address is now based on the real (relocated) address.
->> OK, I'll try to use a symbol in ref_reloc_sym. ;) Thank you for pointed it out!
-> 
-> Hmm, I've tested using ref_reloc_sym for new version, setting probes was OK,
-> but getting the address of "_text" always failed. It seems that the kmaps
-> doesn't make a symbol for "_text", on the other hand, "_stext" seems always
-> available. So I think there are two ways to fix this, use "_stext" as this
-> version, or use "_text" and fix dso__load_sym to load "_text" as a function
-> symbol if exist.
-> I'm not sure why the "_text" is not loaded, is that a policy?
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-Ah, I see. "_text" is not a function, just a label. That is why it
-is not found in function map. Hmm, in that case, maybe I should use
-a special case for checking reference symbol is a ref_reloc_sym and
-if so, use ref_reloc_sym->unrelocated_addr.
+rspi_wait_for_interrupt() unconditionally enables interrupts, even when the
+wait condition is already satisfied. This causes a high interrupt load (2
+interrupts/byte for full-duplex Single SPI transfers, 1 interrupt/byte for
+RSPI with TX Only mode, or QSPI in unidirectional Dual or Quad Transfer
+mode).
 
-Thank you,
+Change this to return immediately when the wait condition is satisfied.
+This dramatically reduces the interrupt load, especially in high-speed
+Quad Transfer mode, and increases transfer speed, as no interrupts need to
+be handled when there's space available in the output FIFO, or data
+available in the input FIFO.
 
+Benchmark results for QSPI on r8a7791 while reading 1 MiB from 30 MHz SPI
+FLASH on the Koelsch development board:
+
+Before:
+                        Single SPI      Dual SPI        Quad SPI
+    Interrupts:         2096856         1048592         1048594
+    Mbps:               0.9             1.6             1.6
+
+After:
+
+                        Single SPI      Dual SPI        Quad SPI
+    Interrupts:         1048569         21295           8
+    Mbps:               0.7             10.8            12.9
+
+I don't know why Single SPI slowed down a bit.
+
+I've also verified functionality for RSPI-RZ on r7s72100, but don't have
+benchmark results as there's no SPI FLASH connected to RSPI on the Genmai
+development board. Unlike RSPI and QSPI, RSPI-RZ has separate interrupts
+for RX and TX, which shows that Single SPI transfers now generate (mostly)
+RX interrupts, as expected.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ drivers/spi/spi-rspi.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/spi/spi-rspi.c b/drivers/spi/spi-rspi.c
+index df637184f6f0..c76f718a3a45 100644
+--- a/drivers/spi/spi-rspi.c
++++ b/drivers/spi/spi-rspi.c
+@@ -393,6 +393,9 @@ static int rspi_wait_for_interrupt(struct rspi_data *rspi, u8 wait_mask,
+ 	int ret;
+ 
+ 	rspi->spsr = rspi_read8(rspi, RSPI_SPSR);
++	if (rspi->spsr & wait_mask)
++		return 0;
++
+ 	rspi_enable_irq(rspi, enable_bit);
+ 	ret = wait_event_timeout(rspi->wait, rspi->spsr & wait_mask, HZ);
+ 	if (ret == 0 && !(rspi->spsr & wait_mask))
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.9.5
 
