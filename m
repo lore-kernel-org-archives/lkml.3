@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935052AbaBDWZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:25:24 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:50254 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933892AbaBDVIU (ORCPT
+	id S935412AbaBDWZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:25:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56601 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933887AbaBDVIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:20 -0500
+	Tue, 4 Feb 2014 16:08:19 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 046/133] b43legacy: Fix unload oops if firmware is not available
+Date: Tue,  4 Feb 2014 13:07:27 -0800
+Message-Id: <20140204210738.337779386@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
+References: <20140204210737.008598235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <20140204080709.GB1428@redhat.com>
-References: <20140203113900.GD1725@redhat.com>
-	<52F00653.40802@wwwdotorg.org>
-	<20140204080105.GA1428@redhat.com>
-	<20140204080709.GB1428@redhat.com>
-Date: Tue, 4 Feb 2014 22:08:19 +0100
-Message-ID: <CACRpkdanesMMZJ046wws5GoOLK9hgh29rHXQ0-uPKC9rTxjzsw@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: protect pinctrl_list add
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Patrice Chotard <patrice.chotard@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 9:07 AM, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> We have few fedora bug reports about list corruption on pinctrl,
-> for example:
-> https://bugzilla.redhat.com/show_bug.cgi?id=1051918
->
-> Most likely corruption happen due lack of protection of pinctrl_list
-> when adding new nodes to it. Patch corrects that.
->
-> Fixes: 42fed7ba44e ("pinctrl: move subsystem mutex to pinctrl_dev struct")
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> ---
-> I only compile tested patch, also did not get test results from bug
-> reporters yet. But I'm pretty confident that patch fixes the problem
-> and does not cause any other deadlock.
->
-> v1 -> v2: point correct first bad commit.
+------------------
 
-Patch applied. Thanks for bringing this to our attention!
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-Yours,
-Linus Walleij
+commit 452028665312672c6ba9e16a19248ee00ead9400 upstream.
+
+The asyncronous firmware load uses a completion struct to hold firmware
+processing until the user-space routines are up and running. There is.
+however, a problem in that the waiter is nevered canceled during teardown.
+As a result, unloading the driver when firmware is not available causes an oops.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/b43legacy/main.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/net/wireless/b43legacy/main.c
++++ b/drivers/net/wireless/b43legacy/main.c
+@@ -3919,6 +3919,7 @@ static void b43legacy_remove(struct ssb_
+ 	 * as the ieee80211 unreg will destroy the workqueue. */
+ 	cancel_work_sync(&wldev->restart_work);
+ 	cancel_work_sync(&wl->firmware_load);
++	complete(&wldev->fw_load_complete);
+ 
+ 	B43legacy_WARN_ON(!wl);
+ 	if (!wldev->fw.ucode)
+
+
