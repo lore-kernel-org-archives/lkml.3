@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaBDKCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:02:04 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45165 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaBDKBx (ORCPT
+	id S1753752AbaBDKFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:05:42 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34211 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079AbaBDKFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:01:53 -0500
-Date: Tue, 4 Feb 2014 11:01:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
-        galak@kernel.crashing.org, paul.gortmaker@windriver.com,
-        paulus@samba.org, mingo@kernel.org, mikey@neuling.org,
-        shangw@linux.vnet.ibm.com, rafael.j.wysocki@intel.com, agraf@suse.de,
-        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
-        john.stultz@linaro.org, anton@samba.org, chenhui.zhao@freescale.com,
-        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V2 1/2] time: Change the return type of clockevents_notify()
- to integer
-In-Reply-To: <20140124065739.17564.97259.stgit@preeti.in.ibm.com>
-Message-ID: <alpine.DEB.2.02.1402041100250.24986@ionos.tec.linutronix.de>
-References: <20140124065501.17564.39363.stgit@preeti.in.ibm.com> <20140124065739.17564.97259.stgit@preeti.in.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Feb 2014 05:05:34 -0500
+Message-ID: <52F0BB60.8020402@hitachi.com>
+Date: Tue, 04 Feb 2014 19:05:20 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        "David A. Long" <dave.long@linaro.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: Re: [PATCH -tip v2 4/8] perf-probe: Use _stext based address
+ instead of the symbol name
+References: <20140129091450.22141.86662.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <20140129091459.22141.29467.stgit@kbuild-fedora.yrl.intra.hitachi.co.jp> <87d2j43aav.fsf@sejong.aot.lge.com> <52EF541E.8040802@hitachi.com> <52F0B7C5.8080609@hitachi.com>
+In-Reply-To: <52F0B7C5.8080609@hitachi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Jan 2014, Preeti U Murthy wrote:
-> -extern void tick_broadcast_oneshot_control(unsigned long reason);
-> +extern int tick_broadcast_oneshot_control(unsigned long reason);
+(2014/02/04 18:49), Masami Hiramatsu wrote:
+>>> Couldn't we just use kmap->ref_reloc_sym instead of the hard-coded
+>>> "_stext"?  You might want to check the Adrian's recent kaslr fixes (now
+>>> in tip/perf/urgent).
+>>
+>> Yeah, I just found Adrian's work and this series must be updated for that,
+>> because symbol's address is now based on the real (relocated) address.
+>> OK, I'll try to use a symbol in ref_reloc_sym. ;) Thank you for pointed it out!
+> 
+> Hmm, I've tested using ref_reloc_sym for new version, setting probes was OK,
+> but getting the address of "_text" always failed. It seems that the kmaps
+> doesn't make a symbol for "_text", on the other hand, "_stext" seems always
+> available. So I think there are two ways to fix this, use "_stext" as this
+> version, or use "_text" and fix dso__load_sym to load "_text" as a function
+> symbol if exist.
+> I'm not sure why the "_text" is not loaded, is that a policy?
 
-> -static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
-> +static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
+Ah, I see. "_text" is not a function, just a label. That is why it
+is not found in function map. Hmm, in that case, maybe I should use
+a special case for checking reference symbol is a ref_reloc_sym and
+if so, use ref_reloc_sym->unrelocated_addr.
 
-> -static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
-> +static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
+Thank you,
 
-The inline stubs need to return 0.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Thanks,
 
-	tglx
