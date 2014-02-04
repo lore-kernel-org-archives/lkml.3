@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935109AbaBDWBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:01:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56935 "EHLO
+	id S935279AbaBDWBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:01:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56922 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933970AbaBDVJY (ORCPT
+	with ESMTP id S934174AbaBDVJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:24 -0500
+	Tue, 4 Feb 2014 16:09:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asias He <asias.hejun@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.12 127/133] virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
-Date: Tue,  4 Feb 2014 13:08:48 -0800
-Message-Id: <20140204210740.620986417@linuxfoundation.org>
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 124/133] hpfs: remember free space
+Date: Tue,  4 Feb 2014 13:08:45 -0800
+Message-Id: <20140204210740.532190168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,58 +29,232 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asias He <asias.hejun@gmail.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit f466f75385369a181409e46da272db3de6f5c5cb upstream.
+commit 2cbe5c76fc5e38e9af4b709593146e4b8272b69e upstream.
 
-vqs are freed in virtscsi_freeze but the hotcpu_notifier is not
-unregistered. We will have a use-after-free usage when the notifier
-callback is called after virtscsi_freeze.
+Previously, hpfs scanned all bitmaps each time the user asked for free
+space using statfs.  This patch changes it so that hpfs scans the
+bitmaps only once, remembes the free space and on next invocation of
+statfs it returns the value instantly.
 
-Fixes: 285e71ea6f3583a85e27cb2b9a7d8c35d4c0d558
-("virtio-scsi: reset virtqueue affinity when doing cpu hotplug")
+New versions of wine are hammering on the statfs syscall very heavily,
+making some games unplayable when they're stored on hpfs, with load
+times in minutes.
 
-Signed-off-by: Asias He <asias.hejun@gmail.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+This should be backported to the stable kernels because it fixes
+user-visible problem (excessive level load times in wine).
+
+Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/virtio_scsi.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ fs/hpfs/alloc.c   |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ fs/hpfs/hpfs_fn.h |    2 -
+ fs/hpfs/super.c   |   29 ++++++++++++++++++-----
+ 3 files changed, 87 insertions(+), 10 deletions(-)
 
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -957,6 +957,10 @@ static void virtscsi_remove(struct virti
- #ifdef CONFIG_PM
- static int virtscsi_freeze(struct virtio_device *vdev)
- {
-+	struct Scsi_Host *sh = virtio_scsi_host(vdev);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+
-+	unregister_hotcpu_notifier(&vscsi->nb);
- 	virtscsi_remove_vqs(vdev);
- 	return 0;
- }
-@@ -965,8 +969,17 @@ static int virtscsi_restore(struct virti
- {
- 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
- 	struct virtio_scsi *vscsi = shost_priv(sh);
-+	int err;
-+
-+	err = virtscsi_init(vdev, vscsi);
-+	if (err)
-+		return err;
-+
-+	err = register_hotcpu_notifier(&vscsi->nb);
-+	if (err)
-+		vdev->config->del_vqs(vdev);
+--- a/fs/hpfs/alloc.c
++++ b/fs/hpfs/alloc.c
+@@ -8,6 +8,58 @@
  
--	return virtscsi_init(vdev, vscsi);
-+	return err;
- }
- #endif
+ #include "hpfs_fn.h"
  
++static void hpfs_claim_alloc(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free != (unsigned)-1) {
++		if (unlikely(!sbi->sb_n_free)) {
++			hpfs_error(s, "free count underflow, allocating sector %08x", sec);
++			sbi->sb_n_free = -1;
++			return;
++		}
++		sbi->sb_n_free--;
++	}
++}
++
++static void hpfs_claim_free(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free != (unsigned)-1) {
++		if (unlikely(sbi->sb_n_free >= sbi->sb_fs_size)) {
++			hpfs_error(s, "free count overflow, freeing sector %08x", sec);
++			sbi->sb_n_free = -1;
++			return;
++		}
++		sbi->sb_n_free++;
++	}
++}
++
++static void hpfs_claim_dirband_alloc(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
++		if (unlikely(!sbi->sb_n_free_dnodes)) {
++			hpfs_error(s, "dirband free count underflow, allocating sector %08x", sec);
++			sbi->sb_n_free_dnodes = -1;
++			return;
++		}
++		sbi->sb_n_free_dnodes--;
++	}
++}
++
++static void hpfs_claim_dirband_free(struct super_block *s, secno sec)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
++		if (unlikely(sbi->sb_n_free_dnodes >= sbi->sb_dirband_size / 4)) {
++			hpfs_error(s, "dirband free count overflow, freeing sector %08x", sec);
++			sbi->sb_n_free_dnodes = -1;
++			return;
++		}
++		sbi->sb_n_free_dnodes++;
++	}
++}
++
+ /*
+  * Check if a sector is allocated in bitmap
+  * This is really slow. Turned on only if chk==2
+@@ -203,9 +255,15 @@ secno hpfs_alloc_sector(struct super_blo
+ 	}
+ 	sec = 0;
+ 	ret:
++	if (sec) {
++		i = 0;
++		do
++			hpfs_claim_alloc(s, sec + i);
++		while (unlikely(++i < n));
++	}
+ 	if (sec && f_p) {
+ 		for (i = 0; i < forward; i++) {
+-			if (!hpfs_alloc_if_possible(s, sec + i + 1)) {
++			if (!hpfs_alloc_if_possible(s, sec + n + i)) {
+ 				hpfs_error(s, "Prealloc doesn't work! Wanted %d, allocated at %08x, can't allocate %d", forward, sec, i);
+ 				sec = 0;
+ 				break;
+@@ -228,6 +286,7 @@ static secno alloc_in_dirband(struct sup
+ 	nr >>= 2;
+ 	sec = alloc_in_bmp(s, (~0x3fff) | nr, 1, 0);
+ 	if (!sec) return 0;
++	hpfs_claim_dirband_alloc(s, sec);
+ 	return ((sec & 0x3fff) << 2) + sbi->sb_dirband_start;
+ }
+ 
+@@ -242,6 +301,7 @@ int hpfs_alloc_if_possible(struct super_
+ 		bmp[(sec & 0x3fff) >> 5] &= cpu_to_le32(~(1 << (sec & 0x1f)));
+ 		hpfs_mark_4buffers_dirty(&qbh);
+ 		hpfs_brelse4(&qbh);
++		hpfs_claim_alloc(s, sec);
+ 		return 1;
+ 	}
+ 	hpfs_brelse4(&qbh);
+@@ -275,6 +335,7 @@ void hpfs_free_sectors(struct super_bloc
+ 		return;
+ 	}
+ 	bmp[(sec & 0x3fff) >> 5] |= cpu_to_le32(1 << (sec & 0x1f));
++	hpfs_claim_free(s, sec);
+ 	if (!--n) {
+ 		hpfs_mark_4buffers_dirty(&qbh);
+ 		hpfs_brelse4(&qbh);
+@@ -359,6 +420,7 @@ void hpfs_free_dnode(struct super_block
+ 		bmp[ssec >> 5] |= cpu_to_le32(1 << (ssec & 0x1f));
+ 		hpfs_mark_4buffers_dirty(&qbh);
+ 		hpfs_brelse4(&qbh);
++		hpfs_claim_dirband_free(s, dno);
+ 	}
+ }
+ 
+@@ -366,7 +428,7 @@ struct dnode *hpfs_alloc_dnode(struct su
+ 			 dnode_secno *dno, struct quad_buffer_head *qbh)
+ {
+ 	struct dnode *d;
+-	if (hpfs_count_one_bitmap(s, hpfs_sb(s)->sb_dmap) > FREE_DNODES_ADD) {
++	if (hpfs_get_free_dnodes(s) > FREE_DNODES_ADD) {
+ 		if (!(*dno = alloc_in_dirband(s, near)))
+ 			if (!(*dno = hpfs_alloc_sector(s, near, 4, 0))) return NULL;
+ 	} else {
+--- a/fs/hpfs/hpfs_fn.h
++++ b/fs/hpfs/hpfs_fn.h
+@@ -311,7 +311,7 @@ static inline struct hpfs_sb_info *hpfs_
+ __printf(2, 3)
+ void hpfs_error(struct super_block *, const char *, ...);
+ int hpfs_stop_cycles(struct super_block *, int, int *, int *, char *);
+-unsigned hpfs_count_one_bitmap(struct super_block *, secno);
++unsigned hpfs_get_free_dnodes(struct super_block *);
+ 
+ /*
+  * local time (HPFS) to GMT (Unix)
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -115,7 +115,7 @@ static void hpfs_put_super(struct super_
+ 	kfree(sbi);
+ }
+ 
+-unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
++static unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
+ {
+ 	struct quad_buffer_head qbh;
+ 	unsigned long *bits;
+@@ -123,7 +123,7 @@ unsigned hpfs_count_one_bitmap(struct su
+ 
+ 	bits = hpfs_map_4sectors(s, secno, &qbh, 0);
+ 	if (!bits)
+-		return 0;
++		return (unsigned)-1;
+ 	count = bitmap_weight(bits, 2048 * BITS_PER_BYTE);
+ 	hpfs_brelse4(&qbh);
+ 	return count;
+@@ -138,30 +138,45 @@ static unsigned count_bitmaps(struct sup
+ 		hpfs_prefetch_bitmap(s, n);
+ 	}
+ 	for (n = 0; n < n_bands; n++) {
++		unsigned c;
+ 		hpfs_prefetch_bitmap(s, n + COUNT_RD_AHEAD);
+-		count += hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
++		c = hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
++		if (c != (unsigned)-1)
++			count += c;
+ 	}
+ 	return count;
+ }
+ 
++unsigned hpfs_get_free_dnodes(struct super_block *s)
++{
++	struct hpfs_sb_info *sbi = hpfs_sb(s);
++	if (sbi->sb_n_free_dnodes == (unsigned)-1) {
++		unsigned c = hpfs_count_one_bitmap(s, sbi->sb_dmap);
++		if (c == (unsigned)-1)
++			return 0;
++		sbi->sb_n_free_dnodes = c;
++	}
++	return sbi->sb_n_free_dnodes;
++}
++
+ static int hpfs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ {
+ 	struct super_block *s = dentry->d_sb;
+ 	struct hpfs_sb_info *sbi = hpfs_sb(s);
+ 	u64 id = huge_encode_dev(s->s_bdev->bd_dev);
++
+ 	hpfs_lock(s);
+ 
+-	/*if (sbi->sb_n_free == -1) {*/
++	if (sbi->sb_n_free == (unsigned)-1)
+ 		sbi->sb_n_free = count_bitmaps(s);
+-		sbi->sb_n_free_dnodes = hpfs_count_one_bitmap(s, sbi->sb_dmap);
+-	/*}*/
++
+ 	buf->f_type = s->s_magic;
+ 	buf->f_bsize = 512;
+ 	buf->f_blocks = sbi->sb_fs_size;
+ 	buf->f_bfree = sbi->sb_n_free;
+ 	buf->f_bavail = sbi->sb_n_free;
+ 	buf->f_files = sbi->sb_dirband_size / 4;
+-	buf->f_ffree = sbi->sb_n_free_dnodes;
++	buf->f_ffree = hpfs_get_free_dnodes(s);
+ 	buf->f_fsid.val[0] = (u32)id;
+ 	buf->f_fsid.val[1] = (u32)(id >> 32);
+ 	buf->f_namelen = 254;
 
 
