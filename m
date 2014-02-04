@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934966AbaBDVSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:18:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57510 "EHLO
+	id S934757AbaBDVMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934765AbaBDVMs (ORCPT
+	with ESMTP id S934558AbaBDVMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:48 -0500
+	Tue, 4 Feb 2014 16:12:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 139/140] powerpc: Fix the setup of CPU-to-Node mappings during CPU online
-Date: Tue,  4 Feb 2014 13:12:06 -0800
-Message-Id: <20140204211040.943616887@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.13 079/140] mfd: max77686: Fix regmap resource leak on driver remove
+Date: Tue,  4 Feb 2014 13:11:06 -0800
+Message-Id: <20140204211039.217891900@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,209 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit d4edc5b6c480a0917e61d93d55531d7efa6230be upstream.
+commit 74142ffc0b52cfe6f9d2f6f34a5f3eedbfe3ce51 upstream.
 
-On POWER platforms, the hypervisor can notify the guest kernel about dynamic
-changes in the cpu-numa associativity (VPHN topology update). Hence the
-cpu-to-node mappings that we got from the firmware during boot, may no longer
-be valid after such updates. This is handled using the arch_update_cpu_topology()
-hook in the scheduler, and the sched-domains are rebuilt according to the new
-mappings.
+The regmap used by max77686 MFD driver was not freed with regmap_exit()
+on driver exit. This lead to leak of resources.
 
-But unfortunately, at the moment, CPU hotplug ignores these updated mappings
-and instead queries the firmware for the cpu-to-numa relationships and uses
-them during CPU online. So the kernel can end up assigning wrong NUMA nodes
-to CPUs during subsequent CPU hotplug online operations (after booting).
+Replace regmap_init_i2c() call in driver probe with initialization of
+managed register map so the regmap will be properly freed by the device
+management code.
 
-Further, a particularly problematic scenario can result from this bug:
-On POWER platforms, the SMT mode can be switched between 1, 2, 4 (and even 8)
-threads per core. The switch to Single-Threaded (ST) mode is performed by
-offlining all except the first CPU thread in each core. Switching back to
-SMT mode involves onlining those other threads back, in each core.
-
-Now consider this scenario:
-
-1. During boot, the kernel gets the cpu-to-node mappings from the firmware
-   and assigns the CPUs to NUMA nodes appropriately, during CPU online.
-
-2. Later on, the hypervisor updates the cpu-to-node mappings dynamically and
-   communicates this update to the kernel. The kernel in turn updates its
-   cpu-to-node associations and rebuilds its sched domains. Everything is
-   fine so far.
-
-3. Now, the user switches the machine from SMT to ST mode (say, by running
-   ppc64_cpu --smt=1). This involves offlining all except 1 thread in each
-   core.
-
-4. The user then tries to switch back from ST to SMT mode (say, by running
-   ppc64_cpu --smt=4), and this involves onlining those threads back. Since
-   CPU hotplug ignores the new mappings, it queries the firmware and tries to
-   associate the newly onlined sibling threads to the old NUMA nodes. This
-   results in sibling threads within the same core getting associated with
-   different NUMA nodes, which is incorrect.
-
-   The scheduler's build-sched-domains code gets thoroughly confused with this
-   and enters an infinite loop and causes soft-lockups, as explained in detail
-   in commit 3be7db6ab (powerpc: VPHN topology change updates all siblings).
-
-So to fix this, use the numa_cpu_lookup_table to remember the updated
-cpu-to-node mappings, and use them during CPU hotplug online operations.
-Further, we also need to ensure that all threads in a core are assigned to a
-common NUMA node, irrespective of whether all those threads were online during
-the topology update. To achieve this, we take care not to use cpu_sibling_mask()
-since it is not hotplug invariant. Instead, we use cpu_first_sibling_thread()
-and set up the mappings manually using the 'threads_per_core' value for that
-particular platform. This helps us ensure that we don't hit this bug with any
-combination of CPU hotplug and SMT mode switching.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/topology.h |   10 ++++-
- arch/powerpc/mm/numa.c              |   70 ++++++++++++++++++++++++++++++++++--
- 2 files changed, 76 insertions(+), 4 deletions(-)
+ drivers/mfd/max77686.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/topology.h
-+++ b/arch/powerpc/include/asm/topology.h
-@@ -22,7 +22,15 @@ struct device_node;
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -104,7 +104,7 @@ static int max77686_i2c_probe(struct i2c
+ 	max77686->irq_gpio = pdata->irq_gpio;
+ 	max77686->irq = i2c->irq;
  
- static inline int cpu_to_node(int cpu)
- {
--	return numa_cpu_lookup_table[cpu];
-+	int nid;
-+
-+	nid = numa_cpu_lookup_table[cpu];
-+
-+	/*
-+	 * During early boot, the numa-cpu lookup table might not have been
-+	 * setup for all CPUs yet. In such cases, default to node 0.
-+	 */
-+	return (nid < 0) ? 0 : nid;
- }
- 
- #define parent_node(node)	(node)
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -31,6 +31,8 @@
- #include <asm/sparsemem.h>
- #include <asm/prom.h>
- #include <asm/smp.h>
-+#include <asm/cputhreads.h>
-+#include <asm/topology.h>
- #include <asm/firmware.h>
- #include <asm/paca.h>
- #include <asm/hvcall.h>
-@@ -152,9 +154,22 @@ static void __init get_node_active_regio
- 	}
- }
- 
--static void map_cpu_to_node(int cpu, int node)
-+static void reset_numa_cpu_lookup_table(void)
-+{
-+	unsigned int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		numa_cpu_lookup_table[cpu] = -1;
-+}
-+
-+static void update_numa_cpu_lookup_table(unsigned int cpu, int node)
- {
- 	numa_cpu_lookup_table[cpu] = node;
-+}
-+
-+static void map_cpu_to_node(int cpu, int node)
-+{
-+	update_numa_cpu_lookup_table(cpu, node);
- 
- 	dbg("adding cpu %d to node %d\n", cpu, node);
- 
-@@ -522,11 +537,24 @@ static int of_drconf_to_nid_single(struc
-  */
- static int numa_setup_cpu(unsigned long lcpu)
- {
--	int nid = 0;
--	struct device_node *cpu = of_get_cpu_node(lcpu, NULL);
-+	int nid;
-+	struct device_node *cpu;
-+
-+	/*
-+	 * If a valid cpu-to-node mapping is already available, use it
-+	 * directly instead of querying the firmware, since it represents
-+	 * the most recent mapping notified to us by the platform (eg: VPHN).
-+	 */
-+	if ((nid = numa_cpu_lookup_table[lcpu]) >= 0) {
-+		map_cpu_to_node(lcpu, nid);
-+		return nid;
-+	}
-+
-+	cpu = of_get_cpu_node(lcpu, NULL);
- 
- 	if (!cpu) {
- 		WARN_ON(1);
-+		nid = 0;
- 		goto out;
- 	}
- 
-@@ -1067,6 +1095,7 @@ void __init do_init_bootmem(void)
- 	 */
- 	setup_node_to_cpumask_map();
- 
-+	reset_numa_cpu_lookup_table();
- 	register_cpu_notifier(&ppc64_numa_nb);
- 	cpu_numa_callback(&ppc64_numa_nb, CPU_UP_PREPARE,
- 			  (void *)(unsigned long)boot_cpuid);
-@@ -1445,6 +1474,33 @@ static int update_cpu_topology(void *dat
- 	return 0;
- }
- 
-+static int update_lookup_table(void *data)
-+{
-+	struct topology_update_data *update;
-+
-+	if (!data)
-+		return -EINVAL;
-+
-+	/*
-+	 * Upon topology update, the numa-cpu lookup table needs to be updated
-+	 * for all threads in the core, including offline CPUs, to ensure that
-+	 * future hotplug operations respect the cpu-to-node associativity
-+	 * properly.
-+	 */
-+	for (update = data; update; update = update->next) {
-+		int nid, base, j;
-+
-+		nid = update->new_nid;
-+		base = cpu_first_thread_sibling(update->cpu);
-+
-+		for (j = 0; j < threads_per_core; j++) {
-+			update_numa_cpu_lookup_table(base + j, nid);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- /*
-  * Update the node maps and sysfs entries for each cpu whose home node
-  * has changed. Returns 1 when the topology has changed, and 0 otherwise.
-@@ -1513,6 +1569,14 @@ int arch_update_cpu_topology(void)
- 
- 	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
- 
-+	/*
-+	 * Update the numa-cpu lookup table with the new mappings, even for
-+	 * offline CPUs. It is best to perform this update from the stop-
-+	 * machine context.
-+	 */
-+	stop_machine(update_lookup_table, &updates[0],
-+					cpumask_of(raw_smp_processor_id()));
-+
- 	for (ud = &updates[0]; ud; ud = ud->next) {
- 		unregister_cpu_under_node(ud->cpu, ud->old_nid);
- 		register_cpu_under_node(ud->cpu, ud->new_nid);
+-	max77686->regmap = regmap_init_i2c(i2c, &max77686_regmap_config);
++	max77686->regmap = devm_regmap_init_i2c(i2c, &max77686_regmap_config);
+ 	if (IS_ERR(max77686->regmap)) {
+ 		ret = PTR_ERR(max77686->regmap);
+ 		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
 
 
