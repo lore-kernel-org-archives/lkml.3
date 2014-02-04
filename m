@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaBDN66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 08:58:58 -0500
-Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:33120 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753239AbaBDN6z (ORCPT
+	id S1752994AbaBDOUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:20:00 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:48318 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDOT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:58:55 -0500
-Message-ID: <52F0F06D.6000704@overkiz.com>
-Date: Tue, 04 Feb 2014 14:51:41 +0100
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 4 Feb 2014 09:19:57 -0500
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH 0/3] clk: at91: various fixes and improvements
-References: <1391426731-9392-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1391426731-9392-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 17327036617219733532
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Date: Tue, 4 Feb 2014 15:19:52 +0100
+X-Google-Sender-Auth: kYszA61SEHu-ZDH2hEqTys7fRFI
+Message-ID: <CAMuHMdVCeFek2LX0_AnA8zg_yYhXvzw19rH8OsqbWWb-rb9w-A@mail.gmail.com>
+Subject: [bisected] Re: WARNING: at net/ipv4/devinet.c:1599
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Mike,
+On Sun, Jan 26, 2014 at 10:56 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On m68k/ARAnyM:
+>
+> WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
+> Modules linked in:
+> CPU: 0 PID: 407 Comm: ifconfig Not tainted
+> 3.13.0-atari-09263-g0c71d68014d1 #1378
+> Stack from 10c4fdf0:
+>         10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
+>         00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
+>         c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
+>         00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
+>         008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
+>         eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
+> Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
+>  [<00024416>] warn_slowpath_null+0x14/0x1a
+>  [<002501b4>] rtmsg_ifa+0xdc/0xf0
+>  [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
+>  [<0024f9b4>] inet_abc_len+0x0/0x42
+>  [<00250b52>] inet_insert_ifa+0xc/0x12
+>  [<00252390>] devinet_ioctl+0x2ae/0x5d6
+>  [<00020000>] _060_fpsp_effadd+0xc90c/0xd518
+>  [<00020000>] _060_fpsp_effadd+0xc90c/0xd518
+>  [<002530ec>] inet_ioctl+0x120/0x14e
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<001f7666>] sock_ioctl+0x56/0x256
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<00095434>] vfs_ioctl+0x1c/0x30
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<0009559c>] do_vfs_ioctl+0x7a/0x3b8
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<00002884>] buserr+0x20/0x28
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<00095910>] SyS_ioctl+0x36/0x5a
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<00002980>] syscall+0x8/0xc
+>  [<00008916>] atari_scc_console_write+0x42/0x5c
+>  [<0010c00b>] mext_leaf_block+0x443/0x81e
+>
+> ---[ end trace 44b14c97c2210758 ]---
+>
+> Adding some debugging code reveals that net_fill_ifaddr() fails in
+>
+>     put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
+>                               preferred, valid))
+>
+> nla_put complains:
+>
+> lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
 
-Please do not take this series: the prog clk driver is still buggy (this was
-reported by Jean-Jacques Hiblot).
+Bisected to:
 
-Jean-Jacques is preparing a new series to fix these bugs, and I'll rebase
-patch 2 and 3 of this series on top of his work.
+commit ad6c81359fc3e6086d1d6f91acda9d5d0e64b2c3
+Author: Jiri Pirko <jiri@resnulli.us>
+Date:   Sun Dec 8 12:16:10 2013 +0100
 
-Sorry for the inconvenience.
+    ipv4: add support for IFA_FLAGS nl attribute
 
-Best Regards,
+    Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-Boris
+Reverting that commit on v3.14-rc1 fixes the problem.
 
-On 03/02/2014 12:25, Boris BREZILLON wrote:
-> Hello Mike,
->
-> This series fixes a bug in the prog clk prepare function (the platform hangs
-> when preparing a prog clk).
->
-> It also implements the determine_rate callback for these prog clks and allow
-> system clk to propagate the rate change to its parent.
->
-> These modifications are needed to get the atmel_wm8904 driver working (this
-> driver make use of prog clks), and if possible, should be merged in the next
-> 3.14 release (at least the first patch of this series).
->
-> Let me know if this is not possible.
->
-> Thanks.
->
-> Best Regards,
->
-> Boris
->
-> Boris BREZILLON (3):
->    clk: at91: fix programmable clk irq handling
->    clk: at91: replace prog clk round_rate with determine_rate
->    clk: at91: propagate rate change on system clks
->
->   drivers/clk/at91/clk-programmable.c |   61 ++++++++++++++++++-----------------
->   drivers/clk/at91/clk-system.c       |    3 +-
->   2 files changed, 34 insertions(+), 30 deletions(-)
->
+I don't know why it fails. My first guess was the alignment of ifa_flags
+(on m68k __u32 is aligned to 2 bytes, so there's no implicit padding):
 
+        __be32                  ifa_broadcast;
+        unsigned char           ifa_scope;
+        unsigned char           ifa_prefixlen;
+        __u32                   ifa_flags;
+
+but adding 2 bytes of explicit alignment didn't help.
+
+Anyone with a clue?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
