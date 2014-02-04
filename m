@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067AbaBDQRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:17:30 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:39292 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaBDQR1 (ORCPT
+	id S932107AbaBDQSs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:18:48 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:39844 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDQSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:17:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391513615.2766.18.camel@menhir>
-References: <CALFYKtDCNWK+9m5m3P01dcxOOV7iHFeNaOH=Q=6Pffuo8gmrMQ@mail.gmail.com>
-	<1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
-	<CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
-	<20140130075421.GA10050@infradead.org>
-	<CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
-	<20140203102943.GF11829@infradead.org>
-	<CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
-	<20140203215908.GD10323@ZenIV.linux.org.uk>
-	<CA+55aFz3PyyCqOLs_SBRS3cbGxWd5ez4Svz2+xK+4KtCez8iGw@mail.gmail.com>
-	<20140203224034.GF10323@ZenIV.linux.org.uk>
-	<1391513615.2766.18.camel@menhir>
-Date: Tue, 4 Feb 2014 08:17:26 -0800
-X-Google-Sender-Auth: F3LIxvhRZbalihP3Fwe4179g_zk
-Message-ID: <CA+55aFz2FLCcNpLz_ey4YaKsLov+Mpjdt4onXVmw5n3z7o_TRg@mail.gmail.com>
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 11:18:45 -0500
+Message-ID: <1391530721.4301.8.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] fdtable: Avoid triggering OOMs from alloc_fdmem
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Date: Tue, 04 Feb 2014 08:18:41 -0800
+In-Reply-To: <87r47jsb2p.fsf@xmission.com>
+References: <87r47jsb2p.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 3:33 AM, Steven Whitehouse <swhiteho@redhat.com> wrote:
->
-> The other question that I have relating to that side of things, is why
-> security_inode_permission() is called from __inode_permission() rather
-> than from generic_permission() ? Maybe there is a good reason, but I
-> can't immediately see what it is at the moment.
+On Mon, 2014-02-03 at 21:26 -0800, Eric W. Biederman wrote:
+> Recently due to a spike in connections per second memcached on 3
+> separate boxes triggered the OOM killer from accept.  At the time the
+> OOM killer was triggered there was 4GB out of 36GB free in zone 1. The
+> problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
+> hold a bitmap, and there was sufficient fragmentation that the largest
+> page available was 8KiB.
+> 
+> I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
+> but I do agree that order 3 allocations are very likely to succeed.
+> 
+> There are always pathologies where order > 0 allocations can fail when
+> there are copious amounts of free memory available.  Using the pigeon
+> hole principle it is easy to show that it requires 1 page more than 50%
+> of the pages being free to guarantee an order 1 (8KiB) allocation will
+> succeed, 1 page more than 75% of the pages being free to guarantee an
+> order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
+> the pages being free to guarantee an order 3 allocate will succeed.
+> 
+> A server churning memory with a lot of small requests and replies like
+> memcached is a common case that if anything can will skew the odds
+> against large pages being available.
+> 
+> Therefore let's not give external applications a practical way to kill
+> linux server applications, and specify __GFP_NORETRY to the kmalloc in
+> alloc_fdmem.  Unless I am misreading the code and by the time the code
+> reaches should_alloc_retry in __alloc_pages_slowpath (where
+> __GFP_NORETRY becomes signification).  We have already tried everything
+> reasonable to allocate a page and the only thing left to do is wait.  So
+> not waiting and falling back to vmalloc immediately seems like the
+> reasonable thing to do even if there wasn't a chance of triggering the
+> OOM killer.
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  fs/file.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/file.c b/fs/file.c
+> index 771578b33fb6..db25c2bdfe46 100644
+> --- a/fs/file.c
+> +++ b/fs/file.c
+> @@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
+>  	 * vmalloc() if the allocation size will be considered "large" by the VM.
+>  	 */
+>  	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
+> -		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
+> +		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
+>  		if (data != NULL)
+>  			return data;
+>  	}
 
-"generic_permission()" is just a helper that implements the default
-UNIX permissions, and won't necessarily even be called. A filesystem
-could decide not to call it at all, and in fact there are cases that
-don't (eg coda or the bad_inode case).
+Hi Eric
 
-The inode_permission() class of helpers, in contrast, is what gets
-called by the VFS layer itself. So if you want to catch all permission
-checks (and that would be security_inode_permission()) then you need
-to catch it there.
+I wrote yesterday a similar patch adding __GFP_NORETRY in following
+paths. I feel that alloc_fdmem() is only a part of the problem ;)
 
-                     Linus
+What do you think, should we merge our changes or have distinct
+patches ?
+
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 0c127dcdf6a8..5b6a9431b017 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1775,7 +1775,9 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 			while (order) {
+ 				if (npages >= 1 << order) {
+ 					page = alloc_pages(sk->sk_allocation |
+-							   __GFP_COMP | __GFP_NOWARN,
++							   __GFP_COMP |
++							   __GFP_NOWARN |
++							   __GFP_NORETRY,
+ 							   order);
+ 					if (page)
+ 						goto fill_page;
+@@ -1845,7 +1847,7 @@ bool skb_page_frag_refill(unsigned int sz, struct page_frag *pfrag, gfp_t prio)
+ 		gfp_t gfp = prio;
+ 
+ 		if (order)
+-			gfp |= __GFP_COMP | __GFP_NOWARN;
++			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
+ 		pfrag->page = alloc_pages(gfp, order);
+ 		if (likely(pfrag->page)) {
+ 			pfrag->offset = 0;
+
+
+
+
+
+
