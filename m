@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936347AbaBDWtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:49:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56241 "EHLO
+	id S933320AbaBDVC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933333AbaBDVC2 (ORCPT
+	with ESMTP id S933193AbaBDVCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:28 -0500
+	Tue, 4 Feb 2014 16:02:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Aristov <aristov.alexander@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 061/104] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
-Date: Tue,  4 Feb 2014 13:02:04 -0800
-Message-Id: <20140204210224.445075999@linuxfoundation.org>
+        Eliad Peller <eliadx.peller@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 037/104] iwlwifi: mvm: fix missing cleanup in .start() error path
+Date: Tue,  4 Feb 2014 13:01:40 -0800
+Message-Id: <20140204210223.782925881@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,32 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Eliad Peller <eliadx.peller@intel.com>
 
-commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+commit 91b0d1198417cf4fd9a7bd4138b6909f0b359099 upstream.
 
-The lack of comma leads to the wrong channel for an SPDIF channel.
-Unfortunately this wasn't caught by compiler because it's still a
-valid expression.
+Cleanup of iwl_mvm_leds was missing in case of error,
+resulting in the following warning:
 
-Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+WARNING: at lib/kobject.c:196 kobject_add_internal+0x1f4/0x210()
+kobject_add_internal failed for phy0-led with -EEXIST, don't try to register things with the same name in the same directory.
+
+which prevents further reloads of the driver.
+
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/rme9652/rme9652.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/mvm/ops.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/rme9652/rme9652.c
-+++ b/sound/pci/rme9652/rme9652.c
-@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
- 	/* ADAT channels are remapped */
- 	1, 3, 5, 7, 9, 11, 13, 15,
- 	/* channels 8 and 9 are S/PDIF */
--	24, 25
-+	24, 25,
- 	/* others don't exist */
- 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
- };
+--- a/drivers/net/wireless/iwlwifi/mvm/ops.c
++++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
+@@ -424,6 +424,7 @@ iwl_op_mode_mvm_start(struct iwl_trans *
+ 
+  out_unregister:
+ 	ieee80211_unregister_hw(mvm->hw);
++	iwl_mvm_leds_exit(mvm);
+  out_free:
+ 	iwl_phy_db_free(mvm->phy_db);
+ 	kfree(mvm->scan_cmd);
 
 
