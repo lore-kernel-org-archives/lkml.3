@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934921AbaBDVth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:49:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57113 "EHLO
+	id S934975AbaBDVuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:50:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574AbaBDVL0 (ORCPT
+	with ESMTP id S934382AbaBDVLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:26 -0500
+	Tue, 4 Feb 2014 16:11:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 037/140] rtlwifi: Add missing code to PWDB statics routine
-Date: Tue,  4 Feb 2014 13:10:24 -0800
-Message-Id: <20140204211038.027861631@linuxfoundation.org>
+Subject: [PATCH 3.13 035/140] rtlwifi: rtl8192cu: Update the power index registers
+Date: Tue,  4 Feb 2014 13:10:22 -0800
+Message-Id: <20140204211037.965303858@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -31,58 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit d82403a9f407217b6aed5260aa92a120e8e98310 upstream.
+commit 9806eacf5de27ab01d680c5d75c92a3a89734e4f upstream.
+
+This patch uses the newly introduced power index register routines.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/stats.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192cu/dm.c |    9 +++++++++
+ drivers/net/wireless/rtlwifi/rtl8192cu/dm.h |    3 +++
+ 2 files changed, 12 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/stats.c
-+++ b/drivers/net/wireless/rtlwifi/stats.c
-@@ -176,6 +176,7 @@ static void rtl_process_pwdb(struct ieee
- 	struct rtl_sta_info *drv_priv = NULL;
- 	struct ieee80211_sta *sta = NULL;
- 	long undec_sm_pwdb;
-+	long undec_sm_cck;
- 
- 	rcu_read_lock();
- 	if (rtlpriv->mac80211.opmode != NL80211_IFTYPE_STATION)
-@@ -185,12 +186,16 @@ static void rtl_process_pwdb(struct ieee
- 	if (sta) {
- 		drv_priv = (struct rtl_sta_info *) sta->drv_priv;
- 		undec_sm_pwdb = drv_priv->rssi_stat.undec_sm_pwdb;
-+		undec_sm_cck = drv_priv->rssi_stat.undec_sm_cck;
- 	} else {
- 		undec_sm_pwdb = rtlpriv->dm.undec_sm_pwdb;
-+		undec_sm_cck = rtlpriv->dm.undec_sm_cck;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/dm.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/dm.c
+@@ -101,6 +101,15 @@ void rtl92cu_dm_dynamic_txpower(struct i
+ 			 "PHY_SetTxPowerLevel8192S() Channel = %d\n",
+ 			 rtlphy->current_channel);
+ 		rtl92c_phy_set_txpower_level(hw, rtlphy->current_channel);
++		if (rtlpriv->dm.dynamic_txhighpower_lvl ==
++		    TXHIGHPWRLEVEL_NORMAL)
++			dm_restorepowerindex(hw);
++		else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
++			 TXHIGHPWRLEVEL_LEVEL1)
++			dm_writepowerindex(hw, 0x14);
++		else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
++			 TXHIGHPWRLEVEL_LEVEL2)
++			dm_writepowerindex(hw, 0x10);
  	}
  
- 	if (undec_sm_pwdb < 0)
- 		undec_sm_pwdb = pstatus->rx_pwdb_all;
-+	if (undec_sm_cck < 0)
-+		undec_sm_cck = pstatus->rx_pwdb_all;
- 	if (pstatus->rx_pwdb_all > (u32) undec_sm_pwdb) {
- 		undec_sm_pwdb = (((undec_sm_pwdb) *
- 		      (RX_SMOOTH_FACTOR - 1)) +
-@@ -200,6 +205,15 @@ static void rtl_process_pwdb(struct ieee
- 		undec_sm_pwdb = (((undec_sm_pwdb) * (RX_SMOOTH_FACTOR - 1)) +
- 		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
- 	}
-+	if (pstatus->rx_pwdb_all > (u32) undec_sm_cck) {
-+		undec_sm_cck = (((undec_sm_pwdb) *
-+		      (RX_SMOOTH_FACTOR - 1)) +
-+		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
-+		undec_sm_cck = undec_sm_cck + 1;
-+	} else {
-+		undec_sm_pwdb = (((undec_sm_cck) * (RX_SMOOTH_FACTOR - 1)) +
-+		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
-+	}
+ 	rtlpriv->dm.last_dtp_lvl = rtlpriv->dm.dynamic_txhighpower_lvl;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/dm.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/dm.h
+@@ -30,3 +30,6 @@
+ #include "../rtl8192ce/dm.h"
  
- 	if (sta) {
- 		drv_priv->rssi_stat.undec_sm_pwdb = undec_sm_pwdb;
+ void rtl92cu_dm_dynamic_txpower(struct ieee80211_hw *hw);
++void dm_savepowerindex(struct ieee80211_hw *hw);
++void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
++void dm_restorepowerindex(struct ieee80211_hw *hw);
 
 
