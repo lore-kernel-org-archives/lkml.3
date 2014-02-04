@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaBDJcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 04:32:45 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:33297 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751484AbaBDJci convert rfc822-to-8bit (ORCPT
+	id S1753733AbaBDJjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 04:39:37 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41449 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751374AbaBDJj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 04:32:38 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Markus Rechberger'" <mrechberger@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: RE: [BUGREPORT] Linux USB 3.0
-Thread-Topic: [BUGREPORT] Linux USB 3.0
-Thread-Index: AQHPITTBr91Kbmny9k2qZH16zHW8EJqk1Ejg
-Date: Tue, 4 Feb 2014 09:31:52 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6B8058@AcuExch.aculab.com>
-References: <CA+O4pCJAL_Dqrt0mF5rbErBXbLTALx8Rrs1+vB3JmT=+rT0jCg@mail.gmail.com>
-	<CA+O4pC+bHC1Bo4ERSfos8fL+FdnwXTTu_EE=rfd9eFkY7432Jg@mail.gmail.com>
-	<CA+O4pCJ5xUQwRem3rvZbvv7K8BEnMW983Qq_vR0tVzwAwmVS6A@mail.gmail.com>
-	<CA+O4pCJ9dFuwrcVF2b5MsreUb4NJX8t6664i3XHM9CYrdN7VzA@mail.gmail.com>
-	<20140120193510.GC5545@xanatos>
- <CA+O4pC+inTZBSVJDBs4PfaDv0et3ZT+eN-1epThRJMztdgQryQ@mail.gmail.com>
-In-Reply-To: <CA+O4pC+inTZBSVJDBs4PfaDv0et3ZT+eN-1epThRJMztdgQryQ@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Feb 2014 04:39:29 -0500
+Date: Tue, 4 Feb 2014 09:38:44 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Colin Cross <ccross@android.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James Morris <james.l.morris@oracle.com>,
+        "open list:SECURITY SUBSYSTEM" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] security: select correct default LSM_MMAP_MIN_ADDR on
+ arm on arm64
+Message-ID: <20140204093843.GB16708@mudshark.cambridge.arm.com>
+References: <1391480133-27149-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391480133-27149-1-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Rechberger
-> >> Dec 27 23:23:50 solist kernel: [   36.118245] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA
-> ptr
-> >
-> > These messages might be harmless.  The 3.0 kernel contains a fix for
-> > Intel Panther Point xHCI hosts that suppresses those messages, commit
-> > ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci: Ignore spurious
-> > successful event."
-> >
-> > A later commit extends that to all xHCI 1.0 hosts, commit
-> > 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 "usb: host: xhci: Enable
-> > XHCI_SPURIOUS_SUCCESS for all controllers with xhci 1.0"  That was
-> > queued for 3.11 and marked to be backported into stable kernels as old
-> > as 3.0.
+On Tue, Feb 04, 2014 at 02:15:32AM +0000, Colin Cross wrote:
+> Binaries compiled for arm may run on arm64 if CONFIG_COMPAT is
+> selected.  Set LSM_MMAP_MIN_ADDR to 32768 if ARM64 && COMPAT to
+> prevent selinux failures launching 32-bit static executables that
+> are mapped at 0x8000.
+> 
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+>  security/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/security/Kconfig b/security/Kconfig
+> index e9c6ac724fef..beb86b500adf 100644
+> --- a/security/Kconfig
+> +++ b/security/Kconfig
+> @@ -103,7 +103,7 @@ config INTEL_TXT
+>  config LSM_MMAP_MIN_ADDR
+>  	int "Low address space for LSM to protect from user allocation"
+>  	depends on SECURITY && SECURITY_SELINUX
+> -	default 32768 if ARM
+> +	default 32768 if ARM || (ARM64 && COMPAT)
+>  	default 65536
+>  	help
+>  	  This is the portion of low virtual memory which should be protected
 
-I see the same error message on the 0.96 ASMedia controller when
-the rx buffers for the ax88179_178a driver cross 64k boundaries.
+Since ARM64 && COMPAT implies 4k pages, this change looks ok to me.
 
-So this isn't confined to 1.0 controllers.
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-	David
-
-
-
+Will
