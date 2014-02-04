@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964803AbaBDVrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:47:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57129 "EHLO
+	id S935229AbaBDVsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:48:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934411AbaBDVLa (ORCPT
+	with ESMTP id S934402AbaBDVL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:30 -0500
+	Tue, 4 Feb 2014 16:11:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 041/140] mwifiex: fix wrong 11ac bits setting in fw_cap_info
-Date: Tue,  4 Feb 2014 13:10:28 -0800
-Message-Id: <20140204211038.137831212@linuxfoundation.org>
+Subject: [PATCH 3.13 040/140] mwifiex: add missing endian conversion for fw_tsf
+Date: Tue,  4 Feb 2014 13:10:27 -0800
+Message-Id: <20140204211038.110016829@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,31 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 1e202242ee1432d68a8bea4919b2ae0ef19d9e06 upstream.
+commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
 
-bit 14 is actually reserved and bit 12 & 13 should be used for
-11ac capability in fw_cap_info.
+It is u64 data received from firmware. Little endian to cpu
+conversion is required here.
 
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
 Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/fw.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/scan.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/fw.h
-+++ b/drivers/net/wireless/mwifiex/fw.h
-@@ -226,7 +226,7 @@ enum MWIFIEX_802_11_PRIVACY_FILTER {
- 
- /* HW_SPEC fw_cap_info */
- 
--#define ISSUPP_11ACENABLED(fw_cap_info) (fw_cap_info & (BIT(13)|BIT(14)))
-+#define ISSUPP_11ACENABLED(fw_cap_info) (fw_cap_info & (BIT(12)|BIT(13)))
- 
- #define GET_VHTCAP_CHWDSET(vht_cap_info)    ((vht_cap_info >> 2) & 0x3)
- #define GET_VHTNSSMCS(mcs_mapset, nss) ((mcs_mapset >> (2 * (nss - 1))) & 0x3)
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1681,7 +1681,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		const u8 *ie_buf;
+ 		size_t ie_len;
+ 		u16 channel = 0;
+-		u64 fw_tsf = 0;
++		__le64 fw_tsf = 0;
+ 		u16 beacon_size = 0;
+ 		u32 curr_bcn_bytes;
+ 		u32 freq;
+@@ -1815,7 +1815,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 					      ie_buf, ie_len, rssi, GFP_KERNEL);
+ 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
+ 				bss_priv->band = band;
+-				bss_priv->fw_tsf = fw_tsf;
++				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
+ 				if (priv->media_connected &&
+ 				    !memcmp(bssid,
+ 					    priv->curr_bss_params.bss_descriptor
 
 
