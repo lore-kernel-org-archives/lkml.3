@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaBDS7z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 13:59:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48585 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165AbaBDS7y (ORCPT
+	id S1755051AbaBDTBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:01:04 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:41675 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530AbaBDTBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 13:59:54 -0500
-Date: Tue, 4 Feb 2014 19:59:58 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Cooper <jason@lakedaemon.net>
-cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
-In-Reply-To: <20140128173531.GT29184@titan.lakedaemon.net>
-Message-ID: <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
-References: <20131201172914.GV2879@titan.lakedaemon.net> <20131211175037.GY10053@titan.lakedaemon.net> <20140110183430.GO19878@titan.lakedaemon.net> <20140128173531.GT29184@titan.lakedaemon.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 4 Feb 2014 14:01:00 -0500
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: [PATCH] MAINTAINERS: Update drm/i915 git repo
+Date: Tue,  4 Feb 2014 20:00:51 +0100
+Message-Id: <1391540451-24169-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jan 2014, Jason Cooper wrote:
-> I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
-> near to the end of the merge window and there's been no activity on this
-> pull request.
-> 
-> Please let us know if there's anything we can do to assist.
+Moved to a common location so that Jani also can push to it, to avoid
+moving it every time I go on vacation. Please update autobuilders and
+everything else pointing at the drm-intel.git repo, the old one won't
+be updated any more.
 
-Nah. I simply forgot about it. About to send a pull request to Linus.
+Cc: Dave Airlie <airlied@gmail.com>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 31a046213274..e3aaf277cf58 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2832,7 +2832,7 @@ M:	Jani Nikula <jani.nikula@linux.intel.com>
+ L:	intel-gfx@lists.freedesktop.org
+ L:	dri-devel@lists.freedesktop.org
+ Q:	http://patchwork.freedesktop.org/project/intel-gfx/
+-T:	git git://people.freedesktop.org/~danvet/drm-intel
++T:	git git://anongit.freedesktop.org/drm-intel
+ S:	Supported
+ F:	drivers/gpu/drm/i915/
+ F:	include/drm/i915*
+-- 
+1.8.5.2
+
