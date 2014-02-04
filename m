@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233AbaBDRYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:24:51 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:33102 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaBDRYq (ORCPT
+	id S1754894AbaBDR1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:27:11 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:56043 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999AbaBDR1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:24:46 -0500
+	Tue, 4 Feb 2014 12:27:08 -0500
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCHv2 2/2] of: fix of_update_property()
-To: Xiubo Li <Li.Xiubo@freescale.com>, robh+dt@kernel.org
-Cc: panto@antoniou-consulting.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>
-In-Reply-To: <1390370260-11273-2-git-send-email-Li.Xiubo@freescale.com>
-References: <1390370260-11273-1-git-send-email-Li.Xiubo@freescale.com> < 1390370260-11273-2-git-send-email-Li.Xiubo@freescale.com>
-Date: Tue, 04 Feb 2014 17:24:36 +0000
-Message-Id: <20140204172436.7EC3FC4050F@trevor.secretlab.ca>
+Subject: RE: [PATCH] of: fix of_update_property()
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        Rob Herring <robherring2@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <b61be84c13ed4056a62743e16beb70f2@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389933996-19306-1-git-send-email-Li.Xiubo@freescale.com> < CAL_JsqJuAv8=pBuzYO5ZGzroD1kq6gjmNsTjoVyXR=vcu+-pTA@mail.gmail.com> < b61be84c13ed4056a62743e16beb70f2@BY2PR03MB505.namprd03.prod.outlook.com>
+Date: Tue, 04 Feb 2014 17:26:59 +0000
+Message-Id: <20140204172659.CEA26C4050F@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jan 2014 13:57:40 +0800, Xiubo Li <Li.Xiubo@freescale.com> wrote:
-> The of_update_property() is intented to update a property in a node
-> and if the property does not exist, will add it.
+On Mon, 20 Jan 2014 05:50:17 +0000, "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com> wrote:
+> > Subject: Re: [PATCH] of: fix of_update_property()
+> > 
+> > On Thu, Jan 16, 2014 at 10:46 PM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
+> > > The of_update_property() is intent to update a property in a node
+> > 
+> > s/intent/indended/
+> > 
+> > > and if the property does not exist, will add it to the node.
+> > >
+> > > The second search of the property is possibly won't be found, that
+> > > maybe removed by other thread just before the second search begain,
+> > > if so just retry it.
+> > 
+> > How did you find this problem? Actual use or some artificial stress test?
+> >
 > 
-> The second search of the property is possibly won't be found, that
-> maybe removed by other thread just before the second search begain.
-> 
-> Using the __of_find_property() and __of_add_property() instead and
-> move them into lock operations.
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
+> Some artificial stress test at home.
 
-Applied, thanks
+Can you reproduce those tests? It would be nice to have the selftests in
+the kernel so that we can regression test for problems like this.
 
 g.
-
-> ---
->  drivers/of/base.c | 36 ++++++++++++++----------------------
->  1 file changed, 14 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index b86b77a..458072d 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -1573,7 +1573,7 @@ int of_update_property(struct device_node *np, struct property *newprop)
->  {
->  	struct property **next, *oldprop;
->  	unsigned long flags;
-> -	int rc, found = 0;
-> +	int rc = 0;
->  
->  	rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
->  	if (rc)
-> @@ -1582,36 +1582,28 @@ int of_update_property(struct device_node *np, struct property *newprop)
->  	if (!newprop->name)
->  		return -EINVAL;
->  
-> -	oldprop = of_find_property(np, newprop->name, NULL);
-> -	if (!oldprop)
-> -		return of_add_property(np, newprop);
-> -
->  	raw_spin_lock_irqsave(&devtree_lock, flags);
-> -	next = &np->properties;
-> -	while (*next) {
-> -		if (*next == oldprop) {
-> -			/* found the node */
-> -			newprop->next = oldprop->next;
-> -			*next = newprop;
-> -			oldprop->next = np->deadprops;
-> -			np->deadprops = oldprop;
-> -			found = 1;
-> -			break;
-> -		}
-> -		next = &(*next)->next;
-> +	oldprop = __of_find_property(np, newprop->name, NULL);
-> +	if (!oldprop) {
-> +		/* add the node */
-> +		rc = __of_add_property(np, newprop);
-> +	} else {
-> +		/* replace the node */
-> +		next = &oldprop;
-> +		newprop->next = oldprop->next;
-> +		*next = newprop;
-> +		oldprop->next = np->deadprops;
-> +		np->deadprops = oldprop;
->  	}
->  	raw_spin_unlock_irqrestore(&devtree_lock, flags);
->  
-> -	if (!found)
-> -		return -ENODEV;
-> -
->  #ifdef CONFIG_PROC_DEVICETREE
->  	/* try to add to proc as well if it was initialized */
-> -	if (np->pde)
-> +	if (!rc && np->pde)
->  		proc_device_tree_update_prop(np->pde, newprop, oldprop);
->  #endif /* CONFIG_PROC_DEVICETREE */
->  
-> -	return 0;
-> +	return rc;
->  }
->  
->  #if defined(CONFIG_OF_DYNAMIC)
-> -- 
-> 1.8.4
-> 
-> 
 
