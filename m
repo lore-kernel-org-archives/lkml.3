@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935055AbaBDVV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:21:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57470 "EHLO
+	id S935041AbaBDVV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:21:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57501 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934730AbaBDVMm (ORCPT
+	with ESMTP id S934731AbaBDVMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:12:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vijaya Mohan Guvva <vmohan@brocade.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.13 131/140] SCSI: bfa: Chinook quad port 16G FC HBA claim issue
-Date: Tue,  4 Feb 2014 13:11:58 -0800
-Message-Id: <20140204211040.708708688@linuxfoundation.org>
+        Thomas Pugliese <thomas.pugliese@gmail.com>
+Subject: [PATCH 3.13 130/140] usb: core: get config and string descriptors for unauthorized devices
+Date: Tue,  4 Feb 2014 13:11:57 -0800
+Message-Id: <20140204211040.680997117@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,54 +28,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vijaya Mohan Guvva <vmohan@brocade.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit dcaf9aed995c2b2a49fb86bbbcfa2f92c797ab5d upstream.
+commit 83e83ecb79a8225e79bc8e54e9aff3e0e27658a2 upstream.
 
-Bfa driver crash is observed while pushing the firmware on to chinook
-quad port card due to uninitialized bfi_image_ct2 access which gets
-initialized only for CT2 ASIC based cards after request_firmware().
-For quard port chinook (CT2 ASIC based), bfi_image_ct2 is not getting
-initialized as there is no check for chinook PCI device ID before
-request_firmware and instead bfi_image_cb is initialized as it is the
-default case for card type check.
+There is no need to skip querying the config and string descriptors for
+unauthorized WUSB devices when usb_new_device is called.  It is allowed
+by WUSB spec.  The only action that needs to be delayed until
+authorization time is the set config.  This change allows user mode
+tools to see the config and string descriptors earlier in enumeration
+which is needed for some WUSB devices to function properly on Android
+systems.  It also reduces the amount of divergent code paths needed
+for WUSB devices.
 
-This patch includes changes to read the right firmware for quad port chinook.
-
-Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/bfa/bfad.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/config.c |    7 -------
+ drivers/usb/core/hub.c    |   39 +++++++--------------------------------
+ 2 files changed, 7 insertions(+), 39 deletions(-)
 
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1802,7 +1802,7 @@ out:
- static u32 *
- bfad_load_fwimg(struct pci_dev *pdev)
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -651,10 +651,6 @@ void usb_destroy_configuration(struct us
+  *
+  * hub-only!! ... and only in reset path, or usb_new_device()
+  * (used by real hubs and virtual root hubs)
+- *
+- * NOTE: if this is a WUSB device and is not authorized, we skip the
+- *       whole thing. A non-authorized USB device has no
+- *       configurations.
+  */
+ int usb_get_configuration(struct usb_device *dev)
  {
--	if (pdev->device == BFA_PCI_DEVICE_ID_CT2) {
-+	if (bfa_asic_id_ct2(pdev->device)) {
- 		if (bfi_image_ct2_size == 0)
- 			bfad_read_firmware(pdev, &bfi_image_ct2,
- 				&bfi_image_ct2_size, BFAD_FW_FILE_CT2);
-@@ -1812,12 +1812,14 @@ bfad_load_fwimg(struct pci_dev *pdev)
- 			bfad_read_firmware(pdev, &bfi_image_ct,
- 				&bfi_image_ct_size, BFAD_FW_FILE_CT);
- 		return bfi_image_ct;
--	} else {
-+	} else if (bfa_asic_id_cb(pdev->device)) {
- 		if (bfi_image_cb_size == 0)
- 			bfad_read_firmware(pdev, &bfi_image_cb,
- 				&bfi_image_cb_size, BFAD_FW_FILE_CB);
- 		return bfi_image_cb;
- 	}
-+
-+	return NULL;
- }
+@@ -666,8 +662,6 @@ int usb_get_configuration(struct usb_dev
+ 	struct usb_config_descriptor *desc;
  
- static void
+ 	cfgno = 0;
+-	if (dev->authorized == 0)	/* Not really an error */
+-		goto out_not_authorized;
+ 	result = -ENOMEM;
+ 	if (ncfg > USB_MAXCONFIG) {
+ 		dev_warn(ddev, "too many configurations: %d, "
+@@ -751,7 +745,6 @@ int usb_get_configuration(struct usb_dev
+ 
+ err:
+ 	kfree(desc);
+-out_not_authorized:
+ 	dev->descriptor.bNumConfigurations = cfgno;
+ err2:
+ 	if (result == -ENOMEM)
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2239,17 +2239,13 @@ static int usb_enumerate_device(struct u
+ 			return err;
+ 		}
+ 	}
+-	if (udev->wusb == 1 && udev->authorized == 0) {
+-		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	} else {
+-		/* read the standard strings and cache them if present */
+-		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
+-		udev->manufacturer = usb_cache_string(udev,
+-						      udev->descriptor.iManufacturer);
+-		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+-	}
++
++	/* read the standard strings and cache them if present */
++	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
++	udev->manufacturer = usb_cache_string(udev,
++					      udev->descriptor.iManufacturer);
++	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
++
+ 	err = usb_enumerate_device_otg(udev);
+ 	if (err < 0)
+ 		return err;
+@@ -2431,16 +2427,6 @@ int usb_deauthorize_device(struct usb_de
+ 	usb_dev->authorized = 0;
+ 	usb_set_configuration(usb_dev, -1);
+ 
+-	kfree(usb_dev->product);
+-	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-
+-	usb_destroy_configuration(usb_dev);
+-	usb_dev->descriptor.bNumConfigurations = 0;
+-
+ out_unauthorized:
+ 	usb_unlock_device(usb_dev);
+ 	return 0;
+@@ -2468,17 +2454,7 @@ int usb_authorize_device(struct usb_devi
+ 		goto error_device_descriptor;
+ 	}
+ 
+-	kfree(usb_dev->product);
+-	usb_dev->product = NULL;
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = NULL;
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = NULL;
+-
+ 	usb_dev->authorized = 1;
+-	result = usb_enumerate_device(usb_dev);
+-	if (result < 0)
+-		goto error_enumerate;
+ 	/* Choose and set the configuration.  This registers the interfaces
+ 	 * with the driver core and lets interface drivers bind to them.
+ 	 */
+@@ -2494,7 +2470,6 @@ int usb_authorize_device(struct usb_devi
+ 	}
+ 	dev_info(&usb_dev->dev, "authorized to connect\n");
+ 
+-error_enumerate:
+ error_device_descriptor:
+ 	usb_autosuspend_device(usb_dev);
+ error_autoresume:
 
 
