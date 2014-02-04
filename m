@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaBDV6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:58:44 -0500
+	id S1755251AbaBDV6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:58:40 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934207AbaBDVJ1 (ORCPT
+	with ESMTP id S933660AbaBDVJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:27 -0500
+	Tue, 4 Feb 2014 16:09:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Sterba <dsterba@suse.cz>, Josef Bacik <jbacik@fb.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.12 131/133] btrfs: restrict snapshotting to own subvolumes
-Date: Tue,  4 Feb 2014 13:08:52 -0800
-Message-Id: <20140204210740.738966779@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.12 133/133] powerpc: Make sure "cache" directory is removed when offlining cpu
+Date: Tue,  4 Feb 2014 13:08:54 -0800
+Message-Id: <20140204210740.800447320@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,49 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Sterba <dsterba@suse.cz>
+From: Paul Mackerras <paulus@samba.org>
 
-commit d024206133ce21936b3d5780359afc00247655b7 upstream.
+commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
 
-Currently, any user can snapshot any subvolume if the path is accessible and
-thus indirectly create and keep files he does not own under his direcotries.
-This is not possible with traditional directories.
+The code in remove_cache_dir() is supposed to remove the "cache"
+subdirectory from the sysfs directory for a CPU when that CPU is
+being offlined.  It tries to do this by calling kobject_put() on
+the kobject for the subdirectory.  However, the subdirectory only
+gets removed once the last reference goes away, and the reference
+being put here may well not be the last reference.  That means
+that the "cache" subdirectory may still exist when the offlining
+operation has finished.  If the same CPU subsequently gets onlined,
+the code tries to add a new "cache" subdirectory.  If the old
+subdirectory has not yet been removed, we get a WARN_ON in the
+sysfs code, with stack trace, and an error message printed on the
+console.  Further, we ultimately end up with an online cpu with no
+"cache" subdirectory.
 
-In security context, a user can snapshot root filesystem and pin any
-potentially buggy binaries, even if the updates are applied.
+This fixes it by doing an explicit kobject_del() at the point where
+we want the subdirectory to go away.  kobject_del() removes the sysfs
+directory even though the object still exists in memory.  The object
+will get freed at some point in the future.  A subsequent onlining
+operation can create a new sysfs directory, even if the old object
+still exists in memory, without causing any problems.
 
-All the snapshots are visible to the administrator, so it's possible to
-verify if there are suspicious snapshots.
-
-Another more practical problem is that any user can pin the space used
-by eg. root and cause ENOSPC.
-
-Original report:
-https://bugs.launchpad.net/ubuntu/+source/apparmor/+bug/484786
-
-Signed-off-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ioctl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/powerpc/kernel/cacheinfo.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1548,6 +1548,12 @@ static noinline int btrfs_ioctl_snap_cre
- 			printk(KERN_INFO "btrfs: Snapshot src from "
- 			       "another FS\n");
- 			ret = -EINVAL;
-+		} else if (!inode_owner_or_capable(src_inode)) {
-+			/*
-+			 * Subvolume creation is not restricted, but snapshots
-+			 * are limited to own subvolumes only
-+			 */
-+			ret = -EPERM;
- 		} else {
- 			ret = btrfs_mksubvol(&file->f_path, name, namelen,
- 					     BTRFS_I(src_inode)->root,
+--- a/arch/powerpc/kernel/cacheinfo.c
++++ b/arch/powerpc/kernel/cacheinfo.c
+@@ -794,6 +794,9 @@ static void remove_cache_dir(struct cach
+ {
+ 	remove_index_dirs(cache_dir);
+ 
++	/* Remove cache dir from sysfs */
++	kobject_del(cache_dir->kobj);
++
+ 	kobject_put(cache_dir->kobj);
+ 
+ 	kfree(cache_dir);
 
 
