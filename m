@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaBDL6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 06:58:25 -0500
-Received: from smtp-out-089.synserver.de ([212.40.185.89]:1115 "EHLO
-	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaBDL6V (ORCPT
+	id S1754107AbaBDMBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:01:22 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:48985 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaBDMBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 06:58:21 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 31909
-Message-ID: <52F0D5E1.3040409@metafoo.de>
-Date: Tue, 04 Feb 2014 12:58:25 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Tue, 4 Feb 2014 07:01:20 -0500
+Message-ID: <52F0D683.4000205@gmail.com>
+Date: Tue, 04 Feb 2014 13:01:07 +0100
+From: Jack Wang <xjtuwjp@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [Patch v4 1/2] dmaengine: add Qualcomm BAM dma driver
-References: <1391468687-4347-1-git-send-email-agross@codeaurora.org> <1391468687-4347-2-git-send-email-agross@codeaurora.org>
-In-Reply-To: <1391468687-4347-2-git-send-email-agross@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, lindar_liu@usish.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 16/22] pm8001: Fix invalid success return when request_irq()
+ failed
+References: <cover.1391512266.git.agordeev@redhat.com> <f724cdc95b9e1eb578cf7297ad32b830885f681c.1391512266.git.agordeev@redhat.com>
+In-Reply-To: <f724cdc95b9e1eb578cf7297ad32b830885f681c.1391512266.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 12:04 AM, Andy Gross wrote:
-[...]
-> +static int bam_dma_remove(struct platform_device *pdev)
-> +{
-> +	struct bam_device *bdev = platform_get_drvdata(pdev);
-> +	u32 i;
-> +
-> +	dma_async_device_unregister(&bdev->common);
-> +	of_dma_controller_free(pdev->dev.of_node);
-
-The controller should first be removed from the of lookup table, then free 
-the device.
-
-> +
-> +	/* mask all interrupts for this execution environment */
-> +	writel_relaxed(0, bdev->regs + BAM_IRQ_SRCS_MSK_EE(bdev->ee));
-
-You still need to free the interrupt to make this race free, especially on a 
-multi-processor system. free_irq() acts as a synchronization point that 
-makes sure that interrupt handler has finished running and that no new 
-interrupt handlers are being run after this point. Just masking the 
-interrupt in the control register does not provide these guarantees.
-
-> +
-> +	for (i = 0; i < bdev->num_channels; i++) {
-> +		bam_dma_terminate_all(&bdev->channels[i]);
-> +		tasklet_kill(&bdev->channels[i].vc.task);
-> +	}
-> +
-> +	tasklet_kill(&bdev->task);
-> +
-> +	clk_disable_unprepare(bdev->bamclk);
-> +
-> +	return 0;
-> +}
-[...]
-
+On 02/04/2014 12:17 PM, Alexander Gordeev wrote:
+> When enabling MSI-X if a call to request_irq() failed
+> pm8001_setup_msix() still returns success. This udate
+> fixes the described misbehaviour.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: xjtuwjp@gmail.com
+> Cc: lindar_liu@usish.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/pm8001/pm8001_init.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+> index 73a120d..efffbb9 100644
+> --- a/drivers/scsi/pm8001/pm8001_init.c
+> +++ b/drivers/scsi/pm8001/pm8001_init.c
+> @@ -739,9 +739,10 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
+>  			pm8001_ha->irq_vector[i].irq_id = i;
+>  			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+>  
+> -			if (request_irq(pm8001_ha->msix_entries[i].vector,
+> +			rc = request_irq(pm8001_ha->msix_entries[i].vector,
+>  				pm8001_interrupt_handler_msix, flag,
+> -				intr_drvname[i], &(pm8001_ha->irq_vector[i]))) {
+> +				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+> +			if (rc) {
+>  				for (j = 0; j < i; j++)
+>  					free_irq(
+>  					pm8001_ha->msix_entries[j].vector,
+> 
+Thanks, looks fine.
+Acked-by: Jack Wang <xjtuwjp@gmail.com>
