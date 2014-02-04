@@ -1,239 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaBDME2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:04:28 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:39975 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaBDMEZ (ORCPT
+	id S1754254AbaBDMEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:04:42 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50505 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859AbaBDME2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:04:25 -0500
-Message-ID: <52F0D5FC.7060502@gmail.com>
-Date: Tue, 04 Feb 2014 19:58:52 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 4 Feb 2014 07:04:28 -0500
+Message-ID: <52F0D740.4000106@gmail.com>
+Date: Tue, 04 Feb 2014 13:04:16 +0100
+From: Jack Wang <xjtuwjp@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, hskinnemoen@gmail.com,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        egtvedt@samfundet.no,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
- to CONFIG_KRETPROBES enabled area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com>
-In-Reply-To: <52F09404.3060502@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, lindar_liu@usish.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 17/22] pm8001: Use pci_enable_msix_range()
+References: <cover.1391512266.git.agordeev@redhat.com> <b6ab9b0f70327c1a394dd8923576dfcae571a5b3.1391512266.git.agordeev@redhat.com>
+In-Reply-To: <b6ab9b0f70327c1a394dd8923576dfcae571a5b3.1391512266.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
-> (2014/02/04 14:16), Chen Gang wrote:
->> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
->> are useless, so need move them to CONFIG_KPROBES enabled area.
->>
->> Now, *kretprobe* generic implementation are all implemented in 2 files:
->>
->>  - in "include/linux/kprobes.h":
->>
->>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
->>      move some *kprobe() declarations which kretprobe*() call, to front.
->>      not touch kretprobe_blacklist[] which is architecture's variable.
->>
->>  - in "kernel/kprobes.c":
->>
->>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
->>      define kretprobe_flush_task() to let kprobe_flush_task() call.
->>      define init_kretprobes() to let init_kprobes() call.
->>
->> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
->> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
->> bzImage and Modpost modules) under x86_64 defconfig.
+On 02/04/2014 12:17 PM, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range() and pci_enable_msix_range()
+> interfaces.
 > 
-> Thanks for the fix! and I have some comments below.
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: xjtuwjp@gmail.com
+> Cc: lindar_liu@usish.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/pm8001/pm8001_init.c |   47 +++++++++++++++++++------------------
+>  1 files changed, 24 insertions(+), 23 deletions(-)
 > 
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  include/linux/kprobes.h |  58 +++++----
->>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
->>  2 files changed, 222 insertions(+), 164 deletions(-)
->>
->> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
->> index 925eaf2..c0d1212 100644
->> --- a/include/linux/kprobes.h
->> +++ b/include/linux/kprobes.h
->> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
->>  	return 1;
->>  }
->>  
->> +int disable_kprobe(struct kprobe *kp);
->> +int enable_kprobe(struct kprobe *kp);
->> +
->> +void dump_kprobe(struct kprobe *kp);
->> +
->> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
->> +
->>  #ifdef CONFIG_KRETPROBES
->>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
->>  				   struct pt_regs *regs);
->>  extern int arch_trampoline_kprobe(struct kprobe *p);
->> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
->> +	unsigned long orig_ret_address, unsigned long trampoline_address)
->> +{
->> +	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->> +		printk(KERN_ERR
->> +			"kretprobe BUG!: Processing kretprobe %p @ %p\n",
->> +			ri->rp, ri->rp->kp.addr);
->> +		BUG();
->> +	}
->> +}
->> +static inline int disable_kretprobe(struct kretprobe *rp)
->> +{
->> +	return disable_kprobe(&rp->kp);
->> +}
->> +static inline int enable_kretprobe(struct kretprobe *rp)
->> +{
->> +	return enable_kprobe(&rp->kp);
->> +}
->> +
->>  #else /* CONFIG_KRETPROBES */
->>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
->>  					struct pt_regs *regs)
->> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
->>  {
->>  	return 0;
->>  }
->> -#endif /* CONFIG_KRETPROBES */
->> -
->> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
->> -
->>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
->>  	unsigned long orig_ret_address, unsigned long trampoline_address)
->>  {
->> -	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->> -		printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
->> -				ri->rp, ri->rp->kp.addr);
->> -		BUG();
->> -	}
->>  }
->> +static inline int disable_kretprobe(struct kretprobe *rp)
->> +{
->> +	return 0;
->> +}
->> +static inline int enable_kretprobe(struct kretprobe *rp)
->> +{
->> +	return 0;
->> +}
+> diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
+> index efffbb9..2d4b06e 100644
+> --- a/drivers/scsi/pm8001/pm8001_init.c
+> +++ b/drivers/scsi/pm8001/pm8001_init.c
+> @@ -724,34 +724,35 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
+>  		sizeof(pm8001_ha->msix_entries[0]);
+>  	for (i = 0; i < max_entry ; i++)
+>  		pm8001_ha->msix_entries[i].entry = i;
+> -	rc = pci_enable_msix(pm8001_ha->pdev, pm8001_ha->msix_entries,
+> -		number_of_intr);
+> +	rc = pci_enable_msix_range(pm8001_ha->pdev, pm8001_ha->msix_entries,
+> +		number_of_intr, number_of_intr);
+>  	pm8001_ha->number_of_intr = number_of_intr;
+> -	if (!rc) {
+> -		PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
+> -			"pci_enable_msix request ret:%d no of intr %d\n",
+> -					rc, pm8001_ha->number_of_intr));
+> -
+> -
+> -		for (i = 0; i < number_of_intr; i++) {
+> -			snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
+> -					DRV_NAME"%d", i);
+> -			pm8001_ha->irq_vector[i].irq_id = i;
+> -			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+> -
+> -			rc = request_irq(pm8001_ha->msix_entries[i].vector,
+> -				pm8001_interrupt_handler_msix, flag,
+> -				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+> -			if (rc) {
+> -				for (j = 0; j < i; j++)
+> -					free_irq(
+> -					pm8001_ha->msix_entries[j].vector,
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	PM8001_INIT_DBG(pm8001_ha, pm8001_printk(
+> +		"pci_enable_msix request ret:%d no of intr %d\n",
+> +				rc, pm8001_ha->number_of_intr));
+> +
+> +	for (i = 0; i < number_of_intr; i++) {
+> +		snprintf(intr_drvname[i], sizeof(intr_drvname[0]),
+> +				DRV_NAME"%d", i);
+> +		pm8001_ha->irq_vector[i].irq_id = i;
+> +		pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+> +
+> +		rc = request_irq(pm8001_ha->msix_entries[i].vector,
+> +			pm8001_interrupt_handler_msix, flag,
+> +			intr_drvname[i], &(pm8001_ha->irq_vector[i]));
+> +		if (rc) {
+> +			for (j = 0; j < i; j++) {
+> +				free_irq(pm8001_ha->msix_entries[j].vector,
+>  					&(pm8001_ha->irq_vector[i]));
+> -				pci_disable_msix(pm8001_ha->pdev);
+> -				break;
+>  			}
+> +			pci_disable_msix(pm8001_ha->pdev);
+> +			break;
+>  		}
+>  	}
+> +
+>  	return rc;
+>  }
+>  #endif
 > 
-> No, these should returns -EINVAL or -ENOSYS, since these are user API.
-
-OK, thanks, it sounds reasonable to me.
-
-> Anyway, I don't think those inlined functions to be changed, because
-> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
-> be ignored.
-> 
-
-In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
-disable_kretprobe(), and enable_kretprobe() are not ignored.
-
-> So, I think you don't need to change kprobes.h.
-> 
-
-So "kprobes.h" still need be changed.
-
->> +
->> +#endif /* CONFIG_KRETPROBES */
->>  
->>  #ifdef CONFIG_KPROBES_SANITY_TEST
->>  extern int init_test_probes(void);
->> @@ -379,11 +406,6 @@ void unregister_kretprobes(struct kretprobe **rps, int num);
->>  void kprobe_flush_task(struct task_struct *tk);
->>  void recycle_rp_inst(struct kretprobe_instance *ri, struct hlist_head *head);
->>  
->> -int disable_kprobe(struct kprobe *kp);
->> -int enable_kprobe(struct kprobe *kp);
->> -
->> -void dump_kprobe(struct kprobe *kp);
->> -
->>  #else /* !CONFIG_KPROBES: */
->>  
->>  static inline int kprobes_built_in(void)
->> @@ -459,14 +481,6 @@ static inline int enable_kprobe(struct kprobe *kp)
->>  	return -ENOSYS;
->>  }
->>  #endif /* CONFIG_KPROBES */
->> -static inline int disable_kretprobe(struct kretprobe *rp)
->> -{
->> -	return disable_kprobe(&rp->kp);
->> -}
->> -static inline int enable_kretprobe(struct kretprobe *rp)
->> -{
->> -	return enable_kprobe(&rp->kp);
->> -}
->>  static inline int disable_jprobe(struct jprobe *jp)
->>  {
->>  	return disable_kprobe(&jp->kp);
->> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->> index ceeadfc..e305a81 100644
->> --- a/kernel/kprobes.c
->> +++ b/kernel/kprobes.c
-> [...]
->> @@ -1936,8 +1955,44 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->>  	return 0;
->>  }
->>  
->> +void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
->> +				struct hlist_head *head)
->> +{
->> +}
->> +
->> +void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
->> +			 struct hlist_head **head, unsigned long *flags)
->> +__acquires(hlist_lock)
->> +{
->> +}
->> +
->> +void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
->> +	unsigned long *flags)
->> +__releases(hlist_lock)
->> +{
->> +}
->> +
-> 
->> +static void __kprobes kretprobe_flush_task(struct task_struct *tk)
->> +{
->> +}
->> +
->> +static void __init init_kretprobes(void)
->> +{
->> +}
-> 
-> These should be macros, as I did for optprobe functions
-> with !CONFIG_OPTPROBES.
->
-
-OK, thanks, it sounds reasonable to me.
-
- - For new added static functions: kretprobe_flush_task(), and
-   init_kretprobes() need be changed to macros
-
- - For extern functions: recycle_rp_inst(), kretprobe_hash_lock(), and
-   kretprobe_has_unlock(), need use dummy functions.
-
- - For original static function: pre_handler_kretprobe(), need still
-   use dummy function (for function pointer comparing).
-
-
-> Other parts looks good to me!;)
-> 
-> Thank you!
-> 
-> 
-
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Thanks, looks fine.
+Acked-by: Jack Wang <xjtuwjp@gmail.com>
