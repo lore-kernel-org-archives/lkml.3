@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426AbaBDTRF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:17:05 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54763 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161AbaBDTQ7 (ORCPT
+	id S1754885AbaBDTSs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:18:48 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:47638 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaBDTSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:16:59 -0500
+	Tue, 4 Feb 2014 14:18:45 -0500
+Message-ID: <52F13D11.8090009@gmail.com>
+Date: Tue, 04 Feb 2014 19:18:41 +0000
+From: Aaron Jones <aaronmdjones@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140204190535.GC5002@laptop.programming.kicks-ass.net>
-References: <20140204184150.GB5002@laptop.programming.kicks-ass.net>
-	<CA+55aFz9+AtK_OnUhH0gspUsXLxZN-MRwKVR5zVPsVGmGpBqxg@mail.gmail.com>
-	<20140204190535.GC5002@laptop.programming.kicks-ass.net>
-Date: Tue, 4 Feb 2014 11:16:58 -0800
-X-Google-Sender-Auth: 7Zp5duukBqkbbUqQluZ2PQ2c_eU
-Message-ID: <CA+55aFwiuE+WbNLdeV8sGqZccoXkjg_VFOJ+xKMZUgbFP_sKZw@mail.gmail.com>
-Subject: Re: mips octeon memory model questions
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: File capabilities are not 'working' and I have no idea why
+References: <52DE7557.3000500@gmail.com>
+In-Reply-To: <52DE7557.3000500@gmail.com>
+X-Enigmail-Version: 1.6
+OpenPGP: id=AAD4CEA4
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 11:05 AM, Peter Zijlstra
->
->> So writes move down, not up.
->
-> Right, but the ll-sc store might move down over a later store.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-Unlikely. The thing is, in order for the sc to succeed, it has to
-already have hit the cache coherency domain (or at least reserved it -
-ie maybe the value is not actually *in* the cache, but the sc needs to
-have gotten exclusive access to the cacheline).
+I have isolated the problem. File capabilities are not assigned when
+the program being executed is located on a filesystem mounted with
+the "nosuid" option.
 
-So just how do you expect a later store (that is *after* the
-conditional branch that tests the result of the sc) to move up before
-it?
+This seems counter-intuitive; a fully capability-based system would
+not use setuid binaries... so a logical thing to do would be to
+prevent the setuid bits from doing anything, which is what the
+nosuid flag is for, no?
 
-I'm not saying it's physically impossible: speculation is always
-possible. But it would require some rather clever speculative store
-buffers or caches and killing of same when mispredicted. Which is
-actually fairly unlikely, since stores are seldom - if ever - in the
-critical path. IOW, "lots and lots of effort for very little gain".
+Or am I missing something?
 
-So I'm personally quite willing to believe that a
-sc+conditional-branch+st is quite well ordered without any extra
-barriers. I'd be more worried about *reads* moving up past the sc
-("doesn't reorder reads" to me would imply not moving across the "ll"
-part, but it's quite likely that the "sc" actually counts as both a
-read and a write).
+Can we get a config flag to toggle this behaviour?
 
-Without any visible documentation (see aforementioned "clown company"
-comment) all of this is obviously just pure speculation.
 
-              Linus
+
+Aaron Jones.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBCAAGBQJS8T0RAAoJEG6FTA+q1M6knGgP/i6UattzXwpFM80Q32GelaTe
+cu8JQLY/BCjN/vICit7VTyAFkxxy5sKxBZB/YYBRa9AlRiMR0MjPb2lhL0q1HJeW
+1hl0/91/Mq7jDRC31y5UXCLv9P2iqoM4gZP4eh2b0xOXtZhOPstX24lIxTWIxQ/6
+rDJkW6pht9x2NWZIlpuxW8qFpaTZ7iw9zAYEs8Jm/PyXaRi07vY2CJhk+WzdrUZq
++NKA9H5ZmaQlyyjBEHA5AEPm2xqxGz8PvI4UhKAzxTC2dBeGL26zYmIxXWsTnq5Z
+reyM0vqGzqLPyYh02mUz+8f72UtYEogZQGdhlfyqEObcXM5FW7JyA+NWi7UIxVB4
+qJaUX/h/CllIXapDklMpfxpWeM/0lI8vOnF6z+PFBhJFN7+2bEnmPHWvVPqYr3Uu
+EhkOjHYT5GNX0s42jR6Y3etWNel+whISyDAYd203lewqFmAKapoDSJgY8+wYdq/Y
+s6kiSMupkXcS1vC4qDAprpcXGOBjzSNL+iiwYKgzStuTXNEvRqn4eS955UwCI1/k
+PzYbXMDUuqZbL8446IrSpYnmzwy3YJvNqFX5kpFdvmwk1j75oXkJ/09O+hN4L2bZ
+45teFqvTw4FrZGltvKt52iZC8+gkuPnpY1nujSpLnQMM28zSn1TNYXScmaQinjVb
+TjuUQDZ3NlE7XSZp20Jp
+=LOIA
+-----END PGP SIGNATURE-----
