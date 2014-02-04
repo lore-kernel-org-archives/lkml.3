@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900AbaBDXbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:31:22 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:53125 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728AbaBDXbU (ORCPT
+	id S933310AbaBDXeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:34:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58594 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830AbaBDXeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:31:20 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-e9-52f1784657f7
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: Re: [PATCHSET 0/5] tracing/uprobes: Support multi buffer and event trigger
-References: <1389946120-19610-1-git-send-email-namhyung@kernel.org>
-	<87mwi83hvf.fsf@sejong.aot.lge.com>
-	<20140203205828.4e5b1592@gandalf.local.home>
-Date: Wed, 05 Feb 2014 08:31:17 +0900
-In-Reply-To: <20140203205828.4e5b1592@gandalf.local.home> (Steven Rostedt's
-	message of "Mon, 3 Feb 2014 20:58:28 -0500")
-Message-ID: <877g9a316i.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 4 Feb 2014 18:34:19 -0500
+Date: Tue, 4 Feb 2014 15:35:25 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
+Message-ID: <20140204233525.GA4475@kroah.com>
+References: <20140204210055.992134150@linuxfoundation.org>
+ <20140204215221.GA2127@bender.morinfr.org>
+ <20140204221109.GA906@kroah.com>
+ <20140204222203.GA6688@bender.morinfr.org>
+ <20140204223150.GA2696@kroah.com>
+ <52F16E4C.3080207@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F16E4C.3080207@linaro.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Tue, Feb 04, 2014 at 02:48:44PM -0800, John Stultz wrote:
+> On 02/04/2014 02:31 PM, Greg Kroah-Hartman wrote:
+> > On Tue, Feb 04, 2014 at 11:22:05PM +0100, Guillaume Morin wrote:
+> >> On 04 Feb 14:11, Greg Kroah-Hartman wrote:
+> >>>>> Borislav Petkov <bp@alien8.de>
+> >>>>>     rtc-cmos: Add an alarm disable quirk
+> >>>> This is just one of the 3 patches posted by John Stultz on
+> >>>> http://git.linaro.org/people/john.stultz/linux.git/shortlog/refs/heads/stable/3.4/timefix
+> >>> I have no idea what that tree is, nor what I am supposed to do with it.
+> >> Ok, sorry. This is all coming from 
+> >> http://article.gmane.org/gmane.linux.kernel.stable/77575/
+> >>
+> >> I assumed you were aware of it because you participated in the thread
+> >> and one of the patch mentioned in this message (Borislav's change) is
+> >> applied to the 3.4 branch
+> > John said he would submit those patches after -rc2 came out, I wasn't
+> > aware that this specific patch was part of that series, sorry, should I
+> > drop it for now?
+> 
+> Yea. Hold off on it for now, I'll resubmit it after -rc2.
 
-On Mon, 3 Feb 2014 20:58:28 -0500, Steven Rostedt wrote:
-> On Mon, 03 Feb 2014 14:06:12 +0900
-> Namhyung Kim <namhyung@kernel.org> wrote:
->
->> Ping!
->
-> Hi Namhyung,
->
-> I plan on getting these ready for the 3.15 queue. There was a bit too
-> much in 3.14 to add these on top of at the last minute.
+Now dropped from 3.4, 3.10, 3.12, and 3.13 trees.
 
-I'm fine with it.
+thanks,
 
->
-> Currently, I'm working on some bugs at work as well as some things I
-> found in mainline. I'll be reviewing these when I get a chance.
-
-Great, thanks!
-Namhyung
+greg k-h
