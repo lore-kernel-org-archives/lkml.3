@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935863AbaBDW0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:26:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56594 "EHLO
+	id S935887AbaBDW1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:27:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881AbaBDVIS (ORCPT
+	with ESMTP id S933875AbaBDVIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:18 -0500
+	Tue, 4 Feb 2014 16:08:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        yury <urykhy@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 044/133] b43: Fix lockdep splat
-Date: Tue,  4 Feb 2014 13:07:25 -0800
-Message-Id: <20140204210738.279996310@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.12 042/133] iwlwifi: pcie: enable oscillator for L1 exit
+Date: Tue,  4 Feb 2014 13:07:23 -0800
+Message-Id: <20140204210738.223876412@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,103 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
+commit 2d93aee152b1758a94a18fe15d72153ba73b5679 upstream.
 
-In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
-when b43 is used with hostapd, and rfkill is used to kill the radio output.
+Enabling the oscillator consumes slightly more power (100uA)
+but allows to make sure that we exit from L1 on time.
 
-The lockdep splat (in part) is as follows:
+Not doing so might lead to a PCIe specification violation
+since we might wake up from L1 at the wrong time.
+This issue has been identified on 3160 and 7260 only.
+On older NICs L1 off is not enabled, on newer NICs (7265),
+the issue is fixed.
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.12.0 #1 Not tainted
--------------------------------------------------------
-rfkill/10040 is trying to acquire lock:
- (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
+When the bug occurs the user sees that the NIC has
+disappeared from the PCI bridge, any access to the device
+returns 0xff.
 
-but task is already holding lock:
- (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
+This fixes:
+	https://bugzilla.kernel.org/show_bug.cgi?id=64541
 
---snip--
+and has been extensively discussed here:
+	http://markmail.org/thread/mfmpzqt3r333n4bo
 
-Chain exists of:
-  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
-
-The fix is to move the initialization of the hardware random number generator
-outside the code range covered by the rtnl_mutex.
-
-Reported-by: yury <urykhy@gmail.com>
-Tested-by: yury <urykhy@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: 99cd47142399 ("iwlwifi: add 7000 series device configuration")
+Reported-and-tested-by: wzyboy <wzyboy@wzyboy.org>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/main.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-prph.h   |    4 ++++
+ drivers/net/wireless/iwlwifi/pcie/trans.c |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2424,6 +2424,7 @@ error:
+--- a/drivers/net/wireless/iwlwifi/iwl-prph.h
++++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
+@@ -272,4 +272,8 @@ static inline unsigned int SCD_QUEUE_STA
  
- static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
- static void b43_one_core_detach(struct b43_bus_dev *dev);
-+static int b43_rng_init(struct b43_wl *wl);
+ /*********************** END TX SCHEDULER *************************************/
  
- static void b43_request_firmware(struct work_struct *work)
- {
-@@ -2475,6 +2476,10 @@ start_ieee80211:
- 		goto err_one_core_detach;
- 	wl->hw_registred = true;
- 	b43_leds_register(wl->current_dev);
++/* Oscillator clock */
++#define OSC_CLK				(0xa04068)
++#define OSC_CLK_FORCE_CONTROL		(0x8)
 +
-+	/* Register HW RNG driver */
-+	b43_rng_init(wl);
+ #endif				/* __iwl_prph_h__ */
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -206,6 +206,28 @@ static int iwl_pcie_apm_init(struct iwl_
+ 		goto out;
+ 	}
+ 
++	if (trans->cfg->host_interrupt_operation_mode) {
++		/*
++		 * This is a bit of an abuse - This is needed for 7260 / 3160
++		 * only check host_interrupt_operation_mode even if this is
++		 * not related to host_interrupt_operation_mode.
++		 *
++		 * Enable the oscillator to count wake up time for L1 exit. This
++		 * consumes slightly more power (100uA) - but allows to be sure
++		 * that we wake up from L1 on time.
++		 *
++		 * This looks weird: read twice the same register, discard the
++		 * value, set a bit, and yet again, read that same register
++		 * just to discard the value. But that's the way the hardware
++		 * seems to like it.
++		 */
++		iwl_read_prph(trans, OSC_CLK);
++		iwl_read_prph(trans, OSC_CLK);
++		iwl_set_bits_prph(trans, OSC_CLK, OSC_CLK_FORCE_CONTROL);
++		iwl_read_prph(trans, OSC_CLK);
++		iwl_read_prph(trans, OSC_CLK);
++	}
 +
- 	goto out;
- 
- err_one_core_detach:
-@@ -4636,9 +4641,6 @@ static void b43_wireless_core_exit(struc
- 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
- 		return;
- 
--	/* Unregister HW RNG driver */
--	b43_rng_exit(dev->wl);
--
- 	b43_set_status(dev, B43_STAT_UNINIT);
- 
- 	/* Stop the microcode PSM. */
-@@ -4795,9 +4797,6 @@ static int b43_wireless_core_init(struct
- 
- 	b43_set_status(dev, B43_STAT_INITIALIZED);
- 
--	/* Register HW RNG driver */
--	b43_rng_init(dev->wl);
--
- out:
- 	return err;
- 
-@@ -5464,6 +5463,9 @@ static void b43_bcma_remove(struct bcma_
- 
- 	b43_one_core_detach(wldev->dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	b43_leds_unregister(wl);
- 
- 	ieee80211_free_hw(wl->hw);
-@@ -5541,6 +5543,9 @@ static void b43_ssb_remove(struct ssb_de
- 
- 	b43_one_core_detach(dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	if (list_empty(&wl->devlist)) {
- 		b43_leds_unregister(wl);
- 		/* Last core on the chip unregistered.
+ 	/*
+ 	 * Enable DMA clock and wait for it to stabilize.
+ 	 *
 
 
