@@ -1,64 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889AbaBDQF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:05:29 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39143 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553AbaBDP7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:59:21 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Cc: Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 01/17] amba: Let runtime PM callbacks be available for CONFIG_PM
-Date: Tue,  4 Feb 2014 16:58:42 +0100
-Message-Id: <1391529538-21685-2-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	id S1754897AbaBDQGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:06:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59078 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754865AbaBDQFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:05:22 -0500
+Date: Tue, 4 Feb 2014 17:05:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH -v2 1/6] memcg: do not replicate
+ try_get_mem_cgroup_from_mm in __mem_cgroup_try_charge
+Message-ID: <20140204160521.GM4890@dhcp22.suse.cz>
+References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+ <1391520540-17436-2-git-send-email-mhocko@suse.cz>
+ <20140204155508.GM6963@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140204155508.GM6963@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to the SET_PM_RUNTIME_PM macro while defining the runtime PM
-callbacks. This means the callbacks becomes available for both
-CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME, which is needed by drivers and
-power domains.
+On Tue 04-02-14 10:55:08, Johannes Weiner wrote:
+> On Tue, Feb 04, 2014 at 02:28:55PM +0100, Michal Hocko wrote:
+> > Johannes Weiner has pointed out that __mem_cgroup_try_charge duplicates
+> > try_get_mem_cgroup_from_mm for charges which came without a memcg. The
+> > only reason seems to be a tiny optimization when css_tryget is not
+> > called if the charge can be consumed from the stock. Nevertheless
+> > css_tryget is very cheap since it has been reworked to use per-cpu
+> > counting so this optimization doesn't give us anything these days.
+> > 
+> > So let's drop the code duplication so that the code is more readable.
+> > While we are at it also remove a very confusing comment in
+> > try_get_mem_cgroup_from_mm.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  mm/memcontrol.c | 49 ++++++++-----------------------------------------
+> >  1 file changed, 8 insertions(+), 41 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 53385cd4e6f0..042e4ff36c05 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1081,11 +1081,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+> >  
+> >  	if (!mm)
+> >  		return NULL;
+> 
+> While you're at it, this check also seems unnecessary.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/amba/bus.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yes, it will be removed in a later patch. I wanted to have it in a
+separate patch for a better bisectability just in case I have really
+missed mm-might-by-NULL case.
 
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 9e60291..3cf61a1 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -83,7 +83,7 @@ static struct device_attribute amba_dev_attrs[] = {
- 	__ATTR_NULL,
- };
- 
--#ifdef CONFIG_PM_RUNTIME
-+#ifdef CONFIG_PM
- /*
-  * Hooks to provide runtime PM of the pclk (bus clock).  It is safe to
-  * enable/disable the bus clock at runtime PM suspend/resume as this
-@@ -123,7 +123,7 @@ static const struct dev_pm_ops amba_pm = {
- 	.thaw		= pm_generic_thaw,
- 	.poweroff	= pm_generic_poweroff,
- 	.restore	= pm_generic_restore,
--	SET_RUNTIME_PM_OPS(
-+	SET_PM_RUNTIME_PM_OPS(
- 		amba_pm_runtime_suspend,
- 		amba_pm_runtime_resume,
- 		NULL
+> > -	/*
+> > -	 * Because we have no locks, mm->owner's may be being moved to other
+> > -	 * cgroup. We use css_tryget() here even if this looks
+> > -	 * pessimistic (rather than adding locks here).
+> > -	 */
+> > +
+> >  	rcu_read_lock();
+> >  	do {
+> >  		memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
+> > @@ -2759,45 +2755,15 @@ again:
+> >  			goto done;
+> >  		css_get(&memcg->css);
+> >  	} else {
+> > -		struct task_struct *p;
+> > -
+> > -		rcu_read_lock();
+> > -		p = rcu_dereference(mm->owner);
+> > -		/*
+> > -		 * Because we don't have task_lock(), "p" can exit.
+> > -		 * In that case, "memcg" can point to root or p can be NULL with
+> > -		 * race with swapoff. Then, we have small risk of mis-accouning.
+> > -		 * But such kind of mis-account by race always happens because
+> > -		 * we don't have cgroup_mutex(). It's overkill and we allo that
+> > -		 * small race, here.
+> > -		 * (*) swapoff at el will charge against mm-struct not against
+> > -		 * task-struct. So, mm->owner can be NULL.
+> > -		 */
+> > -		memcg = mem_cgroup_from_task(p);
+> > -		if (!memcg)
+> > +		memcg = try_get_mem_cgroup_from_mm(mm);
+> > +		if (!memcg) {
+> >  			memcg = root_mem_cgroup;
+> > -		if (mem_cgroup_is_root(memcg)) {
+> > -			rcu_read_unlock();
+> > -			goto done;
+> > -		}
+> > -		if (consume_stock(memcg, nr_pages)) {
+> > -			/*
+> > -			 * It seems dagerous to access memcg without css_get().
+> > -			 * But considering how consume_stok works, it's not
+> > -			 * necessary. If consume_stock success, some charges
+> > -			 * from this memcg are cached on this cpu. So, we
+> > -			 * don't need to call css_get()/css_tryget() before
+> > -			 * calling consume_stock().
+> > -			 */
+> > -			rcu_read_unlock();
+> >  			goto done;
+> >  		}
+> > -		/* after here, we may be blocked. we need to get refcnt */
+> > -		if (!css_tryget(&memcg->css)) {
+> > -			rcu_read_unlock();
+> > -			goto again;
+> > -		}
+> > -		rcu_read_unlock();
+> > +		if (mem_cgroup_is_root(memcg))
+> > +			goto done_put;
+> > +		if (consume_stock(memcg, nr_pages))
+> > +			goto done_put;
+> 
+> These two are actually the same in the if (*ptr) branch.
+
+True, I just wanted to have the patch minimalistic and do just a single
+thing here. Duplicity will vanish in the next patch.
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
