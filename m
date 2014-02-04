@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177AbaBDVCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56074 "EHLO
+	id S936446AbaBDW5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:57:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56129 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933066AbaBDVB4 (ORCPT
+	with ESMTP id S933163AbaBDVCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:01:56 -0500
+	Tue, 4 Feb 2014 16:02:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikhail Zolotaryov <lebon@lebon.org.ua>
-Subject: [PATCH 3.10 018/104] USB: Nokia 502 is an unusual device
-Date: Tue,  4 Feb 2014 13:01:21 -0800
-Message-Id: <20140204210223.256982265@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 033/104] rtlwifi: Add missing code to PWDB statics routine
+Date: Tue,  4 Feb 2014 13:01:36 -0800
+Message-Id: <20140204210223.673479935@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,42 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikhail Zolotaryov <lebon@lebon.org.ua>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 0e16114f2db4838251fb64f3b550996ad3585890 upstream.
+commit d82403a9f407217b6aed5260aa92a120e8e98310 upstream.
 
-The USB storage operation of Nokia Asha 502 Dual SIM smartphone running Asha
-Platform 1.1.1 is unreliable in respect of data consistency (i.e. transfered
-files are corrupted). A similar issue is described here:
-http://discussions.nokia.com/t5/Asha-and-other-Nokia-Series-30/Nokia-301-USB-transfers-and-corrupted-files/td-p/1974170
-
-The workaround is (MAX_SECTORS_64):
-   rmmod usb_storage && modprobe usb_storage quirks=0421:06aa:m
-
-The patch adds the tested device to the unusual list permanently.
-
-Signed-off-by: Mikhail Zolotaryov <lebon@lebon.org.ua>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/net/wireless/rtlwifi/stats.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 ),
+--- a/drivers/net/wireless/rtlwifi/stats.c
++++ b/drivers/net/wireless/rtlwifi/stats.c
+@@ -176,6 +176,7 @@ static void rtl_process_pwdb(struct ieee
+ 	struct rtl_sta_info *drv_priv = NULL;
+ 	struct ieee80211_sta *sta = NULL;
+ 	long undec_sm_pwdb;
++	long undec_sm_cck;
  
-+/* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
-+UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
-+		"Nokia",
-+		"502",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
-+
- #ifdef NO_SDDR09
- UNUSUAL_DEV(  0x0436, 0x0005, 0x0100, 0x0100,
- 		"Microtech",
+ 	rcu_read_lock();
+ 	if (rtlpriv->mac80211.opmode != NL80211_IFTYPE_STATION)
+@@ -185,12 +186,16 @@ static void rtl_process_pwdb(struct ieee
+ 	if (sta) {
+ 		drv_priv = (struct rtl_sta_info *) sta->drv_priv;
+ 		undec_sm_pwdb = drv_priv->rssi_stat.undec_sm_pwdb;
++		undec_sm_cck = drv_priv->rssi_stat.undec_sm_cck;
+ 	} else {
+ 		undec_sm_pwdb = rtlpriv->dm.undec_sm_pwdb;
++		undec_sm_cck = rtlpriv->dm.undec_sm_cck;
+ 	}
+ 
+ 	if (undec_sm_pwdb < 0)
+ 		undec_sm_pwdb = pstatus->rx_pwdb_all;
++	if (undec_sm_cck < 0)
++		undec_sm_cck = pstatus->rx_pwdb_all;
+ 	if (pstatus->rx_pwdb_all > (u32) undec_sm_pwdb) {
+ 		undec_sm_pwdb = (((undec_sm_pwdb) *
+ 		      (RX_SMOOTH_FACTOR - 1)) +
+@@ -200,6 +205,15 @@ static void rtl_process_pwdb(struct ieee
+ 		undec_sm_pwdb = (((undec_sm_pwdb) * (RX_SMOOTH_FACTOR - 1)) +
+ 		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
+ 	}
++	if (pstatus->rx_pwdb_all > (u32) undec_sm_cck) {
++		undec_sm_cck = (((undec_sm_pwdb) *
++		      (RX_SMOOTH_FACTOR - 1)) +
++		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
++		undec_sm_cck = undec_sm_cck + 1;
++	} else {
++		undec_sm_pwdb = (((undec_sm_cck) * (RX_SMOOTH_FACTOR - 1)) +
++		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
++	}
+ 
+ 	if (sta) {
+ 		drv_priv->rssi_stat.undec_sm_pwdb = undec_sm_pwdb;
 
 
