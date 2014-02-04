@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935877AbaBDW0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:26:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56590 "EHLO
+	id S935863AbaBDW0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:26:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933878AbaBDVIR (ORCPT
+	with ESMTP id S933881AbaBDVIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:17 -0500
+	Tue, 4 Feb 2014 16:08:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.12 043/133] iwlwifi: mvm: fix missing cleanup in .start() error path
-Date: Tue,  4 Feb 2014 13:07:24 -0800
-Message-Id: <20140204210738.252074624@linuxfoundation.org>
+        yury <urykhy@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 044/133] b43: Fix lockdep splat
+Date: Tue,  4 Feb 2014 13:07:25 -0800
+Message-Id: <20140204210738.279996310@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,35 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliadx.peller@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 91b0d1198417cf4fd9a7bd4138b6909f0b359099 upstream.
+commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
 
-Cleanup of iwl_mvm_leds was missing in case of error,
-resulting in the following warning:
+In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
+when b43 is used with hostapd, and rfkill is used to kill the radio output.
 
-WARNING: at lib/kobject.c:196 kobject_add_internal+0x1f4/0x210()
-kobject_add_internal failed for phy0-led with -EEXIST, don't try to register things with the same name in the same directory.
+The lockdep splat (in part) is as follows:
 
-which prevents further reloads of the driver.
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.12.0 #1 Not tainted
+-------------------------------------------------------
+rfkill/10040 is trying to acquire lock:
+ (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+but task is already holding lock:
+ (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
+
+--snip--
+
+Chain exists of:
+  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
+
+The fix is to move the initialization of the hardware random number generator
+outside the code range covered by the rtnl_mutex.
+
+Reported-by: yury <urykhy@gmail.com>
+Tested-by: yury <urykhy@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/ops.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/b43/main.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/ops.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
-@@ -446,6 +446,7 @@ iwl_op_mode_mvm_start(struct iwl_trans *
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2424,6 +2424,7 @@ error:
  
-  out_unregister:
- 	ieee80211_unregister_hw(mvm->hw);
-+	iwl_mvm_leds_exit(mvm);
-  out_free:
- 	iwl_phy_db_free(mvm->phy_db);
- 	kfree(mvm->scan_cmd);
+ static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
+ static void b43_one_core_detach(struct b43_bus_dev *dev);
++static int b43_rng_init(struct b43_wl *wl);
+ 
+ static void b43_request_firmware(struct work_struct *work)
+ {
+@@ -2475,6 +2476,10 @@ start_ieee80211:
+ 		goto err_one_core_detach;
+ 	wl->hw_registred = true;
+ 	b43_leds_register(wl->current_dev);
++
++	/* Register HW RNG driver */
++	b43_rng_init(wl);
++
+ 	goto out;
+ 
+ err_one_core_detach:
+@@ -4636,9 +4641,6 @@ static void b43_wireless_core_exit(struc
+ 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
+ 		return;
+ 
+-	/* Unregister HW RNG driver */
+-	b43_rng_exit(dev->wl);
+-
+ 	b43_set_status(dev, B43_STAT_UNINIT);
+ 
+ 	/* Stop the microcode PSM. */
+@@ -4795,9 +4797,6 @@ static int b43_wireless_core_init(struct
+ 
+ 	b43_set_status(dev, B43_STAT_INITIALIZED);
+ 
+-	/* Register HW RNG driver */
+-	b43_rng_init(dev->wl);
+-
+ out:
+ 	return err;
+ 
+@@ -5464,6 +5463,9 @@ static void b43_bcma_remove(struct bcma_
+ 
+ 	b43_one_core_detach(wldev->dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	b43_leds_unregister(wl);
+ 
+ 	ieee80211_free_hw(wl->hw);
+@@ -5541,6 +5543,9 @@ static void b43_ssb_remove(struct ssb_de
+ 
+ 	b43_one_core_detach(dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	if (list_empty(&wl->devlist)) {
+ 		b43_leds_unregister(wl);
+ 		/* Last core on the chip unregistered.
 
 
