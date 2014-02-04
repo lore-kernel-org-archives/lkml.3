@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934435AbaBDVLf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:11:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57034 "EHLO
+	id S934791AbaBDVpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:45:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934329AbaBDVLK (ORCPT
+	with ESMTP id S934433AbaBDVLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:10 -0500
+	Tue, 4 Feb 2014 16:11:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jun zhang <zhang.jun92@zte.com.cn>
-Subject: [PATCH 3.13 018/140] usb: option: add new zte 3g modem pids to option driver
-Date: Tue,  4 Feb 2014 13:10:05 -0800
-Message-Id: <20140204211037.484863271@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 048/140] ath9k: Use correct channel for RX packets
+Date: Tue,  4 Feb 2014 13:10:35 -0800
+Message-Id: <20140204211038.330975926@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,36 +30,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?=E5=BC=A0=E5=90=9B?= <zjn77777@163.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 4d90b819ae4c7ea8fd5e2bb7edc68c0f334be2e4 upstream.
+commit ff9a93f2ebb88ac7aab9568de80b64b92078e96d upstream.
 
-Signed-off-by: Jun zhang <zhang.jun92@zte.com.cn>
+Accessing the current channel definition in mac80211
+when processing RX packets is problematic because it
+could have been updated when a scan is issued. Since a
+channel change involves flushing the existing packets
+in the RX queue before a chip-reset is done, they would
+be processed using the wrong band/channel information.
+
+To avoid this, use the current channel information
+maintained in the driver.
+
+Reported-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/net/wireless/ath/ath9k/recv.c |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1447,6 +1447,17 @@ static const struct usb_device_id option
- 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xffe9, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8b, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8c, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8d, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8e, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8f, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff90, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff91, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff92, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -851,20 +851,15 @@ static int ath9k_process_rate(struct ath
+ 	enum ieee80211_band band;
+ 	unsigned int i = 0;
+ 	struct ath_softc __maybe_unused *sc = common->priv;
++	struct ath_hw *ah = sc->sc_ah;
  
- 	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
+-	band = hw->conf.chandef.chan->band;
++	band = ah->curchan->chan->band;
+ 	sband = hw->wiphy->bands[band];
+ 
+-	switch (hw->conf.chandef.width) {
+-	case NL80211_CHAN_WIDTH_5:
++	if (IS_CHAN_QUARTER_RATE(ah->curchan))
+ 		rxs->flag |= RX_FLAG_5MHZ;
+-		break;
+-	case NL80211_CHAN_WIDTH_10:
++	else if (IS_CHAN_HALF_RATE(ah->curchan))
+ 		rxs->flag |= RX_FLAG_10MHZ;
+-		break;
+-	default:
+-		break;
+-	}
+ 
+ 	if (rx_stats->rs_rate & 0x80) {
+ 		/* HT rate */
+@@ -1248,6 +1243,14 @@ static int ath9k_rx_skb_preprocess(struc
+ 		ath_start_rx_poll(sc, 3);
+ 	}
+ 
++	/*
++	 * This shouldn't happen, but have a safety check anyway.
++	 */
++	if (WARN_ON(!ah->curchan)) {
++		ret = -EINVAL;
++		goto exit;
++	}
++
+ 	if (ath9k_process_rate(common, hw, rx_stats, rx_status)) {
+ 		ret =-EINVAL;
+ 		goto exit;
+@@ -1255,8 +1258,8 @@ static int ath9k_rx_skb_preprocess(struc
+ 
+ 	ath9k_process_rssi(common, hw, rx_stats, rx_status);
+ 
+-	rx_status->band = hw->conf.chandef.chan->band;
+-	rx_status->freq = hw->conf.chandef.chan->center_freq;
++	rx_status->band = ah->curchan->chan->band;
++	rx_status->freq = ah->curchan->chan->center_freq;
+ 	rx_status->antenna = rx_stats->rs_antenna;
+ 	rx_status->flag |= RX_FLAG_MACTIME_END;
+ 
 
 
