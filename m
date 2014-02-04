@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098AbaBDJFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 04:05:52 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:63765 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100AbaBDJF2 (ORCPT
+	id S1751314AbaBDJIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 04:08:16 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:58443 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaBDJIC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 04:05:28 -0500
-Message-ID: <1391504723.2663.4.camel@snow.station>
-Subject: Re: same ext4 file system corruption on different machines
-From: Luca Ognibene <luca.ognibene@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Date: Tue, 04 Feb 2014 10:05:23 +0100
-In-Reply-To: <20140131030028.GB7118@thunk.org>
-References: <1390999955.2601.22.camel@snow.station>
-	 <1391000743.2601.26.camel@snow.station> <20140129173826.GA30419@thunk.org>
-	 <1391068749.2680.6.camel@snow.station> <20140131030028.GB7118@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Feb 2014 04:08:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140204090316.GB13529@lee--X1>
+References: <1391496143-6660-1-git-send-email-sj38.park@gmail.com> <20140204090316.GB13529@lee--X1>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Tue, 4 Feb 2014 18:07:31 +0900
+Message-ID: <CAEjAshpnKc7GAOeMOcYOsO0wviq3vN=Vxc5WKG=5ErJKQu4tYw@mail.gmail.com>
+Subject: Re: [PATCH] drivers/mfd: fix pointer-integer size mismatch warnings
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches@opensource.wolfsonmicro.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il giorno gio, 30/01/2014 alle 22.00 -0500, Theodore Ts'o ha scritto:
-> On Thu, Jan 30, 2014 at 08:59:09AM +0100, Luca Ognibene wrote:
-> > Yes it's indeed very strange.. i tend to rule out application errors
-> > because i don't write directly to the device so i don't think i can
-> > break a filesystem from userspace. I've checked previous and next blocks
-> > and they seem ok, only the block 524320 is getting corrupted. Any idea
-> > on what should i look for now?
-> 
-> Are you willing to try 3.12.9 or 3.13.1 upstream kernel?  Let's see if
-> changing the kernel makes any difference.  I don't recall any ext4
-> problems like this, but maybe it's device driver problem.
+On Tue, Feb 4, 2014 at 6:03 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> Fix the pointer-integer size mismatch warnings below:
+>>       drivers/mfd/wm8994-core.c: In function ‘wm8994_i2c_probe’:
+>>       mfd/wm8994-core.c:639:19: warning: cast from pointer to integer of
+>>                       different size [-Wpointer-to-int-cast]
+>>           wm8994->type = (int)of_id->data;
+>>                          ^
+>>       drivers/mfd/max8997.c: In function ‘max8997_i2c_get_driver_data’:
+>>       drivers/mfd/max8997.c:173:10: warning: cast from pointer to integer of
+>>                       different size [-Wpointer-to-int-cast]
+>>          return (int)match->data;
+>>                 ^
+>
+> Already fixed:
+>   https://lkml.org/lkml/2014/1/23/309
+>   https://lkml.org/lkml/2014/1/23/326
 
-I'll try but my problem is that i can't replicate it.. i have to wait
-weeks to see it happen on clients machines.
+Oops, sorry, didn't check that(I checked only the -next tree).
+Thank you for let me know.
 
-> The other thing I'd ask is whether you can swap out the hard drive
-> interface --- can you use a USB 3.0 attached drive, or something like
-> that?
-
-I can't do that, sorry.
-
-ciao
-Luca
-
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
