@@ -1,254 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaBDMW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:22:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43824 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaBDMWZ (ORCPT
+	id S1753899AbaBDM0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:26:17 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:58584 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079AbaBDM0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:22:25 -0500
-Date: Tue, 4 Feb 2014 13:22:12 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [RFC][PATCH] ia64: Fix atomic ops vs memory barriers
-Message-ID: <20140204122212.GO8874@twins.programming.kicks-ass.net>
+	Tue, 4 Feb 2014 07:26:13 -0500
+Date: Tue, 4 Feb 2014 04:25:24 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Kent Overstreet <kmo@daterainc.com>
+cc: Hugh Dickins <hughd@google.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Explicitly handle discard/write same segments
+In-Reply-To: <20140204101748.GA12440@kmo-pixel>
+Message-ID: <alpine.LSU.2.11.1402040425020.23694@eggly.anvils>
+References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils> <20140114023346.GN9037@kmo> <yq161pnmcl2.fsf@sermon.lab.mkp.net> <20140114044841.GO9037@kmo> <yq1ob3el3mr.fsf@sermon.lab.mkp.net> <20140114222424.GA7333@moria.home.lan> <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
+ <20140117012105.GS9037@kmo> <alpine.LSU.2.11.1401310852000.987@eggly.anvils> <20140204101748.GA12440@kmo-pixel>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 4 Feb 2014, Kent Overstreet wrote:
 
-The IA64 SDM V1-4.4.7 describes the memory ordering rules of IA64.
+> Immutable biovecs changed the way biovecs are interpreted - drivers no
+> longer use bi_vcnt, they have to go by bi_iter.bi_size (to allow for
+> using part of an existing segment without modifying it).
+> 
+> This breaks with discards and write_same bios, since for those bi_size
+> has nothing to do with segments in the biovec. So for now, we need a
+> fairly gross hack - we fortunately know that there will never be more
+> than one segment for the entire request, so we can special case
+> discard/write_same.
+> 
+> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+> ---
+> On Fri, Jan 31, 2014 at 09:17:25AM -0800, Hugh Dickins wrote:
+> > On Thu, 16 Jan 2014, Kent Overstreet wrote:
+> > > 
+> > > Ok, I reread the code and figured it out - the analagous change also has to be
+> > > made in __blk_segment_map_sg(). I'll mail out a patch for this tomorrow after
+> > > I've stared at the code more and had less beer.
+> > 
+> > I'd been hoping for a patch to try, but now your changes have hit Linus's
+> > tree: so today we have discard broken there too, crashing as originally
+> > reported on the NULL struct page pointer in __blk_recalc_rq_segments()'s
+> > page_to_pfn(bv.bv_page).
+> > 
+> > How to reproduce it?  I hope you'll find easier ways, but I get it with
+> > swapping to SSD (remember "swapon -d" to enable discard).  I'm just doing
+> > what I've done for years, running a pair of make -j20 kbuilds to tmpfs in
+> > limited RAM (I use mem=700M with 1.5G of swap: but that would be far too
+> > little RAM for a general config of current tree), to get plenty of fairly
+> > chaotic swapping but good forward progress nonetheless (if the sizes are
+> > too small, then it'll just thrash abysmally or be OOM-killed).
+> > 
+> > But please do send me a patch and I'll give it a try - thanks.
+> 
+> Hugh - can you give this patch a try? Passes my tests but I was never
+> able to reproduce your crash, unfortunately.
 
-It states that the cmpxchg.{rel,acq} really have release and acquire
-semantics and that xchg has acquire semantics.
+Thanks a lot, Kent: I'm glad to report, this is working fine for me.
 
-Despite this the ia64 atomic_t code says that all atomic ops are fully
-serialized, and its smp_mb__{before,after}_atomic_{inc,dec} are
-barrier().
+Hugh
 
-OTOH the atomic bitops, which are identically implemented (using
-cmpxchg.acq), state that they have acquire semantics and set
-smp_mb__before_clear_bit() to smp_mb().
-
-Now either the SDM and the bitops are right, which means the atomic_t,
-cmpxchg() and xchg() implementations are wrong, or the SDM is wrong and
-cmpxchg.acq is actually fully serialized after all and the bitops
-implementation is wrong, not to mention there's a big fat comment
-missing someplace.
-
-
-The below patch assumes the SDM is right (TM), and fixes the atomic_t,
-cmpxchg() and xchg() implementations by inserting a mf before the
-cmpxchg.acq (or xchg).
-
-This way loads/stores before the mf stay there, loads/stores after the
-cmpxchg.acq also stay after and the entire thing acts as a fully
-serialized op the way it is supposed to.
-
-For things like ia64_atomic_sub() which is a cmpxchg.acq loop with an
-unordered load in, it still works because there is a control dependency
-upon the cmpxchg op, therefore the load cannot escape.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/ia64/include/asm/atomic.h       | 31 +++++++++++++++++++++++--------
- arch/ia64/include/asm/bitops.h       | 25 +++++++++++++++++++++++--
- arch/ia64/include/uapi/asm/cmpxchg.h | 13 ++++++++-----
- 3 files changed, 54 insertions(+), 15 deletions(-)
-
-diff --git a/arch/ia64/include/asm/atomic.h b/arch/ia64/include/asm/atomic.h
-index 6e6fe1839f5d..5052fe7ce34b 100644
---- a/arch/ia64/include/asm/atomic.h
-+++ b/arch/ia64/include/asm/atomic.h
-@@ -15,6 +15,7 @@
- #include <linux/types.h>
- 
- #include <asm/intrinsics.h>
-+#include <asm/barrier.h>
- 
- 
- #define ATOMIC_INIT(i)		{ (i) }
-@@ -125,6 +126,7 @@ static __inline__ long atomic64_add_unless(atomic64_t *v, long a, long u)
- #define atomic_add_return(i,v)						\
- ({									\
- 	int __ia64_aar_i = (i);						\
-+ 	ia64_mf();							\
- 	(__builtin_constant_p(i)					\
- 	 && (   (__ia64_aar_i ==  1) || (__ia64_aar_i ==   4)		\
- 	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
-@@ -137,6 +139,7 @@ static __inline__ long atomic64_add_unless(atomic64_t *v, long a, long u)
- #define atomic64_add_return(i,v)					\
- ({									\
- 	long __ia64_aar_i = (i);					\
-+ 	ia64_mf();							\
- 	(__builtin_constant_p(i)					\
- 	 && (   (__ia64_aar_i ==  1) || (__ia64_aar_i ==   4)		\
- 	     || (__ia64_aar_i ==  8) || (__ia64_aar_i ==  16)		\
-@@ -162,7 +165,7 @@ atomic64_add_negative (__s64 i, atomic64_t *v)
- 	return atomic64_add_return(i, v) < 0;
- }
- 
--#define atomic_sub_return(i,v)						\
-+#define __atomic_sub_return(i,v)					\
- ({									\
- 	int __ia64_asr_i = (i);						\
- 	(__builtin_constant_p(i)					\
-@@ -174,7 +177,13 @@ atomic64_add_negative (__s64 i, atomic64_t *v)
- 		: ia64_atomic_sub(__ia64_asr_i, v);			\
- })
- 
--#define atomic64_sub_return(i,v)					\
-+#define atomic_sub_return(i,v)						\
-+({									\
-+	ia64_mf();							\
-+ 	__atomic_sub_return((i), (v));					\
-+})
-+ 	
-+#define __atomic64_sub_return(i,v)					\
- ({									\
- 	long __ia64_asr_i = (i);					\
- 	(__builtin_constant_p(i)					\
-@@ -186,6 +195,12 @@ atomic64_add_negative (__s64 i, atomic64_t *v)
- 		: ia64_atomic64_sub(__ia64_asr_i, v);			\
- })
- 
-+#define atomic64_sub_return(i,v)					\
-+({									\
-+	ia64_mf();							\
-+ 	__atomic64_sub_return((i), (v))					\
-+})
-+
- #define atomic_dec_return(v)		atomic_sub_return(1, (v))
- #define atomic_inc_return(v)		atomic_add_return(1, (v))
- #define atomic64_dec_return(v)		atomic64_sub_return(1, (v))
-@@ -198,20 +213,20 @@ atomic64_add_negative (__s64 i, atomic64_t *v)
- #define atomic64_dec_and_test(v)	(atomic64_sub_return(1, (v)) == 0)
- #define atomic64_inc_and_test(v)	(atomic64_add_return(1, (v)) == 0)
- 
--#define atomic_add(i,v)			atomic_add_return((i), (v))
--#define atomic_sub(i,v)			atomic_sub_return((i), (v))
-+#define atomic_add(i,v)			(void)__atomic_add_return((i), (v))
-+#define atomic_sub(i,v)			(void)__atomic_sub_return((i), (v))
- #define atomic_inc(v)			atomic_add(1, (v))
- #define atomic_dec(v)			atomic_sub(1, (v))
- 
--#define atomic64_add(i,v)		atomic64_add_return((i), (v))
--#define atomic64_sub(i,v)		atomic64_sub_return((i), (v))
-+#define atomic64_add(i,v)		(void)__atomic64_add_return((i), (v))
-+#define atomic64_sub(i,v)		(void)__atomic64_sub_return((i), (v))
- #define atomic64_inc(v)			atomic64_add(1, (v))
- #define atomic64_dec(v)			atomic64_sub(1, (v))
- 
- /* Atomic operations are already serializing */
--#define smp_mb__before_atomic_dec()	barrier()
-+#define smp_mb__before_atomic_dec()	smp_mb()
- #define smp_mb__after_atomic_dec()	barrier()
--#define smp_mb__before_atomic_inc()	barrier()
-+#define smp_mb__before_atomic_inc()	smp_mb()
- #define smp_mb__after_atomic_inc()	barrier()
- 
- #endif /* _ASM_IA64_ATOMIC_H */
-diff --git a/arch/ia64/include/asm/bitops.h b/arch/ia64/include/asm/bitops.h
-index c27eccd33349..4655b905f142 100644
---- a/arch/ia64/include/asm/bitops.h
-+++ b/arch/ia64/include/asm/bitops.h
-@@ -69,7 +69,7 @@ __set_bit (int nr, volatile void *addr)
-  * clear_bit() has "acquire" semantics.
-  */
- #define smp_mb__before_clear_bit()	smp_mb()
--#define smp_mb__after_clear_bit()	do { /* skip */; } while (0)
-+#define smp_mb__after_clear_bit()	barrier()
- 
- /**
-  * clear_bit - Clears a bit in memory
-@@ -208,6 +208,8 @@ test_and_set_bit (int nr, volatile void *addr)
- 	volatile __u32 *m;
- 	CMPXCHG_BUGCHECK_DECL
- 
-+	smp_mb();
-+
- 	m = (volatile __u32 *) addr + (nr >> 5);
- 	bit = 1 << (nr & 31);
- 	do {
-@@ -225,7 +227,22 @@ test_and_set_bit (int nr, volatile void *addr)
-  *
-  * This is the same as test_and_set_bit on ia64
-  */
--#define test_and_set_bit_lock test_and_set_bit
-+static __inline__ int
-+test_and_set_bit_lock (int nr, volatile void *addr)
-+{
-+	__u32 bit, old, new;
-+	volatile __u32 *m;
-+	CMPXCHG_BUGCHECK_DECL
-+
-+	m = (volatile __u32 *) addr + (nr >> 5);
-+	bit = 1 << (nr & 31);
-+	do {
-+		CMPXCHG_BUGCHECK(m);
-+		old = *m;
-+		new = old | bit;
-+	} while (cmpxchg_acq(m, old, new) != old);
-+	return (old & bit) != 0;
-+}
- 
- /**
-  * __test_and_set_bit - Set a bit and return its old value
-@@ -262,6 +279,8 @@ test_and_clear_bit (int nr, volatile void *addr)
- 	volatile __u32 *m;
- 	CMPXCHG_BUGCHECK_DECL
- 
-+	smp_mb();
-+
- 	m = (volatile __u32 *) addr + (nr >> 5);
- 	mask = ~(1 << (nr & 31));
- 	do {
-@@ -307,6 +326,8 @@ test_and_change_bit (int nr, volatile void *addr)
- 	volatile __u32 *m;
- 	CMPXCHG_BUGCHECK_DECL
- 
-+	smp_mb();
-+
- 	m = (volatile __u32 *) addr + (nr >> 5);
- 	bit = (1 << (nr & 31));
- 	do {
-diff --git a/arch/ia64/include/uapi/asm/cmpxchg.h b/arch/ia64/include/uapi/asm/cmpxchg.h
-index 4f37dbbb8640..6fe5d6b7a739 100644
---- a/arch/ia64/include/uapi/asm/cmpxchg.h
-+++ b/arch/ia64/include/uapi/asm/cmpxchg.h
-@@ -53,7 +53,10 @@ extern void ia64_xchg_called_with_bad_pointer(void);
- })
- 
- #define xchg(ptr, x)							\
--((__typeof__(*(ptr))) __xchg((unsigned long) (x), (ptr), sizeof(*(ptr))))
-+({									\
-+ 	ia64_mf();							\
-+ 	(__typeof__(*(ptr))) __xchg((unsigned long) (x), (ptr), sizeof(*(ptr)))) \
-+)}
- 
- /*
-  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-@@ -119,11 +122,11 @@ extern long ia64_cmpxchg_called_with_bad_pointer(void);
- 	ia64_cmpxchg(rel, (ptr), (o), (n), sizeof(*(ptr)))
- 
- /* for compatibility with other platforms: */
--#define cmpxchg(ptr, o, n)	cmpxchg_acq((ptr), (o), (n))
--#define cmpxchg64(ptr, o, n)	cmpxchg_acq((ptr), (o), (n))
-+#define cmpxchg(ptr, o, n)	({ ia64_mf(); cmpxchg_acq((ptr), (o), (n)); })
-+#define cmpxchg64(ptr, o, n)	({ ia64_mf(); cmpxchg_acq((ptr), (o), (n)); })
- 
--#define cmpxchg_local		cmpxchg
--#define cmpxchg64_local		cmpxchg64
-+#define cmpxchg_local		cmpxchg_acq
-+#define cmpxchg64_local		cmpxchg_acq
- 
- #ifdef CONFIG_IA64_DEBUG_CMPXCHG
- # define CMPXCHG_BUGCHECK_DECL	int _cmpxchg_bugcheck_count = 128;
+> 
+>  block/blk-merge.c | 91 +++++++++++++++++++++++++++++++++++++------------------
+>  1 file changed, 62 insertions(+), 29 deletions(-)
+> 
+> diff --git a/block/blk-merge.c b/block/blk-merge.c
+> index 8f8adaa954..6c583f9c5b 100644
+> --- a/block/blk-merge.c
+> +++ b/block/blk-merge.c
+> @@ -21,6 +21,16 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+>  	if (!bio)
+>  		return 0;
+>  
+> +	/*
+> +	 * This should probably be returning 0, but blk_add_request_payload()
+> +	 * (Christoph!!!!)
+> +	 */
+> +	if (bio->bi_rw & REQ_DISCARD)
+> +		return 1;
+> +
+> +	if (bio->bi_rw & REQ_WRITE_SAME)
+> +		return 1;
+> +
+>  	fbio = bio;
+>  	cluster = blk_queue_cluster(q);
+>  	seg_size = 0;
+> @@ -161,30 +171,60 @@ new_segment:
+>  	*bvprv = *bvec;
+>  }
+>  
+> -/*
+> - * map a request to scatterlist, return number of sg entries setup. Caller
+> - * must make sure sg can hold rq->nr_phys_segments entries
+> - */
+> -int blk_rq_map_sg(struct request_queue *q, struct request *rq,
+> -		  struct scatterlist *sglist)
+> +static int __blk_bios_map_sg(struct request_queue *q, struct bio *bio,
+> +			     struct scatterlist *sglist,
+> +			     struct scatterlist **sg)
+>  {
+>  	struct bio_vec bvec, bvprv = { NULL };
+> -	struct req_iterator iter;
+> -	struct scatterlist *sg;
+> +	struct bvec_iter iter;
+>  	int nsegs, cluster;
+>  
+>  	nsegs = 0;
+>  	cluster = blk_queue_cluster(q);
+>  
+> -	/*
+> -	 * for each bio in rq
+> -	 */
+> -	sg = NULL;
+> -	rq_for_each_segment(bvec, rq, iter) {
+> -		__blk_segment_map_sg(q, &bvec, sglist, &bvprv, &sg,
+> -				     &nsegs, &cluster);
+> -	} /* segments in rq */
+> +	if (bio->bi_rw & REQ_DISCARD) {
+> +		/*
+> +		 * This is a hack - drivers should be neither modifying the
+> +		 * biovec, nor relying on bi_vcnt - but because of
+> +		 * blk_add_request_payload(), a discard bio may or may not have
+> +		 * a payload we need to set up here (thank you Christoph) and
+> +		 * bi_vcnt is really the only way of telling if we need to.
+> +		 */
+> +
+> +		if (bio->bi_vcnt)
+> +			goto single_segment;
+> +
+> +		return 0;
+> +	}
+> +
+> +	if (bio->bi_rw & REQ_WRITE_SAME) {
+> +single_segment:
+> +		*sg = sglist;
+> +		bvec = bio_iovec(bio);
+> +		sg_set_page(*sg, bvec.bv_page, bvec.bv_len, bvec.bv_offset);
+> +		return 1;
+> +	}
+> +
+> +	for_each_bio(bio)
+> +		bio_for_each_segment(bvec, bio, iter)
+> +			__blk_segment_map_sg(q, &bvec, sglist, &bvprv, sg,
+> +					     &nsegs, &cluster);
+>  
+> +	return nsegs;
+> +}
+> +
+> +/*
+> + * map a request to scatterlist, return number of sg entries setup. Caller
+> + * must make sure sg can hold rq->nr_phys_segments entries
+> + */
+> +int blk_rq_map_sg(struct request_queue *q, struct request *rq,
+> +		  struct scatterlist *sglist)
+> +{
+> +	struct scatterlist *sg = NULL;
+> +	int nsegs = 0;
+> +
+> +	if (rq->bio)
+> +		nsegs = __blk_bios_map_sg(q, rq->bio, sglist, &sg);
+>  
+>  	if (unlikely(rq->cmd_flags & REQ_COPY_USER) &&
+>  	    (blk_rq_bytes(rq) & q->dma_pad_mask)) {
+> @@ -230,20 +270,13 @@ EXPORT_SYMBOL(blk_rq_map_sg);
+>  int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
+>  		   struct scatterlist *sglist)
+>  {
+> -	struct bio_vec bvec, bvprv = { NULL };
+> -	struct scatterlist *sg;
+> -	int nsegs, cluster;
+> -	struct bvec_iter iter;
+> -
+> -	nsegs = 0;
+> -	cluster = blk_queue_cluster(q);
+> -
+> -	sg = NULL;
+> -	bio_for_each_segment(bvec, bio, iter) {
+> -		__blk_segment_map_sg(q, &bvec, sglist, &bvprv, &sg,
+> -				     &nsegs, &cluster);
+> -	} /* segments in bio */
+> +	struct scatterlist *sg = NULL;
+> +	int nsegs;
+> +	struct bio *next = bio->bi_next;
+> +	bio->bi_next = NULL;
+>  
+> +	nsegs = __blk_bios_map_sg(q, bio, sglist, &sg);
+> +	bio->bi_next = next;
+>  	if (sg)
+>  		sg_mark_end(sg);
+>  
+> -- 
+> 1.9.rc1
