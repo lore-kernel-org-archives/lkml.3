@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936355AbaBDWuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:50:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56239 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932288AbaBDVC1 (ORCPT
+	id S936368AbaBDWuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:50:25 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:60826 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932288AbaBDWuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:27 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 060/104] ASoC: wm5110: Extend SYSCLK patch file for rev D
-Date: Tue,  4 Feb 2014 13:02:03 -0800
-Message-Id: <20140204210224.417980949@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 17:50:21 -0500
+Message-ID: <1391554218.13156.24.camel@x220>
+Subject: Re: [PATCH 1/2] raw: test against runtime value of max_raw_minors
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Jan Kara <jack@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Date: Tue, 04 Feb 2014 23:50:18 +0100
+In-Reply-To: <20140204223419.GB2696@kroah.com>
+References: <1391552592.13156.15.camel@x220>
+	 <20140204223419.GB2696@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Feb 2014 22:50:18.0983 (UTC) FILETIME=[7A536F70:01CF21FB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+[Added Jan Kara.]
 
-------------------
+On Tue, 2014-02-04 at 14:34 -0800, Greg Kroah-Hartman wrote:
+> On Tue, Feb 04, 2014 at 11:23:12PM +0100, Paul Bolle wrote:
+> > bind_get() checks the device number it is called with. It uses
+> > MAX_RAW_MINORS for the upper bound. But MAX_RAW_MINORS is set at compile
+> > time while the actual number of raw devices can be set at runtime. This
+> > means the test can either be too strict or too lenient. And if the test
+> > ends up being too lenient bind_get() might try to access memory beyond
+> > what was allocated for "raw_devices".
+> > 
+> > So check against the runtime value (max_raw_minors) in this function.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> >  drivers/char/raw.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+> > index f3223aa..6e8d65e 100644
+> > --- a/drivers/char/raw.c
+> > +++ b/drivers/char/raw.c
+> > @@ -190,7 +190,7 @@ static int bind_get(int number, dev_t *dev)
+> >  	struct raw_device_data *rawdev;
+> >  	struct block_device *bdev;
+> >  
+> > -	if (number <= 0 || number >= MAX_RAW_MINORS)
+> > +	if (number <= 0 || number >= max_raw_minors)
+> 
+> Are you sure?  For some reason, I thought this was changed to be this
+> way a long time ago, can you please dig through the git archives, and
+> even the history.git tree, to verify that this is correct and you aren't
+> just making this be as it was before?
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+What apparently happened was that in v3.0, through commit 0078bff5283d
+("Allow setting of number of raw devices as a module parameter"), the
+test in bind_set() was updated but the test in bind_get() not.
 
-commit 34354792432b6e0a3b156819a1a19716c50d3473 upstream.
+You can - sort of - see this by comparing
+    git grep -nwi max_raw_minors 0078bff5283d^
 
-Latest evaluation of the the device has given some patch file additions
-for improved performance.
+and
+    git grep -nwi max_raw_minors 0078bff5283d
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/codecs/wm5110.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
-
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -43,6 +43,54 @@ static const struct reg_default wm5110_s
- 	{ 0x3133, 0x1201 },
- 	{ 0x3183, 0x1501 },
- 	{ 0x31D3, 0x1401 },
-+	{ 0x0049, 0x01ea },
-+	{ 0x004a, 0x01f2 },
-+	{ 0x0057, 0x01e7 },
-+	{ 0x0058, 0x01fb },
-+	{ 0x33ce, 0xc4f5 },
-+	{ 0x33cf, 0x1361 },
-+	{ 0x33d0, 0x0402 },
-+	{ 0x33d1, 0x4700 },
-+	{ 0x33d2, 0x026d },
-+	{ 0x33d3, 0xff00 },
-+	{ 0x33d4, 0x026d },
-+	{ 0x33d5, 0x0101 },
-+	{ 0x33d6, 0xc4f5 },
-+	{ 0x33d7, 0x0361 },
-+	{ 0x33d8, 0x0402 },
-+	{ 0x33d9, 0x6701 },
-+	{ 0x33da, 0xc4f5 },
-+	{ 0x33db, 0x136f },
-+	{ 0x33dc, 0xc4f5 },
-+	{ 0x33dd, 0x134f },
-+	{ 0x33de, 0xc4f5 },
-+	{ 0x33df, 0x131f },
-+	{ 0x33e0, 0x026d },
-+	{ 0x33e1, 0x4f01 },
-+	{ 0x33e2, 0x026d },
-+	{ 0x33e3, 0xf100 },
-+	{ 0x33e4, 0x026d },
-+	{ 0x33e5, 0x0001 },
-+	{ 0x33e6, 0xc4f5 },
-+	{ 0x33e7, 0x0361 },
-+	{ 0x33e8, 0x0402 },
-+	{ 0x33e9, 0x6601 },
-+	{ 0x33ea, 0xc4f5 },
-+	{ 0x33eb, 0x136f },
-+	{ 0x33ec, 0xc4f5 },
-+	{ 0x33ed, 0x134f },
-+	{ 0x33ee, 0xc4f5 },
-+	{ 0x33ef, 0x131f },
-+	{ 0x33f0, 0x026d },
-+	{ 0x33f1, 0x4e01 },
-+	{ 0x33f2, 0x026d },
-+	{ 0x33f3, 0xf000 },
-+	{ 0x33f6, 0xc4f5 },
-+	{ 0x33f7, 0x1361 },
-+	{ 0x33f8, 0x0402 },
-+	{ 0x33f9, 0x4600 },
-+	{ 0x33fa, 0x026d },
-+	{ 0x33fb, 0xfe00 },
- };
  
- static int wm5110_sysclk_ev(struct snd_soc_dapm_widget *w,
 
+Paul Bolle
 
