@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933352AbaBDVCa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56206 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbaBDVCX (ORCPT
+	id S936314AbaBDWsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:48:39 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37567 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932576AbaBDWsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:23 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Roszko <mark.roszko@gmail.com>,
-        Leilei Zhao <leilei.zhao@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.10 045/104] tty/serial: at91: Handle shutdown more safely
-Date: Tue,  4 Feb 2014 13:01:48 -0800
-Message-Id: <20140204210224.003257840@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 17:48:32 -0500
+Message-ID: <1391554110.10160.3.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] fdtable: Avoid triggering OOMs from alloc_fdmem
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Date: Tue, 04 Feb 2014 14:48:30 -0800
+In-Reply-To: <87r47ik8ou.fsf@xmission.com>
+References: <87r47jsb2p.fsf@xmission.com>
+	 <1391530721.4301.8.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <871tzirdwf.fsf@xmission.com>
+	 <1391539464.10160.1.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <87r47ik8ou.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-02-04 at 10:57 -0800, Eric W. Biederman wrote:
 
-------------------
+> As I have heard it described one tcp connection per small requestion,
+> and someone goofed and started creating new connections when the server
+> was bogged down.  But since all of the requests and replies were small I
+> don't expect even TCP would allocate more than a 4KiB page in that
+> worload.
 
-From: Marek Roszko <mark.roszko@gmail.com>
+Right, small writes uses regular skb (no page fragments).
 
-commit 0cc7c6c7916b1b6f34350ff1473b80b9f7e459c0 upstream.
+> 
+> I had oodles of 4KiB and 8KiB pages.  What size of memory allocation did
+> you see failing?  
 
-Interrupts were being cleaned up late in the shutdown handler, it is possible
-that an interrupt can occur and schedule a tasklet that runs after the port is
-cleaned up. There is a null dereference due to this race condition with the
-following stacktrace:
-
-[<c02092b0>] (atmel_tasklet_func+0x514/0x814) from [<c001fd34>] (tasklet_action+0x70/0xa8)
-[<c001fd34>] (tasklet_action+0x70/0xa8) from [<c001f60c>] (__do_softirq+0x90/0x144)
-[<c001f60c>] (__do_softirq+0x90/0x144) from [<c001fa18>] (irq_exit+0x40/0x4c)
-[<c001fa18>] (irq_exit+0x40/0x4c) from [<c000e298>] (handle_IRQ+0x64/0x84)
-[<c000e298>] (handle_IRQ+0x64/0x84) from [<c000d6c0>] (__irq_svc+0x40/0x50)
-[<c000d6c0>] (__irq_svc+0x40/0x50) from [<c0208060>] (atmel_rx_dma_release+0x88/0xb8)
-[<c0208060>] (atmel_rx_dma_release+0x88/0xb8) from [<c0209740>] (atmel_shutdown+0x104/0x160)
-[<c0209740>] (atmel_shutdown+0x104/0x160) from [<c0205e8c>] (uart_port_shutdown+0x2c/0x38)
-
-Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
-Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/serial/atmel_serial.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
-
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1022,12 +1022,24 @@ static int atmel_startup(struct uart_por
- static void atmel_shutdown(struct uart_port *port)
- {
- 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
-+
-+	/*
-+	 * Clear out any scheduled tasklets before
-+	 * we destroy the buffers
-+	 */
-+	tasklet_kill(&atmel_port->tasklet);
-+
- 	/*
--	 * Ensure everything is stopped.
-+	 * Ensure everything is stopped and
-+	 * disable all interrupts, port and break condition.
- 	 */
- 	atmel_stop_rx(port);
- 	atmel_stop_tx(port);
- 
-+	UART_PUT_CR(port, ATMEL_US_RSTSTA);
-+	UART_PUT_IDR(port, -1);
-+
-+
- 	/*
- 	 * Shut-down the DMA.
- 	 */
-@@ -1054,12 +1066,6 @@ static void atmel_shutdown(struct uart_p
- 	}
- 
- 	/*
--	 * Disable all interrupts, port and break condition.
--	 */
--	UART_PUT_CR(port, ATMEL_US_RSTSTA);
--	UART_PUT_IDR(port, -1);
--
--	/*
- 	 * Free the interrupt
- 	 */
- 	free_irq(port->irq, port);
+We got some reports of order-3 allocations failing.
 
 
