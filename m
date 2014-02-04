@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610AbaBDVDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56381 "EHLO
+	id S933595AbaBDVDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933377AbaBDVCy (ORCPT
+	with ESMTP id S933470AbaBDVCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:54 -0500
+	Tue, 4 Feb 2014 16:02:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Willem de Bruijn <willemb@google.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 3.10 089/104] ip6tnl: fix double free of fb_tnl_dev on exit
-Date: Tue,  4 Feb 2014 13:02:32 -0800
-Message-Id: <20140204210225.232379937@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 082/104] s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions
+Date: Tue,  4 Feb 2014 13:02:25 -0800
+Message-Id: <20140204210225.035688484@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -33,77 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-[ No relevant upstream commit. ]
+[ Upstream commit 3af57f78c38131b7a66e2b01e06fdacae01992a3 ]
 
-This problem was fixed upstream by commit 1e9f3d6f1c40 ("ip6tnl: fix use after
-free of fb_tnl_dev").
-The upstream patch depends on upstream commit 0bd8762824e7 ("ip6tnl: add x-netns
-support"), which was not backported into 3.10 branch.
+The s390 bpf jit compiler emits the signed divide instructions "dr" and "d"
+for unsigned divisions.
+This can cause problems: the dividend will be zero extended to a 64 bit value
+and the divisor is the 32 bit signed value as specified A or X accumulator,
+even though A and X are supposed to be treated as unsigned values.
 
-First, explain the problem: when the ip6_tunnel module is unloaded,
-ip6_tunnel_cleanup() is called.
-rmmod ip6_tunnel
-=> ip6_tunnel_cleanup()
-  => rtnl_link_unregister()
-    => __rtnl_kill_links()
-      => for_each_netdev(net, dev) {
-        if (dev->rtnl_link_ops == ops)
-        	ops->dellink(dev, &list_kill);
-        }
-At this point, the FB device is deleted (and all ip6tnl tunnels).
-  => unregister_pernet_device()
-    => unregister_pernet_operations()
-      => ops_exit_list()
-        => ip6_tnl_exit_net()
-          => ip6_tnl_destroy_tunnels()
-            => t = rtnl_dereference(ip6n->tnls_wc[0]);
-               unregister_netdevice_queue(t->dev, &list);
-We delete the FB device a second time here!
+The divide instrunctions will generate an exception if the result cannot be
+expressed with a 32 bit signed value.
+This is the case if e.g. the dividend is 0xffffffff and the divisor either 1
+or also 0xffffffff (signed: -1).
 
-The previous fix removes these lines, which fix this double free. But the patch
-introduces a memory leak when a netns is destroyed, because the FB device is
-never deleted. By adding an rtnl ops which delete all ip6tnl device excepting
-the FB device, we can keep this exlicit removal in ip6_tnl_destroy_tunnels().
+To avoid all these issues simply use unsigned divide instructions.
 
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reported-by: Steven Rostedt <srostedt@redhat.com>
-Tested-by: Steven Rostedt <srostedt@redhat.com> (and our entire MRG team)
-Tested-by: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Tested-by: John Kacur <jkacur@redhat.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_tunnel.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/s390/net/bpf_jit_comp.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1617,6 +1617,15 @@ static int ip6_tnl_changelink(struct net
- 	return ip6_tnl_update(t, &p);
- }
- 
-+static void ip6_tnl_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
-+
-+	if (dev != ip6n->fb_tnl_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static size_t ip6_tnl_get_size(const struct net_device *dev)
- {
- 	return
-@@ -1681,6 +1690,7 @@ static struct rtnl_link_ops ip6_link_ops
- 	.validate	= ip6_tnl_validate,
- 	.newlink	= ip6_tnl_newlink,
- 	.changelink	= ip6_tnl_changelink,
-+	.dellink	= ip6_tnl_dellink,
- 	.get_size	= ip6_tnl_get_size,
- 	.fill_info	= ip6_tnl_fill_info,
- };
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -335,16 +335,16 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* dr %r4,%r12 */
+-		EMIT2(0x1d4c);
++		/* dlr %r4,%r12 */
++		EMIT4(0xb997004c);
+ 		break;
+ 	case BPF_S_ALU_DIV_K: /* A /= K */
+ 		if (K == 1)
+ 			break;
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* d %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
++		/* dl %r4,<d(K)>(%r13) */
++		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
+ 		break;
+ 	case BPF_S_ALU_MOD_X: /* A %= X */
+ 		jit->seen |= SEEN_XREG | SEEN_RET0;
+@@ -354,8 +354,8 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* dr %r4,%r12 */
+-		EMIT2(0x1d4c);
++		/* dlr %r4,%r12 */
++		EMIT4(0xb997004c);
+ 		/* lr %r5,%r4 */
+ 		EMIT2(0x1854);
+ 		break;
+@@ -367,8 +367,8 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		}
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* d %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
++		/* dl %r4,<d(K)>(%r13) */
++		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
+ 		/* lr %r5,%r4 */
+ 		EMIT2(0x1854);
+ 		break;
 
 
