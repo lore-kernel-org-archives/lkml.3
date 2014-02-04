@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaBDK1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:27:01 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:33508 "EHLO SMTP.CITRIX.COM"
+	id S1754256AbaBDK1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:27:07 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:37501 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530AbaBDK0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:26:32 -0500
+	id S1753617AbaBDK0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 05:26:33 -0500
 X-IronPort-AV: E=Sophos;i="4.95,778,1384300800"; 
-   d="scan'208";a="99579772"
+   d="scan'208";a="99579774"
 From: Roger Pau Monne <roger.pau@citrix.com>
 To: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
+CC: Roger Pau Monne <roger.pau@citrix.com>, Jan Beulich <jbeulich@suse.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         David Vrabel <david.vrabel@citrix.com>,
         Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [PATCH v2 2/4] xen-blkback: fix memory leaks
-Date: Tue, 4 Feb 2014 11:26:13 +0100
-Message-ID: <1391509575-3949-3-git-send-email-roger.pau@citrix.com>
+        Matt Rushton <mrushton@amazon.com>, Matt Wilson <msw@amazon.com>
+Subject: [PATCH v2 4/4] xen-blkif: drop struct blkif_request_segment_aligned
+Date: Tue, 4 Feb 2014 11:26:15 +0100
+Message-ID: <1391509575-3949-5-git-send-email-roger.pau@citrix.com>
 X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
 In-Reply-To: <1391509575-3949-1-git-send-email-roger.pau@citrix.com>
 References: <1391509575-3949-1-git-send-email-roger.pau@citrix.com>
@@ -30,132 +29,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've at least identified two possible memory leaks in blkback, both
-related to the shutdown path of a VBD:
+This was wrongly introduced in commit 402b27f9, the only difference
+between blkif_request_segment_aligned and blkif_request_segment is
+that the former has a named padding, while both share the same
+memory layout.
 
-- blkback doesn't wait for any pending purge work to finish before
-  cleaning the list of free_pages. The purge work will call
-  put_free_pages and thus we might end up with pages being added to
-  the free_pages list after we have emptied it. Fix this by making
-  sure there's no pending purge work before exiting
-  xen_blkif_schedule, and moving the free_page cleanup code to
-  xen_blkif_free.
-- blkback doesn't wait for pending requests to end before cleaning
-  persistent grants and the list of free_pages. Again this can add
-  pages to the free_pages list or persistent grants to the
-  persistent_gnts red-black tree. Fixed by moving the persistent
-  grants and free_pages cleanup code to xen_blkif_free.
-
-Also, add some checks in xen_blkif_free to make sure we are cleaning
-everything.
+Also correct a few minor glitches in the description, including for it
+to no longer assume PAGE_SIZE == 4096.
 
 Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+[Description fix by Jan Beulich]
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Reported-by: Jan Beulich <jbeulich@suse.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: David Vrabel <david.vrabel@citrix.com>
 Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Cc: Matt Rushton <mrushton@amazon.com>
 Cc: Matt Wilson <msw@amazon.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
 ---
- drivers/block/xen-blkback/blkback.c |   27 ++++++++++++++++++---------
- drivers/block/xen-blkback/common.h  |    1 +
- drivers/block/xen-blkback/xenbus.c  |   12 ++++++++++++
- 3 files changed, 31 insertions(+), 9 deletions(-)
+ drivers/block/xen-blkback/blkback.c |    2 +-
+ drivers/block/xen-blkback/common.h  |    2 +-
+ drivers/block/xen-blkfront.c        |    6 +++---
+ include/xen/interface/io/blkif.h    |   34 ++++++++++++++--------------------
+ 4 files changed, 19 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 30ef7b3..dcfe49f 100644
+index 394fa2e..e612627 100644
 --- a/drivers/block/xen-blkback/blkback.c
 +++ b/drivers/block/xen-blkback/blkback.c
-@@ -375,7 +375,7 @@ static void purge_persistent_gnt(struct xen_blkif *blkif)
+@@ -847,7 +847,7 @@ static int xen_blkbk_parse_indirect(struct blkif_request *req,
+ 	struct grant_page **pages = pending_req->indirect_pages;
+ 	struct xen_blkif *blkif = pending_req->blkif;
+ 	int indirect_grefs, rc, n, nseg, i;
+-	struct blkif_request_segment_aligned *segments = NULL;
++	struct blkif_request_segment *segments = NULL;
  
- 	pr_debug(DRV_PFX "Going to purge %u persistent grants\n", num_clean);
- 
--	INIT_LIST_HEAD(&blkif->persistent_purge_list);
-+	BUG_ON(!list_empty(&blkif->persistent_purge_list));
- 	root = &blkif->persistent_gnts;
- purge_list:
- 	foreach_grant_safe(persistent_gnt, n, root, node) {
-@@ -625,6 +625,23 @@ purge_gnt_list:
- 			print_stats(blkif);
- 	}
- 
-+	/* Drain pending purge work */
-+	flush_work(&blkif->persistent_purge_work);
-+
-+	if (log_stats)
-+		print_stats(blkif);
-+
-+	blkif->xenblkd = NULL;
-+	xen_blkif_put(blkif);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Remove persistent grants and empty the pool of free pages
-+ */
-+void xen_blkbk_free_caches(struct xen_blkif *blkif)
-+{
- 	/* Free all persistent grant pages */
- 	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
- 		free_persistent_gnts(blkif, &blkif->persistent_gnts,
-@@ -635,14 +652,6 @@ purge_gnt_list:
- 
- 	/* Since we are shutting down remove all pages from the buffer */
- 	shrink_free_pagepool(blkif, 0 /* All */);
--
--	if (log_stats)
--		print_stats(blkif);
--
--	blkif->xenblkd = NULL;
--	xen_blkif_put(blkif);
--
--	return 0;
- }
- 
- /*
+ 	nseg = pending_req->nr_pages;
+ 	indirect_grefs = INDIRECT_PAGES(nseg);
 diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 8d88075..f733d76 100644
+index e40326a..9eb34e2 100644
 --- a/drivers/block/xen-blkback/common.h
 +++ b/drivers/block/xen-blkback/common.h
-@@ -376,6 +376,7 @@ int xen_blkif_xenbus_init(void);
- irqreturn_t xen_blkif_be_int(int irq, void *dev_id);
- int xen_blkif_schedule(void *arg);
- int xen_blkif_purge_persistent(void *arg);
-+void xen_blkbk_free_caches(struct xen_blkif *blkif);
+@@ -57,7 +57,7 @@
+ #define MAX_INDIRECT_SEGMENTS 256
  
- int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
- 			      struct backend_info *be, int state);
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index c2014a0..8afef67 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -125,6 +125,7 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
- 	blkif->persistent_gnts.rb_node = NULL;
- 	spin_lock_init(&blkif->free_pages_lock);
- 	INIT_LIST_HEAD(&blkif->free_pages);
-+	INIT_LIST_HEAD(&blkif->persistent_purge_list);
- 	blkif->free_pages_num = 0;
- 	atomic_set(&blkif->persistent_gnt_in_use, 0);
+ #define SEGS_PER_INDIRECT_FRAME \
+-	(PAGE_SIZE/sizeof(struct blkif_request_segment_aligned))
++	(PAGE_SIZE/sizeof(struct blkif_request_segment))
+ #define MAX_INDIRECT_PAGES \
+ 	((MAX_INDIRECT_SEGMENTS + SEGS_PER_INDIRECT_FRAME - 1)/SEGS_PER_INDIRECT_FRAME)
+ #define INDIRECT_PAGES(_segs) \
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index c4a4c90..7d09dfc 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -162,7 +162,7 @@ static DEFINE_SPINLOCK(minor_lock);
+ #define DEV_NAME	"xvd"	/* name in /dev */
  
-@@ -259,6 +260,17 @@ static void xen_blkif_free(struct xen_blkif *blkif)
- 	if (!atomic_dec_and_test(&blkif->refcnt))
- 		BUG();
+ #define SEGS_PER_INDIRECT_FRAME \
+-	(PAGE_SIZE/sizeof(struct blkif_request_segment_aligned))
++	(PAGE_SIZE/sizeof(struct blkif_request_segment))
+ #define INDIRECT_GREFS(_segs) \
+ 	((_segs + SEGS_PER_INDIRECT_FRAME - 1)/SEGS_PER_INDIRECT_FRAME)
  
-+	/* Remove all persistent grants and the cache of ballooned pages. */
-+	xen_blkbk_free_caches(blkif);
-+
-+	/* Make sure everything is drained before shutting down */
-+	BUG_ON(blkif->persistent_gnt_c != 0);
-+	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
-+	BUG_ON(blkif->free_pages_num != 0);
-+	BUG_ON(!list_empty(&blkif->persistent_purge_list));
-+	BUG_ON(!list_empty(&blkif->free_pages));
-+	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
-+
- 	/* Check that there is no request in use */
- 	list_for_each_entry_safe(req, n, &blkif->pending_free, free_list) {
- 		list_del(&req->free_list);
+@@ -393,7 +393,7 @@ static int blkif_queue_request(struct request *req)
+ 	unsigned long id;
+ 	unsigned int fsect, lsect;
+ 	int i, ref, n;
+-	struct blkif_request_segment_aligned *segments = NULL;
++	struct blkif_request_segment *segments = NULL;
+ 
+ 	/*
+ 	 * Used to store if we are able to queue the request by just using
+@@ -550,7 +550,7 @@ static int blkif_queue_request(struct request *req)
+ 			} else {
+ 				n = i % SEGS_PER_INDIRECT_FRAME;
+ 				segments[n] =
+-					(struct blkif_request_segment_aligned) {
++					(struct blkif_request_segment) {
+ 							.gref       = ref,
+ 							.first_sect = fsect,
+ 							.last_sect  = lsect };
+diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+index ae665ac..32ec05a 100644
+--- a/include/xen/interface/io/blkif.h
++++ b/include/xen/interface/io/blkif.h
+@@ -113,13 +113,13 @@ typedef uint64_t blkif_sector_t;
+  * it's less than the number provided by the backend. The indirect_grefs field
+  * in blkif_request_indirect should be filled by the frontend with the
+  * grant references of the pages that are holding the indirect segments.
+- * This pages are filled with an array of blkif_request_segment_aligned
+- * that hold the information about the segments. The number of indirect
+- * pages to use is determined by the maximum number of segments
+- * a indirect request contains. Every indirect page can contain a maximum
+- * of 512 segments (PAGE_SIZE/sizeof(blkif_request_segment_aligned)),
+- * so to calculate the number of indirect pages to use we have to do
+- * ceil(indirect_segments/512).
++ * These pages are filled with an array of blkif_request_segment that hold the
++ * information about the segments. The number of indirect pages to use is
++ * determined by the number of segments an indirect request contains. Every
++ * indirect page can contain a maximum of
++ * (PAGE_SIZE / sizeof(struct blkif_request_segment)) segments, so to
++ * calculate the number of indirect pages to use we have to do
++ * ceil(indirect_segments / (PAGE_SIZE / sizeof(struct blkif_request_segment))).
+  *
+  * If a backend does not recognize BLKIF_OP_INDIRECT, it should *not*
+  * create the "feature-max-indirect-segments" node!
+@@ -135,13 +135,12 @@ typedef uint64_t blkif_sector_t;
+ 
+ #define BLKIF_MAX_INDIRECT_PAGES_PER_REQUEST 8
+ 
+-struct blkif_request_segment_aligned {
+-	grant_ref_t gref;        /* reference to I/O buffer frame        */
+-	/* @first_sect: first sector in frame to transfer (inclusive).   */
+-	/* @last_sect: last sector in frame to transfer (inclusive).     */
+-	uint8_t     first_sect, last_sect;
+-	uint16_t    _pad; /* padding to make it 8 bytes, so it's cache-aligned */
+-} __attribute__((__packed__));
++struct blkif_request_segment {
++		grant_ref_t gref;        /* reference to I/O buffer frame        */
++		/* @first_sect: first sector in frame to transfer (inclusive).   */
++		/* @last_sect: last sector in frame to transfer (inclusive).     */
++		uint8_t     first_sect, last_sect;
++};
+ 
+ struct blkif_request_rw {
+ 	uint8_t        nr_segments;  /* number of segments                   */
+@@ -151,12 +150,7 @@ struct blkif_request_rw {
+ #endif
+ 	uint64_t       id;           /* private guest value, echoed in resp  */
+ 	blkif_sector_t sector_number;/* start sector idx on disk (r/w only)  */
+-	struct blkif_request_segment {
+-		grant_ref_t gref;        /* reference to I/O buffer frame        */
+-		/* @first_sect: first sector in frame to transfer (inclusive).   */
+-		/* @last_sect: last sector in frame to transfer (inclusive).     */
+-		uint8_t     first_sect, last_sect;
+-	} seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
++	struct blkif_request_segment seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+ } __attribute__((__packed__));
+ 
+ struct blkif_request_discard {
 -- 
 1.7.7.5 (Apple Git-26)
 
