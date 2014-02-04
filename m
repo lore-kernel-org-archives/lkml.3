@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934298AbaBDVJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56952 "EHLO
+	id S933634AbaBDVKi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:10:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934202AbaBDVJ1 (ORCPT
+	with ESMTP id S932434AbaBDVKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:27 -0500
+	Tue, 4 Feb 2014 16:10:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang Shilong <wangsl.fnst@cn.fujitsu.com>, Josef Bacik <jbacik@fb.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.12 130/133] Btrfs: handle EAGAIN case properly in btrfs_drop_snapshot()
-Date: Tue,  4 Feb 2014 13:08:51 -0800
-Message-Id: <20140204210740.709323035@linuxfoundation.org>
+        Jonathan Woithe <jwoithe@just42.net>
+Subject: [PATCH 3.12 065/133] serial: 8250: Fix initialisation of Quatech cards with the AMCC PCI chip
+Date: Tue,  4 Feb 2014 13:07:46 -0800
+Message-Id: <20140204210738.865680207@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,32 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+From: Jonathan Woithe <jwoithe@just42.net>
 
-commit 90515e7f5d7d24cbb2a4038a3f1b5cfa2921aa17 upstream.
+commit 9c5320f8d7d9a2cf623e65d50e1113f34d9b9eb1 upstream.
 
-We may return early in btrfs_drop_snapshot(), we shouldn't
-call btrfs_std_err() for this case, fix it.
+Fix the initialisation of older Quatech serial cards which are fitted with
+the AMCC PCI Matchmaker interface chip.
 
-Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Jonathan Woithe (jwoithe@just42.net)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/8250/8250_pci.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -7718,7 +7718,7 @@ out:
- 	 */
- 	if (!for_reloc && root_dropped == false)
- 		btrfs_add_dead_root(root);
--	if (err)
-+	if (err && err != -EAGAIN)
- 		btrfs_std_error(root->fs_info, err);
- 	return err;
- }
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1260,10 +1260,10 @@ static int pci_quatech_init(struct pci_d
+ 		unsigned long base = pci_resource_start(dev, 0);
+ 		if (base) {
+ 			u32 tmp;
+-			outl(inl(base + 0x38), base + 0x38);
++			outl(inl(base + 0x38) | 0x00002000, base + 0x38);
+ 			tmp = inl(base + 0x3c);
+ 			outl(tmp | 0x01000000, base + 0x3c);
+-			outl(tmp, base + 0x3c);
++			outl(tmp &= ~0x01000000, base + 0x3c);
+ 		}
+ 	}
+ 	return 0;
 
 
