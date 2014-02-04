@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935628AbaBDWln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:41:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56358 "EHLO
+	id S936173AbaBDWmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:42:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933487AbaBDVCt (ORCPT
+	with ESMTP id S933479AbaBDVCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:49 -0500
+	Tue, 4 Feb 2014 16:02:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 3.10 087/104] sit: fix double free of fb_tunnel_dev on exit
-Date: Tue,  4 Feb 2014 13:02:30 -0800
-Message-Id: <20140204210225.173554786@linuxfoundation.org>
+        Annie Li <annie.li@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 086/104] xen-netfront: fix resource leak in netfront
+Date: Tue,  4 Feb 2014 13:02:29 -0800
+Message-Id: <20140204210225.145018846@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -33,77 +29,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Annie Li <annie.li@oracle.com>
 
-[ No relevant upstream commit. ]
+[ Upstream commit cefe0078eea52af17411eb1248946a94afb84ca5 ]
 
-This problem was fixed upstream by commit 9434266f2c64 ("sit: fix use after free
-of fb_tunnel_dev").
-The upstream patch depends on upstream commit 5e6700b3bf98 ("sit: add support of
-x-netns"), which was not backported into 3.10 branch.
+This patch removes grant transfer releasing code from netfront, and uses
+gnttab_end_foreign_access to end grant access since
+gnttab_end_foreign_access_ref may fail when the grant entry is
+currently used for reading or writing.
 
-First, explain the problem: when the sit module is unloaded, sit_cleanup() is
-called.
-rmmod sit
-=> sit_cleanup()
-  => rtnl_link_unregister()
-    => __rtnl_kill_links()
-      => for_each_netdev(net, dev) {
-        if (dev->rtnl_link_ops == ops)
-        	ops->dellink(dev, &list_kill);
-        }
-At this point, the FB device is deleted (and all sit tunnels).
-  => unregister_pernet_device()
-    => unregister_pernet_operations()
-      => ops_exit_list()
-        => sit_exit_net()
-          => sit_destroy_tunnels()
-          In this function, no tunnel is found.
-          => unregister_netdevice_queue(sitn->fb_tunnel_dev, &list);
-We delete the FB device a second time here!
+* clean up grant transfer code kept from old netfront(2.6.18) which grants
+pages for access/map and transfer. But grant transfer is deprecated in current
+netfront, so remove corresponding release code for transfer.
 
-Because we cannot simply remove the second deletion (sit_exit_net() must remove
-the FB device when a netns is deleted), we add an rtnl ops which delete all sit
-device excepting the FB device and thus we can keep the explicit deletion in
-sit_exit_net().
+* fix resource leak, release grant access (through gnttab_end_foreign_access)
+and skb for tx/rx path, use get_page to ensure page is released when grant
+access is completed successfully.
 
-CC: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Willem de Bruijn <willemb@google.com>
-Reported-by: Steven Rostedt <srostedt@redhat.com>
-Tested-by: Steven Rostedt <srostedt@redhat.com> (and our entire MRG team)
-Tested-by: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Tested-by: John Kacur <jkacur@redhat.com>
+Xen-blkfront/xen-tpmfront/xen-pcifront also have similar issue, but patches
+for them will be created separately.
+
+V6: Correct subject line and commit message.
+
+V5: Remove unecessary change in xennet_end_access.
+
+V4: Revert put_page in gnttab_end_foreign_access, and keep netfront change in
+single patch.
+
+V3: Changes as suggestion from David Vrabel, ensure pages are not freed untill
+grant acess is ended.
+
+V2: Improve patch comments.
+
+Signed-off-by: Annie Li <annie.li@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/sit.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/xen-netfront.c |   88 +++++++++++++--------------------------------
+ 1 file changed, 26 insertions(+), 62 deletions(-)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1507,6 +1507,15 @@ static const struct nla_policy ipip6_pol
- #endif
- };
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -107,6 +107,7 @@ struct netfront_info {
+ 	} tx_skbs[NET_TX_RING_SIZE];
+ 	grant_ref_t gref_tx_head;
+ 	grant_ref_t grant_tx_ref[NET_TX_RING_SIZE];
++	struct page *grant_tx_page[NET_TX_RING_SIZE];
+ 	unsigned tx_skb_freelist;
  
-+static void ipip6_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct sit_net *sitn = net_generic(net, sit_net_id);
-+
-+	if (dev != sitn->fb_tunnel_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static struct rtnl_link_ops sit_link_ops __read_mostly = {
- 	.kind		= "sit",
- 	.maxtype	= IFLA_IPTUN_MAX,
-@@ -1517,6 +1526,7 @@ static struct rtnl_link_ops sit_link_ops
- 	.changelink	= ipip6_changelink,
- 	.get_size	= ipip6_get_size,
- 	.fill_info	= ipip6_fill_info,
-+	.dellink	= ipip6_dellink,
- };
+ 	spinlock_t   rx_lock ____cacheline_aligned_in_smp;
+@@ -386,6 +387,7 @@ static void xennet_tx_buf_gc(struct net_
+ 			gnttab_release_grant_reference(
+ 				&np->gref_tx_head, np->grant_tx_ref[id]);
+ 			np->grant_tx_ref[id] = GRANT_INVALID_REF;
++			np->grant_tx_page[id] = NULL;
+ 			add_id_to_freelist(&np->tx_skb_freelist, np->tx_skbs, id);
+ 			dev_kfree_skb_irq(skb);
+ 		}
+@@ -442,6 +444,7 @@ static void xennet_make_frags(struct sk_
+ 		gnttab_grant_foreign_access_ref(ref, np->xbdev->otherend_id,
+ 						mfn, GNTMAP_readonly);
  
- static struct xfrm_tunnel sit_handler __read_mostly = {
++		np->grant_tx_page[id] = virt_to_page(data);
+ 		tx->gref = np->grant_tx_ref[id] = ref;
+ 		tx->offset = offset;
+ 		tx->size = len;
+@@ -487,6 +490,7 @@ static void xennet_make_frags(struct sk_
+ 							np->xbdev->otherend_id,
+ 							mfn, GNTMAP_readonly);
+ 
++			np->grant_tx_page[id] = page;
+ 			tx->gref = np->grant_tx_ref[id] = ref;
+ 			tx->offset = offset;
+ 			tx->size = bytes;
+@@ -586,6 +590,7 @@ static int xennet_start_xmit(struct sk_b
+ 	mfn = virt_to_mfn(data);
+ 	gnttab_grant_foreign_access_ref(
+ 		ref, np->xbdev->otherend_id, mfn, GNTMAP_readonly);
++	np->grant_tx_page[id] = virt_to_page(data);
+ 	tx->gref = np->grant_tx_ref[id] = ref;
+ 	tx->offset = offset;
+ 	tx->size = len;
+@@ -1115,10 +1120,11 @@ static void xennet_release_tx_bufs(struc
+ 			continue;
+ 
+ 		skb = np->tx_skbs[i].skb;
+-		gnttab_end_foreign_access_ref(np->grant_tx_ref[i],
+-					      GNTMAP_readonly);
+-		gnttab_release_grant_reference(&np->gref_tx_head,
+-					       np->grant_tx_ref[i]);
++		get_page(np->grant_tx_page[i]);
++		gnttab_end_foreign_access(np->grant_tx_ref[i],
++					  GNTMAP_readonly,
++					  (unsigned long)page_address(np->grant_tx_page[i]));
++		np->grant_tx_page[i] = NULL;
+ 		np->grant_tx_ref[i] = GRANT_INVALID_REF;
+ 		add_id_to_freelist(&np->tx_skb_freelist, np->tx_skbs, i);
+ 		dev_kfree_skb_irq(skb);
+@@ -1127,78 +1133,35 @@ static void xennet_release_tx_bufs(struc
+ 
+ static void xennet_release_rx_bufs(struct netfront_info *np)
+ {
+-	struct mmu_update      *mmu = np->rx_mmu;
+-	struct multicall_entry *mcl = np->rx_mcl;
+-	struct sk_buff_head free_list;
+-	struct sk_buff *skb;
+-	unsigned long mfn;
+-	int xfer = 0, noxfer = 0, unused = 0;
+ 	int id, ref;
+ 
+-	dev_warn(&np->netdev->dev, "%s: fix me for copying receiver.\n",
+-			 __func__);
+-	return;
+-
+-	skb_queue_head_init(&free_list);
+-
+ 	spin_lock_bh(&np->rx_lock);
+ 
+ 	for (id = 0; id < NET_RX_RING_SIZE; id++) {
+-		ref = np->grant_rx_ref[id];
+-		if (ref == GRANT_INVALID_REF) {
+-			unused++;
+-			continue;
+-		}
++		struct sk_buff *skb;
++		struct page *page;
+ 
+ 		skb = np->rx_skbs[id];
+-		mfn = gnttab_end_foreign_transfer_ref(ref);
+-		gnttab_release_grant_reference(&np->gref_rx_head, ref);
+-		np->grant_rx_ref[id] = GRANT_INVALID_REF;
+-
+-		if (0 == mfn) {
+-			skb_shinfo(skb)->nr_frags = 0;
+-			dev_kfree_skb(skb);
+-			noxfer++;
++		if (!skb)
+ 			continue;
+-		}
+ 
+-		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+-			/* Remap the page. */
+-			const struct page *page =
+-				skb_frag_page(&skb_shinfo(skb)->frags[0]);
+-			unsigned long pfn = page_to_pfn(page);
+-			void *vaddr = page_address(page);
++		ref = np->grant_rx_ref[id];
++		if (ref == GRANT_INVALID_REF)
++			continue;
+ 
+-			MULTI_update_va_mapping(mcl, (unsigned long)vaddr,
+-						mfn_pte(mfn, PAGE_KERNEL),
+-						0);
+-			mcl++;
+-			mmu->ptr = ((u64)mfn << PAGE_SHIFT)
+-				| MMU_MACHPHYS_UPDATE;
+-			mmu->val = pfn;
+-			mmu++;
++		page = skb_frag_page(&skb_shinfo(skb)->frags[0]);
+ 
+-			set_phys_to_machine(pfn, mfn);
+-		}
+-		__skb_queue_tail(&free_list, skb);
+-		xfer++;
+-	}
+-
+-	dev_info(&np->netdev->dev, "%s: %d xfer, %d noxfer, %d unused\n",
+-		 __func__, xfer, noxfer, unused);
++		/* gnttab_end_foreign_access() needs a page ref until
++		 * foreign access is ended (which may be deferred).
++		 */
++		get_page(page);
++		gnttab_end_foreign_access(ref, 0,
++					  (unsigned long)page_address(page));
++		np->grant_rx_ref[id] = GRANT_INVALID_REF;
+ 
+-	if (xfer) {
+-		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+-			/* Do all the remapping work and M2P updates. */
+-			MULTI_mmu_update(mcl, np->rx_mmu, mmu - np->rx_mmu,
+-					 NULL, DOMID_SELF);
+-			mcl++;
+-			HYPERVISOR_multicall(np->rx_mcl, mcl - np->rx_mcl);
+-		}
++		kfree_skb(skb);
+ 	}
+ 
+-	__skb_queue_purge(&free_list);
+-
+ 	spin_unlock_bh(&np->rx_lock);
+ }
+ 
+@@ -1333,6 +1296,7 @@ static struct net_device *xennet_create_
+ 	for (i = 0; i < NET_RX_RING_SIZE; i++) {
+ 		np->rx_skbs[i] = NULL;
+ 		np->grant_rx_ref[i] = GRANT_INVALID_REF;
++		np->grant_tx_page[i] = NULL;
+ 	}
+ 
+ 	/* A grant for every tx ring slot */
 
 
