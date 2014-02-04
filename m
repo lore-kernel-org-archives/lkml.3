@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564AbaBDVDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56321 "EHLO
+	id S933640AbaBDVD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933455AbaBDVCm (ORCPT
+	with ESMTP id S933516AbaBDVCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:42 -0500
+	Tue, 4 Feb 2014 16:02:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 078/104] net,via-rhine: Fix tx_timeout handling
-Date: Tue,  4 Feb 2014 13:02:21 -0800
-Message-Id: <20140204210224.917919969@linuxfoundation.org>
+        Vijaya Mohan Guvva <vmohan@brocade.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 098/104] SCSI: bfa: Chinook quad port 16G FC HBA claim issue
+Date: Tue,  4 Feb 2014 13:02:41 -0800
+Message-Id: <20140204210225.497700705@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,34 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Vijaya Mohan Guvva <vmohan@brocade.com>
 
-[ Upstream commit a926592f5e4e900f3fa903298c4619a131e60963 ]
+commit dcaf9aed995c2b2a49fb86bbbcfa2f92c797ab5d upstream.
 
-rhine_reset_task() misses to disable the tx scheduler upon reset,
-this can lead to a crash if work is still scheduled while we're resetting
-the tx queue.
+Bfa driver crash is observed while pushing the firmware on to chinook
+quad port card due to uninitialized bfi_image_ct2 access which gets
+initialized only for CT2 ASIC based cards after request_firmware().
+For quard port chinook (CT2 ASIC based), bfi_image_ct2 is not getting
+initialized as there is no check for chinook PCI device ID before
+request_firmware and instead bfi_image_cb is initialized as it is the
+default case for card type check.
 
-Fixes:
-[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
-[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
+This patch includes changes to read the right firmware for quad port chinook.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/via/via-rhine.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/via/via-rhine.c
-+++ b/drivers/net/ethernet/via/via-rhine.c
-@@ -1611,6 +1611,7 @@ static void rhine_reset_task(struct work
- 		goto out_unlock;
+---
+ drivers/scsi/bfa/bfad.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -1824,7 +1824,7 @@ out:
+ static u32 *
+ bfad_load_fwimg(struct pci_dev *pdev)
+ {
+-	if (pdev->device == BFA_PCI_DEVICE_ID_CT2) {
++	if (bfa_asic_id_ct2(pdev->device)) {
+ 		if (bfi_image_ct2_size == 0)
+ 			bfad_read_firmware(pdev, &bfi_image_ct2,
+ 				&bfi_image_ct2_size, BFAD_FW_FILE_CT2);
+@@ -1834,12 +1834,14 @@ bfad_load_fwimg(struct pci_dev *pdev)
+ 			bfad_read_firmware(pdev, &bfi_image_ct,
+ 				&bfi_image_ct_size, BFAD_FW_FILE_CT);
+ 		return bfi_image_ct;
+-	} else {
++	} else if (bfa_asic_id_cb(pdev->device)) {
+ 		if (bfi_image_cb_size == 0)
+ 			bfad_read_firmware(pdev, &bfi_image_cb,
+ 				&bfi_image_cb_size, BFAD_FW_FILE_CB);
+ 		return bfi_image_cb;
+ 	}
++
++	return NULL;
+ }
  
- 	napi_disable(&rp->napi);
-+	netif_tx_disable(dev);
- 	spin_lock_bh(&rp->lock);
- 
- 	/* clear all descriptors */
+ static void
 
 
