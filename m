@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935594AbaBDWGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:06:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56858 "EHLO
+	id S935566AbaBDWGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:06:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56833 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934113AbaBDVJI (ORCPT
+	with ESMTP id S934118AbaBDVJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Falken <NetFestivalHaveFun@gmx.com>,
-        Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
-        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
+        Richard Weinberger <richard@nod.at>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 104/133] net: avoid reference counter overflows on fib_rules in multicast forwarding
-Date: Tue,  4 Feb 2014 13:08:25 -0800
-Message-Id: <20140204210739.972378613@linuxfoundation.org>
+Subject: [PATCH 3.12 105/133] net,via-rhine: Fix tx_timeout handling
+Date: Tue,  4 Feb 2014 13:08:26 -0800
+Message-Id: <20140204210740.000201247@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -33,73 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Richard Weinberger <richard@nod.at>
 
-[ Upstream commit 95f4a45de1a0f172b35451fc52283290adb21f6e ]
+[ Upstream commit a926592f5e4e900f3fa903298c4619a131e60963 ]
 
-Bob Falken reported that after 4G packets, multicast forwarding stopped
-working. This was because of a rule reference counter overflow which
-freed the rule as soon as the overflow happend.
+rhine_reset_task() misses to disable the tx scheduler upon reset,
+this can lead to a crash if work is still scheduled while we're resetting
+the tx queue.
 
-This patch solves this by adding the FIB_LOOKUP_NOREF flag to
-fib_rules_lookup calls. This is safe even from non-rcu locked sections
-as in this case the flag only implies not taking a reference to the rule,
-which we don't need at all.
+Fixes:
+[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
+[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
 
-Rules only hold references to the namespace, which are guaranteed to be
-available during the call of the non-rcu protected function reg_vif_xmit
-because of the interface reference which itself holds a reference to
-the net namespace.
-
-Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
-Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
-Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Julian Anastasov <ja@ssi.bg>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ipmr.c  |    7 +++++--
- net/ipv6/ip6mr.c |    7 +++++--
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -157,9 +157,12 @@ static struct mr_table *ipmr_get_table(s
- static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
- 			   struct mr_table **mrt)
- {
--	struct ipmr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ipmr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1615,6 +1615,7 @@ static void rhine_reset_task(struct work
+ 		goto out_unlock;
  
- 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
- 			       flowi4_to_flowi(flp4), 0, &arg);
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -141,9 +141,12 @@ static struct mr6_table *ip6mr_get_table
- static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
- 			    struct mr6_table **mrt)
- {
--	struct ip6mr_result res;
--	struct fib_lookup_arg arg = { .result = &res, };
- 	int err;
-+	struct ip6mr_result res;
-+	struct fib_lookup_arg arg = {
-+		.result = &res,
-+		.flags = FIB_LOOKUP_NOREF,
-+	};
+ 	napi_disable(&rp->napi);
++	netif_tx_disable(dev);
+ 	spin_lock_bh(&rp->lock);
  
- 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
- 			       flowi6_to_flowi(flp6), 0, &arg);
+ 	/* clear all descriptors */
 
 
