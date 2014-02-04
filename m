@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaBDQBo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:01:44 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:42717 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680AbaBDP7v (ORCPT
+	id S932393AbaBDQCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:02:03 -0500
+Received: from mail-lb0-f196.google.com ([209.85.217.196]:35412 "EHLO
+	mail-lb0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940AbaBDQB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:59:51 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Cc: Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 12/17] i2c: nomadik: Remove redundant call to pm_runtime_disable
-Date: Tue,  4 Feb 2014 16:58:53 +0100
-Message-Id: <1391529538-21685-13-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	Tue, 4 Feb 2014 11:01:57 -0500
+MIME-Version: 1.0
+Reply-To: paulcompaoree@gmail.com
+Date: Tue, 4 Feb 2014 16:32:56 +0100
+Message-ID: <CAMC1e3uf+3-Q-S2i8M05Rd6srqOeLYA72+=DUsqLwo-5AumqMQ@mail.gmail.com>
+Subject: I NEED YOUR URGENT RESPOND/// CALL ME
+From: "Mr. Paul Comparee" <misslucyadama@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The amba bus are responsible for pm_runtime_enable|disable, remove the
-redundant pm_runtime_disable at driver removal.
+Dear Friend,
 
-Cc: Alessandro Rubini <rubini@unipv.it>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/i2c/busses/i2c-nomadik.c |    1 -
- 1 file changed, 1 deletion(-)
+I received encouraging information about you and how trusts worthy you
+are. I am delighted with such useful information. I am Foreign
+Operations Manager of Banque Internationale du Burkina (BIB/UBA)
+Ouagadougou Burkina Faso.
 
-diff --git a/drivers/i2c/busses/i2c-nomadik.c b/drivers/i2c/busses/i2c-nomadik.c
-index 840bcf9..42c9e51 100644
---- a/drivers/i2c/busses/i2c-nomadik.c
-+++ b/drivers/i2c/busses/i2c-nomadik.c
-@@ -1105,7 +1105,6 @@ static int nmk_i2c_remove(struct amba_device *adev)
- 	i2c_clr_bit(dev->virtbase + I2C_CR, I2C_CR_PE);
- 	if (res)
- 		release_mem_region(res->start, resource_size(res));
--	pm_runtime_disable(&adev->dev);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+I want to transfer US$10.5 Million to your bank account. The fund
+Belongs to our deceased customer who died with his entire family in
+Iraq War 2006, leaving nobody for the claim and as such, I decided to
+Contact you to enable us claim the fund. Your share is 40% while 60%
+for me. This transaction is 100% risk free. Contact me for more
+Details.
 
+Thanks,
+Mr. Paul Compaoree
+Banque Internationale du Burkina (BIB/UBA) ouagadougou, Burkina Faso.
+Tel:+226 65 37 29 22.
+NB: The fund is free from drug and laundering related offences.
