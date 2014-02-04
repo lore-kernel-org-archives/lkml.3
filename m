@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078AbaBDX7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:59:01 -0500
-Received: from forward16.mail.yandex.net ([95.108.253.141]:45526 "EHLO
-	forward16.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226AbaBDX7A (ORCPT
+	id S933127AbaBDX76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:59:58 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37502 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086AbaBDX75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:59:00 -0500
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Feb 2014 18:58:59 EST
-From: zbr@ioremap.net
-Envelope-From: drustafa@yandex.ru
-To: David Fries <david@fries.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140204055131.GI5342@spacedout.fries.net>
-References: <1391390104-31154-1-git-send-email-David@Fries.net>
- <9071391471978@web15j.yandex.ru> <20140204055131.GI5342@spacedout.fries.net>
-Subject: Re: [PATCH 0/4] w1: refcnt fix, skip non-error send, docs
+	Tue, 4 Feb 2014 18:59:57 -0500
+Date: Tue, 4 Feb 2014 15:59:55 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 2/5] clocksource: qcom: Move clocksource code out of
+ mach-msm
+Message-ID: <20140204235955.GF20528@codeaurora.org>
+References: <1391553532-27001-1-git-send-email-galak@codeaurora.org>
+ <1391553532-27001-3-git-send-email-galak@codeaurora.org>
+ <20140204230956.GE20528@codeaurora.org>
+ <EE8EC898-CFE4-4953-968A-ECCEEB09DE76@codeaurora.org>
 MIME-Version: 1.0
-Message-Id: <253061391557725@web20g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 05 Feb 2014 03:48:45 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EE8EC898-CFE4-4953-968A-ECCEEB09DE76@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 02/04, Kumar Gala wrote:
+> 
+> On Feb 4, 2014, at 5:09 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> 
+> > On 02/04, Kumar Gala wrote:
+> >> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> >> index cd6950f..81caa16 100644
+> >> --- a/drivers/clocksource/Kconfig
+> >> +++ b/drivers/clocksource/Kconfig
+> >> @@ -140,3 +140,7 @@ config VF_PIT_TIMER
+> >> 	bool
+> >> 	help
+> >> 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
+> >> +
+> >> +config CLKSRC_QCOM
+> >> +	bool
+> >> +	depends on ARCH_MSM
+> > 
+> > It would be a a little less noisy if  you left this as MSM_TIMER
+> > (msm is all over the code in that file anyway). Also, why do we
+> > care about depending on ARCH_MSM here? This is a hidden Kconfig
+> > option anyway.
+> 
+> I will drop the depends, but not sure what point in leaving this as MSM_TIMER.
+> 
 
-04.02.2014, 09:51, "David Fries" <david@fries.net>:
-> Help me understand what the protocol is supposed to be. šAssuming
-> there aren't any errors, is there supposed to be a
-> w1_netlink_send_error generated reply per netlink packet (cn_msg), per
-> w1_netlink_msg, or per w1_netlink_cmd?
+Less changes to the Kconfig files if you do that. It's a minor
+thing.
 
-reply should be sent per cmd to specify each command status
-If there is no cmd in request or we didn't get to it (like failed to reset device), we should send error.
-
-Depending on how w1-msg + (optional) w1-cmd are packed, client can detect what exact error happend
-
-> What about the cn_msg seq and ack values? šI assume the kernel
-> response should carry the same seq number as the request, but what
-> should the ack be set to?
-
-reply ack is seq + 1
-seq is the same to highlight request it belongs to
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
