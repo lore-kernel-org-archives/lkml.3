@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaBDReD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:34:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60872 "EHLO mx1.redhat.com"
+	id S932109AbaBDRgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:36:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:63386 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464AbaBDReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:34:00 -0500
-Date: Tue, 4 Feb 2014 18:34:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Do we really need curr_target in signal_struct ?
-Message-ID: <20140204173406.GA6256@redhat.com>
-References: <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com> <20140129145535.GA12562@redhat.com> <CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com> <20140129183204.GA22808@redhat.com> <CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com> <CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com> <20140201165122.GA7478@redhat.com> <CADZ9YHg-8XrQ0p+uQNRNBhvnHE83xVxLKais0DrT9vfoQvm=uA@mail.gmail.com> <20140203163921.GA25698@redhat.com> <CADZ9YHgeKjgffbrfRMOzDZu7qv4YVMzLhQz3NDya827=gsvJ5g@mail.gmail.com>
+	id S1751958AbaBDRf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 12:35:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,781,1384329600"; 
+   d="scan'208";a="469786119"
+Message-ID: <52F12406.4020405@intel.com>
+Date: Tue, 04 Feb 2014 09:31:50 -0800
+From: "Kamble, Nitin A" <nitin.a.kamble@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADZ9YHgeKjgffbrfRMOzDZu7qv4YVMzLhQz3NDya827=gsvJ5g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Rientjes <rientjes@google.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irq: fix a Kconfig dependency
+References: <1391129410-54548-1-git-send-email-nitin.a.kamble@intel.com> <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com> <alpine.DEB.2.02.1401310223460.7183@chino.kir.corp.google.com> <52EBE112.5010203@intel.com>
+In-Reply-To: <52EBE112.5010203@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04, Rakib Mullick wrote:
+
+On 1/31/2014 9:44 AM, Kamble, Nitin A wrote:
 >
-> On Mon, Feb 3, 2014 at 10:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 1/31/2014 2:27 AM, David Rientjes wrote:
+>> On Thu, 30 Jan 2014, nitin.a.kamble@intel.com wrote:
+>>
+>>> From: Nitin A Kamble <nitin.a.kamble@intel.com>
+>>>
+>>> The generic_chip.c uses interfaces from irq_domain.c which is 
+>>> controlled by
+>>> the IRQ_DOMAIN config option.
+>>>
+>>> Add a select statement in the Kconfig to reflect this requirement.
+>>>
+>>> Without this fix, the generic_chip.c compilation fails like this:
+>>>
+>>> linux/kernel/irq/generic-chip.c:400:11:
+>>>    error: 'irq_domain_xlate_onetwocell' undeclared here (not in a 
+>>> function)
+>>>
+>> You're not specifying which config option you have enabled that selects
+>> CONFIG_GENERIC_IRQ_CHIP and does not select CONFIG_IRQ_DOMAIN, but it 
+>> does
+>> look like there is a dependency here.
+> It is enabled by GPIO_PCH as seen here:
 >
-> > I can only read the current code. I do not know the original intent.
-> >
-> This is where things are confusing.
+> config GPIO_PCH
+>         tristate "Intel EG20T PCH/LAPIS Semiconductor 
+> IOH(ML7223/ML7831) GPIO"
+>         depends on PCI && X86
+>         select GENERIC_IRQ_CHIP
+>         help
+>           This driver is for PCH(Platform controller Hub) GPIO of 
+> Intel Topcliff
+>           which is an IOH(Input/Output Hub) for x86 embedded processor.
+>           This driver can access PCH GPIO device.
+>
+>>
+>> So, if this dependency is reasonable, it begs the question of why we 
+>> have
+>> CONFIG_GENERIC_IRQ_CHIP at all and shouldn't just make generic-chip.c
+>> depend on CONFIG_IRQ_DOMAIN.
+> Looking at the code there are cases where IRQ_DOMAIN functionality is 
+> used
+> without using the GENERIC_IRQ_CHIP. So making generic-chip.c depend
+> on CONFIG_IRQ_DOMAIN in the makefile will reduce the flexibility of using
+> these config options separately.
+>
+> Nitin
+>
+>
+Hi David, Thomas,
+   Is there any more feedback for this fix? Currently kernel is not 
+building for the
+affected platform without this fix. and I am happy to help here to get 
+the fix
+pulled in sooner. Let me know.
 
-Yes, I agree.
-
-Once again, I can understand what this code does, but I am not sure
-I understand why, and I am not sure this logic was actually "designed".
-The usual problem with the ancient code.
-
-> > I simply can't understand. Why? I do not think so.
-> >
-> Cause, want_signal logic checks these thread attributes to find whether it's
-> eligible or not.
-
-Ah, wants_signal()->signal_pending() doesn't mean "eligible".
-sigismember(&p->blocked) does mean.
-
-This signal_pending() checks allows to notify multiple threads, so that
-they can run the signal handlers in parallel. And otoh, if signal_pending()
-is true then we obviously do not need signal_wake_up().
-
-> And, therefore, I think I should not make any
-> changes in this code.
-
-No ;) not at all.
-
-We all do mistakes, and in this particular case I am not even 100% sure
-I was right.
-
-> > But I am not going to ack the behaviour change, simply because I have
-> > no idea how this can impact the existing applications. Perhaps nobody
-> > will notice this change, but we can't know this.
-> >
-> Yes, I'm not also sure about the behavior change and it's impact over
-> existing applications, so, I'm skipping it.
-
-Yes, this is the main reason why I disliked this change from the very
-beginning.
-
-Oleg.
+Thanks,
+Nitin
 
