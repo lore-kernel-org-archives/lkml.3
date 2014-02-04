@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935823AbaBDWWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:22:36 -0500
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:36739 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933903AbaBDWWc (ORCPT
+	id S935834AbaBDWWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:22:50 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:56839 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933903AbaBDWWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:22:32 -0500
-Date: Tue, 4 Feb 2014 23:22:05 +0100
-From: Guillaume Morin <guillaume@morinfr.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        john.stultz@linaro.org
-Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
-Message-ID: <20140204222203.GA6688@bender.morinfr.org>
-Mail-Followup-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-	john.stultz@linaro.org
-References: <20140204210055.992134150@linuxfoundation.org>
- <20140204215221.GA2127@bender.morinfr.org>
- <20140204221109.GA906@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204221109.GA906@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Feb 2014 17:22:45 -0500
+Message-ID: <1391552562.13156.14.camel@x220>
+Subject: [PATCH 0/2] raw: two issues with the handling of the max minor
+ number
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 04 Feb 2014 23:22:42 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Feb 2014 22:22:42.0721 (UTC) FILETIME=[9F1DE910:01CF21F7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04 Feb 14:11, Greg Kroah-Hartman wrote:
-> > > Borislav Petkov <bp@alien8.de>
-> > >     rtc-cmos: Add an alarm disable quirk
-> > 
-> > This is just one of the 3 patches posted by John Stultz on
-> > http://git.linaro.org/people/john.stultz/linux.git/shortlog/refs/heads/stable/3.4/timefix
-> 
-> I have no idea what that tree is, nor what I am supposed to do with it.
+I noticed some issues with the way the raw driver sets its maximum minor
+number and how that driver tests against that maximum. These two small
+patches try to correct these issues.
 
-Ok, sorry. This is all coming from 
-http://article.gmane.org/gmane.linux.kernel.stable/77575/
+The Kconfig change was tested with make menuconfig only. The change to
+the actual code was compile tested only!
 
-I assumed you were aware of it because you participated in the thread
-and one of the patch mentioned in this message (Borislav's change) is
-applied to the 3.4 branch
+Paul Bolle (2):
+  raw: test against runtime value of max_raw_minors
+  raw: set range for MAX_RAW_DEVS
 
-> > The other 2 are backports of 6fdda9a9c5db367130cf32df5d6618d08b89f46a
-> > (timekeeping: Avoid possible deadlock from clock_was_set_delayed) and
-> > ec145babe754f9ea1079034a108104b6001e001c (timekeeping: fix 32-bit
-> > overflow in get_monotonic_boottime)
-> > 
-> > Could you explain why there were not included?
-> 
-> Can you explain why I would include them?
-
-:) they seem to fix important issues and you seemed to be ok with
-including them in stable trees at some point:
-http://article.gmane.org/gmane.linux.kernel.stable/77261/
-
-Note that I am not pushing for anything.  I was just under the
-(incorrect) impression that you would apply them to the 3.4 branch and
-was surprised when it did not happen
-
-I hope the situation is a bit clearer.
-
-Guillaume.
+ drivers/char/Kconfig | 1 +
+ drivers/char/raw.c   | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
 -- 
-Guillaume Morin <guillaume@morinfr.org>
+1.8.5.3
+
