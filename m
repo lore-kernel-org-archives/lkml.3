@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987AbaBDVGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:06:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56439 "EHLO
+	id S933730AbaBDVGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:06:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56431 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933557AbaBDVDF (ORCPT
+	with ESMTP id S933551AbaBDVDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:03:05 -0500
+	Tue, 4 Feb 2014 16:03:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 096/104] iwlwifi: pcie: fix interrupt coalescing for 7260 / 3160
-Date: Tue,  4 Feb 2014 13:02:39 -0800
-Message-Id: <20140204210225.443243006@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 3.10 094/104] ALSA: hda - hdmi: introduce patch_nvhdmi()
+Date: Tue,  4 Feb 2014 13:02:37 -0800
+Message-Id: <20140204210225.376601012@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,148 +29,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 6960a059b2c618f32fe549f13287b3d2278c09e9 upstream.
+(This is a backport of *part* of upstream 611885bc963a "ALSA: hda -
+hdmi: Disallow unsupported 2ch remapping on NVIDIA codecs" to stable
+3.10 through 3.12. Later stable already contain all of the original
+patch.)
 
-We changed the timeout for the interrupt coealescing for
-calibration, but that wasn't effective since we changed
-that value back before loading the firmware. Since
-calibrations are notification from firmware and not Rx
-packets, this doesn't change anyway - the firmware will
-fire an interrupt straight away regardless of the interrupt
-coalescing value.
-Also, a HW issue has been discovered in 7000 devices series.
-The work around is to disable the new interrupt coalescing
-timeout feature - do this by setting bit 31 in
-CSR_INT_COALESCING.
-This has been fixed in 7265 which means that we can't rely
-on the device family and must have a hint in the iwl_cfg
-structure.
+Mainline commit 611885bc963a "ALSA: hda - hdmi: Disallow unsupported 2ch
+remapping on NVIDIA codecs" introduces function patch_nvhdmi(). That
+function is edited by 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
+dynamically enabled". In order to backport the PIN_OUT patch, I am first
+back-porting just the addition of function patch_nvhdmi(), so that the
+conflicts applying the PIN_OUT patch are simplified.
 
-Fixes: 99cd47142399 ("iwlwifi: add 7000 series device configuration")
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Ideally, one might backport all of 611885bc963a. However, that commit
+doesn't apply to stable kernels, since it relies on a chain of other
+patches which implement new features.
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[swarren, extracted just a small part of the original patch]
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-7000.c   |    6 ++++++
- drivers/net/wireless/iwlwifi/iwl-config.h |    3 +++
- drivers/net/wireless/iwlwifi/iwl-csr.h    |    5 +----
- drivers/net/wireless/iwlwifi/pcie/rx.c    |    4 ++++
- drivers/net/wireless/iwlwifi/pcie/trans.c |    3 ---
- 5 files changed, 14 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   60 +++++++++++++++++++++++++++------------------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-7000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-7000.c
-@@ -131,6 +131,7 @@ const struct iwl_cfg iwl7260_2ac_cfg = {
- 	.ht_params = &iwl7000_ht_params,
- 	.nvm_ver = IWL7260_NVM_VERSION,
- 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
-+	.host_interrupt_operation_mode = true,
- };
- 
- const struct iwl_cfg iwl7260_2n_cfg = {
-@@ -140,6 +141,7 @@ const struct iwl_cfg iwl7260_2n_cfg = {
- 	.ht_params = &iwl7000_ht_params,
- 	.nvm_ver = IWL7260_NVM_VERSION,
- 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
-+	.host_interrupt_operation_mode = true,
- };
- 
- const struct iwl_cfg iwl7260_n_cfg = {
-@@ -149,6 +151,7 @@ const struct iwl_cfg iwl7260_n_cfg = {
- 	.ht_params = &iwl7000_ht_params,
- 	.nvm_ver = IWL7260_NVM_VERSION,
- 	.nvm_calib_ver = IWL7260_TX_POWER_VERSION,
-+	.host_interrupt_operation_mode = true,
- };
- 
- const struct iwl_cfg iwl3160_2ac_cfg = {
-@@ -158,6 +161,7 @@ const struct iwl_cfg iwl3160_2ac_cfg = {
- 	.ht_params = &iwl7000_ht_params,
- 	.nvm_ver = IWL3160_NVM_VERSION,
- 	.nvm_calib_ver = IWL3160_TX_POWER_VERSION,
-+	.host_interrupt_operation_mode = true,
- };
- 
- const struct iwl_cfg iwl3160_2n_cfg = {
-@@ -167,6 +171,7 @@ const struct iwl_cfg iwl3160_2n_cfg = {
- 	.ht_params = &iwl7000_ht_params,
- 	.nvm_ver = IWL3160_NVM_VERSION,
- 	.nvm_calib_ver = IWL3160_TX_POWER_VERSION,
-+	.host_interrupt_operation_mode = true,
- };
- 
- const struct iwl_cfg iwl3160_n_cfg = {
-@@ -176,6 +181,7 @@ const struct iwl_cfg iwl3160_n_cfg = {
- 	.ht_params = &iwl7000_ht_params,
- 	.nvm_ver = IWL3160_NVM_VERSION,
- 	.nvm_calib_ver = IWL3160_TX_POWER_VERSION,
-+	.host_interrupt_operation_mode = true,
- };
- 
- MODULE_FIRMWARE(IWL7260_MODULE_FIRMWARE(IWL7260_UCODE_API_OK));
---- a/drivers/net/wireless/iwlwifi/iwl-config.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-config.h
-@@ -241,6 +241,8 @@ struct iwl_eeprom_params {
-  * @rx_with_siso_diversity: 1x1 device with rx antenna diversity
-  * @internal_wimax_coex: internal wifi/wimax combo device
-  * @temp_offset_v2: support v2 of temperature offset calibration
-+ * @host_interrupt_operation_mode: device needs host interrupt operation
-+ *	mode set
-  *
-  * We enable the driver to be backward compatible wrt. hardware features.
-  * API differences in uCode shouldn't be handled here but through TLVs
-@@ -273,6 +275,7 @@ struct iwl_cfg {
- 	const bool rx_with_siso_diversity;
- 	const bool internal_wimax_coex;
- 	const bool temp_offset_v2;
-+	const bool host_interrupt_operation_mode;
- };
- 
- /*
---- a/drivers/net/wireless/iwlwifi/iwl-csr.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-csr.h
-@@ -463,13 +463,10 @@
-  * the CSR_INT_COALESCING is an 8 bit register in 32-usec unit
-  *
-  * default interrupt coalescing timer is 64 x 32 = 2048 usecs
-- * default interrupt coalescing calibration timer is 16 x 32 = 512 usecs
-  */
- #define IWL_HOST_INT_TIMEOUT_MAX	(0xFF)
- #define IWL_HOST_INT_TIMEOUT_DEF	(0x40)
- #define IWL_HOST_INT_TIMEOUT_MIN	(0x0)
--#define IWL_HOST_INT_CALIB_TIMEOUT_MAX	(0xFF)
--#define IWL_HOST_INT_CALIB_TIMEOUT_DEF	(0x10)
--#define IWL_HOST_INT_CALIB_TIMEOUT_MIN	(0x0)
-+#define IWL_HOST_INT_OPER_MODE		BIT(31)
- 
- #endif /* !__iwl_csr_h__ */
---- a/drivers/net/wireless/iwlwifi/pcie/rx.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
-@@ -489,6 +489,10 @@ static void iwl_pcie_rx_hw_init(struct i
- 
- 	/* Set interrupt coalescing timer to default (2048 usecs) */
- 	iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
-+
-+	/* W/A for interrupt coalescing bug in 7260 and 3160 */
-+	if (trans->cfg->host_interrupt_operation_mode)
-+		iwl_set_bit(trans, CSR_INT_COALESCING, IWL_HOST_INT_OPER_MODE);
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -2476,6 +2476,20 @@ static int patch_nvhdmi_8ch_7x(struct hd
+ 	return 0;
  }
  
- int iwl_pcie_rx_init(struct iwl_trans *trans)
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -292,9 +292,6 @@ static int iwl_pcie_nic_init(struct iwl_
- 	spin_lock_irqsave(&trans_pcie->irq_lock, flags);
- 	iwl_pcie_apm_init(trans);
- 
--	/* Set interrupt coalescing calibration timer to default (512 usecs) */
--	iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_CALIB_TIMEOUT_DEF);
--
- 	spin_unlock_irqrestore(&trans_pcie->irq_lock, flags);
- 
- 	iwl_pcie_set_pwr(trans, false);
++static int patch_nvhdmi(struct hda_codec *codec)
++{
++	struct hdmi_spec *spec;
++	int err;
++
++	err = patch_generic_hdmi(codec);
++	if (err)
++		return err;
++
++	spec = codec->spec;
++
++	return 0;
++}
++
+ /*
+  * ATI-specific implementations
+  *
+@@ -2548,30 +2562,30 @@ static const struct hda_codec_preset snd
+ { .id = 0x10de0005, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
+ { .id = 0x10de0006, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
+ { .id = 0x10de0007, .name = "MCP79/7A HDMI",	.patch = patch_nvhdmi_8ch_7x },
+-{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_nvhdmi },
++{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_nvhdmi },
+ /* 17 is known to be absent */
+-{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
+-{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
++{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
+ { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
 
 
