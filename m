@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934068AbaBDVI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56687 "EHLO
+	id S935132AbaBDWKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:10:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56777 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933482AbaBDVIk (ORCPT
+	with ESMTP id S934067AbaBDVI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:40 -0500
+	Tue, 4 Feb 2014 16:08:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        jidanni@jidanni.org, Ben Hutchings <ben@decadent.org.uk>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.12 062/133] xhci: Avoid infinite loop when sg urb requires too many trbs
-Date: Tue,  4 Feb 2014 13:07:43 -0800
-Message-Id: <20140204210738.782301870@linuxfoundation.org>
+        Waiman Long <Waiman.Long@hp.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.12 091/133] vfs: Remove second variable named error in __dentry_path
+Date: Tue,  4 Feb 2014 13:08:12 -0800
+Message-Id: <20140204210739.606240185@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,39 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d6c9ea9069af684358efedcaf2f2f687f51c58ee upstream.
+commit a8323da0366d3398eda62741d2ac1130c8a172ed upstream.
 
-Currently prepare_ring() returns -ENOMEM if the urb won't fit into a
-single ring segment.  usb_sg_wait() treats this error as a temporary
-condition and will keep retrying until something else goes wrong.
+In commit  232d2d60aa5469bb097f55728f65146bd49c1d25
+Author: Waiman Long <Waiman.Long@hp.com>
+Date:   Mon Sep 9 12:18:13 2013 -0400
 
-The number of retries should be limited in usb_sg_wait(), but also
-prepare_ring() should not return an error code that suggests it might
-be worth retrying.  Change it to -EINVAL.
+    dcache: Translating dentry into pathname without taking rename_lock
 
-Reported-by: jidanni@jidanni.org
-References: http://bugs.debian.org/733907
-Fixes: 35773dac5f86 ('usb: xhci: Link TRB must not occur within a USB payload burst')
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+The __dentry_path locking was changed and the variable error was
+intended to be moved outside of the loop.  Unfortunately the inner
+declaration of error was not removed. Resulting in a version of
+__dentry_path that will never return an error.
+
+Remove the problematic inner declaration of error and allow
+__dentry_path to return errors once again.
+
+Cc: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/dcache.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2964,7 +2964,7 @@ static int prepare_ring(struct xhci_hcd
- 			if (num_trbs >= TRBS_PER_SEGMENT) {
- 				xhci_err(xhci, "Too many fragments %d, max %d\n",
- 						num_trbs, TRBS_PER_SEGMENT - 1);
--				return -ENOMEM;
-+				return -EINVAL;
- 			}
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3140,7 +3140,6 @@ restart:
+ 	read_seqbegin_or_lock(&rename_lock, &seq);
+ 	while (!IS_ROOT(dentry)) {
+ 		struct dentry *parent = dentry->d_parent;
+-		int error;
  
- 			nop_cmd = cpu_to_le32(TRB_TYPE(TRB_TR_NOOP) |
+ 		prefetch(parent);
+ 		error = prepend_name(&end, &len, &dentry->d_name);
 
 
