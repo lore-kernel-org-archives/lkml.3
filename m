@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935084AbaBDVge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:36:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57293 "EHLO
+	id S935342AbaBDVhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:37:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57284 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934565AbaBDVME (ORCPT
+	with ESMTP id S934562AbaBDVMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:04 -0500
+	Tue, 4 Feb 2014 16:12:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Aristov <aristov.alexander@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 084/140] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
-Date: Tue,  4 Feb 2014 13:11:11 -0800
-Message-Id: <20140204211039.365047630@linuxfoundation.org>
+        Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 082/140] ASoC: tlv320aic32x4: Fix regmap range_min
+Date: Tue,  4 Feb 2014 13:11:09 -0800
+Message-Id: <20140204211039.309473709@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,32 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Markus Pargmann <mpa@pengutronix.de>
 
-commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+commit e8e08c521dc101cf7e7e1caf4f487f9fe11a9a7a upstream.
 
-The lack of comma leads to the wrong channel for an SPDIF channel.
-Unfortunately this wasn't caught by compiler because it's still a
-valid expression.
+range_min is the lowest address in the virtual register range. This is
+the first register with address 0, not the first register of page 1.
 
-Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Currently all writes to page 1 are mapped to page 0, so the codec fails
+to operate.
+
+Fixes: 4d208ca429ad (ASoC: tlv320aic32x4: Convert to direct regmap API usage)
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/rme9652/rme9652.c |    2 +-
+ sound/soc/codecs/tlv320aic32x4.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/rme9652/rme9652.c
-+++ b/sound/pci/rme9652/rme9652.c
-@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
- 	/* ADAT channels are remapped */
- 	1, 3, 5, 7, 9, 11, 13, 15,
- 	/* channels 8 and 9 are S/PDIF */
--	24, 25
-+	24, 25,
- 	/* others don't exist */
- 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+--- a/sound/soc/codecs/tlv320aic32x4.c
++++ b/sound/soc/codecs/tlv320aic32x4.c
+@@ -267,7 +267,7 @@ static const struct regmap_range_cfg aic
+ 		.selector_mask  = 0xff,
+ 		.window_start = 0,
+ 		.window_len = 128,
+-		.range_min = AIC32X4_PAGE1,
++		.range_min = 0,
+ 		.range_max = AIC32X4_RMICPGAVOL,
+ 	},
  };
 
 
