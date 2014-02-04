@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936298AbaBDWsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:48:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56248 "EHLO
+	id S933352AbaBDVCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56206 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933347AbaBDVC3 (ORCPT
+	with ESMTP id S933291AbaBDVCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:29 -0500
+	Tue, 4 Feb 2014 16:02:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 062/104] ALSA: hda - Dont create duplicated ctls for loopback paths
-Date: Tue,  4 Feb 2014 13:02:05 -0800
-Message-Id: <20140204210224.472462607@linuxfoundation.org>
+        Marek Roszko <mark.roszko@gmail.com>,
+        Leilei Zhao <leilei.zhao@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 3.10 045/104] tty/serial: at91: Handle shutdown more safely
+Date: Tue,  4 Feb 2014 13:01:48 -0800
+Message-Id: <20140204210224.003257840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,43 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Marek Roszko <mark.roszko@gmail.com>
 
-commit 43a8e50a46a4e1dd1451e4a4ffa1f7695fb7d287 upstream.
+commit 0cc7c6c7916b1b6f34350ff1473b80b9f7e459c0 upstream.
 
-AD1986A mic pins (0x1d and 0x1f) share the same widget for controlling
-the loopback volume/mute, but the generic parser didn't check it.
-This ended up with the duplicated controls for the same effect.
+Interrupts were being cleaned up late in the shutdown handler, it is possible
+that an interrupt can occur and schedule a tasklet that runs after the port is
+cleaned up. There is a null dereference due to this race condition with the
+following stacktrace:
 
-This patch adds the check of the duplication for avoiding it.
+[<c02092b0>] (atmel_tasklet_func+0x514/0x814) from [<c001fd34>] (tasklet_action+0x70/0xa8)
+[<c001fd34>] (tasklet_action+0x70/0xa8) from [<c001f60c>] (__do_softirq+0x90/0x144)
+[<c001f60c>] (__do_softirq+0x90/0x144) from [<c001fa18>] (irq_exit+0x40/0x4c)
+[<c001fa18>] (irq_exit+0x40/0x4c) from [<c000e298>] (handle_IRQ+0x64/0x84)
+[<c000e298>] (handle_IRQ+0x64/0x84) from [<c000d6c0>] (__irq_svc+0x40/0x50)
+[<c000d6c0>] (__irq_svc+0x40/0x50) from [<c0208060>] (atmel_rx_dma_release+0x88/0xb8)
+[<c0208060>] (atmel_rx_dma_release+0x88/0xb8) from [<c0209740>] (atmel_shutdown+0x104/0x160)
+[<c0209740>] (atmel_shutdown+0x104/0x160) from [<c0205e8c>] (uart_port_shutdown+0x2c/0x38)
 
-After this fix, there will be only one control although it affects
-both paths; this remaining issue should be fixed later in a different
-patch.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/tty/serial/atmel_serial.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -2796,9 +2796,11 @@ static bool look_for_mix_leaf_ctls(struc
- 	if (num_conns < idx)
- 		return false;
- 	nid = list[idx];
--	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
-+	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT) &&
-+	    !is_ctl_associated(codec, nid, HDA_OUTPUT, 0, NID_PATH_VOL_CTL))
- 		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
--	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
-+	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT) &&
-+	    !is_ctl_associated(codec, nid, HDA_OUTPUT, 0, NID_PATH_MUTE_CTL))
- 		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -1022,12 +1022,24 @@ static int atmel_startup(struct uart_por
+ static void atmel_shutdown(struct uart_port *port)
+ {
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
++
++	/*
++	 * Clear out any scheduled tasklets before
++	 * we destroy the buffers
++	 */
++	tasklet_kill(&atmel_port->tasklet);
++
+ 	/*
+-	 * Ensure everything is stopped.
++	 * Ensure everything is stopped and
++	 * disable all interrupts, port and break condition.
+ 	 */
+ 	atmel_stop_rx(port);
+ 	atmel_stop_tx(port);
  
- 	return *mix_val || *mute_val;
++	UART_PUT_CR(port, ATMEL_US_RSTSTA);
++	UART_PUT_IDR(port, -1);
++
++
+ 	/*
+ 	 * Shut-down the DMA.
+ 	 */
+@@ -1054,12 +1066,6 @@ static void atmel_shutdown(struct uart_p
+ 	}
+ 
+ 	/*
+-	 * Disable all interrupts, port and break condition.
+-	 */
+-	UART_PUT_CR(port, ATMEL_US_RSTSTA);
+-	UART_PUT_IDR(port, -1);
+-
+-	/*
+ 	 * Free the interrupt
+ 	 */
+ 	free_irq(port->irq, port);
 
 
