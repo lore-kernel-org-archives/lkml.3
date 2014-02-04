@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaBDQms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:42:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60016 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753883AbaBDQmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:42:45 -0500
-Date: Tue, 4 Feb 2014 17:42:43 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH -v2 5/6] memcg, kmem: clean up memcg parameter handling
-Message-ID: <20140204164243.GQ4890@dhcp22.suse.cz>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-6-git-send-email-mhocko@suse.cz>
- <20140204163210.GQ6963@cmpxchg.org>
+	id S1754484AbaBDQqk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:46:40 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:51643 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaBDQqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:46:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204163210.GQ6963@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFrcx1nKFffXtW4T-eDjsbXbCH-sW1DW1_fQt8fGbWBxRPRmZg@mail.gmail.com>
+References: <1389098853-14466-1-git-send-email-jolsa@redhat.com>
+	<20140117122431.GC1130@krava.brq.redhat.com>
+	<CAFrcx1nadiFDq1hyha83Y9GEJmKvXDeW-+7mLA+zj3jE9H5iWA@mail.gmail.com>
+	<20140128130408.GF1229@krava.brq.redhat.com>
+	<CAFrcx1nKFffXtW4T-eDjsbXbCH-sW1DW1_fQt8fGbWBxRPRmZg@mail.gmail.com>
+Date: Tue, 4 Feb 2014 17:46:34 +0100
+Message-ID: <CAFrcx1m0e7QCqffVbCQDJMt5GY8KdNt9Ay42AVMG2Q2YYggBRA@mail.gmail.com>
+Subject: Re: [PATCH 00/16] perf tools: Add libdw DWARF unwind support
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-02-14 11:32:10, Johannes Weiner wrote:
-> On Tue, Feb 04, 2014 at 02:28:59PM +0100, Michal Hocko wrote:
-> > memcg_kmem_newpage_charge doesn't always set the given memcg parameter.
-> 
-> lol, I really don't get your patch order...
+Hi Jiri,
 
-Ok, Ok, I've encountered this mess while double checking #2 and was too
-lazy to rebasing again. I will move it to the front for the merge.
+On 28 January 2014 17:46, Jean Pihet <jean.pihet@linaro.org> wrote:
+> Hi Jiri,
+>
+> On 28 January 2014 14:04, Jiri Olsa <jolsa@redhat.com> wrote:
+>> On Fri, Jan 17, 2014 at 01:27:53PM +0100, Jean Pihet wrote:
+>>> Hi Jiri,
+>>>
+>>> Let me start on it next week. Is that OK?
+>>>
+>>> Thx for the reminder, I had not entirely forgotten it though ;p
+>> hi,
+>> rebased patchset to latest acme's perf/core is in:
+>>   https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/
+>>   perf/core_libdw_unwind
+> Great, that was needed.
+>
+>> aaand ping ;-)
+> I checked that the build still works ok on ARM. I am now trying with libdw.
+> I can give an Ack as soon as that is done, then implement the ARM specific code.
 
-> > Some early escape paths skip setting *memcg while
-> > __memcg_kmem_newpage_charge down the call chain sets *memcg even if no
-> > memcg is charged due to other escape paths.
-> > 
-> > The current code is correct because the memcg is initialized to NULL
-> > at the highest level in __alloc_pages_nodemask but this all is very
-> > confusing and error prone. Let's make the semantic clear and move the
-> > memcg parameter initialization to the highest level of kmem accounting
-> > (memcg_kmem_newpage_charge).
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Patch looks good, though.
-> 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+The build with and without libunwind and libdw has been tested
+succesfully on ARM, including the paths to the desired libraries.
+Of course I am getting a link error on
+'libdw__arch_set_initial_registers' because the ARM support is not yet
+in.
+
+Here is an ack on the series:
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+
+Next on my plate: implement the ARM specifics.
 
 Thanks!
+Jean
 
--- 
-Michal Hocko
-SUSE Labs
+>
+>>
+>> thanks,
+>> jirka
