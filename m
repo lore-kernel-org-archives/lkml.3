@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbaBDR2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:28:03 -0500
-Received: from linuxhacker.ru ([217.76.32.60]:48691 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735AbaBDR17 convert rfc822-to-8bit (ORCPT
+	id S1754867AbaBDR3X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:29:23 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35333 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaBDR3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:27:59 -0500
-Subject: Re: [PATCH 2/4] staging/lustre/obdclass: read jobid from proc
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140204165742.GA19660@kroah.com>
-Date: Tue, 4 Feb 2014 12:27:48 -0500
-Cc: Peng Tao <bergwolf@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EDB9D331-03D7-42D4-AD33-6D55122373B6@linuxhacker.ru>
-References: <1383132636-8952-1-git-send-email-bergwolf@gmail.com> <1383132636-8952-2-git-send-email-bergwolf@gmail.com> <20131030132101.GD30087@kroah.com> <20140204061210.GA944142@fiona.linuxhacker.ru> <20140204165742.GA19660@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+	Tue, 4 Feb 2014 12:29:21 -0500
+Date: Tue, 4 Feb 2014 17:28:36 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Matt Porter <mporter@linaro.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux I2C List <linux-i2c@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20140204172836.GH22609@sirena.org.uk>
+References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
+ <1391516352-32359-5-git-send-email-mporter@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+TFC1kkuuXJmyCU6"
+Content-Disposition: inline
+In-Reply-To: <1391516352-32359-5-git-send-email-mporter@linaro.org>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/6] regulator: add bcm59056 regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
 
-On Feb 4, 2014, at 11:57 AM, Greg Kroah-Hartman wrote:
+--+TFC1kkuuXJmyCU6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> What exactly are you doing here?  Calling out to userspace for what
-> information?  And how are you going to handle namespaces and containers
-> by doing that?  Are you going to block in the kernel for this
-> information?
-> 
-> What are you trying to solve with this code in the first place?
+On Tue, Feb 04, 2014 at 07:19:10AM -0500, Matt Porter wrote:
 
-So, as an overview of a feature:
+> +static unsigned int bcm59056_get_mode(struct regulator_dev *dev)
+> +{
+> +	return REGULATOR_MODE_NORMAL;
+> +}
+> +
+> +static int bcm59056_set_mode(struct regulator_dev *dev, unsigned int mode)
+> +{
+> +	if (mode == REGULATOR_MODE_NORMAL)
+> +		return 0;
+> +	else
+> +		return -EINVAL;
+> +}
 
-When you have tens of thousand (and even hundreds) of nodes doing IO,
-it's no longer practical to tell them apart separately or in some
-network-related groups based on their address server-side
-(for purposes like monitoring and load control).
-Since such systems are usually managed by some sort of a job/batch scheduler,
-it's much more natural to organize them into "jobs" as known to the
-job scheduler instead. This job id information is harvested and added to
-all RPCs so that server side can do useful things with this information
-(like aggregate statistics, identify pathologically bad workcases,
-QoS and so on).
+These do nothing, don't implement them.
 
-Most of batch schedulers out there let userspace know their own JOBID as an
-environment variable. So original implementation was just harvesting this
-info directly from process environment. I certainly can see why this is not
-really desirable.
+> +	if (bcm59056->dev->of_node)
+> +		pmu_data = bcm59056_parse_dt_reg_data(pdev,
+> +						      &bcm59056_reg_matches);
 
-So, the patch does away with the environment parsing, instead it adds two
-new venues of getting this information:
+It'd seem a bit neater to put the OF check into the parse function but
+meh.
 
-1. In vast majorities of cases entire node is dedicated to a single job, so
-we just create a /proc variable where you can input job id from job scheduler
-prologue (and then clear it from an epilogue). Getting jobid in this case does
-does not dip in userspace anymore. This also does not block anywhere.
+> +	if (!pmu_data) {
+> +		dev_err(&pdev->dev, "Platform data not found\n");
+> +		return -EINVAL;
+> +	}
 
-2. In some more rare systems with lots of cores they actually seem to be subdividing
-individual nodes across jobs. Additionally all systems usually have login/interactive
-nodes. While these sort of interactive nodes do not have jobs scheduled on them, it
-still might be useful to distinguish between different user sessions happening there.
-This is where the upcalls come into play. First time a process does IO an upcall
-would be called that would provide the kernel with jobid identifier (however it might
-want to obtain it, we don't really care at this point). This would block (with a timeout)
-for the reply. The reply is then cached and reused for subsequent io from the same process.
-I did not really think about containers before, but I think it would work out anyway:
-I think namespaces and containers still have non-intersecting pid space so we should be
-fine in this regard. There is a "master container"/namespace of some sort I think, that is able to see
-entire pid space, and that's where the upcall would be run (do I need to somehow force that?)
+Like I said when reviewing the binding this should not cause the driver
+to fail to load.
 
-Bye,
-    Oleg
+> +		/*
+> +		 * Regulator API handles empty constraints but not NULL
+> +		 * constraints
+> +		 */
+> +		if (!reg_data)
+> +			continue;
 
+It should do...  if not then make it so since that'd mean most drivers
+are buggy.
+
+--+TFC1kkuuXJmyCU6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8SNBAAoJELSic+t+oim9QioQAIw1I4kSTRw1PhNzOg0ZSoo9
+TibrHRWXuthOrvf52eTwyZ/i3251wpIcH/+fTJC7EQz884p8DlaihrCq4NO8ZGXm
+KgTMNsGAvTT6cex9i+2somZ1paNT4FWg94HFTrJwnmW7Ce53Zl5bUJQ6dC57Q6AQ
+1RxW6ZEotnqE6q/b7xbGzwXfJeQi2QizaQO/HF0lF9qiVu5j6yoKiZVrTSUYhS/W
+NYnrTUvFTeZDhcy1a3xms3SBPrfwlH/JRYC8e/lT/VWVjnecu+fAvYmWdQ/9h77z
+eFKvjmeopnRndpdHKcJG5MAuv2eNM0FRCAH3l/5SMYjmwPkwfv38NMHIWXbdeZAY
+m6adOL8c1RFZdnklmoWXsBsEo41nqgSWtV/ZTRCiOZFKRY+slItZy3AV7geAigKI
+YgfsnqqEwzRaVTlbB4cXoIxOoxYsteFCA8FYEqZa4yGzx0BED6jxvMeTSEk/x/CU
+dTQyD3ub0Oh1m/EZnWeCmew935Rzk9Qoi/6CgTdE8SI80PfExE54yD+R1X15InUE
+81RXNLibBzEAdQRS4nfSMm9A8YcvDO4BnoM9y4Dh0W9bmZhwUcAYEW1lSXscnnMU
+j5TGX6XsdKaXYUu/qwFz7F4km9m8ICZ9+kmSEBiQUMHNzq1AFOpHrwf4lvZb+LkU
+qYcf2/jE6RXp3/MIrLHf
+=KDaY
+-----END PGP SIGNATURE-----
+
+--+TFC1kkuuXJmyCU6--
