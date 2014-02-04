@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaBDN3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 08:29:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54125 "EHLO mx2.suse.de"
+	id S1754677AbaBDN3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 08:29:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54154 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517AbaBDN3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:29:08 -0500
+	id S1754527AbaBDN3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 08:29:16 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -v2 0/6] memcg: some charge path cleanups + css offline vs. charge race fix
-Date: Tue,  4 Feb 2014 14:28:54 +0100
-Message-Id: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+Subject: [PATCH -v2 6/6] Revert "mm: memcg: fix race condition between memcg teardown and swapin"
+Date: Tue,  4 Feb 2014 14:29:00 +0100
+Message-Id: <1391520540-17436-7-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.9.rc1
+In-Reply-To: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-this is a second version of the series previously posted here:
-http://marc.info/?l=linux-mm&m=138729515304263&w=2. It is based on
-3.14-rc1 and I am still testing it but having another eyes on it would
-be great because this piece of code is really tricky.
+This reverts commit 96f1c58d853497a757463e0b57fed140d6858f3a
+because it is no longer needed after "memcg: make sure that memcg is not
+offline when charging" which makes sure that no charges will be accepted
+after mem_cgroup_reparent_charges has started.
 
-The first four patches are an attempt to clean up memcg charging path a
-bit. I am already fed up about all the different combinations of mm vs.
-memcgp parameters so I have split up the function into two parts:
-        * charge mm
-        * charge a known memcg
-More details are in the patch 2. I think that this makes more sense.
-It was also quite surprising that just the code reordering without any
-functional changes made the code smaller by 800B.
-Johannes has suggested (http://marc.info/?l=linux-mm&m=139144269917488&w=2)
-that mem_cgroup_try_charge_mm is not that helpful because the caller
-can resolve the proper memcg by calling try_get_mem_cgroup_from_mm but
-the next patch will require a retry if the css becomes offline and we do
-not want to duplicate the same logic in each caller.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c | 36 ------------------------------------
+ 1 file changed, 36 deletions(-)
 
-Patch #4 addresses memcg charge vs. memcg_offline race which is now
-worked around by 96f1c58d8534 (mm: memcg: fix race condition between
-memcg teardown and swapin). The last patch reverts the workaround.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 46b9f461cedf..6226977d53d0 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6623,42 +6623,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	/*
+-	 * XXX: css_offline() would be where we should reparent all
+-	 * memory to prepare the cgroup for destruction.  However,
+-	 * memcg does not do css_tryget() and res_counter charging
+-	 * under the same RCU lock region, which means that charging
+-	 * could race with offlining.  Offlining only happens to
+-	 * cgroups with no tasks in them but charges can show up
+-	 * without any tasks from the swapin path when the target
+-	 * memcg is looked up from the swapout record and not from the
+-	 * current task as it usually is.  A race like this can leak
+-	 * charges and put pages with stale cgroup pointers into
+-	 * circulation:
+-	 *
+-	 * #0                        #1
+-	 *                           lookup_swap_cgroup_id()
+-	 *                           rcu_read_lock()
+-	 *                           mem_cgroup_lookup()
+-	 *                           css_tryget()
+-	 *                           rcu_read_unlock()
+-	 * disable css_tryget()
+-	 * call_rcu()
+-	 *   offline_css()
+-	 *     reparent_charges()
+-	 *                           res_counter_charge()
+-	 *                           css_put()
+-	 *                             css_free()
+-	 *                           pc->mem_cgroup = dead memcg
+-	 *                           add page to lru
+-	 *
+-	 * The bulk of the charges are still moved in offline_css() to
+-	 * avoid pinning a lot of pages in case a long-term reference
+-	 * like a swapout record is deferring the css_free() to long
+-	 * after offlining.  But this makes sure we catch any charges
+-	 * made after offlining:
+-	 */
+-	mem_cgroup_reparent_charges(memcg);
+ 
+ 	memcg_destroy_kmem(memcg);
+ 	__mem_cgroup_free(memcg);
+-- 
+1.9.rc1
 
-Changes since v1 (based on comments from Johannes)
-- renamed mem_cgroup_bypass_charge to current_bypass_charge
-- get rid of try_get_mem_cgroup_from_mm duplication if the mm is charged
-- fixed rcu_read_lock recursion bug in try_get_mem_cgroup_from_mm
-- dropped memcg->offline and replace it by css_tryget & css_put
-- fixed ref leak for kmem CHARGE_RETRY path
-- kmem accounting cleanup as well
-
-Michal Hocko (6):
-      memcg: do not replicate try_get_mem_cgroup_from_mm in __mem_cgroup_try_charge
-      memcg: cleanup charge routines
-      memcg: mm == NULL is not allowed for mem_cgroup_try_charge_mm
-      memcg: make sure that memcg is not offline when charging
-      memcg, kmem: clean up memcg parameter handling
-      Revert "mm: memcg: fix race condition between memcg teardown and swapin"
-
-Diffstat says:
- include/linux/memcontrol.h |   4 +-
- mm/memcontrol.c            | 341 +++++++++++++++++++++------------------------
- mm/page_alloc.c            |   2 +-
- 3 files changed, 162 insertions(+), 185 deletions(-)
