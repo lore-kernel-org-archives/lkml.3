@@ -1,277 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaBDUe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 15:34:56 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49263 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503AbaBDUex (ORCPT
+	id S1755004AbaBDUkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 15:40:24 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49453 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792AbaBDUkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 15:34:53 -0500
-Date: Tue, 4 Feb 2014 21:34:59 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT Pull] irq updates
-Message-ID: <alpine.DEB.2.02.1402042133340.24986@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Feb 2014 15:40:22 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
+References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 4 Feb 2014 12:39:41 -0800
+Message-ID: <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
+Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
+ from device tree
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+2014-01-17 Matthew Garrett <matthew.garrett@nebula.com>:
+> Some hardware may be broken in interesting and board-specific ways, such
+> that various bits of functionality don't work. This patch provides a
+> mechanism for overriding mii registers during init based on the contents of
+> the device tree data, allowing board-specific fixups without having to
+> pollute generic code.
 
-please pull the latest irq-core-for-linus git tree from:
+It would be good to explain exactly how your hardware is broken
+exactly. I really do not think that such a fine-grained setting where
+you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
+remain usable makes that much sense. In general, Gigabit might be
+badly broken, but 100 and 10Mbits/sec should work fine. How about the
+MASTER-SLAVE bit, is overriding it really required?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-core-for-linus
+Is not a PHY fixup registered for a specific OUI the solution you are
+looking for? I am also concerned that this creates PHY troubleshooting
+issues much harder to debug than before as we may have no idea about
+how much information has been put in Device Tree to override that.
 
-This lot provides:
+Finally, how about making this more general just like the BCM87xx PHY
+driver, which is supplied value/reg pairs directly? There are 16
+common MII registers, and 16 others for vendor specific registers,
+this is just covering for about 2% of the possible changes.
 
-     * Bugfixes for armada irq controller
-     * Updates to renesas irq chip
-     * Support for the TI-NSPIRE irq controller
+>
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> ---
+>
+> V3: Break the main function out into some helper functions and store the
+> values in some structs.
+>
+>  Documentation/devicetree/bindings/net/phy.txt | 21 +++++++
+>  drivers/net/phy/phy_device.c                  | 29 ++++++++-
+>  drivers/of/of_net.c                           | 87 +++++++++++++++++++++++++++
+>  include/linux/of_net.h                        | 12 ++++
+>  4 files changed, 148 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+> index 7cd18fb..fc50f02 100644
+> --- a/Documentation/devicetree/bindings/net/phy.txt
+> +++ b/Documentation/devicetree/bindings/net/phy.txt
+> @@ -23,6 +23,21 @@ Optional Properties:
+>    assume clause 22. The compatible list may also contain other
+>    elements.
+>
+> +The following properties may be added to either the phy node or the parent
+> +ethernet device. If not present, the hardware defaults will be used.
+> +
+> +- phy-mii-advertise-10half: 1 to advertise half-duplex 10MBit, 0 to disable
+> +- phy-mii-advertise-10full: 1 to advertise full-duplex 10MBit, 0 to disable
+> +- phy-mii-advertise-100half: 1 to advertise half-duplex 100MBit, 0 to disable
+> +- phy-mii-advertise-100full: 1 to advertise full-duplex 100MBit, 0 to disable
+> +- phy-mii-advertise-100base4: 1 to advertise 100base4, 0 to disable
+> +- phy-mii-advertise-1000half: 1 to advertise half-duplex 1000MBit, 0 to disable
+> +- phy-mii-advertise-1000full: 1 to advertise full-duplex 1000MBit, 0 to disable
+> +- phy-mii-manual-master: 1 to enable manual master/slave configuration, 0
+> +  to disable manual master/slave configuration
+> +- phy-mii-as-master: 1 to configure phy to act as master, 0 to configure phy
+> +  to act as slave. Ignored if manual master/slave configuration is not enabled.
+> +
+>  Example:
+>
+>  ethernet-phy@0 {
+> @@ -32,4 +47,10 @@ ethernet-phy@0 {
+>         interrupts = <35 1>;
+>         reg = <0>;
+>         device_type = "ethernet-phy";
+> +       // Disable advertising of full duplex 1000MBit
+> +       phy-mii-advertise-1000full = <0>;
+> +       // Force manual phy master/slave configuration
+> +       phy-mii-manual-master = <1>;
+> +       // Forcibly configure phy as slave
+> +       phy-mii-as-master = <0>;
+>  };
+> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+> index d6447b3..91793bc 100644
+> --- a/drivers/net/phy/phy_device.c
+> +++ b/drivers/net/phy/phy_device.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/mii.h>
+>  #include <linux/ethtool.h>
+>  #include <linux/phy.h>
+> +#include <linux/of_net.h>
+>
+>  #include <asm/io.h>
+>  #include <asm/irq.h>
+> @@ -497,6 +498,28 @@ void phy_disconnect(struct phy_device *phydev)
+>  }
+>  EXPORT_SYMBOL(phy_disconnect);
+>
+> +int phy_override_from_of(struct phy_device *phydev)
+> +{
+> +       int reg, regval;
+> +       u16 val, mask;
+> +
+> +       /* Check for phy register overrides from OF */
+> +       for (reg = 0; reg < 16; reg++) {
+> +               if (!of_get_mii_register(phydev, reg, &val, &mask)) {
+> +                       if (!mask)
+> +                               continue;
+> +                       regval = phy_read(phydev, reg);
+> +                       if (regval < 0)
+> +                               continue;
+> +                       regval &= ~mask;
+> +                       regval |= val;
+> +                       phy_write(phydev, reg, regval);
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+>  int phy_init_hw(struct phy_device *phydev)
+>  {
+>         int ret;
+> @@ -508,7 +531,11 @@ int phy_init_hw(struct phy_device *phydev)
+>         if (ret < 0)
+>                 return ret;
+>
+> -       return phydev->drv->config_init(phydev);
+> +       ret = phydev->drv->config_init(phydev);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       return phy_override_from_of(phydev);
+>  }
+>
+>  /**
+> diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
+> index 8f9be2e..75751b7 100644
+> --- a/drivers/of/of_net.c
+> +++ b/drivers/of/of_net.c
+> @@ -93,3 +93,90 @@ const void *of_get_mac_address(struct device_node *np)
+>         return NULL;
+>  }
+>  EXPORT_SYMBOL(of_get_mac_address);
+> +
+> +struct mii_override {
+> +       char *prop;
+> +       u32 supported;
+> +       u16 value;
+> +};
+> +
+> +static struct mii_override mii_advertise_override[] = {
+> +       { "phy-mii-advertise-10half", SUPPORTED_10baseT_Half,
+> +         ADVERTISE_10HALF },
+> +       { "phy-mii-advertise-10full", SUPPORTED_10baseT_Full,
+> +         ADVERTISE_10FULL },
+> +       { "phy-mii-advertise-100half", SUPPORTED_100baseT_Half,
+> +         ADVERTISE_100HALF },
+> +       { "phy-mii-advertise-100full", SUPPORTED_100baseT_Full,
+> +         ADVERTISE_100FULL },
+> +       { "phy-mii-advertise-100base4", 0, ADVERTISE_100BASE4 },
+> +       { NULL },
+> +};
+> +
+> +static struct mii_override mii_gigabit_override[] = {
+> +       { "phy-mii-advertise-1000half", SUPPORTED_1000baseT_Half,
+> +         ADVERTISE_1000HALF },
+> +       { "phy-mii-advertise-1000full", SUPPORTED_1000baseT_Full,
+> +         ADVERTISE_1000FULL },
+> +       { "phy-mii-as-master", 0, CTL1000_AS_MASTER },
+> +       { "phy-mii-manual-master", 0, CTL1000_ENABLE_MASTER },
+> +       { NULL },
+> +};
+> +
+> +static void mii_handle_override(struct mii_override *override_list,
+> +                               struct phy_device *phydev, u16 *val, u16 *mask)
+> +{
+> +       struct device *dev = &phydev->dev;
+> +       struct device_node *np = dev->of_node;
+> +       struct mii_override *override;
+> +       u32 tmp;
+> +
+> +       if (!np && dev->parent->of_node)
+> +               np = dev->parent->of_node;
+> +
+> +       if (!np)
+> +               return;
+> +
+> +       for (override = &override_list[0]; override->prop != NULL; override++) {
+> +               if (!of_property_read_u32(np, override->prop, &tmp)) {
+> +                       if (tmp) {
+> +                               *val |= override->value;
+> +                               phydev->advertising |= override->supported;
+> +                       } else {
+> +                               phydev->advertising &= ~(override->supported);
+> +                       }
+> +
+> +                       *mask |= override->value;
+> +               }
+> +       }
+> +
+> +       return;
+> +}
+> +
+> +/**
+> + * Provide phy register overrides from the device tree. Some hardware may
+> + * be broken in interesting and board-specific ways, so we want a mechanism
+> + * for the board data to provide overrides for default values. This should be
+> + * called during phy init.
+> + */
+> +int of_get_mii_register(struct phy_device *phydev, int reg, u16 *val,
+> +                       u16 *mask)
+> +{
+> +       *val = 0;
+> +       *mask = 0;
+> +
+> +       switch (reg) {
+> +       case MII_ADVERTISE:
+> +               mii_handle_override(mii_advertise_override, phydev, val, mask);
+> +               break;
+> +
+> +       case MII_CTRL1000:
+> +               mii_handle_override(mii_gigabit_override, phydev, val, mask);
+> +               break;
+> +
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(of_get_mii_register);
+> diff --git a/include/linux/of_net.h b/include/linux/of_net.h
+> index 34597c8..2e478bc 100644
+> --- a/include/linux/of_net.h
+> +++ b/include/linux/of_net.h
+> @@ -7,10 +7,14 @@
+>  #ifndef __LINUX_OF_NET_H
+>  #define __LINUX_OF_NET_H
+>
+> +#include <linux/phy.h>
+> +
+>  #ifdef CONFIG_OF_NET
+>  #include <linux/of.h>
+>  extern int of_get_phy_mode(struct device_node *np);
+>  extern const void *of_get_mac_address(struct device_node *np);
+> +extern int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
+> +                              u16 *mask);
+>  #else
+>  static inline int of_get_phy_mode(struct device_node *np)
+>  {
+> @@ -21,6 +25,14 @@ static inline const void *of_get_mac_address(struct device_node *np)
+>  {
+>         return NULL;
+>  }
+> +static inline int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
+> +                                     u16 *mask)
+> +{
+> +       *val = 0;
+> +       *mask = 0;
+> +
+> +       return -EINVAL;
+> +}
+>  #endif
+>
+>  #endif /* __LINUX_OF_NET_H */
+> --
+> 1.8.4.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Not strictly a bug fix only pull request, but important updates for
-some of the arm Socs which I completely forgot to send last
-week.
-
-Seems like my obliviousness is getting worse, I just can't remember
-when it started.
-
-Thanks,
-
-	tglx
-
------------------->
-Daniel Tang (1):
-      irqchip: Add support for TI-NSPIRE irqchip
-
-Lior Amsalem (2):
-      irqchip: armada-370-xp: fix IPI race condition
-      irqchip: armada-370-xp: fix MSI race condition
-
-Magnus Damm (2):
-      irqchip: renesas-irqc: Use lazy disable
-      irqchip: renesas-irqc: Enable mask on suspend
 
 
- .../interrupt-controller/lsi,zevio-intc.txt        |   18 +++
- drivers/irqchip/Makefile                           |    1 +
- drivers/irqchip/irq-armada-370-xp.c                |    4 +-
- drivers/irqchip/irq-renesas-irqc.c                 |    4 +-
- drivers/irqchip/irq-zevio.c                        |  127 ++++++++++++++++++++
- 5 files changed, 149 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
- create mode 100644 drivers/irqchip/irq-zevio.c
-
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
-new file mode 100644
-index 0000000..aee38e7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/lsi,zevio-intc.txt
-@@ -0,0 +1,18 @@
-+TI-NSPIRE interrupt controller
-+
-+Required properties:
-+- compatible: Compatible property value should be "lsi,zevio-intc".
-+
-+- reg: Physical base address of the controller and length of memory mapped
-+	region.
-+
-+- interrupt-controller : Identifies the node as an interrupt controller
-+
-+Example:
-+
-+interrupt-controller {
-+	compatible = "lsi,zevio-intc";
-+	interrupt-controller;
-+	reg = <0xDC000000 0x1000>;
-+	#interrupt-cells = <1>;
-+};
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index c60b901..292b106 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -20,5 +20,6 @@ obj-$(CONFIG_SIRF_IRQ)			+= irq-sirfsoc.o
- obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
- obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
-+obj-$(CONFIG_ARCH_NSPIRE)		+= irq-zevio.o
- obj-$(CONFIG_ARCH_VT8500)		+= irq-vt8500.o
- obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 433cc85..3fac063 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -381,7 +381,7 @@ armada_370_xp_handle_irq(struct pt_regs *regs)
- 						ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS)
- 				& PCI_MSI_DOORBELL_MASK;
- 
--			writel(~PCI_MSI_DOORBELL_MASK, per_cpu_int_base +
-+			writel(~msimask, per_cpu_int_base +
- 			       ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS);
- 
- 			for (msinr = PCI_MSI_DOORBELL_START;
-@@ -407,7 +407,7 @@ armada_370_xp_handle_irq(struct pt_regs *regs)
- 						ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS)
- 				& IPI_DOORBELL_MASK;
- 
--			writel(~IPI_DOORBELL_MASK, per_cpu_int_base +
-+			writel(~ipimask, per_cpu_int_base +
- 				ARMADA_370_XP_IN_DRBEL_CAUSE_OFFS);
- 
- 			/* Handle all pending doorbells */
-diff --git a/drivers/irqchip/irq-renesas-irqc.c b/drivers/irqchip/irq-renesas-irqc.c
-index 2f404ba..082d95c 100644
---- a/drivers/irqchip/irq-renesas-irqc.c
-+++ b/drivers/irqchip/irq-renesas-irqc.c
-@@ -212,10 +212,8 @@ static int irqc_probe(struct platform_device *pdev)
- 	irq_chip->name = name;
- 	irq_chip->irq_mask = irqc_irq_disable;
- 	irq_chip->irq_unmask = irqc_irq_enable;
--	irq_chip->irq_enable = irqc_irq_enable;
--	irq_chip->irq_disable = irqc_irq_disable;
- 	irq_chip->irq_set_type = irqc_irq_set_type;
--	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
-+	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
- 
- 	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
- 					      p->number_of_irqs,
-diff --git a/drivers/irqchip/irq-zevio.c b/drivers/irqchip/irq-zevio.c
-new file mode 100644
-index 0000000..8ed04c4
---- /dev/null
-+++ b/drivers/irqchip/irq-zevio.c
-@@ -0,0 +1,127 @@
-+/*
-+ *  linux/drivers/irqchip/irq-zevio.c
-+ *
-+ *  Copyright (C) 2013 Daniel Tang <tangrs@tangrs.id.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+#include <asm/mach/irq.h>
-+#include <asm/exception.h>
-+
-+#include "irqchip.h"
-+
-+#define IO_STATUS	0x000
-+#define IO_RAW_STATUS	0x004
-+#define IO_ENABLE	0x008
-+#define IO_DISABLE	0x00C
-+#define IO_CURRENT	0x020
-+#define IO_RESET	0x028
-+#define IO_MAX_PRIOTY	0x02C
-+
-+#define IO_IRQ_BASE	0x000
-+#define IO_FIQ_BASE	0x100
-+
-+#define IO_INVERT_SEL	0x200
-+#define IO_STICKY_SEL	0x204
-+#define IO_PRIORITY_SEL	0x300
-+
-+#define MAX_INTRS	32
-+#define FIQ_START	MAX_INTRS
-+
-+static struct irq_domain *zevio_irq_domain;
-+static void __iomem *zevio_irq_io;
-+
-+static void zevio_irq_ack(struct irq_data *irqd)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(irqd);
-+	struct irq_chip_regs *regs =
-+		&container_of(irqd->chip, struct irq_chip_type, chip)->regs;
-+
-+	readl(gc->reg_base + regs->ack);
-+}
-+
-+static asmlinkage void __exception_irq_entry zevio_handle_irq(struct pt_regs *regs)
-+{
-+	int irqnr;
-+
-+	while (readl(zevio_irq_io + IO_STATUS)) {
-+		irqnr = readl(zevio_irq_io + IO_CURRENT);
-+		irqnr = irq_find_mapping(zevio_irq_domain, irqnr);
-+		handle_IRQ(irqnr, regs);
-+	};
-+}
-+
-+static void __init zevio_init_irq_base(void __iomem *base)
-+{
-+	/* Disable all interrupts */
-+	writel(~0, base + IO_DISABLE);
-+
-+	/* Accept interrupts of all priorities */
-+	writel(0xF, base + IO_MAX_PRIOTY);
-+
-+	/* Reset existing interrupts */
-+	readl(base + IO_RESET);
-+}
-+
-+static int __init zevio_of_init(struct device_node *node,
-+				struct device_node *parent)
-+{
-+	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-+	struct irq_chip_generic *gc;
-+	int ret;
-+
-+	if (WARN_ON(zevio_irq_io || zevio_irq_domain))
-+		return -EBUSY;
-+
-+	zevio_irq_io = of_iomap(node, 0);
-+	BUG_ON(!zevio_irq_io);
-+
-+	/* Do not invert interrupt status bits */
-+	writel(~0, zevio_irq_io + IO_INVERT_SEL);
-+
-+	/* Disable sticky interrupts */
-+	writel(0, zevio_irq_io + IO_STICKY_SEL);
-+
-+	/* We don't use IRQ priorities. Set each IRQ to highest priority. */
-+	memset_io(zevio_irq_io + IO_PRIORITY_SEL, 0, MAX_INTRS * sizeof(u32));
-+
-+	/* Init IRQ and FIQ */
-+	zevio_init_irq_base(zevio_irq_io + IO_IRQ_BASE);
-+	zevio_init_irq_base(zevio_irq_io + IO_FIQ_BASE);
-+
-+	zevio_irq_domain = irq_domain_add_linear(node, MAX_INTRS,
-+						 &irq_generic_chip_ops, NULL);
-+	BUG_ON(!zevio_irq_domain);
-+
-+	ret = irq_alloc_domain_generic_chips(zevio_irq_domain, MAX_INTRS, 1,
-+					     "zevio_intc", handle_level_irq,
-+					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+	BUG_ON(ret);
-+
-+	gc = irq_get_domain_generic_chip(zevio_irq_domain, 0);
-+	gc->reg_base				= zevio_irq_io;
-+	gc->chip_types[0].chip.irq_ack		= zevio_irq_ack;
-+	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_disable_reg;
-+	gc->chip_types[0].chip.irq_unmask	= irq_gc_unmask_enable_reg;
-+	gc->chip_types[0].regs.mask		= IO_IRQ_BASE + IO_ENABLE;
-+	gc->chip_types[0].regs.enable		= IO_IRQ_BASE + IO_ENABLE;
-+	gc->chip_types[0].regs.disable		= IO_IRQ_BASE + IO_DISABLE;
-+	gc->chip_types[0].regs.ack		= IO_IRQ_BASE + IO_RESET;
-+
-+	set_handle_irq(zevio_handle_irq);
-+
-+	pr_info("TI-NSPIRE classic IRQ controller\n");
-+	return 0;
-+}
-+
-+IRQCHIP_DECLARE(zevio_irq, "lsi,zevio-intc", zevio_of_init);
+-- 
+Florian
