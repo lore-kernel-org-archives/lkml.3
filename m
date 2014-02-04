@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935134AbaBDV0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:26:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57457 "EHLO
+	id S934838AbaBDV0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:26:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934520AbaBDVMc (ORCPT
+	with ESMTP id S934686AbaBDVMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:32 -0500
+	Tue, 4 Feb 2014 16:12:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Chuanxiao Dong <chuanxiao.dong@intel.com>,
         Dong Aisheng <b29396@freescale.com>, Chris Ball <chris@printf.net>
-Subject: [PATCH 3.13 120/140] mmc: sdhci-pci: add broken HS200 quirk for Intel Merrifield
-Date: Tue,  4 Feb 2014 13:11:47 -0800
-Message-Id: <20140204211040.397901186@linuxfoundation.org>
+Subject: [PATCH 3.13 121/140] mmc: sdhci: fix lockdep error in tuning routine
+Date: Tue,  4 Feb 2014 13:11:48 -0800
+Message-Id: <20140204211040.425592352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,85 +28,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Cohen <david.a.cohen@linux.intel.com>
+From: Aisheng Dong <b29396@freescale.com>
 
-commit 390145f9adcf2730fcee81c8a51fd7c6c08f705f upstream.
+commit 2b35bd83467df6f8284b9148d6f768148c3a5e5f upstream.
 
-Due to unknown hw issue so far, Merrifield is unable to enable HS200
-support. This patch adds quirk to avoid SDHCI to initialize with error
-below:
+The sdhci_execute_tuning routine gets lock separately by
+disable_irq(host->irq);
+spin_lock(&host->lock);
+It will cause the following lockdep error message since the &host->lock
+could also be got in irq context.
+Use spin_lock_irqsave/spin_unlock_restore instead to get rid of
+this error message.
 
-[   53.850132] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G W
-3.12.0-rc6-00037-g3d7c8d9-dirty #36
-[   53.850150] Hardware name: Intel Corporation Merrifield/SALT BAY,
-BIOS 397 2013.09.12:11.51.40
-[   53.850167]  00000000 00000000 ee409e48 c18816d2 00000000 ee409e78
-c123e254 c1acc9b0
-[   53.850227]  00000000 00000000 c1b14148 000003de c16c03bf c16c03bf
-ee75b480 ed97c54c
-[   53.850282]  ee75b480 ee409e88 c123e292 00000009 00000000 ee409ef8
-c16c03bf c1207fac
-[   53.850339] Call Trace:
-[   53.850376]  [<c18816d2>] dump_stack+0x4b/0x79
-[   53.850408]  [<c123e254>] warn_slowpath_common+0x84/0xa0
-[   53.850436]  [<c16c03bf>] ? sdhci_send_command+0xb4f/0xc50
-[   53.850462]  [<c16c03bf>] ? sdhci_send_command+0xb4f/0xc50
-[   53.850490]  [<c123e292>] warn_slowpath_null+0x22/0x30
-[   53.850516]  [<c16c03bf>] sdhci_send_command+0xb4f/0xc50
-[   53.850545]  [<c1207fac>] ? native_sched_clock+0x2c/0xb0
-[   53.850575]  [<c14c1f93>] ? delay_tsc+0x73/0xb0
-[   53.850601]  [<c14c1ebe>] ? __const_udelay+0x1e/0x20
-[   53.850626]  [<c16bdeb3>] ? sdhci_reset+0x93/0x190
-[   53.850654]  [<c16c05b0>] sdhci_finish_data+0xf0/0x2e0
-[   53.850683]  [<c16c130f>] sdhci_irq+0x31f/0x930
-[   53.850713]  [<c12cb080>] ? __buffer_unlock_commit+0x10/0x20
-[   53.850740]  [<c12cbcd7>] ? trace_buffer_unlock_commit+0x37/0x50
-[   53.850773]  [<c1288f3c>] handle_irq_event_percpu+0x5c/0x220
-[   53.850800]  [<c128bc96>] ? handle_fasteoi_irq+0x16/0xd0
-[   53.850827]  [<c128913a>] handle_irq_event+0x3a/0x60
-[   53.850852]  [<c128bc80>] ? unmask_irq+0x30/0x30
-[   53.850878]  [<c128bcce>] handle_fasteoi_irq+0x4e/0xd0
-[   53.850895]  <IRQ>  [<c1890b52>] ? do_IRQ+0x42/0xb0
-[   53.850943]  [<c1890a31>] ? common_interrupt+0x31/0x38
-[   53.850973]  [<c12b00d8>] ? cgroup_mkdir+0x4e8/0x580
-[   53.851001]  [<c1208d32>] ? default_idle+0x22/0xf0
-[   53.851029]  [<c1209576>] ? arch_cpu_idle+0x26/0x30
-[   53.851054]  [<c1288505>] ? cpu_startup_entry+0x65/0x240
-[   53.851082]  [<c18793d5>] ? rest_init+0xb5/0xc0
-[   53.851108]  [<c1879320>] ? __read_lock_failed+0x18/0x18
-[   53.851138]  [<c1bf6a15>] ? start_kernel+0x31b/0x321
-[   53.851164]  [<c1bf652f>] ? repair_env_string+0x51/0x51
-[   53.851190]  [<c1bf6363>] ? i386_start_kernel+0x139/0x13c
-[   53.851209] ---[ end trace 92777f5fe48d33f2 ]---
-[   53.853449] mmcblk0: error -84 transferring data, sector 11142162, nr
-304, cmd response 0x0, card status 0x0
-[   53.853476] mmcblk0: retrying using single block read
-[   55.937863] sdhci: Timeout waiting for Buffer Read Ready interrupt
-during tuning procedure, falling back to fixed sampling clock
-[   56.207951] sdhci: Timeout waiting for Buffer Read Ready interrupt
-during tuning procedure, falling back to fixed sampling clock
-[   66.228785] mmc0: Timeout waiting for hardware interrupt.
-[   66.230855] ------------[ cut here ]------------
+[ INFO: inconsistent lock state ]
+3.13.0-rc1+ #287 Not tainted
+---------------------------------
+inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+kworker/u2:1/33 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ (&(&host->lock)->rlock){?.-...}, at: [<8045f7f4>] sdhci_execute_tuning+0x4c/0x710
+{IN-HARDIRQ-W} state was registered at:
+  [<8005f030>] mark_lock+0x140/0x6ac
+  [<80060760>] __lock_acquire+0xb30/0x1cbc
+  [<800620d0>] lock_acquire+0x70/0x84
+  [<8061d1c8>] _raw_spin_lock+0x30/0x40
+  [<804605cc>] sdhci_irq+0x24/0xa68
+  [<8006b1d4>] handle_irq_event_percpu+0x54/0x18c
+  [<8006b350>] handle_irq_event+0x44/0x64
+  [<8006e50c>] handle_fasteoi_irq+0xa0/0x170
+  [<8006a8f0>] generic_handle_irq+0x30/0x44
+  [<8000f238>] handle_IRQ+0x54/0xbc
+  [<8000864c>] gic_handle_irq+0x30/0x64
+  [<80013024>] __irq_svc+0x44/0x5c
+  [<80329bf4>] dev_vprintk_emit+0x50/0x58
+  [<80329c24>] dev_printk_emit+0x28/0x30
+  [<80329fec>] __dev_printk+0x4c/0x90
+  [<8032a180>] dev_err+0x3c/0x48
+  [<802dd4f0>] _regulator_get+0x158/0x1cc
+  [<802dd5b4>] regulator_get_optional+0x18/0x1c
+  [<80461df4>] sdhci_add_host+0x42c/0xbd8
+  [<80464820>] sdhci_esdhc_imx_probe+0x378/0x67c
+  [<8032ee88>] platform_drv_probe+0x20/0x50
+  [<8032d48c>] driver_probe_device+0x118/0x234
+  [<8032d690>] __driver_attach+0x9c/0xa0
+  [<8032b89c>] bus_for_each_dev+0x68/0x9c
+  [<8032cf44>] driver_attach+0x20/0x28
+  [<8032cbc8>] bus_add_driver+0x148/0x1f4
+  [<8032dce0>] driver_register+0x80/0x100
+  [<8032ee54>] __platform_driver_register+0x50/0x64
+  [<8084b094>] sdhci_esdhc_imx_driver_init+0x18/0x20
+  [<80008980>] do_one_initcall+0x108/0x16c
+  [<8081cca4>] kernel_init_freeable+0x10c/0x1d0
+  [<80611b28>] kernel_init+0x10/0x120
+  [<8000e9c8>] ret_from_fork+0x14/0x2c
+irq event stamp: 805
+hardirqs last  enabled at (805): [<8061d43c>] _raw_spin_unlock_irqrestore+0x38/0x4c
+hardirqs last disabled at (804): [<8061d2c8>] _raw_spin_lock_irqsave+0x24/0x54
+softirqs last  enabled at (570): [<8002b824>] __do_softirq+0x1c4/0x290
+softirqs last disabled at (561): [<8002bcf4>] irq_exit+0xb4/0x10c
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Reviewed-by: Chuanxiao Dong <chuanxiao.dong@intel.com>
-Acked-by: Dong Aisheng <b29396@freescale.com>
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(&(&host->lock)->rlock);
+  <Interrupt>
+    lock(&(&host->lock)->rlock);
+
+ *** DEADLOCK ***
+
+2 locks held by kworker/u2:1/33:
+ #0:  (kmmcd){.+.+..}, at: [<8003db18>] process_one_work+0x128/0x468
+ #1:  ((&(&host->detect)->work)){+.+...}, at: [<8003db18>] process_one_work+0x128/0x468
+
+stack backtrace:
+CPU: 0 PID: 33 Comm: kworker/u2:1 Not tainted 3.13.0-rc1+ #287
+Workqueue: kmmcd mmc_rescan
+Backtrace:
+[<80012160>] (dump_backtrace+0x0/0x10c) from [<80012438>] (show_stack+0x18/0x1c)
+ r6:bfad0900 r5:00000000 r4:8088ecc8 r3:bfad0900
+[<80012420>] (show_stack+0x0/0x1c) from [<806169ec>] (dump_stack+0x84/0x9c)
+[<80616968>] (dump_stack+0x0/0x9c) from [<806147b4>] (print_usage_bug+0x260/0x2d0)
+ r5:8076ba88 r4:80977410
+[<80614554>] (print_usage_bug+0x0/0x2d0) from [<8005f0d0>] (mark_lock+0x1e0/0x6ac)
+ r9:8005e678 r8:00000000 r7:bfad0900 r6:00001015 r5:bfad0cd0
+r4:00000002
+[<8005eef0>] (mark_lock+0x0/0x6ac) from [<80060234>] (__lock_acquire+0x604/0x1cbc)
+[<8005fc30>] (__lock_acquire+0x0/0x1cbc) from [<800620d0>] (lock_acquire+0x70/0x84)
+[<80062060>] (lock_acquire+0x0/0x84) from [<8061d1c8>] (_raw_spin_lock+0x30/0x40)
+ r7:00000000 r6:bfb63000 r5:00000000 r4:bfb60568
+[<8061d198>] (_raw_spin_lock+0x0/0x40) from [<8045f7f4>] (sdhci_execute_tuning+0x4c/0x710)
+ r4:bfb60000
+[<8045f7a8>] (sdhci_execute_tuning+0x0/0x710) from [<80453454>] (mmc_sd_init_card+0x5f8/0x660)
+[<80452e5c>] (mmc_sd_init_card+0x0/0x660) from [<80453748>] (mmc_attach_sd+0xb4/0x180)
+ r9:bf92d400 r8:8065f364 r7:00061a80 r6:bfb60000 r5:8065f358
+r4:bfb60000
+[<80453694>] (mmc_attach_sd+0x0/0x180) from [<8044d9f8>] (mmc_rescan+0x284/0x2f0)
+ r5:8065f358 r4:bfb602f8
+[<8044d774>] (mmc_rescan+0x0/0x2f0) from [<8003db94>] (process_one_work+0x1a4/0x468)
+ r8:00000000 r7:bfb55eb0 r6:bf80dc00 r5:bfb602f8 r4:bfb35980
+r3:8044d774
+[<8003d9f0>] (process_one_work+0x0/0x468) from [<8003e850>] (worker_thread+0x118/0x3e0)
+[<8003e738>] (worker_thread+0x0/0x3e0) from [<80044de0>] (kthread+0xd4/0xf0)
+[<80044d0c>] (kthread+0x0/0xf0) from [<8000e9c8>] (ret_from_fork+0x14/0x2c)
+ r7:00000000 r6:00000000 r5:80044d0c r4:bfb37b40
+
+Signed-off-by: Dong Aisheng <b29396@freescale.com>
 Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mmc/host/sdhci.c |   20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -381,6 +381,7 @@ static int intel_mrfl_mmc_probe_slot(str
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1845,12 +1845,12 @@ static int sdhci_execute_tuning(struct m
+ 	unsigned long timeout;
+ 	int err = 0;
+ 	bool requires_tuning_nonuhs = false;
++	unsigned long flags;
  
- static const struct sdhci_pci_fixes sdhci_intel_mrfl_mmc = {
- 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
-+	.quirks2	= SDHCI_QUIRK2_BROKEN_HS200,
- 	.probe_slot	= intel_mrfl_mmc_probe_slot,
- };
+ 	host = mmc_priv(mmc);
  
+ 	sdhci_runtime_pm_get(host);
+-	disable_irq(host->irq);
+-	spin_lock(&host->lock);
++	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+ 
+@@ -1870,15 +1870,13 @@ static int sdhci_execute_tuning(struct m
+ 	    requires_tuning_nonuhs)
+ 		ctrl |= SDHCI_CTRL_EXEC_TUNING;
+ 	else {
+-		spin_unlock(&host->lock);
+-		enable_irq(host->irq);
++		spin_unlock_irqrestore(&host->lock, flags);
+ 		sdhci_runtime_pm_put(host);
+ 		return 0;
+ 	}
+ 
+ 	if (host->ops->platform_execute_tuning) {
+-		spin_unlock(&host->lock);
+-		enable_irq(host->irq);
++		spin_unlock_irqrestore(&host->lock, flags);
+ 		err = host->ops->platform_execute_tuning(host, opcode);
+ 		sdhci_runtime_pm_put(host);
+ 		return err;
+@@ -1951,15 +1949,12 @@ static int sdhci_execute_tuning(struct m
+ 		host->cmd = NULL;
+ 		host->mrq = NULL;
+ 
+-		spin_unlock(&host->lock);
+-		enable_irq(host->irq);
+-
++		spin_unlock_irqrestore(&host->lock, flags);
+ 		/* Wait for Buffer Read Ready interrupt */
+ 		wait_event_interruptible_timeout(host->buf_ready_int,
+ 					(host->tuning_done == 1),
+ 					msecs_to_jiffies(50));
+-		disable_irq(host->irq);
+-		spin_lock(&host->lock);
++		spin_lock_irqsave(&host->lock, flags);
+ 
+ 		if (!host->tuning_done) {
+ 			pr_info(DRIVER_NAME ": Timeout waiting for "
+@@ -2034,8 +2029,7 @@ out:
+ 		err = 0;
+ 
+ 	sdhci_clear_set_irqs(host, SDHCI_INT_DATA_AVAIL, ier);
+-	spin_unlock(&host->lock);
+-	enable_irq(host->irq);
++	spin_unlock_irqrestore(&host->lock, flags);
+ 	sdhci_runtime_pm_put(host);
+ 
+ 	return err;
 
 
