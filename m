@@ -1,183 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaBDKKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:10:03 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:52643 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629AbaBDKKA (ORCPT
+	id S1753708AbaBDKOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:14:41 -0500
+Received: from www84.your-server.de ([213.133.104.84]:38132 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964AbaBDKOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:10:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from device tree
-Date: Tue, 04 Feb 2014 11:09:44 +0100
-Message-ID: <4524393.8AzpATULMB@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140203221743.GB24036@e106497-lin.cambridge.arm.com>
-References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com> <3523674.i9iUPinOAk@wuerfel> <20140203221743.GB24036@e106497-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ty8Tc7AkTMDFr9/DrWKqryTzUrBexlf28NKBssQA71N
- PevoF9jOsvle+ll6yANXlUpuOwWSYd0NIdhAjRIZ/PKC9yHm1+
- 81B2Y+IfJ+MhPWhdPjaj41XEJt2PFNjrveJOBE5vNEAQVI7HF2
- BFddYNCEbh25gv+zKgvQUTkM5UP7uVLPv5Beu1qHgCRrfWMMCS
- ziZNPh+hOXC7GiZ+fz3WHHwMmBXU7hBcYygrUTDVttlBsE1P/N
- XlnnOQS8PPv9MuvBSSSvbGpR4UUn0qQw7DSaXWpjLvvSYAHcdT
- AuKYBLcgSkylC59DHXVICoxY2b8QJpDmaJXw3Hshy+Wxn/S49b
- 7jHFZRsor503U6If55SQ=
+	Tue, 4 Feb 2014 05:14:33 -0500
+From: stefani@seibold.net
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v11 0/9] Add 32 bit VDSO time function support
+Date: Tue,  4 Feb 2014 11:14:59 +0100
+Message-Id: <1391508908-32239-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.3
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 February 2014 22:17:44 Liviu Dudau wrote:
-> On Mon, Feb 03, 2014 at 07:31:31PM +0000, Arnd Bergmann wrote:
-> > Let's try to come up with nomenclature so we can talk about this better
-> >
-> > The ioport_resource is in "logical I/O space", which is a Linux fiction,
-> > it goes from 0 to IO_SPACE_LIMIT (2MB on ARM) and is mapped into "virtual
-> > I/O space", which start at (void __iomem *)PCI_IO_VIRT_BASE.
-> >
-> > Each PCI domain can have its own "bus I/O aperture", which is typically
-> > between 0x1000 and 0xffff and reflects the address that is used in PCI
-> > transactions and in BARs.
-> 
-> Actually, the bus I/O aperture can start from 0x0000 if you are talking about
-> PCI bus addresses.
+From: Stefani Seibold <stefani@seibold.net>
 
-Right.
+This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+and vdso_time() to the 32 bit VDSO.
 
-> > The aperture here reflects the subset of the
-> > 4GB bus I/O space that is actually mapped into a CPU visible "physical
-> > I/O aperture" using an inbound mapping of the host bridge. The physical
-> > I/O aperture in turn gets mapped to the virtual I/O space using
-> > pci_ioremap_io.
-> 
-> Agree.
-> 
-> > The difference between a bus I/O address and a logical
-> > I/O address is stored in the io_offset.
-> 
-> Not exactly. If that would be true that means that for an I/O range that
-> start at bus I/O address zero but physical I/O apperture starts at
-> 0x40000000 the io_offset is zero. For me, the io_offset should be 0x40000000.
+The reason to do this was to get a fast reliable time stamp. Many developers
+uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
+time functions a fast and a reliable way, because the kernel knows the
+best time source and the P- and C-state of the CPU.
 
-That's not how we do it on any of the existing host controllers.
-Typically the io_offset is zero for the first one, and may be
-either zero for all the others (meaning BARs get > 64KB values
-for secondary buses) or between 64KB and 2MB (meaning each bus
-starts at I/O port number 0).
+The helper library to use the VDSO functions can be download at
+http://http://seibold.net/vdso.c
+The libary is very small, only 228 lines of code. Compile it with
+gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
+and use it with LD_PRELOAD=<path>/libvdso.so
 
-> Let me see if I can summarise this correctly, using only CPU addresses:
-> 
-> 0x0000 - IO_SPACE_LIMIT           <-  logical I/O address
-> 0xPPPPPPPP - 0xPPPPPPPP+IO_SIZE   <-  physical address for PCI I/O space
-> 0xVVVVVVVV - 0xVVVVVVVV+IO_SPACE_LIMIT <- virtual address for I/O
-> 
-> The io_offset then is 0xPPPPPPPP - logical I/O address. At least that is
-> the intent of the io_offset variable that I introduced in pci_host_bridge.
+This kind of helper must be integrated into glibc, for x86 64 bit and
+PowerPC it is already there.
 
-That is highly confusing then, because we already have something called
-io_offset with a different meaning. I would call 0xPPPPPPPP the io_phys_base
-if I had to come up with a variable name for it.
+Some linux 32 bit kernel benchmark results (all measurements are in nano
+seconds):
 
-> The bus I/O address is generated by the host bridge, I think we can ignore
-> it here as it tends to confuse the message.
+Intel(R) Celeron(TM) CPU 400MHz
 
-No, it's important because the PCI core code has to transform between
-bus I/O address and logical I/O address when accessing the BARs.
+Average time kernel call:
+ gettimeofday(): 1039
+ clock_gettime(): 1578
+ time(): 526
+Average time VDSO call:
+ gettimeofday(): 378
+ clock_gettime(): 303
+ time(): 60
 
-> > So much for basic definitions. When a device driver calls pci_request_region,
-> > the port number it sees is the bus I/O port number adjusted using the
-> > io_offset to turn it into a logical I/O port number, which should
-> > always be within the host bridge window, which in turn is a subset
-> > of the ioport_resource.
-> 
-> My understanding is that device drivers all user port numbers that are logical
-> I/O numbers, so no io_offset needs to be applied here. It is only when one
-> wants to access the port, that the translation happens. First, inb or outb
-> will add the PCI_IO_VIRT_BASE to generate the virtual address, the MMU will
-> then convert that address to physical address and the host bridge will
-> then translate the physical address into bus address.
+Celeron(R) Dual-Core CPU T3100 1.90GHz
 
-This is correct. The bus I/O number is not visible to the device driver,
-but it is what you put into the 'ranges' property in DT, and it gets
-used during PCI resource scanning.
+Average time kernel call:
+ gettimeofday(): 209
+ clock_gettime(): 406
+ time(): 135
+Average time VDSO call:
+ gettimeofday(): 51
+ clock_gettime(): 43
+ time(): 10
 
+So you can see a performance increase between 4 and 13, depending on the
+CPU and the function.
 
-> > > And that is why the code in probe.c has been added to deal with that. It is
-> > > too early to do the adjustments here as all we have is the list of resources
-> > > and that might get culled by the architecture fixup code. Remembering the
-> > > io_offset will happen once the pci_host_bridge gets created, and the resources
-> > > are then adjusted.
-> >
-> > So you want to register an incorrect I/O resource first and then
-> > have it fixed up later, rather than registering the correct
-> > one from the start as everyone else?
-> 
-> The incorrect I/O resource is added to a temporary list of resources, it has not
-> been attached yet to the list of windows in the bridge. What gets added is the
-> I/O resource as described if it would be an ordinary resource.
+The address layout of the VDSO has changed, because there is no fixed
+address space available on a x86 32 bit kernel, despite the name. Because
+someone decided to add an offset to the __FIXADDR_TOP for virtualization.
 
-I'm not completely sure I'm following here, but let's work out the
-other things first, this will probably get clearer then.
+Also the IA32 Emulation uses the whole 4 GB address space, so there is no
+fixed address available.
 
-> > > > > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > > > > index 6e34498..16febae 100644
-> > > > > --- a/drivers/pci/probe.c
-> > > > > +++ b/drivers/pci/probe.c
-> > > > > @@ -1787,6 +1787,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> > > > >     list_for_each_entry_safe(window, n, resources, list) {
-> > > > >             list_move_tail(&window->list, &bridge->windows);
-> > > > >             res = window->res;
-> > > > > +           /*
-> > > > > +            * IO resources are stored in the kernel with a CPU start
-> > > > > +            * address of zero. Adjust the data accordingly and remember
-> > > > > +            * the offset
-> > > > > +            */
-> > > > > +           if (resource_type(res) == IORESOURCE_IO) {
-> > > > > +                   bridge->io_offset = res->start;
-> > > > > +                   res->end -= res->start;
-> > > > > +                   window->offset -= res->start;
-> > > > > +                   res->start = 0;
-> > > > > +           }
-> 
-> Here, we correct for the fact that IORESOURCE_IO is not a normal resource, because Linux wants
-> a logical I/O as start and end address, not the physical CPU address. We adjust to that and
-> remember the offset.
+This was the reason not depend on this kind of address and change the layout
+of the VDSO. The VDSO for a 32 bit application has now three pages:
 
-But the offset (phys_base) doesn't actually matter to the PCI core or
-the driver. Why save it?
+^ Higher Address
+|
++----------------------------------------+
++ VDSO page (includes code) ro+x         +
++----------------------------------------+
++ VVAR page (export kernel variables) ro +
++----------------------------------------+
++ HPET page (mapped registers) ro 
++----------------------------------------+
+|
+^ Lower Address
 
-> > > > >             offset = window->offset;
-> > > > >             if (res->flags & IORESOURCE_BUS)
-> > > >
-> > > > Won't this break all existing host bridges?
-> > >
-> > > I am not sure. I believe not, due to what I've explained earlier, but you might be right.
-> > >
-> > > The adjustment happens before the resource is added to the host bridge windows and translates
-> > > it from MMIO range into IO range.
-> >
-> > AFAICT, the resource_type of the resource you register above should be
-> > IORESOURCE_MEM, so you are not actually matching it here.
-> 
-> No, all resources are added here. For IORESOURCE_IO we do an adjustment.
+The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
+HPET page are mapped before.
 
-But there should never be an IORESOURCE_IO resource structure that is
-not in IO space, i.e. within ioport_resource. Doing an "adjustment"
-is not an operation defined on this structure. What I meant above is that
-the pci range parser gets this right and gives you a resource that looks
-like { .flags = IORESOURCE_MEM, .start = phys_base, .end = phys_base +
-size - 1}, while the resource we want to register is { .flags = IORESOURCE_IO,
-.start = log_base, .end = log_base + size -1}. In the of_pci_range struct for
-the I/O space, the "pci_space" is IORESOURCE_IO (for the pci_addr), while the
-"flags" are IORESOURCE_MEM, to go along with the cpu_addr.
+In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
+So this decrease the available logical address room by 2 pages.
 
-	Arnd
+The patch is against kernel 3.14 (e7651b819e90da924991d727d3c007200a18670d)
+
+Changelog:
+25.11.2012 - first release and proof of concept for linux 3.4
+11.12.2012 - Port to linux 3.7 and code cleanup
+12.12.2012 - fixes suggested by Andy Lutomirski
+           - fixes suggested by John Stultz
+           - use call VDSO32_vsyscall instead of int 80
+           - code cleanup
+17.12.2012 - support for IA32_EMULATION, this includes
+             - code cleanup
+             - include cleanup to fix compile warnings and errors
+             - move out seqcount from seqlock, enable use in VDSO
+             - map FIXMAP and HPET into the 32 bit address space
+18.12.2012 - split into separate patches
+30.01.2014 - revamp the code
+             - code clean up
+             - VDSO layout changed
+             - no fixed addresses
+             - port to 3.14
+01.02.2014 - code cleanup
+02.02.2014 - code cleanup
+             - split into more patches
+             - use HPET_COUNTER instead of hard coded value
+             - fix changelog to the right year ;-)
+02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
+             full compatible.
+03.02.2014 - code cleanup
+             - fix comment
+             - fix ABI break in vdso32.lds.S
+04.02.2014 - revamp IA32 emulation support
+             - introduce VVAR macro
+             - rearranged vsyscall_gtod_data struture for IA32 emulation support
+	     - code cleanup
