@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934721AbaBDV6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:58:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56956 "EHLO
+	id S935036AbaBDV6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:58:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56952 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934214AbaBDVJb (ORCPT
+	with ESMTP id S934211AbaBDVJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:31 -0500
+	Tue, 4 Feb 2014 16:09:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Eric Dumazet <edumazet@google.com>,
+        Joseph Gasparakis <joseph.gasparakis@intel.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 112/133] fib_frontend: fix possible NULL pointer dereference
-Date: Tue,  4 Feb 2014 13:08:33 -0800
-Message-Id: <20140204210740.193380655@linuxfoundation.org>
+Subject: [PATCH 3.12 111/133] net/vxlan: Share RX skb de-marking and checksum checks with ovs
+Date: Tue,  4 Feb 2014 13:08:32 -0800
+Message-Id: <20140204210740.165684262@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,35 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-[ Upstream commit a0065f266a9b5d51575535a25c15ccbeed9a9966 ]
+[ Upstream commit d0bc65557ad09a57b4db176e9e3ccddb26971453 ]
 
-The two commits 0115e8e30d (net: remove delay at device dismantle) and
-748e2d9396a (net: reinstate rtnl in call_netdevice_notifiers()) silently
-removed a NULL pointer check for in_dev since Linux 3.7.
+Make sure the practice set by commit 0afb166 "vxlan: Add capability
+of Rx checksum offload for inner packet" is applied when the skb
+goes through the portion of the RX code which is shared between
+vxlan netdevices and ovs vxlan port instances.
 
-This patch re-introduces this check as it causes crashing the kernel when
-setting small mtu values on non-ip capable netdevices.
-
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/fib_frontend.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/vxlan.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
---- a/net/ipv4/fib_frontend.c
-+++ b/net/ipv4/fib_frontend.c
-@@ -1049,6 +1049,8 @@ static int fib_netdev_event(struct notif
- 	}
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1051,6 +1051,15 @@ static int vxlan_udp_encap_recv(struct s
+ 	if (!vs)
+ 		goto drop;
  
- 	in_dev = __in_dev_get_rtnl(dev);
-+	if (!in_dev)
-+		return NOTIFY_DONE;
++	/* If the NIC driver gave us an encapsulated packet
++	 * with the encapsulation mark, the device checksummed it
++	 * for us. Otherwise force the upper layers to verify it.
++	 */
++	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation)
++		skb->ip_summed = CHECKSUM_NONE;
++
++	skb->encapsulation = 0;
++
+ 	vs->rcv(vs, skb, vxh->vx_vni);
+ 	return 0;
  
- 	switch (event) {
- 	case NETDEV_UP:
+@@ -1109,17 +1118,6 @@ static void vxlan_rcv(struct vxlan_sock
+ 
+ 	skb_reset_network_header(skb);
+ 
+-	/* If the NIC driver gave us an encapsulated packet with
+-	 * CHECKSUM_UNNECESSARY and Rx checksum feature is enabled,
+-	 * leave the CHECKSUM_UNNECESSARY, the device checksummed it
+-	 * for us. Otherwise force the upper layers to verify it.
+-	 */
+-	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation ||
+-	    !(vxlan->dev->features & NETIF_F_RXCSUM))
+-		skb->ip_summed = CHECKSUM_NONE;
+-
+-	skb->encapsulation = 0;
+-
+ 	if (oip6)
+ 		err = IP6_ECN_decapsulate(oip6, skb);
+ 	if (oip)
 
 
