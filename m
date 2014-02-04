@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934663AbaBDVM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:12:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57214 "EHLO
+	id S935183AbaBDV2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:28:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57424 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934418AbaBDVLt (ORCPT
+	with ESMTP id S934654AbaBDVM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:49 -0500
+	Tue, 4 Feb 2014 16:12:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Deneen <mdeneen@gmail.com>, Leilei Zhao <leilei.zhao@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.13 057/140] tty/serial: at91: reset rx_ring when port is shutdown
-Date: Tue,  4 Feb 2014 13:10:44 -0800
-Message-Id: <20140204211038.594389664@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Wolfram Sang <wsa@the-dreams.de>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.13 109/140] i2c: mv64xxx: Fix bus hang on A0 version of the Armada XP SoCs
+Date: Tue,  4 Feb 2014 13:11:36 -0800
+Message-Id: <20140204211040.088116530@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,45 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Deneen <mdeneen@gmail.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit bb7e73c598fb226c75f7625088a8f6a45a0fc892 upstream.
+commit 6cf70ae928bae17077efc0d528dec49bc380438b upstream.
 
-When using RX DMA, the driver won't pass any data to the uart layer
-until the buffer is flipped. When the port is shutdown, the dma buffers
-are unmapped, but the head and tail of the ring buffer are not reseted.
-Since the serial console will keep the port open, this will only
-present itself when the uart is not shared.
+The first variants of Armada XP SoCs (A0 stepping) have issues related
+to the i2c controller which prevent to use the offload mechanism and
+lead to a kernel hang during boot.
 
-To reproduce the issue, with an unpatched driver, run a getty on /dev/ttyS0
-with no serial console and exit. Getty will exit, and when the new one returns
-you will be unable to log in.  If you hold down a key long enough to fill the
-DMA buffer and flip it, you can then log in.
+The commit introduces a new the compatible string
+marvell,mv78230-a0-i2c for the i2c controller. When this compatible
+string is used the driver disables the offload mechanism and the
+kernel no more hangs on these SoCs.
 
-Signed-off-by: Mark Deneen <mdeneen@gmail.com>
-Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
-[nicolas.ferre@atmel.com: adapt to mainline kernel, handle !DMA case]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reported-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/atmel_serial.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/i2c/busses/i2c-mv64xxx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1677,6 +1677,12 @@ static void atmel_shutdown(struct uart_p
- 		atmel_port->release_tx(port);
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -692,6 +692,7 @@ static const struct of_device_id mv64xxx
+ 	{ .compatible = "allwinner,sun4i-i2c", .data = &mv64xxx_i2c_regs_sun4i},
+ 	{ .compatible = "marvell,mv64xxx-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
+ 	{ .compatible = "marvell,mv78230-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
++	{ .compatible = "marvell,mv78230-a0-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, mv64xxx_i2c_of_match_table);
+@@ -783,6 +784,10 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
+ 		drv_data->errata_delay = true;
+ 	}
  
- 	/*
-+	 * Reset ring buffer pointers
-+	 */
-+	atmel_port->rx_ring.head = 0;
-+	atmel_port->rx_ring.tail = 0;
-+
-+	/*
- 	 * Free the interrupt
- 	 */
- 	free_irq(port->irq, port);
++	if (of_device_is_compatible(np, "marvell,mv78230-a0-i2c")) {
++		drv_data->offload_enabled = false;
++		drv_data->errata_delay = true;
++	}
+ out:
+ 	return rc;
+ #endif
 
 
