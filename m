@@ -1,184 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935832AbaBDXAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:00:11 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:60174 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933109AbaBDXAG (ORCPT
+	id S935787AbaBDXAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:00:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56115 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933108AbaBDVCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:00:06 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] clk: respect the clock dependencies in of_clk_init
-Date: Tue,  4 Feb 2014 23:59:26 +0100
-Message-Id: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 4 Feb 2014 16:02:04 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 026/104] rtlwifi: Redo register save locations
+Date: Tue,  4 Feb 2014 13:01:29 -0800
+Message-Id: <20140204210223.475862313@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now the clock providers were initialized in the order found in
-the device tree. This led to have the dependencies between the clocks
-not respected: children clocks could be initialized before their
-parent clocks.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Instead of forcing each platform to manage its own initialization order,
-this patch adds this work inside the framework itself.
+------------------
 
-Using the data of the device tree the of_clk_init function now delayed
-the initialization of a clock provider if its parent provider was not
-ready yet.
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+commit b9a758a8c905fc59e783ae91ad645452d877ea88 upstream.
+
+The initial USB driver did not use some register save locations in the
+private data storage. To save some memory, a union was used to overlay these
+variables with USB I/O components. In an update of the gain-control code,
+these register save locations are now needed for USB drivers.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Mike,
+ drivers/net/wireless/rtlwifi/wifi.h |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-this patch could solve the issues we get on severals mvebu platform
-since 3.14-rc1. This is an alternate solution of the patch set sent by
-Sebastian. However as it modifies the clock framework itself, it is
-more sensible.
-
-I find this solution more elegant than changing the order of the
-initialization of the clock at the platform level. However as it
-should be tested on more platforms that only the mvebu ones, it would
-take some time, and I don't want to still have "broken" platform
-during more release candidate. So at the end this patch should be part
-of the 3.15 kernel.
-
-Thanks,
-
-Gregory
-
- drivers/clk/clk.c | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 91 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 5517944495d8..beb0f8b0c2a0 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2526,24 +2526,112 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
- }
- EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -1035,6 +1035,7 @@ struct rtl_ht_agg {
  
-+struct clock_provider {
-+	of_clk_init_cb_t clk_init_cb;
-+	struct device_node *np;
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(clk_provider_list);
-+
-+/*
-+ * This function looks for a parent clock. If there is one, then it
-+ * checks that the provider for this parent clock was initialized, in
-+ * this case the parent clock will be ready.
-+ */
-+static int parent_ready(struct device_node *np)
-+{
-+	struct of_phandle_args clkspec;
-+	struct of_clk_provider *provider;
-+
-+	/*
-+	 * If there is no clock parent, no need to wait for them, then
-+	 * we can consider their absence as being ready
-+	 */
-+	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
-+					&clkspec))
-+		return 1;
-+
-+	/* Check if we have such a provider in our array */
-+	list_for_each_entry(provider, &of_clk_providers, link) {
-+		if (provider->node == clkspec.np)
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  * of_clk_init() - Scan and init clock providers from the DT
-  * @matches: array of compatible values and init functions for providers.
-  *
-- * This function scans the device tree for matching clock providers and
-- * calls their initialization functions
-+ * This function scans the device tree for matching clock providers
-+ * and calls their initialization functions. It also do it by trying
-+ * to follow the dependencies.
-  */
- void __init of_clk_init(const struct of_device_id *matches)
- {
- 	const struct of_device_id *match;
- 	struct device_node *np;
-+	struct clock_provider *clk_provider, *next;
-+	bool is_init_done;
+ struct rssi_sta {
+ 	long undec_sm_pwdb;
++	long undec_sm_cck;
+ };
  
- 	if (!matches)
- 		matches = &__clk_of_table;
+ struct rtl_tid_data {
+@@ -1325,8 +1326,10 @@ struct fast_ant_training {
+ struct rtl_dm {
+ 	/*PHY status for Dynamic Management */
+ 	long entry_min_undec_sm_pwdb;
++	long undec_sm_cck;
+ 	long undec_sm_pwdb;	/*out dm */
+ 	long entry_max_undec_sm_pwdb;
++	s32 ofdm_pkt_cnt;
+ 	bool dm_initialgain_enable;
+ 	bool dynamic_txpower_enable;
+ 	bool current_turbo_edca;
+@@ -1341,6 +1344,7 @@ struct rtl_dm {
+ 	bool inform_fw_driverctrldm;
+ 	bool current_mrc_switch;
+ 	u8 txpowercount;
++	u8 powerindex_backup[6];
  
- 	for_each_matching_node_and_match(np, matches, &match) {
- 		of_clk_init_cb_t clk_init_cb = match->data;
--		clk_init_cb(np);
-+
-+
-+		if (parent_ready(np)) {
-+			/*
-+			 * The parent clock is ready or there is no
-+			 * clock parent at all, in this case the
-+			 * provider can be initialize immediately.
-+			 */
-+			clk_init_cb(np);
-+		} else {
-+			/*
-+			 * The parent clock is not ready, this
-+			 * provider is moved to a list to be
-+			 * initialized later
-+			 */
-+			struct clock_provider *parent = kzalloc(sizeof(struct clock_provider),
-+							GFP_KERNEL);
-+
-+			parent->clk_init_cb = match->data;
-+			parent->np = np;
-+			list_add(&parent->node, &clk_provider_list);
-+		}
-+	}
-+
-+	while (!list_empty(&clk_provider_list)) {
-+		is_init_done = false;
-+		list_for_each_entry_safe(clk_provider, next,
-+					&clk_provider_list, node) {
-+			if (parent_ready(clk_provider->np)) {
-+				clk_provider->clk_init_cb(clk_provider->np);
-+				list_del(&clk_provider->node);
-+				kfree(clk_provider);
-+				is_init_done = true;
-+			}
-+		}
-+
-+		if (!is_init_done) {
-+			/*
-+			 * We didn't managed to initialize any of the
-+			 * remaining providers during the last loop,
-+			 * so now we initialize all the remaining ones
-+			 * unconditionally in case the clock parent
-+			 * was not mandatory
-+			 */
-+			list_for_each_entry_safe(clk_provider, next,
-+						&clk_provider_list, node) {
-+				clk_provider->clk_init_cb(clk_provider->np);
-+				list_del(&clk_provider->node);
-+				kfree(clk_provider);
-+			}
-+		}
- 	}
- }
- #endif
--- 
-1.8.1.2
+ 	u8 thermalvalue_rxgain;
+ 	u8 thermalvalue_iqk;
+@@ -1352,7 +1356,9 @@ struct rtl_dm {
+ 	bool done_txpower;
+ 	u8 dynamic_txhighpower_lvl;	/*Tx high power level */
+ 	u8 dm_flag;		/*Indicate each dynamic mechanism's status. */
++	u8 dm_flag_tmp;
+ 	u8 dm_type;
++	u8 dm_rssi_sel;
+ 	u8 txpower_track_control;
+ 	bool interrupt_migration;
+ 	bool disable_tx_int;
+@@ -1951,6 +1957,7 @@ struct dig_t {
+ 	u8 pre_ccastate;
+ 	u8 cur_ccasate;
+ 	u8 large_fa_hit;
++	u8 dig_dynamic_min;
+ 	u8 forbidden_igi;
+ 	u8 dig_state;
+ 	u8 dig_highpwrstate;
+@@ -2031,22 +2038,15 @@ struct rtl_priv {
+ 	struct dig_t dm_digtable;
+ 	struct ps_t dm_pstable;
+ 
+-	/* section shared by individual drivers */
+-	union {
+-		struct {	/* data buffer pointer for USB reads */
+-			__le32 *usb_data;
+-			int usb_data_index;
+-			bool initialized;
+-		};
+-		struct {	/* section for 8723ae */
+-			bool reg_init;	/* true if regs saved */
+-			u32 reg_874;
+-			u32 reg_c70;
+-			u32 reg_85c;
+-			u32 reg_a74;
+-			bool bt_operation_on;
+-		};
+-	};
++	u32 reg_874;
++	u32 reg_c70;
++	u32 reg_85c;
++	u32 reg_a74;
++	bool reg_init;	/* true if regs saved */
++	bool bt_operation_on;
++	__le32 *usb_data;
++	int usb_data_index;
++	bool initialized;
+ 	bool enter_ps;	/* true when entering PS */
+ 	u8 rate_mask[5];
+ 
+
 
