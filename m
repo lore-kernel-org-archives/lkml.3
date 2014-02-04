@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935785AbaBDW5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:57:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56133 "EHLO
+	id S933177AbaBDVCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933066AbaBDVCL (ORCPT
+	with ESMTP id S933066AbaBDVB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:11 -0500
+	Tue, 4 Feb 2014 16:01:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 035/104] mwifiex: add missing endian conversion for fw_tsf
-Date: Tue,  4 Feb 2014 13:01:38 -0800
-Message-Id: <20140204210223.727952447@linuxfoundation.org>
+        Mikhail Zolotaryov <lebon@lebon.org.ua>
+Subject: [PATCH 3.10 018/104] USB: Nokia 502 is an unusual device
+Date: Tue,  4 Feb 2014 13:01:21 -0800
+Message-Id: <20140204210223.256982265@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,41 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Mikhail Zolotaryov <lebon@lebon.org.ua>
 
-commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
+commit 0e16114f2db4838251fb64f3b550996ad3585890 upstream.
 
-It is u64 data received from firmware. Little endian to cpu
-conversion is required here.
+The USB storage operation of Nokia Asha 502 Dual SIM smartphone running Asha
+Platform 1.1.1 is unreliable in respect of data consistency (i.e. transfered
+files are corrupted). A similar issue is described here:
+http://discussions.nokia.com/t5/Asha-and-other-Nokia-Series-30/Nokia-301-USB-transfers-and-corrupted-files/td-p/1974170
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The workaround is (MAX_SECTORS_64):
+   rmmod usb_storage && modprobe usb_storage quirks=0421:06aa:m
+
+The patch adds the tested device to the unusual list permanently.
+
+Signed-off-by: Mikhail Zolotaryov <lebon@lebon.org.ua>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/scan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1622,7 +1622,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		const u8 *ie_buf;
- 		size_t ie_len;
- 		u16 channel = 0;
--		u64 fw_tsf = 0;
-+		__le64 fw_tsf = 0;
- 		u16 beacon_size = 0;
- 		u32 curr_bcn_bytes;
- 		u32 freq;
-@@ -1749,7 +1749,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 					      ie_buf, ie_len, rssi, GFP_KERNEL);
- 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
- 				bss_priv->band = band;
--				bss_priv->fw_tsf = fw_tsf;
-+				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
- 				if (priv->media_connected &&
- 				    !memcmp(bssid,
- 					    priv->curr_bss_params.bss_descriptor
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
+ 
++/* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
++UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
++		"Nokia",
++		"502",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
++
+ #ifdef NO_SDDR09
+ UNUSUAL_DEV(  0x0436, 0x0005, 0x0100, 0x0100,
+ 		"Microtech",
 
 
