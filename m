@@ -1,101 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaBDGDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 01:03:36 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38258 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbaBDGDb (ORCPT
+	id S1751920AbaBDGZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 01:25:01 -0500
+Received: from www84.your-server.de ([213.133.104.84]:56590 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaBDGYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 01:03:31 -0500
-Message-ID: <1391493806.3692.11.camel@europa>
-Subject: Re: [PATCH] Make math_state_restore() save and restore the
- interrupt flag
-From: Suresh Siddha <sbsiddha@gmail.com>
-Reply-To: sbsiddha@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nate Eldredge <nate@thatsmathematics.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maarten Baert <maarten-baert@hotmail.com>, Jan Kara <jack@suse.cz>,
-        George Spelvin <linux@horizon.com>, Pekka Riikonen <priikone@iki.fi>
-Date: Mon, 03 Feb 2014 22:03:26 -0800
-In-Reply-To: <CA+55aFyrUTshLPk=21H+6ySOeEVS_zVUAK=2QPrq0aqdQ=3_zg@mail.gmail.com>
-References: <alpine.DEB.2.10.1401301442170.2769@minerva.lan>
-	 <CA+55aFz_CYQGxukpRb5zF5SZ9ZWqpvohoUzqdEb-3+bR_FMnWA@mail.gmail.com>
-	 <CALmL7E9LRZCPH5EuS_Jm-iJzpKnWj4OsXmS44VYDpLoDKPfVxA@mail.gmail.com>
-	 <CA+55aFz-=9L=K2O-yB5f9R-w40PzXJ5xEXcinnUdUF1QHO7KMQ@mail.gmail.com>
-	 <CALmL7E9j5Rv8ZqUZXZh-dfNu_-7XWK_EoNjZHpuAwtG7jpk9+g@mail.gmail.com>
-	 <1391325599.6481.5.camel@europa>
-	 <CA+55aFzz8a7K+KSB_TkGb1ih1hAg09-0TQusQgE5vwMJGegHDw@mail.gmail.com>
-	 <1391410583.3801.6.camel@europa>
-	 <CA+55aFyrUTshLPk=21H+6ySOeEVS_zVUAK=2QPrq0aqdQ=3_zg@mail.gmail.com>
+	Tue, 4 Feb 2014 01:24:53 -0500
+Message-ID: <1391495134.957.2.camel@wall-e.seibold.net>
+Subject: Re: [PATCH 7/8] Add 32 bit VDSO time support for 32 bit kernel
+From: Stefani Seibold <stefani@seibold.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Date: Tue, 04 Feb 2014 07:25:34 +0100
+In-Reply-To: <CALCETrXPraCrvUR=L1iw+=dnxDHwf3AM0QMNPtSEf40G+80pPg@mail.gmail.com>
+References: <1391340435-5130-1-git-send-email-stefani@seibold.net>
+	 <1391340435-5130-8-git-send-email-stefani@seibold.net>
+	 <CALCETrXNVoJBUncHbWWuQ7LAf2ZoWOY8uJBeg_VD1+MmwJ07Rg@mail.gmail.com>
+	 <1391377190.9266.6.camel@wall-e.seibold.net>
+	 <CALCETrX2K6DeGO7v+8Qed03xbKd0dcsoWVPg6fp6+KNGHnC+eA@mail.gmail.com>
+	 <1391413467.965.21.camel@wall-e.seibold.net>
+	 <CALCETrWvPkJo=3o3EZ+ZnFJgKak-7GjcJbsinn6z7wsB3393hg@mail.gmail.com>
+	 <1391464885.1080.18.camel@wall-e.seibold.net>
+	 <CALCETrXPraCrvUR=L1iw+=dnxDHwf3AM0QMNPtSEf40G+80pPg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.8.5 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-03 at 10:20 -0800, Linus Torvalds wrote:
-> Thinking about it some more, this patch is *almost* not needed at all.
+Am Montag, den 03.02.2014, 14:04 -0800 schrieb Andy Lutomirski:
+> On Mon, Feb 3, 2014 at 2:01 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> > Am Montag, den 03.02.2014, 08:36 -0800 schrieb Andy Lutomirski:
+> >> On Sun, Feb 2, 2014 at 11:44 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> >> > Am Sonntag, den 02.02.2014, 16:12 -0800 schrieb Andy Lutomirski:
+> >> >> On Sun, Feb 2, 2014 at 1:39 PM, Stefani Seibold <stefani@seibold.net> wrote:
+> >> >> > Am Sonntag, den 02.02.2014, 08:46 -0800 schrieb Andy Lutomirski:
+> >> >> >> On Sun, Feb 2, 2014 at 3:27 AM,  <stefani@seibold.net> wrote:
+> >> >> >> > From: Stefani Seibold <stefani@seibold.net>
+> >> >> >> >
+> >> >> >> > This patch add the time support for 32 bit a VDSO to a 32 bit kernel.
+> >> >> >>
+> >> >> >> [...]
+> >> >> >>
+> >> >> >> Can you address the review comments from last time around?  For
+> >> >> >> example, this still seems to have redundant vvar and hpet mappings, it
+> >> >> >> doesn't use the VVAR macro, it moves the 32-bit compat vDSO, etc.
+> >> >> >>
+> >> >> >
+> >> >> > I will address the compat VDSO issue.
+> >> >> >
+> >> >> > But the VVAR macro will be not a part of this patch set. If you depend
+> >> >> > on this, feel free to create one. From my point of view this is not
+> >> >> > feasible without a macro hacking, because the address accessing the vvar
+> >> >> > area differs in kernel and VDSO user mode.
+> >> >>
+> >> >> Sorry, but "I will make the code messier for no apparent reason and I
+> >> >> will not offer to fix it in the same series" gets my NAK.
+> >> >>
+> >> >> Hint: I'm talking about two or three lines of code in vvar.h.
+> >> >>
+> >> >
+> >> > A hint back: if you threat me with a NAK for a requested code sequence
+> >> > which currently no user, this is far away from professional. I am not
+> >> > your trainee.
+> >> >
+> >> > BTW: If it is so easy, send me the two or three lines and i will merge
+> >> > it ;-)
+> >>
+> >> Something to the effect of:
+> >>
+> >> #elif defined(BUILD_VDSO32)
+> >> #define VVAR(name) (*vvar_ ## name)
+> >> #endif
+> >>
+> >> Should do the trick.
+> >
+> > You are wrong...
+> >
+> > #ifdef BUILD_VDSO32
+> >
+> > #define DECLARE_VVAR(offset, type, name) \
+> >         extern type vvar_ ## name __attribute__((visibility("hidden")));
+> >
+> > #define VVAR(name) (vvar_ ## name)
+> >
+> > #else
+> >
+> > /* Base address of vvars.  This is not ABI. */
+> > #ifdef CONFIG_X86_64
+> > #define VVAR_ADDRESS (-10*1024*1024 - 4096)
+> > #else
+> > extern char __vvar_page;
+> >
+> > #define VVAR_ADDRESS (&__vvar_page)
+> > #endif
+> >
+> > This would do the trick!
+> >
+> > But for 64 bit to 32 bit conversation layer in vclock_gettime.c there is
+> > still a
+> >
+> > struct arch_vsyscall_gtod_data arch_vvar_vsyscall_gtod_data
+> >         __attribute__((visibility("hidden")));
+> > #define gtod (&arch_vvar_vsyscall_gtod_data)
+> >
+> > needed, because vvar_vsyscall_gtod_data is the 32 bit version, which
+> > would result in incorrect access of the struct members. So my code can't
+> > use this VVAR macro.
 > 
-> I'm wondering if you should just change the first patch to just always
-> initialize the fpu when it is allocated, and at execve() time (ie in
-> flush_thread()).
+> For 32-on-64, I must have read your code wrong.  Are you sticking two
+> copies of the same struct with different layout into the vvar page?
+> If so, wouldn't it be better to only have the variant with a common
+> layout and use it for all versions of the vdso?
 > 
 
-We already do this for eager-fpu case, in eager_fpu_init() during boot
-and in drop_init_fpu() during flush_thread().
+No, only one. But for depend on 32/64 bit the layout differs.
 
-> If we do that, then this:
-> 
-> +       if (!tsk_used_math(tsk))
-> +               init_fpu(tsk);
-> 
-> can be dropped entirely from math_state_restore(). 
+We discuss this topic some days before, so please have a look at the
+code and the previous posts.
 
-yeah, probably for eager-fpu, but:
+- Stefani
 
-> And quite frankly,
-> at that point, I think all the changes to __kernel_fpu_end() can go
-> away, because at that point math_state_restore() really does the right
-> thing - all the allocations are gone, and all the async task state
-> games are gone, only the "restore state" remains.
-> 
-> Hmm? So the only thing needed would be to add that "init_fpu()" to the
-> initial bootmem allocation path and to change flush_thread() (it
-> currently does "drop_init_fpu()", let's just make it initialize the
-> FPU state using fpu_finit()), and then we could remove the whole
-> "used_math" bit entirely, and just say that the FPU is always
-> initialized.
-> 
-> What do you guys think?
-
-No. as I mentioned in the changelog, there is one more path which does
-drop_fpu() and we still depend on this used_math bit for eager-fpu.
-
-in signal restore path for 32-bit app, where we copy the sig-context
-state from the user stack to the kernel manually (because of legacy
-reasons where fsave state is followed by fxsave state etc in the 32-bit
-signal handler context and we have to go through convert_to_fxsr() etc).
-
-from __restore_xstate_sig() :
-
-                /*
-                 * Drop the current fpu which clears used_math(). This ensures
-                 * that any context-switch during the copy of the new state,
-                 * avoids the intermediate state from getting restored/saved.
-                 * Thus avoiding the new restored state from getting corrupted.
-                 * We will be ready to restore/save the state only after
-                 * set_used_math() is again set.
-                 */
-                drop_fpu(tsk);
-
-
-thanks,
-suresh
 
