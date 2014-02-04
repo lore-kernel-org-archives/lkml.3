@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935524AbaBDWEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:04:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56891 "EHLO
+	id S935545AbaBDWEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:04:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934144AbaBDVJO (ORCPT
+	with ESMTP id S934137AbaBDVJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:14 -0500
+	Tue, 4 Feb 2014 16:09:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.12 073/133] pinctrl: sunxi: Honor GPIO output initial vaules
-Date: Tue,  4 Feb 2014 13:07:54 -0800
-Message-Id: <20140204210739.095424795@linuxfoundation.org>
+        Brecht Machiels <brecht@mos6581.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.12 071/133] rtc-cmos: Add an alarm disable quirk
+Date: Tue,  4 Feb 2014 13:07:52 -0800
+Message-Id: <20140204210739.039420145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,50 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen-Yu Tsai <wens@csie.org>
+From: Borislav Petkov <bp@alien8.de>
 
-commit fa8cf57c923e86a693a85aff1df579245a27cbb3 upstream.
+commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
 
-Some GPIO users, such as fixed-regulator, request GPIO output with
-initial value of 1. This was ignored by sunxi driver.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+However, there are at least two b0rked BIOSes we know about:
+
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
+
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
+
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
+
+Cc: Brecht Machiels <brecht@mos6581.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/pinctrl-sunxi.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -469,12 +469,6 @@ static int sunxi_pinctrl_gpio_get(struct
- 	return val;
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
+ 
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
+ 	return 0;
  }
  
--static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
--					unsigned offset, int value)
--{
--	return pinctrl_gpio_direction_output(chip->base + offset);
--}
--
- static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
- 				unsigned offset, int value)
- {
-@@ -498,6 +492,13 @@ static void sunxi_pinctrl_gpio_set(struc
- 	spin_unlock_irqrestore(&pctl->lock, flags);
- }
- 
-+static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned offset, int value)
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
++
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
 +{
-+	sunxi_pinctrl_gpio_set(chip, offset, value);
-+	return pinctrl_gpio_direction_output(chip->base + offset);
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
 +}
 +
- static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
- 				const struct of_phandle_args *gpiospec,
- 				u32 *flags)
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
+ 
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1158,6 +1206,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
+ 	}
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
+ 
 
 
