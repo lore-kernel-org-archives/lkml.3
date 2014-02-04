@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935412AbaBDWZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:25:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56601 "EHLO
+	id S935504AbaBDW0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:26:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933887AbaBDVIT (ORCPT
+	with ESMTP id S933882AbaBDVIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:08:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 046/133] b43legacy: Fix unload oops if firmware is not available
-Date: Tue,  4 Feb 2014 13:07:27 -0800
-Message-Id: <20140204210738.337779386@linuxfoundation.org>
+Subject: [PATCH 3.12 045/133] b43: Fix unload oops if firmware is not available
+Date: Tue,  4 Feb 2014 13:07:26 -0800
+Message-Id: <20140204210738.308105653@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -31,30 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 452028665312672c6ba9e16a19248ee00ead9400 upstream.
+commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
 
 The asyncronous firmware load uses a completion struct to hold firmware
 processing until the user-space routines are up and running. There is.
 however, a problem in that the waiter is nevered canceled during teardown.
 As a result, unloading the driver when firmware is not available causes an oops.
 
+To be able to access the completion structure at teardown, it had to be moved
+into the b43_wldev structure.
+
+This patch also fixes a typo in a comment.
+
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43legacy/main.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/b43/b43.h  |    4 ++--
+ drivers/net/wireless/b43/main.c |   10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/b43legacy/main.c
-+++ b/drivers/net/wireless/b43legacy/main.c
-@@ -3919,6 +3919,7 @@ static void b43legacy_remove(struct ssb_
- 	 * as the ieee80211 unreg will destroy the workqueue. */
- 	cancel_work_sync(&wldev->restart_work);
- 	cancel_work_sync(&wl->firmware_load);
-+	complete(&wldev->fw_load_complete);
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -731,8 +731,6 @@ enum b43_firmware_file_type {
+ struct b43_request_fw_context {
+ 	/* The device we are requesting the fw for. */
+ 	struct b43_wldev *dev;
+-	/* a completion event structure needed if this call is asynchronous */
+-	struct completion fw_load_complete;
+ 	/* a pointer to the firmware object */
+ 	const struct firmware *blob;
+ 	/* The type of firmware to request. */
+@@ -809,6 +807,8 @@ enum {
+ struct b43_wldev {
+ 	struct b43_bus_dev *dev;
+ 	struct b43_wl *wl;
++	/* a completion event structure needed if this call is asynchronous */
++	struct completion fw_load_complete;
  
- 	B43legacy_WARN_ON(!wl);
- 	if (!wldev->fw.ucode)
+ 	/* The device initialization status.
+ 	 * Use b43_status() to query. */
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2070,6 +2070,7 @@ void b43_do_release_fw(struct b43_firmwa
+ 
+ static void b43_release_firmware(struct b43_wldev *dev)
+ {
++	complete(&dev->fw_load_complete);
+ 	b43_do_release_fw(&dev->fw.ucode);
+ 	b43_do_release_fw(&dev->fw.pcm);
+ 	b43_do_release_fw(&dev->fw.initvals);
+@@ -2095,7 +2096,7 @@ static void b43_fw_cb(const struct firmw
+ 	struct b43_request_fw_context *ctx = context;
+ 
+ 	ctx->blob = firmware;
+-	complete(&ctx->fw_load_complete);
++	complete(&ctx->dev->fw_load_complete);
+ }
+ 
+ int b43_do_request_fw(struct b43_request_fw_context *ctx,
+@@ -2142,7 +2143,7 @@ int b43_do_request_fw(struct b43_request
+ 	}
+ 	if (async) {
+ 		/* do this part asynchronously */
+-		init_completion(&ctx->fw_load_complete);
++		init_completion(&ctx->dev->fw_load_complete);
+ 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
+ 					      ctx->dev->dev->dev, GFP_KERNEL,
+ 					      ctx, b43_fw_cb);
+@@ -2150,12 +2151,11 @@ int b43_do_request_fw(struct b43_request
+ 			pr_err("Unable to load firmware\n");
+ 			return err;
+ 		}
+-		/* stall here until fw ready */
+-		wait_for_completion(&ctx->fw_load_complete);
++		wait_for_completion(&ctx->dev->fw_load_complete);
+ 		if (ctx->blob)
+ 			goto fw_ready;
+ 	/* On some ARM systems, the async request will fail, but the next sync
+-	 * request works. For this reason, we dall through here
++	 * request works. For this reason, we fall through here
+ 	 */
+ 	}
+ 	err = request_firmware(&ctx->blob, ctx->fwname,
 
 
