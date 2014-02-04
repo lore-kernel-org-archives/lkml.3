@@ -1,204 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaBDKQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:16:34 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:36801 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437AbaBDKQN (ORCPT
+	id S1754264AbaBDKPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:15:39 -0500
+Received: from www84.your-server.de ([213.133.104.84]:38158 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbaBDKOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:16:13 -0500
-Date: Tue, 4 Feb 2014 02:17:48 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] block: Explicitly handle discard/write same segments
-Message-ID: <20140204101748.GA12440@kmo-pixel>
-References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
- <20140114023346.GN9037@kmo>
- <yq161pnmcl2.fsf@sermon.lab.mkp.net>
- <20140114044841.GO9037@kmo>
- <yq1ob3el3mr.fsf@sermon.lab.mkp.net>
- <20140114222424.GA7333@moria.home.lan>
- <alpine.LSU.2.11.1401161129380.1321@eggly.anvils>
- <20140117012105.GS9037@kmo>
- <alpine.LSU.2.11.1401310852000.987@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401310852000.987@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Feb 2014 05:14:43 -0500
+From: stefani@seibold.net
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH v11 5/9] replace VVAR(vsyscall_gtod_data) by gtod macro
+Date: Tue,  4 Feb 2014 11:15:04 +0100
+Message-Id: <1391508908-32239-6-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391508908-32239-1-git-send-email-stefani@seibold.net>
+References: <1391508908-32239-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Immutable biovecs changed the way biovecs are interpreted - drivers no
-longer use bi_vcnt, they have to go by bi_iter.bi_size (to allow for
-using part of an existing segment without modifying it).
+From: Stefani Seibold <stefani@seibold.net>
 
-This breaks with discards and write_same bios, since for those bi_size
-has nothing to do with segments in the biovec. So for now, we need a
-fairly gross hack - we fortunately know that there will never be more
-than one segment for the entire request, so we can special case
-discard/write_same.
+There a currently more than 30 users of the gtod macro, so replace the
+last VVAR(vsyscall_gtod_data) by gtod macro.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
-On Fri, Jan 31, 2014 at 09:17:25AM -0800, Hugh Dickins wrote:
-> On Thu, 16 Jan 2014, Kent Overstreet wrote:
-> > 
-> > Ok, I reread the code and figured it out - the analagous change also has to be
-> > made in __blk_segment_map_sg(). I'll mail out a patch for this tomorrow after
-> > I've stared at the code more and had less beer.
-> 
-> I'd been hoping for a patch to try, but now your changes have hit Linus's
-> tree: so today we have discard broken there too, crashing as originally
-> reported on the NULL struct page pointer in __blk_recalc_rq_segments()'s
-> page_to_pfn(bv.bv_page).
-> 
-> How to reproduce it?  I hope you'll find easier ways, but I get it with
-> swapping to SSD (remember "swapon -d" to enable discard).  I'm just doing
-> what I've done for years, running a pair of make -j20 kbuilds to tmpfs in
-> limited RAM (I use mem=700M with 1.5G of swap: but that would be far too
-> little RAM for a general config of current tree), to get plenty of fairly
-> chaotic swapping but good forward progress nonetheless (if the sizes are
-> too small, then it'll just thrash abysmally or be OOM-killed).
-> 
-> But please do send me a patch and I'll give it a try - thanks.
+ arch/x86/vdso/vclock_gettime.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Hugh - can you give this patch a try? Passes my tests but I was never
-able to reproduce your crash, unfortunately.
-
- block/blk-merge.c | 91 +++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 62 insertions(+), 29 deletions(-)
-
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 8f8adaa954..6c583f9c5b 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -21,6 +21,16 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 	if (!bio)
- 		return 0;
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index fd074dd..743f277 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -109,7 +109,7 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 		*mode = VCLOCK_NONE;
  
-+	/*
-+	 * This should probably be returning 0, but blk_add_request_payload()
-+	 * (Christoph!!!!)
-+	 */
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return 1;
-+
-+	if (bio->bi_rw & REQ_WRITE_SAME)
-+		return 1;
-+
- 	fbio = bio;
- 	cluster = blk_queue_cluster(q);
- 	seg_size = 0;
-@@ -161,30 +171,60 @@ new_segment:
- 	*bvprv = *bvec;
- }
+ 	/* refer to tsc.c read_tsc() comment for rationale */
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
  
--/*
-- * map a request to scatterlist, return number of sg entries setup. Caller
-- * must make sure sg can hold rq->nr_phys_segments entries
-- */
--int blk_rq_map_sg(struct request_queue *q, struct request *rq,
--		  struct scatterlist *sglist)
-+static int __blk_bios_map_sg(struct request_queue *q, struct bio *bio,
-+			     struct scatterlist *sglist,
-+			     struct scatterlist **sg)
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -133,7 +133,7 @@ notrace static cycle_t vread_tsc(void)
+ 	rdtsc_barrier();
+ 	ret = (cycle_t)vget_cycles();
+ 
+-	last = VVAR(vsyscall_gtod_data).clock.cycle_last;
++	last = gtod->clock.cycle_last;
+ 
+ 	if (likely(ret >= last))
+ 		return ret;
+@@ -288,7 +288,7 @@ int gettimeofday(struct timeval *, struct timezone *)
+ notrace time_t __vdso_time(time_t *t)
  {
- 	struct bio_vec bvec, bvprv = { NULL };
--	struct req_iterator iter;
--	struct scatterlist *sg;
-+	struct bvec_iter iter;
- 	int nsegs, cluster;
+ 	/* This is atomic on x86_64 so we don't need any locks. */
+-	time_t result = ACCESS_ONCE(VVAR(vsyscall_gtod_data).wall_time_sec);
++	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
  
- 	nsegs = 0;
- 	cluster = blk_queue_cluster(q);
- 
--	/*
--	 * for each bio in rq
--	 */
--	sg = NULL;
--	rq_for_each_segment(bvec, rq, iter) {
--		__blk_segment_map_sg(q, &bvec, sglist, &bvprv, &sg,
--				     &nsegs, &cluster);
--	} /* segments in rq */
-+	if (bio->bi_rw & REQ_DISCARD) {
-+		/*
-+		 * This is a hack - drivers should be neither modifying the
-+		 * biovec, nor relying on bi_vcnt - but because of
-+		 * blk_add_request_payload(), a discard bio may or may not have
-+		 * a payload we need to set up here (thank you Christoph) and
-+		 * bi_vcnt is really the only way of telling if we need to.
-+		 */
-+
-+		if (bio->bi_vcnt)
-+			goto single_segment;
-+
-+		return 0;
-+	}
-+
-+	if (bio->bi_rw & REQ_WRITE_SAME) {
-+single_segment:
-+		*sg = sglist;
-+		bvec = bio_iovec(bio);
-+		sg_set_page(*sg, bvec.bv_page, bvec.bv_len, bvec.bv_offset);
-+		return 1;
-+	}
-+
-+	for_each_bio(bio)
-+		bio_for_each_segment(bvec, bio, iter)
-+			__blk_segment_map_sg(q, &bvec, sglist, &bvprv, sg,
-+					     &nsegs, &cluster);
- 
-+	return nsegs;
-+}
-+
-+/*
-+ * map a request to scatterlist, return number of sg entries setup. Caller
-+ * must make sure sg can hold rq->nr_phys_segments entries
-+ */
-+int blk_rq_map_sg(struct request_queue *q, struct request *rq,
-+		  struct scatterlist *sglist)
-+{
-+	struct scatterlist *sg = NULL;
-+	int nsegs = 0;
-+
-+	if (rq->bio)
-+		nsegs = __blk_bios_map_sg(q, rq->bio, sglist, &sg);
- 
- 	if (unlikely(rq->cmd_flags & REQ_COPY_USER) &&
- 	    (blk_rq_bytes(rq) & q->dma_pad_mask)) {
-@@ -230,20 +270,13 @@ EXPORT_SYMBOL(blk_rq_map_sg);
- int blk_bio_map_sg(struct request_queue *q, struct bio *bio,
- 		   struct scatterlist *sglist)
- {
--	struct bio_vec bvec, bvprv = { NULL };
--	struct scatterlist *sg;
--	int nsegs, cluster;
--	struct bvec_iter iter;
--
--	nsegs = 0;
--	cluster = blk_queue_cluster(q);
--
--	sg = NULL;
--	bio_for_each_segment(bvec, bio, iter) {
--		__blk_segment_map_sg(q, &bvec, sglist, &bvprv, &sg,
--				     &nsegs, &cluster);
--	} /* segments in bio */
-+	struct scatterlist *sg = NULL;
-+	int nsegs;
-+	struct bio *next = bio->bi_next;
-+	bio->bi_next = NULL;
- 
-+	nsegs = __blk_bios_map_sg(q, bio, sglist, &sg);
-+	bio->bi_next = next;
- 	if (sg)
- 		sg_mark_end(sg);
- 
+ 	if (t)
+ 		*t = result;
 -- 
-1.9.rc1
+1.8.5.3
 
