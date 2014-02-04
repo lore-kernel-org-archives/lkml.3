@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152AbaBDUD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 15:03:27 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54511 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaBDUDZ (ORCPT
+	id S1754800AbaBDUHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 15:07:42 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:59025 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754472AbaBDUHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 15:03:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWUR-x=fwG26xg8AsUQwL+FXLaQAnkaWHbrVaep0QzHJQ@mail.gmail.com>
-References: <CAMuHMdVCeFek2LX0_AnA8zg_yYhXvzw19rH8OsqbWWb-rb9w-A@mail.gmail.com>
-	<CAHA+R7Omv++NCg=nocVsW+tM=Zv_qCNhX1JjtFTuCzfz9B3Cig@mail.gmail.com>
-	<CAMuHMdWUR-x=fwG26xg8AsUQwL+FXLaQAnkaWHbrVaep0QzHJQ@mail.gmail.com>
-Date: Tue, 4 Feb 2014 21:03:24 +0100
-X-Google-Sender-Auth: wq7SK3lhTOdjHtpCEi_FCJK2Kqg
-Message-ID: <CAMuHMdWrYj1te-7qhKg-uHmXpuLaBBdqCEmpv_fgYSmaN3yujw@mail.gmail.com>
-Subject: Re: [bisected] Re: WARNING: at net/ipv4/devinet.c:1599
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Cong Wang <cwang@twopensource.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 15:07:40 -0500
+Date: Tue, 4 Feb 2014 21:07:33 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Willy Tarreau <w@1wt.eu>, Andrew Lunn <andrew@lunn.ch>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140204210733.36c2eab0@skate>
+In-Reply-To: <52F10024.4030201@free-electrons.com>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<52EA2875.5020807@free-electrons.com>
+	<52EA2A04.2070109@gmail.com>
+	<20140203231603.GA11613@1wt.eu>
+	<52F02816.1050708@gmail.com>
+	<52F10024.4030201@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 8:20 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Tue, Feb 4, 2014 at 7:08 PM, Cong Wang <cwang@twopensource.com> wrote:
->> On Tue, Feb 4, 2014 at 6:19 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>>
->>> Anyone with a clue?
->>>
->>
->> Looks like we need:
->>
->> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
->> index ac2dff3..bdbf68b 100644
->> --- a/net/ipv4/devinet.c
->> +++ b/net/ipv4/devinet.c
->> @@ -1443,7 +1443,8 @@ static size_t inet_nlmsg_size(void)
->>                + nla_total_size(4) /* IFA_LOCAL */
->>                + nla_total_size(4) /* IFA_BROADCAST */
->>                + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
->> -              + nla_total_size(4);  /* IFA_FLAGS */
->> +              + nla_total_size(4)  /* IFA_FLAGS */
->> +              + nla_total_size(sizeof(struct ifa_cacheinfo)); /*
->> IFA_CACHEINFO */
->>  }
->
-> Thanks for your suggestion, but it doesn't help :-(
+Hello,
 
-Bummer, I applied it to the wrong tree.
+On Tue, 04 Feb 2014 15:58:44 +0100, Gregory CLEMENT wrote:
 
-Yes, it works, thanks a lot!
+> > @Jason, Andrew, Gregory, Thomas:
+> > Now that v3.14 is out, anything against taking this in as fixes for rc1?
+> 
+> I am not found of this solution I still think it should be done
+> at framework level. However we still have this very annoying issue,
+> and this fix is better than nothing. So I am not against taking this
+> for rc1 with the hope that it will be later revert with a better
+> solution.
 
-David, Jiri, is this the right fix, or just a band-aid?
+Same opinion here. I'm fine with this solution as a temporary measure,
+but it would be good to solve this problem in a nicer way. Also, making
+this change doesn't impact the DT in any way, there is no problem in
+having a temporary not perfect solution, and improve it later on.
 
-Gr{oetje,eeting}s,
+Best regards,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
