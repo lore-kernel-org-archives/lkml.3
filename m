@@ -1,325 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaBDG6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 01:58:39 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:46929 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484AbaBDG6c (ORCPT
+	id S1753553AbaBDG7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 01:59:04 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44026 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557AbaBDG6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 01:58:32 -0500
+	Tue, 4 Feb 2014 01:58:55 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: gregkh@linuxfoundation.org, lisa@xenapiadmin.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] staging: bcm: fix pointer-integer size mismatch warnings
+Date: Tue,  4 Feb 2014 15:59:23 +0900
+Message-Id: <1391497163-6894-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-In-Reply-To: <CAEr7rXjmVp-F88zQnc4a2tSzBAJFshzR0FPkOBdo1jbQLOv+2A@mail.gmail.com>
-References: <20140121232708.GA29787@amazon.com>
-	<20140122014908.GG18164@kroah.com>
-	<CA+55aFw7fTFJtOAa+RETGSL7ZXZE4Ysk9+Xmg6_5yyLkwRtcTw@mail.gmail.com>
-	<20140122032045.GA22182@falcon.amazon.com>
-	<20140122050215.GC9931@konrad-lan.dumpdata.com>
-	<20140122072914.GA9283@orcus.uplinklabs.net>
-	<52DFD5DB.6060603@iogearbox.net>
-	<CAEr7rXhJf1tf2KUErsGgUyYNUpVwLYD=fKUf8aPm0Dcg21MuNQ@mail.gmail.com>
-	<20140122203337.GA31908@orcus.uplinklabs.net>
-	<CAEr7rXjge6rKzxbwy+0A6-5YhVZL9WGmaLrDYbE8H5hrtwq_4A@mail.gmail.com>
-	<20140124133830.GU4963@suse.de>
-	<CAEr7rXjmVp-F88zQnc4a2tSzBAJFshzR0FPkOBdo1jbQLOv+2A@mail.gmail.com>
-Date: Tue, 4 Feb 2014 01:58:31 -0500
-Message-ID: <CAEr7rXgCoYW7O0E38YGCThUKgmxYFfLfYP-x_KSzVBLOCiHeDg@mail.gmail.com>
-Subject: Re: [BISECTED] Linux 3.12.7 introduces page map handling regression
-From: Elena Ufimtseva <ufimtseva@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Steven Noonan <steven@uplinklabs.net>,
-        Daniel Borkmann <borkmann@iogearbox.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        xen-devel <xen-devel@lists.xenproject.org>,
-        George Dunlap <george.dunlap@eu.citrix.com>,
-        Dario Faggioli <dario.faggioli@citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 1:02 PM, Elena Ufimtseva <ufimtseva@gmail.com> wrote:
-> On Fri, Jan 24, 2014 at 8:38 AM, Mel Gorman <mgorman@suse.de> wrote:
->> On Thu, Jan 23, 2014 at 11:23:37AM -0500, Elena Ufimtseva wrote:
->>> >> >> <SNIP>
->>> >> >>
->>> >> >> This dump doesn't look dramatically different, either.
->>> >> >>
->>> >> >>>
->>> >> >>> The other question is - how is AutoNUMA running when it is not enabled?
->>> >> >>> Shouldn't those _PAGE_NUMA ops be nops when AutoNUMA hasn't even been
->>> >> >>> turned on?
->>> >> >>
->>> >> >>
->>> >> >> Well, NUMA_BALANCING is enabled in the kernel config[1], but I presume you
->>> >> >> mean not enabled at runtime?
->>> >> >>
->>> >> >> [1]
->>> >> >> http://git.uplinklabs.net/snoonan/projects/archlinux/ec2/ec2-packages.git/tree/linux-ec2/config.x86_64
->>> >>
->>> >>
->>> >>
->>> >> --
->>> >> Elena
->>>
->>> I was able to reproduce this consistently, also with the latest mm
->>> patches from yesterday.
->>> Can you please try this:
->>>
->>
->> Thanks Elena,
->>
->>> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
->>> index ce563be..76dcf96 100644
->>> --- a/arch/x86/xen/mmu.c
->>> +++ b/arch/x86/xen/mmu.c
->>> @@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct
->>> *mm, unsigned long addr,
->>>  /* Assume pteval_t is equivalent to all the other *val_t types. */
->>>  static pteval_t pte_mfn_to_pfn(pteval_t val)
->>>  {
->>> -       if (val & _PAGE_PRESENT) {
->>> +       if ((val & _PAGE_PRESENT) || ((val &
->>> (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)) {
->>>                 unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->>>                 unsigned long pfn = mfn_to_pfn(mfn);
->>>
->>> @@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
->>>
->>>  static pteval_t pte_pfn_to_mfn(pteval_t val)
->>>  {
->>> -       if (val & _PAGE_PRESENT) {
->>> +       if ((val & _PAGE_PRESENT) || ((val &
->>> (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA)) {
->>>                 unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->>>                 pteval_t flags = val & PTE_FLAGS_MASK;
->>>                 unsigned long mfn;
->>
->> Would reusing pte_present be an option? Ordinarily I expect that
->> PAGE_NUMA/PAGE_PROTNONE is only set if PAGE_PRESENT is not set and pte_present
->> is defined as
->>
->> static inline int pte_present(pte_t a)
->> {
->>         return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
->>                                _PAGE_NUMA);
->> }
->>
->> So it looks like it work work. Of course it would need to be split to
->> reuse it within xen if pte_present was split to have a pteval_present
->> helper like so
->>
->> static inline int pteval_present(pteval_t val)
->> {
->>         /*
->>          * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
->>          * way clearly states that the intent is that a protnone and numa
->>          * hinting ptes are considered present for the purposes of
->>          * pagetable operations like zapping, protection changes, gup etc.
->>          */
->>         return val & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
->> }
->>
->> static inline int pte_present(pte_t pte)
->> {
->>         return pteval_present(pte_flags(pte))
->> }
->>
->> If Xen is doing some other tricks with _PAGE_PRESENT then it might be
->> ruled out as an option. If so, then maybe it could still be made a
->> little clearer for future reference?
->
-> Yes, sure, it should work, I tried it.
-> Thank you Mel.
->
->>
->>
->> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
->> index c1d406f..ff621de 100644
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct *mm, unsigned long addr,
->>  /* Assume pteval_t is equivalent to all the other *val_t types. */
->>  static pteval_t pte_mfn_to_pfn(pteval_t val)
->>  {
->> -       if (val & _PAGE_PRESENT) {
->> +       if ((val & _PAGE_PRESENT) || pteval_numa(val)) {
->>                 unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->>                 unsigned long pfn = mfn_to_pfn(mfn);
->>
->> @@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
->>
->>  static pteval_t pte_pfn_to_mfn(pteval_t val)
->>  {
->> -       if (val & _PAGE_PRESENT) {
->> +       if ((val & _PAGE_PRESENT) || pteval_numa(val)) {
->>                 unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
->>                 pteval_t flags = val & PTE_FLAGS_MASK;
->>                 unsigned long mfn;
->> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
->> index 8e4f41d..693fe00 100644
->> --- a/include/asm-generic/pgtable.h
->> +++ b/include/asm-generic/pgtable.h
->> @@ -654,10 +654,14 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
->>   * (because _PAGE_PRESENT is not set).
->>   */
->>  #ifndef pte_numa
->> +static inline int pteval_numa(pteval_t pteval)
->> +{
->> +       return (pteval & (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
->> +}
->> +
->>  static inline int pte_numa(pte_t pte)
->>  {
->> -       return (pte_flags(pte) &
->> -               (_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
->> +       return pteval_numa(pte_flags(pte));
->>  }
->>  #endif
->>
->
->
->
-> --
-> Elena
+Fix the pointer-integer size mismatch warnings below:
+	drivers/staging/bcm/CmHost.c: In function ‘StoreCmControlResponseMessage’:
+	drivers/staging/bcm/CmHost.c:1387:39: warning: cast to pointer from
+			integer of different size [-Wint-to-pointer-cast]
+	  pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
+					       ^
+	drivers/staging/bcm/CmHost.c:1426:37: warning: cast to pointer from
+			integer of different size [-Wint-to-pointer-cast]
+	  pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
+					     ^
+	drivers/staging/bcm/CmHost.c:1440:35: warning: cast to pointer from
+			integer of different size [-Wint-to-pointer-cast]
+	  pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfActiveSet);
+					   ^
 
-Here are two variants of this change . First one adds check for
-_PAGE_NUMA flag in xen pte translations.
-Second adds proposed by Mel pteval_present (comments are left
-untouched :) and respective patch for xen pte translation that
-uses pteval_present.
-Mel, you can pick any of these two if they look fine and xen
-maintainers are ok with the xen change (Konrad, David?)
-
-Subject: [PATCH] xen: add _PAGE_NUMA for pte translations
-
-xen: add _PAGE_NUMA for pte translations
-
-Adds check in xen guest pte addresses translations for
-_PAGE_NUMA flag. This resolves reported issues and will
-be essential for NUMA support in xen guest with future
-vNUMA patches.
-
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
 ---
- arch/x86/xen/mmu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/bcm/CmHost.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 2423ef0..c804d58 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct
-*mm, unsigned long addr,
- /* Assume pteval_t is equivalent to all the other *val_t types. */
- static pteval_t pte_mfn_to_pfn(pteval_t val)
- {
--       if (val & _PAGE_PRESENT) {
-+       if ((val & _PAGE_PRESENT) || (val & (_PAGE_NUMA|_PAGE_PRESENT))) {
-                unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-                unsigned long pfn = mfn_to_pfn(mfn);
-
-@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
-
- static pteval_t pte_pfn_to_mfn(pteval_t val)
- {
--       if (val & _PAGE_PRESENT) {
-+       if ((val & _PAGE_PRESENT) || (val & (_PAGE_NUMA|_PAGE_PRESENT))) {
-                unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-                pteval_t flags = val & PTE_FLAGS_MASK;
-                unsigned long mfn;
+diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+index cc91b5e..dd8f8f7 100644
+--- a/drivers/staging/bcm/CmHost.c
++++ b/drivers/staging/bcm/CmHost.c
+@@ -1384,7 +1384,8 @@ ULONG StoreCmControlResponseMessage(struct bcm_mini_adapter *Adapter, PVOID pvBu
+ 	}
+ 
+ 	/* this can't possibly be right */
+-	pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
++	pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)
++		(uintptr_t)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
+ 
+ 	if (pstAddIndicationAlt->u8Type == DSA_REQ) {
+ 		struct bcm_add_request AddRequest;
+@@ -1423,7 +1424,8 @@ ULONG StoreCmControlResponseMessage(struct bcm_mini_adapter *Adapter, PVOID pvBu
+ 		return 0;
+ 	}
+ 
+-	pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
++	pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)
++		(uintptr_t)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
+ 
+ 	/* ACTIVE SET */
+ 	pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)
+@@ -1437,7 +1439,8 @@ ULONG StoreCmControlResponseMessage(struct bcm_mini_adapter *Adapter, PVOID pvBu
+ 		return 0;
+ 	}
+ 
+-	pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfActiveSet);
++	pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)
++		(uintptr_t)ntohl((ULONG)pstAddIndication->psfActiveSet);
+ 
+ 	(*puBufferLength) = sizeof(struct bcm_add_indication);
+ 	*(struct bcm_add_indication *)pvBuffer = *pstAddIndication;
 -- 
-1.7.10.4
+1.8.3.2
 
-
-
-
-Subject: [PATCH] mm: adds pteval_present
-
-As suggested by Mel Gorman in https://lkml.org/lkml/2014/1/24/174.
-Adds pteval_present to clarify that hinting ptes are considered present
-for the purposes of pagetable operations like zapping, protection changes,
-gup etc.
-
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
----
- arch/x86/include/asm/pgtable.h |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index bbc8b12..205b00d 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -445,10 +445,20 @@ static inline int pte_same(pte_t a, pte_t b)
-        return a.pte == b.pte;
- }
-
-+static inline int pteval_present(pteval_t pteval)
-+{
-+       /*
-+        * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
-+        * way clearly states that the intent is that a protnone and numa
-+        * hinting ptes are considered present for the purposes of
-+        * pagetable operations like zapping, protection changes, gup etc.
-+       */
-+       return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
-+}
-+
- static inline int pte_present(pte_t a)
- {
--       return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
--                              _PAGE_NUMA);
-+       return pteval_present(pte_flags(a));
- }
-
- #define pte_accessible pte_accessible
--- 
-1.7.10.4
-
-
-Subject: [PATCH] xen: use pteval_present for xen pte translations
-
-Uses pteval_present for xen pte translations as sugested
-by Mel Gorman in https://lkml.org/lkml/2014/1/24/174.
-This also takes into account _PAGE_NUMA flag.
-
-Signed-off-by: Elena Ufimtseva <ufimtseva@gmail.com>
----
- arch/x86/xen/mmu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 2423ef0..256282e 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct mm_struct
-*mm, unsigned long addr,
- /* Assume pteval_t is equivalent to all the other *val_t types. */
- static pteval_t pte_mfn_to_pfn(pteval_t val)
- {
--       if (val & _PAGE_PRESENT) {
-+       if (pteval_present(val)) {
-                unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-                unsigned long pfn = mfn_to_pfn(mfn);
-
-@@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t val)
-
- static pteval_t pte_pfn_to_mfn(pteval_t val)
- {
--       if (val & _PAGE_PRESENT) {
-+       if (pteval_present(val)) {
-                unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-                pteval_t flags = val & PTE_FLAGS_MASK;
-                unsigned long mfn;
--- 
-1.7.10.4
