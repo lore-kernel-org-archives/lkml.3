@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934982AbaBDVeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:34:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57326 "EHLO
+	id S935093AbaBDVeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:34:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57324 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934588AbaBDVMM (ORCPT
+	with ESMTP id S934584AbaBDVML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:12 -0500
+	Tue, 4 Feb 2014 16:12:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Uosis <uosisl@gmail.com>, Stephen Warren <swarren@nvidia.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 093/140] ALSA: hda/hdmi - allow PIN_OUT to be dynamically enabled
-Date: Tue,  4 Feb 2014 13:11:20 -0800
-Message-Id: <20140204211039.627909621@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Doro Wu <fan-cheng.wu@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 092/140] ALSA: hda - add headset mic detect quirks for another Dell laptop
+Date: Tue,  4 Feb 2014 13:11:19 -0800
+Message-Id: <20140204211039.600275521@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,131 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit 75fae117a5dbde5ab984fa5c60705758cfbc6433 upstream.
+commit 5e87d5807110afd6bd659e1b98929fab43f3732f upstream.
 
-Commit 384a48d71520 "ALSA: hda: HDMI: Support codecs with fewer cvts
-than pins" dynamically enabled each pin widget's PIN_OUT only when the
-pin was actively in use. This was required on certain NVIDIA CODECs for
-correct operation. Specifically, if multiple pin widgets each had their
-mux input select the same audio converter widget and each pin widget had
-PIN_OUT enabled, then only one of the pin widgets would actually receive
-the audio, and often not the one the user wanted!
+When we plug a 3-ring headset on the Dell machine (Vendor ID:
+0x10ec0255, Subsystem ID: 0x1028064d), the headset mic can't be
+detected, after apply this patch, the headset mic can work well.
 
-However, this apparently broke some Intel systems, and commit
-6169b673618b "ALSA: hda - Always turn on pins for HDMI/DP" reverted the
-dynamic setting of PIN_OUT. This in turn broke the afore-mentioned NVIDIA
-CODECs.
-
-This change supports either dynamic or static handling of PIN_OUT,
-selected by a flag set up during CODEC initialization. This flag is
-enabled for all recent NVIDIA GPUs.
-
-Reported-by: Uosis <uosisl@gmail.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+BugLink: https://bugs.launchpad.net/bugs/1260303
+Cc: David Henningsson <david.henningsson@canonical.com>
+Tested-by: Doro Wu <fan-cheng.wu@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   40 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -129,6 +129,9 @@ struct hdmi_spec {
- 
- 	struct hdmi_eld temp_eld;
- 	struct hdmi_ops ops;
-+
-+	bool dyn_pin_out;
-+
- 	/*
- 	 * Non-generic VIA/NVIDIA specific
- 	 */
-@@ -497,15 +500,25 @@ static void hdmi_write_dip_byte(struct h
- 
- static void hdmi_init_pin(struct hda_codec *codec, hda_nid_t pin_nid)
- {
-+	struct hdmi_spec *spec = codec->spec;
-+	int pin_out;
-+
- 	/* Unmute */
- 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
- 		snd_hda_codec_write(codec, pin_nid, 0,
- 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
--	/* Enable pin out: some machines with GM965 gets broken output when
--	 * the pin is disabled or changed while using with HDMI
--	 */
-+
-+	if (spec->dyn_pin_out)
-+		/* Disable pin out until stream is active */
-+		pin_out = 0;
-+	else
-+		/* Enable pin out: some machines with GM965 gets broken output
-+		 * when the pin is disabled or changed while using with HDMI
-+		 */
-+		pin_out = PIN_OUT;
-+
- 	snd_hda_codec_write(codec, pin_nid, 0,
--			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
-+			    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_out);
- }
- 
- static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
-@@ -1747,6 +1760,7 @@ static int generic_hdmi_playback_pcm_pre
- 	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
- 	hda_nid_t pin_nid = per_pin->pin_nid;
- 	bool non_pcm;
-+	int pinctl;
- 
- 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
- 	mutex_lock(&per_pin->lock);
-@@ -1756,6 +1770,14 @@ static int generic_hdmi_playback_pcm_pre
- 	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
- 	mutex_unlock(&per_pin->lock);
- 
-+	if (spec->dyn_pin_out) {
-+		pinctl = snd_hda_codec_read(codec, pin_nid, 0,
-+					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+		snd_hda_codec_write(codec, pin_nid, 0,
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+				    pinctl | PIN_OUT);
-+	}
-+
- 	return spec->ops.setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
- }
- 
-@@ -1775,6 +1797,7 @@ static int hdmi_pcm_close(struct hda_pcm
- 	int cvt_idx, pin_idx;
- 	struct hdmi_spec_per_cvt *per_cvt;
- 	struct hdmi_spec_per_pin *per_pin;
-+	int pinctl;
- 
- 	if (hinfo->nid) {
- 		cvt_idx = cvt_nid_to_cvt_index(spec, hinfo->nid);
-@@ -1791,6 +1814,14 @@ static int hdmi_pcm_close(struct hda_pcm
- 			return -EINVAL;
- 		per_pin = get_pin(spec, pin_idx);
- 
-+		if (spec->dyn_pin_out) {
-+			pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
-+					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+			snd_hda_codec_write(codec, per_pin->pin_nid, 0,
-+					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+					    pinctl & ~PIN_OUT);
-+		}
-+
- 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
- 
- 		mutex_lock(&per_pin->lock);
-@@ -2848,6 +2879,7 @@ static int patch_nvhdmi(struct hda_codec
- 		return err;
- 
- 	spec = codec->spec;
-+	spec->dyn_pin_out = true;
- 
- 	spec->ops.chmap_cea_alloc_validate_get_type =
- 		nvhdmi_chmap_cea_alloc_validate_get_type;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4284,6 +4284,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1028, 0x063e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x063f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0640, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x064d, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0651, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0652, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0653, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
 
 
