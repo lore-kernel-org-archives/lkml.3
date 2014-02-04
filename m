@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672AbaBDVjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:39:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57229 "EHLO
+	id S934517AbaBDVLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:11:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57133 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933608AbaBDVLw (ORCPT
+	with ESMTP id S934427AbaBDVLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:52 -0500
+	Tue, 4 Feb 2014 16:11:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 3.13 060/140] ARM: at91: smc: bug fix in sam9_smc_cs_read()
-Date: Tue,  4 Feb 2014 13:10:47 -0800
-Message-Id: <20140204211038.676973507@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 046/140] b43legacy: Fix unload oops if firmware is not available
+Date: Tue,  4 Feb 2014 13:10:33 -0800
+Message-Id: <20140204211038.276028232@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -31,32 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 1588c51cf6d782e63a8719681d905ef0ac22ee62 upstream.
+commit 452028665312672c6ba9e16a19248ee00ead9400 upstream.
 
-There was a copy/paste error when reading the nwe_pulse value.
+The asyncronous firmware load uses a completion struct to hold firmware
+processing until the user-space routines are up and running. There is.
+however, a problem in that the waiter is nevered canceled during teardown.
+As a result, unloading the driver when firmware is not available causes an oops.
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/sam9_smc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/b43legacy/main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mach-at91/sam9_smc.c
-+++ b/arch/arm/mach-at91/sam9_smc.c
-@@ -101,7 +101,7 @@ static void sam9_smc_cs_read(void __iome
- 	/* Pulse register */
- 	val = __raw_readl(base + AT91_SMC_PULSE);
+--- a/drivers/net/wireless/b43legacy/main.c
++++ b/drivers/net/wireless/b43legacy/main.c
+@@ -3919,6 +3919,7 @@ static void b43legacy_remove(struct ssb_
+ 	 * as the ieee80211 unreg will destroy the workqueue. */
+ 	cancel_work_sync(&wldev->restart_work);
+ 	cancel_work_sync(&wl->firmware_load);
++	complete(&wldev->fw_load_complete);
  
--	config->nwe_setup = val & AT91_SMC_NWEPULSE;
-+	config->nwe_pulse = val & AT91_SMC_NWEPULSE;
- 	config->ncs_write_pulse = (val & AT91_SMC_NCS_WRPULSE) >> 8;
- 	config->nrd_pulse = (val & AT91_SMC_NRDPULSE) >> 16;
- 	config->ncs_read_pulse = (val & AT91_SMC_NCS_RDPULSE) >> 24;
+ 	B43legacy_WARN_ON(!wl);
+ 	if (!wldev->fw.ucode)
 
 
