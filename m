@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaBDIev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 03:34:51 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:45444 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaBDIem (ORCPT
+	id S1753769AbaBDIgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 03:36:16 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:59880 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbaBDIgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 03:34:42 -0500
+	Tue, 4 Feb 2014 03:36:11 -0500
 From: SeongJae Park <sj38.park@gmail.com>
 To: gregkh@linuxfoundation.org, dulshani.gunawardhana89@gmail.com,
         shaun@XResource.ca, lisa@xenapiadmin.com, sima.baymani@gmail.com,
         dan.carpenter@oracle.com
-Cc: deve@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         SeongJae Park <sj38.park@gmail.com>
 Subject: [PATCH] staging: cxt1e1: remove unnecessary function, VMETRO_TRACE
-Date: Tue,  4 Feb 2014 17:35:14 +0900
-Message-Id: <1391502914-7308-1-git-send-email-sj38.park@gmail.com>
+Date: Tue,  4 Feb 2014 17:36:39 +0900
+Message-Id: <1391502999-7349-1-git-send-email-sj38.park@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
