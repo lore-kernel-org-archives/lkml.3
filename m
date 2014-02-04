@@ -1,83 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaBDMgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:36:42 -0500
-Received: from relay.parallels.com ([195.214.232.42]:42044 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaBDMgk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:36:40 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <rientjes@google.com>, <penberg@kernel.org>, <cl@linux.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] slub: fix false-positive lockdep warning in free_partial()
-Date: Tue, 4 Feb 2014 16:36:37 +0400
-Message-ID: <1391517397-6142-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754276AbaBDMhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:37:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:4547 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751079AbaBDMhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 07:37:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,779,1384329600"; 
+   d="scan'208";a="477777430"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        xinhuix.pan@intel.com, Jingoo Han <jg1.han@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] i2c: designware-pci: Cleanup driver power management
+Date: Tue,  4 Feb 2014 14:37:07 +0200
+Message-Id: <1391517427-16204-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-remove_partial() to be called with n->list_lock held, but free_partial()
-called from kmem_cache_close() on cache destruction does not follow this
-rule, leading to a warning:
+The PCI part of the DesignWare I2C driver does a lot of things that are not
+required anymore. For example drivers aren't supposed to handle PCI state
+transitions themselves. This is all provided by the PCI bus core already.
 
-  WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
-  Modules linked in:
-  CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
-  Hardware name:
-   0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
-   0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
-   ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
-  Call Trace:
-   [<ffffffff816d9583>] dump_stack+0x51/0x6e
-   [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
-   [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
-   [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
-   [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
-   [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
-   [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
-   [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
-   [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
-   [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
-   [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-   [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+In addition to that there is no point scheduling RPM suspend on driver's
+idle hook but instead we can use RPM autosuspend for this (which is enabled
+in the driver already).
 
-Although this cannot actually result in a race, because on cache
-destruction there should not be any concurrent frees or allocations from
-the cache, let's add spin_lock/unlock to free_partial() just to keep
-lockdep happy.
+As a bonus, this patch also fixes following compile warning which is
+emitted when the driver was compiled without CONFIG_PM_RUNTIME set:
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+drivers/i2c/busses/i2c-designware-pcidrv.c:245:12: warning: ‘i2c_dw_pci_runtime_idle’ defined but not used [-Wunused-function]
+
+Reported-by: xinhui.pan <xinhuix.pan@intel.com>
+Reported-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- mm/slub.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/i2c/busses/i2c-designware-pcidrv.c | 57 ++++--------------------------
+ 1 file changed, 7 insertions(+), 50 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 0eeea85034c8..b1054568a76e 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3191,6 +3191,7 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
- {
- 	struct page *page, *h;
+diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
+index f6ed06c966ee..c0a87a5eb63e 100644
+--- a/drivers/i2c/busses/i2c-designware-pcidrv.c
++++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
+@@ -138,69 +138,25 @@ static struct i2c_algorithm i2c_dw_algo = {
+ 	.functionality	= i2c_dw_func,
+ };
  
-+	spin_lock_irq(&n->list_lock);
- 	list_for_each_entry_safe(page, h, &n->partial, lru) {
- 		if (!page->inuse) {
- 			remove_partial(n, page);
-@@ -3200,6 +3201,7 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
- 			"Objects remaining in %s on kmem_cache_close()");
- 		}
- 	}
-+	spin_unlock_irq(&n->list_lock);
++#ifdef CONFIG_PM
+ static int i2c_dw_pci_suspend(struct device *dev)
+ {
+ 	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
+-	struct dw_i2c_dev *i2c = pci_get_drvdata(pdev);
+-	int err;
+-
+-
+-	i2c_dw_disable(i2c);
+-
+-	err = pci_save_state(pdev);
+-	if (err) {
+-		dev_err(&pdev->dev, "pci_save_state failed\n");
+-		return err;
+-	}
+-
+-	err = pci_set_power_state(pdev, PCI_D3hot);
+-	if (err) {
+-		dev_err(&pdev->dev, "pci_set_power_state failed\n");
+-		return err;
+-	}
+ 
++	i2c_dw_disable(pci_get_drvdata(pdev));
+ 	return 0;
  }
  
- /*
+ static int i2c_dw_pci_resume(struct device *dev)
+ {
+ 	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
+-	struct dw_i2c_dev *i2c = pci_get_drvdata(pdev);
+-	int err;
+-	u32 enabled;
+-
+-	enabled = i2c_dw_is_enabled(i2c);
+-	if (enabled)
+-		return 0;
+-
+-	err = pci_set_power_state(pdev, PCI_D0);
+-	if (err) {
+-		dev_err(&pdev->dev, "pci_set_power_state() failed\n");
+-		return err;
+-	}
+ 
+-	pci_restore_state(pdev);
+-
+-	i2c_dw_init(i2c);
+-	return 0;
++	return i2c_dw_init(pci_get_drvdata(pdev));
+ }
++#endif
+ 
+-static int i2c_dw_pci_runtime_idle(struct device *dev)
+-{
+-	int err = pm_schedule_suspend(dev, 500);
+-	dev_dbg(dev, "runtime_idle called\n");
+-
+-	if (err != 0)
+-		return 0;
+-	return -EBUSY;
+-}
+-
+-static const struct dev_pm_ops i2c_dw_pm_ops = {
+-	.resume         = i2c_dw_pci_resume,
+-	.suspend        = i2c_dw_pci_suspend,
+-	SET_RUNTIME_PM_OPS(i2c_dw_pci_suspend, i2c_dw_pci_resume,
+-			   i2c_dw_pci_runtime_idle)
+-};
++static UNIVERSAL_DEV_PM_OPS(i2c_dw_pm_ops, i2c_dw_pci_suspend,
++			    i2c_dw_pci_resume, NULL);
+ 
+ static u32 i2c_dw_get_clk_rate_khz(struct dw_i2c_dev *dev)
+ {
+@@ -290,6 +246,7 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
+ 
+ 	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
+ 	pm_runtime_use_autosuspend(&pdev->dev);
++	pm_runtime_put_autosuspend(&pdev->dev);
+ 	pm_runtime_allow(&pdev->dev);
+ 
+ 	return 0;
 -- 
-1.7.10.4
+1.8.5.2
 
