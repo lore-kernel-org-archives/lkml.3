@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934976AbaBDWMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:12:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56747 "EHLO
+	id S934033AbaBDVIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:08:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934041AbaBDVIw (ORCPT
+	with ESMTP id S933913AbaBDVIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:52 -0500
+	Tue, 4 Feb 2014 16:08:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Lior Amsalem <alior@marvell.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 086/133] ata: sata_mv: introduce compatible string "marvell, armada-370-sata"
-Date: Tue,  4 Feb 2014 13:08:07 -0800
-Message-Id: <20140204210739.461020217@linuxfoundation.org>
+        robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.12 026/133] usb: ehci: add freescale imx28 special write register method
+Date: Tue,  4 Feb 2014 13:07:07 -0800
+Message-Id: <20140204210737.771970651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -33,53 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <simon.guinot@sequanux.org>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit b1f5c73bd5a4752efb7d7af019034044b08aafe9 upstream.
+commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
 
-The sata_mv driver supports the SATA IP found in several Marvell SoCs.
-As some new SATA registers have been introduced with the Armada 370/XP
-SoCs, a way to identify them is needed.
+According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
+register error issue", All USB register write operations must
+use the ARM SWP instruction. So, we implement a special ehci_write
+for imx28.
 
-This patch introduces a new compatible string for the SATA IP found in
-Armada 370/XP SoCs.
+Discussion for it at below:
+http://marc.info/?l=linux-usb&m=137996395529294&w=2
 
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Lior Amsalem <alior@marvell.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Without this patcheset, imx28 works unstable at high AHB bus loading.
+If the bus loading is not high, the imx28 usb can work well at the most
+of time. There is a IC errata for this problem, usually, we consider
+IC errata is a problem not a new feature, and this workaround is needed
+for that, so we need to add them to stable tree 3.11+.
+
+Cc: robert.hodaszi@digi.com
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/ata/marvell.txt |    2 +-
- drivers/ata/sata_mv.c                             |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci.h |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/ata/marvell.txt
-+++ b/Documentation/devicetree/bindings/ata/marvell.txt
-@@ -1,7 +1,7 @@
- * Marvell Orion SATA
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -203,6 +203,7 @@ struct ehci_hcd {			/* one per controlle
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
+ 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
+ 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
++	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
  
- Required Properties:
--- compatibility : "marvell,orion-sata"
-+- compatibility : "marvell,orion-sata" or "marvell,armada-370-sata"
- - reg           : Address range of controller
- - interrupts    : Interrupt controller is using
- - nr-ports      : Number of SATA ports in use.
---- a/drivers/ata/sata_mv.c
-+++ b/drivers/ata/sata_mv.c
-@@ -4209,6 +4209,7 @@ static int mv_platform_resume(struct pla
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -679,6 +680,18 @@ static inline unsigned int ehci_readl(co
+ #endif
+ }
  
- #ifdef CONFIG_OF
- static struct of_device_id mv_sata_dt_ids[] = {
-+	{ .compatible = "marvell,armada-370-sata", },
- 	{ .compatible = "marvell,orion-sata", },
- 	{},
- };
++#ifdef CONFIG_SOC_IMX28
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++}
++#else
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++}
++#endif
+ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		const unsigned int val, __u32 __iomem *regs)
+ {
+@@ -687,7 +700,10 @@ static inline void ehci_writel(const str
+ 		writel_be(val, regs) :
+ 		writel(val, regs);
+ #else
+-	writel(val, regs);
++	if (ehci->imx28_write_fix)
++		imx28_ehci_writel(val, regs);
++	else
++		writel(val, regs);
+ #endif
+ }
+ 
 
 
