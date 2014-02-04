@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933702AbaBDVDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56446 "EHLO
+	id S933719AbaBDVDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56442 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933566AbaBDVDH (ORCPT
+	with ESMTP id S933563AbaBDVDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:03:07 -0500
+	Tue, 4 Feb 2014 16:03:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 3.10 088/104] Revert "ip6tnl: fix use after free of fb_tnl_dev"
-Date: Tue,  4 Feb 2014 13:02:31 -0800
-Message-Id: <20140204210225.202185269@linuxfoundation.org>
+        Thomas Pugliese <thomas.pugliese@gmail.com>
+Subject: [PATCH 3.10 097/104] usb: core: get config and string descriptors for unauthorized devices
+Date: Tue,  4 Feb 2014 13:02:40 -0800
+Message-Id: <20140204210225.470552221@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -31,35 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-[ No relevant upstream commit. ]
+commit 83e83ecb79a8225e79bc8e54e9aff3e0e27658a2 upstream.
 
-This reverts commit 22c3ec552c29cf4bd4a75566088950fe57d860c4.
+There is no need to skip querying the config and string descriptors for
+unauthorized WUSB devices when usb_new_device is called.  It is allowed
+by WUSB spec.  The only action that needs to be delayed until
+authorization time is the set config.  This change allows user mode
+tools to see the config and string descriptors earlier in enumeration
+which is needed for some WUSB devices to function properly on Android
+systems.  It also reduces the amount of divergent code paths needed
+for WUSB devices.
 
-This patch is not the right fix, it introduces a memory leak when a netns is
-destroyed (the FB device is never deleted).
-
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reported-by: Steven Rostedt <srostedt@redhat.com>
-Tested-by: Steven Rostedt <srostedt@redhat.com> (and our entire MRG team)
-Tested-by: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
-Tested-by: John Kacur <jkacur@redhat.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_tunnel.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1711,6 +1711,8 @@ static void __net_exit ip6_tnl_destroy_t
+---
+ drivers/usb/core/config.c |    7 -------
+ drivers/usb/core/hub.c    |   40 +++++++---------------------------------
+ 2 files changed, 7 insertions(+), 40 deletions(-)
+
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -651,10 +651,6 @@ void usb_destroy_configuration(struct us
+  *
+  * hub-only!! ... and only in reset path, or usb_new_device()
+  * (used by real hubs and virtual root hubs)
+- *
+- * NOTE: if this is a WUSB device and is not authorized, we skip the
+- *       whole thing. A non-authorized USB device has no
+- *       configurations.
+  */
+ int usb_get_configuration(struct usb_device *dev)
+ {
+@@ -666,8 +662,6 @@ int usb_get_configuration(struct usb_dev
+ 	struct usb_config_descriptor *desc;
+ 
+ 	cfgno = 0;
+-	if (dev->authorized == 0)	/* Not really an error */
+-		goto out_not_authorized;
+ 	result = -ENOMEM;
+ 	if (ncfg > USB_MAXCONFIG) {
+ 		dev_warn(ddev, "too many configurations: %d, "
+@@ -751,7 +745,6 @@ int usb_get_configuration(struct usb_dev
+ 
+ err:
+ 	kfree(desc);
+-out_not_authorized:
+ 	dev->descriptor.bNumConfigurations = cfgno;
+ err2:
+ 	if (result == -ENOMEM)
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2231,18 +2231,13 @@ static int usb_enumerate_device(struct u
+ 			return err;
  		}
  	}
+-	if (udev->wusb == 1 && udev->authorized == 0) {
+-		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	}
+-	else {
+-		/* read the standard strings and cache them if present */
+-		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
+-		udev->manufacturer = usb_cache_string(udev,
+-						      udev->descriptor.iManufacturer);
+-		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+-	}
++
++	/* read the standard strings and cache them if present */
++	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
++	udev->manufacturer = usb_cache_string(udev,
++					      udev->descriptor.iManufacturer);
++	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
++
+ 	err = usb_enumerate_device_otg(udev);
+ 	if (err < 0)
+ 		return err;
+@@ -2421,16 +2416,6 @@ int usb_deauthorize_device(struct usb_de
+ 	usb_dev->authorized = 0;
+ 	usb_set_configuration(usb_dev, -1);
  
-+	t = rtnl_dereference(ip6n->tnls_wc[0]);
-+	unregister_netdevice_queue(t->dev, &list);
- 	unregister_netdevice_many(&list);
- }
+-	kfree(usb_dev->product);
+-	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
+-
+-	usb_destroy_configuration(usb_dev);
+-	usb_dev->descriptor.bNumConfigurations = 0;
+-
+ out_unauthorized:
+ 	usb_unlock_device(usb_dev);
+ 	return 0;
+@@ -2458,17 +2443,7 @@ int usb_authorize_device(struct usb_devi
+ 		goto error_device_descriptor;
+ 	}
  
+-	kfree(usb_dev->product);
+-	usb_dev->product = NULL;
+-	kfree(usb_dev->manufacturer);
+-	usb_dev->manufacturer = NULL;
+-	kfree(usb_dev->serial);
+-	usb_dev->serial = NULL;
+-
+ 	usb_dev->authorized = 1;
+-	result = usb_enumerate_device(usb_dev);
+-	if (result < 0)
+-		goto error_enumerate;
+ 	/* Choose and set the configuration.  This registers the interfaces
+ 	 * with the driver core and lets interface drivers bind to them.
+ 	 */
+@@ -2484,7 +2459,6 @@ int usb_authorize_device(struct usb_devi
+ 	}
+ 	dev_info(&usb_dev->dev, "authorized to connect\n");
+ 
+-error_enumerate:
+ error_device_descriptor:
+ 	usb_autosuspend_device(usb_dev);
+ error_autoresume:
 
 
