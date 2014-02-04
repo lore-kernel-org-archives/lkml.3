@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705AbaBDVJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56738 "EHLO
+	id S935524AbaBDWEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:04:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56891 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934035AbaBDVIv (ORCPT
+	with ESMTP id S934144AbaBDVJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:51 -0500
+	Tue, 4 Feb 2014 16:09:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 3.12 084/133] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
-Date: Tue,  4 Feb 2014 13:08:05 -0800
-Message-Id: <20140204210739.405560325@linuxfoundation.org>
+        Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.12 073/133] pinctrl: sunxi: Honor GPIO output initial vaules
+Date: Tue,  4 Feb 2014 13:07:54 -0800
+Message-Id: <20140204210739.095424795@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,63 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <PeterHuewe@gmx.de>
+From: Chen-Yu Tsai <wens@csie.org>
 
-commit 85c5e0d451125c6ddb78663972e40af810b83644 upstream.
+commit fa8cf57c923e86a693a85aff1df579245a27cbb3 upstream.
 
-The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
-in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
-thus converting the signed value into an unsigned value, resulting
-in 'burstcnt' being huge.
-Changing the type to u32 only does not solve the problem as the signed
-value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
-same effect.
+Some GPIO users, such as fixed-regulator, request GPIO output with
+initial value of 1. This was ignored by sunxi driver.
 
-Thus
--> Change type of burstcnt to u32 (the return type of get_burstcount)
--> Add a check for the return value of 'get_burstcount' and propagate a
-potential error.
-
-This makes also sense in the 'I2C_READ_DATA' case, where the there is no
-signed/unsigned conversion.
-
-found by coverity
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm_i2c_stm_st33.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-sunxi.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *ch
- 			     &chip->vendor.read_queue)
- 	       == 0) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		len = min_t(int, burstcnt, count - size);
- 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
- 		size += len;
-@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(
- static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 			    size_t len)
- {
--	u32 status, burstcnt = 0, i, size;
-+	u32 status, i, size;
-+	int burstcnt = 0;
- 	int ret;
- 	u8 data;
- 	struct i2c_client *client;
-@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_c
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -469,12 +469,6 @@ static int sunxi_pinctrl_gpio_get(struct
+ 	return val;
+ }
  
- 	for (i = 0; i < len - 1;) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		size = min_t(int, len - i - 1, burstcnt);
- 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
- 		if (ret < 0)
+-static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
+-					unsigned offset, int value)
+-{
+-	return pinctrl_gpio_direction_output(chip->base + offset);
+-}
+-
+ static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
+ 				unsigned offset, int value)
+ {
+@@ -498,6 +492,13 @@ static void sunxi_pinctrl_gpio_set(struc
+ 	spin_unlock_irqrestore(&pctl->lock, flags);
+ }
+ 
++static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
++					unsigned offset, int value)
++{
++	sunxi_pinctrl_gpio_set(chip, offset, value);
++	return pinctrl_gpio_direction_output(chip->base + offset);
++}
++
+ static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
+ 				const struct of_phandle_args *gpiospec,
+ 				u32 *flags)
 
 
