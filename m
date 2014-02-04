@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244AbaBDVJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56835 "EHLO
+	id S935304AbaBDV4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:56:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56972 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934122AbaBDVJJ (ORCPT
+	with ESMTP id S934239AbaBDVJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:09 -0500
+	Tue, 4 Feb 2014 16:09:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 106/133] net: rds: fix per-cpu helper usage
-Date: Tue,  4 Feb 2014 13:08:27 -0800
-Message-Id: <20140204210740.028571934@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Matt Turner <mattst88@gmail.com>
+Subject: [PATCH 3.12 117/133] alpha: fix broken network checksum
+Date: Tue,  4 Feb 2014 13:08:38 -0800
+Message-Id: <20140204210740.336662867@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,52 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-[ Upstream commit c196403b79aa241c3fefb3ee5bb328aa7c5cc860 ]
+commit 0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd upstream.
 
-commit ae4b46e9d "net: rds: use this_cpu_* per-cpu helper" broke per-cpu
-handling for rds. chpfirst is the result of __this_cpu_read(), so it is
-an absolute pointer and not __percpu. Therefore, __this_cpu_write()
-should not operate on chpfirst, but rather on cache->percpu->first, just
-like __this_cpu_read() did before.
+The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 breaks networking on
+alpha (there is a follow-up fix 5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6,
+but networking is still broken even with the second patch).
 
-Signed-off-byd Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 makes
+csum_partial_copy_from_user check the pointer with access_ok. However,
+csum_partial_copy_from_user is called also from csum_partial_copy_nocheck
+and csum_partial_copy_nocheck is called on kernel pointers and it is
+supposed not to check pointer validity.
+
+This bug results in ssh session hangs if the system is loaded and bulk
+data are printed to ssh terminal.
+
+This patch fixes csum_partial_copy_nocheck to call set_fs(KERNEL_DS), so
+that access_ok in csum_partial_copy_from_user accepts kernel-space
+addresses.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Matt Turner <mattst88@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/rds/ib_recv.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/net/rds/ib_recv.c
-+++ b/net/rds/ib_recv.c
-@@ -421,8 +421,7 @@ static void rds_ib_recv_cache_put(struct
- 				 struct rds_ib_refill_cache *cache)
+---
+ arch/alpha/lib/csum_partial_copy.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+--- a/arch/alpha/lib/csum_partial_copy.c
++++ b/arch/alpha/lib/csum_partial_copy.c
+@@ -378,6 +378,11 @@ csum_partial_copy_from_user(const void _
+ __wsum
+ csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
  {
- 	unsigned long flags;
--	struct list_head *old;
--	struct list_head __percpu *chpfirst;
-+	struct list_head *old, *chpfirst;
- 
- 	local_irq_save(flags);
- 
-@@ -432,7 +431,7 @@ static void rds_ib_recv_cache_put(struct
- 	else /* put on front */
- 		list_add_tail(new_item, chpfirst);
- 
--	__this_cpu_write(chpfirst, new_item);
-+	__this_cpu_write(cache->percpu->first, new_item);
- 	__this_cpu_inc(cache->percpu->count);
- 
- 	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
-@@ -452,7 +451,7 @@ static void rds_ib_recv_cache_put(struct
- 	} while (old);
- 
- 
--	__this_cpu_write(chpfirst, NULL);
-+	__this_cpu_write(cache->percpu->first, NULL);
- 	__this_cpu_write(cache->percpu->count, 0);
- end:
- 	local_irq_restore(flags);
+-	return csum_partial_copy_from_user((__force const void __user *)src,
+-			dst, len, sum, NULL);
++	__wsum checksum;
++	mm_segment_t oldfs = get_fs();
++	set_fs(KERNEL_DS);
++	checksum = csum_partial_copy_from_user((__force const void __user *)src,
++						dst, len, sum, NULL);
++	set_fs(oldfs);
++	return checksum;
+ }
 
 
