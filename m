@@ -1,161 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466AbaBDOpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:45:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56456 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753409AbaBDOp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:45:27 -0500
-Date: Tue, 4 Feb 2014 15:45:26 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
-        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 2/8] memcg, slab: remove cgroup name from memcg cache
- names
-Message-ID: <20140204144526.GG4890@dhcp22.suse.cz>
-References: <cover.1391356789.git.vdavydov@parallels.com>
- <90b34882d51b18a9dd557d24f6a377df1ba13945.1391356789.git.vdavydov@parallels.com>
+	id S1754316AbaBDOrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:47:40 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:44054 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaBDOri (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 09:47:38 -0500
+Date: Tue, 4 Feb 2014 14:47:31 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Matt Porter <mporter@linaro.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux I2C List <linux-i2c@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] mfd: add bcm59056 pmu driver
+Message-ID: <20140204144731.GA3154@lee--X1>
+References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
+ <1391516352-32359-4-git-send-email-mporter@linaro.org>
+ <20140204132951.GE13529@lee--X1>
+ <20140204143119.GA4627@beef>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <90b34882d51b18a9dd557d24f6a377df1ba13945.1391356789.git.vdavydov@parallels.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140204143119.GA4627@beef>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 02-02-14 20:33:47, Vladimir Davydov wrote:
-> The cgroup name is not informative at all in case the cgroup hierarchy
-> is not flat. Besides, we can always find the memcg a particular cache
-> belongs to by its kmemcg id, which is now exported via "memory.kmem.id"
-> cgroup fs file for each memcg.
-> 
-> So let's remove the cgroup name part from kmem caches names - it will
-> greatly simplify the call paths and make the code look clearer.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Hold your horses. :)
 
-I guess this one doesn't make much sense withou 1/8, right?
+> > > Add a driver for the BCM59056 PMU multi-function device. The driver
+> > > initially supports regmap initialization and instantiation of the
+> > > voltage regulator device function of the PMU.
+> > > 
+> > > Signed-off-by: Matt Porter <mporter@linaro.org>
+> > > Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> > > Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> > > ---
+> > >  drivers/mfd/Kconfig          |   8 +++
+> > >  drivers/mfd/Makefile         |   1 +
+> > >  drivers/mfd/bcm59056.c       | 119 +++++++++++++++++++++++++++++++++++++++++++
+> > >  include/linux/mfd/bcm59056.h |  35 +++++++++++++
+> > >  4 files changed, 163 insertions(+)
+> > >  create mode 100644 drivers/mfd/bcm59056.c
+> > >  create mode 100644 include/linux/mfd/bcm59056.h
 
-> ---
->  mm/memcontrol.c  |   63 +++++++++++++-----------------------------------------
->  mm/slab_common.c |    6 +++++-
->  2 files changed, 20 insertions(+), 49 deletions(-)
+<snip>
+
+> > I thought this was a DT only driver? If so, you probably want to use
+> > of_match_device() instead.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 91d242707404..3351c5b5486d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3405,44 +3405,6 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
->  	schedule_work(&cachep->memcg_params->destroy);
->  }
->  
-> -static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> -						  struct kmem_cache *s)
-> -{
-> -	struct kmem_cache *new = NULL;
-> -	static char *tmp_name = NULL;
-> -	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
-> -
-> -	BUG_ON(!memcg_can_account_kmem(memcg));
-> -
-> -	mutex_lock(&mutex);
-> -	/*
-> -	 * kmem_cache_create_memcg duplicates the given name and
-> -	 * cgroup_name for this name requires RCU context.
-> -	 * This static temporary buffer is used to prevent from
-> -	 * pointless shortliving allocation.
-> -	 */
-> -	if (!tmp_name) {
-> -		tmp_name = kmalloc(PATH_MAX, GFP_KERNEL);
-> -		if (!tmp_name)
-> -			goto out;
-> -	}
-> -
-> -	rcu_read_lock();
-> -	snprintf(tmp_name, PATH_MAX, "%s(%d:%s)", s->name,
-> -			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
-> -	rcu_read_unlock();
-> -
-> -	new = kmem_cache_create_memcg(memcg, tmp_name, s->object_size, s->align,
-> -				      (s->flags & ~SLAB_PANIC), s->ctor, s);
-> -	if (new)
-> -		new->allocflags |= __GFP_KMEMCG;
-> -	else
-> -		new = s;
-> -out:
-> -	mutex_unlock(&mutex);
-> -	return new;
-> -}
-> -
->  void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  {
->  	struct kmem_cache *c;
-> @@ -3489,12 +3451,6 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
->  	mutex_unlock(&activate_kmem_mutex);
->  }
->  
-> -struct create_work {
-> -	struct mem_cgroup *memcg;
-> -	struct kmem_cache *cachep;
-> -	struct work_struct work;
-> -};
-> -
->  static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
->  {
->  	struct kmem_cache *cachep;
-> @@ -3512,13 +3468,24 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
->  	mutex_unlock(&memcg->slab_caches_mutex);
->  }
->  
-> +struct create_work {
-> +	struct mem_cgroup *memcg;
-> +	struct kmem_cache *cachep;
-> +	struct work_struct work;
-> +};
-> +
->  static void memcg_create_cache_work_func(struct work_struct *w)
->  {
-> -	struct create_work *cw;
-> +	struct create_work *cw = container_of(w, struct create_work, work);
-> +	struct mem_cgroup *memcg = cw->memcg;
-> +	struct kmem_cache *s = cw->cachep;
-> +	struct kmem_cache *new;
->  
-> -	cw = container_of(w, struct create_work, work);
-> -	memcg_create_kmem_cache(cw->memcg, cw->cachep);
-> -	css_put(&cw->memcg->css);
-> +	new = kmem_cache_create_memcg(memcg, s->name, s->object_size, s->align,
-> +				      (s->flags & ~SLAB_PANIC), s->ctor, s);
-> +	if (new)
-> +		new->allocflags |= __GFP_KMEMCG;
-> +	css_put(&memcg->css);
->  	kfree(cw);
->  }
->  
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 1ec3c619ba04..152d9b118b7a 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -213,7 +213,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  	s->align = calculate_alignment(flags, align, size);
->  	s->ctor = ctor;
->  
-> -	s->name = kstrdup(name, GFP_KERNEL);
-> +	if (!memcg)
-> +		s->name = kstrdup(name, GFP_KERNEL);
-> +	else
-> +		s->name = kasprintf(GFP_KERNEL, "%s:%d",
-> +				    name, memcg_cache_id(memcg));
->  	if (!s->name)
->  		goto out_free_cache;
->  
-> -- 
-> 1.7.10.4
+> Correct, I'll use of_match_device()
+
+If you're going to use this ...
+
+<snip>
+
+> > You've gone to the trouble of setting a device version here, but you
+> > don't seem to use it?
 > 
+> I'll drop the device version
+
+... then you'll still need this.
+
+> > > +static const struct i2c_device_id bcm59056_i2c_id[] = {
+> > > +	{ "bcm59056", BCM59056 },
+> > > +	{ }
+> > > +};
+> > 
+> > Ah, I guess this is where id->driver comes from.
+> > 
+> > It's pretty silly that the I2C subsystem demands the presence of this
+> > table, despite not using it if an of_device_id table is present.
+> 
+> It does make it very difficult to follow DT enabled I2C client drivers
+> :( I'll drop the BCM59056 too.
+
+And I don't think you can drop this, as the I2C subsystem still
+insists on it.
+
+> > > +/* chip id */
+> > > +#define BCM59056		0
+> > 
+> > Lonely, oh so lonely!
+> 
+> Understood. Will remove.
+
+I think you need to keep this to supply the silly I2C ID table.
+
+I would just omit the '.data = (void *) VERSION' from the
+of_match_table until you require it. 
 
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
