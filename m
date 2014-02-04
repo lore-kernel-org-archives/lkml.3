@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934258AbaBDVJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56911 "EHLO
+	id S935301AbaBDV4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:56:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56952 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194AbaBDVJT (ORCPT
+	with ESMTP id S934122AbaBDVJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:19 -0500
+	Tue, 4 Feb 2014 16:09:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 121/133] ALSA: hda - Dont set indep_hp flag for old AD codecs
-Date: Tue,  4 Feb 2014 13:08:42 -0800
-Message-Id: <20140204210740.446397681@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Mircea Gherzan <mgherzan@gmail.com>,
+        Daniel Borkmann <dxchgb@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Matt Evans <matt@ozlabs.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 108/133] bpf: do not use reciprocal divide
+Date: Tue,  4 Feb 2014 13:08:29 -0800
+Message-Id: <20140204210740.083438304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,95 +36,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Eric Dumazet <edumazet@google.com>
 
-commit cbd209f41ea5f39394de5c1fe2dd9aa54a9c5744 upstream.
+[ Upstream commit aee636c4809fa54848ff07a899b326eb1f9987a2 ]
 
-Some old AD codecs don't like the independent HP handling, either it
-contains a single DAC (AD1981) or it mandates the mixer routing
-(AD1986A).  This patch removes the indep_hp flag for such codecs.
+At first Jakub Zawadzki noticed that some divisions by reciprocal_divide
+were not correct. (off by one in some cases)
+http://www.wireshark.org/~darkjames/reciprocal-buggy.c
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=68081
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+He could also show this with BPF:
+http://www.wireshark.org/~darkjames/set-and-dump-filter-k-bug.c
+
+The reciprocal divide in linux kernel is not generic enough,
+lets remove its use in BPF, as it is not worth the pain with
+current cpus.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Cc: Mircea Gherzan <mgherzan@gmail.com>
+Cc: Daniel Borkmann <dxchgb@gmail.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Matt Evans <matt@ozlabs.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/patch_analog.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/arm/net/bpf_jit_32.c       |    6 +++---
+ arch/powerpc/net/bpf_jit_comp.c |    7 ++++---
+ arch/s390/net/bpf_jit_comp.c    |   17 ++++++++++++-----
+ arch/sparc/net/bpf_jit_comp.c   |   17 ++++++++++++++---
+ arch/x86/net/bpf_jit_comp.c     |   14 ++++++++++----
+ net/core/filter.c               |   30 ++----------------------------
+ 6 files changed, 45 insertions(+), 46 deletions(-)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -171,7 +171,7 @@ static const struct hda_codec_ops ad198x
- };
+--- a/arch/arm/net/bpf_jit_32.c
++++ b/arch/arm/net/bpf_jit_32.c
+@@ -637,10 +637,10 @@ load_ind:
+ 			emit(ARM_MUL(r_A, r_A, r_X), ctx);
+ 			break;
+ 		case BPF_S_ALU_DIV_K:
+-			/* current k == reciprocal_value(userspace k) */
++			if (k == 1)
++				break;
+ 			emit_mov_i(r_scratch, k, ctx);
+-			/* A = top 32 bits of the product */
+-			emit(ARM_UMULL(r_scratch, r_A, r_A, r_scratch), ctx);
++			emit_udiv(r_A, r_A, r_scratch, ctx);
+ 			break;
+ 		case BPF_S_ALU_DIV_X:
+ 			update_on_xread(ctx);
+--- a/arch/powerpc/net/bpf_jit_comp.c
++++ b/arch/powerpc/net/bpf_jit_comp.c
+@@ -209,10 +209,11 @@ static int bpf_jit_build_body(struct sk_
+ 			}
+ 			PPC_DIVWU(r_A, r_A, r_X);
+ 			break;
+-		case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K); */
++		case BPF_S_ALU_DIV_K: /* A /= K */
++			if (K == 1)
++				break;
+ 			PPC_LI32(r_scratch1, K);
+-			/* Top 32 bits of 64bit result -> A */
+-			PPC_MULHWU(r_A, r_A, r_scratch1);
++			PPC_DIVWU(r_A, r_A, r_scratch1);
+ 			break;
+ 		case BPF_S_ALU_AND_X:
+ 			ctx->seen |= SEEN_XREG;
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -371,11 +371,13 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		/* dr %r4,%r12 */
+ 		EMIT2(0x1d4c);
+ 		break;
+-	case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K) */
+-		/* m %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5c40d000, EMIT_CONST(K));
+-		/* lr %r5,%r4 */
+-		EMIT2(0x1854);
++	case BPF_S_ALU_DIV_K: /* A /= K */
++		if (K == 1)
++			break;
++		/* lhi %r4,0 */
++		EMIT4(0xa7480000);
++		/* d %r4,<d(K)>(%r13) */
++		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
+ 		break;
+ 	case BPF_S_ALU_MOD_X: /* A %= X */
+ 		jit->seen |= SEEN_XREG | SEEN_RET0;
+@@ -391,6 +393,11 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		EMIT2(0x1854);
+ 		break;
+ 	case BPF_S_ALU_MOD_K: /* A %= K */
++		if (K == 1) {
++			/* lhi %r5,0 */
++			EMIT4(0xa7580000);
++			break;
++		}
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+ 		/* d %r4,<d(K)>(%r13) */
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -497,9 +497,20 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ALU_MUL_K:	/* A *= K */
+ 				emit_alu_K(MUL, K);
+ 				break;
+-			case BPF_S_ALU_DIV_K:	/* A /= K */
+-				emit_alu_K(MUL, K);
+-				emit_read_y(r_A);
++			case BPF_S_ALU_DIV_K:	/* A /= K with K != 0*/
++				if (K == 1)
++					break;
++				emit_write_y(G0);
++#ifdef CONFIG_SPARC32
++				/* The Sparc v8 architecture requires
++				 * three instructions between a %y
++				 * register write and the first use.
++				 */
++				emit_nop();
++				emit_nop();
++				emit_nop();
++#endif
++				emit_alu_K(DIV, K);
+ 				break;
+ 			case BPF_S_ALU_DIV_X:	/* A /= X; */
+ 				emit_cmpi(r_X, 0);
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -359,15 +359,21 @@ void bpf_jit_compile(struct sk_filter *f
+ 				EMIT2(0x89, 0xd0);	/* mov %edx,%eax */
+ 				break;
+ 			case BPF_S_ALU_MOD_K: /* A %= K; */
++				if (K == 1) {
++					CLEAR_A();
++					break;
++				}
+ 				EMIT2(0x31, 0xd2);	/* xor %edx,%edx */
+ 				EMIT1(0xb9);EMIT(K, 4);	/* mov imm32,%ecx */
+ 				EMIT2(0xf7, 0xf1);	/* div %ecx */
+ 				EMIT2(0x89, 0xd0);	/* mov %edx,%eax */
+ 				break;
+-			case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K); */
+-				EMIT3(0x48, 0x69, 0xc0); /* imul imm32,%rax,%rax */
+-				EMIT(K, 4);
+-				EMIT4(0x48, 0xc1, 0xe8, 0x20); /* shr $0x20,%rax */
++			case BPF_S_ALU_DIV_K: /* A /= K */
++				if (K == 1)
++					break;
++				EMIT2(0x31, 0xd2);	/* xor %edx,%edx */
++				EMIT1(0xb9);EMIT(K, 4);	/* mov imm32,%ecx */
++				EMIT2(0xf7, 0xf1);	/* div %ecx */
+ 				break;
+ 			case BPF_S_ALU_AND_X:
+ 				seen |= SEEN_XREG;
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -36,7 +36,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/unaligned.h>
+ #include <linux/filter.h>
+-#include <linux/reciprocal_div.h>
+ #include <linux/ratelimit.h>
+ #include <linux/seccomp.h>
+ #include <linux/if_vlan.h>
+@@ -166,7 +165,7 @@ unsigned int sk_run_filter(const struct
+ 			A /= X;
+ 			continue;
+ 		case BPF_S_ALU_DIV_K:
+-			A = reciprocal_divide(A, K);
++			A /= K;
+ 			continue;
+ 		case BPF_S_ALU_MOD_X:
+ 			if (X == 0)
+@@ -553,11 +552,6 @@ int sk_chk_filter(struct sock_filter *fi
+ 		/* Some instructions need special checks */
+ 		switch (code) {
+ 		case BPF_S_ALU_DIV_K:
+-			/* check for division by zero */
+-			if (ftest->k == 0)
+-				return -EINVAL;
+-			ftest->k = reciprocal_value(ftest->k);
+-			break;
+ 		case BPF_S_ALU_MOD_K:
+ 			/* check for division by zero */
+ 			if (ftest->k == 0)
+@@ -853,27 +847,7 @@ void sk_decode_filter(struct sock_filter
+ 	to->code = decodes[code];
+ 	to->jt = filt->jt;
+ 	to->jf = filt->jf;
+-
+-	if (code == BPF_S_ALU_DIV_K) {
+-		/*
+-		 * When loaded this rule user gave us X, which was
+-		 * translated into R = r(X). Now we calculate the
+-		 * RR = r(R) and report it back. If next time this
+-		 * value is loaded and RRR = r(RR) is calculated
+-		 * then the R == RRR will be true.
+-		 *
+-		 * One exception. X == 1 translates into R == 0 and
+-		 * we can't calculate RR out of it with r().
+-		 */
+-
+-		if (filt->k == 0)
+-			to->k = 1;
+-		else
+-			to->k = reciprocal_value(filt->k);
+-
+-		BUG_ON(reciprocal_value(to->k) != filt->k);
+-	} else
+-		to->k = filt->k;
++	to->k = filt->k;
+ }
  
- 
--static int ad198x_parse_auto_config(struct hda_codec *codec)
-+static int ad198x_parse_auto_config(struct hda_codec *codec, bool indep_hp)
- {
- 	struct ad198x_spec *spec = codec->spec;
- 	struct auto_pin_cfg *cfg = &spec->gen.autocfg;
-@@ -181,7 +181,7 @@ static int ad198x_parse_auto_config(stru
- 	codec->no_trigger_sense = 1;
- 	codec->no_sticky_stream = 1;
- 
--	spec->gen.indep_hp = 1;
-+	spec->gen.indep_hp = indep_hp;
- 
- 	err = snd_hda_parse_pin_defcfg(codec, cfg, NULL, 0);
- 	if (err < 0)
-@@ -362,7 +362,7 @@ static int patch_ad1986a(struct hda_code
- 			   ad1986a_fixups);
- 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
- 
--	err = ad198x_parse_auto_config(codec);
-+	err = ad198x_parse_auto_config(codec, false);
- 	if (err < 0) {
- 		snd_hda_gen_free(codec);
- 		return err;
-@@ -464,7 +464,7 @@ static int patch_ad1983(struct hda_codec
- 
- 	spec->gen.beep_nid = 0x10;
- 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
--	err = ad198x_parse_auto_config(codec);
-+	err = ad198x_parse_auto_config(codec, false);
- 	if (err < 0)
- 		goto error;
- 	err = ad1983_add_spdif_mux_ctl(codec);
-@@ -564,7 +564,7 @@ static int patch_ad1981(struct hda_codec
- 	snd_hda_pick_fixup(codec, NULL, ad1981_fixup_tbl, ad1981_fixups);
- 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
- 
--	err = ad198x_parse_auto_config(codec);
-+	err = ad198x_parse_auto_config(codec, false);
- 	if (err < 0)
- 		goto error;
- 	err = ad1983_add_spdif_mux_ctl(codec);
-@@ -890,7 +890,7 @@ static int patch_ad1988(struct hda_codec
- 	snd_hda_pick_fixup(codec, ad1988_fixup_models, NULL, ad1988_fixups);
- 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
- 
--	err = ad198x_parse_auto_config(codec);
-+	err = ad198x_parse_auto_config(codec, true);
- 	if (err < 0)
- 		goto error;
- 	err = ad1988_add_spdif_mux_ctl(codec);
-@@ -1064,7 +1064,7 @@ static int patch_ad1884(struct hda_codec
- 	snd_hda_pick_fixup(codec, NULL, ad1884_fixup_tbl, ad1884_fixups);
- 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
- 
--	err = ad198x_parse_auto_config(codec);
-+	err = ad198x_parse_auto_config(codec, true);
- 	if (err < 0)
- 		goto error;
- 	err = ad1983_add_spdif_mux_ctl(codec);
-@@ -1106,7 +1106,7 @@ static int patch_ad1882(struct hda_codec
- 	spec->gen.mixer_merge_nid = 0x21;
- 	spec->gen.beep_nid = 0x10;
- 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
--	err = ad198x_parse_auto_config(codec);
-+	err = ad198x_parse_auto_config(codec, true);
- 	if (err < 0)
- 		goto error;
- 	err = ad1988_add_spdif_mux_ctl(codec);
+ int sk_get_filter(struct sock *sk, struct sock_filter __user *ubuf, unsigned int len)
 
 
