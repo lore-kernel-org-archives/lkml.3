@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934155AbaBDVQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:16:50 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:58050 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984AbaBDVQo (ORCPT
+	id S934795AbaBDVMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57315 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934441AbaBDVMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:16:44 -0500
-Date: Tue, 4 Feb 2014 16:16:38 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] regulator: add bcm59056 pmu DT binding
-Message-ID: <20140204211638.GA16179@beef>
-References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
- <1391516352-32359-3-git-send-email-mporter@linaro.org>
- <20140204172309.GG22609@sirena.org.uk>
+	Tue, 4 Feb 2014 16:12:09 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 090/140] ALSA: bits vs bytes bug in snd_card_create()
+Date: Tue,  4 Feb 2014 13:11:17 -0800
+Message-Id: <20140204211039.538015801@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
+References: <20140204211036.967663852@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204172309.GG22609@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 05:23:09PM +0000, Mark Brown wrote:
-> On Tue, Feb 04, 2014 at 07:19:08AM -0500, Matt Porter wrote:
-> > Add a DT binding for the BCM59056 PMU. The binding inherits from
-> > the generic regulator bindings.
-> 
-> Is this really only a regulator - does the chip have no other functions?
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-It's your average multi-function device with other functions as you are
-suspecting.  Buried in the the MFD driver comments is me admitting that
-I need to split this into two bindings. The base device, "bcm59056" and
-then "bcm59056-reg". So point noted, I'll updated with the appropriate
-binding for each.
+------------------
 
-> > +- regulators: This is the list of child nodes that specify the regulator
-> > +  initialization data for defined regulators.  Generic regulator bindings
-> > +  are described in regulator/regulator.txt.
-> 
-> The regulators property should always be optional, the driver should be
-> able to start up and read back the hardware state without any further
-> configuration.
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Ahh, ok. I will make it so.
+commit 4c3773eda49c872a3034382f8ec3080002e715bf upstream.
 
-Thanks,
-Matt
+The test here is intended intended to prevent shift wrapping bugs when
+we do "1U << idx2".  We should consider the number of bits in a u32
+instead of the number of bytes.
+
+[fix another chunk similarly by tiwai]
+
+Fixes: 7bb2491b35a2 ('ALSA: Add kconfig to specify the max card numbers')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/core/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -170,7 +170,7 @@ int snd_card_create(int idx, const char
+ 	if (idx < 0) {
+ 		for (idx2 = 0; idx2 < SNDRV_CARDS; idx2++) {
+ 			/* idx == -1 == 0xffff means: take any free slot */
+-			if (idx2 < sizeof(int) && !(idx & (1U << idx2)))
++			if (idx2 < 32 && !(idx & (1U << idx2)))
+ 				continue;
+ 			if (!test_bit(idx2, snd_cards_lock)) {
+ 				if (module_slot_match(module, idx2)) {
+@@ -183,7 +183,7 @@ int snd_card_create(int idx, const char
+ 	if (idx < 0) {
+ 		for (idx2 = 0; idx2 < SNDRV_CARDS; idx2++) {
+ 			/* idx == -1 == 0xffff means: take any free slot */
+-			if (idx2 < sizeof(int) && !(idx & (1U << idx2)))
++			if (idx2 < 32 && !(idx & (1U << idx2)))
+ 				continue;
+ 			if (!test_bit(idx2, snd_cards_lock)) {
+ 				if (!slots[idx2] || !*slots[idx2]) {
+
+
