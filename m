@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935283AbaBDWWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:22:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56627 "EHLO
+	id S964806AbaBDWWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:22:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933908AbaBDVIY (ORCPT
+	with ESMTP id S933903AbaBDVIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:24 -0500
+	Tue, 4 Feb 2014 16:08:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Du, Changbin" <changbinx.du@intel.com>
-Subject: [PATCH 3.12 025/133] USB: fix race between hub_disconnect and recursively_mark_NOTATTACHED
-Date: Tue,  4 Feb 2014 13:07:06 -0800
-Message-Id: <20140204210737.743548458@linuxfoundation.org>
+        Jack Pham <jackp@codeaurora.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.12 024/133] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
+Date: Tue,  4 Feb 2014 13:07:05 -0800
+Message-Id: <20140204210737.716058005@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,92 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jack Pham <jackp@codeaurora.org>
 
-commit 543d7784b07ffd16cc82a9cb4e1e0323fd0040f1 upstream.
+commit 9005355af23856c55a5538c9024355785424821b upstream.
 
-There is a race in the hub driver between hub_disconnect() and
-recursively_mark_NOTATTACHED().  This race can be triggered if the
-driver is unbound from a device at the same time as the bus's root hub
-is removed.  When the race occurs, it can cause an oops:
+If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
+doesn't try to free a bogus PCI IRQ or dereference an invalid
+pci_dev when the xHCI device is actually a platform_device.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000015c
-IP: [<c16d5fb0>] recursively_mark_NOTATTACHED+0x20/0x60
-Call Trace:
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d6082>] usb_set_device_state+0x92/0x120
- [<c16d862b>] usb_disconnect+0x2b/0x1a0
- [<c16dd4c0>] usb_remove_hcd+0xb0/0x160
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c1704efc>] ehci_mid_remove+0x1c/0x30
- [<c1704f26>] ehci_mid_stop_host+0x16/0x30
- [<c16f7698>] penwell_otg_work+0xd28/0x3520
- [<c19c945b>] ? __schedule+0x39b/0x7f0
- [<c19cdb9d>] ? sub_preempt_count+0x3d/0x50
- [<c125e97d>] process_one_work+0x11d/0x3d0
- [<c19c7f4d>] ? mutex_unlock+0xd/0x10
- [<c125e0e5>] ? manage_workers.isra.24+0x1b5/0x270
- [<c125f009>] worker_thread+0xf9/0x320
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c125ef10>] ? rescuer_thread+0x2b0/0x2b0
- [<c1264ac4>] kthread+0x94/0xa0
- [<c19d0f77>] ret_from_kernel_thread+0x1b/0x28
- [<c1264a30>] ? kthread_create_on_node+0xc0/0xc0
+This patch should be backported to kernels as old as 3.9, that
+contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
+"xhci-plat: Don't enable legacy PCI interrupts."
 
-One problem is that recursively_mark_NOTATTACHED() uses the intfdata
-value and hub->hdev->maxchild while hub_disconnect() is clearing them.
-Another problem is that it uses hub->ports[i] while the port device is
-being released.
-
-To fix this race, we need to hold the device_state_lock while
-hub_disconnect() changes the values.  (Note that usb_disconnect()
-and hub_port_connect_change() already acquire this lock at similar
-critical times during a USB device's life cycle.)  We also need to
-remove the port devices after maxchild has been set to 0, instead of
-before.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: "Du, Changbin" <changbinx.du@intel.com>
-Tested-by: "Du, Changbin" <changbinx.du@intel.com>
+Signed-off-by: Jack Pham <jackp@codeaurora.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1610,7 +1610,7 @@ static void hub_disconnect(struct usb_in
- {
- 	struct usb_hub *hub = usb_get_intfdata(intf);
- 	struct usb_device *hdev = interface_to_usbdev(intf);
--	int i;
-+	int port1;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -321,6 +321,9 @@ static void xhci_cleanup_msix(struct xhc
+ 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
+ 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
  
- 	/* Take the hub off the event list and don't let it be added again */
- 	spin_lock_irq(&hub_event_lock);
-@@ -1625,11 +1625,15 @@ static void hub_disconnect(struct usb_in
- 	hub->error = 0;
- 	hub_quiesce(hub, HUB_DISCONNECT);
++	if (xhci->quirks & XHCI_PLAT)
++		return;
++
+ 	xhci_free_irq(xhci);
  
--	usb_set_intfdata (intf, NULL);
-+	/* Avoid races with recursively_mark_NOTATTACHED() */
-+	spin_lock_irq(&device_state_lock);
-+	port1 = hdev->maxchild;
-+	hdev->maxchild = 0;
-+	usb_set_intfdata(intf, NULL);
-+	spin_unlock_irq(&device_state_lock);
- 
--	for (i = 0; i < hdev->maxchild; i++)
--		usb_hub_remove_port_device(hub, i + 1);
--	hub->hdev->maxchild = 0;
-+	for (; port1 > 0; --port1)
-+		usb_hub_remove_port_device(hub, port1);
- 
- 	if (hub->hdev->speed == USB_SPEED_HIGH)
- 		highspeed_hubs--;
+ 	if (xhci->msix_entries) {
 
 
