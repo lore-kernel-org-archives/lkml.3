@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935012AbaBDVUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:20:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57510 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934743AbaBDVMo (ORCPT
+	id S935029AbaBDVVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:21:21 -0500
+Received: from smtprelay0136.hostedemail.com ([216.40.44.136]:44780 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933627AbaBDVVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:44 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asias He <asias.hejun@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.13 133/140] virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
-Date: Tue,  4 Feb 2014 13:12:00 -0800
-Message-Id: <20140204211040.764349416@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 16:21:13 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3870:3871:4321:4560:5007:7652:7901:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: eyes89_7dba8649ee649
+X-Filterd-Recvd-Size: 1998
+Message-ID: <1391548862.2538.34.camel@joe-AO722>
+Subject: Re: [PATCH v7 2/3] trivial: PM / Hibernate: clean up checkpatch in
+ hibernate.c
+From: Joe Perches <joe@perches.com>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Date: Tue, 04 Feb 2014 13:21:02 -0800
+In-Reply-To: <1391546631-7715-3-git-send-email-sebastian.capella@linaro.org>
+References: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org>
+	 <1391546631-7715-3-git-send-email-sebastian.capella@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2014-02-04 at 12:43 -0800, Sebastian Capella wrote:
+> Checkpatch reports several warnings in hibernate.c
+> printk use removed, long lines wrapped, whitespace cleanup,
+> extend short msleeps, while loops on two lines.
+[]
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+[]
+> @@ -765,7 +762,7 @@ static int software_resume(void)
+>  	if (isdigit(resume_file[0]) && resume_wait) {
+>  		int partno;
+>  		while (!get_gendisk(swsusp_resume_device, &partno))
+> -			msleep(10);
+> +			msleep(20);
 
-------------------
+What good is changing this from 10 to 20?
 
-From: Asias He <asias.hejun@gmail.com>
+> @@ -776,8 +773,9 @@ static int software_resume(void)
+>  		wait_for_device_probe();
+>  
+>  		if (resume_wait) {
+> -			while ((swsusp_resume_device = name_to_dev_t(resume_file)) == 0)
+> -				msleep(10);
+> +			while ((swsusp_resume_device =
+> +					name_to_dev_t(resume_file)) == 0)
+> +				msleep(20);
 
-commit f466f75385369a181409e46da272db3de6f5c5cb upstream.
-
-vqs are freed in virtscsi_freeze but the hotcpu_notifier is not
-unregistered. We will have a use-after-free usage when the notifier
-callback is called after virtscsi_freeze.
-
-Fixes: 285e71ea6f3583a85e27cb2b9a7d8c35d4c0d558
-("virtio-scsi: reset virtqueue affinity when doing cpu hotplug")
-
-Signed-off-by: Asias He <asias.hejun@gmail.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/virtio_scsi.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -956,6 +956,10 @@ static void virtscsi_remove(struct virti
- #ifdef CONFIG_PM_SLEEP
- static int virtscsi_freeze(struct virtio_device *vdev)
- {
-+	struct Scsi_Host *sh = virtio_scsi_host(vdev);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+
-+	unregister_hotcpu_notifier(&vscsi->nb);
- 	virtscsi_remove_vqs(vdev);
- 	return 0;
- }
-@@ -964,8 +968,17 @@ static int virtscsi_restore(struct virti
- {
- 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
- 	struct virtio_scsi *vscsi = shost_priv(sh);
-+	int err;
-+
-+	err = virtscsi_init(vdev, vscsi);
-+	if (err)
-+		return err;
-+
-+	err = register_hotcpu_notifier(&vscsi->nb);
-+	if (err)
-+		vdev->config->del_vqs(vdev);
- 
--	return virtscsi_init(vdev, vscsi);
-+	return err;
- }
- #endif
- 
+here too.
 
 
