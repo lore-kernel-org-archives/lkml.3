@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917AbaBDVI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56521 "EHLO
+	id S933957AbaBDVIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:08:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933787AbaBDVIB (ORCPT
+	with ESMTP id S933868AbaBDVIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:01 -0500
+	Tue, 4 Feb 2014 16:08:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Ertman <davidx.m.ertman@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 3.12 006/133] e1000e: fix compiler warnings
-Date: Tue,  4 Feb 2014 13:06:47 -0800
-Message-Id: <20140204210737.204219911@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        David Binderman <dcb314@hotmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 039/133] rtlwifi: rtl8188ee: Fix typo in code
+Date: Tue,  4 Feb 2014 13:07:20 -0800
+Message-Id: <20140204210738.138348477@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -31,57 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Ertman <davidx.m.ertman@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 9e6c3b63399dd424d33a34e08b77f2cab0b84cdc upstream.
+commit f699273d6a624266ebc9198774f06ee64a3847a1 upstream.
 
-This patch is to fix a compiler warning of __bad_udelay due to a value
-of >999 being passed as a parameter to udelay() in the function
-e1000e_phy_has_link_generic().  This affects the gcc compiler when
-it is given a flag of -O3 and the icc compiler.
+The static analyser "cppcheck" shows the following typo:
+drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:1081]: (style) Same expression on both sides of '!='.
 
-This patch is also making the change from mdelay() to msleep() in the
-same function, since it was determined though code inspection that this
-function is never called in atomic context.
-
-Signed-off-by: David Ertman <davidx.m.ertman@intel.com>
-Acked-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Cc: David Binderman <dcb314@hotmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/phy.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8188ee/dm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/intel/e1000e/phy.c
-+++ b/drivers/net/ethernet/intel/e1000e/phy.c
-@@ -1757,19 +1757,23 @@ s32 e1000e_phy_has_link_generic(struct e
- 		 * it across the board.
- 		 */
- 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
--		if (ret_val)
-+		if (ret_val) {
- 			/* If the first read fails, another entity may have
- 			 * ownership of the resources, wait and try again to
- 			 * see if they have relinquished the resources yet.
- 			 */
--			udelay(usec_interval);
-+			if (usec_interval >= 1000)
-+				msleep(usec_interval / 1000);
-+			else
-+				udelay(usec_interval);
-+		}
- 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
- 		if (ret_val)
- 			break;
- 		if (phy_status & BMSR_LSTATUS)
- 			break;
- 		if (usec_interval >= 1000)
--			mdelay(usec_interval / 1000);
-+			msleep(usec_interval / 1000);
- 		else
- 			udelay(usec_interval);
- 	}
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
+@@ -1078,7 +1078,7 @@ static void rtl88e_dm_txpower_tracking_c
+ 				rtldm->swing_flag_ofdm = true;
+ 			}
+ 
+-			if (rtldm->swing_idx_cck != rtldm->swing_idx_cck) {
++			if (rtldm->swing_idx_cck_cur != rtldm->swing_idx_cck) {
+ 				rtldm->swing_idx_cck_cur = rtldm->swing_idx_cck;
+ 				rtldm->swing_flag_cck = true;
+ 			}
 
 
