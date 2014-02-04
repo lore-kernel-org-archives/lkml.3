@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaBDBxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 20:53:36 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59138 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaBDBxe (ORCPT
+	id S1753907AbaBDB6j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 20:58:39 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:50165 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752388AbaBDB6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 20:53:34 -0500
-X-Original-SENDERIP: 10.177.222.146
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 4 Feb 2014 10:53:32 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, compaction: avoid isolating pinned pages fix
-Message-ID: <20140204015332.GA14779@lge.com>
-References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com>
- <20140203095329.GH6732@suse.de>
- <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com>
- <20140204000237.GA17331@lge.com>
- <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
+	Mon, 3 Feb 2014 20:58:35 -0500
+Date: Mon, 3 Feb 2014 20:58:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: Re: [PATCHSET 0/5] tracing/uprobes: Support multi buffer and event
+ trigger
+Message-ID: <20140203205828.4e5b1592@gandalf.local.home>
+In-Reply-To: <87mwi83hvf.fsf@sejong.aot.lge.com>
+References: <1389946120-19610-1-git-send-email-namhyung@kernel.org>
+	<87mwi83hvf.fsf@sejong.aot.lge.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 05:20:46PM -0800, David Rientjes wrote:
-> On Tue, 4 Feb 2014, Joonsoo Kim wrote:
-> 
-> > I think that you need more code to skip this type of page correctly.
-> > Without page_mapped() check, this code makes migratable pages be skipped,
-> > since if page_mapped() case, page_count() may be more than zero.
-> > 
-> > So I think that you need following change.
-> > 
-> > (!page_mapping(page) && !page_mapped(page) && page_count(page))
-> > 
-> 
-> These pages returned by get_user_pages() will have a mapcount of 1 so this 
-> wouldn't actually fix the massive lock contention.  page_mapping() is only 
-> going to be NULL for pages off the lru like these are for 
-> PAGE_MAPPING_ANON.
+On Mon, 03 Feb 2014 14:06:12 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Okay. It can't fix your situation. Anyway, *normal* anon pages may be mapped
-and have positive page_count(), so your code such as
-'!page_mapping(page) && page_count(page)' makes compaction skip these *normal*
-anon pages and this is incorrect behaviour.
+> Ping!
 
-Thanks.
+Hi Namhyung,
+
+I plan on getting these ready for the 3.15 queue. There was a bit too
+much in 3.14 to add these on top of at the last minute.
+
+Currently, I'm working on some bugs at work as well as some things I
+found in mainline. I'll be reviewing these when I get a chance.
+
+Thanks,
+
+-- Steve
