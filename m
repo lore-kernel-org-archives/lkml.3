@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864AbaBDVAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:00:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55925 "EHLO
+	id S935855AbaBDXHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:07:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120AbaBDVAX (ORCPT
+	with ESMTP id S932779AbaBDVAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:23 -0500
+	Tue, 4 Feb 2014 16:00:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.4 18/37] staging: vt6656: [BUG] BBvUpdatePreEDThreshold Always set sensitivity on bScanning
-Date: Tue,  4 Feb 2014 13:00:54 -0800
-Message-Id: <20140204210056.518782250@linuxfoundation.org>
+        Michal Schmidt <mschmidt@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 28/37] bnx2x: fix DMA unmapping of TSO split BDs
+Date: Tue,  4 Feb 2014 13:01:04 -0800
+Message-Id: <20140204210056.801785530@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -28,48 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit 8f248dae133668bfb8e9379b4b3f0571c858b24a upstream.
+[ Upstream commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 ]
 
-byBBPreEDIndex value is initially 0, this means that from
-cold BBvUpdatePreEDThreshold is never set.
+bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
 
-This means that sensitivity may be in an ambiguous state,
-failing to scan any wireless points or at least distant ones.
+  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
+  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
+  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
+  [unmap size=66 bytes]
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
+using one DMA mapping for both, but it uses only the length of the first
+BD when unmapping.
+
+This patch fixes the bug by unmapping the whole length of the two BDs.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/staging/vt6656/baseband.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -1634,7 +1634,6 @@ BBvUpdatePreEDThreshold(
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -71,6 +71,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	struct sk_buff *skb = tx_buf->skb;
+ 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
+ 	int nbd;
++	u16 split_bd_len = 0;
  
-             if( bScanning )
-             {   // need Max sensitivity //RSSI -69, -70,....
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x30); //CR206(0xCE)
-@@ -1777,7 +1776,6 @@ BBvUpdatePreEDThreshold(
+ 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
+ 	prefetch(&skb->end);
+@@ -78,10 +79,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
+ 	   txdata->txq_index, idx, tx_buf, skb);
  
-             if( bScanning )
-             {   // need Max sensitivity  //RSSI -69, -70, ...
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x24); //CR206(0xCE)
-@@ -1929,7 +1927,6 @@ BBvUpdatePreEDThreshold(
-         case RF_VT3342A0: //RobertYu:20060627, testing table
-             if( bScanning )
-             {   // need Max sensitivity  //RSSI -67, -68, ...
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x38); //CR206(0xCE)
+-	/* unmap first bd */
+ 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
+-	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
+-			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
+ 
+ 
+ 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
+@@ -100,12 +98,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
+-	/* ...and the TSO split header bd since they have no mapping */
++	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
++		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
++		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
+ 		--nbd;
+ 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 	}
+ 
++	/* unmap first bd */
++	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
++			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
++			 DMA_TO_DEVICE);
++
+ 	/* now free frags */
+ 	while (nbd > 0) {
+ 
 
 
