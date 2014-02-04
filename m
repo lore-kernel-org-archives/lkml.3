@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935326AbaBDWBy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:01:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56918 "EHLO
+	id S934162AbaBDVJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:09:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56741 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934169AbaBDVJU (ORCPT
+	with ESMTP id S933584AbaBDVIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:20 -0500
+	Tue, 4 Feb 2014 16:08:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Uosis <uosisl@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3.12 123/133] ALSA: hda/hdmi - allow PIN_OUT to be dynamically enabled
-Date: Tue,  4 Feb 2014 13:08:44 -0800
-Message-Id: <20140204210740.503086006@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 3.12 085/133] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
+Date: Tue,  4 Feb 2014 13:08:06 -0800
+Message-Id: <20140204210739.433593790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,132 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Peter Huewe <PeterHuewe@gmx.de>
 
-(This is upstream 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
-dynamically enabled", backported to stable 3.10 through 3.12. 3.13 and
-later can take the original patch.)
+commit 747d35bd9bb4ae6bd74b19baa5bbe32f3e0cee11 upstream.
 
-Commit 384a48d71520 "ALSA: hda: HDMI: Support codecs with fewer cvts
-than pins" dynamically enabled each pin widget's PIN_OUT only when the
-pin was actively in use. This was required on certain NVIDIA CODECs for
-correct operation. Specifically, if multiple pin widgets each had their
-mux input select the same audio converter widget and each pin widget had
-PIN_OUT enabled, then only one of the pin widgets would actually receive
-the audio, and often not the one the user wanted!
+Depending on the implementation strcmp might return the difference between
+two strings not only -1,0,1 consequently
+ if (strcmp (a,b) == -1)
+might lead to taking the wrong branch
 
-However, this apparently broke some Intel systems, and commit
-6169b673618b "ALSA: hda - Always turn on pins for HDMI/DP" reverted the
-dynamic setting of PIN_OUT. This in turn broke the afore-mentioned NVIDIA
-CODECs.
+-> compare with < 0  instead,
+which in any case is more canonical.
 
-This change supports either dynamic or static handling of PIN_OUT,
-selected by a flag set up during CODEC initialization. This flag is
-enabled for all recent NVIDIA GPUs.
-
-Reported-by: Uosis <uosisl@gmail.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   40 ++++++++++++++++++++++++++++++++++++----
- 1 file changed, 36 insertions(+), 4 deletions(-)
+ drivers/char/tpm/tpm_ppi.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -88,6 +88,9 @@ struct hdmi_spec {
- 	unsigned int channels_max; /* max over all cvts */
- 
- 	struct hdmi_eld temp_eld;
-+
-+	bool dyn_pin_out;
-+
- 	/*
- 	 * Non-generic ATI/NVIDIA specific
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -172,7 +172,7 @@ static ssize_t tpm_store_ppi_request(str
+ 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
+ 	 * version 1.1
  	 */
-@@ -452,15 +455,25 @@ static void hdmi_write_dip_byte(struct h
+-	if (strcmp(version, "1.1") == -1)
++	if (strcmp(version, "1.1") < 0)
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
+ 	else
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
+@@ -182,7 +182,7 @@ static ssize_t tpm_store_ppi_request(str
+ 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
+ 	 * for compatibility, and use package type since 1.2 according to spec.
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length = sizeof(req);
+ 		sscanf(buf, "%d", &req);
+@@ -248,7 +248,7 @@ static ssize_t tpm_show_ppi_transition_a
+ 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
+ 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length =  0;
+ 		params[3].buffer.pointer = NULL;
+@@ -390,7 +390,7 @@ static ssize_t show_ppi_operations(char
+ 	kfree(output.pointer);
+ 	output.length = ACPI_ALLOCATE_BUFFER;
+ 	output.pointer = NULL;
+-	if (strcmp(version, "1.2") == -1)
++	if (strcmp(version, "1.2") < 0)
+ 		return -EPERM;
  
- static void hdmi_init_pin(struct hda_codec *codec, hda_nid_t pin_nid)
- {
-+	struct hdmi_spec *spec = codec->spec;
-+	int pin_out;
-+
- 	/* Unmute */
- 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
- 		snd_hda_codec_write(codec, pin_nid, 0,
- 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
--	/* Enable pin out: some machines with GM965 gets broken output when
--	 * the pin is disabled or changed while using with HDMI
--	 */
-+
-+	if (spec->dyn_pin_out)
-+		/* Disable pin out until stream is active */
-+		pin_out = 0;
-+	else
-+		/* Enable pin out: some machines with GM965 gets broken output
-+		 * when the pin is disabled or changed while using with HDMI
-+		 */
-+		pin_out = PIN_OUT;
-+
- 	snd_hda_codec_write(codec, pin_nid, 0,
--			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
-+			    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_out);
- }
- 
- static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
-@@ -1535,6 +1548,7 @@ static int generic_hdmi_playback_pcm_pre
- 	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
- 	hda_nid_t pin_nid = per_pin->pin_nid;
- 	bool non_pcm;
-+	int pinctl;
- 
- 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
- 	per_pin->channels = substream->runtime->channels;
-@@ -1544,6 +1558,14 @@ static int generic_hdmi_playback_pcm_pre
- 
- 	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
- 
-+	if (spec->dyn_pin_out) {
-+		pinctl = snd_hda_codec_read(codec, pin_nid, 0,
-+					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+		snd_hda_codec_write(codec, pin_nid, 0,
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+				    pinctl | PIN_OUT);
-+	}
-+
- 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
- }
- 
-@@ -1563,6 +1585,7 @@ static int hdmi_pcm_close(struct hda_pcm
- 	int cvt_idx, pin_idx;
- 	struct hdmi_spec_per_cvt *per_cvt;
- 	struct hdmi_spec_per_pin *per_pin;
-+	int pinctl;
- 
- 	if (hinfo->nid) {
- 		cvt_idx = cvt_nid_to_cvt_index(spec, hinfo->nid);
-@@ -1579,6 +1602,14 @@ static int hdmi_pcm_close(struct hda_pcm
- 			return -EINVAL;
- 		per_pin = get_pin(spec, pin_idx);
- 
-+		if (spec->dyn_pin_out) {
-+			pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
-+					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-+			snd_hda_codec_write(codec, per_pin->pin_nid, 0,
-+					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+					    pinctl & ~PIN_OUT);
-+		}
-+
- 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
- 		per_pin->chmap_set = false;
- 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
-@@ -2570,6 +2601,7 @@ static int patch_nvhdmi(struct hda_codec
- 		return err;
- 
- 	spec = codec->spec;
-+	spec->dyn_pin_out = true;
- 
- 	return 0;
- }
+ 	params[2].integer.value = TPM_PPI_FN_GETOPR;
 
 
