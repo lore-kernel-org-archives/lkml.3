@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419AbaBDRcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:32:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:26798 "EHLO mga02.intel.com"
+	id S1754644AbaBDReD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:34:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60872 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932212AbaBDRcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:32:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,781,1384329600"; 
-   d="scan'208";a="477935981"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
-References: <1391452183-2160-1-git-send-email-bp@alien8.de>
-	<alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
-	<CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
-	<20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
-	<alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
-	<20140204090809.GA19156@gmail.com>
-	<CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
-Date: Tue, 04 Feb 2014 09:32:13 -0800
-In-Reply-To: <CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 4 Feb 2014 08:36:14 -0800")
-Message-ID: <87fvny238i.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754464AbaBDReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 12:34:00 -0500
+Date: Tue, 4 Feb 2014 18:34:06 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Do we really need curr_target in signal_struct ?
+Message-ID: <20140204173406.GA6256@redhat.com>
+References: <CADZ9YHhx3NkeQp4S=o0ruAd7U20AprFt-uejcqn1oLzJbm3w4A@mail.gmail.com> <20140129145535.GA12562@redhat.com> <CADZ9YHjEfEWJx5z_5KZnfQAVHXY3u613XV7vdZqjts4zFR3_=g@mail.gmail.com> <20140129183204.GA22808@redhat.com> <CADZ9YHj4D7aDAznt5rWvn45aVXZ8r-c+G0EeaH6AGdE_TLu9Bg@mail.gmail.com> <CADZ9YHgYsibaVm9c+Ho+XXZKxZatHY-+pm=w+jj0EQ94qfFt5Q@mail.gmail.com> <20140201165122.GA7478@redhat.com> <CADZ9YHg-8XrQ0p+uQNRNBhvnHE83xVxLKais0DrT9vfoQvm=uA@mail.gmail.com> <20140203163921.GA25698@redhat.com> <CADZ9YHgeKjgffbrfRMOzDZu7qv4YVMzLhQz3NDya827=gsvJ5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADZ9YHgeKjgffbrfRMOzDZu7qv4YVMzLhQz3NDya827=gsvJ5g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On 02/04, Rakib Mullick wrote:
 >
-> Trivial oneliner patch (independent of the discussion about improving
-> the documentation), so I'll just apply it.
+> On Mon, Feb 3, 2014 at 10:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
 >
-> I can't imagine that this would be controversial:
->
->    config DEBUG_INFO
->           bool "Compile the kernel with debug info"
->   -       depends on DEBUG_KERNEL
->   +       depends on DEBUG_KERNEL && !COMPILE_TEST
->           help
->
-> Hm?
+> > I can only read the current code. I do not know the original intent.
+> >
+> This is where things are confusing.
 
-I have used debug info on allyesconfig in the past to run statistics
-on the resulting binary. It's still useful, even though quite slow.
-Make it depend on !EXPERT or somesuch? I agree for normal usages it's fine.
+Yes, I agree.
 
-BTW you probably also want to do the same for the x86 instruction
-decoder test. It seems to be the biggest compile time waster in
-allyesconfig and I usually disable it too.
+Once again, I can understand what this code does, but I am not sure
+I understand why, and I am not sure this logic was actually "designed".
+The usual problem with the ancient code.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+> > I simply can't understand. Why? I do not think so.
+> >
+> Cause, want_signal logic checks these thread attributes to find whether it's
+> eligible or not.
+
+Ah, wants_signal()->signal_pending() doesn't mean "eligible".
+sigismember(&p->blocked) does mean.
+
+This signal_pending() checks allows to notify multiple threads, so that
+they can run the signal handlers in parallel. And otoh, if signal_pending()
+is true then we obviously do not need signal_wake_up().
+
+> And, therefore, I think I should not make any
+> changes in this code.
+
+No ;) not at all.
+
+We all do mistakes, and in this particular case I am not even 100% sure
+I was right.
+
+> > But I am not going to ack the behaviour change, simply because I have
+> > no idea how this can impact the existing applications. Perhaps nobody
+> > will notice this change, but we can't know this.
+> >
+> Yes, I'm not also sure about the behavior change and it's impact over
+> existing applications, so, I'm skipping it.
+
+Yes, this is the main reason why I disliked this change from the very
+beginning.
+
+Oleg.
+
