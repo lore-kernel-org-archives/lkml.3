@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935374AbaBDWMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:12:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56733 "EHLO
+	id S935392AbaBDWNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:13:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56726 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934026AbaBDVIu (ORCPT
+	with ESMTP id S934018AbaBDVIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:50 -0500
+	Tue, 4 Feb 2014 16:08:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3.12 066/133] serial: 8250: enable UART_BUG_NOMSR for Tegra
-Date: Tue,  4 Feb 2014 13:07:47 -0800
-Message-Id: <20140204210738.893712272@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 082/133] ALSA: bits vs bytes bug in snd_card_create()
+Date: Tue,  4 Feb 2014 13:08:03 -0800
+Message-Id: <20140204210739.349982762@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,65 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3685f19e07802ec4207b52465c408f185b66490e upstream.
+commit 4c3773eda49c872a3034382f8ec3080002e715bf upstream.
 
-Tegra chips have 4 or 5 identical UART modules embedded. UARTs C..E have
-their MODEM-control signals tied off to a static state. However UARTs A
-and B can optionally route those signals to/from package pins, depending
-on the exact pinmux configuration.
+The test here is intended intended to prevent shift wrapping bugs when
+we do "1U << idx2".  We should consider the number of bits in a u32
+instead of the number of bytes.
 
-When these signals are not routed to package pins, false interrupts may
-trigger either temporarily, or permanently, all while not showing up in
-the IIR; it will read as NO_INT. This will eventually lead to the UART
-IRQ being disabled due to unhandled interrupts. When this happens, the
-kernel may print e.g.:
+[fix another chunk similarly by tiwai]
 
-    irq 68: nobody cared (try booting with the "irqpoll" option)
-
-In order to prevent this, enable UART_BUG_NOMSR. This prevents
-UART_IER_MSI from being enabled, which prevents the false interrupts
-from triggering.
-
-In practice, this is not needed under any of the following conditions:
-
-* On Tegra chips after Tegra30, since the HW bug has apparently been
-  fixed.
-
-* On UARTs C..E since their MODEM control signals are tied to the correct
-  static state which doesn't trigger the issue.
-
-* On UARTs A..B if the MODEM control signals are routed out to package
-  pins, since they will then carry valid signals.
-
-However, we ignore these exceptions for now, since they are only relevant
-if a board actually hooks up more than a 4-wire UART, and no currently
-supported board does this. If we ever support a board that does, we can
-refine the algorithm that enables UART_BUG_NOMSR to take those exceptions
-into account, and/or read a flag from DT/... that indicates that the
-board has hooked up and pinmux'd more than a 4-wire UART.
-
-Reported-by: Olof Johansson <olof@lixom.net> # autotester
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Fixes: 7bb2491b35a2 ('ALSA: Add kconfig to specify the max card numbers')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_core.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ sound/core/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2670,6 +2670,10 @@ static void serial8250_config_port(struc
- 	if (port->type == PORT_16550A && port->iotype == UPIO_AU)
- 		up->bugs |= UART_BUG_NOMSR;
- 
-+	/* HW bugs may trigger IRQ while IIR == NO_INT */
-+	if (port->type == PORT_TEGRA)
-+		up->bugs |= UART_BUG_NOMSR;
-+
- 	if (port->type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
- 		autoconfig_irq(up);
- 
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -170,7 +170,7 @@ int snd_card_create(int idx, const char
+ 	if (idx < 0) {
+ 		for (idx2 = 0; idx2 < SNDRV_CARDS; idx2++) {
+ 			/* idx == -1 == 0xffff means: take any free slot */
+-			if (idx2 < sizeof(int) && !(idx & (1U << idx2)))
++			if (idx2 < 32 && !(idx & (1U << idx2)))
+ 				continue;
+ 			if (!test_bit(idx2, snd_cards_lock)) {
+ 				if (module_slot_match(module, idx2)) {
+@@ -183,7 +183,7 @@ int snd_card_create(int idx, const char
+ 	if (idx < 0) {
+ 		for (idx2 = 0; idx2 < SNDRV_CARDS; idx2++) {
+ 			/* idx == -1 == 0xffff means: take any free slot */
+-			if (idx2 < sizeof(int) && !(idx & (1U << idx2)))
++			if (idx2 < 32 && !(idx & (1U << idx2)))
+ 				continue;
+ 			if (!test_bit(idx2, snd_cards_lock)) {
+ 				if (!slots[idx2] || !*slots[idx2]) {
 
 
