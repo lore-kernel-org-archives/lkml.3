@@ -1,94 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaBDF0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 00:26:19 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:39143 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaBDF0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 00:26:15 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>
-Date: Mon, 03 Feb 2014 21:26:06 -0800
-Message-ID: <87r47jsb2p.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752433AbaBDF30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 00:29:26 -0500
+Received: from mga01.intel.com ([192.55.52.88]:39993 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780AbaBDF3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 00:29:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,777,1384329600"; 
+   d="scan'208";a="475579446"
+Date: Tue, 4 Feb 2014 10:58:10 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, dan.j.williams@intel.com,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        robh+dt@kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [PATCH v2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+Message-ID: <20140204052810.GO10628@intel.com>
+References: <1390409565-4200-1-git-send-email-sthokal@xilinx.com>
+ <1390409565-4200-2-git-send-email-sthokal@xilinx.com>
+ <52E0FC22.8060903@metafoo.de>
+ <CA+mB=1L6yvCwA3mKCwz83LQbXiVau110REV64rYrSzUhGE4ucA@mail.gmail.com>
+ <52E2698B.6070001@metafoo.de>
+ <20140126135933.GD10628@intel.com>
+ <CA+mB=1Jwjn+KSO9yFr=LNVjk3khf0b-LLQamYf+nnSF4bODGPA@mail.gmail.com>
+ <CA+mB=1LyX0_VVXZQ-=m3gR2RBeumLrnPTUW3j+Zm1nj7a4exHg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18R+d9ilNNYZDmrAM6Sjz8a3TjjIsfLFZE=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1107]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH] fdtable: Avoid triggering OOMs from alloc_fdmem
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+mB=1LyX0_VVXZQ-=m3gR2RBeumLrnPTUW3j+Zm1nj7a4exHg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 31, 2014 at 12:22:52PM +0530, Srikanth Thokala wrote:
+> >>> >> [...]
+> >>> >>> +/**
+> >>> >>> + * xilinx_vdma_device_control - Configure DMA channel of the device
+> >>> >>> + * @dchan: DMA Channel pointer
+> >>> >>> + * @cmd: DMA control command
+> >>> >>> + * @arg: Channel configuration
+> >>> >>> + *
+> >>> >>> + * Return: '0' on success and failure value on error
+> >>> >>> + */
+> >>> >>> +static int xilinx_vdma_device_control(struct dma_chan *dchan,
+> >>> >>> +                                   enum dma_ctrl_cmd cmd, unsigned long arg)
+> >>> >>> +{
+> >>> >>> +     struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+> >>> >>> +
+> >>> >>> +     switch (cmd) {
+> >>> >>> +     case DMA_TERMINATE_ALL:
+> >>> >>> +             xilinx_vdma_terminate_all(chan);
+> >>> >>> +             return 0;
+> >>> >>> +     case DMA_SLAVE_CONFIG:
+> >>> >>> +             return xilinx_vdma_slave_config(chan,
+> >>> >>> +                                     (struct xilinx_vdma_config *)arg);
+> >>> >>
+> >>> >> You really shouldn't be overloading the generic API with your own semantics.
+> >>> >> DMA_SLAVE_CONFIG should take a dma_slave_config and nothing else.
+> >>> >
+> >>> > Ok.  The driver needs few additional configuration from the slave
+> >>> > device like Vertical
+> >>> > Size, Horizontal Size,  Stride etc., for the DMA transfers, in that case do you
+> >>> > suggest me to define a separate dma_ctrl_cmd like the one FSLDMA_EXTERNAL_START
+> >>> > defined for Freescale drivers?
+> >>>
+> >>> In my opinion it is not a good idea to have driver implement a generic API,
+> >>> but at the same time let the driver have custom semantics for those API
+> >>> calls. It's a bit like having a gpio driver that expects 23 and 42 as the
+> >>> values passed to gpio_set_value instead of 0 and 1. It completely defeats
+> >>> the purpose of a generic API, namely that you are able to write generic code
+> >>> that makes use of the API without having to know about which implementation
+> >>> API it is talking to. The dmaengine framework provides the
+> >>> dmaengine_prep_interleaved_dma() function to setup two dimensional
+> >>> transfers, e.g. take a look at sirf-dma.c or imx-dma.c.
+> >>
+> >> The question here i think would be waht this device supports? Is the hardware
+> >> capable of doing interleaved transfers, then would make sense.
+> >>
+> >> While we do try to get users use dma_slave_config, but there will always be
+> >> someone who have specfic params. If we can generalize then we might want to add
+> >> to the dma_slave_config as well
+> >
+> > There are many configuration parameters which are specific to IP and I
+> > would like to
+> > give an overview of some of parameteres here:
+> >
+> > 1) Park Mode ('cfg->park'): In Park mode, engine will park on frame
+> > referenced by
+> >     'cfg->park_frm', so user will have control on each frame in this mode.
+> >
+> > 2) Interrupt Coalesce ('cfg->coalesce'):  Used for setting interrupt
+> > threshold. This value
+> >    determines the number of frame buffers to process. To use this feature,
+> >    'cfg->frm_cnt_en' should be set.
+> >
+> > 3) Frame Synchronization Source ('cfg->ext_fsync'):  Can be an
+> > external/internal frame
+> >     synchronization source. Used to synchronize one channel (MM2S/S2MM) with
+> >     another (S2MM/MM2S) channel.
+> >
+> > 4) Genlock Synchronization ('cfg->genlock'): Used to avoid mismatch rate between
+> >     master and slave.  In master mode (cfg->master), frames are not dropped and
+> >     slave can drop frames to adjust to master frame rate.
+> >
+> > And in future, this Engine being a soft IP, we could expect some more additional
+> > parameters.  Isn't a good idea to have a private member in dma_slave_config for
+> > sharing additional configuration between slave device and dma engine? Or a new
+> > dma_ctrl_cmd like FSLDMA_EXTERNAL_START?
 
-Recently due to a spike in connections per second memcached on 3
-separate boxes triggered the OOM killer from accept.  At the time the
-OOM killer was triggered there was 4GB out of 36GB free in zone 1. The
-problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-hold a bitmap, and there was sufficient fragmentation that the largest
-page available was 8KiB.
+The idea of a generic API is that we can use it for most of the controllers. Even
+if you are planning to support a family of controllers
 
-I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-but I do agree that order 3 allocations are very likely to succeed.
+ATM, lets not discuss the possiblity of private member and try to exhanust all
+possible options. Worst case you can embed the dma_slave_config in
+xilinx_dma_slave_config and retrieve it in dmac driver
 
-There are always pathologies where order > 0 allocations can fail when
-there are copious amounts of free memory available.  Using the pigeon
-hole principle it is easy to show that it requires 1 page more than 50%
-of the pages being free to guarantee an order 1 (8KiB) allocation will
-succeed, 1 page more than 75% of the pages being free to guarantee an
-order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-the pages being free to guarantee an order 3 allocate will succeed.
-
-A server churning memory with a lot of small requests and replies like
-memcached is a common case that if anything can will skew the odds
-against large pages being available.
-
-Therefore let's not give external applications a practical way to kill
-linux server applications, and specify __GFP_NORETRY to the kmalloc in
-alloc_fdmem.  Unless I am misreading the code and by the time the code
-reaches should_alloc_retry in __alloc_pages_slowpath (where
-__GFP_NORETRY becomes signification).  We have already tried everything
-reasonable to allocate a page and the only thing left to do is wait.  So
-not waiting and falling back to vmalloc immediately seems like the
-reasonable thing to do even if there wasn't a chance of triggering the
-OOM killer.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- fs/file.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/file.c b/fs/file.c
-index 771578b33fb6..db25c2bdfe46 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
- 	 * vmalloc() if the allocation size will be considered "large" by the VM.
- 	 */
- 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
--		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
- 		if (data != NULL)
- 			return data;
- 	}
 -- 
-1.7.5.4
-
+~Vinod
