@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaBDEtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 23:49:04 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:58609 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaBDEsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 23:48:16 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-2a-52f0710ee46f
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/2] f2fs: fix the potential mismatch between dir's i_size and
- i_blocks
-Date: Tue, 04 Feb 2014 13:46:43 +0900
-Message-id: <1391489204-19695-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zA12+wg9BBjNWSlhc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXF98QqmgvV8Fa8X
-	32JtYDzB1cXIySEhYCIx6c4UNghbTOLCvfVANheHkMAyRolDi2cywhQd3XyZBSKxiFFix98W
-	ZpCEkEATk8TH3oouRg4ONgFtic37DUDCIgLMEgumnmcEqWcWmMAo8X/RexaQhLBApMSvK1OZ
-	QGwWAVWJAwvngs3hFXCX2D67gRVimbbEtucTwZolBB6zSWz7+AKqQUDi2+RDLCDLJARkJTYd
-	YIaol5Q4uOIGywRGwQWMDKsYRVMLkguKk9KLDPWKE3OLS/PS9ZLzczcxQkKwdwfj7QPWhxiT
-	gcZNZJYSTc4HhnBeSbyhsZmRhamJqbGRuaUZacJK4rxJD5OChATSE0tSs1NTC1KL4otKc1KL
-	DzEycXBKNTDqeG6yVWl+LJdpm60vtOJ4WKoah2T81lRLPtGz9QaX1WPfe/Af2iYu0MbX/Uty
-	4aEOL77XLJdaVpbMT12l5MqjM113DuMBm1XuO8pLEsVqo664xRZ87JwlqMb5rvQuG7P+mdju
-	x35hUw1qtsQt1dpjqtqwLeL/ednFx34fSGJYryKz7NPGt0osxRmJhlrMRcWJALc8zJtXAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAV2+wg9BBlvWi1hc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5hxffEKpoL1fBWvF99ibWA8wdXFyMkhIWAicXTzZRYIW0ziwr31bF2MXBxC
-	AosYJXb8bWEGSQgJNDFJfOyt6GLk4GAT0JbYvN8AJCwiwCyxYOp5RpB6ZoEJjBL/F70HGyQs
-	ECnx68pUJhCbRUBV4sDCuWBzeAXcJbbPbmCFWKYtse35RMYJjNwLGBlWMYqmFiQXFCel5xrq
-	FSfmFpfmpesl5+duYgQH+DOpHYwrGywOMQpwMCrx8CqofAgSYk0sK67MPcQowcGsJMJ70AIo
-	xJuSWFmVWpQfX1Sak1p8iDEZaPtEZinR5Hxg9OWVxBsam5gZWRqZWRiZmJuTJqwkznug1TpQ
-	SCA9sSQ1OzW1ILUIZgsTB6dUA2Nd9vHuqHmhEw580ly9tXTNE7Wbd0V+tNtF3jG/YSd9lP/1
-	pbXrnykXsjTJcDXc11ZcYp63dsHuZ0c0/jEXPe2cscapra64d95m/S3brI+s3dnQv2XS8QVv
-	o6oyz3xvi4+K7KnfoBX7vljBpEPtBsf15/uM4q7W71O+Vp4dk2xSMFMkYh7Hsv1KLMUZiYZa
-	zEXFiQA2DvXYtAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	id S1753883AbaBDE7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 23:59:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50816 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394AbaBDE7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 23:59:07 -0500
+Date: Tue, 4 Feb 2014 05:59:04 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        Richard Weinberger <richard@nod.at>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
+Message-ID: <20140204045904.GA4340@pd.tnic>
+References: <1391452183-2160-1-git-send-email-bp@alien8.de>
+ <alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
+ <CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
+ <20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the erroneous scenario.
+On Mon, Feb 03, 2014 at 02:57:18PM -0800, Andrew Morton wrote:
+> On Mon, 3 Feb 2014 14:47:15 -0800 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Mon, Feb 3, 2014 at 2:00 PM, David Rientjes <rientjes@google.com> wrote:
+> > >
+> > > How do you define "huge bloat" if the size of vmlinux doesn't increase?
+> > 
+> > Don't be silly. The size of all the object files increase *hugely*.
+> 
+> yup, I disable this in my allmodconfig testing, to great effect.
+> 
+> That being said, I do think the text should make clear that the bloat
+> is a compile-time impact and not a runtime one.  Something like
+> 
+> --- a/lib/Kconfig.debug~lib-kconfigdebug-clarify-config_debug_infos-bloaty-nature-fix
+> +++ a/lib/Kconfig.debug
+> @@ -128,9 +128,9 @@ config DEBUG_INFO
+>  	  tools like crash, kgdb, LKCD, gdb, etc on the kernel.
+>  
+>  	  If you only want to have resolved symbols in kernel traces and
+> -	  are not going to need support for those tools above, you don't need
+> -	  to enable this as it is a huge bloat and build slowdown;
+> -	  enable CONFIG_KALLSYMS instead.
+> +	  are not going to need support for the above tools, you don't need
+> +	  to enable this.  It hugely bloat object files' on-disk sizes and slows
+> +	  the build.  Enable CONFIG_KALLSYMS instead.
 
-                             i_size    on-disk i_size    i_blocks
-__f2fs_add_link()             4096           4096           2
- get_new_data_page            8192           4096           3
- -ENOSPC = init_inode_metadata
- checkpoint                     -            4096           3
- POR and reboot
+Yes, this is better.
 
-__f2fs_add_link()             4096           4096           3
- page = get_new_data_page (page->index = 1 by NEW_ADDR)
- add a dentry to the page successfully
+Andrew, can you add that or you want me to send a new version?
 
-f2fs_rmdir()
- f2fs_empty_dir()             4096           4096           3
- f2fs_unlink() goes, since there is no valid dentry due to i_size = 4096.
- But, still there is one dentry in page->index = 1.
+Thanks.
 
-So this patch moves the code to write dir->i_size into on-disk i_size in order
-to sync dir's i_size, on-disk i_size, and its i_blocks.
-
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/dir.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-index 2b7c255..bfcb4ae 100644
---- a/fs/f2fs/dir.c
-+++ b/fs/f2fs/dir.c
-@@ -395,9 +395,6 @@ static void update_parent_metadata(struct inode *dir, struct inode *inode,
- 		set_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
- 	}
- 
--	if (is_inode_flag_set(F2FS_I(dir), FI_UPDATE_DIR))
--		update_inode_page(dir);
--
- 	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK))
- 		clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
- }
-@@ -511,7 +508,10 @@ add_dentry:
- 
- 	update_parent_metadata(dir, inode, current_depth);
- fail:
--	clear_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
-+	if (is_inode_flag_set(F2FS_I(dir), FI_UPDATE_DIR)) {
-+		update_inode_page(dir);
-+		clear_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
-+	}
- 	kunmap(dentry_page);
- 	f2fs_put_page(dentry_page, 1);
- 	return err;
 -- 
-1.8.4.474.g128a96c
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
