@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921AbaBDShP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 13:37:15 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39585 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaBDShL (ORCPT
+	id S1754880AbaBDSlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 13:41:22 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:51569 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaBDSlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 13:37:11 -0500
-Message-ID: <52F13350.2020300@gmail.com>
-Date: Wed, 05 Feb 2014 00:07:04 +0530
-From: sohny thomas <sohny.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 4 Feb 2014 13:41:20 -0500
 MIME-Version: 1.0
-To: nicolas.dichtel@6wind.com, Sohny Thomas <sthomas@linux.vnet.ibm.com>,
-        netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        yoshfuji@linux-ipv6.org, davem@davemloft.net,
-        kumuda <kumuda@linux.vnet.ibm.com>
-Subject: Re: [PATCH] ipv6: default route for link local address is not added
- while assigning a address
-References: <52E8A2AA.3090507@linux.vnet.ibm.com> <52E8DA37.7010208@6wind.com> <20140130232909.GH25336@order.stressinduktion.org> <52EF42FF.60907@linux.vnet.ibm.com> <52EFB454.1040908@6wind.com> <20140203160838.GA17999@order.stressinduktion.org> <52EFC324.1030102@6wind.com>
-In-Reply-To: <52EFC324.1030102@6wind.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87fvny238i.fsf@tassilo.jf.intel.com>
+References: <1391452183-2160-1-git-send-email-bp@alien8.de>
+	<alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
+	<CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
+	<20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
+	<alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
+	<20140204090809.GA19156@gmail.com>
+	<CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
+	<87fvny238i.fsf@tassilo.jf.intel.com>
+Date: Tue, 4 Feb 2014 10:41:20 -0800
+X-Google-Sender-Auth: XcXLAkmX_0GR6Kh9OZ2ck71TxOg
+Message-ID: <CA+55aFzDp70dv=eCwuOr=gAPVBKaDVUyvFbqedrRJXhUDeHnfQ@mail.gmail.com>
+Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
+        Borislav Petkov <bp@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 February 2014 09:56 PM, Nicolas Dichtel wrote:
->> 4) make flush not remove the fe80::/64 address
->>
->>     Least favourable to me. I guess this also woud need iproute change
->>     and seems most difficult to do.
-> Why using this command 'ip -6 route flush proto static' isn't possible?
-Ok I tried this and it works fine ( i.e, leaves out removing Link Local 
-route), but I think this is a workaround to a problem that occurs if 
-anyone actually deletes a Link local route
+On Tue, Feb 4, 2014 at 9:32 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> I have used debug info on allyesconfig in the past to run statistics
+> on the resulting binary. It's still useful, even though quite slow.
+> Make it depend on !EXPERT or somesuch? I agree for normal usages it's fine.
 
-> I think that we know what kind of route is added for these TAHI tests,
-> hence
-> it's better to remove only routes added manually (or by a routing daemon if
-> it's the case).
-> Removing kernel routes may hide bugs: imagine the kernel adds a wrong
-> route,
-> TAHI will not detect it.
+EXPERT is useless, people set it randomly.
 
+I'd suggest that for any statistics gathering, you just disable
+COMPILE_TEST. You can do that by just editing the .config file after
+doing the allyesconfig, or by pre-seeding the allyesconfig with
+COMPILE_TEST disabled.
+
+Your use-case is rather special, after all. I do *not* believe that we
+should make one of the goals of "make all{yes,mod}config" be that kind
+of odd specialized thing.
+
+> BTW you probably also want to do the same for the x86 instruction
+> decoder test. It seems to be the biggest compile time waster in
+> allyesconfig and I usually disable it too.
+
+Agreed, that should be disabled too by default. Although in that case
+I think the COMPILE_TEST combination makes more sense, since it's a
+coverage issue.
+
+Suggestions for symbols?
+
+                 Linus
