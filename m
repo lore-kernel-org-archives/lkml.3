@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527AbaBDP6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:58:00 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:41825 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440AbaBDP54 (ORCPT
+	id S1754603AbaBDP7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:59:22 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45271 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994AbaBDP7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:57:56 -0500
-Date: Tue, 4 Feb 2014 07:57:44 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Guangliang Zhao <lucienchao@gmail.com>,
-        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
-Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
-Message-ID: <20140204155744.GA3974@infradead.org>
-References: <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
- <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
- <20140130075421.GA10050@infradead.org>
- <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
- <20140203102943.GF11829@infradead.org>
- <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
- <20140203215908.GD10323@ZenIV.linux.org.uk>
- <CA+55aFz3PyyCqOLs_SBRS3cbGxWd5ez4Svz2+xK+4KtCez8iGw@mail.gmail.com>
- <20140203224034.GF10323@ZenIV.linux.org.uk>
- <1391513615.2766.18.camel@menhir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391513615.2766.18.camel@menhir>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 4 Feb 2014 10:59:19 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Cc: Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 00/17] amba: PM fixups for amba bus and some amba drivers
+Date: Tue,  4 Feb 2014 16:58:41 +0100
+Message-Id: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 11:33:35AM +0000, Steven Whitehouse wrote:
-> To diverge from that topic for a moment, this thread has also brought
-> together some discussion on another issue which I've been pondering
-> recently.... that of whether the inode operations for get/set_xattr
-> should take a dentry or not. I had thought that we'd come to the
-> conclusion that 9p made it impossible to swap the current dentry
-> argument for an inode, and I was about to send a patch for selinux
-> support on clustered fs on that basis. However the discussion in this
-> thread has made me wonder whether that really is the case or not.... Al,
-> can you confirm whether your xattr-experimental patches are still under
-> active consideration?
+This patchset fixes the PM problems you yet when combining CONFIG_PM_SLEEP and
+CONFIG_PM_RUNTIME. In principle these drivers did not manage to put it's devices
+into low power state at system suspend, which then this patchset intend to fix.
 
-My plan was to work on the 9p and cifs conversions using the
-d_find_alias hack we have in ceph right now.  That means the base work
-could switch to passed in dentries or in case of 9p the per-inode fids
-easily.
+Both the drivers and the amba bus converts to the new SET_PM_RUNTIME_PM_OPS
+macro while setting up the runtime PM callbacks, which is intended to be used
+for solving these kind of issues.
 
-> The other question that I have relating to that side of things, is why
-> security_inode_permission() is called from __inode_permission() rather
-> than from generic_permission() ? Maybe there is a good reason, but I
-> can't immediately see what it is at the moment.
+The fixes for the amba bus needs to be merged prior to the other, thus I think
+it could make sense to merge this complete patchset through Russell's tree,
+if he and the other maintainers think this is okay.
 
-Seems like almost everything of the security_* family is called from the
-VFS instead of the filesystem.  There's also some very odd other
-behaviour in there, e.g. for the xattrs sets are handed to the
-filesystem first, and then the xattr layer calls into the security
-layer, which for reads the filesystems is never reached at all.
+Ulf Hansson (17):
+  amba: Let runtime PM callbacks be available for CONFIG_PM
+  amba: Add late and early PM callbacks
+  mmc: mmci: Mask IRQs for all variants during runtime suspend
+  mmc: mmci: Let runtime PM callbacks be available for CONFIG_PM
+  mmc: mmci: Put the device into low power state at system suspend
+  spi: pl022: Let runtime PM callbacks be available for CONFIG_PM
+  spi: pl022: Don't ignore power domain and amba bus at system suspend
+  spi: pl022: Fully gate clocks at request inactivity
+  spi: pl022: Simplify clock handling
+  spi: pl022: Remove redundant pinctrl to default state in probe
+  i2c: nomadik: Convert to devm functions
+  i2c: nomadik: Remove redundant call to pm_runtime_disable
+  i2c: nomadik: Leave probe with the device in active state
+  i2c: nomadik: Fixup deployment of runtime PM
+  i2c: nomadik: Convert to late and early system PM callbacks
+  i2c: nomadik: Remove busy check for transfers at suspend late
+  i2c: nomadik: Fixup system suspend
 
-> In response to the question elsewhere about GFS2 calling
-> gfs2_permission() after the vfs has already done its checks, that is
-> indeed down to needing to ensure that we have the cluster locks when
-> this check is called. More importantly to know that things haven't
-> changed since the VFS called the same function in case we've raced with
-> another node changing the permissions, for example. There are a number
-> of cases where we redo vfs level checks for this reason,
+ drivers/amba/bus.c               |   10 ++-
+ drivers/i2c/busses/i2c-nomadik.c |  146 ++++++++++++++++++--------------------
+ drivers/mmc/host/mmci.c          |   72 ++++++++++---------
+ drivers/spi/spi-pl022.c          |   95 +++++++++++--------------
+ 4 files changed, 159 insertions(+), 164 deletions(-)
 
-Seems like we should be able to grab a cluster lock where we grab
-i_mutex in the namespace code to avoid having to redo all these checks.
+-- 
+1.7.9.5
 
