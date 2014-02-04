@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936500AbaBDXBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:01:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56100 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933092AbaBDVCA (ORCPT
+	id S935438AbaBDXCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:02:33 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:32819 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933902AbaBDXC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:00 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 023/104] rtlwifi: Update beacon statistics for USB driver
-Date: Tue,  4 Feb 2014 13:01:26 -0800
-Message-Id: <20140204210223.393868870@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 18:02:28 -0500
+X-Sasl-enc: QFdX+lerh4krkd7kcsGH9J2m9tmzqybZtzlDTQMNYpr2 1391554945
+From: Sebastian Keller <sebastiankeller@fastmail.net>
+To: ebiederm@xmission.com
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Keller <sebastiankeller@fastmail.net>
+Subject: [PATCH] kernel: nsproxy.c: fixed coding style issues
+Date: Wed,  5 Feb 2014 00:02:07 +0100
+Message-Id: <1391554927-6013-1-git-send-email-sebastiankeller@fastmail.net>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Fixed 3 coding style issues (80 column limit, trailing whitespace)
 
-------------------
-
-From: Larry Finger <Larry.Finger@lwfinger.net>
-
-commit 65b9cc97c6852fae19dc5c7745e9abc8dd380aad upstream.
-
-The USB drivers were not updating the beacon statistics, which led to
-false beacon loss indications.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Sebastian Keller <sebastiankeller@fastmail.net>
 ---
- drivers/net/wireless/rtlwifi/usb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/nsproxy.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -477,6 +477,8 @@ static void _rtl_usb_rx_process_agg(stru
- 			if (unicast)
- 				rtlpriv->link_info.num_rx_inperiod++;
- 		}
-+		/* static bcn for roaming */
-+		rtl_beacon_statistic(hw, skb);
- 	}
- }
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 8e78110..049774a 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -67,7 +67,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 	if (!new_nsp)
+ 		return ERR_PTR(-ENOMEM);
  
-
+-	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, user_ns, new_fs);
++	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, user_ns,
++					new_fs);
+ 	if (IS_ERR(new_nsp->mnt_ns)) {
+ 		err = PTR_ERR(new_nsp->mnt_ns);
+ 		goto out_ns;
+@@ -144,7 +145,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+ 	 * it along with CLONE_NEWIPC.
+ 	 */
+ 	if ((flags & (CLONE_NEWIPC | CLONE_SYSVSEM)) ==
+-		(CLONE_NEWIPC | CLONE_SYSVSEM)) 
++		(CLONE_NEWIPC | CLONE_SYSVSEM))
+ 		return -EINVAL;
+ 
+ 	new_ns = create_new_namespaces(flags, tsk, user_ns, tsk->fs);
+@@ -174,7 +175,8 @@ void free_nsproxy(struct nsproxy *ns)
+  * On success, returns the new nsproxy.
+  */
+ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+-	struct nsproxy **new_nsp, struct cred *new_cred, struct fs_struct *new_fs)
++	struct nsproxy **new_nsp, struct cred *new_cred,
++	struct fs_struct *new_fs)
+ {
+ 	struct user_namespace *user_ns;
+ 	int err = 0;
+-- 
+1.8.5.3
 
