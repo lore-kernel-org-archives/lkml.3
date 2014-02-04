@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933692AbaBDVIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56636 "EHLO
+	id S935699AbaBDWNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:13:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56714 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933916AbaBDVI0 (ORCPT
+	with ESMTP id S934008AbaBDVIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:26 -0500
+	Tue, 4 Feb 2014 16:08:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Prinsloo <janroot@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 027/133] rtlwifi: rtl8192cu: Add new device ID
-Date: Tue,  4 Feb 2014 13:07:08 -0800
-Message-Id: <20140204210737.800063046@linuxfoundation.org>
+        Alexander Aristov <aristov.alexander@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 078/133] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
+Date: Tue,  4 Feb 2014 13:07:59 -0800
+Message-Id: <20140204210739.236960883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,29 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f87f960b2fb802f26ee3b00c19320e57a9c583ff upstream.
+commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
 
-Reported-by: Jan Prinsloo <janroot@gmail.com>
-Tested-by: Jan Prinsloo <janroot@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The lack of comma leads to the wrong channel for an SPDIF channel.
+Unfortunately this wasn't caught by compiler because it's still a
+valid expression.
+
+Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/rme9652/rme9652.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -306,6 +306,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
-+	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
- 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
- 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
- 	/* HP - Lite-On ,8188CUS Slim Combo */
+--- a/sound/pci/rme9652/rme9652.c
++++ b/sound/pci/rme9652/rme9652.c
+@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
+ 	/* ADAT channels are remapped */
+ 	1, 3, 5, 7, 9, 11, 13, 15,
+ 	/* channels 8 and 9 are S/PDIF */
+-	24, 25
++	24, 25,
+ 	/* others don't exist */
+ 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+ };
 
 
