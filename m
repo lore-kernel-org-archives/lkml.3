@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667AbaBDVAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:00:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55893 "EHLO
+	id S936621AbaBDXJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:09:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105AbaBDVAQ (ORCPT
+	with ESMTP id S932664AbaBDVAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:16 -0500
+	Tue, 4 Feb 2014 16:00:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ethan Wilson <ethan.wilson@shiftmail.org>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.4 01/37] md/raid5: fix long-standing problem with bitmap handling on write failure.
-Date: Tue,  4 Feb 2014 13:00:37 -0800
-Message-Id: <20140204210056.036266310@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 37/37] powerpc: Make sure "cache" directory is removed when offlining cpu
+Date: Tue,  4 Feb 2014 13:01:13 -0800
+Message-Id: <20140204210057.055477846@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -28,46 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
+commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
 
-Before a write starts we set a bit in the write-intent bitmap.
-When the write completes we clear that bit if the write was successful
-to all devices.  However if the write wasn't fully successful we
-should not clear the bit.  If the faulty drive is subsequently
-re-added, the fact that the bit is still set ensure that we will
-re-write the data that is missing.
+The code in remove_cache_dir() is supposed to remove the "cache"
+subdirectory from the sysfs directory for a CPU when that CPU is
+being offlined.  It tries to do this by calling kobject_put() on
+the kobject for the subdirectory.  However, the subdirectory only
+gets removed once the last reference goes away, and the reference
+being put here may well not be the last reference.  That means
+that the "cache" subdirectory may still exist when the offlining
+operation has finished.  If the same CPU subsequently gets onlined,
+the code tries to add a new "cache" subdirectory.  If the old
+subdirectory has not yet been removed, we get a WARN_ON in the
+sysfs code, with stack trace, and an error message printed on the
+console.  Further, we ultimately end up with an online cpu with no
+"cache" subdirectory.
 
-This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
-bitmap bit when this flag is not set.
-Currently we correctly set the flag if a write starts when some
-devices are failed or missing.  But we do *not* set the flag if some
-device failed during the write attempt.
-This is wrong and can result in clearing the bit inappropriately.
+This fixes it by doing an explicit kobject_del() at the point where
+we want the subdirectory to go away.  kobject_del() removes the sysfs
+directory even though the object still exists in memory.  The object
+will get freed at some point in the future.  A subsequent onlining
+operation can create a new sysfs directory, even if the old object
+still exists in memory, without causing any problems.
 
-So: set the flag when a write fails.
-
-This bug has been present since bitmaps were introduces, so the fix is
-suitable for any -stable kernel.
-
-Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/cacheinfo.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1805,6 +1805,7 @@ static void raid5_end_write_request(stru
- 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
- 	} else {
- 		if (!uptodate) {
-+			set_bit(STRIPE_DEGRADED, &sh->state);
- 			set_bit(WriteErrorSeen, &rdev->flags);
- 			set_bit(R5_WriteError, &sh->dev[i].flags);
- 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
+--- a/arch/powerpc/kernel/cacheinfo.c
++++ b/arch/powerpc/kernel/cacheinfo.c
+@@ -788,6 +788,9 @@ static void remove_cache_dir(struct cach
+ {
+ 	remove_index_dirs(cache_dir);
+ 
++	/* Remove cache dir from sysfs */
++	kobject_del(cache_dir->kobj);
++
+ 	kobject_put(cache_dir->kobj);
+ 
+ 	kfree(cache_dir);
 
 
