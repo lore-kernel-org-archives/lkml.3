@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964887AbaBDWz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:55:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56162 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229AbaBDVCQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        ZHAO Gang <gamerh2o@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 041/104] b43: fix the wrong assignment of status.freq in b43_rx()
-Date: Tue,  4 Feb 2014 13:01:44 -0800
-Message-Id: <20140204210223.894308089@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S935256AbaBDW42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:56:28 -0500
+Received: from mail.efficios.com ([78.47.125.74]:53116 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932452AbaBDW4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 17:56:24 -0500
+Date: Tue, 4 Feb 2014 22:56:24 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: tglx@linutronix.de
+Cc: Heinz.Egger@linutronix.de, bigeasy@linutronix.de,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Molnar, Ingo" <mingo@kernel.org>, rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Message-ID: <238497929.19329.1391554584871.JavaMail.zimbra@efficios.com>
+In-Reply-To: <104831840.19303.1391553779700.JavaMail.zimbra@efficios.com>
+Subject: Perf user-space ABI sequence lock memory barriers
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [24.114.90.220]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF26 (Linux)/8.0.5_GA_5839)
+Thread-Topic: Perf user-space ABI sequence lock memory barriers
+Thread-Index: tU4aEo8ChZC1MoMlGAd5jPvQvpZ8tw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+I'm currently integrating user-space performance counters from
+Perf into LTTng-UST, and I'm noticing something odd regarding
+the home-made sequence lock found at:
 
-From: ZHAO Gang <gamerh2o@gmail.com>
+kernel/events/core.c: perf_event_update_userpage()
 
-commit 64e5acb09ca6b50c97299cff9ef51299470b29f2 upstream.
+        ++userpg->lock;
+        barrier();
+[...]
+        barrier();
+        ++userpg->lock;
 
-Use the right function to update frequency value.
+This goes in pair with something like this at user-level:
 
-If rx skb is probe response or beacon, the wrong frequency value can
-cause problem that bss info can't be updated when it should be.
+        do {
+                seq = pc->lock;
+                barrier();
 
-Fixes: 8318d78a44d4 ("cfg80211 API for channels/bitrates, mac80211 and driver conversion")
-Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+                idx = pc->index;
+                count = pc->offset;
+                if (idx)
+                        count += rdpmc(idx - 1);
 
----
- drivers/net/wireless/b43/xmit.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+                barrier();
+        } while (pc->lock != seq);
 
---- a/drivers/net/wireless/b43/xmit.c
-+++ b/drivers/net/wireless/b43/xmit.c
-@@ -821,10 +821,10 @@ void b43_rx(struct b43_wldev *dev, struc
- 		 * channel number in b43. */
- 		if (chanstat & B43_RX_CHAN_5GHZ) {
- 			status.band = IEEE80211_BAND_5GHZ;
--			status.freq = b43_freq_to_channel_5ghz(chanid);
-+			status.freq = b43_channel_to_freq_5ghz(chanid);
- 		} else {
- 			status.band = IEEE80211_BAND_2GHZ;
--			status.freq = b43_freq_to_channel_2ghz(chanid);
-+			status.freq = b43_channel_to_freq_2ghz(chanid);
- 		}
- 		break;
- 	default:
+As we see, only compiler barrier() are protecting all this.
+First question, is it possible that the update be performed
+by a thread running on a different CPU than the thread reading
+the info in user-space ?
 
+I would be tempted to use a volatile semantic on all reads of the
+lock field (ACCESS_ONCE()). Secondly, read sequence locks usually use a
+smp_rmb() at the end of the seqcount_begin(), and at the beginning
+of the seqcount_retry(). Moreover, this is usually matched
+by smp_wmb() in write_seqcount begin/end().
 
+Am I missing something special about this lock that makes these
+barriers unnecessary ?
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
