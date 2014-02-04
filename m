@@ -1,180 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaBDOwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:52:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56630 "EHLO mx2.suse.de"
+	id S1754591AbaBDOw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:52:28 -0500
+Received: from mga03.intel.com ([143.182.124.21]:12593 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165AbaBDOwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:52:13 -0500
-Date: Tue, 4 Feb 2014 15:52:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
-        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
-Message-ID: <20140204145210.GH4890@dhcp22.suse.cz>
-References: <cover.1391356789.git.vdavydov@parallels.com>
- <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com>
+	id S1754107AbaBDOw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 09:52:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,780,1384329600"; 
+   d="scan'208";a="338703304"
+Message-ID: <52F0FE9F.501@linux.intel.com>
+Date: Tue, 04 Feb 2014 06:52:15 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>, linux-pm@vger.kernel.org,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org, len.brown@intel.com
+CC: benh@kernel.crashing.org, daniel.lezcano@linaro.org,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com
+Subject: Re: [PATCH V3] cpuidle/governors: Fix logic in selection of idle
+ states
+References: <20140204083531.24802.63370.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140204083531.24802.63370.stgit@preeti.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 02-02-14 20:33:48, Vladimir Davydov wrote:
-> Suppose we are creating memcg cache A that could be merged with cache B
-> of the same memcg. Since any memcg cache has the same parameters as its
-> parent cache, parent caches PA and PB of memcg caches A and B must be
-> mergeable too. That means PA was merged with PB on creation or vice
-> versa, i.e. PA = PB. From that it follows that A = B, and we couldn't
-> even try to create cache B, because it already exists - a contradiction.
+On 2/4/2014 12:35 AM, Preeti U Murthy wrote:
+> The cpuidle governors today are not handling scenarios where no idle state
+> can be chosen. Such scenarios coud arise if the user has disabled all the
+> idle states at runtime or the latency requirement from the cpus is very strict.
+>
+> The menu governor returns 0th index of the idle state table when no other
+> idle state is suitable. This is even when the idle state corresponding to this
+> index is disabled or the latency requirement is strict and the exit_latency
+> of the lowest idle state is also not acceptable. Hence this patch
+> fixes this logic in the menu governor by defaulting to an idle state index
+>  of -1 unless any other state is suitable.
 
-I cannot tell I understand the above but I am totally not sure about the
-statement bellow.
+state 0 is defined as polling, and polling ALWAYS should be ok
 
-> So let's remove unused code responsible for merging memcg caches.
-
-How come the code was unused? find_mergeable called cache_match_memcg...
-
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
->  mm/slab.h        |   21 ++++-----------------
->  mm/slab_common.c |    8 +++++---
->  mm/slub.c        |   19 +++++++++----------
->  3 files changed, 18 insertions(+), 30 deletions(-)
-> 
-> diff --git a/mm/slab.h b/mm/slab.h
-> index 8184a7cde272..3045316b7c9d 100644
-> --- a/mm/slab.h
-> +++ b/mm/slab.h
-> @@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
->  struct mem_cgroup;
->  #ifdef CONFIG_SLUB
->  struct kmem_cache *
-> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
-> -		   size_t align, unsigned long flags, void (*ctor)(void *));
-> +__kmem_cache_alias(const char *name, size_t size, size_t align,
-> +		   unsigned long flags, void (*ctor)(void *));
->  #else
->  static inline struct kmem_cache *
-> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
-> -		   size_t align, unsigned long flags, void (*ctor)(void *))
-> +__kmem_cache_alias(const char *name, size_t size, size_t align,
-> +		   unsigned long flags, void (*ctor)(void *))
->  { return NULL; }
->  #endif
->  
-> @@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
->  	return !s->memcg_params || s->memcg_params->is_root_cache;
->  }
->  
-> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
-> -				     struct mem_cgroup *memcg)
-> -{
-> -	return (is_root_cache(cachep) && !memcg) ||
-> -				(cachep->memcg_params->memcg == memcg);
-> -}
-> -
->  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
->  {
->  	if (!is_root_cache(s))
-> @@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
->  	return true;
->  }
->  
-> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
-> -				     struct mem_cgroup *memcg)
-> -{
-> -	return true;
-> -}
-> -
->  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
->  {
->  }
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 152d9b118b7a..a75834bb966d 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->  	 */
->  	flags &= CACHE_CREATE_MASK;
->  
-> -	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
-> -	if (s)
-> -		goto out_unlock;
-> +	if (!memcg) {
-> +		s = __kmem_cache_alias(name, size, align, flags, ctor);
-> +		if (s)
-> +			goto out_unlock;
-> +	}
->  
->  	err = -ENOMEM;
->  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 2b1a6970e46f..962abfdfde06 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3686,9 +3686,8 @@ static int slab_unmergeable(struct kmem_cache *s)
->  	return 0;
->  }
->  
-> -static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
-> -		size_t align, unsigned long flags, const char *name,
-> -		void (*ctor)(void *))
-> +static struct kmem_cache *find_mergeable(size_t size, size_t align,
-> +		unsigned long flags, const char *name, void (*ctor)(void *))
->  {
->  	struct kmem_cache *s;
->  
-> @@ -3707,11 +3706,14 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->  		if (slab_unmergeable(s))
->  			continue;
->  
-> +		if (!is_root_cache(s))
-> +			continue;
-> +
->  		if (size > s->size)
->  			continue;
->  
->  		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
-> -				continue;
-> +			continue;
->  		/*
->  		 * Check if alignment is compatible.
->  		 * Courtesy of Adrian Drzewiecki
-> @@ -3722,21 +3724,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->  		if (s->size - size >= sizeof(void *))
->  			continue;
->  
-> -		if (!cache_match_memcg(s, memcg))
-> -			continue;
-> -
->  		return s;
->  	}
->  	return NULL;
->  }
->  
->  struct kmem_cache *
-> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
-> -		   size_t align, unsigned long flags, void (*ctor)(void *))
-> +__kmem_cache_alias(const char *name, size_t size, size_t align,
-> +		   unsigned long flags, void (*ctor)(void *))
->  {
->  	struct kmem_cache *s;
->  
-> -	s = find_mergeable(memcg, size, align, flags, name, ctor);
-> +	s = find_mergeable(size, align, flags, name, ctor);
->  	if (s) {
->  		s->refcount++;
->  		/*
-> -- 
-> 1.7.10.4
-> 
-
--- 
-Michal Hocko
-SUSE Labs
