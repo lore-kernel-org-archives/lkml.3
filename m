@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809AbaBDVvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:51:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57085 "EHLO
+	id S935448AbaBDVva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:51:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57087 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934364AbaBDVLS (ORCPT
+	with ESMTP id S934366AbaBDVLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:18 -0500
+	Tue, 4 Feb 2014 16:11:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         mtosatti@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.13 008/140] x86, kvm: cache the base of the KVM cpuid leaves
-Date: Tue,  4 Feb 2014 13:09:55 -0800
-Message-Id: <20140204211037.207531603@linuxfoundation.org>
+Subject: [PATCH 3.13 009/140] x86, kvm: correctly access the KVM_CPUID_FEATURES leaf at 0x40000101
+Date: Tue,  4 Feb 2014 13:09:56 -0800
+Message-Id: <20140204211037.235397739@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,11 +30,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 1c300a40772dae829b91dad634999a6a522c0829 upstream.
+commit 77f01bdfa5e55dc19d3eb747181d2730a9bb3ca8 upstream.
 
-It is unnecessary to go through hypervisor_cpuid_base every time
-a leaf is found (which will be every time a feature is requested
-after the next patch).
+When Hyper-V hypervisor leaves are present, KVM must relocate
+its own leaves at 0x40000100, because Windows does not look for
+Hyper-V leaves at indices other than 0x40000000.  In this case,
+the KVM features are at 0x40000101, but the old code would always
+look at 0x40000001.
+
+Fix by using kvm_cpuid_base().  This also requires making the
+function non-inline, since kvm_cpuid_base() is static.
 
 Fixes: 1085ba7f552d84aa8ac0ae903fa8d0cc2ff9f79d
 Cc: mtosatti@redhat.com
@@ -42,86 +47,49 @@ Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_para.h |   22 ++++++----------------
- arch/x86/kernel/kvm.c           |   27 +++++++++++++++++++++++++++
- 2 files changed, 33 insertions(+), 16 deletions(-)
+ arch/x86/include/asm/kvm_para.h |   11 ++++++-----
+ arch/x86/kernel/kvm.c           |    5 +++++
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
 --- a/arch/x86/include/asm/kvm_para.h
 +++ b/arch/x86/include/asm/kvm_para.h
-@@ -85,28 +85,13 @@ static inline long kvm_hypercall4(unsign
+@@ -85,13 +85,9 @@ static inline long kvm_hypercall4(unsign
  	return ret;
  }
  
--static inline uint32_t kvm_cpuid_base(void)
+-static inline unsigned int kvm_arch_para_features(void)
 -{
--	if (boot_cpu_data.cpuid_level < 0)
--		return 0;	/* So we don't blow up on old processors */
--
--	if (cpu_has_hypervisor)
--		return hypervisor_cpuid_base("KVMKVMKVM\0\0\0", 0);
--
--	return 0;
+-	return cpuid_eax(KVM_CPUID_FEATURES);
 -}
 -
--static inline bool kvm_para_available(void)
--{
--	return kvm_cpuid_base() != 0;
--}
--
- static inline unsigned int kvm_arch_para_features(void)
- {
- 	return cpuid_eax(KVM_CPUID_FEATURES);
- }
- 
  #ifdef CONFIG_KVM_GUEST
-+bool kvm_para_available(void);
+ bool kvm_para_available(void);
++unsigned int kvm_arch_para_features(void);
  void __init kvm_guest_init(void);
  void kvm_async_pf_task_wait(u32 token);
  void kvm_async_pf_task_wake(u32 token);
-@@ -126,6 +111,11 @@ static inline void kvm_spinlock_init(voi
- #define kvm_async_pf_task_wait(T) do {} while(0)
- #define kvm_async_pf_task_wake(T) do {} while(0)
- 
-+static inline bool kvm_para_available(void)
-+{
-+	return 0;
-+}
-+
- static inline u32 kvm_read_and_reset_pf_reason(void)
+@@ -115,6 +111,11 @@ static inline bool kvm_para_available(vo
  {
  	return 0;
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -500,6 +500,33 @@ void __init kvm_guest_init(void)
- #endif
  }
- 
-+static noinline uint32_t __kvm_cpuid_base(void)
++
++static inline unsigned int kvm_arch_para_features(void)
 +{
-+	if (boot_cpu_data.cpuid_level < 0)
-+		return 0;	/* So we don't blow up on old processors */
-+
-+	if (cpu_has_hypervisor)
-+		return hypervisor_cpuid_base("KVMKVMKVM\0\0\0", 0);
-+
 +	return 0;
 +}
-+
-+static inline uint32_t kvm_cpuid_base(void)
+ 
+ static inline u32 kvm_read_and_reset_pf_reason(void)
+ {
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -527,6 +527,11 @@ bool kvm_para_available(void)
+ }
+ EXPORT_SYMBOL_GPL(kvm_para_available);
+ 
++unsigned int kvm_arch_para_features(void)
 +{
-+	static int kvm_cpuid_base = -1;
-+
-+	if (kvm_cpuid_base == -1)
-+		kvm_cpuid_base = __kvm_cpuid_base();
-+
-+	return kvm_cpuid_base;
++	return cpuid_eax(kvm_cpuid_base() | KVM_CPUID_FEATURES);
 +}
-+
-+bool kvm_para_available(void)
-+{
-+	return kvm_cpuid_base() != 0;
-+}
-+EXPORT_SYMBOL_GPL(kvm_para_available);
 +
  static uint32_t __init kvm_detect(void)
  {
