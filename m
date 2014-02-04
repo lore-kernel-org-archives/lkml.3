@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaBDCZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 21:25:44 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49201 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaBDCZl (ORCPT
+	id S1752910AbaBDCiL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 21:38:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48074 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaBDCiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 21:25:41 -0500
-Message-ID: <52F04FA8.8040008@gmail.com>
-Date: Tue, 04 Feb 2014 10:25:44 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, hskinnemoen@gmail.com,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        egtvedt@samfundet.no,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] kernel/kprobes.c: move cleanup_rp_inst() to where CONFIG_KRETPROBES
- enabled
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com>
-In-Reply-To: <52EFB8F4.6010207@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Feb 2014 21:38:07 -0500
+Date: Mon, 3 Feb 2014 18:42:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: David Rientjes <rientjes@google.com>,
+        "Alexey Dobriyan" <adobriyan@gmail.com>,
+        "Linux Kernel" <linux-kernel@vger.kernel.org>,
+        mm-commits@vger.kernel.org, "Joe Perches" <joe@perches.com>
+Subject: Re: + mm-utilc-add-kstrimdup.patch added to -mm tree
+Message-Id: <20140203184245.33ac93bf.akpm@linux-foundation.org>
+In-Reply-To: <20140204012816.22878.4159@capellas-linux>
+References: <52ec195e.P8S/D298ZeaBLTvn%akpm@linux-foundation.org>
+	<CACVxJT-HUXmBepz-GW3T1+ANkSxt80=1-kNFyHLdk+RRjHaWQQ@mail.gmail.com>
+	<alpine.DEB.2.02.1402031704430.32346@chino.kir.corp.google.com>
+	<20140204012816.22878.4159@capellas-linux>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 11:42 PM, Masami Hiramatsu wrote:
-> (2014/02/03 20:48), Chen Gang wrote:
->> On 02/02/2014 10:40 AM, Masami Hiramatsu wrote:
->>> (2014/02/01 21:17), Chen Gang wrote:
->>>> When CONFIG_KRETPROBES disabled, cleanup_rp_inst() is useless too. It
->>>> is only called by unregister_kretprobes() which is in CONFIG_KRETPROBES
->>>> enabled area.
->>>>
->>>> The related warning (allmodconfig under avr32):
->>>>
->>>>   kernel/kprobes.c:1181: warning: 'cleanup_rp_inst' defined but not used
->>>
->>> This patch itself looks good to me.
->>> And it seems that not only the cleanup_rp_inst, but also other
->>> kretprobe related functions should be moved (free_rp_inst,etc)
->>>
->>
->> OK, thanks, need/should I check them again and send patch v2 for them?
+On Mon, 03 Feb 2014 17:28:16 -0800 Sebastian Capella <sebastian.capella@linaro.org> wrote:
+
+> Quoting David Rientjes (2014-02-03 17:05:04)
+> > The last we heard, I think Sebastian is looking to redo this series and 
+> > this patch is no longer needed.  Sebastian?
+> Hi David, Alexey,
 > 
-> Yes, I'm happy to review it :)
+> I am in the process of reworking the patches.  I'm not sure if Andrew
+> was just interested in having the kstrimdup utility function available.
 > 
-> Thank you!
+> Isn't it too late to impose userspace trimming of newlines for sysfs?
+> It seems already fairly common and expected for the kernel to eat the
+> trailing whitespace, or at least ignore it.  If we change this won't we
+> be breaking userspace / tools / instructions / etc?
 > 
 
-I will/should finish in these days (within 2014-02-07).
+We have quite a lot of codesites which open-code the newline trimming. 
+Providing a library function to do this will result in goodness.
 
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+That being said, I don't plan to merge kstrimdup() until it has some users.
