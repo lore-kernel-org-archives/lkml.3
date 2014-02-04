@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaBDUnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 15:43:06 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47823 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017AbaBDUms (ORCPT
+	id S932642AbaBDUn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 15:43:56 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39898 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932588AbaBDUnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 15:42:48 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        dmaengine@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>
-Subject: [Patch v5 2/2] dmaengine: qcom_bam_dma: Add device tree binding
-Date: Tue,  4 Feb 2014 14:42:36 -0600
-Message-Id: <1391546556-27702-3-git-send-email-agross@codeaurora.org>
+	Tue, 4 Feb 2014 15:43:51 -0500
+From: Sebastian Capella <sebastian.capella@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org
+Subject: [PATCH v7 0/3] hibernation related patches
+Date: Tue,  4 Feb 2014 12:43:48 -0800
+Message-Id: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
-References: <1391546556-27702-1-git-send-email-agross@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree binding support for the QCOM BAM DMA driver.
+Patchset related to hibernation resume:
+  - enhancement to make the use of an existing resume file more general
+  - add kstrdup_trimnl function which duplicates and trims a single
+    trailing newline off of a string
+  - cleanup checkpatch warnings in hibernate.c file
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- .../devicetree/bindings/dma/qcom_bam_dma.txt       |   48 ++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
+  All patches are based on the 3.13 tag.  This was tested on a
+  Beaglebone black with partial hibernation support, and compiled for
+  x86_64.
 
-diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-new file mode 100644
-index 0000000..86344f1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-@@ -0,0 +1,48 @@
-+QCOM BAM DMA controller
-+
-+Required properties:
-+- compatible:	Must be "qcom,bam-v1.4.0" for MSM8974 V1
-+		Must be "qcom,bam-v1.4.1" for MSM8974 V2
-+- reg: Address range for DMA registers
-+- interrupts: single interrupt for this controller
-+- #dma-cells: must be <1>
-+- clocks: required clock
-+- clock-names: name of clock
-+- qcom,ee : indicates the active Execution Environment identifier (0-7)
-+
-+Example:
-+
-+	uart-bam: dma@f9984000 = {
-+		compatible = "qcom,bam-v1.4.1";
-+		reg = <0xf9984000 0x15000>;
-+		interrupts = <0 94 0>;
-+		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
-+		clock-names = "bam_clk";
-+		#dma-cells = <1>;
-+		qcom,ee = <0>;
-+	};
-+
-+Client:
-+Required properties:
-+- dmas: List of dma channel requests
-+- dma-names: Names of aforementioned requested channels
-+
-+Clients must use the format described in the dma.txt file, using a two cell
-+specifier for each channel.
-+
-+The three cells in order are:
-+  1. A phandle pointing to the DMA controller
-+  2. The channel number
-+
-+Example:
-+	serial@f991e000 {
-+		compatible = "qcom,msm-uart";
-+		reg = <0xf991e000 0x1000>
-+			<0xf9944000 0x19000>;
-+		interrupts = <0 108 0>;
-+		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>, <&gcc GCC_BLSP1_AHB_CLK>;
-+		clock-names = "core", "iface";
-+
-+		dmas = <&uart-bam 0>, <&uart-bam 1>;
-+		dma-names = "rx", "tx";
-+	};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+[PATCH v7 1/3] mm: add kstrdup_trimnl function
+  include/linux/string.h |    1 +
+  mm/util.c              |   29 +++++++++++++++++++++++++++++
+  2 files changed, 30 insertions(+)
 
+  Adds the kstrdup_trimnl function to duplicate and trim
+  at most one trailing newline from a string.
+  This is useful for working with user input to sysfs.
+
+[PATCH v7 2/3] trivial: PM / Hibernate: clean up checkpatch in
+  kernel/power/hibernate.c |   62 ++++++++++++++++++++++++----------------------
+  1 file changed, 32 insertions(+), 30 deletions(-)
+
+  Cleanup checkpatch warnings in kernel/power/hibernate.c
+
+[PATCH v7 3/3] PM / Hibernate: use name_to_dev_t to parse resume
+  kernel/power/hibernate.c |   33 +++++++++++++++++----------------
+  1 file changed, 17 insertions(+), 16 deletions(-)
+
+  Use name_to_dev_t to parse the /sys/power/resume file making the
+  syntax more flexible.  It supports the previous use syntax
+  and additionally can support other formats such as
+  /dev/devicenode and UUID= formats.
+
+  By changing /sys/debug/resume to accept the same syntax as
+  the resume=device parameter, we can parse the resume=device
+  in the initrd init script and use the resume device directly
+  from the kernel command line.
+
+
+Changes in v7:
+--------------
+* Switch to trim only one trailing newline if present using kstrdup_trimnl
+* remove kstrimdup patch
+* add kstrdup_trimnl patch
+* Add clean up patch for kernel/power/hibernate.c checkpatch warnings
+
+Changes in v6:
+--------------
+* Revert tricky / confusing while loop indexing
+
+Changes in v5:
+--------------
+* Change kstrimdup to minimize allocated memory.  Now allocates only
+  the memory needed for the string instead of using strim.
+
+Changes in v4:
+--------------
+* Dropped name_to_dev_t rework in favor of adding kstrimdup
+* adjusted resume_store
+
+Changes in v3:
+--------------
+* Dropped documentation patch as it went in through trivial
+* Added patch for name_to_dev_t to support directly parsing userspace
+  buffer
+
+Changes in v2:
+--------------
+* Added check for null return of kstrndup in hibernate.c
+
+
+Thanks,
+
+Sebastian
