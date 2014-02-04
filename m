@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936291AbaBDWq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:46:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934028AbaBDWqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:46:52 -0500
-Message-ID: <52F16DD3.9090302@redhat.com>
-Date: Tue, 04 Feb 2014 17:46:43 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S936276AbaBDWqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:46:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56272 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933384AbaBDVCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 16:02:33 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Simon Guinot <simon.guinot@sequanux.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Lior Amsalem <alior@marvell.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 067/104] ata: sata_mv: introduce compatible string "marvell, armada-370-sata"
+Date: Tue,  4 Feb 2014 13:02:10 -0800
+Message-Id: <20140204210224.609174973@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Gong Chen <gong.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Yang Zhang <yang.z.zhang@Intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
-        Ruiv Wang <ruiv.wang@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 3.12 010/133] x86: Add check for number of available vectors
- before CPU down
-References: <20140204210737.008598235@linuxfoundation.org> <20140204210737.312279605@linuxfoundation.org>
-In-Reply-To: <20140204210737.312279605@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Simon Guinot <simon.guinot@sequanux.org>
+
+commit b1f5c73bd5a4752efb7d7af019034044b08aafe9 upstream.
+
+The sata_mv driver supports the SATA IP found in several Marvell SoCs.
+As some new SATA registers have been introduced with the Armada 370/XP
+SoCs, a way to identify them is needed.
+
+This patch introduces a new compatible string for the SATA IP found in
+Armada 370/XP SoCs.
+
+Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Lior Amsalem <alior@marvell.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ Documentation/devicetree/bindings/ata/marvell.txt |    2 +-
+ drivers/ata/sata_mv.c                             |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+--- a/Documentation/devicetree/bindings/ata/marvell.txt
++++ b/Documentation/devicetree/bindings/ata/marvell.txt
+@@ -1,7 +1,7 @@
+ * Marvell Orion SATA
+ 
+ Required Properties:
+-- compatibility : "marvell,orion-sata"
++- compatibility : "marvell,orion-sata" or "marvell,armada-370-sata"
+ - reg           : Address range of controller
+ - interrupts    : Interrupt controller is using
+ - nr-ports      : Number of SATA ports in use.
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -4216,6 +4216,7 @@ static int mv_platform_resume(struct pla
+ 
+ #ifdef CONFIG_OF
+ static struct of_device_id mv_sata_dt_ids[] = {
++	{ .compatible = "marvell,armada-370-sata", },
+ 	{ .compatible = "marvell,orion-sata", },
+ 	{},
+ };
 
 
-On 02/04/2014 04:06 PM, Greg Kroah-Hartman wrote:
-> 3.12-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Prarit Bhargava <prarit@redhat.com>
-> 
-> commit da6139e49c7cb0f4251265cb5243b8d220adb48d upstream.
-> 
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
-> 
-
-Greg, there is a follow up to this patch that removes declarations from the
-stack and makes them global within the file.  This was done to avoid a
--Wframe-larger-than warning that was found in with 0day kernel build service,
-kbuild.
-
-So I don't think this should go into -stable yet.  I've pushed a patch onto
-LKML to resolve the kbuild warning, and hopefully on the x86 maintainers pick
-it up.
-
-P.
