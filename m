@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215AbaBDQyO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:54:14 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51705 "EHLO mail.eperm.de"
+	id S932391AbaBDQzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:55:51 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41573 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123AbaBDQyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:54:01 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
-        John Crispin <blogic@openwrt.org>, andrewmcgr@gmail.com,
-        Thorsten Glaser <tg@mirbsd.de>, sandyinchina@gmail.com
-Subject: Re: [PATCH 2/5] CPU Jitter RNG: Enable compilation
-Date: Tue, 04 Feb 2014 17:53:39 +0100
-Message-ID: <4270486.pLbfl66a7r@tauon>
-User-Agent: KMail/4.11.5 (Linux/3.12.7-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140204163957.GA13928@order.stressinduktion.org>
-References: <2039634.jSmQAS6tdi@myon.chronox.de> <3579180.ti4z33qfDe@tauon> <20140204163957.GA13928@order.stressinduktion.org>
+	id S932336AbaBDQzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:55:45 -0500
+Message-ID: <52F11B5C.40407@ti.com>
+Date: Tue, 4 Feb 2014 18:54:52 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <daniel.lezcano@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v4 1/3] clocksource: timer-keystone: introduce clocksource
+ driver for Keystone
+References: <1391513453-21140-1-git-send-email-ivan.khoronzhuk@ti.com> <1391513453-21140-2-git-send-email-ivan.khoronzhuk@ti.com> <alpine.DEB.2.02.1402041715220.24986@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402041715220.24986@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 4. Februar 2014, 17:39:57 schrieb Hannes Frederic Sowa:
+It was so in v1. But it was decided to use explicit memory barriers,
+because we're always sure the memory barriers are there and that
+they're properly documented. Also in this case I don't need to add
+keystone readl/writel relaxed function variants and to use mixed calls of
+writel/writel_relaxed functions.
 
-Hi Hannes,
+See:
+http://www.spinics.net/lists/arm-kernel/msg294941.html
 
->On Tue, Feb 04, 2014 at 05:19:52PM +0100, Stephan Mueller wrote:
->> Also, I consider the execution speed of the entropy collection is not
->> really an issue because the RNG delivers random numbers at a
->> comparatively high rate. Any other noise source feeding into random.c
->> delivers data with far less speed.
+On 02/04/2014 06:24 PM, Thomas Gleixner wrote:
+> On Tue, 4 Feb 2014, Ivan Khoronzhuk wrote:
+>> +	keystone_timer_writel(off, TCR);
+>> +	/* here we have to be sure the timer has been disabled */
+>> +	wmb();
+> We have explicit writew_relaxed and writew. Why open coding the
+> barriers?
 >
->Compiling the kernel with -O0 could add some other problems, like
-
-I thought with the given flag, I only compile the respective C file 
-without optimizations, but not the entire kernel. Am I wrong here?
-
->e.g. not doing enough constant folding which could result in linking
->errors. I guess it is not a problem currently though, but some of the
->compile time checks depend on this (compiletime_assert and such).
-
-How do you think that my folding code can cause linking errors?
+> Thanks,
 >
->Have you looked into adding compiler barriers into relevant places in
->the loops to stop the compiler from optimizing and spill out the
->values from the registers to their memory locations?
+> 	tglx
 
-I did not look into that one, let me have a look.
->
->Greetings,
->
->  Hannes
+-- 
+Regards,
+Ivan Khoronzhuk
 
-
-Ciao
-Stephan
