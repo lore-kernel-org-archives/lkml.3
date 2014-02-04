@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204AbaBDQ3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:29:41 -0500
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:57649 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaBDQ3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:29:37 -0500
+	id S1754612AbaBDQ3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:29:51 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:57239 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754331AbaBDQ3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:29:45 -0500
+Date: Tue, 4 Feb 2014 11:29:39 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH -v2 4/6] memcg: make sure that memcg is not offline when
+ charging
+Message-ID: <20140204162939.GP6963@cmpxchg.org>
+References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+ <1391520540-17436-5-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140204122212.GO8874@twins.programming.kicks-ass.net>
-References: <20140204122212.GO8874@twins.programming.kicks-ass.net>
-Date: Tue, 4 Feb 2014 08:29:36 -0800
-X-Google-Sender-Auth: aPZUOkizMvRmnkXI2TQ0KwKkChA
-Message-ID: <CA+55aFz6LGt35C2ex6qCM8cQDowmr9HR-+hR9bMXJPE707+k-A@mail.gmail.com>
-Subject: Re: [RFC][PATCH] ia64: Fix atomic ops vs memory barriers
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391520540-17436-5-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 4:22 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> The below patch assumes the SDM is right (TM), and fixes the atomic_t,
-> cmpxchg() and xchg() implementations by inserting a mf before the
-> cmpxchg.acq (or xchg).
+On Tue, Feb 04, 2014 at 02:28:58PM +0100, Michal Hocko wrote:
+> The current charge path might race with memcg offlining because holding
+> css reference doesn't neither prevent from task move to a different
+> group nor stop css offline. When a charging task is the last one in the
+> group and it is moved to a different group in the middle of the charge
+> the old memcg might get offlined. As a result res counter might be
+> charged after mem_cgroup_reparent_charges (called from memcg css_offline
+> callback) and so the charge would never be freed. This has been worked
+> around by 96f1c58d8534 (mm: memcg: fix race condition between memcg
+> teardown and swapin) which tries to catch such a leaked charges later
+> during css_free. It is more optimal to heal this race in the long term
+> though.
+> 
+> In order to make this raceless we have to check that the memcg is online
+> and res_counter_charge in the same RCU read section. The online check can
+> be done simply by calling css_tryget & css_put which are now wrapped
+> into mem_cgroup_is_online helper.
+> 
+> Callers are then updated to retry with a new memcg which is associated
+> with the current mm. There always has to be a valid memcg encountered
+> sooner or later because task had to be moved to a valid and online
+> cgroup.
+> 
+> The only exception is mem_cgroup_do_precharge which should never see
+> this race because it is called from cgroup {can_}attach callbacks and so
+> the whole cgroup cannot go away.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c | 70 +++++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 66 insertions(+), 4 deletions(-)
 
-You picked the wrong thing to be right. The SDM is wrong.
+Maybe we should remove the XXX if it makes you think we should change
+the current situation by any means necessary.  This patch is not an
+improvement.
 
-Last time this came up, Tony explained it thus:
+I put the XXX there so that we one day maybe refactor the code in a
+clean fashion where try_get_mem_cgroup_from_whatever() is in the same
+rcu section as the first charge attempt.  On failure, reclaim, and do
+the lookup again.
 
->> Worse still - early processor implementations actually just ignored
->> the acquire/release and did a full fence all the time.  Unfortunately
->> this meant a lot of badly written code that used .acq when they really
->> wanted .rel became legacy out in the wild - so when we made a cpu
->> that strictly did the .acq or .rel ... all that code started breaking - so
->> we had to back-pedal and keep the "legacy" behavior of a full fence :-(
+Also, this problem only exists on swapin, where the memcg is looked up
+from an auxilliary data structure and not the current task, so maybe
+that would be an angle to look for a clean solution.
 
-and since ia64 is basically on life support as an architecture, we can
-pretty much agree that the SDM is dead, and the only thing that
-matters is implementation.
-
-The above quote was strictly in the context of just cmpxchg, though,
-so it's possible that the "fetchadd" instruction acts differently. I
-would personally expect it to have the same issues, but let's see what
-Tony says.. Tony?
-
-                Linus
+Either way, the problem is currently fixed with a *oneliner*.  Unless
+the alternative solution is inherent in a clean rework of the code to
+match cgroup core lifetime management, I don't see any reason to move
+away from the status quo.
