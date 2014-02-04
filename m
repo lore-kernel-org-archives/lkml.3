@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534AbaBDTw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:52:56 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:61592 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503AbaBDTwt (ORCPT
+	id S932611AbaBDTxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:53:06 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:16231 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198AbaBDTwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:52:49 -0500
+	Tue, 4 Feb 2014 14:52:50 -0500
 X-IronPort-AV: E=Sophos;i="4.95,781,1384329600"; 
-   d="scan'208";a="12926904"
+   d="scan'208";a="12703098"
 From: Tim Kryger <tim.kryger@linaro.org>
 To: Thierry Reding <thierry.reding@gmail.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -25,9 +25,9 @@ CC: Tim Kryger <tim.kryger@linaro.org>,
         Broadcom Kernel Feedback List 
 	<bcm-kernel-feedback-list@broadcom.com>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 3/5] ARM: dts: Declare the PWM for bcm11351 (bcm281xx)
-Date: Tue, 4 Feb 2014 11:51:41 -0800
-Message-ID: <1391543503-14773-4-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH v2 1/5] Documentation: dt: Add Kona PWM binding
+Date: Tue, 4 Feb 2014 11:51:39 -0800
+Message-ID: <1391543503-14773-2-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1391543503-14773-1-git-send-email-tim.kryger@linaro.org>
 References: <1391543503-14773-1-git-send-email-tim.kryger@linaro.org>
@@ -37,34 +37,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device tree node for the PWM on bcm11351 SoCs.
+Add the binding description for the Kona PWM controller found on Broadcom's
+mobile SoCs.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Alex Elder <elder@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- arch/arm/boot/dts/bcm11351.dtsi | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ .../devicetree/bindings/pwm/bcm-kona-pwm.txt       | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index e491b82..5296c3d 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -191,6 +191,14 @@
- 		status = "disabled";
- 	};
- 
-+	pwm: pwm@3e01a000 {
-+		compatible = "brcm,bcm11351-pwm", "brcm,kona-pwm";
-+		reg = <0x3e01a000 0xcc>;
-+		clocks = <&pwm_clk>;
-+		#pwm-cells = <3>;
-+		status = "disabled";
-+	};
+diff --git a/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+new file mode 100644
+index 0000000..c8e2d13
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+@@ -0,0 +1,24 @@
++Broadcom Kona PWM controller device tree bindings
 +
- 	clocks {
- 		bsc1_clk: bsc1 {
- 			compatible = "fixed-clock";
++This controller has 6 channels.
++
++Required Properties :
++- compatible: should be "brcm,kona-pwm"
++- reg: physical base address and length of the controller's registers
++- clocks: phandle + clock specifier pair for the external clock
++- #pwm-cells: should be 3.  The first cell specifies the per-chip index
++  of the PWM to use, the second cell is the period in nanoseconds, and
++  the third cell is the flags.
++
++Refer to pwm/pwm.txt for generic pwm controller node properties.
++
++Refer to clocks/clock-bindings.txt for generic clock consumer properties.
++
++Example:
++
++pwm: pwm@3e01a000 {
++	compatible = "brcm,bcm11351-pwm", "brcm,kona-pwm";
++	reg = <0x3e01a000 0xc4>;
++	clocks = <&pwm_clk>;
++	#pwm-cells = <3>;
++};
 -- 
 1.8.0.1
 
