@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935545AbaBDWEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:04:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56879 "EHLO
+	id S1752828AbaBDWE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:04:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934137AbaBDVJN (ORCPT
+	with ESMTP id S934141AbaBDVJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:09:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brecht Machiels <brecht@mos6581.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.12 071/133] rtc-cmos: Add an alarm disable quirk
-Date: Tue,  4 Feb 2014 13:07:52 -0800
-Message-Id: <20140204210739.039420145@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.12 072/133] rtc: max8907: weekday encoding fixes
+Date: Tue,  4 Feb 2014 13:07:53 -0800
+Message-Id: <20140204210739.067485681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -32,125 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@alien8.de>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
+commit 75ea799df4cb07e505c91b4abaa87bc28aad3e66 upstream.
 
-41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
-functionality to disable the RTC wake alarm when shutting down the box.
+The current MAX8907 driver has two issues related to weekday value
+handling:
 
-However, there are at least two b0rked BIOSes we know about:
+1)
 
-https://bugzilla.novell.com/show_bug.cgi?id=812592
-https://bugzilla.novell.com/show_bug.cgi?id=805740
+The HW WEEKDAY register has range 0..6 rather than 1..7 as documented.
+Note that I validated the actual HW range by observing the HW register
+roll from 6->0 rather than 6->7->1 as would otherwise be expected.
 
-where, when wakeup alarm is enabled in the BIOS, the machine reboots
-automatically right after shutdown, regardless of what wakeup time is
-programmed.
+This matches Linux's tm_wday range of 0..6.
 
-Bisecting the issue lead to this patch so disable its functionality with
-a DMI quirk only for those boxes.
+When the CMOS RAM content is lost, the date returned from the device is
+2007-01-01 00:00:00, which is a Monday.  The WEEKDAY register reads 1 in
+this case.  This matches the numbering in Linux's tm_wday field.
 
-Cc: Brecht Machiels <brecht@mos6581.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-[jstultz: Changed variable name for clarity, added extra dmi entry]
-Tested-by: Brecht Machiels <brecht@mos6581.org>
-Tested-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Hence we should write Linux's tm_wday value to the register without
+modifying it.  Hence, remove the +1/-1 calculations for WEEKDAY/tm_wday.
+
+2)
+
+There's no need to make alarms match on the WEEKDAY register, since the
+other fields together uniquely define the alarm date/time.  Ignoring the
+WEEKDAY value in the match isolates the driver from any incorrect value in
+the current time copy of the WEEKDAY register.
+
+Each change individually, or both together, solves an issue that I
+observed; "hwclock -r" would time out waiting for its alarm to fire if the
+CMOS RAM content had been lost, and hence the WEEKDAY register value
+mismatched what the driver expected it to be.  "hwclock -w" would solve
+this by over-writing the HW default WEEKDAY register value with what the
+driver expected.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 51 insertions(+), 1 deletion(-)
+ drivers/rtc/rtc-max8907.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -34,11 +34,11 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
--#include <linux/mod_devicetable.h>
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/dmi.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
- 	return 0;
- }
- 
-+/*
-+ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
-+ */
-+static bool alarm_disable_quirk;
-+
-+static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
-+{
-+	alarm_disable_quirk = true;
-+	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
-+	pr_info("RTC alarms disabled\n");
-+	return 0;
-+}
-+
-+static const struct dmi_system_id rtc_quirks[] __initconst = {
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "IBM Truman",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
-+		},
-+	},
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Gigabyte GA-990XA-UD3",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
-+		},
-+	},
-+	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Toshiba Satellite L300",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
-+		},
-+	},
-+	{}
-+};
-+
- static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+--- a/drivers/rtc/rtc-max8907.c
++++ b/drivers/rtc/rtc-max8907.c
+@@ -51,7 +51,7 @@ static irqreturn_t max8907_irq_handler(i
  {
- 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
-@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
- 	if (!is_valid_irq(cmos->irq))
- 		return -EINVAL;
+ 	struct max8907_rtc *rtc = data;
  
-+	if (alarm_disable_quirk)
-+		return 0;
-+
- 	spin_lock_irqsave(&rtc_lock, flags);
+-	regmap_update_bits(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0x7f, 0);
++	regmap_write(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0);
  
- 	if (enabled)
-@@ -1158,6 +1206,8 @@ static int __init cmos_init(void)
- 			platform_driver_registered = true;
- 	}
+ 	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
  
-+	dmi_check_system(rtc_quirks);
-+
- 	if (retval == 0)
- 		return 0;
+@@ -64,7 +64,7 @@ static void regs_to_tm(u8 *regs, struct
+ 		bcd2bin(regs[RTC_YEAR1]) - 1900;
+ 	tm->tm_mon = bcd2bin(regs[RTC_MONTH] & 0x1f) - 1;
+ 	tm->tm_mday = bcd2bin(regs[RTC_DATE] & 0x3f);
+-	tm->tm_wday = (regs[RTC_WEEKDAY] & 0x07) - 1;
++	tm->tm_wday = (regs[RTC_WEEKDAY] & 0x07);
+ 	if (regs[RTC_HOUR] & HOUR_12) {
+ 		tm->tm_hour = bcd2bin(regs[RTC_HOUR] & 0x01f);
+ 		if (tm->tm_hour == 12)
+@@ -88,7 +88,7 @@ static void tm_to_regs(struct rtc_time *
+ 	regs[RTC_YEAR1] = bin2bcd(low);
+ 	regs[RTC_MONTH] = bin2bcd(tm->tm_mon + 1);
+ 	regs[RTC_DATE] = bin2bcd(tm->tm_mday);
+-	regs[RTC_WEEKDAY] = tm->tm_wday + 1;
++	regs[RTC_WEEKDAY] = tm->tm_wday;
+ 	regs[RTC_HOUR] = bin2bcd(tm->tm_hour);
+ 	regs[RTC_MIN] = bin2bcd(tm->tm_min);
+ 	regs[RTC_SEC] = bin2bcd(tm->tm_sec);
+@@ -153,7 +153,7 @@ static int max8907_rtc_set_alarm(struct
+ 	tm_to_regs(&alrm->time, regs);
  
+ 	/* Disable alarm while we update the target time */
+-	ret = regmap_update_bits(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0x7f, 0);
++	ret = regmap_write(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -163,8 +163,7 @@ static int max8907_rtc_set_alarm(struct
+ 		return ret;
+ 
+ 	if (alrm->enabled)
+-		ret = regmap_update_bits(rtc->regmap, MAX8907_REG_ALARM0_CNTL,
+-					 0x7f, 0x7f);
++		ret = regmap_write(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0x77);
+ 
+ 	return ret;
+ }
 
 
