@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935727AbaBDWwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:52:12 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57166 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671AbaBDWwI (ORCPT
+	id S935728AbaBDWwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:52:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56202 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933271AbaBDVCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:52:08 -0500
+	Tue, 4 Feb 2014 16:02:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [PATCH 3.10 042/104] staging: r8712u: Set device type to wlan
+Date: Tue,  4 Feb 2014 13:01:45 -0800
+Message-Id: <20140204210223.921690847@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <52F141AE.8010402@gmail.com>
-References: <1386513631-11284-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1386926429-28818-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20131217.144313.1563516273987934449.davem@davemloft.net> <52F141AE.8010402@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 4 Feb 2014 14:51:27 -0800
-Message-ID: <CAGVrzcYxcSL+Lrc=ueU6ARtxJ6MhhfHtSMEUeaMXQJEfjByVUA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] net: phy: Ethernet PHY powerdown optimization
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>, mugunthanvnm <mugunthanvnm@ti.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Lunn <andrew@lunn.ch>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-2014-02-04 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
-> On 12/17/2013 08:43 PM, David Miller wrote:
->>
->> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> Date: Fri, 13 Dec 2013 10:20:24 +0100
->>
->>> This is v2 of the ethernet PHY power optimization patches to reduce
->>> power consumption of network PHYs with link that are either unused or
->>> the corresponding netdev is down.
->>>
->>> Compared to the last version, this patch set drops a patch to disable
->>> unused PHYs after late initcall, as it is not compatible with a modular
->>> mdio bus [1]. I'll investigate different ways to have a modular mdio bus
->>> driver get notified when driver loading is done.
->>>
->>> Again, a branch with v2 applied to v3.13-rc2 can also be found at
->>> https://github.com/shesselba/linux-dove.git topic/ethphy-power-v2
->>>
->>> [1] http://www.spinics.net/lists/arm-kernel/msg293028.html
->>
->>
->> Series applied, thanks.
->>
->
-> David, Mungunthan, Florian,
->
-> as expected the above patches create a Linux to bootloader dependency
-> that surfaces dumb bootloaders not initializing PHYs correctly.
->
-> Andrew has a Kirkwood based board that does not power-up and restart
-> auto-negotiation on the powered down PHY after a warm restart. While
-> this specific bootloader allows a soft-workaround by issuing the
-> required PHY writes before accessing the interface, others may not.
->
-> I think we should allow the user to soft-disable the automatic
-> power-down of PHYs, i.e. by exploiting a kernel parameter.
->
-> Do you have any preference for naming it? My call would be something
-> like libphy.suspend_halted = [0,1] with 1 being the default.
+------------------
 
-The name looks good to me, and it would avoid having to clear the
-BMCR_PWRDOWN bit during the MDIO bus remove callback to workaround
-such bootloaders.
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-BTW, it looks like we are omitting a 0.5 seconds delay after clearing
-the BMCR_PWRDOWN bit:
+commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
 
-"
-22.2.4.1.5 Power Down
-...
-A PHY is not required to meet the RX_CLK and TX_CLK signal functional
-requirements when either bit
-0.11 or bit 0.10 is set to a logic one. A PHY shall meet the RX_CLK
-and TX_CLK signal functional require-
-ments defined in 22.2.2 within 0.5 s after both bit 0.11 and 0.10 are
-cleared to zero."
--- 
-Florian
+The latest version of NetworkManager does not recognize the device as wireless
+without this change.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/rtl8712/usb_intf.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -358,6 +358,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
+ 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
+ }
+ 
++static const struct device_type wlan_type = {
++	.name = "wlan",
++};
++
+ /*
+  * drv_init() - a device potentially for us
+  *
+@@ -393,6 +397,7 @@ static int r871xu_drv_init(struct usb_in
+ 	padapter->pusb_intf = pusb_intf;
+ 	usb_set_intfdata(pusb_intf, pnetdev);
+ 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
++	pnetdev->dev.type = &wlan_type;
+ 	/* step 2. */
+ 	padapter->dvobj_init = &r8712_usb_dvobj_init;
+ 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
+
+
