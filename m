@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935193AbaBDWLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:11:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56773 "EHLO
+	id S935689AbaBDWLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:11:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934053AbaBDVI4 (ORCPT
+	with ESMTP id S934048AbaBDVIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:56 -0500
+	Tue, 4 Feb 2014 16:08:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.12 090/133] ext4: avoid clearing beyond i_blocks when truncating an inline data file
-Date: Tue,  4 Feb 2014 13:08:11 -0800
-Message-Id: <20140204210739.572316950@linuxfoundation.org>
+        Lior Amsalem <alior@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Simon Guinot <simon.guinot@sequanux.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.12 087/133] ata: sata_mv: fix disk hotplug for Armada 370/XP SoCs
+Date: Tue,  4 Feb 2014 13:08:08 -0800
+Message-Id: <20140204210739.488462475@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,40 +34,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Lior Amsalem <alior@marvell.com>
 
-commit 09c455aaa8f47a94d5bafaa23d58365768210507 upstream.
+commit 9013d64e661fc2a37a1742670202171c27fef4b5 upstream.
 
-A missing cast means that when we are truncating a file which is less
-than 60 bytes, we don't clear the correct area of memory, and in fact
-we can end up truncating the next inode in the inode table, or worse
-yet, some other kernel data structure.
+On Armada 370/XP SoCs, once a disk is removed from a SATA port, then the
+re-plug events are not detected by the sata_mv driver. This patch fixes
+the issue by updating the PHY speed in the LP_PHY_CTL register (0x58)
+according to the SControl speed.
 
-Addresses-Coverity-Id: #751987
+Note that this fix is only applied if the compatible string
+"marvell,armada-370-sata" is found in the SATA DT node.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Fixes: 9ae6f740b49f ("arm: mach-mvebu: add support for Armada 370 and Armada XP with DT")
+Signed-off-by: Lior Amsalem <alior@marvell.com>
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inline.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/ata/sata_mv.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
---- a/fs/ext4/inline.c
-+++ b/fs/ext4/inline.c
-@@ -1925,9 +1925,11 @@ void ext4_inline_data_truncate(struct in
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -304,6 +304,7 @@ enum {
+ 	MV5_LTMODE		= 0x30,
+ 	MV5_PHY_CTL		= 0x0C,
+ 	SATA_IFCFG		= 0x050,
++	LP_PHY_CTL		= 0x058,
+ 
+ 	MV_M2_PREAMP_MASK	= 0x7e0,
+ 
+@@ -431,6 +432,7 @@ enum {
+ 	MV_HP_CUT_THROUGH	= (1 << 10),	/* can use EDMA cut-through */
+ 	MV_HP_FLAG_SOC		= (1 << 11),	/* SystemOnChip, no PCI */
+ 	MV_HP_QUIRK_LED_BLINK_EN = (1 << 12),	/* is led blinking enabled? */
++	MV_HP_FIX_LP_PHY_CTL	= (1 << 13),	/* fix speed in LP_PHY_CTL ? */
+ 
+ 	/* Port private flags (pp_flags) */
+ 	MV_PP_FLAG_EDMA_EN	= (1 << 0),	/* is EDMA engine enabled? */
+@@ -1358,6 +1360,7 @@ static int mv_scr_write(struct ata_link
+ 
+ 	if (ofs != 0xffffffffU) {
+ 		void __iomem *addr = mv_ap_base(link->ap) + ofs;
++		struct mv_host_priv *hpriv = link->ap->host->private_data;
+ 		if (sc_reg_in == SCR_CONTROL) {
+ 			/*
+ 			 * Workaround for 88SX60x1 FEr SATA#26:
+@@ -1374,6 +1377,18 @@ static int mv_scr_write(struct ata_link
+ 			 */
+ 			if ((val & 0xf) == 1 || (readl(addr) & 0xf) == 1)
+ 				val |= 0xf000;
++
++			if (hpriv->hp_flags & MV_HP_FIX_LP_PHY_CTL) {
++				void __iomem *lp_phy_addr =
++					mv_ap_base(link->ap) + LP_PHY_CTL;
++				/*
++				 * Set PHY speed according to SControl speed.
++				 */
++				if ((val & 0xf0) == 0x10)
++					writelfl(0x7, lp_phy_addr);
++				else
++					writelfl(0x227, lp_phy_addr);
++			}
  		}
+ 		writelfl(val, addr);
+ 		return 0;
+@@ -4110,6 +4125,15 @@ static int mv_platform_probe(struct plat
+ 	if (rc)
+ 		goto err;
  
- 		/* Clear the content within i_blocks. */
--		if (i_size < EXT4_MIN_INLINE_DATA_SIZE)
--			memset(ext4_raw_inode(&is.iloc)->i_block + i_size, 0,
--					EXT4_MIN_INLINE_DATA_SIZE - i_size);
-+		if (i_size < EXT4_MIN_INLINE_DATA_SIZE) {
-+			void *p = (void *) ext4_raw_inode(&is.iloc)->i_block;
-+			memset(p + i_size, 0,
-+			       EXT4_MIN_INLINE_DATA_SIZE - i_size);
-+		}
- 
- 		EXT4_I(inode)->i_inline_size = i_size <
- 					EXT4_MIN_INLINE_DATA_SIZE ?
++	/*
++	 * To allow disk hotplug on Armada 370/XP SoCs, the PHY speed must be
++	 * updated in the LP_PHY_CTL register.
++	 */
++	if (pdev->dev.of_node &&
++		of_device_is_compatible(pdev->dev.of_node,
++					"marvell,armada-370-sata"))
++		hpriv->hp_flags |= MV_HP_FIX_LP_PHY_CTL;
++
+ 	/* initialize adapter */
+ 	rc = mv_init_host(host);
+ 	if (rc)
 
 
