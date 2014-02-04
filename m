@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537AbaBDVC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56308 "EHLO
+	id S933564AbaBDVDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56321 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933442AbaBDVCl (ORCPT
+	with ESMTP id S933455AbaBDVCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:41 -0500
+	Tue, 4 Feb 2014 16:02:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Engelmayer <cengelma@gmx.at>,
+        Richard Weinberger <richard@nod.at>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 076/104] ieee802154: Fix memory leak in ieee802154_add_iface()
-Date: Tue,  4 Feb 2014 13:02:19 -0800
-Message-Id: <20140204210224.863006715@linuxfoundation.org>
+Subject: [PATCH 3.10 078/104] net,via-rhine: Fix tx_timeout handling
+Date: Tue,  4 Feb 2014 13:02:21 -0800
+Message-Id: <20140204210224.917919969@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,34 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Engelmayer <cengelma@gmx.at>
+From: Richard Weinberger <richard@nod.at>
 
-[ Upstream commit 267d29a69c6af39445f36102a832b25ed483f299 ]
+[ Upstream commit a926592f5e4e900f3fa903298c4619a131e60963 ]
 
-Fix a memory leak in the ieee802154_add_iface() error handling path.
-Detected by Coverity: CID 710490.
+rhine_reset_task() misses to disable the tx scheduler upon reset,
+this can lead to a crash if work is still scheduled while we're resetting
+the tx queue.
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+Fixes:
+[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
+[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ieee802154/nl-phy.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/via/via-rhine.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ieee802154/nl-phy.c
-+++ b/net/ieee802154/nl-phy.c
-@@ -224,8 +224,10 @@ static int ieee802154_add_iface(struct s
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1611,6 +1611,7 @@ static void rhine_reset_task(struct work
+ 		goto out_unlock;
  
- 	if (info->attrs[IEEE802154_ATTR_DEV_TYPE]) {
- 		type = nla_get_u8(info->attrs[IEEE802154_ATTR_DEV_TYPE]);
--		if (type >= __IEEE802154_DEV_MAX)
--			return -EINVAL;
-+		if (type >= __IEEE802154_DEV_MAX) {
-+			rc = -EINVAL;
-+			goto nla_put_failure;
-+		}
- 	}
+ 	napi_disable(&rp->napi);
++	netif_tx_disable(dev);
+ 	spin_lock_bh(&rp->lock);
  
- 	dev = phy->add_iface(phy, devname, type);
+ 	/* clear all descriptors */
 
 
