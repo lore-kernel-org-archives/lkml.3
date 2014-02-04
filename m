@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaBDItl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 03:49:41 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:50931 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaBDIth (ORCPT
+	id S1753629AbaBDIv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 03:51:56 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22891 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaBDIvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 03:49:37 -0500
-Message-ID: <1391503770.19947.0.camel@phoenix>
-Subject: [PATCH] pinctrl: capri: Make capri_pinctrl_probe static
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sherman Yin <syin@broadcom.com>, linux-kernel@vger.kernel.org
-Date: Tue, 04 Feb 2014 16:49:30 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Feb 2014 03:51:47 -0500
+Date: Tue, 4 Feb 2014 11:51:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lisa@xenapiadmin.com,
+        devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: bcm: fix pointer-integer size mismatch warnings
+Message-ID: <20140204085143.GF26776@mwanda>
+References: <1391497163-6894-1-git-send-email-sj38.park@gmail.com>
+ <20140204082110.GG26722@mwanda>
+ <CAEjAshrT1z+-VsKPO6MYZ2=Ly8XqjJY_NVzsZkXhtUvMLTEBTA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEjAshrT1z+-VsKPO6MYZ2=Ly8XqjJY_NVzsZkXhtUvMLTEBTA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/pinctrl-capri.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Tue, Feb 04, 2014 at 05:26:57PM +0900, SeongJae Park wrote:
+> Hello,
+> 
+> On Tue, Feb 4, 2014 at 5:21 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Tue, Feb 04, 2014 at 03:59:23PM +0900, SeongJae Park wrote:
+> >> Fix the pointer-integer size mismatch warnings below:
+> >>       drivers/staging/bcm/CmHost.c: In function ‘StoreCmControlResponseMessage’:
+> >>       drivers/staging/bcm/CmHost.c:1387:39: warning: cast to pointer from
+> >>                       integer of different size [-Wint-to-pointer-cast]
+> >>         pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
+> >>                                              ^
+> >>       drivers/staging/bcm/CmHost.c:1426:37: warning: cast to pointer from
+> >>                       integer of different size [-Wint-to-pointer-cast]
+> >>         pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
+> >>                                            ^
+> >>       drivers/staging/bcm/CmHost.c:1440:35: warning: cast to pointer from
+> >>                       integer of different size [-Wint-to-pointer-cast]
+> >>         pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfActiveSet);
+> >>                                          ^
+> >
+> > No.  You haven't fixed the bug, you've just silenced the warning so now
+> > someone has to spent hours and hours looking for it when it comes time
+> > to write a proper fix.  Don't do that.
+> >
+> 
+> I had thought silencing warning may be better in someway for some people.
+> But, anyway, now I agree and respect your opinion. Thank you for the opinion :)
 
-diff --git a/drivers/pinctrl/pinctrl-capri.c b/drivers/pinctrl/pinctrl-capri.c
-index 4669c53..b4aa8e3 100644
---- a/drivers/pinctrl/pinctrl-capri.c
-+++ b/drivers/pinctrl/pinctrl-capri.c
-@@ -1390,7 +1390,7 @@ static struct pinctrl_desc capri_pinctrl_desc = {
- 	.owner = THIS_MODULE,
- };
- 
--int __init capri_pinctrl_probe(struct platform_device *pdev)
-+static int __init capri_pinctrl_probe(struct platform_device *pdev)
- {
- 	struct capri_pinctrl_data *pdata = &capri_pinctrl;
- 	struct resource *res;
--- 
-1.8.1.2
+Don't worry about it.  You're not the first person to try submit that
+patch.
 
+When I last looked at it, this driver only worked under 32 bits and
+there were other 64 bit bugs as well besides this one.
 
+regards,
+dan carpenter
 
