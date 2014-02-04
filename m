@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934818AbaBDVar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:30:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57344 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934621AbaBDVMT (ORCPT
+	id S935226AbaBDVa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:30:59 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49653 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934852AbaBDVat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:19 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.13 102/140] vfs: Remove second variable named error in __dentry_path
-Date: Tue,  4 Feb 2014 13:11:29 -0800
-Message-Id: <20140204211039.886899408@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 16:30:49 -0500
+Date: Tue, 4 Feb 2014 22:30:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jason Cooper <jason@lakedaemon.net>
+cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
+In-Reply-To: <20140204211219.GK8533@titan.lakedaemon.net>
+Message-ID: <alpine.DEB.2.02.1402042230230.24986@ionos.tec.linutronix.de>
+References: <20131201172914.GV2879@titan.lakedaemon.net> <20131211175037.GY10053@titan.lakedaemon.net> <20140110183430.GO19878@titan.lakedaemon.net> <20140128173531.GT29184@titan.lakedaemon.net> <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
+ <20140204211219.GK8533@titan.lakedaemon.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 4 Feb 2014, Jason Cooper wrote:
 
-------------------
+> On Tue, Feb 04, 2014 at 07:59:58PM +0100, Thomas Gleixner wrote:
+> > On Tue, 28 Jan 2014, Jason Cooper wrote:
+> > > I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
+> > > near to the end of the merge window and there's been no activity on this
+> > > pull request.
+> > > 
+> > > Please let us know if there's anything we can do to assist.
+> > 
+> > Nah. I simply forgot about it. About to send a pull request to Linus.
+> 
+> hmmm.  I see the pull request contains the patches from
+> mvebu/irqchip-fixes (armada), but not the patches from mvebu/irqchip
+> (dove):
+> 
+>   40b367d95fb3 irqchip: irq-dove: Add PMU interrupt controller.
+> 
+> which is what this thread was originally a pull request for.
+> 
+> 
+> Are you planning to send a second pull request to Linus?
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-
-commit a8323da0366d3398eda62741d2ac1130c8a172ed upstream.
-
-In commit  232d2d60aa5469bb097f55728f65146bd49c1d25
-Author: Waiman Long <Waiman.Long@hp.com>
-Date:   Mon Sep 9 12:18:13 2013 -0400
-
-    dcache: Translating dentry into pathname without taking rename_lock
-
-The __dentry_path locking was changed and the variable error was
-intended to be moved outside of the loop.  Unfortunately the inner
-declaration of error was not removed. Resulting in a version of
-__dentry_path that will never return an error.
-
-Remove the problematic inner declaration of error and allow
-__dentry_path to return errors once again.
-
-Cc: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/dcache.c |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -3135,7 +3135,6 @@ restart:
- 	read_seqbegin_or_lock(&rename_lock, &seq);
- 	while (!IS_ROOT(dentry)) {
- 		struct dentry *parent = dentry->d_parent;
--		int error;
- 
- 		prefetch(parent);
- 		error = prepend_name(&end, &len, &dentry->d_name);
-
-
+Duh. I'll pick that up tomorrow
