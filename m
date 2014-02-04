@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935036AbaBDV6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:58:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56952 "EHLO
+	id S933679AbaBDVJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:09:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934211AbaBDVJa (ORCPT
+	with ESMTP id S934075AbaBDVI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:30 -0500
+	Tue, 4 Feb 2014 16:08:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph Gasparakis <joseph.gasparakis@intel.com>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 111/133] net/vxlan: Share RX skb de-marking and checksum checks with ovs
-Date: Tue,  4 Feb 2014 13:08:32 -0800
-Message-Id: <20140204210740.165684262@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [PATCH 3.12 093/133] bcache: Data corruption fix
+Date: Tue,  4 Feb 2014 13:08:14 -0800
+Message-Id: <20140204210739.661051174@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -31,59 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-[ Upstream commit d0bc65557ad09a57b4db176e9e3ccddb26971453 ]
+commit ef71ec00002d92a08eb27e9d036e3d48835b6597 upstream.
 
-Make sure the practice set by commit 0afb166 "vxlan: Add capability
-of Rx checksum offload for inner packet" is applied when the skb
-goes through the portion of the RX code which is shared between
-vxlan netdevices and ovs vxlan port instances.
+The code that handles overlapping extents that we've just read back in from disk
+was depending on the behaviour of the code that handles overlapping extents as
+we're inserting into a btree node in the case of an insert that forced an
+existing extent to be split: on insert, if we had to split we'd also insert a
+new extent to represent the top part of the old extent - and then that new
+extent would get written out.
 
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The code that read the extents back in thus not bother with splitting extents -
+if it saw an extent that ovelapped in the middle of an older extent, it would
+trim the old extent to only represent the bottom part, assuming that the
+original insert would've inserted a new extent to represent the top part.
+
+I still haven't figured out _how_ it can happen, but I'm now pretty convinced
+(and testing has confirmed) that there's some kind of an obscure corner case
+(probably involving extent merging, and multiple overwrites in different sets)
+that breaks this. The fix is to change the mergesort fixup code to split extents
+itself when required.
+
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/vxlan.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1051,6 +1051,15 @@ static int vxlan_udp_encap_recv(struct s
- 	if (!vs)
- 		goto drop;
+---
+ drivers/md/bcache/bset.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
+
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -935,7 +935,7 @@ static void sort_key_next(struct btree_i
+ 		*i = iter->data[--iter->used];
+ }
  
-+	/* If the NIC driver gave us an encapsulated packet
-+	 * with the encapsulation mark, the device checksummed it
-+	 * for us. Otherwise force the upper layers to verify it.
-+	 */
-+	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation)
-+		skb->ip_summed = CHECKSUM_NONE;
+-static void btree_sort_fixup(struct btree_iter *iter)
++static struct bkey *btree_sort_fixup(struct btree_iter *iter, struct bkey *tmp)
+ {
+ 	while (iter->used > 1) {
+ 		struct btree_iter_set *top = iter->data, *i = top + 1;
+@@ -963,9 +963,22 @@ static void btree_sort_fixup(struct btre
+ 		} else {
+ 			/* can't happen because of comparison func */
+ 			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
+-			bch_cut_back(&START_KEY(i->k), top->k);
 +
-+	skb->encapsulation = 0;
++			if (bkey_cmp(i->k, top->k) < 0) {
++				bkey_copy(tmp, top->k);
 +
- 	vs->rcv(vs, skb, vxh->vx_vni);
- 	return 0;
++				bch_cut_back(&START_KEY(i->k), tmp);
++				bch_cut_front(i->k, top->k);
++				heap_sift(iter, 0, btree_iter_cmp);
++
++				return tmp;
++			} else {
++				bch_cut_back(&START_KEY(i->k), top->k);
++			}
+ 		}
+ 	}
++
++	return NULL;
+ }
  
-@@ -1109,17 +1118,6 @@ static void vxlan_rcv(struct vxlan_sock
+ static void btree_mergesort(struct btree *b, struct bset *out,
+@@ -973,15 +986,20 @@ static void btree_mergesort(struct btree
+ 			    bool fixup, bool remove_stale)
+ {
+ 	struct bkey *k, *last = NULL;
++	BKEY_PADDED(k) tmp;
+ 	bool (*bad)(struct btree *, const struct bkey *) = remove_stale
+ 		? bch_ptr_bad
+ 		: bch_ptr_invalid;
  
- 	skb_reset_network_header(skb);
+ 	while (!btree_iter_end(iter)) {
+ 		if (fixup && !b->level)
+-			btree_sort_fixup(iter);
++			k = btree_sort_fixup(iter, &tmp.k);
++		else
++			k = NULL;
++
++		if (!k)
++			k = bch_btree_iter_next(iter);
  
--	/* If the NIC driver gave us an encapsulated packet with
--	 * CHECKSUM_UNNECESSARY and Rx checksum feature is enabled,
--	 * leave the CHECKSUM_UNNECESSARY, the device checksummed it
--	 * for us. Otherwise force the upper layers to verify it.
--	 */
--	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation ||
--	    !(vxlan->dev->features & NETIF_F_RXCSUM))
--		skb->ip_summed = CHECKSUM_NONE;
--
--	skb->encapsulation = 0;
--
- 	if (oip6)
- 		err = IP6_ECN_decapsulate(oip6, skb);
- 	if (oip)
+-		k = bch_btree_iter_next(iter);
+ 		if (bad(b, k))
+ 			continue;
+ 
 
 
