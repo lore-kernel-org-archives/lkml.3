@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935779AbaBDWot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:44:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56297 "EHLO
+	id S935815AbaBDWpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:45:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933429AbaBDVCi (ORCPT
+	with ESMTP id S933411AbaBDVCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:38 -0500
+	Tue, 4 Feb 2014 16:02:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philip Pokorny <ppokorny@penguincomputing.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 047/104] hwmon: (k10temp) Add support for Kaveri CPUs
-Date: Tue,  4 Feb 2014 13:01:50 -0800
-Message-Id: <20140204210224.058153088@linuxfoundation.org>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 071/104] vfs: Is mounted should be testing mnt_ns for NULL or error.
+Date: Tue,  4 Feb 2014 13:02:14 -0800
+Message-Id: <20140204210224.725951872@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,29 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Pokorny <ppokorny@penguincomputing.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d303b1b5fbb688282bbf72a534b9dfed7af9fe4f upstream.
+commit 260a459d2e39761fbd39803497205ce1690bc7b1 upstream.
 
-Add new PCI ID to support new model "Kaveri" family.
+A bug was introduced with the is_mounted helper function in
+commit f7a99c5b7c8bd3d3f533c8b38274e33f3da9096e
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Jun 9 00:59:08 2012 -0400
 
-Signed-off-by: Philip Pokorny <ppokorny@penguincomputing.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+    get rid of ->mnt_longterm
+
+    it's enough to set ->mnt_ns of internal vfsmounts to something
+    distinct from all struct mnt_namespace out there; then we can
+    just use the check for ->mnt_ns != NULL in the fast path of
+    mntput_no_expire()
+
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+The intent was to test if the real_mount(vfsmount)->mnt_ns was
+NULL_OR_ERR but the code is actually testing real_mount(vfsmount)
+and always returning true.
+
+The result is d_absolute_path returning paths it should be hiding.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/k10temp.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/mount.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_i
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
- };
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -73,7 +73,7 @@ static inline int mnt_has_parent(struct
+ static inline int is_mounted(struct vfsmount *mnt)
+ {
+ 	/* neither detached nor internal? */
+-	return !IS_ERR_OR_NULL(real_mount(mnt));
++	return !IS_ERR_OR_NULL(real_mount(mnt)->mnt_ns);
+ }
+ 
+ extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
 
 
