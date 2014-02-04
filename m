@@ -1,141 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364AbaBDRQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:16:00 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:54920 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932132AbaBDRP6 convert rfc822-to-8bit (ORCPT
+	id S1754817AbaBDRSb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:18:31 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:50213 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530AbaBDRS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:15:58 -0500
-Date: Tue, 4 Feb 2014 18:16:05 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org, Dave Airlie <airlied@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 2/5] ASoC: tda998x: add a codec driver for the
- TDA998x
-Message-ID: <20140204181605.5b837a70@armhf>
-In-Reply-To: <20140204133014.GA22609@sirena.org.uk>
-References: <cover.1391274627.git.moinejf@free.fr>
- <ae68394f080f0ea5acaf3377cb1d18f29e42c646.1391274628.git.moinejf@free.fr>
- <20140204133014.GA22609@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Tue, 4 Feb 2014 12:18:29 -0500
+Message-ID: <52F12008.4040103@linux.vnet.ibm.com>
+Date: Tue, 04 Feb 2014 22:44:48 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
+        galak@kernel.crashing.org, paul.gortmaker@windriver.com,
+        paulus@samba.org, mingo@kernel.org, mikey@neuling.org,
+        shangw@linux.vnet.ibm.com, rafael.j.wysocki@intel.com, agraf@suse.de,
+        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
+        john.stultz@linaro.org, anton@samba.org, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V2 1/2] time: Change the return type of clockevents_notify()
+ to integer
+References: <20140124065501.17564.39363.stgit@preeti.in.ibm.com> <20140124065739.17564.97259.stgit@preeti.in.ibm.com> <alpine.DEB.2.02.1402041100250.24986@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402041100250.24986@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020417-3864-0000-0000-00000C41EFCB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Feb 2014 13:30:14 +0000
-Mark Brown <broonie@kernel.org> wrote:
-
-> On Sun, Jan 26, 2014 at 07:45:36PM +0100, Jean-Francois Moine wrote:
+On 02/04/2014 03:31 PM, Thomas Gleixner wrote:
+> On Fri, 24 Jan 2014, Preeti U Murthy wrote:
+>> -extern void tick_broadcast_oneshot_control(unsigned long reason);
+>> +extern int tick_broadcast_oneshot_control(unsigned long reason);
 > 
-> > +	/* load the optional CODEC */
-> > +	of_platform_populate(np, NULL, NULL, &client->dev);
-> > +
+>> -static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
+>> +static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
 > 
-> Why is this using of_platform_populate()?  That's a very odd way of
-> doing things.
-
-The i2c does not populate the subnodes in the DT. I did not find why,
-but, what is sure is that if of_platform_populate() is not called, the
-tda CODEC module is not loaded.
-
-You may find an other example in drivers/mfd/twl-core.c.
-
-> > +config SND_SOC_TDA998X
-> > +	tristate
-> > +	depends on OF
-> > +	default y if DRM_I2C_NXP_TDA998X=y
-> > +	default m if DRM_I2C_NXP_TDA998X=m
-> > +
+>> -static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
+>> +static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
 > 
-> Make this visible if it can be selected from DT so it can be used with
-> generic cards.
+> The inline stubs need to return 0.
 
-I don't understand. The tda CODEC can only be used with the TDA998x I2C
-driver. It might have been included in the tda998x source as well.
-
-> > +static int tda_get_encoder(struct tda_priv *priv)
-> > +{
-> > +	struct snd_soc_codec *codec = priv->codec;
-> > +	struct device_node *np;
-> > +
-> > +	/* get the parent tda998x device */
-> > +	np = of_get_parent(codec->dev->of_node);
-> > +	if (!np || !of_device_is_compatible(np, "nxp,tda998x")) {
-> > +		dev_err(codec->dev, "no or bad parent!\n");
-> > +		return -EINVAL;
-> > +	}
-> > +	priv->i2c_client = of_find_i2c_device_by_node(np);
-> > +	of_node_put(np);
-> > +	return 0;
-> > +}
+Oh right! Apologies!
+Thanks.
 > 
-> Why does this need to be checked like this?  We don't normally have this
-> sort of code to check that the parent is correct.
-
-In my previous submit, the tda CODEC was not declared inside the
-tda998x I2c device, so, its location was searched from  phandle.
-
-Now, the CODEC is declared inside the tda998x as a node child. But, in
-a bad DT, the tda CODEC could be declared anywhere, even inside a other
-DRM I2C slave encoder, in which case, bad things would happen...
-
-> > +static int tda_start_stop(struct tda_priv *priv)
-> > +{
-> > +	int port;
-> > +
-> > +	/* give the audio parameters to the HDMI encoder */
-> > +	if (priv->dai_id == AFMT_I2S)
-> > +		port = priv->ports[0];
-> > +	else
-> > +		port = priv->ports[1];
-> > +	tda998x_audio_update(priv->i2c_client, priv->dai_id, port);
-> > +	return 0;
-> > +}
+> Thanks,
 > 
-> What does this actually do?  No information is being passed in to the
-> core function here, not even any information on if it's starting or
-> stopping.  Looking at the rest of the code I can't help thinking it
-> might be clearer to inline this possibly with a lookup helper, the code
-> is very small and the lack of parameters makes it hard to follow.
-
-I thought it was simple enough. The function tda_start_stop() is called
-from 2 places:
-
-- on audio start in tda_startup with the audio type (DAI id)
-	priv->dai_id = dai->id;
-
-- on audio stop with a null audio type
-	priv->dai_id = 0;		/* streaming stop */
-
-On stream start, the DAI id is never null, as explained in the patch 1:
-
-	The audio format values in the encoder configuration interface  are
-	changed to non null values so that the value 0 is used in the audio
-	function to indicate that audio streaming is stopped.
-
-and on streaming stop the port is not meaningful.
-
-I will add a null item in the enum (AFMT_NO_AUDIO).
-
-> > +static const struct snd_soc_dapm_route tda_routes[] = {
-> > +	{ "hdmi-out", NULL, "HDMI I2S Playback" },
-> > +	{ "hdmi-out", NULL, "HDMI SPDIF Playback" },
-> > +};
+> 	tglx
 > 
-> S/PDIF.
 
-Did you ever try that with debugfs?
+Regards
+Preeti U Murthy
 
-BTW, this patch series may be delayed for some time: the tda998x driver
-has to be reworked for DT support.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
