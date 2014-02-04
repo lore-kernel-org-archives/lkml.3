@@ -1,186 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaBDO72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:59:28 -0500
-Received: from relay.parallels.com ([195.214.232.42]:40188 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050AbaBDO70 (ORCPT
+	id S1753844AbaBDPCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:02:04 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:57959 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDPCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:59:26 -0500
-Message-ID: <52F1004B.90307@parallels.com>
-Date: Tue, 4 Feb 2014 18:59:23 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Tue, 4 Feb 2014 10:02:00 -0500
+X-Greylist: delayed 91276 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Feb 2014 10:02:00 EST
+Date: Tue, 4 Feb 2014 10:01:56 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux I2C List <linux-i2c@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] mfd: add bcm59056 pmu driver
+Message-ID: <20140204150156.GC4627@beef>
+References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
+ <1391516352-32359-4-git-send-email-mporter@linaro.org>
+ <20140204132951.GE13529@lee--X1>
+ <20140204143119.GA4627@beef>
+ <20140204144731.GA3154@lee--X1>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <penberg@kernel.org>,
-        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
-References: <cover.1391356789.git.vdavydov@parallels.com> <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com> <20140204145210.GH4890@dhcp22.suse.cz>
-In-Reply-To: <20140204145210.GH4890@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140204144731.GA3154@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 06:52 PM, Michal Hocko wrote:
-> On Sun 02-02-14 20:33:48, Vladimir Davydov wrote:
->> Suppose we are creating memcg cache A that could be merged with cache B
->> of the same memcg. Since any memcg cache has the same parameters as its
->> parent cache, parent caches PA and PB of memcg caches A and B must be
->> mergeable too. That means PA was merged with PB on creation or vice
->> versa, i.e. PA = PB. From that it follows that A = B, and we couldn't
->> even try to create cache B, because it already exists - a contradiction.
-> I cannot tell I understand the above but I am totally not sure about the
-> statement bellow.
->
->> So let's remove unused code responsible for merging memcg caches.
-> How come the code was unused? find_mergeable called cache_match_memcg...
+On Tue, Feb 04, 2014 at 02:47:31PM +0000, Lee Jones wrote:
+> Hold your horses. :)
 
-Oh, sorry for misleading comment. I mean the code handling merging of
-per-memcg caches is useless, AFAIU: if we find an alias for a per-memcg
-cache on kmem_cache_create_memcg(), the parent of the found alias must
-be the same as the parent_cache passed to kmem_cache_create_memcg(), but
-if it were so, we would never proceed to the memcg cache creation,
-because the cache we want to create already exists.
+Holding :)
 
-Thanks.
+> > > > Add a driver for the BCM59056 PMU multi-function device. The driver
+> > > > initially supports regmap initialization and instantiation of the
+> > > > voltage regulator device function of the PMU.
+> > > > 
+> > > > Signed-off-by: Matt Porter <mporter@linaro.org>
+> > > > Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> > > > Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> > > > ---
+> > > >  drivers/mfd/Kconfig          |   8 +++
+> > > >  drivers/mfd/Makefile         |   1 +
+> > > >  drivers/mfd/bcm59056.c       | 119 +++++++++++++++++++++++++++++++++++++++++++
+> > > >  include/linux/mfd/bcm59056.h |  35 +++++++++++++
+> > > >  4 files changed, 163 insertions(+)
+> > > >  create mode 100644 drivers/mfd/bcm59056.c
+> > > >  create mode 100644 include/linux/mfd/bcm59056.h
+> 
+> <snip>
+> 
+> > > I thought this was a DT only driver? If so, you probably want to use
+> > > of_match_device() instead.
+> > 
+> > Correct, I'll use of_match_device()
+> 
+> If you're going to use this ...
+> 
+> <snip>
+> 
+> > > You've gone to the trouble of setting a device version here, but you
+> > > don't seem to use it?
+> > 
+> > I'll drop the device version
+> 
+> ... then you'll still need this.
 
->
->> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
->> ---
->>  mm/slab.h        |   21 ++++-----------------
->>  mm/slab_common.c |    8 +++++---
->>  mm/slub.c        |   19 +++++++++----------
->>  3 files changed, 18 insertions(+), 30 deletions(-)
->>
->> diff --git a/mm/slab.h b/mm/slab.h
->> index 8184a7cde272..3045316b7c9d 100644
->> --- a/mm/slab.h
->> +++ b/mm/slab.h
->> @@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
->>  struct mem_cgroup;
->>  #ifdef CONFIG_SLUB
->>  struct kmem_cache *
->> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
->> -		   size_t align, unsigned long flags, void (*ctor)(void *));
->> +__kmem_cache_alias(const char *name, size_t size, size_t align,
->> +		   unsigned long flags, void (*ctor)(void *));
->>  #else
->>  static inline struct kmem_cache *
->> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
->> -		   size_t align, unsigned long flags, void (*ctor)(void *))
->> +__kmem_cache_alias(const char *name, size_t size, size_t align,
->> +		   unsigned long flags, void (*ctor)(void *))
->>  { return NULL; }
->>  #endif
->>  
->> @@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
->>  	return !s->memcg_params || s->memcg_params->is_root_cache;
->>  }
->>  
->> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
->> -				     struct mem_cgroup *memcg)
->> -{
->> -	return (is_root_cache(cachep) && !memcg) ||
->> -				(cachep->memcg_params->memcg == memcg);
->> -}
->> -
->>  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
->>  {
->>  	if (!is_root_cache(s))
->> @@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
->>  	return true;
->>  }
->>  
->> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
->> -				     struct mem_cgroup *memcg)
->> -{
->> -	return true;
->> -}
->> -
->>  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
->>  {
->>  }
->> diff --git a/mm/slab_common.c b/mm/slab_common.c
->> index 152d9b118b7a..a75834bb966d 100644
->> --- a/mm/slab_common.c
->> +++ b/mm/slab_common.c
->> @@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
->>  	 */
->>  	flags &= CACHE_CREATE_MASK;
->>  
->> -	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
->> -	if (s)
->> -		goto out_unlock;
->> +	if (!memcg) {
->> +		s = __kmem_cache_alias(name, size, align, flags, ctor);
->> +		if (s)
->> +			goto out_unlock;
->> +	}
->>  
->>  	err = -ENOMEM;
->>  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
->> diff --git a/mm/slub.c b/mm/slub.c
->> index 2b1a6970e46f..962abfdfde06 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -3686,9 +3686,8 @@ static int slab_unmergeable(struct kmem_cache *s)
->>  	return 0;
->>  }
->>  
->> -static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->> -		size_t align, unsigned long flags, const char *name,
->> -		void (*ctor)(void *))
->> +static struct kmem_cache *find_mergeable(size_t size, size_t align,
->> +		unsigned long flags, const char *name, void (*ctor)(void *))
->>  {
->>  	struct kmem_cache *s;
->>  
->> @@ -3707,11 +3706,14 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->>  		if (slab_unmergeable(s))
->>  			continue;
->>  
->> +		if (!is_root_cache(s))
->> +			continue;
->> +
->>  		if (size > s->size)
->>  			continue;
->>  
->>  		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
->> -				continue;
->> +			continue;
->>  		/*
->>  		 * Check if alignment is compatible.
->>  		 * Courtesy of Adrian Drzewiecki
->> @@ -3722,21 +3724,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
->>  		if (s->size - size >= sizeof(void *))
->>  			continue;
->>  
->> -		if (!cache_match_memcg(s, memcg))
->> -			continue;
->> -
->>  		return s;
->>  	}
->>  	return NULL;
->>  }
->>  
->>  struct kmem_cache *
->> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
->> -		   size_t align, unsigned long flags, void (*ctor)(void *))
->> +__kmem_cache_alias(const char *name, size_t size, size_t align,
->> +		   unsigned long flags, void (*ctor)(void *))
->>  {
->>  	struct kmem_cache *s;
->>  
->> -	s = find_mergeable(memcg, size, align, flags, name, ctor);
->> +	s = find_mergeable(size, align, flags, name, ctor);
->>  	if (s) {
->>  		s->refcount++;
->>  		/*
->> -- 
->> 1.7.10.4
->>
+Yes, I was far too vague..I'm going to stop explicitly populating the
+data field.
 
+static const struct of_device_id bcm59056_of_match[] = {
+	{ .compatible = "brcm,bcm59056"},
+	{ }
+};
+
+> > > > +static const struct i2c_device_id bcm59056_i2c_id[] = {
+> > > > +	{ "bcm59056", BCM59056 },
+> > > > +	{ }
+> > > > +};
+> > > 
+> > > Ah, I guess this is where id->driver comes from.
+> > > 
+> > > It's pretty silly that the I2C subsystem demands the presence of this
+> > > table, despite not using it if an of_device_id table is present.
+> > 
+> > It does make it very difficult to follow DT enabled I2C client drivers
+> > :( I'll drop the BCM59056 too.
+> 
+> And I don't think you can drop this, as the I2C subsystem still
+> insists on it.
+
+Agreed. I'm just dropping explicit population of the driver_data field
+here.
+
+static const struct i2c_device_id bcm59056_i2c_id[] = {
+	{ "bcm59056" },
+	{ }
+};
+
+> 
+> > > > +/* chip id */
+> > > > +#define BCM59056		0
+> > > 
+> > > Lonely, oh so lonely!
+> > 
+> > Understood. Will remove.
+> 
+> I think you need to keep this to supply the silly I2C ID table.
+> 
+> I would just omit the '.data = (void *) VERSION' from the
+> of_match_table until you require it. 
+
+Well, it's not even necessary for I2C ID table. the I2C subsystem is
+happy with just a matching entry on the i2c_device_id name field and
+NULL driver_data. palmas is implemented in this manner.
+
+-Matt
