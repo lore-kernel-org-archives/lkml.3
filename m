@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935540AbaBDWgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:36:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56391 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933521AbaBDVC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asias He <asias.hejun@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.10 099/104] virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
-Date: Tue,  4 Feb 2014 13:02:42 -0800
-Message-Id: <20140204210225.525962387@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S936056AbaBDWg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:36:58 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49807 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933521AbaBDWgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 17:36:53 -0500
+Message-ID: <52F16B4F.2010801@ti.com>
+Date: Wed, 5 Feb 2014 00:35:59 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <rob@landley.net>, <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <daniel.lezcano@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v4 1/3] clocksource: timer-keystone: introduce clocksource
+ driver for Keystone
+References: <1391513453-21140-1-git-send-email-ivan.khoronzhuk@ti.com> <1391513453-21140-2-git-send-email-ivan.khoronzhuk@ti.com> <alpine.DEB.2.02.1402041715220.24986@ionos.tec.linutronix.de> <52F11B5C.40407@ti.com> <alpine.DEB.2.02.1402042113270.24986@ionos.tec.linutronix.de> <52F1668B.9040507@ti.com>
+In-Reply-To: <52F1668B.9040507@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Yes. I'll send with __iowmb() instead of wmb().
 
-------------------
+On 02/05/2014 12:15 AM, Santosh Shilimkar wrote:
+> On Tuesday 04 February 2014 03:17 PM, Thomas Gleixner wrote:
+>> On Tue, 4 Feb 2014, Ivan Khoronzhuk wrote:
+>>
+>> Please do not top post.
+>>
+>>> It was so in v1. But it was decided to use explicit memory barriers,
+>>> because we're always sure the memory barriers are there and that
+>>> they're properly documented. Also in this case I don't need to add
+>>> keystone readl/writel relaxed function variants and to use mixed calls of
+>>> writel/writel_relaxed functions.
+>>>
+>>> See:
+>>> http://www.spinics.net/lists/arm-kernel/msg294941.html
+>> Fair enough, but we want a proper explanation for explicit barriers in
+>> the code and not in some random discussion of patch version X on some
+>> random mailing list.
+>>
+>> Aside of that it should be iowmb(), but I might miss something ...
+>>
+> Agree. __iowmb() seems to be more appropriate.
+>
+> Regards,
+> Santosh
+>
 
-From: Asias He <asias.hejun@gmail.com>
-
-commit f466f75385369a181409e46da272db3de6f5c5cb upstream.
-
-vqs are freed in virtscsi_freeze but the hotcpu_notifier is not
-unregistered. We will have a use-after-free usage when the notifier
-callback is called after virtscsi_freeze.
-
-Fixes: 285e71ea6f3583a85e27cb2b9a7d8c35d4c0d558
-("virtio-scsi: reset virtqueue affinity when doing cpu hotplug")
-
-Signed-off-by: Asias He <asias.hejun@gmail.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/virtio_scsi.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -957,6 +957,10 @@ static void virtscsi_remove(struct virti
- #ifdef CONFIG_PM
- static int virtscsi_freeze(struct virtio_device *vdev)
- {
-+	struct Scsi_Host *sh = virtio_scsi_host(vdev);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+
-+	unregister_hotcpu_notifier(&vscsi->nb);
- 	virtscsi_remove_vqs(vdev);
- 	return 0;
- }
-@@ -965,8 +969,17 @@ static int virtscsi_restore(struct virti
- {
- 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
- 	struct virtio_scsi *vscsi = shost_priv(sh);
-+	int err;
-+
-+	err = virtscsi_init(vdev, vscsi);
-+	if (err)
-+		return err;
-+
-+	err = register_hotcpu_notifier(&vscsi->nb);
-+	if (err)
-+		vdev->config->del_vqs(vdev);
- 
--	return virtscsi_init(vdev, vscsi);
-+	return err;
- }
- #endif
- 
-
+-- 
+Regards,
+Ivan Khoronzhuk
 
