@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936374AbaBDWvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:51:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56220 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933294AbaBDVCY (ORCPT
+	id S935727AbaBDWwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:52:12 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:57166 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932671AbaBDWwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 056/104] pinctrl: sunxi: Honor GPIO output initial vaules
-Date: Tue,  4 Feb 2014 13:01:59 -0800
-Message-Id: <20140204210224.309568772@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
-References: <20140204210222.731641778@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 17:52:08 -0500
 MIME-Version: 1.0
+In-Reply-To: <52F141AE.8010402@gmail.com>
+References: <1386513631-11284-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1386926429-28818-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20131217.144313.1563516273987934449.davem@davemloft.net> <52F141AE.8010402@gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 4 Feb 2014 14:51:27 -0800
+Message-ID: <CAGVrzcYxcSL+Lrc=ueU6ARtxJ6MhhfHtSMEUeaMXQJEfjByVUA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/5] net: phy: Ethernet PHY powerdown optimization
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>, mugunthanvnm <mugunthanvnm@ti.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Lunn <andrew@lunn.ch>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi Sebastian,
 
-------------------
+2014-02-04 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
+> On 12/17/2013 08:43 PM, David Miller wrote:
+>>
+>> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> Date: Fri, 13 Dec 2013 10:20:24 +0100
+>>
+>>> This is v2 of the ethernet PHY power optimization patches to reduce
+>>> power consumption of network PHYs with link that are either unused or
+>>> the corresponding netdev is down.
+>>>
+>>> Compared to the last version, this patch set drops a patch to disable
+>>> unused PHYs after late initcall, as it is not compatible with a modular
+>>> mdio bus [1]. I'll investigate different ways to have a modular mdio bus
+>>> driver get notified when driver loading is done.
+>>>
+>>> Again, a branch with v2 applied to v3.13-rc2 can also be found at
+>>> https://github.com/shesselba/linux-dove.git topic/ethphy-power-v2
+>>>
+>>> [1] http://www.spinics.net/lists/arm-kernel/msg293028.html
+>>
+>>
+>> Series applied, thanks.
+>>
+>
+> David, Mungunthan, Florian,
+>
+> as expected the above patches create a Linux to bootloader dependency
+> that surfaces dumb bootloaders not initializing PHYs correctly.
+>
+> Andrew has a Kirkwood based board that does not power-up and restart
+> auto-negotiation on the powered down PHY after a warm restart. While
+> this specific bootloader allows a soft-workaround by issuing the
+> required PHY writes before accessing the interface, others may not.
+>
+> I think we should allow the user to soft-disable the automatic
+> power-down of PHYs, i.e. by exploiting a kernel parameter.
+>
+> Do you have any preference for naming it? My call would be something
+> like libphy.suspend_halted = [0,1] with 1 being the default.
 
-From: Chen-Yu Tsai <wens@csie.org>
+The name looks good to me, and it would avoid having to clear the
+BMCR_PWRDOWN bit during the MDIO bus remove callback to workaround
+such bootloaders.
 
-commit fa8cf57c923e86a693a85aff1df579245a27cbb3 upstream.
+BTW, it looks like we are omitting a 0.5 seconds delay after clearing
+the BMCR_PWRDOWN bit:
 
-Some GPIO users, such as fixed-regulator, request GPIO output with
-initial value of 1. This was ignored by sunxi driver.
-
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pinctrl/pinctrl-sunxi.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -1754,12 +1754,6 @@ static int sunxi_pinctrl_gpio_get(struct
- 	return val;
- }
- 
--static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
--					unsigned offset, int value)
--{
--	return pinctrl_gpio_direction_output(chip->base + offset);
--}
--
- static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
- 				unsigned offset, int value)
- {
-@@ -1770,6 +1764,13 @@ static void sunxi_pinctrl_gpio_set(struc
- 	writel((value & DATA_PINS_MASK) << index, pctl->membase + reg);
- }
- 
-+static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned offset, int value)
-+{
-+	sunxi_pinctrl_gpio_set(chip, offset, value);
-+	return pinctrl_gpio_direction_output(chip->base + offset);
-+}
-+
- static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
- 				const struct of_phandle_args *gpiospec,
- 				u32 *flags)
-
-
+"
+22.2.4.1.5 Power Down
+...
+A PHY is not required to meet the RX_CLK and TX_CLK signal functional
+requirements when either bit
+0.11 or bit 0.10 is set to a logic one. A PHY shall meet the RX_CLK
+and TX_CLK signal functional require-
+ments defined in 22.2.2 within 0.5 s after both bit 0.11 and 0.10 are
+cleared to zero."
+-- 
+Florian
