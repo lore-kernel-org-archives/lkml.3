@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936593AbaBDXJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:09:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55973 "EHLO
+	id S932667AbaBDVAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:00:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55893 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932684AbaBDVAk (ORCPT
+	with ESMTP id S1755105AbaBDVAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:40 -0500
+	Tue, 4 Feb 2014 16:00:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Magnus Reftel <magnus.reftel@lockless.no>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 24/37] ASoC: adau1701: Fix ADAU1701_SEROCTL_WORD_LEN_16 constant
-Date: Tue,  4 Feb 2014 13:01:00 -0800
-Message-Id: <20140204210056.692716618@linuxfoundation.org>
+        Ethan Wilson <ethan.wilson@shiftmail.org>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.4 01/37] md/raid5: fix long-standing problem with bitmap handling on write failure.
+Date: Tue,  4 Feb 2014 13:00:37 -0800
+Message-Id: <20140204210056.036266310@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -29,32 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: NeilBrown <neilb@suse.de>
 
-commit e20970ada3f699c113fe64b04492af083d11a7d8 upstream.
+commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
 
-The driver defines ADAU1701_SEROCTL_WORD_LEN_16 as 0x10 while it should be b10,
-so 0x2. This patch fixes it.
+Before a write starts we set a bit in the write-intent bitmap.
+When the write completes we clear that bit if the write was successful
+to all devices.  However if the write wasn't fully successful we
+should not clear the bit.  If the faulty drive is subsequently
+re-added, the fact that the bit is still set ensure that we will
+re-write the data that is missing.
 
-Reported-by: Magnus Reftel <magnus.reftel@lockless.no>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
+bitmap bit when this flag is not set.
+Currently we correctly set the flag if a write starts when some
+devices are failed or missing.  But we do *not* set the flag if some
+device failed during the write attempt.
+This is wrong and can result in clearing the bit inappropriately.
+
+So: set the flag when a write fails.
+
+This bug has been present since bitmaps were introduces, so the fix is
+suitable for any -stable kernel.
+
+Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/adau1701.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid5.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/codecs/adau1701.c
-+++ b/sound/soc/codecs/adau1701.c
-@@ -64,7 +64,7 @@
- 
- #define ADAU1701_SEROCTL_WORD_LEN_24	0x0000
- #define ADAU1701_SEROCTL_WORD_LEN_20	0x0001
--#define ADAU1701_SEROCTL_WORD_LEN_16	0x0010
-+#define ADAU1701_SEROCTL_WORD_LEN_16	0x0002
- #define ADAU1701_SEROCTL_WORD_LEN_MASK	0x0003
- 
- #define ADAU1701_AUXNPOW_VBPD		0x40
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1805,6 +1805,7 @@ static void raid5_end_write_request(stru
+ 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
+ 	} else {
+ 		if (!uptodate) {
++			set_bit(STRIPE_DEGRADED, &sh->state);
+ 			set_bit(WriteErrorSeen, &rdev->flags);
+ 			set_bit(R5_WriteError, &sh->dev[i].flags);
+ 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
 
 
