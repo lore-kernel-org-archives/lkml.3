@@ -1,79 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935146AbaBDVqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:46:21 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:45445 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933606AbaBDVqQ (ORCPT
+	id S934935AbaBDVql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:46:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57137 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933589AbaBDVLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:46:16 -0500
+	Tue, 4 Feb 2014 16:11:32 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        yury <urykhy@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 044/140] b43: Fix lockdep splat
+Date: Tue,  4 Feb 2014 13:10:31 -0800
+Message-Id: <20140204211038.220508151@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
+References: <20140204211036.967663852@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <52F15000.2080102@zytor.com>
-References: <2039634.jSmQAS6tdi@myon.chronox.de>
-	<20140204170823.GF12768@thunk.org>
-	<52F13A1C.3040003@zytor.com>
-	<20140204192325.GA11831@thunk.org>
-	<CAMuHMdV5tLX7L6m4Q+1tMu_LF0bhxErVJuXDcga8VAmGV91dZg@mail.gmail.com>
-	<52F15000.2080102@zytor.com>
-Date: Tue, 4 Feb 2014 22:46:15 +0100
-X-Google-Sender-Auth: gYtv17t77G009CLIHPiYHgprVw0
-Message-ID: <CAMuHMdXdYBB9AfdE4qb846SmkO_pqEqtrUsFL=d09tAqgmkXTQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] CPU Jitter RNG
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
-        =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Dave Taht <dave.taht@gmail.com>,
-        John Crispin <blogic@openwrt.org>,
-        Andrew McGregor <andrewmcgr@gmail.com>, Thorsten Glaser <tg@mirbsd.de>,
-        sandyinchina@gmail.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 9:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/04/2014 11:39 AM, Geert Uytterhoeven wrote:
->> On Tue, Feb 4, 2014 at 8:23 PM,  <tytso@mit.edu> wrote:
->>> However, where a decade ago the ethernet card probably had its own
->>> independent clock crystal/oscillator, I'm going to guess that these
->>> days with SOC's and even on laptops, with ethernet device part of the
->>> chipset, it is probably being driven off the same master oscillator.
->>
->> USB typically still has its own crystal.
->
-> USB and the Ethernet PHY frequently do still have their own crystals,
-> for reasons not entirely clear to me.  However, what all of these have
-> in common is that they are way out in the periphery.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Because they're fixed frequency, and used for communication with other
-devices, so accuracy matters?
+------------------
 
-Other clocks can be tuned for performance or power reasons, but clocks
-for communication must be fixed and stable. You can run e.g. your CPU
-or memory a bit slower or faster, but not your Ethernet.
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
->>> I wonder if there's anyway we can either figure out manually, or
->>> preferably, automatically at boot time, which devices actually have
->>> independent clock oscillators.
->>
->> You may find this information in the DT on some platforms (if you're
->> lucky).
->
-> On most systems today, all the high speed clocks (CPU, memory, etc.) are
-> all fed from a single oscillator.
+commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
 
-Indeed.
+In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
+when b43 is used with hostapd, and rfkill is used to kill the radio output.
 
-Gr{oetje,eeting}s,
+The lockdep splat (in part) is as follows:
 
-                        Geert
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.12.0 #1 Not tainted
+-------------------------------------------------------
+rfkill/10040 is trying to acquire lock:
+ (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+but task is already holding lock:
+ (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--snip--
+
+Chain exists of:
+  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
+
+The fix is to move the initialization of the hardware random number generator
+outside the code range covered by the rtnl_mutex.
+
+Reported-by: yury <urykhy@gmail.com>
+Tested-by: yury <urykhy@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/b43/main.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2424,6 +2424,7 @@ error:
+ 
+ static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
+ static void b43_one_core_detach(struct b43_bus_dev *dev);
++static int b43_rng_init(struct b43_wl *wl);
+ 
+ static void b43_request_firmware(struct work_struct *work)
+ {
+@@ -2475,6 +2476,10 @@ start_ieee80211:
+ 		goto err_one_core_detach;
+ 	wl->hw_registred = true;
+ 	b43_leds_register(wl->current_dev);
++
++	/* Register HW RNG driver */
++	b43_rng_init(wl);
++
+ 	goto out;
+ 
+ err_one_core_detach:
+@@ -4636,9 +4641,6 @@ static void b43_wireless_core_exit(struc
+ 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
+ 		return;
+ 
+-	/* Unregister HW RNG driver */
+-	b43_rng_exit(dev->wl);
+-
+ 	b43_set_status(dev, B43_STAT_UNINIT);
+ 
+ 	/* Stop the microcode PSM. */
+@@ -4795,9 +4797,6 @@ static int b43_wireless_core_init(struct
+ 
+ 	b43_set_status(dev, B43_STAT_INITIALIZED);
+ 
+-	/* Register HW RNG driver */
+-	b43_rng_init(dev->wl);
+-
+ out:
+ 	return err;
+ 
+@@ -5464,6 +5463,9 @@ static void b43_bcma_remove(struct bcma_
+ 
+ 	b43_one_core_detach(wldev->dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	b43_leds_unregister(wl);
+ 
+ 	ieee80211_free_hw(wl->hw);
+@@ -5541,6 +5543,9 @@ static void b43_ssb_remove(struct ssb_de
+ 
+ 	b43_one_core_detach(dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	if (list_empty(&wl->devlist)) {
+ 		b43_leds_unregister(wl);
+ 		/* Last core on the chip unregistered.
+
+
