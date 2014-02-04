@@ -1,172 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaBDNyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 08:54:18 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61394 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaBDNyP (ORCPT
+	id S1753568AbaBDN5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 08:57:37 -0500
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:44896 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751234AbaBDN5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:54:15 -0500
-Message-ID: <52F0F0ED.5090005@gmail.com>
-Date: Tue, 04 Feb 2014 21:53:49 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 4 Feb 2014 08:57:35 -0500
+Message-ID: <52F0F1CB.9000207@overkiz.com>
+Date: Tue, 04 Feb 2014 14:57:31 +0100
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
- to CONFIG_KRETPROBES enabled area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com>
-In-Reply-To: <52F0EB30.2070401@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>, nicolas.ferre@atmel.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v2] at91: pmc: Fixed irq's name allocation for programmable
+ clocks
+References: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com> <1391502105-24612-1-git-send-email-jjhiblot@traphandler.com> <52F0A7F5.6070201@overkiz.com>
+In-Reply-To: <52F0A7F5.6070201@overkiz.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 17425834333287512153
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 09:29 PM, Masami Hiramatsu wrote:
-> (2014/02/04 21:07), Chen Gang wrote:
->> On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
->>> (2014/02/04 14:16), Chen Gang wrote:
->>>> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
->>>> are useless, so need move them to CONFIG_KPROBES enabled area.
->>>>
->>>> Now, *kretprobe* generic implementation are all implemented in 2 files:
->>>>
->>>>  - in "include/linux/kprobes.h":
->>>>
->>>>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
->>>>      move some *kprobe() declarations which kretprobe*() call, to front.
->>>>      not touch kretprobe_blacklist[] which is architecture's variable.
->>>>
->>>>  - in "kernel/kprobes.c":
->>>>
->>>>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
->>>>      define kretprobe_flush_task() to let kprobe_flush_task() call.
->>>>      define init_kretprobes() to let init_kprobes() call.
->>>>
->>>> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
->>>> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
->>>> bzImage and Modpost modules) under x86_64 defconfig.
->>>
->>> Thanks for the fix! and I have some comments below.
->>>
->>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>> ---
->>>>  include/linux/kprobes.h |  58 +++++----
->>>>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
->>>>  2 files changed, 222 insertions(+), 164 deletions(-)
->>>>
->>>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
->>>> index 925eaf2..c0d1212 100644
->>>> --- a/include/linux/kprobes.h
->>>> +++ b/include/linux/kprobes.h
->>>> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
->>>>   return 1;
->>>>  }
->>>>  
->>>> +int disable_kprobe(struct kprobe *kp);
->>>> +int enable_kprobe(struct kprobe *kp);
->>>> +
->>>> +void dump_kprobe(struct kprobe *kp);
->>>> +
->>>> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
->>>> +
->>>>  #ifdef CONFIG_KRETPROBES
->>>>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
->>>>     struct pt_regs *regs);
->>>>  extern int arch_trampoline_kprobe(struct kprobe *p);
->>>> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
->>>> + unsigned long orig_ret_address, unsigned long trampoline_address)
->>>> +{
->>>> + if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->>>> + printk(KERN_ERR
->>>> + "kretprobe BUG!: Processing kretprobe %p @ %p\n",
->>>> + ri->rp, ri->rp->kp.addr);
->>>> + BUG();
->>>> + }
->>>> +}
->>>> +static inline int disable_kretprobe(struct kretprobe *rp)
->>>> +{
->>>> + return disable_kprobe(&rp->kp);
->>>> +}
->>>> +static inline int enable_kretprobe(struct kretprobe *rp)
->>>> +{
->>>> + return enable_kprobe(&rp->kp);
->>>> +}
->>>> +
->>>>  #else /* CONFIG_KRETPROBES */
->>>>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
->>>>   struct pt_regs *regs)
->>>> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
->>>>  {
->>>>   return 0;
->>>>  }
->>>> -#endif /* CONFIG_KRETPROBES */
->>>> -
->>>> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
->>>> -
->>>>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
->>>>   unsigned long orig_ret_address, unsigned long trampoline_address)
->>>>  {
->>>> - if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
->>>> - printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
->>>> - ri->rp, ri->rp->kp.addr);
->>>> - BUG();
->>>> - }
->>>>  }
->>>> +static inline int disable_kretprobe(struct kretprobe *rp)
->>>> +{
->>>> + return 0;
->>>> +}
->>>> +static inline int enable_kretprobe(struct kretprobe *rp)
->>>> +{
->>>> + return 0;
->>>> +}
->>>
->>> No, these should returns -EINVAL or -ENOSYS, since these are user API.
+Hello, Mike,
+
+Please do not take this patch: the work of JJ to fix the prog clk 
+prepare bug
+will remove the irq handling from the prog clk driver, as a result, we won't
+have to request the irq anymore.
+
+Sorry for the inconvenience.
+
+Best Regards,
+
+Boris
+
+On 04/02/2014 09:42, Boris BREZILLON wrote:
+> Hello JJ,
+>
+> Sorry for the noise (I added Mike in the CC list).
+>
+> BTW, thanks for fixing this bug.
+>
+> Mike, could you take this bug fix for the next 3.14 release ?
+>
+> Best Regards,
+>
+> Boris
+>
+> On 04/02/2014 09:21, Jean-Jacques Hiblot wrote:
+>> The name provided to request_irq() must be valid until the irq is 
+>> released.
+>> This patch stores the name in the internal data structure.
 >>
->> OK, thanks, it sounds reasonable to me.
+>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>   drivers/clk/at91/clk-programmable.c | 6 +++---
+>>   1 file changed, 3 insertions(+), 3 deletions(-)
 >>
->>> Anyway, I don't think those inlined functions to be changed, because
->>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
->>> be ignored.
->>>
->>
->> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
->> disable_kretprobe(), and enable_kretprobe() are not ignored.
-> 
-> Really? where are they called? I mean, those functions do not have
-> any instance unless your module uses it (but that is not what the kernel
-> itself should help).
-> 
+>> diff --git a/drivers/clk/at91/clk-programmable.c 
+>> b/drivers/clk/at91/clk-programmable.c
+>> index 8e242c7..799b75c 100644
+>> --- a/drivers/clk/at91/clk-programmable.c
+>> +++ b/drivers/clk/at91/clk-programmable.c
+>> @@ -44,6 +44,7 @@ struct clk_programmable {
+>>       u8 css;
+>>       u8 pres;
+>>       u8 slckmck;
+>> +    char irq_name[11];
+>>       const struct clk_programmable_layout *layout;
+>>   };
+>>   @@ -247,7 +248,6 @@ at91_clk_register_programmable(struct at91_pmc 
+>> *pmc, unsigned int irq,
+>>       struct clk_programmable *prog;
+>>       struct clk *clk = NULL;
+>>       struct clk_init_data init;
+>> -    char irq_name[11];
+>>         if (id > PROG_ID_MAX)
+>>           return ERR_PTR(-EINVAL);
+>> @@ -269,9 +269,9 @@ at91_clk_register_programmable(struct at91_pmc 
+>> *pmc, unsigned int irq,
+>>       prog->irq = irq;
+>>       init_waitqueue_head(&prog->wait);
+>>       irq_set_status_flags(prog->irq, IRQ_NOAUTOEN);
+>> -    snprintf(irq_name, sizeof(irq_name), "clk-prog%d", id);
+>> +    snprintf(prog->irq_name, sizeof(prog->irq_name), "clk-prog%d", id);
+>>       ret = request_irq(prog->irq, clk_programmable_irq_handler,
+>> -              IRQF_TRIGGER_HIGH, irq_name, prog);
+>> +              IRQF_TRIGGER_HIGH, prog->irq_name, prog);
+>>       if (ret)
+>>           return ERR_PTR(ret);
+>
 
-If what you said correct (I guess so), for me, we still need let them in
-CONFIG_KRETPROBES area, and without any dummy outside, just like another
-*kprobe* static inline functions have done in "include/linux/kprobes.h".
-
-
->>
->>> So, I think you don't need to change kprobes.h.
->>>
->>
->> So "kprobes.h" still need be changed.
-> 
-> Is there any concrete problem you have?
-> 
-
-No, I just read the code, no additional really issues.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
