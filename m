@@ -1,130 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995AbaBDXmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:42:12 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:18780 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754792AbaBDXmL (ORCPT
+	id S1755054AbaBDXpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:45:33 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64626 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933236AbaBDXpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:42:11 -0500
-Date: Tue, 4 Feb 2014 18:42:08 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Smith <dsmith@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Igor Zhbanov <i.zhbanov@samsung.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFC][PATCH] exec: Fix use after free of tracepoint
- trace_sched_process_exec
-Message-ID: <20140204184208.6f4f22a8@gandalf.local.home>
-In-Reply-To: <20140204182852.43ffa442@gandalf.local.home>
-References: <20140204120500.041b5175@gandalf.local.home>
-	<CA+55aFyObrVGXqncNboMzybeevPBOtAUcn-zur_B26VHJ1CEcg@mail.gmail.com>
-	<20140204182852.43ffa442@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 4 Feb 2014 18:45:31 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH v7 2/3] trivial: PM / Hibernate: clean up checkpatch in hibernate.c
+Date: Wed, 05 Feb 2014 00:59:59 +0100
+Message-ID: <4317708.1544moHa91@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20140204223733.30015.23993@capellas-linux>
+References: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org> <9487103.2jnJmCRm9n@vostro.rjw.lan> <20140204223733.30015.23993@capellas-linux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Feb 2014 18:28:52 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tuesday, February 04, 2014 02:37:33 PM Sebastian Capella wrote:
+> Quoting Rafael J. Wysocki (2014-02-04 13:36:29)
+> > Well, this isn't a trivial patch.
+> 
+> I'll remove the trivial, thanks!
+> 
+> Quoting Rafael J. Wysocki (2014-02-04 13:36:29)
+> > On Tuesday, February 04, 2014 12:43:50 PM Sebastian Capella wrote:
+> > > +     while (1)
+> > > +             ;
+> > Please remove this change from the patch.  I don't care about checkpatch
+> > complaining here.
+> > > +     while (1)
+> > > +             ;
+> > Same here.
+> 
+> Will do, thanks!
+> 
+> > > @@ -765,7 +762,7 @@ static int software_resume(void)
+> > >       if (isdigit(resume_file[0]) && resume_wait) {
+> > >               int partno;
+> > >               while (!get_gendisk(swsusp_resume_device, &partno))
+> > > -                     msleep(10);
+> > > +                     msleep(20);
+> > 
+> > That's the reason why it is not trivial.
+> > 
+> > First, the change being made doesn't belong in this patch.
+> 
+> Thanks I'll separate it if it remains.
+> 
+> > Second, what's the problem with the original value?
+> 
+> The warning from checkpatch implies that it's misleading to
+> msleep < 20ms since msleep is using msec_to_jiffies + 1 for
+> the duration.  In any case, this is polling for devices discovery to
+> complete.  It is used when resumewait is specified on the command
+> line telling hibernate to wait for the resume device to appear.
 
+What checkpatch is saying is about *new* code, not the existing one.
 
-> At least this patch keeps the ugliness with the code. I could even
-> encapsulate that in a static inline function to remove the ugliness out
-> of exec_binprm().
+You need to have a *reason* to change the way the existing code works
+and the above explanation doesn't sound like a good one to me in this
+particular case.
 
-New version that moves all the ugliness into a static inline helper
-function.
+> > > -static ssize_t image_size_show(struct kobject *kobj, struct kobj_attribute *attr,
+> > > +static ssize_t image_size_show(struct kobject *kobj,
+> > > +                            struct kobj_attribute *attr,
+> > Why can't you leave the code as is here?
+> > > -static ssize_t image_size_store(struct kobject *kobj, struct kobj_attribute *attr,
+> > > +static ssize_t image_size_store(struct kobject *kobj,
+> > > +                             struct kobj_attribute *attr,
+> > And here?
+> 
+> Purely long line cleanup. (>80 colunms)
 
-I'll start testing this and the added helper, and if there's no
-problems or arguments from you, I'll post them tomorrow.
+Please don't do any >80 columns cleanups in any patches you want me to apply.
+Seriously.  This is irritating and unuseful.
 
--- Steve
+And if you don't want checkpatch to complain about that, please send a patch
+to modify checkpatch accordingly.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index e1529b4..06101e9 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1407,6 +1407,36 @@ int search_binary_handler(struct linux_binprm *bprm)
- }
- EXPORT_SYMBOL(search_binary_handler);
- 
-+static __always_inline void
-+do_trace_sched_process_exec(pid_t old_pid, struct linux_binprm *bprm)
-+{
-+	char *pathname;
-+	char *tmp;
-+
-+	/*
-+	 * We can't use bprm->filename here because it can be freed
-+	 * within the search_binary_handler() call (by mm_release()
-+	 * waking up the cgroup call_usermodehelper parent, that
-+	 * will free what bprm->filename points to). Instead, if
-+	 * the sched_process_exec tracepoint is enabled, we need
-+	 * to create the pathname from the file dentry pointer.
-+	 */
-+	if (tracepoint_enabled(sched_process_exec)) {
-+		tmp = (char*)__get_free_page(GFP_TEMPORARY);
-+		if (tmp)
-+			pathname = dentry_path_raw(bprm->file->f_dentry,
-+						   tmp, PAGE_SIZE);
-+		else
-+			pathname = ERR_PTR(-ENOMEM);
-+		if (IS_ERR(pathname))
-+			trace_sched_process_exec(current, old_pid,
-+						 "//error-no-mem");
-+		else
-+			trace_sched_process_exec(current, old_pid, pathname);
-+		free_page((unsigned long)tmp);
-+	}
-+}
-+
- static int exec_binprm(struct linux_binprm *bprm)
- {
- 	pid_t old_pid, old_vpid;
-@@ -1421,7 +1451,7 @@ static int exec_binprm(struct linux_binprm *bprm)
- 	ret = search_binary_handler(bprm);
- 	if (ret >= 0) {
- 		audit_bprm(bprm);
--		trace_sched_process_exec(current, old_pid, bprm);
-+		do_trace_sched_process_exec(old_pid, bprm);
- 		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
- 		proc_exec_connector(current);
- 	}
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 67e1bbf..520ba9a 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -282,18 +282,18 @@ TRACE_EVENT(sched_process_fork,
- TRACE_EVENT(sched_process_exec,
- 
- 	TP_PROTO(struct task_struct *p, pid_t old_pid,
--		 struct linux_binprm *bprm),
-+		 const char *pathname),
- 
--	TP_ARGS(p, old_pid, bprm),
-+	TP_ARGS(p, old_pid, pathname),
- 
- 	TP_STRUCT__entry(
--		__string(	filename,	bprm->filename	)
-+		__string(	filename,	pathname	)
- 		__field(	pid_t,		pid		)
- 		__field(	pid_t,		old_pid		)
- 	),
- 
- 	TP_fast_assign(
--		__assign_str(filename, bprm->filename);
-+		__assign_str(filename, pathname);
- 		__entry->pid		= p->pid;
- 		__entry->old_pid	= old_pid;
- 	),
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
