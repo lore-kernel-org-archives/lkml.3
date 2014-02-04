@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935065AbaBDVdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:33:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57332 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934591AbaBDVMN (ORCPT
+	id S935067AbaBDVdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:33:21 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:50655 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934591AbaBDVdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:13 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 3.13 094/140] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
-Date: Tue,  4 Feb 2014 13:11:21 -0800
-Message-Id: <20140204211039.662803403@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 16:33:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,782,1384300800"; 
+   d="scan'208";a="97968399"
+Message-ID: <52F15C85.7050200@citrix.com>
+Date: Tue, 4 Feb 2014 21:32:53 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Wei Liu <wei.liu2@citrix.com>, Zoltan Kiss <zoltan.kiss@schaman.hu>
+CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michael Chan <mchan@broadcom.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Subject: Re: igb and bnx2: "NETDEV WATCHDOG: transmit queue timed out" when
+ skb has huge linear buffer
+References: <52EAA31B.1090606@schaman.hu> <20140131185619.GB27553@zion.uk.xensource.com>
+In-Reply-To: <20140131185619.GB27553@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On 31/01/14 18:56, Wei Liu wrote:
+> On Thu, Jan 30, 2014 at 07:08:11PM +0000, Zoltan Kiss wrote:
+>> Hi,
+>>
+>> I've experienced some queue timeout problems mentioned in the
+>> subject with igb and bnx2 cards. I haven't seen them on other cards
+>> so far. I'm using XenServer with 3.10 Dom0 kernel (however igb were
+>> already updated to latest version), and there are Windows guests
+>> sending data through these cards. I noticed these problems in XenRT
+>> test runs, and I know that they usually mean some lost interrupt
+>> problem or other hardware error, but in my case they started to
+>> appear more often, and they are likely connected to my netback grant
+>> mapping patches. These patches causing skb's with huge (~64kb)
+>> linear buffers to appear more often.
+>> The reason for that is an old problem in the ring protocol:
+>> originally the maximum amount of slots were linked to MAX_SKB_FRAGS,
+>> as every slot ended up as a frag of the skb. When this value were
+>> changed, netback had to cope with the situation by coalescing the
+>> packets into fewer frags.
+>> My patch series take a different approach: the leftover slots
+>> (pages) were assigned to a new skb's frags, and that skb were
+>> stashed to the frag_list of the first one. Then, before sending it
+>> off to the stack it calls skb = skb_copy_expand(skb, 0, 0,
+>> GFP_ATOMIC, __GFP_NOWARN), which basically creates a new skb and
+>> copied all the data into it. As far as I understood, it put
+>> everything into the linear buffer, which can amount to 64KB at most.
+>> The original skb are freed then, and this new one were sent to the
+>> stack.
+>
+> Just my two cents, if it is this case, you can try to call
+> skb_copy_expand on every SKB netback receives to manually create SKBs
+> with ~64KB linear buffer to see how it goes...
 
-------------------
+I've tried it, and it did break everything in a similar way, so that's a 
+strong clue that the problem lies here. I've rewrote that part of my 
+patches to do less modification, based on Malcolm's idea: netback pulls 
+the first frag into linear buffer, then moves a frag from the frag_list 
+skb into the first one. That seems to help, but so far I have only one 
+relevant test result, I'm waiting for more results.
 
-From: Peter Huewe <PeterHuewe@gmx.de>
-
-commit 85c5e0d451125c6ddb78663972e40af810b83644 upstream.
-
-The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
-in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
-thus converting the signed value into an unsigned value, resulting
-in 'burstcnt' being huge.
-Changing the type to u32 only does not solve the problem as the signed
-value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
-same effect.
-
-Thus
--> Change type of burstcnt to u32 (the return type of get_burstcount)
--> Add a check for the return value of 'get_burstcount' and propagate a
-potential error.
-
-This makes also sense in the 'I2C_READ_DATA' case, where the there is no
-signed/unsigned conversion.
-
-found by coverity
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/char/tpm/tpm_i2c_stm_st33.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *ch
- 			     &chip->vendor.read_queue)
- 	       == 0) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		len = min_t(int, burstcnt, count - size);
- 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
- 		size += len;
-@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(
- static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 			    size_t len)
- {
--	u32 status, burstcnt = 0, i, size;
-+	u32 status, i, size;
-+	int burstcnt = 0;
- 	int ret;
- 	u8 data;
- 	struct i2c_client *client;
-@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_c
- 
- 	for (i = 0; i < len - 1;) {
- 		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			return burstcnt;
- 		size = min_t(int, len - i - 1, burstcnt);
- 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
- 		if (ret < 0)
-
+Zoli
 
