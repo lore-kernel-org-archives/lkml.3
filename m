@@ -1,103 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaBDO6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:58:54 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:56948 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751234AbaBDO6v (ORCPT
+	id S1754327AbaBDO72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:59:28 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40188 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050AbaBDO70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:58:51 -0500
-Message-ID: <52F10024.4030201@free-electrons.com>
-Date: Tue, 04 Feb 2014 15:58:44 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 4 Feb 2014 09:59:26 -0500
+Message-ID: <52F1004B.90307@parallels.com>
+Date: Tue, 4 Feb 2014 18:59:23 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Willy Tarreau <w@1wt.eu>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com> <52EA2875.5020807@free-electrons.com> <52EA2A04.2070109@gmail.com> <20140203231603.GA11613@1wt.eu> <52F02816.1050708@gmail.com>
-In-Reply-To: <52F02816.1050708@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <penberg@kernel.org>,
+        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH 3/8] memcg, slab: never try to merge memcg caches
+References: <cover.1391356789.git.vdavydov@parallels.com> <27c4e7d7fb6b788b66995d2523225ef2dcbc6431.1391356789.git.vdavydov@parallels.com> <20140204145210.GH4890@dhcp22.suse.cz>
+In-Reply-To: <20140204145210.GH4890@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 00:36, Sebastian Hesselbarth wrote:
-> On 02/04/2014 12:16 AM, Willy Tarreau wrote:
->> On Thu, Jan 30, 2014 at 11:31:32AM +0100, Sebastian Hesselbarth wrote:
->>> On 01/30/14 11:24, Gregory CLEMENT wrote:
->>>> On 25/01/2014 19:19, Sebastian Hesselbarth wrote:
->>>>> This patch set fixes clk init order that went upside-down with
->>>>> v3.14. I haven't really investigated what caused this, but I assume
->>>>> it is related with DT node reordering by addresses.
->>>>
->>>> Can you explain what kind of issue do you observe?
->>>
->>> Sure. When probing CLK_OF_DECLAREed clock drivers, clock-gating driver
->>> gets registered before core-clocks. It therefore cannot resolve it's
->>> parent clock name for tclk and all clock gates will have no parent
->>> clock.
->>>
->>> Usually, you'll see in some drivers (e.g. v643xx_eth) div_by_zero errors
->>> poping up, when they calculate a frequency division factors based on
->>> clock gate frequency, which should have been tclk but is 0 now.
+On 02/04/2014 06:52 PM, Michal Hocko wrote:
+> On Sun 02-02-14 20:33:48, Vladimir Davydov wrote:
+>> Suppose we are creating memcg cache A that could be merged with cache B
+>> of the same memcg. Since any memcg cache has the same parameters as its
+>> parent cache, parent caches PA and PB of memcg caches A and B must be
+>> mergeable too. That means PA was merged with PB on creation or vice
+>> versa, i.e. PA = PB. From that it follows that A = B, and we couldn't
+>> even try to create cache B, because it already exists - a contradiction.
+> I cannot tell I understand the above but I am totally not sure about the
+> statement bellow.
+>
+>> So let's remove unused code responsible for merging memcg caches.
+> How come the code was unused? find_mergeable called cache_match_memcg...
+
+Oh, sorry for misleading comment. I mean the code handling merging of
+per-memcg caches is useless, AFAIU: if we find an alias for a per-memcg
+cache on kmem_cache_create_memcg(), the parent of the found alias must
+be the same as the parent_cache passed to kmem_cache_create_memcg(), but
+if it were so, we would never proceed to the memcg cache creation,
+because the cache we want to create already exists.
+
+Thanks.
+
+>
+>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+>> ---
+>>  mm/slab.h        |   21 ++++-----------------
+>>  mm/slab_common.c |    8 +++++---
+>>  mm/slub.c        |   19 +++++++++----------
+>>  3 files changed, 18 insertions(+), 30 deletions(-)
 >>
->> Well, to be honnest, I have no idea whether your patch is the right way
->> to fix the problem or not, but what I can say is that it fixes such oopses
->> that appear in 3.14-rc1 when booting on mirabox :
+>> diff --git a/mm/slab.h b/mm/slab.h
+>> index 8184a7cde272..3045316b7c9d 100644
+>> --- a/mm/slab.h
+>> +++ b/mm/slab.h
+>> @@ -55,12 +55,12 @@ extern void create_boot_cache(struct kmem_cache *, const char *name,
+>>  struct mem_cgroup;
+>>  #ifdef CONFIG_SLUB
+>>  struct kmem_cache *
+>> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+>> -		   size_t align, unsigned long flags, void (*ctor)(void *));
+>> +__kmem_cache_alias(const char *name, size_t size, size_t align,
+>> +		   unsigned long flags, void (*ctor)(void *));
+>>  #else
+>>  static inline struct kmem_cache *
+>> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+>> -		   size_t align, unsigned long flags, void (*ctor)(void *))
+>> +__kmem_cache_alias(const char *name, size_t size, size_t align,
+>> +		   unsigned long flags, void (*ctor)(void *))
+>>  { return NULL; }
+>>  #endif
+>>  
+>> @@ -119,13 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+>>  	return !s->memcg_params || s->memcg_params->is_root_cache;
+>>  }
+>>  
+>> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
+>> -				     struct mem_cgroup *memcg)
+>> -{
+>> -	return (is_root_cache(cachep) && !memcg) ||
+>> -				(cachep->memcg_params->memcg == memcg);
+>> -}
+>> -
+>>  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+>>  {
+>>  	if (!is_root_cache(s))
+>> @@ -204,12 +197,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+>>  	return true;
+>>  }
+>>  
+>> -static inline bool cache_match_memcg(struct kmem_cache *cachep,
+>> -				     struct mem_cgroup *memcg)
+>> -{
+>> -	return true;
+>> -}
+>> -
+>>  static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+>>  {
+>>  }
+>> diff --git a/mm/slab_common.c b/mm/slab_common.c
+>> index 152d9b118b7a..a75834bb966d 100644
+>> --- a/mm/slab_common.c
+>> +++ b/mm/slab_common.c
+>> @@ -200,9 +200,11 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>>  	 */
+>>  	flags &= CACHE_CREATE_MASK;
+>>  
+>> -	s = __kmem_cache_alias(memcg, name, size, align, flags, ctor);
+>> -	if (s)
+>> -		goto out_unlock;
+>> +	if (!memcg) {
+>> +		s = __kmem_cache_alias(name, size, align, flags, ctor);
+>> +		if (s)
+>> +			goto out_unlock;
+>> +	}
+>>  
+>>  	err = -ENOMEM;
+>>  	s = kmem_cache_zalloc(kmem_cache, GFP_KERNEL);
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 2b1a6970e46f..962abfdfde06 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -3686,9 +3686,8 @@ static int slab_unmergeable(struct kmem_cache *s)
+>>  	return 0;
+>>  }
+>>  
+>> -static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>> -		size_t align, unsigned long flags, const char *name,
+>> -		void (*ctor)(void *))
+>> +static struct kmem_cache *find_mergeable(size_t size, size_t align,
+>> +		unsigned long flags, const char *name, void (*ctor)(void *))
+>>  {
+>>  	struct kmem_cache *s;
+>>  
+>> @@ -3707,11 +3706,14 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>>  		if (slab_unmergeable(s))
+>>  			continue;
+>>  
+>> +		if (!is_root_cache(s))
+>> +			continue;
+>> +
+>>  		if (size > s->size)
+>>  			continue;
+>>  
+>>  		if ((flags & SLUB_MERGE_SAME) != (s->flags & SLUB_MERGE_SAME))
+>> -				continue;
+>> +			continue;
+>>  		/*
+>>  		 * Check if alignment is compatible.
+>>  		 * Courtesy of Adrian Drzewiecki
+>> @@ -3722,21 +3724,18 @@ static struct kmem_cache *find_mergeable(struct mem_cgroup *memcg, size_t size,
+>>  		if (s->size - size >= sizeof(void *))
+>>  			continue;
+>>  
+>> -		if (!cache_match_memcg(s, memcg))
+>> -			continue;
+>> -
+>>  		return s;
+>>  	}
+>>  	return NULL;
+>>  }
+>>  
+>>  struct kmem_cache *
+>> -__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+>> -		   size_t align, unsigned long flags, void (*ctor)(void *))
+>> +__kmem_cache_alias(const char *name, size_t size, size_t align,
+>> +		   unsigned long flags, void (*ctor)(void *))
+>>  {
+>>  	struct kmem_cache *s;
+>>  
+>> -	s = find_mergeable(memcg, size, align, flags, name, ctor);
+>> +	s = find_mergeable(size, align, flags, name, ctor);
+>>  	if (s) {
+>>  		s->refcount++;
+>>  		/*
+>> -- 
+>> 1.7.10.4
 >>
->> Division by zero in kernel.
-> 
-> Willy,
-> 
-> you have hit exactly the reason for this patch.
-> 
-> [...]
->> By the way, seeing how often a trick related to the DT is nedeed to solve an
->> oops or a panic, I'm really scared that this whole DT mess is just becoming
->> the exact copy of the ACPI mess (but 15 years later) and we'll experience the
->> same horrible things :-( Sometimes I'm wondering whether there are not too
->> many structural things put in there...
-> 
-> To be precise, it is not a DT-related trick at all. You would have the
-> same issues, if you'd register those "low-level" (i.e. early) drivers
-> without DT. It is more about missing init ordering, here.
-> 
-> There could be different ways to work this out, even elevating clock
-> devices to "normal" probed devices could be possible. I am sure, in the
-> long run, it will work out, but now this is a fix for v3.14-rc1.
-> 
-> @Jason, Andrew, Gregory, Thomas:
-> Now that v3.14 is out, anything against taking this in as fixes for rc1?
 
-Hi Sebastian,
-
-I am not found of this solution I still think it should be done
-at framework level. However we still have this very annoying issue,
-and this fix is better than nothing. So I am not against taking this
-for rc1 with the hope that it will be later revert with a better
-solution.
-
-
-Thanks,
-
-Gregory
-
-
-> 
-> Sebastian
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
