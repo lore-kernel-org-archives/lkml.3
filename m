@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936083AbaBDXDt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:03:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
+	id S936541AbaBDXEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:04:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933063AbaBDVB4 (ORCPT
+	with ESMTP id S933032AbaBDVBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:01:56 -0500
+	Tue, 4 Feb 2014 16:01:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Pham <jackp@codeaurora.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.10 019/104] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
-Date: Tue,  4 Feb 2014 13:01:22 -0800
-Message-Id: <20140204210223.284309779@linuxfoundation.org>
+        Jun zhang <zhang.jun92@zte.com.cn>
+Subject: [PATCH 3.10 014/104] usb: option: add new zte 3g modem pids to option driver
+Date: Tue,  4 Feb 2014 13:01:17 -0800
+Message-Id: <20140204210223.147155636@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,37 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Pham <jackp@codeaurora.org>
+From: =?UTF-8?q?=E5=BC=A0=E5=90=9B?= <zjn77777@163.com>
 
-commit 9005355af23856c55a5538c9024355785424821b upstream.
+commit 4d90b819ae4c7ea8fd5e2bb7edc68c0f334be2e4 upstream.
 
-If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
-doesn't try to free a bogus PCI IRQ or dereference an invalid
-pci_dev when the xHCI device is actually a platform_device.
-
-This patch should be backported to kernels as old as 3.9, that
-contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
-"xhci-plat: Don't enable legacy PCI interrupts."
-
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Jun zhang <zhang.jun92@zte.com.cn>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/option.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -315,6 +315,9 @@ static void xhci_cleanup_msix(struct xhc
- 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
- 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1447,6 +1447,17 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xffe9, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8b, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8c, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8d, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8e, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8f, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff90, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff91, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff92, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
  
-+	if (xhci->quirks & XHCI_PLAT)
-+		return;
-+
- 	xhci_free_irq(xhci);
- 
- 	if (xhci->msix_entries) {
+ 	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
 
 
