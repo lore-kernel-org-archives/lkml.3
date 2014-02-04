@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934808AbaBDVM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:12:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57300 "EHLO
+	id S934884AbaBDVNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:13:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57432 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934574AbaBDVMI (ORCPT
+	with ESMTP id S934666AbaBDVM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:08 -0500
+	Tue, 4 Feb 2014 16:12:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 088/140] ALSA: hda - automute via amp instead of pinctl on some AIO models
-Date: Tue,  4 Feb 2014 13:11:15 -0800
-Message-Id: <20140204211039.475723540@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.13 072/140] s390/uapi: fix struct statfs64 definition
+Date: Tue,  4 Feb 2014 13:10:59 -0800
+Message-Id: <20140204211039.017992895@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,85 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 493a52a9b6645f61954580c7d4bd52fa62110934 upstream.
+commit 4e078146dff728f4865270a47710d57797e81eb6 upstream.
 
-On some AIO (All In One) models with the codec alc668
-(Vendor ID: 0x10ec0668) on it, when we plug a headphone into the jack,
-the system will switch the output to headphone and set the speaker to
-automute as well as change the speaker Pin-ctls from 0x40 to 0x00,
-this will bring loud noise to the headphone.
+With b8668fd0a7e1b59f "s390/uapi: change struct statfs[64] member types
+to unsigned values" the size of a couple of struct statfs64 member got
+incorrectly changed from 64 to 32 bit for 32 bit builds.
 
-I tried to disable the corresponding EAPD, but it did not help to
-eliminate the noise.
+Fix this by changing the type of couple of struct statfs64 members from
+unsigned long to unsigned long long.
+The definition of struct compat_statfs64 was correct however.
 
-According to Takashi's suggestion, we use amp operation to replace the
-pinctl modification for the automute, this really eliminate the noise.
-
-BugLink: https://bugs.launchpad.net/bugs/1268468
-Cc: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ arch/s390/include/uapi/asm/statfs.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3526,6 +3526,15 @@ static void alc_fixup_headset_mode_alc25
- 	alc_fixup_headset_mode(codec, fix, action);
- }
- 
-+static void alc_fixup_auto_mute_via_amp(struct hda_codec *codec,
-+					const struct hda_fixup *fix, int action)
-+{
-+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
-+		struct alc_spec *spec = codec->spec;
-+		spec->gen.auto_mute_via_amp = 1;
-+	}
-+}
-+
- static void alc_fixup_headset_mode_alc668(struct hda_codec *codec,
- 				const struct hda_fixup *fix, int action)
- {
-@@ -4841,6 +4850,7 @@ enum {
- 	ALC662_FIXUP_BASS_CHMAP,
- 	ALC662_FIXUP_BASS_1A,
- 	ALC662_FIXUP_BASS_1A_CHMAP,
-+	ALC668_FIXUP_AUTO_MUTE,
- };
- 
- static const struct hda_fixup alc662_fixups[] = {
-@@ -5001,6 +5011,12 @@ static const struct hda_fixup alc662_fix
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc_fixup_inv_dmic_0x12,
- 	},
-+	[ALC668_FIXUP_AUTO_MUTE] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = alc_fixup_auto_mute_via_amp,
-+		.chained = true,
-+		.chain_id = ALC668_FIXUP_DELL_MIC_NO_PRESENCE
-+	},
- 	[ALC668_FIXUP_DELL_MIC_NO_PRESENCE] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = (const struct hda_pintbl[]) {
-@@ -5046,11 +5062,11 @@ static const struct snd_pci_quirk alc662
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
--	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
--	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_AUTO_MUTE),
-+	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_AUTO_MUTE),
- 	SND_PCI_QUIRK(0x1028, 0x0625, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0626, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
--	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_AUTO_MUTE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
- 	SND_PCI_QUIRK(0x1043, 0x11cd, "Asus N550", ALC662_FIXUP_BASS_1A_CHMAP),
- 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_BASS_CHMAP),
+--- a/arch/s390/include/uapi/asm/statfs.h
++++ b/arch/s390/include/uapi/asm/statfs.h
+@@ -35,11 +35,11 @@ struct statfs {
+ struct statfs64 {
+ 	unsigned int	f_type;
+ 	unsigned int	f_bsize;
+-	unsigned long	f_blocks;
+-	unsigned long	f_bfree;
+-	unsigned long	f_bavail;
+-	unsigned long	f_files;
+-	unsigned long	f_ffree;
++	unsigned long long f_blocks;
++	unsigned long long f_bfree;
++	unsigned long long f_bavail;
++	unsigned long long f_files;
++	unsigned long long f_ffree;
+ 	__kernel_fsid_t f_fsid;
+ 	unsigned int	f_namelen;
+ 	unsigned int	f_frsize;
 
 
