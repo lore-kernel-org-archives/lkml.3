@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935848AbaBDWYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:24:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56611 "EHLO
+	id S933895AbaBDVIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:08:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933809AbaBDVIW (ORCPT
+	with ESMTP id S933809AbaBDVIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:22 -0500
+	Tue, 4 Feb 2014 16:08:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heinrich Siebmanns <H.Siebmanns@t-online.de>,
-        Colin Leitner <colin.leitner@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.12 022/133] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
-Date: Tue,  4 Feb 2014 13:07:03 -0800
-Message-Id: <20140204210737.653796786@linuxfoundation.org>
+        Aristeu Rozanski <aris@redhat.com>, mark gross <mark.gross@intel.com>,
+        Borislav Petkov <bp@suse.de>, Jean Delvare <jdelvare@suse.de>
+Subject: [PATCH 3.12 005/133] e752x_edac: Fix pci_dev usage count
+Date: Tue,  4 Feb 2014 13:06:46 -0800
+Message-Id: <20140204210737.171513931@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,67 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Aristeu Rozanski <aris@redhat.com>
 
-commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
+commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
 
-Genuine FTDI chips support only CS7/8. A previous fix in commit
-8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
-setting") enforced this limitation and reported it back to userspace.
+In case the device 0, function 1 is not found using pci_get_device(),
+pci_scan_single_device() will be used but, differently than
+pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
+count on the pci_dev and after few module removals and loads the pci_dev
+will be freed.
 
-However, certain types of smartcard readers depend on specific
-driver behaviour that requests 0 data bits (not 5) to change into a
-different operating mode if CS5 has been set.
-
-This patch reenables this behaviour for all FTDI devices.
-
-Tagged to be added to stable, because it affects a lot of users of
-embedded systems which rely on these readers to work properly.
-
-Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+Reviewed-by: mark gross <mark.gross@intel.com>
+Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Jean Delvare <jdelvare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/edac/e752x_edac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2116,10 +2116,20 @@ static void ftdi_set_termios(struct tty_
- 	}
+--- a/drivers/edac/e752x_edac.c
++++ b/drivers/edac/e752x_edac.c
+@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev
+ 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				pvt->dev_info->err_dev, pvt->bridge_ck);
  
- 	/*
--	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
-+	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
- 	 * support CS5/6 and revert the CSIZE setting instead.
-+	 *
-+	 * CS5 however is used to control some smartcard readers which abuse
-+	 * this limitation to switch modes. Original FTDI chips fall back to
-+	 * eight data bits.
-+	 *
-+	 * TODO: Implement a quirk to only allow this with mentioned
-+	 *       readers. One I know of (Argolis Smartreader V1)
-+	 *       returns "USB smartcard server" as iInterface string.
-+	 *       The vendor didn't bother with a custom VID/PID of
-+	 *       course.
- 	 */
--	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
-+	if (C_CSIZE(tty) == CS6) {
- 		dev_warn(ddev, "requested CSIZE setting not supported\n");
+-	if (pvt->bridge_ck == NULL)
++	if (pvt->bridge_ck == NULL) {
+ 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
+ 							PCI_DEVFN(0, 1));
++		pci_dev_get(pvt->bridge_ck);
++	}
  
- 		termios->c_cflag &= ~CSIZE;
-@@ -2166,6 +2176,9 @@ no_skip:
- 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
- 	}
- 	switch (cflag & CSIZE) {
-+	case CS5:
-+		dev_dbg(ddev, "Setting CS5 quirk\n");
-+		break;
- 	case CS7:
- 		urb_value |= 7;
- 		dev_dbg(ddev, "Setting CS7\n");
+ 	if (pvt->bridge_ck == NULL) {
+ 		e752x_printk(KERN_ERR, "error reporting device not found:"
 
 
