@@ -1,95 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaBDD4A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 22:56:00 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:52497 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaBDDz6 (ORCPT
+	id S1753584AbaBDEAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 23:00:15 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:36575 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427AbaBDEAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 22:55:58 -0500
+	Mon, 3 Feb 2014 23:00:12 -0500
+Date: Mon, 3 Feb 2014 19:59:30 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+In-Reply-To: <52F05827.1040401@oracle.com>
+Message-ID: <alpine.LSU.2.11.1402031949450.29601@eggly.anvils>
+References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop> <5166CEDD.9050301@oracle.com> <20130411151323.89D40E0085@blue.fi.intel.com> <5166D355.2060103@oracle.com> <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org>
+ <5179CF8F.7000702@oracle.com> <20130426020101.GA21162@redhat.com> <52F05827.1040401@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1391224618-3794-11-git-send-email-acourbot@nvidia.com>
-References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>
-	<1391224618-3794-11-git-send-email-acourbot@nvidia.com>
-Date: Tue, 4 Feb 2014 13:55:57 +1000
-Message-ID: <CACAvsv4T=TRb05OtkxG=t1+Ou9=Of9c-ALWkHJjKYpNi2aGs5Q@mail.gmail.com>
-Subject: Re: [RFC 10/16] drm/nouveau/timer: skip calibration on GK20A
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Eric Brower <ebrower@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 1, 2014 at 1:16 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> GK20A's timer is directly attached to the system timer and cannot be
-> calibrated. Skip the calibration phase on that chip since the
-> corresponding registers do not exist.
-Just a curiosity:  What timer resolution does the HW initialise at?
+On Mon, 3 Feb 2014, Sasha Levin wrote:
+> On 04/25/2013 10:01 PM, Dave Jones wrote:
+> > On Thu, Apr 25, 2013 at 08:51:27PM -0400, Sasha Levin wrote:
+> >   > On 04/24/2013 06:46 PM, Andrew Morton wrote:
+> >   > > Guys, did this get fixed?
+> >   >
+> >   > I've stopped seeing that during fuzzing, so I guess that it got fixed
+> > somehow...
+> > 
+> > We've had reports of users hitting this in 3.8
+> > 
+> > eg:
+> > https://bugzilla.redhat.com/show_bug.cgi?id=947985
+> > https://bugzilla.redhat.com/show_bug.cgi?id=956730
+> > 
+> > I'm sure there are other reports of it too.
+> > 
+> > Would be good if we can figure out what fixed it (if it is actually fixed)
+> > for backporting to stable
+> 
+> It's been a while (7 months?), but this one is back...
+> 
+> Just hit it again with today's -next:
+> 
+> [  762.701278] BUG: unable to handle kernel paging request at
+> ffff88009eae6000
+> [  762.702462] IP: [<ffffffff81ae8455>] copy_page_rep+0x5/0x10
+> [  762.703369] PGD 84bb067 PUD 22fa81067 PMD 22f98b067 PTE 800000009eae6060
+> [  762.704411] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  762.705873] Dumping ftrace buffer:
+> [  762.707606]    (ftrace buffer empty)
+> [  762.708311] Modules linked in:
+> [  762.708762] CPU: 16 PID: 17920 Comm: trinity-c16 Tainted: G        W
+> 3.13.0-next-2
+> 0140203-sasha-00007-gf4985e2 #23
+> [  762.710135] task: ffff8801ac358000 ti: ffff880199234000 task.ti:
+> ffff880199234000
+> [  762.710135] RIP: 0010:[<ffffffff81ae8455>]  [<ffffffff81ae8455>]
+> copy_page_rep+0x5/0x
+> 10
+> [  762.710135] RSP: 0018:ffff880199235c90  EFLAGS: 00010286
+> [  762.710135] RAX: 0000000080000002 RBX: 00000000056db980 RCX:
+> 0000000000000200
+> [  762.710135] RDX: ffff8801ac358000 RSI: ffff88009eae6000 RDI:
+> ffff88015b6e6000
+> [  762.710135] RBP: ffff880199235cd8 R08: 0000000000000000 R09:
+> 0000000000000000
+> [  762.710135] R10: 0000000000000001 R11: 0000000000000000 R12:
+> 00000000027ab980
+> [  762.710135] R13: 0000000000000200 R14: 00000000000000e6 R15:
+> ffff880000000000
+> [  762.710135] FS:  00007fb0804e1700(0000) GS:ffff88003da00000(0000)
+> knlGS:0000000000000
+> 000
+> [  762.710135] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  762.710135] CR2: ffff88009eae6000 CR3: 0000000199225000 CR4:
+> 00000000000006e0
+> [  762.710135] Stack:
+> [  762.710135]  ffffffff81298995 ffff8801a841ae00 ffff88003d084520
+> ffff880199227090
+> [  762.710135]  800000009ea008e5 ffff8801a841ae00 ffffea00027a8000
+> ffff880199227090
+> [  762.710135]  ffffea00056d8000 ffff880199235d58 ffffffff812d7260
+> ffff880199235cf8
+> [  762.710135] Call Trace:
+> [  762.710135]  [<ffffffff81298995>] ? copy_user_huge_page+0x1a5/0x210
+> [  762.710135]  [<ffffffff812d7260>] do_huge_pmd_wp_page+0x3d0/0x650
+> [  762.710135]  [<ffffffff811a308e>] ? put_lock_stats+0xe/0x30
+> [  762.710135]  [<ffffffff8129b511>] __handle_mm_fault+0x2b1/0x3d0
+> [  762.710135]  [<ffffffff8129b763>] handle_mm_fault+0x133/0x1c0
+> [  762.710135]  [<ffffffff8129bcf8>] __get_user_pages+0x438/0x630
+> [  762.710135]  [<ffffffff811a308e>] ? put_lock_stats+0xe/0x30
+> [  762.710135]  [<ffffffff8129cfc4>] __mlock_vma_pages_range+0xd4/0xe0
+> [  762.710135]  [<ffffffff8129d0e0>] __mm_populate+0x110/0x190
+> [  762.710135]  [<ffffffff8129dcd0>] SyS_mlockall+0x160/0x1b0
+> [  762.710135]  [<ffffffff84450650>] tracesys+0xdd/0xe2
+> [  762.710135] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08
+> 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30 c0 c3 b9 00 02 00 00 <f3>
+> 48 a5 c3 0f 1f 80 00
+> 00 00 00 eb ee 66 66 66 90 66 66 66 90
+> [  762.710135] RIP  [<ffffffff81ae8455>] copy_page_rep+0x5/0x10
+> [  762.710135]  RSP <ffff880199235c90>
+> [  762.710135] CR2: ffff88009eae6000
 
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c | 19 +++++++++++++------
->  1 file changed, 13 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-> index c0bdd10..822fe0d 100644
-> --- a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-> +++ b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-> @@ -185,6 +185,10 @@ nv04_timer_init(struct nouveau_object *object)
->         if (ret)
->                 return ret;
->
-> +       /* gk20a does not have the calibration registers */
-> +       if (device->chipset == 0xea)
-> +               goto skip_clk_init;
-> +
->         /* aim for 31.25MHz, which gives us nanosecond timestamps */
->         d = 1000000 / 32;
->
-> @@ -235,20 +239,23 @@ nv04_timer_init(struct nouveau_object *object)
->                 d >>= 1;
->         }
->
-> -       /* restore the time before suspend */
-> -       lo = priv->suspend_time;
-> -       hi = (priv->suspend_time >> 32);
-> -
->         nv_debug(priv, "input frequency : %dHz\n", f);
->         nv_debug(priv, "input multiplier: %d\n", m);
->         nv_debug(priv, "numerator       : 0x%08x\n", n);
->         nv_debug(priv, "denominator     : 0x%08x\n", d);
->         nv_debug(priv, "timer frequency : %dHz\n", (f * m) * d / n);
-> -       nv_debug(priv, "time low        : 0x%08x\n", lo);
-> -       nv_debug(priv, "time high       : 0x%08x\n", hi);
->
->         nv_wr32(priv, NV04_PTIMER_NUMERATOR, n);
->         nv_wr32(priv, NV04_PTIMER_DENOMINATOR, d);
-> +
-> +skip_clk_init:
-> +       /* restore the time before suspend */
-> +       lo = priv->suspend_time;
-> +       hi = (priv->suspend_time >> 32);
-> +
-> +       nv_debug(priv, "time low        : 0x%08x\n", lo);
-> +       nv_debug(priv, "time high       : 0x%08x\n", hi);
-> +
->         nv_wr32(priv, NV04_PTIMER_INTR_0, 0xffffffff);
->         nv_wr32(priv, NV04_PTIMER_INTR_EN_0, 0x00000000);
->         nv_wr32(priv, NV04_PTIMER_TIME_1, hi);
-> --
-> 1.8.5.3
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Here's what I suggested about that one in eecc1e426d68
+"thp: fix copy_page_rep GPF by testing is_huge_zero_pmd once only":
+Note: this is not the same issue as trinity's DEBUG_PAGEALLOC BUG
+in copy_page_rep with RSI: ffff88009c422000, reported by Sasha Levin
+in https://lkml.org/lkml/2013/3/29/103.  I believe that one is due
+to the source page being split, and a tail page freed, while copy
+is in progress; and not a problem without DEBUG_PAGEALLOC, since
+the pmd_same check will prevent a miscopy from being made visible.
+
+It could be fixed by additional locking, or by taking an additional
+reference on every tail page, in the DEBUG_PAGEALLOC case (we wouldn't
+want to add to the overhead in the normal case).  I didn't feel very
+motivated to uglify the code in that way just for DEBUG_PAGEALLOC and
+trinity: if it only comes up once in seven months, I'm inclined to
+live with it myself, but you may have a different perspective.
+
+Hugh
