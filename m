@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935190AbaBDVrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:47:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57130 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934414AbaBDVLb (ORCPT
+	id S935370AbaBDVrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:47:10 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:55932 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934414AbaBDVrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:31 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 042/140] iwlwifi: pcie: enable oscillator for L1 exit
-Date: Tue,  4 Feb 2014 13:10:29 -0800
-Message-Id: <20140204211038.165100423@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 16:47:05 -0500
+Date: Tue, 4 Feb 2014 13:47:04 -0800 (PST)
+From: Arvind Kumar <arvindkumar@vmware.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Message-ID: <1720135544.11645858.1391550424291.JavaMail.root@vmware.com>
+In-Reply-To: <9a6fa1d91c1f23ee0bbde7c854ce03f22054345a.1391512266.git.agordeev@redhat.com>
+References: <cover.1391512266.git.agordeev@redhat.com> <9a6fa1d91c1f23ee0bbde7c854ce03f22054345a.1391512266.git.agordeev@redhat.com>
+Subject: Re: [PATCH 22/22] vmw_pvscsi: Use pci_enable_msix_range()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.163.68]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF26 (Linux)/8.0.3_GA_5664)
+Thread-Topic: vmw_pvscsi: Use pci_enable_msix_range()
+Thread-Index: BheLR+W8STzvdRCj1nzb4Oqgr+x6vg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+Looks fine to me.
 
-------------------
+Acked-by: Arvind Kumar <arvindkumar@vmware.com>
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Thanks!
+Arvind
 
-commit 2d93aee152b1758a94a18fe15d72153ba73b5679 upstream.
+----- Original Message -----
+From: "Alexander Gordeev" <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Alexander Gordeev" <agordeev@redhat.com>, "Arvind Kumar" <arvindkumar@vmware.com>, pv-drivers@vmware.com, linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Sent: Tuesday, February 4, 2014 3:17:08 AM
+Subject: [PATCH 22/22] vmw_pvscsi: Use pci_enable_msix_range()
 
-Enabling the oscillator consumes slightly more power (100uA)
-but allows to make sure that we exit from L1 on time.
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range() and pci_enable_msix_range()
+interfaces.
 
-Not doing so might lead to a PCIe specification violation
-since we might wake up from L1 at the wrong time.
-This issue has been identified on 3160 and 7260 only.
-On older NICs L1 off is not enabled, on newer NICs (7265),
-the issue is fixed.
-
-When the bug occurs the user sees that the NIC has
-disappeared from the PCI bridge, any access to the device
-returns 0xff.
-
-This fixes:
-	https://bugzilla.kernel.org/show_bug.cgi?id=64541
-
-and has been extensively discussed here:
-	http://markmail.org/thread/mfmpzqt3r333n4bo
-
-Fixes: 99cd47142399 ("iwlwifi: add 7000 series device configuration")
-Reported-and-tested-by: wzyboy <wzyboy@wzyboy.org>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Arvind Kumar <arvindkumar@vmware.com>
+Cc: pv-drivers@vmware.com
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
 ---
- drivers/net/wireless/iwlwifi/iwl-prph.h   |    4 ++++
- drivers/net/wireless/iwlwifi/pcie/trans.c |   22 ++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+ drivers/scsi/vmw_pvscsi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-prph.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
-@@ -274,4 +274,8 @@ static inline unsigned int SCD_QUEUE_STA
+diff --git a/drivers/scsi/vmw_pvscsi.c b/drivers/scsi/vmw_pvscsi.c
+index b9755ec..c521f8e 100644
+--- a/drivers/scsi/vmw_pvscsi.c
++++ b/drivers/scsi/vmw_pvscsi.c
+@@ -1078,8 +1078,8 @@ static int pvscsi_setup_msix(const struct pvscsi_adapter *adapter,
+ 	struct msix_entry entry = { 0, PVSCSI_VECTOR_COMPLETION };
+ 	int ret;
  
- /*********************** END TX SCHEDULER *************************************/
+-	ret = pci_enable_msix(adapter->dev, &entry, 1);
+-	if (ret)
++	ret = pci_enable_msix_range(adapter->dev, &entry, 1, 1);
++	if (ret < 0)
+ 		return ret;
  
-+/* Oscillator clock */
-+#define OSC_CLK				(0xa04068)
-+#define OSC_CLK_FORCE_CONTROL		(0x8)
-+
- #endif				/* __iwl_prph_h__ */
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -206,6 +206,28 @@ static int iwl_pcie_apm_init(struct iwl_
- 		goto out;
- 	}
- 
-+	if (trans->cfg->host_interrupt_operation_mode) {
-+		/*
-+		 * This is a bit of an abuse - This is needed for 7260 / 3160
-+		 * only check host_interrupt_operation_mode even if this is
-+		 * not related to host_interrupt_operation_mode.
-+		 *
-+		 * Enable the oscillator to count wake up time for L1 exit. This
-+		 * consumes slightly more power (100uA) - but allows to be sure
-+		 * that we wake up from L1 on time.
-+		 *
-+		 * This looks weird: read twice the same register, discard the
-+		 * value, set a bit, and yet again, read that same register
-+		 * just to discard the value. But that's the way the hardware
-+		 * seems to like it.
-+		 */
-+		iwl_read_prph(trans, OSC_CLK);
-+		iwl_read_prph(trans, OSC_CLK);
-+		iwl_set_bits_prph(trans, OSC_CLK, OSC_CLK_FORCE_CONTROL);
-+		iwl_read_prph(trans, OSC_CLK);
-+		iwl_read_prph(trans, OSC_CLK);
-+	}
-+
- 	/*
- 	 * Enable DMA clock and wait for it to stabilize.
- 	 *
-
-
+ 	*irq = entry.vector;
+-- 
+1.7.7.6
