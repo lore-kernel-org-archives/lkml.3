@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935562AbaBDWF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:05:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56870 "EHLO
+	id S935594AbaBDWGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:06:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933916AbaBDVJL (ORCPT
+	with ESMTP id S934113AbaBDVJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:11 -0500
+	Tue, 4 Feb 2014 16:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.12 069/133] s390/uapi: fix struct statfs64 definition
-Date: Tue,  4 Feb 2014 13:07:50 -0800
-Message-Id: <20140204210738.978017152@linuxfoundation.org>
+        Bob Falken <NetFestivalHaveFun@gmx.com>,
+        Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
+        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 104/133] net: avoid reference counter overflows on fib_rules in multicast forwarding
+Date: Tue,  4 Feb 2014 13:08:25 -0800
+Message-Id: <20140204210739.972378613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,44 +33,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 4e078146dff728f4865270a47710d57797e81eb6 upstream.
+[ Upstream commit 95f4a45de1a0f172b35451fc52283290adb21f6e ]
 
-With b8668fd0a7e1b59f "s390/uapi: change struct statfs[64] member types
-to unsigned values" the size of a couple of struct statfs64 member got
-incorrectly changed from 64 to 32 bit for 32 bit builds.
+Bob Falken reported that after 4G packets, multicast forwarding stopped
+working. This was because of a rule reference counter overflow which
+freed the rule as soon as the overflow happend.
 
-Fix this by changing the type of couple of struct statfs64 members from
-unsigned long to unsigned long long.
-The definition of struct compat_statfs64 was correct however.
+This patch solves this by adding the FIB_LOOKUP_NOREF flag to
+fib_rules_lookup calls. This is safe even from non-rcu locked sections
+as in this case the flag only implies not taking a reference to the rule,
+which we don't need at all.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Rules only hold references to the namespace, which are guaranteed to be
+available during the call of the non-rcu protected function reg_vif_xmit
+because of the interface reference which itself holds a reference to
+the net namespace.
+
+Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
+Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
+Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/s390/include/uapi/asm/statfs.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/ipv4/ipmr.c  |    7 +++++--
+ net/ipv6/ip6mr.c |    7 +++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/arch/s390/include/uapi/asm/statfs.h
-+++ b/arch/s390/include/uapi/asm/statfs.h
-@@ -35,11 +35,11 @@ struct statfs {
- struct statfs64 {
- 	unsigned int	f_type;
- 	unsigned int	f_bsize;
--	unsigned long	f_blocks;
--	unsigned long	f_bfree;
--	unsigned long	f_bavail;
--	unsigned long	f_files;
--	unsigned long	f_ffree;
-+	unsigned long long f_blocks;
-+	unsigned long long f_bfree;
-+	unsigned long long f_bavail;
-+	unsigned long long f_files;
-+	unsigned long long f_ffree;
- 	__kernel_fsid_t f_fsid;
- 	unsigned int	f_namelen;
- 	unsigned int	f_frsize;
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -157,9 +157,12 @@ static struct mr_table *ipmr_get_table(s
+ static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
+ 			   struct mr_table **mrt)
+ {
+-	struct ipmr_result res;
+-	struct fib_lookup_arg arg = { .result = &res, };
+ 	int err;
++	struct ipmr_result res;
++	struct fib_lookup_arg arg = {
++		.result = &res,
++		.flags = FIB_LOOKUP_NOREF,
++	};
+ 
+ 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
+ 			       flowi4_to_flowi(flp4), 0, &arg);
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -141,9 +141,12 @@ static struct mr6_table *ip6mr_get_table
+ static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
+ 			    struct mr6_table **mrt)
+ {
+-	struct ip6mr_result res;
+-	struct fib_lookup_arg arg = { .result = &res, };
+ 	int err;
++	struct ip6mr_result res;
++	struct fib_lookup_arg arg = {
++		.result = &res,
++		.flags = FIB_LOOKUP_NOREF,
++	};
+ 
+ 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
+ 			       flowi6_to_flowi(flp6), 0, &arg);
 
 
