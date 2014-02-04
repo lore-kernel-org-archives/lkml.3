@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935162AbaBDV1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:27:40 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54728 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935148AbaBDV1e (ORCPT
+	id S935148AbaBDV2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:28:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57437 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933555AbaBDVM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:27:34 -0500
-Date: Tue, 4 Feb 2014 13:27:32 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] fdtable: Avoid triggering OOMs from alloc_fdmem
-In-Reply-To: <871tzirdwf.fsf@xmission.com>
-Message-ID: <alpine.DEB.2.02.1402041312410.26019@chino.kir.corp.google.com>
-References: <87r47jsb2p.fsf@xmission.com> <1391530721.4301.8.camel@edumazet-glaptop2.roam.corp.google.com> <871tzirdwf.fsf@xmission.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Feb 2014 16:12:28 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maximilian Attems <maks@stro.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.13 073/140] parport: parport_pc: remove double PCI ID for NetMos
+Date: Tue,  4 Feb 2014 13:11:00 -0800
+Message-Id: <20140204211039.046618003@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
+References: <20140204211036.967663852@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Feb 2014, Eric W. Biederman wrote:
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-> My gut feel says if there is a code path that has __GFP_NOWARN and
-> because of PAGE_ALLOC_COSTLY_ORDER we loop forever then there is
-> something fishy going on.
-> 
+------------------
 
-The __GFP_NOWARN without __GFP_NORETRY in alloc_fdmem() is pointless 
-because we already know that the allocation is PAGE_ALLOC_COSTLY_ORDER or 
-smaller.  That function encodes specific knowledge of the page allocator's 
-implementation so it leads me to believe that __GFP_NOWARN was intended to 
-be __GFP_NORETRY from the start.  Otherwise, it's just set pointlessly and 
-specifically allows for the oom killing that you're now reporting.  Since 
-it can fallback to vmalloc() after exhausting all of the page allocator's 
-capabilities, the __GFP_NOWARN|__GFP_NORETRY seems entirely appropriate.
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-The vmalloc() has never been called in this function because of the 
-infinite loop in kmalloc() because of its allocation context, but it 
-definitely seems better than oom killing something.
+commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
 
-Acked-by: David Rientjes <rientjes@google.com>
+In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+was at the v2.4.26 time frame. The patch made into 2.6.14.
+Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+NetMOS based PCI cards providing serial and parallel ports") which made
+into v2.6.9-rc1.
+Now we have two different entries for the same PCI id.
+I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+0x1000 / 0x0020 so it should match PCI_ANY).
 
-> I would love to hear some people who are more current on the mm
-> subsystem than I am chime in.  It might be that the darn fix is going to
-> be to teach __alloc_pages_slowpath to not loop forever, unless order == 0.
+While here I also drop the entry for titan_1284p2 which is the same as
+netmos_9815.
 
-It doesn't loop forever, it will either return NULL because of its 
-allocation context or the oom killer will kill something, even for order-3 
-allocations.  In the case that you've modified, you have sane fallback 
-behavior that can be utilized rather than the oom killer and __GFP_NORETRY 
-was reasonable from the start.
+Cc: Maximilian Attems <maks@stro.at>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The question is simple enough: do we want to change 
-PAGE_ALLOC_COSTLY_ORDER to be smaller so that order-3 does return NULL 
-without oom killing?  Perhaps there's an argument to be made that does 
-exactly that, but by not setting __GFP_NORETRY you are really demanding 
-order-3 memory at the time you allocate it and are willing to accept the 
-consequences to free that memory.  Should we make everything except for 
-order-0 inherently __GFP_NORETRY and introduce a replacement __GFP_RETRY?  
-That's doable as well, but it would be a massive effort.
+---
+ drivers/parport/parport_pc.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2600,8 +2600,6 @@ enum parport_pc_pci_cards {
+ 	syba_2p_epp,
+ 	syba_1p_ecp,
+ 	titan_010l,
+-	titan_1284p1,
+-	titan_1284p2,
+ 	avlab_1p,
+ 	avlab_2p,
+ 	oxsemi_952,
+@@ -2660,8 +2658,6 @@ static struct parport_pc_pci {
+ 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
+ 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
+ 	/* titan_010l */		{ 1, { { 3, -1 }, } },
+-	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
+-	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
+ 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
+ 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
+@@ -2677,8 +2673,8 @@ static struct parport_pc_pci {
+ 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
+ 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
+-	/* netmos_9805 */               { 1, { { 0, -1 }, } },
+-	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
++	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
++	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
+ 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
+@@ -2722,8 +2718,6 @@ static const struct pci_device_id parpor
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
+ 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
+-	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
+-	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
+ 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
+ 	/* AFAVLAB_TK9902 */
+ 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
+
+
