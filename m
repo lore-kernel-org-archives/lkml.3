@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaBDRIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:08:42 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:49960 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786AbaBDRIj (ORCPT
+	id S1754827AbaBDRJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:09:44 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:41539 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778AbaBDRJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:08:39 -0500
-Date: Tue, 4 Feb 2014 17:08:32 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Matt Porter <mporter@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Tim Kryger <tim.kryger@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] mfd: add bcm59056 pmu driver
-Message-ID: <20140204170832.GA5196@lee--X1>
-References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
- <1391516352-32359-4-git-send-email-mporter@linaro.org>
- <20140204132951.GE13529@lee--X1>
- <20140204143119.GA4627@beef>
- <20140204165906.GC22609@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140204165906.GC22609@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Feb 2014 12:09:41 -0500
+From: kosaki.motohiro@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org
+Subject: [PATCH] __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
+Date: Tue,  4 Feb 2014 12:09:36 -0500
+Message-Id: <1391533776-2425-1-git-send-email-kosaki.motohiro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +static struct i2c_driver bcm59056_i2c_driver = {
-> > > > +	.driver = {
-> > > > +		   .name = "bcm59056",
-> > > > +		   .owner = THIS_MODULE,
-> > > > +		   .of_match_table = of_match_ptr(bcm59056_of_match),
-> 
-> > > No need to use of_match_ptr() here.
-> 
-> > Will remove.
-> 
-> What using of_match_ptr() should do is allow the compiler to figure out
-> that the table isn't used when DT is disabled and discard it without
-> ifdefs.  Not sure if that actually works yet but that's the idea.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Right, but I'm guessing that as there is no support for platform data
-then this device(s) is going to be DT only? If that's the case perhaps
-a 'depends OF' might be in order. If that's not the case then I'm more
-than happy to leave the of_match_ptr() in.
+To use spin_{un}lock_irq is dangerous if caller disabled interrupt.
+During aio buffer migration, we have a possibility to see the
+following call stack.
 
+aio_migratepage  [disable interrupt]
+  migrate_page_copy
+    clear_page_dirty_for_io
+      set_page_dirty
+        __set_page_dirty_buffers
+          __set_page_dirty
+            spin_lock_irq
+
+This mean, current aio migration is a deadlockable. spin_lock_irqsave
+is a safer alternative and we should use it.
+
+Reported-by: David Rientjes rientjes@google.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: stable@vger.kernel.org
+---
+ fs/buffer.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 651dba1..27265a8 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -654,14 +654,16 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+ static void __set_page_dirty(struct page *page,
+ 		struct address_space *mapping, int warn)
+ {
+-	spin_lock_irq(&mapping->tree_lock);
++	unsigned long flags;
++
++	spin_lock_irqsave(&mapping->tree_lock, flags);
+ 	if (page->mapping) {	/* Race with truncate? */
+ 		WARN_ON_ONCE(warn && !PageUptodate(page));
+ 		account_page_dirtied(page, mapping);
+ 		radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 	}
+-	spin_unlock_irq(&mapping->tree_lock);
++	spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+ }
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.1
+
