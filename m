@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaBDStJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 13:49:09 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:52815 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753502AbaBDStG convert rfc822-to-8bit (ORCPT
+	id S1754863AbaBDSth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 13:49:37 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35429 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192AbaBDSte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 13:49:06 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Grant Likely <grant.likely@linaro.org>, arm@kernel.org
-Cc: Rob Herring <robherring2@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Subject: Re: [PATCH v4] of: add functions to count number of elements in a property
-Date: Tue, 04 Feb 2014 19:48:17 +0100
-Message-ID: <13514940.URVnEJ4NF0@phil>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140204173034.2D899C4050F@trevor.secretlab.ca>
-References: <27256277.YJ687suYy5@phil> <CAL_JsqJord1OOjwcKk1jqF5o+XO3uw+Lc4ATtQacgwZWAoQq1g@mail.gmail.com> <20140204173034.2D899C4050F@trevor.secretlab.ca>
+	Tue, 4 Feb 2014 13:49:34 -0500
+Date: Tue, 4 Feb 2014 18:49:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-mmc@vger.kernel.org
+Message-ID: <20140204184909.GT22609@sirena.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9LnWyBss4uQTlezA"
+Content-Disposition: inline
+In-Reply-To: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 00/17] amba: PM fixups for amba bus and some amba drivers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
 
-On Tuesday, 4. February 2014 17:30:34 Grant Likely wrote:
-> On Sat, 18 Jan 2014 09:07:30 -0600, Rob Herring <robherring2@gmail.com> 
-wrote:
-> > On Sat, Jan 18, 2014 at 6:02 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > > The need to know the number of array elements in a property is
-> > > a common pattern. To prevent duplication of open-coded implementations
-> > > add a helper static function that also centralises strict sanity
-> > > checking and DTB format details, as well as a set of wrapper functions
-> > > for u8, u16, u32 and u64.
-> > > 
-> > > Suggested-by: Mark Rutland <mark.rutland@arm.com>
-> > > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> > > ---
-> > 
-> > Looks good. Do you plan to convert some users to use this?
-> 
-> I'll take that as an acked-by. Merged, thanks.
+--9LnWyBss4uQTlezA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-before you taking this patch, I was planning on simply sending this as part of 
-my rockchip-smp series - as I'm currently the only user of it :-) .
+On Tue, Feb 04, 2014 at 04:58:41PM +0100, Ulf Hansson wrote:
 
-This going through your tree is most likely the better way, but now I need it 
-to somehow make its way into arm-soc too ... I guess some sort of stable 
-branch arm-soc could pull?
+> The fixes for the amba bus needs to be merged prior to the other, thus I think
+> it could make sense to merge this complete patchset through Russell's tree,
+> if he and the other maintainers think this is okay.
 
+What are the actual dependencies for the SPI bit?  AFAICT it's probably
+the first patch needs the bus updating?
 
-Thanks
-Heiko
+--9LnWyBss4uQTlezA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8TYiAAoJELSic+t+oim9pVoP/R8rI+1Ffz2UfTaJ72AcKLgz
+gZxsn12hQIOOKoB/RXI2qF6zJj09JIsO5u47CkjJ5IaDAmCY1s5sJxqo1o1shwle
+pTWRflDp7esLDdQeitkPlfyzfELmqteUN4flCZHq19bBjN7+lAkgFoAuctJPqN8N
+QsY3qv1K35SkQ4lV6JRUpX7YS5tB6rTqOkUMct30wuDYgDqRGqt8gASl2FT/CIrG
+9kC5teiCunSstqb5zF2jEury7HdeqovRXJA2bAk5jV3ephlyKYboNsDQ+cpRBhrO
+lVzYRJ15g+8GZO1RXikum18YyRyfKPeD4RfQt5BV8ID5Z7S0JcqgmD+6vbBOJo7a
+CRv2OFO+l1czH50UjVyAA3/RUGjiRvScnd6ARLfEqdyb3sXxwltbnxn2Ja71ZRXx
+iYaGu6CKNmjhXL24JBDCDqs3biMwbGiYek8hLh4JSMapsdDnN1DhRV5JDOrHwGuK
+Ug8rflPflwBitCS1fH476MUTT9FDVg93D/RnyvN8t/HTyFj8m8az/6ojurBUK745
+t3UUUGZNvAsIQ/19yLG1Uf2WdUsVD7sLs3cvv95oYJCEd3cklR5eoBB5jqKX48aR
+Saibmy7zsYn7awBLv6NUZBkTkhSbA/h4aAmhafAdLnP7pH8SKhzgCoDPh63LFCZc
+phCnP+GmtkNuvKjagVW1
+=xvOJ
+-----END PGP SIGNATURE-----
+
+--9LnWyBss4uQTlezA--
