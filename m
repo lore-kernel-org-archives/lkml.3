@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934578AbaBDVMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:12:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57154 "EHLO
+	id S934808AbaBDVM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934441AbaBDVLi (ORCPT
+	with ESMTP id S934574AbaBDVMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:38 -0500
+	Tue, 4 Feb 2014 16:12:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.13 025/140] usb: ehci: add freescale imx28 special write register method
-Date: Tue,  4 Feb 2014 13:10:12 -0800
-Message-Id: <20140204211037.681112291@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 088/140] ALSA: hda - automute via amp instead of pinctl on some AIO models
+Date: Tue,  4 Feb 2014 13:11:15 -0800
+Message-Id: <20140204211039.475723540@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,75 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
+commit 493a52a9b6645f61954580c7d4bd52fa62110934 upstream.
 
-According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
-register error issue", All USB register write operations must
-use the ARM SWP instruction. So, we implement a special ehci_write
-for imx28.
+On some AIO (All In One) models with the codec alc668
+(Vendor ID: 0x10ec0668) on it, when we plug a headphone into the jack,
+the system will switch the output to headphone and set the speaker to
+automute as well as change the speaker Pin-ctls from 0x40 to 0x00,
+this will bring loud noise to the headphone.
 
-Discussion for it at below:
-http://marc.info/?l=linux-usb&m=137996395529294&w=2
+I tried to disable the corresponding EAPD, but it did not help to
+eliminate the noise.
 
-Without this patcheset, imx28 works unstable at high AHB bus loading.
-If the bus loading is not high, the imx28 usb can work well at the most
-of time. There is a IC errata for this problem, usually, we consider
-IC errata is a problem not a new feature, and this workaround is needed
-for that, so we need to add them to stable tree 3.11+.
+According to Takashi's suggestion, we use amp operation to replace the
+pinctl modification for the automute, this really eliminate the noise.
 
-Cc: robert.hodaszi@digi.com
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+BugLink: https://bugs.launchpad.net/bugs/1268468
+Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci.h |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -225,6 +225,7 @@ struct ehci_hcd {			/* one per controlle
- 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
- 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
- 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
-+	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
- 
- 	/* required for usb32 quirk */
- 	#define OHCI_CTRL_HCFS          (3 << 6)
-@@ -728,6 +729,18 @@ static inline unsigned int ehci_readl(co
- #endif
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3526,6 +3526,15 @@ static void alc_fixup_headset_mode_alc25
+ 	alc_fixup_headset_mode(codec, fix, action);
  }
  
-+#ifdef CONFIG_SOC_IMX28
-+static inline void imx28_ehci_writel(const unsigned int val,
-+		volatile __u32 __iomem *addr)
++static void alc_fixup_auto_mute_via_amp(struct hda_codec *codec,
++					const struct hda_fixup *fix, int action)
 +{
-+	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		struct alc_spec *spec = codec->spec;
++		spec->gen.auto_mute_via_amp = 1;
++	}
 +}
-+#else
-+static inline void imx28_ehci_writel(const unsigned int val,
-+		volatile __u32 __iomem *addr)
-+{
-+}
-+#endif
- static inline void ehci_writel(const struct ehci_hcd *ehci,
- 		const unsigned int val, __u32 __iomem *regs)
++
+ static void alc_fixup_headset_mode_alc668(struct hda_codec *codec,
+ 				const struct hda_fixup *fix, int action)
  {
-@@ -736,7 +749,10 @@ static inline void ehci_writel(const str
- 		writel_be(val, regs) :
- 		writel(val, regs);
- #else
--	writel(val, regs);
-+	if (ehci->imx28_write_fix)
-+		imx28_ehci_writel(val, regs);
-+	else
-+		writel(val, regs);
- #endif
- }
+@@ -4841,6 +4850,7 @@ enum {
+ 	ALC662_FIXUP_BASS_CHMAP,
+ 	ALC662_FIXUP_BASS_1A,
+ 	ALC662_FIXUP_BASS_1A_CHMAP,
++	ALC668_FIXUP_AUTO_MUTE,
+ };
  
+ static const struct hda_fixup alc662_fixups[] = {
+@@ -5001,6 +5011,12 @@ static const struct hda_fixup alc662_fix
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_inv_dmic_0x12,
+ 	},
++	[ALC668_FIXUP_AUTO_MUTE] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = alc_fixup_auto_mute_via_amp,
++		.chained = true,
++		.chain_id = ALC668_FIXUP_DELL_MIC_NO_PRESENCE
++	},
+ 	[ALC668_FIXUP_DELL_MIC_NO_PRESENCE] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = (const struct hda_pintbl[]) {
+@@ -5046,11 +5062,11 @@ static const struct snd_pci_quirk alc662
+ 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
+ 	SND_PCI_QUIRK(0x1028, 0x05d8, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x05db, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+-	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+-	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0623, "Dell", ALC668_FIXUP_AUTO_MUTE),
++	SND_PCI_QUIRK(0x1028, 0x0624, "Dell", ALC668_FIXUP_AUTO_MUTE),
+ 	SND_PCI_QUIRK(0x1028, 0x0625, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0626, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
+-	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_AUTO_MUTE),
+ 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
+ 	SND_PCI_QUIRK(0x1043, 0x11cd, "Asus N550", ALC662_FIXUP_BASS_1A_CHMAP),
+ 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_BASS_CHMAP),
 
 
