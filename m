@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933941AbaBDVIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56578 "EHLO
+	id S935806AbaBDWTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:19:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933494AbaBDVIO (ORCPT
+	with ESMTP id S933932AbaBDVIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:14 -0500
+	Tue, 4 Feb 2014 16:08:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 040/133] mwifiex: add missing endian conversion for fw_tsf
-Date: Tue,  4 Feb 2014 13:07:21 -0800
-Message-Id: <20140204210738.166072302@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [PATCH 3.12 052/133] staging: vt6656: [BUG] BBvUpdatePreEDThreshold Always set sensitivity on bScanning
+Date: Tue,  4 Feb 2014 13:07:33 -0800
+Message-Id: <20140204210738.504750282@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,41 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
+commit 8f248dae133668bfb8e9379b4b3f0571c858b24a upstream.
 
-It is u64 data received from firmware. Little endian to cpu
-conversion is required here.
+byBBPreEDIndex value is initially 0, this means that from
+cold BBvUpdatePreEDThreshold is never set.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This means that sensitivity may be in an ambiguous state,
+failing to scan any wireless points or at least distant ones.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/scan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/vt6656/baseband.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1681,7 +1681,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		const u8 *ie_buf;
- 		size_t ie_len;
- 		u16 channel = 0;
--		u64 fw_tsf = 0;
-+		__le64 fw_tsf = 0;
- 		u16 beacon_size = 0;
- 		u32 curr_bcn_bytes;
- 		u32 freq;
-@@ -1815,7 +1815,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 					      ie_buf, ie_len, rssi, GFP_KERNEL);
- 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
- 				bss_priv->band = band;
--				bss_priv->fw_tsf = fw_tsf;
-+				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
- 				if (priv->media_connected &&
- 				    !memcmp(bssid,
- 					    priv->curr_bss_params.bss_descriptor
+--- a/drivers/staging/vt6656/baseband.c
++++ b/drivers/staging/vt6656/baseband.c
+@@ -1464,7 +1464,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
+ 
+             if( bScanning )
+             {   // need Max sensitivity //RSSI -69, -70,....
+-                if(pDevice->byBBPreEDIndex == 0) break;
+                 pDevice->byBBPreEDIndex = 0;
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x30); //CR206(0xCE)
+@@ -1607,7 +1606,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
+ 
+             if( bScanning )
+             {   // need Max sensitivity  //RSSI -69, -70, ...
+-                if(pDevice->byBBPreEDIndex == 0) break;
+                 pDevice->byBBPreEDIndex = 0;
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x24); //CR206(0xCE)
+@@ -1759,7 +1757,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
+         case RF_VT3342A0: //RobertYu:20060627, testing table
+             if( bScanning )
+             {   // need Max sensitivity  //RSSI -67, -68, ...
+-                if(pDevice->byBBPreEDIndex == 0) break;
+                 pDevice->byBBPreEDIndex = 0;
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
+                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x38); //CR206(0xCE)
 
 
