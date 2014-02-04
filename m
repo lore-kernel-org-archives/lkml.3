@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634AbaBDMsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:48:30 -0500
-Received: from mail.eperm.de ([89.247.134.16]:38170 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754609AbaBDMs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:48:29 -0500
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
-        blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
-        tg@mirbsd.de, sandyinchina@gmail.com
-Subject: [RFC PATCH 0/5] CPU Jitter RNG
-Date: Tue, 04 Feb 2014 13:36:59 +0100
-Message-ID: <2039634.jSmQAS6tdi@myon.chronox.de>
-User-Agent: KMail/4.11.5 (Linux/3.12.8-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754028AbaBDM52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:57:28 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44953 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684AbaBDM50 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 07:57:26 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] backlight: add PWM dependencies
+Date: Tue,  4 Feb 2014 13:57:14 +0100
+Message-Id: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In some compilations the LM3630A and LP855X backlight drivers
+fail like this:
 
-with the previous release of the CPU Jitter RNG ([1]), concerns were raised on 
-the presence of entropy in the CPU execution timing. With this new version of 
-the CPU Jitter RNG, a new noise source based on memory access timings is now 
-added and the concerns raised before are addressed with additional analyses 
-given in [2] section 6.1.
+drivers/built-in.o: In function `lm3630a_pwm_ctrl':
+drivers/video/backlight/lm3630a_bl.c:168: undefined reference to `pwm_config'
+drivers/video/backlight/lm3630a_bl.c:172: undefined reference to `pwm_disable'
+drivers/video/backlight/lm3630a_bl.c:170: undefined reference to `pwm_enable'
+drivers/built-in.o: In function `lp855x_pwm_ctrl':
+drivers/video/backlight/lp855x_bl.c:249: undefined reference to `pwm_config'
+drivers/video/backlight/lp855x_bl.c:253: undefined reference to `pwm_disable'
+drivers/video/backlight/lp855x_bl.c:251: undefined reference to `pwm_enable'
 
-This additional noise source is again covered with extensive testing 
-documented in [2] section 6.2. The test results allowed the explanation of the 
-basics of that memory access noise source.
+This is because both drivers depend on the PWM framework, so
+add this dependency to their Kconfig entries.
 
-To analyze the two noise sources, a bare metal testing program is used as 
-documented in [2] section 6.3. That bare metal testing allows the analysis of 
-the noise source without interference of an OS and interrupts.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/video/backlight/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Furthermore, for the already existent noise source of the CPU execution 
-timing, more analysis of the behavior of the CPU is provided in [2] section 
-6.1. The analysis, however, showed CPU behavior that cannot easily be 
-explained. The testing shows that there is a possibility to eliminate the CPU 
-execution timing jitter for one particular measurement using a serialization 
-instruction. That elimination of timing jitter, however, was not visible when 
-the individual rounds of the RNG were tested. That means that the elimination 
-of timing jitter in one special case did not show any effects on the behavior 
-of the RNG.
-
-The following set of patches integrate the CPU Jitter RNG as a fallback noise 
-source into /dev/random. The reason for using it as a fallback only is the 
-conceptual difference of the CPU Jitter RNG to the other noise sources: all 
-other noise sources are a push mechanism whereas the CPU Jitter RNG works by 
-pulling bits on demand. Due to the speed of the Jitter RNG, it has the 
-capability of monopolizing all other noise sources which is prevented by only 
-invoking it when the lower entropy threshold of the Linux RNG is reached.
-
-Ciao
-Stephan 
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1577419/focus=1586212
-[2] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index 5a3eb2ecb525..0604c3348761 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -371,6 +371,7 @@ config BACKLIGHT_AAT2870
+ config BACKLIGHT_LM3630A
+ 	tristate "Backlight Driver for LM3630A"
+ 	depends on BACKLIGHT_CLASS_DEVICE && I2C
++	depends on PWM
+ 	select REGMAP_I2C
+ 	help
+ 	  This supports TI LM3630A Backlight Driver
+@@ -387,6 +388,7 @@ config BACKLIGHT_LM3639
+ config BACKLIGHT_LP855X
+ 	tristate "Backlight driver for TI LP855X"
+ 	depends on BACKLIGHT_CLASS_DEVICE && I2C
++	depends on PWM
+ 	help
+ 	  This supports TI LP8550, LP8551, LP8552, LP8553, LP8555, LP8556 and
+ 	  LP8557 backlight driver.
 -- 
-| Cui bono? |
+1.8.5.3
+
