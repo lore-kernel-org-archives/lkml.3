@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936449AbaBDW7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:59:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56116 "EHLO
+	id S964932AbaBDW7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:59:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56117 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933109AbaBDVCE (ORCPT
+	with ESMTP id S933056AbaBDVCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:02:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 027/104] rtlwifi: Set the link state
-Date: Tue,  4 Feb 2014 13:01:30 -0800
-Message-Id: <20140204210223.509715192@linuxfoundation.org>
+Subject: [PATCH 3.10 028/104] rtlwifi: rtl8192c: Add new definitions in the dm_common header
+Date: Tue,  4 Feb 2014 13:01:31 -0800
+Message-Id: <20140204210223.537158762@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -31,28 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
+commit c908c74e005de780fddbe8cb6fcd44803f5d4b74 upstream.
 
-The present code fails to set the linked state when an interface is
-added.
+Changes in the gain-control mechanism will require some changes in the header.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/core.c
-+++ b/drivers/net/wireless/rtlwifi/core.c
-@@ -194,6 +194,7 @@ static int rtl_op_add_interface(struct i
- 					rtlpriv->cfg->maps
- 					[RTL_IBSS_INT_MASKS]);
- 		}
-+		mac->link_state = MAC80211_LINKED;
- 		break;
- 	case NL80211_IFTYPE_ADHOC:
- 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
+@@ -91,6 +91,17 @@
+ #define TX_POWER_NEAR_FIELD_THRESH_LVL2		74
+ #define TX_POWER_NEAR_FIELD_THRESH_LVL1		67
+ 
++#define DYNAMIC_FUNC_DISABLE			0x0
++#define DYNAMIC_FUNC_DIG			BIT(0)
++#define DYNAMIC_FUNC_HP				BIT(1)
++#define DYNAMIC_FUNC_SS				BIT(2) /*Tx Power Tracking*/
++#define DYNAMIC_FUNC_BT				BIT(3)
++#define DYNAMIC_FUNC_ANT_DIV			BIT(4)
++
++#define	RSSI_CCK				0
++#define	RSSI_OFDM				1
++#define	RSSI_DEFAULT				2
++
+ struct swat_t {
+ 	u8 failure_cnt;
+ 	u8 try_flag;
+@@ -167,5 +178,8 @@ void rtl92c_phy_lc_calibrate(struct ieee
+ void rtl92c_phy_iq_calibrate(struct ieee80211_hw *hw, bool recovery);
+ void rtl92c_dm_dynamic_txpower(struct ieee80211_hw *hw);
+ void rtl92c_dm_bt_coexist(struct ieee80211_hw *hw);
++void dm_savepowerindex(struct ieee80211_hw *hw);
++void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
++void dm_restorepowerindex(struct ieee80211_hw *hw);
+ 
+ #endif
 
 
