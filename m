@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935448AbaBDVva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:51:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57087 "EHLO
+	id S935246AbaBDVv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:51:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934366AbaBDVLT (ORCPT
+	with ESMTP id S934368AbaBDVLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:11:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        mtosatti@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.13 009/140] x86, kvm: correctly access the KVM_CPUID_FEATURES leaf at 0x40000101
-Date: Tue,  4 Feb 2014 13:09:56 -0800
-Message-Id: <20140204211037.235397739@linuxfoundation.org>
+        Mikhail Zolotaryov <lebon@lebon.org.ua>
+Subject: [PATCH 3.13 022/140] USB: Nokia 502 is an unusual device
+Date: Tue,  4 Feb 2014 13:10:09 -0800
+Message-Id: <20140204211037.598069207@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,71 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Mikhail Zolotaryov <lebon@lebon.org.ua>
 
-commit 77f01bdfa5e55dc19d3eb747181d2730a9bb3ca8 upstream.
+commit 0e16114f2db4838251fb64f3b550996ad3585890 upstream.
 
-When Hyper-V hypervisor leaves are present, KVM must relocate
-its own leaves at 0x40000100, because Windows does not look for
-Hyper-V leaves at indices other than 0x40000000.  In this case,
-the KVM features are at 0x40000101, but the old code would always
-look at 0x40000001.
+The USB storage operation of Nokia Asha 502 Dual SIM smartphone running Asha
+Platform 1.1.1 is unreliable in respect of data consistency (i.e. transfered
+files are corrupted). A similar issue is described here:
+http://discussions.nokia.com/t5/Asha-and-other-Nokia-Series-30/Nokia-301-USB-transfers-and-corrupted-files/td-p/1974170
 
-Fix by using kvm_cpuid_base().  This also requires making the
-function non-inline, since kvm_cpuid_base() is static.
+The workaround is (MAX_SECTORS_64):
+   rmmod usb_storage && modprobe usb_storage quirks=0421:06aa:m
 
-Fixes: 1085ba7f552d84aa8ac0ae903fa8d0cc2ff9f79d
-Cc: mtosatti@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+The patch adds the tested device to the unusual list permanently.
+
+Signed-off-by: Mikhail Zolotaryov <lebon@lebon.org.ua>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_para.h |   11 ++++++-----
- arch/x86/kernel/kvm.c           |    5 +++++
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -85,13 +85,9 @@ static inline long kvm_hypercall4(unsign
- 	return ret;
- }
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
  
--static inline unsigned int kvm_arch_para_features(void)
--{
--	return cpuid_eax(KVM_CPUID_FEATURES);
--}
--
- #ifdef CONFIG_KVM_GUEST
- bool kvm_para_available(void);
-+unsigned int kvm_arch_para_features(void);
- void __init kvm_guest_init(void);
- void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
-@@ -115,6 +111,11 @@ static inline bool kvm_para_available(vo
- {
- 	return 0;
- }
++/* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
++UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
++		"Nokia",
++		"502",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
 +
-+static inline unsigned int kvm_arch_para_features(void)
-+{
-+	return 0;
-+}
- 
- static inline u32 kvm_read_and_reset_pf_reason(void)
- {
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -527,6 +527,11 @@ bool kvm_para_available(void)
- }
- EXPORT_SYMBOL_GPL(kvm_para_available);
- 
-+unsigned int kvm_arch_para_features(void)
-+{
-+	return cpuid_eax(kvm_cpuid_base() | KVM_CPUID_FEATURES);
-+}
-+
- static uint32_t __init kvm_detect(void)
- {
- 	return kvm_cpuid_base();
+ #ifdef NO_SDDR09
+ UNUSUAL_DEV(  0x0436, 0x0005, 0x0100, 0x0100,
+ 		"Microtech",
 
 
