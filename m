@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934537AbaBDVL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:11:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57154 "EHLO
+	id S964793AbaBDVif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:38:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934329AbaBDVLg (ORCPT
+	with ESMTP id S934536AbaBDVL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:36 -0500
+	Tue, 4 Feb 2014 16:11:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 049/140] ath9k: Disable cross-band FCC
-Date: Tue,  4 Feb 2014 13:10:36 -0800
-Message-Id: <20140204211038.358386179@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 3.13 067/140] serial: 8250: enable UART_BUG_NOMSR for Tegra
+Date: Tue,  4 Feb 2014 13:10:54 -0800
+Message-Id: <20140204211038.871863553@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,40 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 1e2f9295f4c657500111514f92a3d3894d0e05b4 upstream.
+commit 3685f19e07802ec4207b52465c408f185b66490e upstream.
 
-Fast Channel Change across bands was enabled for
-AR9462 recently, but this is causing baseband issues.
-Disable it until this feature is tested well. Also,
-remove the feature bit for AR9565 since it is
-a single-band card and doesn't support this feature.
+Tegra chips have 4 or 5 identical UART modules embedded. UARTs C..E have
+their MODEM-control signals tied off to a static state. However UARTs A
+and B can optionally route those signals to/from package pins, depending
+on the exact pinmux configuration.
 
-Reported-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+When these signals are not routed to package pins, false interrupts may
+trigger either temporarily, or permanently, all while not showing up in
+the IIR; it will read as NO_INT. This will eventually lead to the UART
+IRQ being disabled due to unhandled interrupts. When this happens, the
+kernel may print e.g.:
+
+    irq 68: nobody cared (try booting with the "irqpoll" option)
+
+In order to prevent this, enable UART_BUG_NOMSR. This prevents
+UART_IER_MSI from being enabled, which prevents the false interrupts
+from triggering.
+
+In practice, this is not needed under any of the following conditions:
+
+* On Tegra chips after Tegra30, since the HW bug has apparently been
+  fixed.
+
+* On UARTs C..E since their MODEM control signals are tied to the correct
+  static state which doesn't trigger the issue.
+
+* On UARTs A..B if the MODEM control signals are routed out to package
+  pins, since they will then carry valid signals.
+
+However, we ignore these exceptions for now, since they are only relevant
+if a board actually hooks up more than a 4-wire UART, and no currently
+supported board does this. If we ever support a board that does, we can
+refine the algorithm that enables UART_BUG_NOMSR to take those exceptions
+into account, and/or read a flag from DT/... that indicates that the
+board has hooked up and pinmux'd more than a 4-wire UART.
+
+Reported-by: Olof Johansson <olof@lixom.net> # autotester
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/tty/serial/8250/8250_core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -2608,13 +2608,6 @@ int ath9k_hw_fill_cap_info(struct ath_hw
- 	    ah->eep_ops->get_eeprom(ah, EEP_PAPRD))
- 			pCap->hw_caps |= ATH9K_HW_CAP_PAPRD;
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2670,6 +2670,10 @@ static void serial8250_config_port(struc
+ 	if (port->type == PORT_16550A && port->iotype == UPIO_AU)
+ 		up->bugs |= UART_BUG_NOMSR;
  
--	/*
--	 * Fast channel change across bands is available
--	 * only for AR9462 and AR9565.
--	 */
--	if (AR_SREV_9462(ah) || AR_SREV_9565(ah))
--		pCap->hw_caps |= ATH9K_HW_CAP_FCC_BAND_SWITCH;
--
- 	return 0;
- }
++	/* HW bugs may trigger IRQ while IIR == NO_INT */
++	if (port->type == PORT_TEGRA)
++		up->bugs |= UART_BUG_NOMSR;
++
+ 	if (port->type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
+ 		autoconfig_irq(up);
  
 
 
