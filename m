@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026AbaBDVBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:01:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55993 "EHLO
+	id S932963AbaBDVBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:01:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932785AbaBDVAo (ORCPT
+	with ESMTP id S932390AbaBDVA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:44 -0500
+	Tue, 4 Feb 2014 16:00:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH 3.4 29/37] inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
-Date: Tue,  4 Feb 2014 13:01:05 -0800
-Message-Id: <20140204210056.829662932@linuxfoundation.org>
+        Jun zhang <zhang.jun92@zte.com.cn>
+Subject: [PATCH 3.4 05/37] usb: option: add new zte 3g modem pids to option driver
+Date: Tue,  4 Feb 2014 13:00:41 -0800
+Message-Id: <20140204210056.159718053@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -29,62 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: =?UTF-8?q?=E5=BC=A0=E5=90=9B?= <zjn77777@163.com>
 
-[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
+commit 4d90b819ae4c7ea8fd5e2bb7edc68c0f334be2e4 upstream.
 
-Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
-FIN_WAIT2 connections are represented by inet_timewait_sock (not just
-TIME_WAIT). Thus:
-
-(a) We need to iterate through the time_wait buckets if the user wants
-either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
-fin-wait-2" would not return any sockets, even if there were some in
-FIN_WAIT2.)
-
-(b) We need to check tw_substate to see if the user wants to dump
-sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
-given connection is in. (Before fixing this, "ss -nemoi state
-time-wait" would actually return sockets in state FIN_WAIT2.)
-
-An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
-("inet_diag: fix inet_diag_dump_icsk() to use correct state for
-timewait sockets") but that patch is quite different because 3.13 code
-is very different in this area due to the unification of TCP hash
-tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
-
-I tested that this applies cleanly between v3.3 and v3.12, and tested
-that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
-and earlier (though it makes semantic sense), and semantically is not
-the right fix for 3.13 and beyond (as mentioned above).
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Jun zhang <zhang.jun92@zte.com.cn>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/inet_diag.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -941,7 +941,7 @@ next_normal:
- 			++num;
- 		}
+---
+ drivers/usb/serial/option.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1461,6 +1461,17 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xffe9, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8b, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8c, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8d, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8e, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8f, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff90, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff91, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff92, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
  
--		if (r->idiag_states & TCPF_TIME_WAIT) {
-+		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
- 			struct inet_timewait_sock *tw;
- 
- 			inet_twsk_for_each(tw, node,
-@@ -949,6 +949,8 @@ next_normal:
- 
- 				if (num < s_num)
- 					goto next_dying;
-+				if (!(r->idiag_states & (1 << tw->tw_substate)))
-+					goto next_dying;
- 				if (r->sdiag_family != AF_UNSPEC &&
- 						tw->tw_family != r->sdiag_family)
- 					goto next_dying;
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
 
 
