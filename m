@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936410AbaBDWyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:54:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56162 "EHLO
+	id S935927AbaBDWzd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:55:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56151 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933240AbaBDVCS (ORCPT
+	with ESMTP id S932452AbaBDVCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:18 -0500
+	Tue, 4 Feb 2014 16:02:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Ertman <davidx.m.ertman@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 3.10 007/104] e1000e: fix compiler warnings
-Date: Tue,  4 Feb 2014 13:01:10 -0800
-Message-Id: <20140204210222.945902250@linuxfoundation.org>
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Jon Medhurst <tixy@linaro.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 004/104] lib/decompressors: fix "no limit" output buffer length
+Date: Tue,  4 Feb 2014 13:01:07 -0800
+Message-Id: <20140204210222.856933717@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -31,57 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Ertman <davidx.m.ertman@intel.com>
+From: Alexandre Courbot <acourbot@nvidia.com>
 
-commit 9e6c3b63399dd424d33a34e08b77f2cab0b84cdc upstream.
+commit 1431574a1c4c669a0c198e4763627837416e4443 upstream.
 
-This patch is to fix a compiler warning of __bad_udelay due to a value
-of >999 being passed as a parameter to udelay() in the function
-e1000e_phy_has_link_generic().  This affects the gcc compiler when
-it is given a flag of -O3 and the icc compiler.
+When decompressing into memory, the output buffer length is set to some
+arbitrarily high value (0x7fffffff) to indicate the output is, virtually,
+unlimited in size.
 
-This patch is also making the change from mdelay() to msleep() in the
-same function, since it was determined though code inspection that this
-function is never called in atomic context.
+The problem with this is that some platforms have their physical memory at
+high physical addresses (0x80000000 or more), and that the output buffer
+address and its "unlimited" length cannot be added without overflowing.
+An example of this can be found in inflate_fast():
 
-Signed-off-by: David Ertman <davidx.m.ertman@intel.com>
-Acked-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+/* next_out is the output buffer address */
+out = strm->next_out - OFF;
+/* avail_out is the output buffer size. end will overflow if the output
+ * address is >= 0x80000104 */
+end = out + (strm->avail_out - 257);
+
+This has huge consequences on the performance of kernel decompression,
+since the following exit condition of inflate_fast() will be always true:
+
+} while (in < last && out < end);
+
+Indeed, "end" has overflowed and is now always lower than "out".  As a
+result, inflate_fast() will return after processing one single byte of
+input data, and will thus need to be called an unreasonably high number of
+times.  This probably went unnoticed because kernel decompression is fast
+enough even with this issue.
+
+Nonetheless, adjusting the output buffer length in such a way that the
+above pointer arithmetic never overflows results in a kernel decompression
+that is about 3 times faster on affected machines.
+
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Tested-by: Jon Medhurst <tixy@linaro.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/phy.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ lib/decompress_inflate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/intel/e1000e/phy.c
-+++ b/drivers/net/ethernet/intel/e1000e/phy.c
-@@ -1757,19 +1757,23 @@ s32 e1000e_phy_has_link_generic(struct e
- 		 * it across the board.
- 		 */
- 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
--		if (ret_val)
-+		if (ret_val) {
- 			/* If the first read fails, another entity may have
- 			 * ownership of the resources, wait and try again to
- 			 * see if they have relinquished the resources yet.
- 			 */
--			udelay(usec_interval);
-+			if (usec_interval >= 1000)
-+				msleep(usec_interval / 1000);
-+			else
-+				udelay(usec_interval);
-+		}
- 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
- 		if (ret_val)
- 			break;
- 		if (phy_status & BMSR_LSTATUS)
- 			break;
- 		if (usec_interval >= 1000)
--			mdelay(usec_interval / 1000);
-+			msleep(usec_interval / 1000);
- 		else
- 			udelay(usec_interval);
+--- a/lib/decompress_inflate.c
++++ b/lib/decompress_inflate.c
+@@ -48,7 +48,7 @@ STATIC int INIT gunzip(unsigned char *bu
+ 		out_len = 0x8000; /* 32 K */
+ 		out_buf = malloc(out_len);
+ 	} else {
+-		out_len = 0x7fffffff; /* no limit */
++		out_len = ((size_t)~0) - (size_t)out_buf; /* no limit */
  	}
+ 	if (!out_buf) {
+ 		error("Out of memory while allocating output buffer");
 
 
