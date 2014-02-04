@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935649AbaBDWIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:08:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56815 "EHLO
+	id S935151AbaBDWIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:08:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56809 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934091AbaBDVJD (ORCPT
+	with ESMTP id S934090AbaBDVJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:09:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Wolfram Sang <wsa@the-dreams.de>,
         Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.12 098/133] i2c: mv64xxx: Fix bus hang on A0 version of the Armada XP SoCs
-Date: Tue,  4 Feb 2014 13:08:19 -0800
-Message-Id: <20140204210739.804315330@linuxfoundation.org>
+Subject: [PATCH 3.12 097/133] ARM: mvebu: Add quirk for i2c for the OpenBlocks AX3-4 board
+Date: Tue,  4 Feb 2014 13:08:18 -0800
+Message-Id: <20140204210739.776870716@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -32,49 +31,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 6cf70ae928bae17077efc0d528dec49bc380438b upstream.
+commit 85e618a1be2b2092318178d1d66bdad49cbbeeeb upstream.
 
 The first variants of Armada XP SoCs (A0 stepping) have issues related
 to the i2c controller which prevent to use the offload mechanism and
 lead to a kernel hang during boot.
 
-The commit introduces a new the compatible string
-marvell,mv78230-a0-i2c for the i2c controller. When this compatible
-string is used the driver disables the offload mechanism and the
-kernel no more hangs on these SoCs.
+This commit add quirk in the mvebu platform code to check the SoC
+version and then update the compatible string for the i2c controller
+according to the revision of the SoC. Currently only some OpenBlocks
+AX3-4 boards are known to use an A0 revision so the check is done only
+for these boards.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reported-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-mv64xxx.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/mach-mvebu/armada-370-xp.c |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -692,6 +692,7 @@ static const struct of_device_id mv64xxx
- 	{ .compatible = "allwinner,sun4i-i2c", .data = &mv64xxx_i2c_regs_sun4i},
- 	{ .compatible = "marvell,mv64xxx-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
- 	{ .compatible = "marvell,mv78230-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
-+	{ .compatible = "marvell,mv78230-a0-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
- 	{}
- };
- MODULE_DEVICE_TABLE(of, mv64xxx_i2c_of_match_table);
-@@ -783,6 +784,10 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
- 		drv_data->errata_delay = true;
- 	}
+--- a/arch/arm/mach-mvebu/armada-370-xp.c
++++ b/arch/arm/mach-mvebu/armada-370-xp.c
+@@ -21,6 +21,7 @@
+ #include <linux/clocksource.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/mbus.h>
++#include <linux/slab.h>
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -28,6 +29,7 @@
+ #include "armada-370-xp.h"
+ #include "common.h"
+ #include "coherency.h"
++#include "mvebu-soc-id.h"
  
-+	if (of_device_is_compatible(np, "marvell,mv78230-a0-i2c")) {
-+		drv_data->offload_enabled = false;
-+		drv_data->errata_delay = true;
-+	}
- out:
- 	return rc;
+ static void __init armada_370_xp_map_io(void)
+ {
+@@ -45,8 +47,38 @@ static void __init armada_370_xp_timer_a
  #endif
+ }
+ 
++static void __init i2c_quirk(void)
++{
++	struct device_node *np;
++	u32 dev, rev;
++
++	/*
++	 * Only revisons more recent than A0 support the offload
++	 * mechanism. We can exit only if we are sure that we can
++	 * get the SoC revision and it is more recent than A0.
++	 */
++	if (mvebu_get_soc_id(&rev, &dev) == 0 && dev > MV78XX0_A0_REV)
++		return;
++
++	for_each_compatible_node(np, NULL, "marvell,mv78230-i2c") {
++		struct property *new_compat;
++
++		new_compat = kzalloc(sizeof(*new_compat), GFP_KERNEL);
++
++		new_compat->name = kstrdup("compatible", GFP_KERNEL);
++		new_compat->length = sizeof("marvell,mv78230-a0-i2c");
++		new_compat->value = kstrdup("marvell,mv78230-a0-i2c",
++						GFP_KERNEL);
++
++		of_update_property(np, new_compat);
++	}
++	return;
++}
++
+ static void __init armada_370_xp_dt_init(void)
+ {
++	if (of_machine_is_compatible("plathome,openblocks-ax3-4"))
++		i2c_quirk();
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+ 
 
 
