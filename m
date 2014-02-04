@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934183AbaBDVJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56770 "EHLO
+	id S935109AbaBDWBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:01:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56935 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933970AbaBDVIz (ORCPT
+	with ESMTP id S933970AbaBDVJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:55 -0500
+	Tue, 4 Feb 2014 16:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.12 089/133] libata: disable LPM for some WD SATA-I devices
-Date: Tue,  4 Feb 2014 13:08:10 -0800
-Message-Id: <20140204210739.544408554@linuxfoundation.org>
+        Asias He <asias.hejun@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.12 127/133] virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
+Date: Tue,  4 Feb 2014 13:08:48 -0800
+Message-Id: <20140204210740.620986417@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,135 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Asias He <asias.hejun@gmail.com>
 
-commit ecd75ad514d73efc1bbcc5f10a13566c3ace5f53 upstream.
+commit f466f75385369a181409e46da272db3de6f5c5cb upstream.
 
-For some reason, some early WD drives spin up and down drives
-erratically when the link is put into slumber mode which can reduce
-the life expectancy of the device significantly.  Unfortunately, we
-don't have full list of devices and given the nature of the issue it'd
-be better to err on the side of false positives than the other way
-around.  Let's disable LPM on all WD devices which match one of the
-known problematic model prefixes and are SATA-I.
+vqs are freed in virtscsi_freeze but the hotcpu_notifier is not
+unregistered. We will have a use-after-free usage when the notifier
+callback is called after virtscsi_freeze.
 
-As horkage list doesn't support matching SATA capabilities, this is
-implemented as two horkages - WD_BROKEN_LPM and NOLPM.  The former is
-set for the known prefixes and sets the latter if the matched device
-is SATA-I.
+Fixes: 285e71ea6f3583a85e27cb2b9a7d8c35d4c0d558
+("virtio-scsi: reset virtqueue affinity when doing cpu hotplug")
 
-Note that this isn't optimal as this disables all LPM operations and
-partial link power state reportedly works fine on these; however, the
-way LPM is implemented in libata makes it difficult to precisely map
-libata LPM setting to specific link power state.  Well, these devices
-are already fairly outdated.  Let's just disable whole LPM for now.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-and-tested-by: Nikos Barkas <levelwol@gmail.com>
-Reported-and-tested-by: Ioannis Barkas <risc4all@yahoo.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=57211
+Signed-off-by: Asias He <asias.hejun@gmail.com>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |   27 +++++++++++++++++++++++++++
- drivers/ata/libata-scsi.c |   18 +++++++++++++++---
- include/linux/libata.h    |    2 ++
- 3 files changed, 44 insertions(+), 3 deletions(-)
+ drivers/scsi/virtio_scsi.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2222,6 +2222,16 @@ int ata_dev_configure(struct ata_device
- 	if (rc)
- 		return rc;
- 
-+	/* some WD SATA-1 drives have issues with LPM, turn on NOLPM for them */
-+	if ((dev->horkage & ATA_HORKAGE_WD_BROKEN_LPM) &&
-+	    (id[ATA_ID_SATA_CAPABILITY] & 0xe) == 0x2)
-+		dev->horkage |= ATA_HORKAGE_NOLPM;
-+
-+	if (dev->horkage & ATA_HORKAGE_NOLPM) {
-+		ata_dev_warn(dev, "LPM support broken, forcing max_power\n");
-+		dev->link->ap->target_lpm_policy = ATA_LPM_MAX_POWER;
-+	}
-+
- 	/* let ACPI work its magic */
- 	rc = ata_acpi_on_devcfg(dev);
- 	if (rc)
-@@ -4216,6 +4226,23 @@ static const struct ata_blacklist_entry
- 	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 	{ "Crucial_CT???M500SSD1",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 
-+	/*
-+	 * Some WD SATA-I drives spin up and down erratically when the link
-+	 * is put into the slumber mode.  We don't have full list of the
-+	 * affected devices.  Disable LPM if the device matches one of the
-+	 * known prefixes and is SATA-1.  As a side effect LPM partial is
-+	 * lost too.
-+	 *
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=57211
-+	 */
-+	{ "WDC WD800JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD1200JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD1600JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD2000JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD2500JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD3000JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+	{ "WDC WD3200JD-*",		NULL,	ATA_HORKAGE_WD_BROKEN_LPM },
-+
- 	/* End Marker */
- 	{ }
- };
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -111,12 +111,14 @@ static const char *ata_lpm_policy_names[
- 	[ATA_LPM_MIN_POWER]	= "min_power",
- };
- 
--static ssize_t ata_scsi_lpm_store(struct device *dev,
-+static ssize_t ata_scsi_lpm_store(struct device *device,
- 				  struct device_attribute *attr,
- 				  const char *buf, size_t count)
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -957,6 +957,10 @@ static void virtscsi_remove(struct virti
+ #ifdef CONFIG_PM
+ static int virtscsi_freeze(struct virtio_device *vdev)
  {
--	struct Scsi_Host *shost = class_to_shost(dev);
-+	struct Scsi_Host *shost = class_to_shost(device);
- 	struct ata_port *ap = ata_shost_to_port(shost);
-+	struct ata_link *link;
-+	struct ata_device *dev;
- 	enum ata_lpm_policy policy;
- 	unsigned long flags;
- 
-@@ -132,10 +134,20 @@ static ssize_t ata_scsi_lpm_store(struct
- 		return -EINVAL;
- 
- 	spin_lock_irqsave(ap->lock, flags);
++	struct Scsi_Host *sh = virtio_scsi_host(vdev);
++	struct virtio_scsi *vscsi = shost_priv(sh);
 +
-+	ata_for_each_link(link, ap, EDGE) {
-+		ata_for_each_dev(dev, &ap->link, ENABLED) {
-+			if (dev->horkage & ATA_HORKAGE_NOLPM) {
-+				count = -EOPNOTSUPP;
-+				goto out_unlock;
-+			}
-+		}
-+	}
-+
- 	ap->target_lpm_policy = policy;
- 	ata_port_schedule_eh(ap);
-+out_unlock:
- 	spin_unlock_irqrestore(ap->lock, flags);
--
- 	return count;
++	unregister_hotcpu_notifier(&vscsi->nb);
+ 	virtscsi_remove_vqs(vdev);
+ 	return 0;
  }
+@@ -965,8 +969,17 @@ static int virtscsi_restore(struct virti
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
++	int err;
++
++	err = virtscsi_init(vdev, vscsi);
++	if (err)
++		return err;
++
++	err = register_hotcpu_notifier(&vscsi->nb);
++	if (err)
++		vdev->config->del_vqs(vdev);
  
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -419,6 +419,8 @@ enum {
- 	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
- 	ATA_HORKAGE_ATAPI_DMADIR = (1 << 18),	/* device requires dmadir */
- 	ATA_HORKAGE_NO_NCQ_TRIM	= (1 << 19),	/* don't use queued TRIM */
-+	ATA_HORKAGE_NOLPM	= (1 << 20),	/* don't use LPM */
-+	ATA_HORKAGE_WD_BROKEN_LPM = (1 << 21),	/* some WDs have broken LPM */
+-	return virtscsi_init(vdev, vscsi);
++	return err;
+ }
+ #endif
  
- 	 /* DMA mask for user DMA control: User visible values; DO NOT
- 	    renumber */
 
 
