@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaBDSAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 13:00:14 -0500
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:41800 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125AbaBDSAM (ORCPT
+	id S1754880AbaBDSCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 13:02:17 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:54257 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaBDSCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 13:00:12 -0500
+	Tue, 4 Feb 2014 13:02:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAN8YU5PJWqnaBN_oaZ-yZjV-s9oCkKPa4ebk-kNbhPSgpd3_wQ@mail.gmail.com>
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail>
-	<20140202160512.GA4946@redhat.com>
-	<201402021807.37772.s.L-H@gmx.de>
-	<52EFCC66.9020304@lwfinger.net>
-	<20140203201228.GE26722@mwanda>
-	<CA+55aFyHZfw9rtZQJ9i2p7MQAVX4iM0QCdzRZzaivD2nRDHeLQ@mail.gmail.com>
-	<CAN8YU5PJWqnaBN_oaZ-yZjV-s9oCkKPa4ebk-kNbhPSgpd3_wQ@mail.gmail.com>
-Date: Tue, 4 Feb 2014 10:00:11 -0800
-X-Google-Sender-Auth: mmQUZK88Xj6zn9tMv9TTsSi0roQ
-Message-ID: <CA+55aFyF05NqDrRFnuVmUAwQFQz9k41+exSo1xVz69t_PJakOA@mail.gmail.com>
-Subject: Re: rtl8821ae.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrea Merello <andrea.merello@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140204110531.GR22609@sirena.org.uk>
+References: <1391493268-3242-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<20140204110531.GR22609@sirena.org.uk>
+Date: Tue, 4 Feb 2014 10:02:14 -0800
+Message-ID: <CAJAp7OjCnJ=P9Gi20=D9gybREiSaqd1CaQ0K=9fGbCzU1gTFLw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: core: Make regulator object reflect configured voltage
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 3, 2014 at 6:22 PM, Andrea Merello <andrea.merello@gmail.com> wrote:
-> Right now I have merged rtl8187se support in rtl8180 driver. But I must
-> admit that I ever been in doubt about whether to produce a separate driver
-> rather than going on merging.
+On Tue, Feb 4, 2014 at 3:05 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Feb 03, 2014 at 09:54:28PM -0800, Bjorn Andersson wrote:
+>
+>> +     /*
+>> +      * Make the regulator reflect the configured voltage selected in
+>> +      * machine_constraints_voltage()
+>> +      */
+>> +     if (rdev->constraints->apply_uV &&
+>> +         rdev->constraints->min_uV == rdev->constraints->max_uV) {
+>> +             regulator->min_uV = rdev->constraints->min_uV;
+>> +             regulator->max_uV = rdev->constraints->min_uV;
+>> +     }
+>> +
+>
+> Why not do this at the time we apply the voltage?  That would seem to be
+> more robust, doing it in a separate place means that we might update one
+> bit of code and not the other or might change the execution path so that
+> one gets run and the other doesn't.
 
-If you've already merged them, and you think it works, keep it that way.
+I do share your concerns about having this logic mirrored here is
+risky, unfortunately the regulator object is created upon request from
+a consumer; so it is not available when regulator_register() calls
+set_machine_constraints().
 
-I was just saying that merging drivers isn't necessarily always the
-right thing to do, and can be painful as hell.
+An alternative is to drop the conditional setting of
+REGULATOR_CHANGE_VOLTAGE from of_regulator.c and force the regulator
+drivers to set this flag explicitly; to avoid the difference in
+behavior depending on configuration.
 
-                  Linus
+Regards,
+Bjorn
