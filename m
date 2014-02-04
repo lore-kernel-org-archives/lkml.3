@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935607AbaBDWG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:06:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56843 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934013AbaBDVJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934107AbaBDVJG (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Feb 2014 16:09:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56720 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934013AbaBDVIr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 16:08:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Engelmayer <cengelma@gmx.at>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 103/133] ieee802154: Fix memory leak in ieee802154_add_iface()
-Date: Tue,  4 Feb 2014 13:08:24 -0800
-Message-Id: <20140204210739.942233061@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 080/133] ALSA: hda - Dont create duplicated ctls for loopback paths
+Date: Tue,  4 Feb 2014 13:08:01 -0800
+Message-Id: <20140204210739.293461896@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,34 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Engelmayer <cengelma@gmx.at>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 267d29a69c6af39445f36102a832b25ed483f299 ]
+commit 43a8e50a46a4e1dd1451e4a4ffa1f7695fb7d287 upstream.
 
-Fix a memory leak in the ieee802154_add_iface() error handling path.
-Detected by Coverity: CID 710490.
+AD1986A mic pins (0x1d and 0x1f) share the same widget for controlling
+the loopback volume/mute, but the generic parser didn't check it.
+This ended up with the duplicated controls for the same effect.
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch adds the check of the duplication for avoiding it.
+
+After this fix, there will be only one control although it affects
+both paths; this remaining issue should be fixed later in a different
+patch.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- net/ieee802154/nl-phy.c |    6 ++++--
+ sound/pci/hda/hda_generic.c |    6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/ieee802154/nl-phy.c
-+++ b/net/ieee802154/nl-phy.c
-@@ -224,8 +224,10 @@ static int ieee802154_add_iface(struct s
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -2857,9 +2857,11 @@ static bool look_for_mix_leaf_ctls(struc
+ 	if (num_conns < idx)
+ 		return false;
+ 	nid = list[idx];
+-	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
++	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT) &&
++	    !is_ctl_associated(codec, nid, HDA_OUTPUT, 0, NID_PATH_VOL_CTL))
+ 		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
+-	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
++	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT) &&
++	    !is_ctl_associated(codec, nid, HDA_OUTPUT, 0, NID_PATH_MUTE_CTL))
+ 		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
  
- 	if (info->attrs[IEEE802154_ATTR_DEV_TYPE]) {
- 		type = nla_get_u8(info->attrs[IEEE802154_ATTR_DEV_TYPE]);
--		if (type >= __IEEE802154_DEV_MAX)
--			return -EINVAL;
-+		if (type >= __IEEE802154_DEV_MAX) {
-+			rc = -EINVAL;
-+			goto nla_put_failure;
-+		}
- 	}
- 
- 	dev = phy->add_iface(phy, devname, type);
+ 	return *mix_val || *mute_val;
 
 
