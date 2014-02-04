@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935403AbaBDVu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:50:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57102 "EHLO
+	id S935220AbaBDVuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:50:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933577AbaBDVLW (ORCPT
+	with ESMTP id S934378AbaBDVLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:22 -0500
+	Tue, 4 Feb 2014 16:11:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 033/140] rtlwifi: Increase the RX queue length for USB drivers
-Date: Tue,  4 Feb 2014 13:10:20 -0800
-Message-Id: <20140204211037.909117327@linuxfoundation.org>
+Subject: [PATCH 3.13 034/140] rtlwifi: rtl8192c: Add routines to save/restore power index registers
+Date: Tue,  4 Feb 2014 13:10:21 -0800
+Message-Id: <20140204211037.937795216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -31,29 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dc6405712268fe514d3dd89aa936c4397b0871b9 upstream.
-
-The current number of RX buffers queued is 32, which is too small under
-heavy load. That number is doubled.
+commit 97204e93f01868eeba6ae5c4f3270f32905bb418 upstream.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   36 ++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -555,7 +555,7 @@ static void _rtl_rx_pre_process(struct i
- 	}
- }
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -158,6 +158,42 @@ static const u8 cckswing_table_ch14[CCK_
+ 	{0x09, 0x08, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00}
+ };
  
--#define __RX_SKB_MAX_QUEUED	32
-+#define __RX_SKB_MAX_QUEUED	64
- 
- static void _rtl_rx_work(unsigned long param)
++static u32 power_index_reg[6] = {0xc90, 0xc91, 0xc92, 0xc98, 0xc99, 0xc9a};
++
++void dm_restorepowerindex(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8	index;
++
++	for (index = 0; index < 6; index++)
++		rtl_write_byte(rtlpriv, power_index_reg[index],
++			       rtlpriv->dm.powerindex_backup[index]);
++}
++EXPORT_SYMBOL_GPL(dm_restorepowerindex);
++
++void dm_writepowerindex(struct ieee80211_hw *hw, u8 value)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8 index;
++
++	for (index = 0; index < 6; index++)
++		rtl_write_byte(rtlpriv, power_index_reg[index], value);
++}
++EXPORT_SYMBOL_GPL(dm_writepowerindex);
++
++void dm_savepowerindex(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8 index;
++	u8 tmp;
++
++	for (index = 0; index < 6; index++) {
++		tmp = rtl_read_byte(rtlpriv, power_index_reg[index]);
++		rtlpriv->dm.powerindex_backup[index] = tmp;
++	}
++}
++EXPORT_SYMBOL_GPL(dm_savepowerindex);
++
+ static void rtl92c_dm_diginit(struct ieee80211_hw *hw)
  {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 
 
