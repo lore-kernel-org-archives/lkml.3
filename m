@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936173AbaBDWmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:42:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56339 "EHLO
+	id S936225AbaBDWm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:42:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56331 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933479AbaBDVCs (ORCPT
+	with ESMTP id S933468AbaBDVCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:48 -0500
+	Tue, 4 Feb 2014 16:02:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Annie Li <annie.li@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Mircea Gherzan <mgherzan@gmail.com>,
+        Daniel Borkmann <dxchgb@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Matt Evans <matt@ozlabs.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 086/104] xen-netfront: fix resource leak in netfront
-Date: Tue,  4 Feb 2014 13:02:29 -0800
-Message-Id: <20140204210225.145018846@linuxfoundation.org>
+Subject: [PATCH 3.10 081/104] bpf: do not use reciprocal divide
+Date: Tue,  4 Feb 2014 13:02:24 -0800
+Message-Id: <20140204210225.007492084@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,204 +36,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Annie Li <annie.li@oracle.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit cefe0078eea52af17411eb1248946a94afb84ca5 ]
+[ Upstream commit aee636c4809fa54848ff07a899b326eb1f9987a2 ]
 
-This patch removes grant transfer releasing code from netfront, and uses
-gnttab_end_foreign_access to end grant access since
-gnttab_end_foreign_access_ref may fail when the grant entry is
-currently used for reading or writing.
+At first Jakub Zawadzki noticed that some divisions by reciprocal_divide
+were not correct. (off by one in some cases)
+http://www.wireshark.org/~darkjames/reciprocal-buggy.c
 
-* clean up grant transfer code kept from old netfront(2.6.18) which grants
-pages for access/map and transfer. But grant transfer is deprecated in current
-netfront, so remove corresponding release code for transfer.
+He could also show this with BPF:
+http://www.wireshark.org/~darkjames/set-and-dump-filter-k-bug.c
 
-* fix resource leak, release grant access (through gnttab_end_foreign_access)
-and skb for tx/rx path, use get_page to ensure page is released when grant
-access is completed successfully.
+The reciprocal divide in linux kernel is not generic enough,
+lets remove its use in BPF, as it is not worth the pain with
+current cpus.
 
-Xen-blkfront/xen-tpmfront/xen-pcifront also have similar issue, but patches
-for them will be created separately.
-
-V6: Correct subject line and commit message.
-
-V5: Remove unecessary change in xennet_end_access.
-
-V4: Revert put_page in gnttab_end_foreign_access, and keep netfront change in
-single patch.
-
-V3: Changes as suggestion from David Vrabel, ensure pages are not freed untill
-grant acess is ended.
-
-V2: Improve patch comments.
-
-Signed-off-by: Annie Li <annie.li@oracle.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Cc: Mircea Gherzan <mgherzan@gmail.com>
+Cc: Daniel Borkmann <dxchgb@gmail.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Matt Evans <matt@ozlabs.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netfront.c |   88 +++++++++++++--------------------------------
- 1 file changed, 26 insertions(+), 62 deletions(-)
+ arch/arm/net/bpf_jit_32.c       |    6 +++---
+ arch/powerpc/net/bpf_jit_comp.c |    7 ++++---
+ arch/s390/net/bpf_jit_comp.c    |   17 ++++++++++++-----
+ arch/sparc/net/bpf_jit_comp.c   |   17 ++++++++++++++---
+ arch/x86/net/bpf_jit_comp.c     |   14 ++++++++++----
+ net/core/filter.c               |   30 ++----------------------------
+ 6 files changed, 45 insertions(+), 46 deletions(-)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -107,6 +107,7 @@ struct netfront_info {
- 	} tx_skbs[NET_TX_RING_SIZE];
- 	grant_ref_t gref_tx_head;
- 	grant_ref_t grant_tx_ref[NET_TX_RING_SIZE];
-+	struct page *grant_tx_page[NET_TX_RING_SIZE];
- 	unsigned tx_skb_freelist;
- 
- 	spinlock_t   rx_lock ____cacheline_aligned_in_smp;
-@@ -386,6 +387,7 @@ static void xennet_tx_buf_gc(struct net_
- 			gnttab_release_grant_reference(
- 				&np->gref_tx_head, np->grant_tx_ref[id]);
- 			np->grant_tx_ref[id] = GRANT_INVALID_REF;
-+			np->grant_tx_page[id] = NULL;
- 			add_id_to_freelist(&np->tx_skb_freelist, np->tx_skbs, id);
- 			dev_kfree_skb_irq(skb);
- 		}
-@@ -442,6 +444,7 @@ static void xennet_make_frags(struct sk_
- 		gnttab_grant_foreign_access_ref(ref, np->xbdev->otherend_id,
- 						mfn, GNTMAP_readonly);
- 
-+		np->grant_tx_page[id] = virt_to_page(data);
- 		tx->gref = np->grant_tx_ref[id] = ref;
- 		tx->offset = offset;
- 		tx->size = len;
-@@ -487,6 +490,7 @@ static void xennet_make_frags(struct sk_
- 							np->xbdev->otherend_id,
- 							mfn, GNTMAP_readonly);
- 
-+			np->grant_tx_page[id] = page;
- 			tx->gref = np->grant_tx_ref[id] = ref;
- 			tx->offset = offset;
- 			tx->size = bytes;
-@@ -586,6 +590,7 @@ static int xennet_start_xmit(struct sk_b
- 	mfn = virt_to_mfn(data);
- 	gnttab_grant_foreign_access_ref(
- 		ref, np->xbdev->otherend_id, mfn, GNTMAP_readonly);
-+	np->grant_tx_page[id] = virt_to_page(data);
- 	tx->gref = np->grant_tx_ref[id] = ref;
- 	tx->offset = offset;
- 	tx->size = len;
-@@ -1115,10 +1120,11 @@ static void xennet_release_tx_bufs(struc
+--- a/arch/arm/net/bpf_jit_32.c
++++ b/arch/arm/net/bpf_jit_32.c
+@@ -637,10 +637,10 @@ load_ind:
+ 			emit(ARM_MUL(r_A, r_A, r_X), ctx);
+ 			break;
+ 		case BPF_S_ALU_DIV_K:
+-			/* current k == reciprocal_value(userspace k) */
++			if (k == 1)
++				break;
+ 			emit_mov_i(r_scratch, k, ctx);
+-			/* A = top 32 bits of the product */
+-			emit(ARM_UMULL(r_scratch, r_A, r_A, r_scratch), ctx);
++			emit_udiv(r_A, r_A, r_scratch, ctx);
+ 			break;
+ 		case BPF_S_ALU_DIV_X:
+ 			update_on_xread(ctx);
+--- a/arch/powerpc/net/bpf_jit_comp.c
++++ b/arch/powerpc/net/bpf_jit_comp.c
+@@ -209,10 +209,11 @@ static int bpf_jit_build_body(struct sk_
+ 			}
+ 			PPC_DIVWU(r_A, r_A, r_X);
+ 			break;
+-		case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K); */
++		case BPF_S_ALU_DIV_K: /* A /= K */
++			if (K == 1)
++				break;
+ 			PPC_LI32(r_scratch1, K);
+-			/* Top 32 bits of 64bit result -> A */
+-			PPC_MULHWU(r_A, r_A, r_scratch1);
++			PPC_DIVWU(r_A, r_A, r_scratch1);
+ 			break;
+ 		case BPF_S_ALU_AND_X:
+ 			ctx->seen |= SEEN_XREG;
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -338,11 +338,13 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		/* dr %r4,%r12 */
+ 		EMIT2(0x1d4c);
+ 		break;
+-	case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K) */
+-		/* m %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5c40d000, EMIT_CONST(K));
+-		/* lr %r5,%r4 */
+-		EMIT2(0x1854);
++	case BPF_S_ALU_DIV_K: /* A /= K */
++		if (K == 1)
++			break;
++		/* lhi %r4,0 */
++		EMIT4(0xa7480000);
++		/* d %r4,<d(K)>(%r13) */
++		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
+ 		break;
+ 	case BPF_S_ALU_MOD_X: /* A %= X */
+ 		jit->seen |= SEEN_XREG | SEEN_RET0;
+@@ -358,6 +360,11 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		EMIT2(0x1854);
+ 		break;
+ 	case BPF_S_ALU_MOD_K: /* A %= K */
++		if (K == 1) {
++			/* lhi %r5,0 */
++			EMIT4(0xa7580000);
++			break;
++		}
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+ 		/* d %r4,<d(K)>(%r13) */
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -497,9 +497,20 @@ void bpf_jit_compile(struct sk_filter *f
+ 			case BPF_S_ALU_MUL_K:	/* A *= K */
+ 				emit_alu_K(MUL, K);
+ 				break;
+-			case BPF_S_ALU_DIV_K:	/* A /= K */
+-				emit_alu_K(MUL, K);
+-				emit_read_y(r_A);
++			case BPF_S_ALU_DIV_K:	/* A /= K with K != 0*/
++				if (K == 1)
++					break;
++				emit_write_y(G0);
++#ifdef CONFIG_SPARC32
++				/* The Sparc v8 architecture requires
++				 * three instructions between a %y
++				 * register write and the first use.
++				 */
++				emit_nop();
++				emit_nop();
++				emit_nop();
++#endif
++				emit_alu_K(DIV, K);
+ 				break;
+ 			case BPF_S_ALU_DIV_X:	/* A /= X; */
+ 				emit_cmpi(r_X, 0);
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -324,15 +324,21 @@ void bpf_jit_compile(struct sk_filter *f
+ 				EMIT2(0x89, 0xd0);	/* mov %edx,%eax */
+ 				break;
+ 			case BPF_S_ALU_MOD_K: /* A %= K; */
++				if (K == 1) {
++					CLEAR_A();
++					break;
++				}
+ 				EMIT2(0x31, 0xd2);	/* xor %edx,%edx */
+ 				EMIT1(0xb9);EMIT(K, 4);	/* mov imm32,%ecx */
+ 				EMIT2(0xf7, 0xf1);	/* div %ecx */
+ 				EMIT2(0x89, 0xd0);	/* mov %edx,%eax */
+ 				break;
+-			case BPF_S_ALU_DIV_K: /* A = reciprocal_divide(A, K); */
+-				EMIT3(0x48, 0x69, 0xc0); /* imul imm32,%rax,%rax */
+-				EMIT(K, 4);
+-				EMIT4(0x48, 0xc1, 0xe8, 0x20); /* shr $0x20,%rax */
++			case BPF_S_ALU_DIV_K: /* A /= K */
++				if (K == 1)
++					break;
++				EMIT2(0x31, 0xd2);	/* xor %edx,%edx */
++				EMIT1(0xb9);EMIT(K, 4);	/* mov imm32,%ecx */
++				EMIT2(0xf7, 0xf1);	/* div %ecx */
+ 				break;
+ 			case BPF_S_ALU_AND_X:
+ 				seen |= SEEN_XREG;
+--- a/net/core/filter.c
++++ b/net/core/filter.c
+@@ -36,7 +36,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/unaligned.h>
+ #include <linux/filter.h>
+-#include <linux/reciprocal_div.h>
+ #include <linux/ratelimit.h>
+ #include <linux/seccomp.h>
+ #include <linux/if_vlan.h>
+@@ -166,7 +165,7 @@ unsigned int sk_run_filter(const struct
+ 			A /= X;
  			continue;
- 
- 		skb = np->tx_skbs[i].skb;
--		gnttab_end_foreign_access_ref(np->grant_tx_ref[i],
--					      GNTMAP_readonly);
--		gnttab_release_grant_reference(&np->gref_tx_head,
--					       np->grant_tx_ref[i]);
-+		get_page(np->grant_tx_page[i]);
-+		gnttab_end_foreign_access(np->grant_tx_ref[i],
-+					  GNTMAP_readonly,
-+					  (unsigned long)page_address(np->grant_tx_page[i]));
-+		np->grant_tx_page[i] = NULL;
- 		np->grant_tx_ref[i] = GRANT_INVALID_REF;
- 		add_id_to_freelist(&np->tx_skb_freelist, np->tx_skbs, i);
- 		dev_kfree_skb_irq(skb);
-@@ -1127,78 +1133,35 @@ static void xennet_release_tx_bufs(struc
- 
- static void xennet_release_rx_bufs(struct netfront_info *np)
- {
--	struct mmu_update      *mmu = np->rx_mmu;
--	struct multicall_entry *mcl = np->rx_mcl;
--	struct sk_buff_head free_list;
--	struct sk_buff *skb;
--	unsigned long mfn;
--	int xfer = 0, noxfer = 0, unused = 0;
- 	int id, ref;
- 
--	dev_warn(&np->netdev->dev, "%s: fix me for copying receiver.\n",
--			 __func__);
--	return;
--
--	skb_queue_head_init(&free_list);
--
- 	spin_lock_bh(&np->rx_lock);
- 
- 	for (id = 0; id < NET_RX_RING_SIZE; id++) {
--		ref = np->grant_rx_ref[id];
--		if (ref == GRANT_INVALID_REF) {
--			unused++;
--			continue;
--		}
-+		struct sk_buff *skb;
-+		struct page *page;
- 
- 		skb = np->rx_skbs[id];
--		mfn = gnttab_end_foreign_transfer_ref(ref);
--		gnttab_release_grant_reference(&np->gref_rx_head, ref);
--		np->grant_rx_ref[id] = GRANT_INVALID_REF;
--
--		if (0 == mfn) {
--			skb_shinfo(skb)->nr_frags = 0;
--			dev_kfree_skb(skb);
--			noxfer++;
-+		if (!skb)
+ 		case BPF_S_ALU_DIV_K:
+-			A = reciprocal_divide(A, K);
++			A /= K;
  			continue;
--		}
- 
--		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
--			/* Remap the page. */
--			const struct page *page =
--				skb_frag_page(&skb_shinfo(skb)->frags[0]);
--			unsigned long pfn = page_to_pfn(page);
--			void *vaddr = page_address(page);
-+		ref = np->grant_rx_ref[id];
-+		if (ref == GRANT_INVALID_REF)
-+			continue;
- 
--			MULTI_update_va_mapping(mcl, (unsigned long)vaddr,
--						mfn_pte(mfn, PAGE_KERNEL),
--						0);
--			mcl++;
--			mmu->ptr = ((u64)mfn << PAGE_SHIFT)
--				| MMU_MACHPHYS_UPDATE;
--			mmu->val = pfn;
--			mmu++;
-+		page = skb_frag_page(&skb_shinfo(skb)->frags[0]);
- 
--			set_phys_to_machine(pfn, mfn);
--		}
--		__skb_queue_tail(&free_list, skb);
--		xfer++;
--	}
+ 		case BPF_S_ALU_MOD_X:
+ 			if (X == 0)
+@@ -553,11 +552,6 @@ int sk_chk_filter(struct sock_filter *fi
+ 		/* Some instructions need special checks */
+ 		switch (code) {
+ 		case BPF_S_ALU_DIV_K:
+-			/* check for division by zero */
+-			if (ftest->k == 0)
+-				return -EINVAL;
+-			ftest->k = reciprocal_value(ftest->k);
+-			break;
+ 		case BPF_S_ALU_MOD_K:
+ 			/* check for division by zero */
+ 			if (ftest->k == 0)
+@@ -853,27 +847,7 @@ void sk_decode_filter(struct sock_filter
+ 	to->code = decodes[code];
+ 	to->jt = filt->jt;
+ 	to->jf = filt->jf;
 -
--	dev_info(&np->netdev->dev, "%s: %d xfer, %d noxfer, %d unused\n",
--		 __func__, xfer, noxfer, unused);
-+		/* gnttab_end_foreign_access() needs a page ref until
-+		 * foreign access is ended (which may be deferred).
-+		 */
-+		get_page(page);
-+		gnttab_end_foreign_access(ref, 0,
-+					  (unsigned long)page_address(page));
-+		np->grant_rx_ref[id] = GRANT_INVALID_REF;
- 
--	if (xfer) {
--		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
--			/* Do all the remapping work and M2P updates. */
--			MULTI_mmu_update(mcl, np->rx_mmu, mmu - np->rx_mmu,
--					 NULL, DOMID_SELF);
--			mcl++;
--			HYPERVISOR_multicall(np->rx_mcl, mcl - np->rx_mcl);
--		}
-+		kfree_skb(skb);
- 	}
- 
--	__skb_queue_purge(&free_list);
+-	if (code == BPF_S_ALU_DIV_K) {
+-		/*
+-		 * When loaded this rule user gave us X, which was
+-		 * translated into R = r(X). Now we calculate the
+-		 * RR = r(R) and report it back. If next time this
+-		 * value is loaded and RRR = r(RR) is calculated
+-		 * then the R == RRR will be true.
+-		 *
+-		 * One exception. X == 1 translates into R == 0 and
+-		 * we can't calculate RR out of it with r().
+-		 */
 -
- 	spin_unlock_bh(&np->rx_lock);
+-		if (filt->k == 0)
+-			to->k = 1;
+-		else
+-			to->k = reciprocal_value(filt->k);
+-
+-		BUG_ON(reciprocal_value(to->k) != filt->k);
+-	} else
+-		to->k = filt->k;
++	to->k = filt->k;
  }
  
-@@ -1333,6 +1296,7 @@ static struct net_device *xennet_create_
- 	for (i = 0; i < NET_RX_RING_SIZE; i++) {
- 		np->rx_skbs[i] = NULL;
- 		np->grant_rx_ref[i] = GRANT_INVALID_REF;
-+		np->grant_tx_page[i] = NULL;
- 	}
- 
- 	/* A grant for every tx ring slot */
+ int sk_get_filter(struct sock *sk, struct sock_filter __user *ubuf, unsigned int len)
 
 
