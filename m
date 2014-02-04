@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111AbaBDTrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:47:55 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:21382 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaBDTrw (ORCPT
+	id S1755126AbaBDTtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:49:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55442 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440AbaBDTtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:47:52 -0500
-X-IronPort-AV: E=Sophos;i="4.95,781,1384329600"; 
-   d="scan'208";a="13103775"
-Subject: Re: igb and bnx2: "NETDEV WATCHDOG: transmit queue timed out" when
- skb has huge linear buffer
-From: Michael Chan <mchan@broadcom.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@schaman.hu>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        "Greg Rose" <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-In-Reply-To: <52EBA51E.808@citrix.com>
-References: <52EAA31B.1090606@schaman.hu>
-	 <1391114048.4804.2.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <52EBA51E.808@citrix.com>
-Content-Type: text/plain; charset="cp1252"
-Date: Tue, 4 Feb 2014 11:47:51 -0800
-Message-ID: <1391543271.4804.44.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	Tue, 4 Feb 2014 14:49:10 -0500
+Date: Tue, 4 Feb 2014 11:50:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chris Mason <clm@fb.com>
+Cc: dsterba@suse.cz, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs
+Message-ID: <20140204195016.GA5264@kroah.com>
+References: <52EAC9B6.7090603@fb.com>
+ <20140203175405.GL1364@twin.jikos.cz>
+ <52EFDD80.4050800@fb.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52EFDD80.4050800@fb.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-31 at 14:29 +0100, Zoltan Kiss wrote: 
-> [ 5417.275472] WARNING: at net/sched/sch_generic.c:255 
-> dev_watchdog+0x156/0x1f0()
-> [ 5417.275474] NETDEV WATCHDOG: eth1 (bnx2): transmit queue 2 timed out 
+On Mon, Feb 03, 2014 at 01:18:40PM -0500, Chris Mason wrote:
+> On Mon 03 Feb 2014 12:54:05 PM EST, David Sterba wrote:
+> >On Thu, Jan 30, 2014 at 04:52:54PM -0500, Chris Mason wrote:
+> >>Chris Mason (3) commits (+64/-32):
+> >>     Btrfs: setup inode location during btrfs_init_inode_locked (+9/-9)
+> >>     Btrfs: don't use ram_bytes for uncompressed inline items (+52/-22)
+> >
+> >The patches are CC: stable, but haven't gone through the mailinglist.
+> >Are they still going to be picked by stable?
+> 
+> We do need both in -stable, I'll help with backports.
 
-The dump shows an internal IRQ pending on MSIX vector 2 which matches
-the the queue number that is timing out.  I don't know what happened to
-the MSIX and why the driver is not seeing it.  Do you see an IRQ error
-message from the kernel a few seconds before the tx timeout message?
+Very few of the patches you marked for -stable, actually would apply (or
+build once applied.)  Can you please send a set of patches you want
+applied?
 
+thanks,
+
+greg k-h
