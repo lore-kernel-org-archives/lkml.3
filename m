@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964774AbaBDVht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:37:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57269 "EHLO
+	id S935360AbaBDViP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:38:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57263 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934545AbaBDVL7 (ORCPT
+	with ESMTP id S934542AbaBDVL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:59 -0500
+	Tue, 4 Feb 2014 16:11:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3.13 078/140] perf kvm: Fix kvm report without guestmount.
-Date: Tue,  4 Feb 2014 13:11:05 -0800
-Message-Id: <20140204211039.188995842@linuxfoundation.org>
+        Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.13 077/140] pinctrl: sunxi: Honor GPIO output initial vaules
+Date: Tue,  4 Feb 2014 13:11:04 -0800
+Message-Id: <20140204211039.159710977@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,79 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+From: Chen-Yu Tsai <wens@csie.org>
 
-commit ad85ace07a05062ef6b59c35a5e80b6eaee1eee6 upstream.
+commit fa8cf57c923e86a693a85aff1df579245a27cbb3 upstream.
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
-can not get the perf information from perf data file. All sample are
-shown as unknown.
+Some GPIO users, such as fixed-regulator, request GPIO output with
+initial value of 1. This was ignored by sunxi driver.
 
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
-
-This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-and added. Then the default guest which with pid == 0 will never get a symbol.
-
-And because the new machine initialized here has no kernel map created, the symbol delivered to
-it will be marked as "unknown".
-
-This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
-
-Verification steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/session.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-sunxi.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -851,6 +851,7 @@ static struct machine *
- 					       struct perf_sample *sample)
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -469,12 +469,6 @@ static int sunxi_pinctrl_gpio_get(struct
+ 	return val;
+ }
+ 
+-static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
+-					unsigned offset, int value)
+-{
+-	return pinctrl_gpio_direction_output(chip->base + offset);
+-}
+-
+ static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
+ 				unsigned offset, int value)
  {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
+@@ -498,6 +492,13 @@ static void sunxi_pinctrl_gpio_set(struc
+ 	spin_unlock_irqrestore(&pctl->lock, flags);
+ }
  
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -863,7 +864,11 @@ static struct machine *
- 		else
- 			pid = sample->pid;
- 
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
- 	}
- 
- 	return &session->machines.host;
++static int sunxi_pinctrl_gpio_direction_output(struct gpio_chip *chip,
++					unsigned offset, int value)
++{
++	sunxi_pinctrl_gpio_set(chip, offset, value);
++	return pinctrl_gpio_direction_output(chip->base + offset);
++}
++
+ static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
+ 				const struct of_phandle_args *gpiospec,
+ 				u32 *flags)
 
 
