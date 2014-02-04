@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654AbaBDVoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:44:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57182 "EHLO
+	id S934460AbaBDVLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:11:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934468AbaBDVLm (ORCPT
+	with ESMTP id S934375AbaBDVLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:42 -0500
+	Tue, 4 Feb 2014 16:11:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 030/140] rtlwifi: Redo register save locations
-Date: Tue,  4 Feb 2014 13:10:17 -0800
-Message-Id: <20140204211037.826570150@linuxfoundation.org>
+Subject: [PATCH 3.13 032/140] rtlwifi: rtl8192c: Add new definitions in the dm_common header
+Date: Tue,  4 Feb 2014 13:10:19 -0800
+Message-Id: <20140204211037.884178861@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -31,99 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit b9a758a8c905fc59e783ae91ad645452d877ea88 upstream.
+commit c908c74e005de780fddbe8cb6fcd44803f5d4b74 upstream.
 
-The initial USB driver did not use some register save locations in the
-private data storage. To save some memory, a union was used to overlay these
-variables with USB I/O components. In an update of the gain-control code,
-these register save locations are now needed for USB drivers.
+Changes in the gain-control mechanism will require some changes in the header.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/wifi.h |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/wifi.h
-+++ b/drivers/net/wireless/rtlwifi/wifi.h
-@@ -1033,6 +1033,7 @@ struct rtl_ht_agg {
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
+@@ -91,6 +91,17 @@
+ #define TX_POWER_NEAR_FIELD_THRESH_LVL2		74
+ #define TX_POWER_NEAR_FIELD_THRESH_LVL1		67
  
- struct rssi_sta {
- 	long undec_sm_pwdb;
-+	long undec_sm_cck;
- };
++#define DYNAMIC_FUNC_DISABLE			0x0
++#define DYNAMIC_FUNC_DIG			BIT(0)
++#define DYNAMIC_FUNC_HP				BIT(1)
++#define DYNAMIC_FUNC_SS				BIT(2) /*Tx Power Tracking*/
++#define DYNAMIC_FUNC_BT				BIT(3)
++#define DYNAMIC_FUNC_ANT_DIV			BIT(4)
++
++#define	RSSI_CCK				0
++#define	RSSI_OFDM				1
++#define	RSSI_DEFAULT				2
++
+ struct swat_t {
+ 	u8 failure_cnt;
+ 	u8 try_flag;
+@@ -167,5 +178,8 @@ void rtl92c_phy_lc_calibrate(struct ieee
+ void rtl92c_phy_iq_calibrate(struct ieee80211_hw *hw, bool recovery);
+ void rtl92c_dm_dynamic_txpower(struct ieee80211_hw *hw);
+ void rtl92c_dm_bt_coexist(struct ieee80211_hw *hw);
++void dm_savepowerindex(struct ieee80211_hw *hw);
++void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
++void dm_restorepowerindex(struct ieee80211_hw *hw);
  
- struct rtl_tid_data {
-@@ -1323,8 +1324,10 @@ struct fast_ant_training {
- struct rtl_dm {
- 	/*PHY status for Dynamic Management */
- 	long entry_min_undec_sm_pwdb;
-+	long undec_sm_cck;
- 	long undec_sm_pwdb;	/*out dm */
- 	long entry_max_undec_sm_pwdb;
-+	s32 ofdm_pkt_cnt;
- 	bool dm_initialgain_enable;
- 	bool dynamic_txpower_enable;
- 	bool current_turbo_edca;
-@@ -1339,6 +1342,7 @@ struct rtl_dm {
- 	bool inform_fw_driverctrldm;
- 	bool current_mrc_switch;
- 	u8 txpowercount;
-+	u8 powerindex_backup[6];
- 
- 	u8 thermalvalue_rxgain;
- 	u8 thermalvalue_iqk;
-@@ -1350,7 +1354,9 @@ struct rtl_dm {
- 	bool done_txpower;
- 	u8 dynamic_txhighpower_lvl;	/*Tx high power level */
- 	u8 dm_flag;		/*Indicate each dynamic mechanism's status. */
-+	u8 dm_flag_tmp;
- 	u8 dm_type;
-+	u8 dm_rssi_sel;
- 	u8 txpower_track_control;
- 	bool interrupt_migration;
- 	bool disable_tx_int;
-@@ -1949,6 +1955,7 @@ struct dig_t {
- 	u8 pre_ccastate;
- 	u8 cur_ccasate;
- 	u8 large_fa_hit;
-+	u8 dig_dynamic_min;
- 	u8 forbidden_igi;
- 	u8 dig_state;
- 	u8 dig_highpwrstate;
-@@ -2029,22 +2036,15 @@ struct rtl_priv {
- 	struct dig_t dm_digtable;
- 	struct ps_t dm_pstable;
- 
--	/* section shared by individual drivers */
--	union {
--		struct {	/* data buffer pointer for USB reads */
--			__le32 *usb_data;
--			int usb_data_index;
--			bool initialized;
--		};
--		struct {	/* section for 8723ae */
--			bool reg_init;	/* true if regs saved */
--			u32 reg_874;
--			u32 reg_c70;
--			u32 reg_85c;
--			u32 reg_a74;
--			bool bt_operation_on;
--		};
--	};
-+	u32 reg_874;
-+	u32 reg_c70;
-+	u32 reg_85c;
-+	u32 reg_a74;
-+	bool reg_init;	/* true if regs saved */
-+	bool bt_operation_on;
-+	__le32 *usb_data;
-+	int usb_data_index;
-+	bool initialized;
- 	bool enter_ps;	/* true when entering PS */
- 	u8 rate_mask[5];
- 
+ #endif
 
 
