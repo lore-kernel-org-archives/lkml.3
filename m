@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaBDQur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:50:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6663 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393AbaBDQuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:50:44 -0500
-Date: Tue, 4 Feb 2014 17:50:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH v2.1] audit: Only use the syscall slowpath when syscall
-	audit rules exist
-Message-ID: <20140204165015.GA3011@redhat.com>
-References: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754697AbaBDQw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:52:27 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:60765 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaBDQwX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:52:23 -0500
+Message-ID: <1391532741.8900.1.camel@leira.trondhjem.org>
+Subject: [GIT PULL] Please pull NFS client fixes
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Torvalds Linus <torvalds@linux-foundation.org>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Tue, 04 Feb 2014 11:52:21 -0500
+Organization: PrimaryData Inc
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03, Andy Lutomirski wrote:
->
-> +void audit_inc_n_rules()
-> +{
-> +	struct task_struct *p, *g;
-> +	unsigned long flags;
-> +
-> +	read_lock_irqsave(&tasklist_lock, flags);
+Hi Linus,
 
-Confused... read_lock(tasklist) doesn't need to disable irqs.
+The following changes since commit 8a1f006ad302ea178aefb1f8c67e679c696289e9:
 
-(ftrace does this for no reason too, perhaps I should resend the patch)
+  Merge tag 'nfs-for-3.14-2' of git://git.linux-nfs.org/projects/trondmy/linux-nfs (2014-01-31 15:39:07 -0800)
 
-> +	if (audit_n_rules++ == 0) {
+are available in the git repository at:
 
-probably this can be done outside of read_lock?
 
-> +		do_each_thread(g, p) {
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.14-3
 
-for_each_process_thread ;) do_each_thread will die, I hope.
+for you to fetch changes up to 88a78a912ee059467ae6db7429a6efe4654620a5:
 
-> +void audit_dec_n_rules()
-> +{
-> +	struct task_struct *p, *g;
-> +	unsigned long flags;
-> +
-> +	read_lock_irqsave(&tasklist_lock, flags);
-> +
-> +	--audit_n_rules;
-> +	BUG_ON(audit_n_rules < 0);
-> +
-> +	if (audit_n_rules == 0) {
-> +		do_each_thread(g, p) {
-> +			clear_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
-> +		} while_each_thread(g, p);
-> +	}
+  Merge branch 'acl_fixes' into linux-next (2014-02-03 17:13:45 -0500)
 
-The same, and...
+----------------------------------------------------------------
 
-On a second thought it seems that audit_dec_n_rules() has a problem.
-Note the BUG_ON(context->in_syscall) in __audit_syscall_entry().
+NFS client bugfixes for Linux 3.14
 
-Suppose that audit_dec_n_rules() clears TIF_SYSCALL_AUDIT when a task
-runs a syscall. In this case (afaics) __audit_syscall_exit() won't be
-called. The next audit_inc_n_rules() can set TIF_SYSCALL_AUDIT and
-trigger another __audit_syscall_entry() which will hit this BUG_ON().
+Highlights:
 
-And in general it doesn't look safe although I know almost nothing
-about audit. I mean, currently __audit_syscall_entry() or
-__audit_log_bprm_fcaps() assume that __audit_syscall_exit() or
-__audit_free() will "cleanup" ->audit_context, perhaps we should not
-break the rules?
+- Fix NFSv3 acl regressions
+- Fix NFSv4 memory corruption due to slot table abuse in nfs4_proc_open_confirm
+- nfs4_destroy_session must call rpc_destroy_waitqueue
 
-Once again, I do not pretend I understand this code, this is the
-question, not the comment.
+----------------------------------------------------------------
+Noah Massey (1):
+      nfs: fix setting of ACLs on file creation.
 
-But if I am right, then TIF_SYSCALL_AUDIT should be cleared in
-__audit_syscall_exit() as you suggested before.
+Trond Myklebust (6):
+      NFSv4: Fix memory corruption in nfs4_proc_open_confirm
+      NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
+      NFSv3: Remove unused function nfs3_proc_set_default_acl
+      NFSv3: Fix return value of nfs3_proc_setacls
+      fs: get_acl() must be allowed to return EOPNOTSUPP
+      Merge branch 'acl_fixes' into linux-next
 
-Oleg.
+ fs/nfs/nfs3acl.c        | 34 ++++++++++++----------------------
+ fs/nfs/nfs4client.c     |  2 +-
+ fs/nfs/nfs4proc.c       |  8 ++++----
+ fs/nfs/nfs4session.c    | 25 ++++++++++++++++++++-----
+ fs/nfs/nfs4session.h    |  2 +-
+ fs/posix_acl.c          | 18 ++++++++++++------
+ include/linux/nfs_xdr.h |  2 ++
+ 7 files changed, 52 insertions(+), 39 deletions(-)
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
