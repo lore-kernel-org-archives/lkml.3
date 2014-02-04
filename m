@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934935AbaBDVql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:46:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57137 "EHLO
+	id S934416AbaBDVLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:11:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933589AbaBDVLc (ORCPT
+	with ESMTP id S933589AbaBDVLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:32 -0500
+	Tue, 4 Feb 2014 16:11:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        yury <urykhy@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 044/140] b43: Fix lockdep splat
-Date: Tue,  4 Feb 2014 13:10:31 -0800
-Message-Id: <20140204211038.220508151@linuxfoundation.org>
+        Peter Chen <peter.chen@freescale.com>
+Subject: [PATCH 3.13 012/140] usb: chipidea: need to mask INT_STATUS when write otgsc
+Date: Tue,  4 Feb 2014 13:09:59 -0800
+Message-Id: <20140204211037.319758496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,103 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
+commit 5332ff1fb63c46588656e4208201bc131627c878 upstream.
 
-In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
-when b43 is used with hostapd, and rfkill is used to kill the radio output.
+For otgsc, both enable bits and status bits are in it. So we need
+to make sure the status bits are not be cleared when write enable
+bits. It can fix one bug that we plug in/out Micro AB cable fast,
+and sometimes, the IDIS will be cleared wrongly when handle last
+ID interrupt (ID 0->1), so the current interrupt will not occur.
 
-The lockdep splat (in part) is as follows:
+For stable tree: 3.12+
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.12.0 #1 Not tainted
--------------------------------------------------------
-rfkill/10040 is trying to acquire lock:
- (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
-
-but task is already holding lock:
- (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
-
---snip--
-
-Chain exists of:
-  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
-
-The fix is to move the initialization of the hardware random number generator
-outside the code range covered by the rtnl_mutex.
-
-Reported-by: yury <urykhy@gmail.com>
-Tested-by: yury <urykhy@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/main.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/usb/chipidea/otg.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2424,6 +2424,7 @@ error:
+--- a/drivers/usb/chipidea/otg.h
++++ b/drivers/usb/chipidea/otg.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2013 Freescale Semiconductor, Inc.
++ * Copyright (C) 2013-2014 Freescale Semiconductor, Inc.
+  *
+  * Author: Peter Chen
+  *
+@@ -19,12 +19,12 @@ static inline void ci_clear_otg_interrup
  
- static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
- static void b43_one_core_detach(struct b43_bus_dev *dev);
-+static int b43_rng_init(struct b43_wl *wl);
- 
- static void b43_request_firmware(struct work_struct *work)
+ static inline void ci_enable_otg_interrupt(struct ci_hdrc *ci, u32 bits)
  {
-@@ -2475,6 +2476,10 @@ start_ieee80211:
- 		goto err_one_core_detach;
- 	wl->hw_registred = true;
- 	b43_leds_register(wl->current_dev);
-+
-+	/* Register HW RNG driver */
-+	b43_rng_init(wl);
-+
- 	goto out;
+-	hw_write(ci, OP_OTGSC, bits, bits);
++	hw_write(ci, OP_OTGSC, bits | OTGSC_INT_STATUS_BITS, bits);
+ }
  
- err_one_core_detach:
-@@ -4636,9 +4641,6 @@ static void b43_wireless_core_exit(struc
- 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
- 		return;
+ static inline void ci_disable_otg_interrupt(struct ci_hdrc *ci, u32 bits)
+ {
+-	hw_write(ci, OP_OTGSC, bits, 0);
++	hw_write(ci, OP_OTGSC, bits | OTGSC_INT_STATUS_BITS, 0);
+ }
  
--	/* Unregister HW RNG driver */
--	b43_rng_exit(dev->wl);
--
- 	b43_set_status(dev, B43_STAT_UNINIT);
- 
- 	/* Stop the microcode PSM. */
-@@ -4795,9 +4797,6 @@ static int b43_wireless_core_init(struct
- 
- 	b43_set_status(dev, B43_STAT_INITIALIZED);
- 
--	/* Register HW RNG driver */
--	b43_rng_init(dev->wl);
--
- out:
- 	return err;
- 
-@@ -5464,6 +5463,9 @@ static void b43_bcma_remove(struct bcma_
- 
- 	b43_one_core_detach(wldev->dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	b43_leds_unregister(wl);
- 
- 	ieee80211_free_hw(wl->hw);
-@@ -5541,6 +5543,9 @@ static void b43_ssb_remove(struct ssb_de
- 
- 	b43_one_core_detach(dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	if (list_empty(&wl->devlist)) {
- 		b43_leds_unregister(wl);
- 		/* Last core on the chip unregistered.
+ int ci_hdrc_otg_init(struct ci_hdrc *ci);
 
 
