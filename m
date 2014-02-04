@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935288AbaBDVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:54:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57042 "EHLO
+	id S934956AbaBDVyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:54:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934332AbaBDVLM (ORCPT
+	with ESMTP id S934337AbaBDVLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:12 -0500
+	Tue, 4 Feb 2014 16:11:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Robert Lippert <rlippert@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 002/140] mm/mempolicy.c: fix mempolicy printing in numa_maps
-Date: Tue,  4 Feb 2014 13:09:49 -0800
-Message-Id: <20140204211037.040348843@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.13 020/140] USB: cypress_m8: fix ring-indicator detection and reporting
+Date: Tue,  4 Feb 2014 13:10:07 -0800
+Message-Id: <20140204211037.542112641@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -33,43 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 8790c71a18e5d2d93532ae250bcf5eddbba729cd upstream.
+commit 440ebadeae9298d7de3d4d105342691841ec88d0 upstream.
 
-As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference
-policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as
-"prefer:N" for the local node, N, of the process reading the file.
+Fix ring-indicator (RI) status-bit definition, which was defined as CTS,
+effectively preventing RI-changes from being detected while reporting
+false RI status.
 
-This should only be printed when the mempolicy of <pid> is
-MPOL_PREFERRED for node N.
+This bug predates git.
 
-If the process is actually only using the default mempolicy for local
-node allocation, make sure "default" is printed as expected.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Robert Lippert <rlippert@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |    2 +-
+ drivers/usb/serial/cypress_m8.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2928,7 +2928,7 @@ void mpol_to_str(char *buffer, int maxle
- 	unsigned short mode = MPOL_DEFAULT;
- 	unsigned short flags = 0;
- 
--	if (pol && pol != &default_policy) {
-+	if (pol && pol != &default_policy && !(pol->flags & MPOL_F_MORON)) {
- 		mode = pol->mode;
- 		flags = pol->flags;
- 	}
+--- a/drivers/usb/serial/cypress_m8.h
++++ b/drivers/usb/serial/cypress_m8.h
+@@ -63,7 +63,7 @@
+ #define UART_DSR	0x20	/* data set ready - flow control - device to host */
+ #define CONTROL_RTS	0x10	/* request to send - flow control - host to device */
+ #define UART_CTS	0x10	/* clear to send - flow control - device to host */
+-#define UART_RI		0x10	/* ring indicator - modem - device to host */
++#define UART_RI		0x80	/* ring indicator - modem - device to host */
+ #define UART_CD		0x40	/* carrier detect - modem - device to host */
+ #define CYP_ERROR	0x08	/* received from input report - device to host */
+ /* Note - the below has nothing to do with the "feature report" reset */
 
 
