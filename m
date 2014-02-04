@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935438AbaBDXCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:02:33 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:32819 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933902AbaBDXC2 (ORCPT
+	id S936474AbaBDXB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:01:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933094AbaBDVCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 18:02:28 -0500
-X-Sasl-enc: QFdX+lerh4krkd7kcsGH9J2m9tmzqybZtzlDTQMNYpr2 1391554945
-From: Sebastian Keller <sebastiankeller@fastmail.net>
-To: ebiederm@xmission.com
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Keller <sebastiankeller@fastmail.net>
-Subject: [PATCH] kernel: nsproxy.c: fixed coding style issues
-Date: Wed,  5 Feb 2014 00:02:07 +0100
-Message-Id: <1391554927-6013-1-git-send-email-sebastiankeller@fastmail.net>
-X-Mailer: git-send-email 1.8.5.3
+	Tue, 4 Feb 2014 16:02:01 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 024/104] rtlwifi: rtl8192c: Prevent reconnect attempts if not connected
+Date: Tue,  4 Feb 2014 13:01:27 -0800
+Message-Id: <20140204210223.421191398@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed 3 coding style issues (80 column limit, trailing whitespace)
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Sebastian Keller <sebastiankeller@fastmail.net>
+------------------
+
+From: Larry Finger <Larry.Finger@lwfinger.net>
+
+commit 8fd77aec1a9d6f4328fc0244f21932114e066df3 upstream.
+
+This driver has a watchdog timer that attempts to reconnect when beacon frames
+are not seen for 6 seconds. This patch disables that reconnect whenever the
+device has never been connected.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- kernel/nsproxy.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/base.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 8e78110..049774a 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -67,7 +67,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	if (!new_nsp)
- 		return ERR_PTR(-ENOMEM);
- 
--	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, user_ns, new_fs);
-+	new_nsp->mnt_ns = copy_mnt_ns(flags, tsk->nsproxy->mnt_ns, user_ns,
-+					new_fs);
- 	if (IS_ERR(new_nsp->mnt_ns)) {
- 		err = PTR_ERR(new_nsp->mnt_ns);
- 		goto out_ns;
-@@ -144,7 +145,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 	 * it along with CLONE_NEWIPC.
- 	 */
- 	if ((flags & (CLONE_NEWIPC | CLONE_SYSVSEM)) ==
--		(CLONE_NEWIPC | CLONE_SYSVSEM)) 
-+		(CLONE_NEWIPC | CLONE_SYSVSEM))
- 		return -EINVAL;
- 
- 	new_ns = create_new_namespaces(flags, tsk, user_ns, tsk->fs);
-@@ -174,7 +175,8 @@ void free_nsproxy(struct nsproxy *ns)
-  * On success, returns the new nsproxy.
-  */
- int unshare_nsproxy_namespaces(unsigned long unshare_flags,
--	struct nsproxy **new_nsp, struct cred *new_cred, struct fs_struct *new_fs)
-+	struct nsproxy **new_nsp, struct cred *new_cred,
-+	struct fs_struct *new_fs)
- {
- 	struct user_namespace *user_ns;
- 	int err = 0;
--- 
-1.8.5.3
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -1427,7 +1427,8 @@ void rtl_watchdog_wq_callback(void *data
+ 			/* if we can't recv beacon for 6s, we should
+ 			 * reconnect this AP
+ 			 */
+-			if (rtlpriv->link_info.roam_times >= 3) {
++			if ((rtlpriv->link_info.roam_times >= 3) &&
++			    !is_zero_ether_addr(rtlpriv->mac80211.bssid)) {
+ 				RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 					 "AP off, try to reconnect now\n");
+ 				rtlpriv->link_info.roam_times = 0;
+
 
