@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaBDOUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:20:00 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48318 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaBDOT5 (ORCPT
+	id S1753630AbaBDOWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:22:34 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:58445 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDOWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:19:57 -0500
+	Tue, 4 Feb 2014 09:22:32 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52F0F7A6.4070700@roeck-us.net>
+Date: Tue, 04 Feb 2014 06:22:30 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Tue, 4 Feb 2014 15:19:52 +0100
-X-Google-Sender-Auth: kYszA61SEHu-ZDH2hEqTys7fRFI
-Message-ID: <CAMuHMdVCeFek2LX0_AnA8zg_yYhXvzw19rH8OsqbWWb-rb9w-A@mail.gmail.com>
-Subject: [bisected] Re: WARNING: at net/ipv4/devinet.c:1599
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: Would devm_regulator_enable be useful ?
+References: <52ED901F.3010002@roeck-us.net> <20140203182152.GG22609@sirena.org.uk> <20140203222726.GA5053@roeck-us.net> <20140204111045.GS22609@sirena.org.uk>
+In-Reply-To: <20140204111045.GS22609@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 26, 2014 at 10:56 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On m68k/ARAnyM:
+On 02/04/2014 03:10 AM, Mark Brown wrote:
+> On Mon, Feb 03, 2014 at 02:27:26PM -0800, Guenter Roeck wrote:
+>> On Mon, Feb 03, 2014 at 06:21:52PM +0000, Mark Brown wrote:
 >
-> WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
-> Modules linked in:
-> CPU: 0 PID: 407 Comm: ifconfig Not tainted
-> 3.13.0-atari-09263-g0c71d68014d1 #1378
-> Stack from 10c4fdf0:
->         10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
->         00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
->         c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
->         00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
->         008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
->         eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
-> Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
->  [<00024416>] warn_slowpath_null+0x14/0x1a
->  [<002501b4>] rtmsg_ifa+0xdc/0xf0
->  [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
->  [<0024f9b4>] inet_abc_len+0x0/0x42
->  [<00250b52>] inet_insert_ifa+0xc/0x12
->  [<00252390>] devinet_ioctl+0x2ae/0x5d6
->  [<00020000>] _060_fpsp_effadd+0xc90c/0xd518
->  [<00020000>] _060_fpsp_effadd+0xc90c/0xd518
->  [<002530ec>] inet_ioctl+0x120/0x14e
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<001f7666>] sock_ioctl+0x56/0x256
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<00095434>] vfs_ioctl+0x1c/0x30
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<0009559c>] do_vfs_ioctl+0x7a/0x3b8
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<00002884>] buserr+0x20/0x28
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<00095910>] SyS_ioctl+0x36/0x5a
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<00002980>] syscall+0x8/0xc
->  [<00008916>] atari_scc_console_write+0x42/0x5c
->  [<0010c00b>] mext_leaf_block+0x443/0x81e
+>>> As previously mentioned please fix your mailer to word wrap at a
+>>> sensible limit.
 >
-> ---[ end trace 44b14c97c2210758 ]---
+>> I thought I did ;-). I'll try to make sure I only send e-mail to you
+>> using mutt in the future ... but I notice that your line length is
+>> less than the one I configured, so maybe that is the problem here.
 >
-> Adding some debugging code reveals that net_fill_ifaddr() fails in
+> You need to allow some room for quoting.
 >
->     put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
->                               preferred, valid))
+>>> In both cases enabling and then leaving the resource enabled throughout
+>>> the runtime of the device isn't normally the best practice for using
+>>> them.  You usually want to enable and disable at runtime with mechanisms
+>>> like runtime PM when the device is idle rather than burning power all
+>>> the time and once you start doing that managed resources don't fit so
+>>> well.
 >
-> nla_put complains:
+>> Ok, I accept that. I thought that was what devm_xxx_[disable,remove] etc
+>> was for, though.
 >
-> lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
+> Sort of.  They're there but that doesn't mean that they should be used
+> in normal operation - they should be special cases, not normal things.
+> Managed resources are supposed to for things that are more fire and
+> forget.
+>
 
-Bisected to:
+Isn't that a bit philosophical ? The drivers I had in mind commonly
+call regulator_enable() in probe and regulator_disable() in remove.
+Having device managed functions would simplify that code a lot.
+If those same drivers implement pm functions, I don't see a problem
+using devm_ functions in those. Sure, execution complexity is a bit
+higher, but it is not as if pm functions are high volume calls.
+And, after all, the existence of devm_ functions doesn't mean
+that they _have_ to be used.
 
-commit ad6c81359fc3e6086d1d6f91acda9d5d0e64b2c3
-Author: Jiri Pirko <jiri@resnulli.us>
-Date:   Sun Dec 8 12:16:10 2013 +0100
+Guenter
 
-    ipv4: add support for IFA_FLAGS nl attribute
-
-    Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-Reverting that commit on v3.14-rc1 fixes the problem.
-
-I don't know why it fails. My first guess was the alignment of ifa_flags
-(on m68k __u32 is aligned to 2 bytes, so there's no implicit padding):
-
-        __be32                  ifa_broadcast;
-        unsigned char           ifa_scope;
-        unsigned char           ifa_prefixlen;
-        __u32                   ifa_flags;
-
-but adding 2 bytes of explicit alignment didn't help.
-
-Anyone with a clue?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
