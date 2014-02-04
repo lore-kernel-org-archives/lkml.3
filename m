@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669AbaBDVDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56416 "EHLO
+	id S933654AbaBDVDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933541AbaBDVDB (ORCPT
+	with ESMTP id S933442AbaBDVDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:03:01 -0500
+	Tue, 4 Feb 2014 16:03:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 090/104] iwlwifi: pcie: enable oscillator for L1 exit
-Date: Tue,  4 Feb 2014 13:02:33 -0800
-Message-Id: <20140204210225.267548514@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 104/104] powerpc: Make sure "cache" directory is removed when offlining cpu
+Date: Tue,  4 Feb 2014 13:02:47 -0800
+Message-Id: <20140204210225.669182585@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,76 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 2d93aee152b1758a94a18fe15d72153ba73b5679 upstream.
+commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
 
-Enabling the oscillator consumes slightly more power (100uA)
-but allows to make sure that we exit from L1 on time.
+The code in remove_cache_dir() is supposed to remove the "cache"
+subdirectory from the sysfs directory for a CPU when that CPU is
+being offlined.  It tries to do this by calling kobject_put() on
+the kobject for the subdirectory.  However, the subdirectory only
+gets removed once the last reference goes away, and the reference
+being put here may well not be the last reference.  That means
+that the "cache" subdirectory may still exist when the offlining
+operation has finished.  If the same CPU subsequently gets onlined,
+the code tries to add a new "cache" subdirectory.  If the old
+subdirectory has not yet been removed, we get a WARN_ON in the
+sysfs code, with stack trace, and an error message printed on the
+console.  Further, we ultimately end up with an online cpu with no
+"cache" subdirectory.
 
-Not doing so might lead to a PCIe specification violation
-since we might wake up from L1 at the wrong time.
-This issue has been identified on 3160 and 7260 only.
-On older NICs L1 off is not enabled, on newer NICs (7265),
-the issue is fixed.
+This fixes it by doing an explicit kobject_del() at the point where
+we want the subdirectory to go away.  kobject_del() removes the sysfs
+directory even though the object still exists in memory.  The object
+will get freed at some point in the future.  A subsequent onlining
+operation can create a new sysfs directory, even if the old object
+still exists in memory, without causing any problems.
 
-When the bug occurs the user sees that the NIC has
-disappeared from the PCI bridge, any access to the device
-returns 0xff.
-
-This fixes:
-	https://bugzilla.kernel.org/show_bug.cgi?id=64541
-
-and has been extensively discussed here:
-	http://markmail.org/thread/mfmpzqt3r333n4bo
-
-Fixes: 99cd47142399 ("iwlwifi: add 7000 series device configuration")
-Reported-and-tested-by: wzyboy <wzyboy@wzyboy.org>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/iwlwifi/iwl-prph.h   |    4 ++++
- drivers/net/wireless/iwlwifi/pcie/trans.c |   16 ++++++++++++++++
- 2 files changed, 20 insertions(+)
+ arch/powerpc/kernel/cacheinfo.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-prph.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-prph.h
-@@ -260,4 +260,8 @@ static inline unsigned int SCD_QUEUE_STA
+--- a/arch/powerpc/kernel/cacheinfo.c
++++ b/arch/powerpc/kernel/cacheinfo.c
+@@ -788,6 +788,9 @@ static void remove_cache_dir(struct cach
+ {
+ 	remove_index_dirs(cache_dir);
  
- /*********************** END TX SCHEDULER *************************************/
- 
-+/* Oscillator clock */
-+#define OSC_CLK				(0xa04068)
-+#define OSC_CLK_FORCE_CONTROL		(0x8)
++	/* Remove cache dir from sysfs */
++	kobject_del(cache_dir->kobj);
 +
- #endif				/* __iwl_prph_h__ */
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -207,6 +207,22 @@ static int iwl_pcie_apm_init(struct iwl_
- 	}
+ 	kobject_put(cache_dir->kobj);
  
- 	/*
-+	 * Enable the oscillator to count wake up time for L1 exit. This
-+	 * consumes slightly more power (100uA) - but allows to be sure
-+	 * that we wake up from L1 on time.
-+	 *
-+	 * This looks weird: read twice the same register, discard the
-+	 * value, set a bit, and yet again, read that same register
-+	 * just to discard the value. But that's the way the hardware
-+	 * seems to like it.
-+	 */
-+	iwl_read_prph(trans, OSC_CLK);
-+	iwl_read_prph(trans, OSC_CLK);
-+	iwl_set_bits_prph(trans, OSC_CLK, OSC_CLK_FORCE_CONTROL);
-+	iwl_read_prph(trans, OSC_CLK);
-+	iwl_read_prph(trans, OSC_CLK);
-+
-+	/*
- 	 * Enable DMA clock and wait for it to stabilize.
- 	 *
- 	 * Write to "CLK_EN_REG"; "1" bits enable clocks, while "0" bits
+ 	kfree(cache_dir);
 
 
