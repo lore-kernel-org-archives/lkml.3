@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473AbaBDP5N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:57:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54965 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaBDP5K (ORCPT
+	id S1754527AbaBDP6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:58:00 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41825 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440AbaBDP54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:57:10 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from device tree
-Date: Tue, 4 Feb 2014 16:56:58 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-pci" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel" <linaro-kernel@lists.linaro.org>
-References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com> <4524393.8AzpATULMB@wuerfel> <20140204120801.GB27975@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20140204120801.GB27975@e106497-lin.cambridge.arm.com>
+	Tue, 4 Feb 2014 10:57:56 -0500
+Date: Tue, 4 Feb 2014 07:57:44 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ceph-devel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Guangliang Zhao <lucienchao@gmail.com>,
+        Li Wang <li.wang@ubuntykylin.com>, zheng.z.yan@intel.com
+Subject: Re: [PATCH v2] ceph: fix posix ACL hooks
+Message-ID: <20140204155744.GA3974@infradead.org>
+References: <1391013467-7598-1-git-send-email-ilya.dryomov@inktank.com>
+ <CA+55aFwTuBDHgQoTymr8OtE-+k=+pX0T_eb+fff0K+Pa3C-g-Q@mail.gmail.com>
+ <20140130075421.GA10050@infradead.org>
+ <CA+55aFxbVFpy8Y8P5fMCmmTSGbFxU9dTbOj9uTH+fKWGUzwgNg@mail.gmail.com>
+ <20140203102943.GF11829@infradead.org>
+ <CA+55aFytvTPdBsv6BwSomUGWXZ_tKP=BxaeJ7FXBft0JNnjBCQ@mail.gmail.com>
+ <20140203215908.GD10323@ZenIV.linux.org.uk>
+ <CA+55aFz3PyyCqOLs_SBRS3cbGxWd5ez4Svz2+xK+4KtCez8iGw@mail.gmail.com>
+ <20140203224034.GF10323@ZenIV.linux.org.uk>
+ <1391513615.2766.18.camel@menhir>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402041656.59165.arnd@arndb.de>
-X-Provags-ID: V02:K0:MbP4ZjWJT1/5JGpi4i4R+67bPfxFMGpz4W3wknoRDf9
- lOCWbGku3lUHM1Ue2DDkuYdb51xfGWBbeVG1Kqhswmex2qVOoh
- J5DYLeVWphiLdj3Vxw1N9eLuzrFRklw9DQec9nHpEHAV3Warja
- l0iyi2I3wW+xWOp43Iu2fPka4SuxDINTtk6K5KAy0YNmHtCm8L
- V48kNKqvx+FD7pmxdsSYGu2IWeq47HAejNHKEDT/Lzwc2/2l/I
- 8iPk9OESiHg5xTF9yprh/BNU+zrX+1FHuugiIHJdFbQt1veUrC
- W6vl95gRfmkYDQiIZpXsJgXVbCUnFvu1pE7N6mQCNjFYw7YF11
- c1QbIpIQ7lGbkOcysru85KDYVcp6QpJAASsbuekV3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391513615.2766.18.camel@menhir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 February 2014, Liviu Dudau wrote:
-> On Tue, Feb 04, 2014 at 10:09:44AM +0000, Arnd Bergmann wrote:
-> > On Monday 03 February 2014 22:17:44 Liviu Dudau wrote:
-> > > On Mon, Feb 03, 2014 at 07:31:31PM +0000, Arnd Bergmann wrote:
-> > > > The aperture here reflects the subset of the
-> > > > 4GB bus I/O space that is actually mapped into a CPU visible "physical
-> > > > I/O aperture" using an inbound mapping of the host bridge. The physical
-> > > > I/O aperture in turn gets mapped to the virtual I/O space using
-> > > > pci_ioremap_io.
-> > >
-> > > Agree.
-> > >
-> > > > The difference between a bus I/O address and a logical
-> > > > I/O address is stored in the io_offset.
-> > >
-> > > Not exactly. If that would be true that means that for an I/O range that
-> > > start at bus I/O address zero but physical I/O apperture starts at
-> > > 0x40000000 the io_offset is zero. For me, the io_offset should be 0x40000000.
-> >
-> > That's not how we do it on any of the existing host controllers.
-> > Typically the io_offset is zero for the first one, and may be
-> > either zero for all the others (meaning BARs get > 64KB values
-> > for secondary buses) or between 64KB and 2MB (meaning each bus
-> > starts at I/O port number 0).
-> 
-> In that case it is probably worth to rename my variable into phys_io_offset.
-> 
-> I need to go back over my driver code. My assumptions were probably wrong
-> wrt to meaning of the io_offset.
+On Tue, Feb 04, 2014 at 11:33:35AM +0000, Steven Whitehouse wrote:
+> To diverge from that topic for a moment, this thread has also brought
+> together some discussion on another issue which I've been pondering
+> recently.... that of whether the inode operations for get/set_xattr
+> should take a dentry or not. I had thought that we'd come to the
+> conclusion that 9p made it impossible to swap the current dentry
+> argument for an inode, and I was about to send a patch for selinux
+> support on clustered fs on that basis. However the discussion in this
+> thread has made me wonder whether that really is the case or not.... Al,
+> can you confirm whether your xattr-experimental patches are still under
+> active consideration?
 
-Ok. I'd still call it 'base' rather than 'offset', although the meaning
-isn't all that different.
+My plan was to work on the 9p and cifs conversions using the
+d_find_alias hack we have in ceph right now.  That means the base work
+could switch to passed in dentries or in case of 9p the per-inode fids
+easily.
 
-> > But there should never be an IORESOURCE_IO resource structure that is
-> > not in IO space, i.e. within ioport_resource. Doing an "adjustment"
-> > is not an operation defined on this structure. What I meant above is that
-> > the pci range parser gets this right and gives you a resource that looks
-> > like { .flags = IORESOURCE_MEM, .start = phys_base, .end = phys_base +
-> > size - 1}, while the resource we want to register is { .flags = IORESOURCE_IO,
-> > .start = log_base, .end = log_base + size -1}. In the of_pci_range struct for
-> > the I/O space, the "pci_space" is IORESOURCE_IO (for the pci_addr), while the
-> > "flags" are IORESOURCE_MEM, to go along with the cpu_addr.
-> 
-> The pci range parser gives me a range with .flags = IORESOURCE_IO for IO space. It
-> does not convert it to IORESOURCE_MEM. Hence the need for adjustment.
+> The other question that I have relating to that side of things, is why
+> security_inode_permission() is called from __inode_permission() rather
+> than from generic_permission() ? Maybe there is a good reason, but I
+> can't immediately see what it is at the moment.
 
-Ah, I see that now in the code too. This seems to be a bug in the range parser
-though: range->flags should not be initialized to
-of_bus_pci_get_flags(parser->range).
+Seems like almost everything of the security_* family is called from the
+VFS instead of the filesystem.  There's also some very odd other
+behaviour in there, e.g. for the xattrs sets are handed to the
+filesystem first, and then the xattr layer calls into the security
+layer, which for reads the filesystems is never reached at all.
 
-	Arnd
+> In response to the question elsewhere about GFS2 calling
+> gfs2_permission() after the vfs has already done its checks, that is
+> indeed down to needing to ensure that we have the cluster locks when
+> this check is called. More importantly to know that things haven't
+> changed since the VFS called the same function in case we've raced with
+> another node changing the permissions, for example. There are a number
+> of cases where we redo vfs level checks for this reason,
+
+Seems like we should be able to grab a cluster lock where we grab
+i_mutex in the namespace code to avoid having to redo all these checks.
+
