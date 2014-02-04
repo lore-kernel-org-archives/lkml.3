@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093AbaBDTLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:11:00 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:43087 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828AbaBDTK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:10:58 -0500
-Date: Tue, 4 Feb 2014 12:10:55 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: Add architecture support for PCI
-Message-ID: <20140204191055.GC25695@obsidianresearch.com>
-References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com>
- <13031998.NR888KZWhk@wuerfel>
- <20140204181514.GA25695@obsidianresearch.com>
- <8676627.b6SYsazoah@wuerfel>
+	id S932277AbaBDTLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:11:34 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56084 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130AbaBDTLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 14:11:33 -0500
+Date: Tue, 4 Feb 2014 20:11:25 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH -v2 2/6] memcg: cleanup charge routines
+Message-ID: <20140204191125.GA26000@dhcp22.suse.cz>
+References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+ <1391520540-17436-3-git-send-email-mhocko@suse.cz>
+ <20140204160509.GN6963@cmpxchg.org>
+ <20140204161230.GN4890@dhcp22.suse.cz>
+ <20140204164050.GR6963@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8676627.b6SYsazoah@wuerfel>
+In-Reply-To: <20140204164050.GR6963@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 07:34:50PM +0100, Arnd Bergmann wrote:
-
-> Well, the way I see it, we already have support for arbitrary
-> PCI domains in the kernel, and that works fine, so we can just
-> as well use it. That way we don't have to partition the available
-> 256 buses among the host bridges, and anything that needs a separate
-> PCI config space can live in its own world. Quite often when you
-> have multiple PCI hosts, they actually have different ways to
-> get at the config space and don't even share the same driver.
-
-> On x86, any kind of HT/PCI/PCIe/PCI-x bridge is stuffed into a
-> single domain so they can support OSs that only know the
-> traditional config space access methods, but I don't see
-> any real advantage to that for other architectures.
-
-Supporting a standard configration interface is a solid reason, but
-there is alot more going on.
-
-For instance to support peer-to-peer IO you need to have a consisent,
-non-overlapping set of bus/device/function/tag to uniquely route TLPs
-within the chip. Cross domain TLP routing in HW is non-trivial.
-
-IOMMUs (and SR-IOv) rely on the BDF to identify the originating device
-for each TLP. Multiple domains means a much more complex IOMMU
-environment.
-
-Failure to integrate on-chip devices into the PCI world also means
-thing like SR-IOv won't work sanely with on-chip devices.
-
-The only reason we should see multi-domain on a SOC is because the HW
-design was lazy. Being lazy misses the Big Picture where PCI is the
-cornerstone of many important Server/Enterprise technologies.
-
-> > SOC internal peripherals should all show up in the bus 0 config space
-> > of the only domain and SOC PCI-E physical ports should show up on bus
-> > 0 as PCI-PCI bridges. This is all covered in the PCI-E specs regarding
-> > the root complex.
+On Tue 04-02-14 11:40:50, Johannes Weiner wrote:
+> On Tue, Feb 04, 2014 at 05:12:30PM +0100, Michal Hocko wrote:
+> > On Tue 04-02-14 11:05:09, Johannes Weiner wrote:
+> > > On Tue, Feb 04, 2014 at 02:28:56PM +0100, Michal Hocko wrote:
+> > > > -	/*
+> > > > -	 * We always charge the cgroup the mm_struct belongs to.
+> > > > -	 * The mm_struct's mem_cgroup changes on task migration if the
+> > > > -	 * thread group leader migrates. It's possible that mm is not
+> > > > -	 * set, if so charge the root memcg (happens for pagecache usage).
+> > > > -	 */
+> > > > -	if (!*ptr && !mm)
+> > > > -		*ptr = root_mem_cgroup;
+> > > 
+> > > [...]
+> > > 
+> > > >  /*
+> > > > + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
+> > > > + * if mm is NULL). Returns NULL if memcg is under OOM.
+> > > > + */
+> > > > +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
+> > > > +				   gfp_t gfp_mask,
+> > > > +				   unsigned int nr_pages,
+> > > > +				   bool oom)
+> > > > +{
+> > > > +	struct mem_cgroup *memcg;
+> > > > +	int ret;
+> > > > +
+> > > > +	/*
+> > > > +	 * We always charge the cgroup the mm_struct belongs to.
+> > > > +	 * The mm_struct's mem_cgroup changes on task migration if the
+> > > > +	 * thread group leader migrates. It's possible that mm is not
+> > > > +	 * set, if so charge the root memcg (happens for pagecache usage).
+> > > > +	 */
+> > > > +	if (!mm)
+> > > > +		goto bypass;
+> > > 
+> > > Why shuffle it around right before you remove it anyway?  Just start
+> > > the series off with the patches that delete stuff without having to
+> > > restructure anything, get those out of the way.
 > > 
-> > Generally I would expect the internal peripherals to still be
-> > internally connected with AXI, but also connected through the ECAM
-> > space for configuration, control, power management and address
-> > assignment.
+> > As mentioned in the previous email. I wanted to have this condition
+> > removal bisectable. So it is removed in the next patch when it is
+> > replaced by VM_BUG_ON.
 > 
-> That would of course be very nice from a software perspective,
-> but I think that is much less likely for any practical
-> implementation.
+> I'm not suggesting to sneak the removal into *this* patch,
 
-Well, all x86 implementations do this already.. It actually isn't that
-big a deal from a HW perspective, you just have to think about it
-fully, understand PCI, and position your registers accordingly.
+OK
 
-Jason
+> just put the simple stand-alone patches that remove stuff first in the
+> series.
+
+In this particular case, though, the reduced condition is much easier
+to review IMO. Just look at the jungle of different *ptr vs. mm
+combinations described in this patch description which would have to be
+reviewed separately if I moved the removal before this patch.
+The ptr part of the original condition went away naturally here while
+the reasoning why there is no code path implicitly relying on (!ptr &&
+!mm) resulting in bypass would be harder.
+
+> Seems pretty logical to me to first reduce the code base as much as
+> possible before reorganizing it.  This does not change bisectability
+> but it sure makes the patches easier to read.
+
+Agreed.
+-- 
+Michal Hocko
+SUSE Labs
