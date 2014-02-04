@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823AbaBDQDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:03:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754677AbaBDQDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:03:38 -0500
-Date: Tue, 4 Feb 2014 17:03:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
-        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH v2 3/7] memcg, slab: separate memcg vs root cache
- creation paths
-Message-ID: <20140204160336.GL4890@dhcp22.suse.cz>
-References: <cover.1391441746.git.vdavydov@parallels.com>
- <81a403327163facea2b4c7b720fdc0ef62dd1dbf.1391441746.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <81a403327163facea2b4c7b720fdc0ef62dd1dbf.1391441746.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754834AbaBDQEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:04:13 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:38017 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932086AbaBDP7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 10:59:35 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Cc: Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 06/17] spi: pl022: Let runtime PM callbacks be available for CONFIG_PM
+Date: Tue,  4 Feb 2014 16:58:47 +0100
+Message-Id: <1391529538-21685-7-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-02-14 19:54:38, Vladimir Davydov wrote:
-> Memcg-awareness turned kmem_cache_create() into a dirty interweaving of
-> memcg-only and except-for-memcg calls. To clean this up, let's create a
-> separate function handling memcg caches creation. Although this will
-> result in the two functions having several hunks of practically the same
-> code, I guess this is the case when readability fully covers the cost of
-> code duplication.
+Convert to the SET_PM_RUNTIME_PM macro while defining the runtime PM
+callbacks. This means the callbacks becomes available for both
+CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME, which is needed to handle the
+combinations of these scenarios.
 
-I don't know. The code is apparently cleaner because calling a function
-with NULL memcg just to go via several if (memcg) branches is ugly as
-hell. But having a duplicated function like this calls for a problem
-later.
+Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ drivers/spi/spi-pl022.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Would it be possible to split kmem_cache_create into memcg independant
-part and do the rest in a single memcg branch?
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index 2789b45..70fa907 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -2288,7 +2288,7 @@ pl022_remove(struct amba_device *adev)
+ 	return 0;
+ }
  
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
->  include/linux/memcontrol.h |   14 ++---
->  include/linux/slab.h       |    9 ++-
->  mm/memcontrol.c            |   16 ++----
->  mm/slab_common.c           |  130 ++++++++++++++++++++++++++------------------
->  4 files changed, 90 insertions(+), 79 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 84e4801fc36c..de79a9617e09 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -500,8 +500,8 @@ int memcg_cache_id(struct mem_cgroup *memcg);
->  
->  char *memcg_create_cache_name(struct mem_cgroup *memcg,
->  			      struct kmem_cache *root_cache);
-> -int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
-> -			     struct kmem_cache *root_cache);
-> +int memcg_alloc_cache_params(struct kmem_cache *s,
-> +		struct mem_cgroup *memcg, struct kmem_cache *root_cache);
-
-Why is the parameters ordering changed? It really doesn't help
-review the patch. Also what does `s' stand for and can we use a more
-descriptive name, please?
-
-[...]
+-#if defined(CONFIG_SUSPEND) || defined(CONFIG_PM_RUNTIME)
++#ifdef CONFIG_PM
+ /*
+  * These two functions are used from both suspend/resume and
+  * the runtime counterparts to handle external resources like
+@@ -2354,7 +2354,7 @@ static int pl022_resume(struct device *dev)
+ }
+ #endif	/* CONFIG_PM */
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int pl022_runtime_suspend(struct device *dev)
+ {
+ 	struct pl022 *pl022 = dev_get_drvdata(dev);
+@@ -2374,7 +2374,7 @@ static int pl022_runtime_resume(struct device *dev)
+ 
+ static const struct dev_pm_ops pl022_dev_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(pl022_suspend, pl022_resume)
+-	SET_RUNTIME_PM_OPS(pl022_runtime_suspend, pl022_runtime_resume, NULL)
++	SET_PM_RUNTIME_PM_OPS(pl022_runtime_suspend, pl022_runtime_resume, NULL)
+ };
+ 
+ static struct vendor_data vendor_arm = {
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
