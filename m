@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933852AbaBDVIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56486 "EHLO
+	id S935915AbaBDW2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:28:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56536 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933304AbaBDVHy (ORCPT
+	with ESMTP id S933848AbaBDVIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:07:54 -0500
+	Tue, 4 Feb 2014 16:08:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        mtosatti@redhat.com, Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.12 013/133] x86, kvm: correctly access the KVM_CPUID_FEATURES leaf at 0x40000101
-Date: Tue,  4 Feb 2014 13:06:54 -0800
-Message-Id: <20140204210737.395946681@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 035/133] rtlwifi: rtl8192c: Add routines to save/restore power index registers
+Date: Tue,  4 Feb 2014 13:07:16 -0800
+Message-Id: <20140204210738.024923978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,71 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 77f01bdfa5e55dc19d3eb747181d2730a9bb3ca8 upstream.
+commit 97204e93f01868eeba6ae5c4f3270f32905bb418 upstream.
 
-When Hyper-V hypervisor leaves are present, KVM must relocate
-its own leaves at 0x40000100, because Windows does not look for
-Hyper-V leaves at indices other than 0x40000000.  In this case,
-the KVM features are at 0x40000101, but the old code would always
-look at 0x40000001.
-
-Fix by using kvm_cpuid_base().  This also requires making the
-function non-inline, since kvm_cpuid_base() is static.
-
-Fixes: 1085ba7f552d84aa8ac0ae903fa8d0cc2ff9f79d
-Cc: mtosatti@redhat.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_para.h |   11 ++++++-----
- arch/x86/kernel/kvm.c           |    5 +++++
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   36 ++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -85,13 +85,9 @@ static inline long kvm_hypercall4(unsign
- 	return ret;
- }
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -158,6 +158,42 @@ static const u8 cckswing_table_ch14[CCK_
+ 	{0x09, 0x08, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00}
+ };
  
--static inline unsigned int kvm_arch_para_features(void)
--{
--	return cpuid_eax(KVM_CPUID_FEATURES);
--}
--
- #ifdef CONFIG_KVM_GUEST
- bool kvm_para_available(void);
-+unsigned int kvm_arch_para_features(void);
- void __init kvm_guest_init(void);
- void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
-@@ -115,6 +111,11 @@ static inline bool kvm_para_available(vo
- {
- 	return 0;
- }
++static u32 power_index_reg[6] = {0xc90, 0xc91, 0xc92, 0xc98, 0xc99, 0xc9a};
 +
-+static inline unsigned int kvm_arch_para_features(void)
++void dm_restorepowerindex(struct ieee80211_hw *hw)
 +{
-+	return 0;
-+}
- 
- static inline u32 kvm_read_and_reset_pf_reason(void)
- {
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -527,6 +527,11 @@ bool kvm_para_available(void)
- }
- EXPORT_SYMBOL_GPL(kvm_para_available);
- 
-+unsigned int kvm_arch_para_features(void)
-+{
-+	return cpuid_eax(kvm_cpuid_base() | KVM_CPUID_FEATURES);
-+}
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8	index;
 +
- static uint32_t __init kvm_detect(void)
++	for (index = 0; index < 6; index++)
++		rtl_write_byte(rtlpriv, power_index_reg[index],
++			       rtlpriv->dm.powerindex_backup[index]);
++}
++EXPORT_SYMBOL_GPL(dm_restorepowerindex);
++
++void dm_writepowerindex(struct ieee80211_hw *hw, u8 value)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8 index;
++
++	for (index = 0; index < 6; index++)
++		rtl_write_byte(rtlpriv, power_index_reg[index], value);
++}
++EXPORT_SYMBOL_GPL(dm_writepowerindex);
++
++void dm_savepowerindex(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8 index;
++	u8 tmp;
++
++	for (index = 0; index < 6; index++) {
++		tmp = rtl_read_byte(rtlpriv, power_index_reg[index]);
++		rtlpriv->dm.powerindex_backup[index] = tmp;
++	}
++}
++EXPORT_SYMBOL_GPL(dm_savepowerindex);
++
+ static void rtl92c_dm_diginit(struct ieee80211_hw *hw)
  {
- 	return kvm_cpuid_base();
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 
 
