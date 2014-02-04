@@ -1,114 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaBDV7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:59:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57851 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229AbaBDV6i (ORCPT
+	id S1755307AbaBDV7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:59:18 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:48987 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287AbaBDV7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:58:38 -0500
-Date: Tue, 4 Feb 2014 13:58:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 2/3] mm: vmscan: get rid of DEFAULT_SEEKS and document
- shrink_slab logic
-Message-Id: <20140204135836.05c09c765073513e62edd174@linux-foundation.org>
-In-Reply-To: <e204471853100447541ce36b198c0d45bf06379c.1389982079.git.vdavydov@parallels.com>
-References: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com>
-	<e204471853100447541ce36b198c0d45bf06379c.1389982079.git.vdavydov@parallels.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Feb 2014 16:59:15 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rob Herring <robh+dt@kernel.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH] DT: Add vendor prefix for Spansion Inc.
+Date: Tue,  4 Feb 2014 22:59:09 +0100
+Message-Id: <1391551149-15958-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Jan 2014 23:25:30 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-> Each shrinker must define the number of seeks it takes to recreate a
-> shrinkable cache object. It is used to balance slab reclaim vs page
-> reclaim: assuming it costs one seek to replace an LRU page, we age equal
-> percentages of the LRU and ageable caches. So far, everything sounds
-> clear, but the code implementing this behavior is rather confusing.
-> 
-> First, there is the DEFAULT_SEEKS constant, which equals 2 for some
-> reason:
-> 
->   #define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
-> 
-> Most shrinkers define `seeks' to be equal to DEFAULT_SEEKS, some use
-> DEFAULT_SEEKS*N, and there are a few that totally ignore it. What is
-> peculiar, dcache and icache shrinkers have seeks=DEFAULT_SEEKS although
-> recreating an inode typically requires one seek. Does this mean that we
-> scan twice more inodes than we should?
-> 
-> Actually, no. The point is that vmscan handles DEFAULT_SEEKS as if it
-> were 1 (`delta' is the number of objects we are going to scan):
-> 
->   shrink_slab_node():
->     delta = (4 * nr_pages_scanned) / shrinker->seeks;
->     delta *= freeable;
->     do_div(delta, lru_pages + 1);
-> 
-> i.e.
-> 
->             2 * nr_pages_scanned    DEFAULT_SEEKS
->     delta = -------------------- * --------------- * freeable;
->                  lru_pages         shrinker->seeks
-> 
-> Here we double the number of pages scanned in order to take into account
-> moves of on-LRU pages from the inactive list to the active list, which
-> we do not count in nr_pages_scanned.
-> 
-> That said, shrinker->seeks=DEFAULT_SEEKS*N is equivalent to N seeks, so
-> why on the hell do we need it?
-> 
-> IMO, the existence of the DEFAULT_SEEKS constant only causes confusion
-> for both users of the shrinker interface and those trying to understand
-> how slab shrinking works. The meaning of the `seeks' is perfectly
-> explained by the comment to it and there is no need in any obscure
-> constants for using it.
-> 
-> That's why I'm sending this patch which completely removes DEFAULT_SEEKS
-> and makes all shrinkers use N instead of N*DEFAULT_SEEKS, documenting
-> the idea lying behind shrink_slab() in the meanwhile.
-> 
-> Unfortunately, there are a few shrinkers that define seeks=1, which is
-> impossible to transfer to the new interface intact, namely:
-> 
->   nfsd_reply_cache_shrinker
->   ttm_pool_manager::mm_shrink
->   ttm_pool_manager::mm_shrink
->   dm_bufio_client::shrinker
-> 
-> It seems to me their authors were simply deceived by this mysterious
-> DEFAULT_SEEKS constant, because I've found no documentation why these
-> particular caches should be scanned more aggressively than the page and
-> other slab caches. For them, this patch leaves seeks=1. Thus, it DOES
-> introduce a functional change: the shrinkers enumerated above will be
-> scanned twice less intensively than they are now. I do not think that
-> this will cause any problems though.
-> 
+This is already in active use in several DTS files.
 
-um, yes.  DEFAULT_SEEKS is supposed to be "the number of seeks if you
-don't know any better".  Using DEFAULT_SEEKS*n is just daft.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+---
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 1 file changed, 1 insertion(+)
 
-So why did I originally make DEFAULT_SEEKS=2?  Because I figured that to
-recreate (say) an inode would require a seek to the inode data then a
-seek back.  Is it legitimate to include the
-seek-back-to-what-you-were-doing-before seek in the cost of an inode
-reclaim?  I guess so...
-
-If a filesystem were to require a seek to the superblock for every
-inode read (ok, bad example) then the cost of reestablishing that inode
-would be 3.
-
-All that being said, why did you go through and halve everything?  The
-cost of reestablishing an ext2 inode should be "2 seeks", but the patch
-makes it "1".
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 3f900cd51bf0..29afbdedec3c 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -78,6 +78,7 @@ silabs	Silicon Laboratories
+ simtek
+ sirf	SiRF Technology, Inc.
+ snps 	Synopsys, Inc.
++spansion	Spansion Inc.
+ st	STMicroelectronics
+ ste	ST-Ericsson
+ stericsson	ST-Ericsson
+-- 
+1.7.9.5
 
