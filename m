@@ -1,101 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaBDJIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 04:08:40 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:51913 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaBDJI3 (ORCPT
+	id S1753941AbaBDJKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 04:10:13 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:55097 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751234AbaBDJKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 04:08:29 -0500
-Date: Tue, 4 Feb 2014 10:08:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
-Message-ID: <20140204090809.GA19156@gmail.com>
-References: <1391452183-2160-1-git-send-email-bp@alien8.de>
- <alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
- <CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
- <20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
- <alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
+	Tue, 4 Feb 2014 04:10:06 -0500
+Date: Tue, 4 Feb 2014 10:09:26 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
+Subject: Re: [PATCH v3 3/5] spi: sunxi: Add Allwinner A31 SPI controller
+ driver
+Message-ID: <20140204090926.GI25625@lukather>
+References: <1391165752-1819-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1391165752-1819-4-git-send-email-maxime.ripard@free-electrons.com>
+ <20140131124809.GE22609@sirena.org.uk>
+ <20140131224704.GI2950@lukather>
+ <20140204002110.GP22609@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a7XSrSxqzVsaECgU"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
+In-Reply-To: <20140204002110.GP22609@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* David Rientjes <rientjes@google.com> wrote:
+--a7XSrSxqzVsaECgU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, 3 Feb 2014, Andrew Morton wrote:
-> 
-> > > > How do you define "huge bloat" if the size of vmlinux doesn't increase?
-> > > 
-> > > Don't be silly. The size of all the object files increase *hugely*.
-> > 
-> > yup, I disable this in my allmodconfig testing, to great effect.
-> > 
-> > That being said, I do think the text should make clear that the bloat
-> > is a compile-time impact and not a runtime one.  Something like
-> > 
-> > --- a/lib/Kconfig.debug~lib-kconfigdebug-clarify-config_debug_infos-bloaty-nature-fix
-> > +++ a/lib/Kconfig.debug
-> > @@ -128,9 +128,9 @@ config DEBUG_INFO
-> >  	  tools like crash, kgdb, LKCD, gdb, etc on the kernel.
-> >  
-> >  	  If you only want to have resolved symbols in kernel traces and
-> > -	  are not going to need support for those tools above, you don't need
-> > -	  to enable this as it is a huge bloat and build slowdown;
-> > -	  enable CONFIG_KALLSYMS instead.
-> > +	  are not going to need support for the above tools, you don't need
-> > +	  to enable this.  It hugely bloat object files' on-disk sizes and slows
-> > +	  the build.  Enable CONFIG_KALLSYMS instead.
-> >  
-> >  	  If unsure, say N.
-> >  
-> 
-> Um, I still don't think this is right since 
-> CONFIG_DEBUG_INFO_REDUCED requires you to say yes here and that 
-> config option actually specifies the tools for which it is 
-> effective.  Are you suggesting that we decouple CONFIG_DEBUG_INFO 
-> from CONFIG_DEBUG_INFO_REDUCED and make CONFIG_DEBUG_INFO select the 
-> reduced variant?  Or... what?
+Hi Mark,
 
-I think the right solution is what I suggested in another recent 
-discussion:
+On Tue, Feb 04, 2014 at 12:21:10AM +0000, Mark Brown wrote:
+> On Fri, Jan 31, 2014 at 11:47:04PM +0100, Maxime Ripard wrote:
+> > On Fri, Jan 31, 2014 at 12:48:09PM +0000, Mark Brown wrote:
+> > > On Fri, Jan 31, 2014 at 11:55:50AM +0100, Maxime Ripard wrote:
+>=20
+> > > > +	pm_runtime_enable(&pdev->dev);
+> > > > +	if (!pm_runtime_enabled(&pdev->dev)) {
+> > > > +		ret =3D sun6i_spi_runtime_resume(&pdev->dev);
+> > > > +		if (ret) {
+> > > > +			dev_err(&pdev->dev, "Couldn't resume the device\n");
+> > > > +			return ret;
+> > > > +		}
+> > > > +	}
+>=20
+> > > No, as discussed don't do this - notice how other drivers aren't writ=
+ten
+> > > this way either.  Like I said leave the device powered on startup and
+> > > then let it be idled by runtime PM.
+>=20
+> > Well, some SPI drivers are actually written like that (all the tegra
+>=20
+> It's not been done consistently, no - that should be fixed.
+>=20
+> > SPI drivers for example). It's not an excuse, but waking up the device
+> > only to put it back in suspend right away seems kind of
+>=20
+> It isn't awesome, no.  Ideally the runtime PM code would do this but
+> then you couldn't ifdef the operations which as far as I can tell is the
+> main thing people want from disabling it and it gets complicated for
+> devices that genuinely do power up on startup so here we are.
 
-"So to reign in debuginfo in allyesconfig/allmodconfig builds we could 
- do something like:
+We discussed it with Kevin on IRC, and he suggested that we move that
+pm_runtime initialization to the SPI core, but I guess that would also
+mean that all drivers shouldn't ifdef the operations, so that the core
+can call the runtime_resume callback directly.
 
- config SAVE_TIME_AND_DISK_SPACE
-        bool "Faster and leaner build object files: compile without debug info"
-        default y
+However, I don't really get why any driver should be doing so, since
+you still need these functions to at least to the device
+suspend/resume in the probe/remove, and you don't really want to
+duplicate the code.
 
- choice
-        prompt "Choose DEBUGINFO bloat level"
-        depends on !SAVE_TIME_AND_DISK_SPACE
-        default DEBUG_INFO_REDUCED
-        help
-           This option allows to select the debuginfo model.
+Right now, about half of the SPI drivers using auto_runtime_pm are
+using a ifdef, the other half is not.
 
-   config DEBUG_INFO_REDUCED
-        bool "Reduced amount of debugging information, 4x regular .o size"
+> > inefficient. Plus, the pm_runtime_idle callback you suggested are
+> > actually calling runtime_idle, while we want to call runtime_suspend.
+>=20
+> Yeah, I didn't actually check if I was looking at the right call there.
 
-   config DEBUG_INFO
-        bool "Full debuginfo, 10x regular .o size, 'planet killer' version"
-
- endchoice
-
- That would default to Y and would disable debuginfo by default."
+I was actually wrong, it does so in its very last line.
 
 Thanks,
+Maxime
 
-	Ingo
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--a7XSrSxqzVsaECgU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8K5GAAoJEBx+YmzsjxAgH5QQALk76NTGMUunWeqr5XCeSoEP
+bYrpdT48kylB6f8LzNmd2gMe1eZE7HKgW/fBvCDGF7Ms0+jXQxPC87ucdvPuPBYr
+mwtRhcTjW9WLXZM7tH/Lh8K0sJHiUYqm8MZfGLzQUm1nnZ6587utxJ8Sxy89rHIy
+GAUThAcy93plh4TgkdxcBG1svn99k1kdhr+PaA0jiZ5y+yYUwGxgXOJyq5Wv68xk
+9mMQ/GYPHNSFFrJbKc7PWUC1PTES07uFv+LFzpS0BzZzqku8F0OKBmLaXlNJJLJa
+9zJ/WcpW9+2U2CuROjmXmdNmX46u2utCwGuqXT4XiodrjgjwekBMT50M7KCYctMa
+hHvy1Ldq78/eREADJOAzofjPK+p9TVNF445Mh86SPVFcsX5l1go9A3+lSeLqPUse
+8RtkwRv/Qa7+bwnyzegjru0ucXuRBPZ8hoxNPMm0FVS5bFqSS7O+MQwf6NNRSWRS
+b8fkaqL+q5P0IeYke/B/FMTYvw6anctQG6gouyX9K6YqJd8MDRUfYOrpyWV+7Ya+
+hfMf7M58uX1GrjLexWZn2YzreDC9fJTFzH0Hxyl/qQJTPKyZOGEdgPd1lgyxG5DT
+D1td6h6TxPglyjsBttyVNtX416Uxh00XCv+ufo2QPgrRPbRy8olD+7e5+TMGa70x
+ocB7Z/Fz7pY/HSS4HSBc
+=43Nn
+-----END PGP SIGNATURE-----
+
+--a7XSrSxqzVsaECgU--
