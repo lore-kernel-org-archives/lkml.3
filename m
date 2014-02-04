@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934226AbaBDVJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56803 "EHLO
+	id S935511AbaBDV53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:57:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56972 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934086AbaBDVJB (ORCPT
+	with ESMTP id S934221AbaBDVJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:01 -0500
+	Tue, 4 Feb 2014 16:09:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.12 096/133] ARM: mvebu: Add support to get the ID and the revision of a SoC
-Date: Tue,  4 Feb 2014 13:08:17 -0800
-Message-Id: <20140204210739.749684293@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        Holger Eitzenberger <holger@eitzenberger.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 113/133] net: Fix memory leak if TPROXY used with TCP early demux
+Date: Tue,  4 Feb 2014 13:08:34 -0800
+Message-Id: <20140204210740.220769184@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,197 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Holger Eitzenberger <holger@eitzenberger.org>
 
-commit af8d1c63afcbf36eea06789c92e22d4af118d2fb upstream.
+[ Upstream commit a452ce345d63ddf92cd101e4196569f8718ad319 ]
 
-All the mvebu SoCs have information related to their variant and
-revision that can be read from the PCI control register.
+I see a memory leak when using a transparent HTTP proxy using TPROXY
+together with TCP early demux and Kernel v3.8.13.15 (Ubuntu stable):
 
-This patch adds support for Armada XP and Armada 370. This reading of
-the revision and the ID are done before the PCI initialization to
-avoid any conflicts. Once these data are retrieved, the resources are
-freed to let the PCI subsystem use it.
+unreferenced object 0xffff88008cba4a40 (size 1696):
+  comm "softirq", pid 0, jiffies 4294944115 (age 8907.520s)
+  hex dump (first 32 bytes):
+    0a e0 20 6a 40 04 1b 37 92 be 32 e2 e8 b4 00 00  .. j@..7..2.....
+    02 00 07 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff810b710a>] kmem_cache_alloc+0xad/0xb9
+    [<ffffffff81270185>] sk_prot_alloc+0x29/0xc5
+    [<ffffffff812702cf>] sk_clone_lock+0x14/0x283
+    [<ffffffff812aaf3a>] inet_csk_clone_lock+0xf/0x7b
+    [<ffffffff8129a893>] netlink_broadcast+0x14/0x16
+    [<ffffffff812c1573>] tcp_create_openreq_child+0x1b/0x4c3
+    [<ffffffff812c033e>] tcp_v4_syn_recv_sock+0x38/0x25d
+    [<ffffffff812c13e4>] tcp_check_req+0x25c/0x3d0
+    [<ffffffff812bf87a>] tcp_v4_do_rcv+0x287/0x40e
+    [<ffffffff812a08a7>] ip_route_input_noref+0x843/0xa55
+    [<ffffffff812bfeca>] tcp_v4_rcv+0x4c9/0x725
+    [<ffffffff812a26f4>] ip_local_deliver_finish+0xe9/0x154
+    [<ffffffff8127a927>] __netif_receive_skb+0x4b2/0x514
+    [<ffffffff8127aa77>] process_backlog+0xee/0x1c5
+    [<ffffffff8127c949>] net_rx_action+0xa7/0x200
+    [<ffffffff81209d86>] add_interrupt_randomness+0x39/0x157
 
-Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+But there are many more, resulting in the machine going OOM after some
+days.
+
+>From looking at the TPROXY code, and with help from Florian, I see
+that the memory leak is introduced in tcp_v4_early_demux():
+
+  void tcp_v4_early_demux(struct sk_buff *skb)
+  {
+    /* ... */
+
+    iph = ip_hdr(skb);
+    th = tcp_hdr(skb);
+
+    if (th->doff < sizeof(struct tcphdr) / 4)
+        return;
+
+    sk = __inet_lookup_established(dev_net(skb->dev), &tcp_hashinfo,
+                       iph->saddr, th->source,
+                       iph->daddr, ntohs(th->dest),
+                       skb->skb_iif);
+    if (sk) {
+        skb->sk = sk;
+
+where the socket is assigned unconditionally to skb->sk, also bumping
+the refcnt on it.  This is problematic, because in our case the skb
+has already a socket assigned in the TPROXY target.  This then results
+in the leak I see.
+
+The very same issue seems to be with IPv6, but haven't tested.
+
+Reviewed-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Holger Eitzenberger <holger@eitzenberger.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mach-mvebu/Makefile       |    2 
- arch/arm/mach-mvebu/mvebu-soc-id.c |  119 +++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mvebu/mvebu-soc-id.h |   32 +++++++++
- 3 files changed, 152 insertions(+), 1 deletion(-)
+ net/ipv4/ip_input.c  |    2 +-
+ net/ipv6/ip6_input.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-mvebu/Makefile
-+++ b/arch/arm/mach-mvebu/Makefile
-@@ -3,7 +3,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) :=
+--- a/net/ipv4/ip_input.c
++++ b/net/ipv4/ip_input.c
+@@ -314,7 +314,7 @@ static int ip_rcv_finish(struct sk_buff
+ 	const struct iphdr *iph = ip_hdr(skb);
+ 	struct rtable *rt;
  
- AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
+-	if (sysctl_ip_early_demux && !skb_dst(skb)) {
++	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
+ 		const struct net_protocol *ipprot;
+ 		int protocol = iph->protocol;
  
--obj-y				 += system-controller.o
-+obj-y				 += system-controller.o mvebu-soc-id.o
- obj-$(CONFIG_MACH_ARMADA_370_XP) += armada-370-xp.o
- obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
- obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
---- /dev/null
-+++ b/arch/arm/mach-mvebu/mvebu-soc-id.c
-@@ -0,0 +1,119 @@
-+/*
-+ * ID and revision information for mvebu SoCs
-+ *
-+ * Copyright (C) 2014 Marvell
-+ *
-+ * Gregory CLEMENT <gregory.clement@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ *
-+ * All the mvebu SoCs have information related to their variant and
-+ * revision that can be read from the PCI control register. This is
-+ * done before the PCI initialization to avoid any conflict. Once the
-+ * ID and revision are retrieved, the mapping is freed.
-+ */
-+
-+#define pr_fmt(fmt) "mvebu-soc-id: " fmt
-+
-+#include <linux/clk.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include "mvebu-soc-id.h"
-+
-+#define PCIE_DEV_ID_OFF		0x0
-+#define PCIE_DEV_REV_OFF	0x8
-+
-+#define SOC_ID_MASK	    0xFFFF0000
-+#define SOC_REV_MASK	    0xFF
-+
-+static u32 soc_dev_id;
-+static u32 soc_rev;
-+static bool is_id_valid;
-+
-+static const struct of_device_id mvebu_pcie_of_match_table[] = {
-+	{ .compatible = "marvell,armada-xp-pcie", },
-+	{ .compatible = "marvell,armada-370-pcie", },
-+	{},
-+};
-+
-+int mvebu_get_soc_id(u32 *dev, u32 *rev)
-+{
-+	if (is_id_valid) {
-+		*dev = soc_dev_id;
-+		*rev = soc_rev;
-+		return 0;
-+	} else
-+		return -1;
-+}
-+
-+static int __init mvebu_soc_id_init(void)
-+{
-+	struct device_node *np;
-+	int ret = 0;
-+	void __iomem *pci_base;
-+	struct clk *clk;
-+	struct device_node *child;
-+
-+	np = of_find_matching_node(NULL, mvebu_pcie_of_match_table);
-+	if (!np)
-+		return ret;
-+
-+	/*
-+	 * ID and revision are available from any port, so we
-+	 * just pick the first one
-+	 */
-+	child = of_get_next_child(np, NULL);
-+	if (child == NULL) {
-+		pr_err("cannot get pci node\n");
-+		ret = -ENOMEM;
-+		goto clk_err;
-+	}
-+
-+	clk = of_clk_get_by_name(child, NULL);
-+	if (IS_ERR(clk)) {
-+		pr_err("cannot get clock\n");
-+		ret = -ENOMEM;
-+		goto clk_err;
-+	}
-+
-+	ret = clk_prepare_enable(clk);
-+	if (ret) {
-+		pr_err("cannot enable clock\n");
-+		goto clk_err;
-+	}
-+
-+	pci_base = of_iomap(child, 0);
-+	if (IS_ERR(pci_base)) {
-+		pr_err("cannot map registers\n");
-+		ret = -ENOMEM;
-+		goto res_ioremap;
-+	}
-+
-+	/* SoC ID */
-+	soc_dev_id = readl(pci_base + PCIE_DEV_ID_OFF) >> 16;
-+
-+	/* SoC revision */
-+	soc_rev = readl(pci_base + PCIE_DEV_REV_OFF) & SOC_REV_MASK;
-+
-+	is_id_valid = true;
-+
-+	pr_info("MVEBU SoC ID=0x%X, Rev=0x%X\n", soc_dev_id, soc_rev);
-+
-+	iounmap(pci_base);
-+
-+res_ioremap:
-+	clk_disable_unprepare(clk);
-+
-+clk_err:
-+	of_node_put(child);
-+	of_node_put(np);
-+
-+	return ret;
-+}
-+core_initcall(mvebu_soc_id_init);
-+
---- /dev/null
-+++ b/arch/arm/mach-mvebu/mvebu-soc-id.h
-@@ -0,0 +1,32 @@
-+/*
-+ * Marvell EBU SoC ID and revision definitions.
-+ *
-+ * Copyright (C) 2014 Marvell Semiconductor
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#ifndef __LINUX_MVEBU_SOC_ID_H
-+#define __LINUX_MVEBU_SOC_ID_H
-+
-+/* Armada XP ID */
-+#define MV78230_DEV_ID	    0x7823
-+#define MV78260_DEV_ID	    0x7826
-+#define MV78460_DEV_ID	    0x7846
-+
-+/* Armada XP Revision */
-+#define MV78XX0_A0_REV	    0x1
-+#define MV78XX0_B0_REV	    0x2
-+
-+#ifdef CONFIG_ARCH_MVEBU
-+int mvebu_get_soc_id(u32 *dev, u32 *rev);
-+#else
-+static inline int mvebu_get_soc_id(u32 *dev, u32 *rev)
-+{
-+	return -1;
-+}
-+#endif
-+
-+#endif /* __LINUX_MVEBU_SOC_ID_H */
+--- a/net/ipv6/ip6_input.c
++++ b/net/ipv6/ip6_input.c
+@@ -49,7 +49,7 @@
+ 
+ int ip6_rcv_finish(struct sk_buff *skb)
+ {
+-	if (sysctl_ip_early_demux && !skb_dst(skb)) {
++	if (sysctl_ip_early_demux && !skb_dst(skb) && skb->sk == NULL) {
+ 		const struct inet6_protocol *ipprot;
+ 
+ 		ipprot = rcu_dereference(inet6_protos[ipv6_hdr(skb)->nexthdr]);
 
 
