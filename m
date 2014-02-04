@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964859AbaBDWdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:33:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56497 "EHLO
+	id S964844AbaBDWdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:33:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933793AbaBDVH4 (ORCPT
+	with ESMTP id S933239AbaBDVH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:07:56 -0500
+	Tue, 4 Feb 2014 16:07:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Matthieu Vanin <b47495@freescale.com>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: [PATCH 3.12 017/133] usb: chipidea: udc: using MultO at TD as real mult value for ISO-TX
-Date: Tue,  4 Feb 2014 13:06:58 -0800
-Message-Id: <20140204210737.506822391@linuxfoundation.org>
+        Ethan Wilson <ethan.wilson@shiftmail.org>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.12 002/133] md/raid5: fix long-standing problem with bitmap handling on write failure.
+Date: Tue,  4 Feb 2014 13:06:43 -0800
+Message-Id: <20140204210737.081042417@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,85 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 2fc5a7dace3c43e62402ab4e8800a8f1834ffe2a upstream.
+commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
 
-We have met a bug that the high bandwidth ISO-TX transfer has failed
-at the last packet if it is less than 1024, the TD status shows it
-is "Transaction Error".
+Before a write starts we set a bit in the write-intent bitmap.
+When the write completes we clear that bit if the write was successful
+to all devices.  However if the write wasn't fully successful we
+should not clear the bit.  If the faulty drive is subsequently
+re-added, the fact that the bit is still set ensure that we will
+re-write the data that is missing.
 
-The root cause of this problem is: the mult value at qh is not correct
-for current TD's transfer length. We use TD list to queue un-transfer
-TDs, and change mult for new adding TDs. If new adding TDs transfer length
-less than 1024, but the queued un-transfer TDs transfer length is larger
-than 1024, the transfer error will occur, and vice versa.
-Usually, this problem occurs at the last packet, and the first packet for
-new frame.
+This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
+bitmap bit when this flag is not set.
+Currently we correctly set the flag if a write starts when some
+devices are failed or missing.  But we do *not* set the flag if some
+device failed during the write attempt.
+This is wrong and can result in clearing the bit inappropriately.
 
-We fixed this problem by setting Mult at QH as the largest value (3), and
-set MultO (Multiplier Override) at TD according to every transfer length.
-It can cover both hardware version less than 2.3 (the real mult is MultO
-if it is not 0) and 2.3+ (the real mult is min(qh.mult, td.multo)).
+So: set the flag when a write fails.
 
-Since the MultO bits are only existed at TX TD, we keep the ISO-RX behavior
-unchanged.
+This bug has been present since bitmaps were introduces, so the fix is
+suitable for any -stable kernel.
 
-For stable tree: 3.11+.
-
-Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Reported-by: Matthieu Vanin <b47495@freescale.com>
-Tested-by: Matthieu Vanin <b47495@freescale.com>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -394,6 +394,14 @@ static int add_td_to_list(struct ci_hw_e
- 	node->ptr->token = cpu_to_le32(length << __ffs(TD_TOTAL_BYTES));
- 	node->ptr->token &= cpu_to_le32(TD_TOTAL_BYTES);
- 	node->ptr->token |= cpu_to_le32(TD_STATUS_ACTIVE);
-+	if (hwep->type == USB_ENDPOINT_XFER_ISOC && hwep->dir == TX) {
-+		u32 mul = hwreq->req.length / hwep->ep.maxpacket;
-+
-+		if (hwreq->req.length == 0
-+				|| hwreq->req.length % hwep->ep.maxpacket)
-+			mul++;
-+		node->ptr->token |= mul << __ffs(TD_MULTO);
-+	}
- 
- 	temp = (u32) (hwreq->req.dma + hwreq->req.actual);
- 	if (length) {
-@@ -516,10 +524,11 @@ static int _hardware_enqueue(struct ci_h
- 	hwep->qh.ptr->td.token &=
- 		cpu_to_le32(~(TD_STATUS_HALTED|TD_STATUS_ACTIVE));
- 
--	if (hwep->type == USB_ENDPOINT_XFER_ISOC) {
-+	if (hwep->type == USB_ENDPOINT_XFER_ISOC && hwep->dir == RX) {
- 		u32 mul = hwreq->req.length / hwep->ep.maxpacket;
- 
--		if (hwreq->req.length % hwep->ep.maxpacket)
-+		if (hwreq->req.length == 0
-+				|| hwreq->req.length % hwep->ep.maxpacket)
- 			mul++;
- 		hwep->qh.ptr->cap |= mul << __ffs(QH_MULT);
- 	}
-@@ -1172,6 +1181,12 @@ static int ep_enable(struct usb_ep *ep,
- 	if (hwep->num)
- 		cap |= QH_ZLT;
- 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
-+	/*
-+	 * For ISO-TX, we set mult at QH as the largest value, and use
-+	 * MultO at TD as real mult value.
-+	 */
-+	if (hwep->type == USB_ENDPOINT_XFER_ISOC && hwep->dir == TX)
-+		cap |= 3 << __ffs(QH_MULT);
- 
- 	hwep->qh.ptr->cap = cpu_to_le32(cap);
- 
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -2004,6 +2004,7 @@ static void raid5_end_write_request(stru
+ 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
+ 	} else {
+ 		if (!uptodate) {
++			set_bit(STRIPE_DEGRADED, &sh->state);
+ 			set_bit(WriteErrorSeen, &rdev->flags);
+ 			set_bit(R5_WriteError, &sh->dev[i].flags);
+ 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
 
 
