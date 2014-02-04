@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553AbaBDG7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 01:59:04 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:44026 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557AbaBDG6z (ORCPT
+	id S1753257AbaBDHAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 02:00:22 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:46789 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaBDHAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 01:58:55 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-To: gregkh@linuxfoundation.org, lisa@xenapiadmin.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH] staging: bcm: fix pointer-integer size mismatch warnings
-Date: Tue,  4 Feb 2014 15:59:23 +0900
-Message-Id: <1391497163-6894-1-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 4 Feb 2014 02:00:18 -0500
 MIME-Version: 1.0
+In-Reply-To: <8761ovwemu.fsf@devron.myhome.or.jp>
+References: <1387953112-2828-1-git-send-email-linkinjeon@gmail.com>
+	<87eh3kx1n6.fsf@devron.myhome.or.jp>
+	<CAKYAXd9mm6KmMu6XvQoFynQtyAC8yR5rCd12SMoB_PFgojbEiw@mail.gmail.com>
+	<87a9e7wq6w.fsf@devron.myhome.or.jp>
+	<CAKYAXd8K9tO2zyZvHtMRA54=XvWowaA3SVa2H6_R5bnmKgG5Dg@mail.gmail.com>
+	<8761ovwemu.fsf@devron.myhome.or.jp>
+Date: Tue, 4 Feb 2014 16:00:17 +0900
+Message-ID: <CAKYAXd8MNy=tp3U26u-5G21ZHcQ8gPRTrrEbAvhZKcvFJJRyZQ@mail.gmail.com>
+Subject: Re: [PATCH v3 5/6] fat: permit to return phy block number by fibmap
+ in fallocated region
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the pointer-integer size mismatch warnings below:
-	drivers/staging/bcm/CmHost.c: In function ‘StoreCmControlResponseMessage’:
-	drivers/staging/bcm/CmHost.c:1387:39: warning: cast to pointer from
-			integer of different size [-Wint-to-pointer-cast]
-	  pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
-					       ^
-	drivers/staging/bcm/CmHost.c:1426:37: warning: cast to pointer from
-			integer of different size [-Wint-to-pointer-cast]
-	  pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
-					     ^
-	drivers/staging/bcm/CmHost.c:1440:35: warning: cast to pointer from
-			integer of different size [-Wint-to-pointer-cast]
-	  pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfActiveSet);
-					   ^
-
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- drivers/staging/bcm/CmHost.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
-index cc91b5e..dd8f8f7 100644
---- a/drivers/staging/bcm/CmHost.c
-+++ b/drivers/staging/bcm/CmHost.c
-@@ -1384,7 +1384,8 @@ ULONG StoreCmControlResponseMessage(struct bcm_mini_adapter *Adapter, PVOID pvBu
- 	}
- 
- 	/* this can't possibly be right */
--	pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
-+	pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)
-+		(uintptr_t)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
- 
- 	if (pstAddIndicationAlt->u8Type == DSA_REQ) {
- 		struct bcm_add_request AddRequest;
-@@ -1423,7 +1424,8 @@ ULONG StoreCmControlResponseMessage(struct bcm_mini_adapter *Adapter, PVOID pvBu
- 		return 0;
- 	}
- 
--	pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
-+	pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)
-+		(uintptr_t)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
- 
- 	/* ACTIVE SET */
- 	pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)
-@@ -1437,7 +1439,8 @@ ULONG StoreCmControlResponseMessage(struct bcm_mini_adapter *Adapter, PVOID pvBu
- 		return 0;
- 	}
- 
--	pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfActiveSet);
-+	pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)
-+		(uintptr_t)ntohl((ULONG)pstAddIndication->psfActiveSet);
- 
- 	(*puBufferLength) = sizeof(struct bcm_add_indication);
- 	*(struct bcm_add_indication *)pvBuffer = *pstAddIndication;
--- 
-1.8.3.2
-
+2014-02-04, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> 2014-02-04, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>>> Namjae Jeon <linkinjeon@gmail.com> writes:
+>>>
+>>>>>>  	/* fat_get_cluster() assumes the requested blocknr isn't truncated.
+>>>>>> */
+>>>>>>  	down_read(&MSDOS_I(mapping->host)->truncate_lock);
+>>>>>> +	/* To get block number beyond file size in fallocated region */
+>>>>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 1);
+>>>>>>  	blocknr = generic_block_bmap(mapping, block, fat_get_block);
+>>>>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 0);
+>>>>>>  	up_read(&MSDOS_I(mapping->host)->truncate_lock);
+>>>>>
+>>>>> This is racy. While user is using bmap, kernel can allocate new
+>>>>> blocks.
+>>>>> We should use another function for this.
+>>>> I understand that fat can map fallocated blocks in read case while
+>>>> user is using bmap.
+>>>> But I can not find the case allocate new blocks.
+>>>> If I am missing something, Could you please elaborate more ?
+>>>> Is it a case of _bmap request returning the block number for block
+>>>> allocated in parallel write path ?
+>>>
+>>> ->beyond_size is global for inode. So, write(2) path on same inode with
+>>> bmap() also can see 1 set by bmap() while another process is using
+>>> bmap().
+>> 'create' flag  will be 1 in write(2) path. ->beyond_isize will only be
+>> checked when 'create' flag is 0. Is there any case to be racy by
+>> beyond_isize in write(2) path ?
+>
+> Ah, so instead of write, it will assign physical address to buffers
+> beyond i_size for simple read if race?  In this case, it is still wrong.
+Right. I will fix this case.
+Thanks for review!
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
