@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934974AbaBDV3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:29:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57395 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934640AbaBDVMW (ORCPT
+	id S935196AbaBDV31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:29:27 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:57817 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934640AbaBDV3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 105/140] zram: fix race between reset and flushing pending work
-Date: Tue,  4 Feb 2014 13:11:32 -0800
-Message-Id: <20140204211039.973549084@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 16:29:19 -0500
+Date: Tue, 4 Feb 2014 16:29:14 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linux I2C List <linux-i2c@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] regulator: add bcm59056 regulator driver
+Message-ID: <20140204212914.GB16179@beef>
+References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
+ <1391516352-32359-5-git-send-email-mporter@linaro.org>
+ <20140204172836.GH22609@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140204172836.GH22609@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 04, 2014 at 05:28:36PM +0000, Mark Brown wrote:
+> On Tue, Feb 04, 2014 at 07:19:10AM -0500, Matt Porter wrote:
+> 
+> > +static unsigned int bcm59056_get_mode(struct regulator_dev *dev)
+> > +{
+> > +	return REGULATOR_MODE_NORMAL;
+> > +}
+> > +
+> > +static int bcm59056_set_mode(struct regulator_dev *dev, unsigned int mode)
+> > +{
+> > +	if (mode == REGULATOR_MODE_NORMAL)
+> > +		return 0;
+> > +	else
+> > +		return -EINVAL;
+> > +}
+> 
+> These do nothing, don't implement them.
 
-------------------
+Will remove. Maybe some day.
 
-From: Minchan Kim <minchan@kernel.org>
+> > +	if (bcm59056->dev->of_node)
+> > +		pmu_data = bcm59056_parse_dt_reg_data(pdev,
+> > +						      &bcm59056_reg_matches);
+> 
+> It'd seem a bit neater to put the OF check into the parse function but
+> meh.
 
-commit da4a04126baa3be03bc566d4a2ee0944c5e783d0 upstream.
+On second look, I'd agree. Easy enough to clean up.
 
-Dan and Sergey reported that there is a racy between reset and flushing
-of pending work so that it could make oops by freeing zram->meta in
-reset while zram_slot_free can access zram->meta if new request is
-adding during the race window.
+> > +	if (!pmu_data) {
+> > +		dev_err(&pdev->dev, "Platform data not found\n");
+> > +		return -EINVAL;
+> > +	}
+> 
+> Like I said when reviewing the binding this should not cause the driver
+> to fail to load.
 
-This patch moves flush after taking init_lock so it prevents new request
-so that it closes the race.
+Will fix.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > +		/*
+> > +		 * Regulator API handles empty constraints but not NULL
+> > +		 * constraints
+> > +		 */
+> > +		if (!reg_data)
+> > +			continue;
+> 
+> It should do...  if not then make it so since that'd mean most drivers
+> are buggy.
 
----
- drivers/staging/zram/zram_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Ahh, I see there is a check for NULL in the core. Will drop.
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -552,14 +552,14 @@ static void zram_reset_device(struct zra
- 	size_t index;
- 	struct zram_meta *meta;
- 
--	flush_work(&zram->free_work);
--
- 	down_write(&zram->init_lock);
- 	if (!zram->init_done) {
- 		up_write(&zram->init_lock);
- 		return;
- 	}
- 
-+	flush_work(&zram->free_work);
-+
- 	meta = zram->meta;
- 	zram->init_done = 0;
- 
-
-
+-Matt
