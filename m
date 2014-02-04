@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936276AbaBDWqy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:46:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56272 "EHLO
+	id S935130AbaBDWrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:47:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56252 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933384AbaBDVCd (ORCPT
+	with ESMTP id S933358AbaBDVCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:33 -0500
+	Tue, 4 Feb 2014 16:02:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Lior Amsalem <alior@marvell.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 067/104] ata: sata_mv: introduce compatible string "marvell, armada-370-sata"
-Date: Tue,  4 Feb 2014 13:02:10 -0800
-Message-Id: <20140204210224.609174973@linuxfoundation.org>
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 3.10 046/104] ARM: at91: smc: bug fix in sam9_smc_cs_read()
+Date: Tue,  4 Feb 2014 13:01:49 -0800
+Message-Id: <20140204210224.030899466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -33,53 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <simon.guinot@sequanux.org>
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 
-commit b1f5c73bd5a4752efb7d7af019034044b08aafe9 upstream.
+commit 1588c51cf6d782e63a8719681d905ef0ac22ee62 upstream.
 
-The sata_mv driver supports the SATA IP found in several Marvell SoCs.
-As some new SATA registers have been introduced with the Armada 370/XP
-SoCs, a way to identify them is needed.
+There was a copy/paste error when reading the nwe_pulse value.
 
-This patch introduces a new compatible string for the SATA IP found in
-Armada 370/XP SoCs.
-
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Lior Amsalem <alior@marvell.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/ata/marvell.txt |    2 +-
- drivers/ata/sata_mv.c                             |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-at91/sam9_smc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/ata/marvell.txt
-+++ b/Documentation/devicetree/bindings/ata/marvell.txt
-@@ -1,7 +1,7 @@
- * Marvell Orion SATA
+--- a/arch/arm/mach-at91/sam9_smc.c
++++ b/arch/arm/mach-at91/sam9_smc.c
+@@ -101,7 +101,7 @@ static void sam9_smc_cs_read(void __iome
+ 	/* Pulse register */
+ 	val = __raw_readl(base + AT91_SMC_PULSE);
  
- Required Properties:
--- compatibility : "marvell,orion-sata"
-+- compatibility : "marvell,orion-sata" or "marvell,armada-370-sata"
- - reg           : Address range of controller
- - interrupts    : Interrupt controller is using
- - nr-ports      : Number of SATA ports in use.
---- a/drivers/ata/sata_mv.c
-+++ b/drivers/ata/sata_mv.c
-@@ -4216,6 +4216,7 @@ static int mv_platform_resume(struct pla
- 
- #ifdef CONFIG_OF
- static struct of_device_id mv_sata_dt_ids[] = {
-+	{ .compatible = "marvell,armada-370-sata", },
- 	{ .compatible = "marvell,orion-sata", },
- 	{},
- };
+-	config->nwe_setup = val & AT91_SMC_NWEPULSE;
++	config->nwe_pulse = val & AT91_SMC_NWEPULSE;
+ 	config->ncs_write_pulse = (val & AT91_SMC_NCS_WRPULSE) >> 8;
+ 	config->nrd_pulse = (val & AT91_SMC_NRDPULSE) >> 16;
+ 	config->ncs_read_pulse = (val & AT91_SMC_NCS_RDPULSE) >> 24;
 
 
