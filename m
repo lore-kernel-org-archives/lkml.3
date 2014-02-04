@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936679AbaBDXMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:12:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55967 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932553AbaBDVAc (ORCPT
+	id S936665AbaBDXMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:12:42 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49970 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932558AbaBDVAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:00:32 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 31/37] net,via-rhine: Fix tx_timeout handling
-Date: Tue,  4 Feb 2014 13:01:07 -0800
-Message-Id: <20140204210056.894225818@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
-References: <20140204210055.992134150@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+Date: Tue, 4 Feb 2014 14:57:14 -0600
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH v5 4/6] spmi: pmic_arb: add support for interrupt handling
+Message-ID: <20140204205714.GN20228@joshc.qualcomm.com>
+References: <1391468739-20987-1-git-send-email-joshc@codeaurora.org>
+ <1391468739-20987-5-git-send-email-joshc@codeaurora.org>
+ <alpine.DEB.2.02.1402042107311.24986@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402042107311.24986@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 04, 2014 at 09:10:45PM +0100, Thomas Gleixner wrote:
+> On Mon, 3 Feb 2014, Josh Cartwright wrote:
+> > +static void qpnpint_irq_ack(struct irq_data *d)
+> > +{
+> > +	struct spmi_pmic_arb_dev *pa = irq_data_get_irq_chip_data(d);
+> > +	u8 irq  = d->hwirq >> 8;
+> > +	u8 apid = d->hwirq;
+> > +	unsigned long flags;
+> > +	u8 data;
+> > +
+> > +	spin_lock_irqsave(&pa->lock, flags);
+> 
+> This wants to be a raw_spinlock - think about RT!
 
-------------------
+Indeed.  I'll change this in the next revision.
 
-From: Richard Weinberger <richard@nod.at>
+> Looks sane otherwise.
 
-[ Upstream commit a926592f5e4e900f3fa903298c4619a131e60963 ]
+Great, thanks for taking a look!
 
-rhine_reset_task() misses to disable the tx scheduler upon reset,
-this can lead to a crash if work is still scheduled while we're resetting
-the tx queue.
+  Josh
 
-Fixes:
-[   93.591707] BUG: unable to handle kernel NULL pointer dereference at 0000004c
-[   93.595514] IP: [<c119d10d>] rhine_napipoll+0x491/0x6
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/via/via-rhine.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/net/ethernet/via/via-rhine.c
-+++ b/drivers/net/ethernet/via/via-rhine.c
-@@ -1601,6 +1601,7 @@ static void rhine_reset_task(struct work
- 		goto out_unlock;
- 
- 	napi_disable(&rp->napi);
-+	netif_tx_disable(dev);
- 	spin_lock_bh(&rp->lock);
- 
- 	/* clear all descriptors */
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
