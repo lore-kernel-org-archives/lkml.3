@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934718AbaBDVf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:35:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57300 "EHLO
+	id S934954AbaBDVgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:36:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57297 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934567AbaBDVMG (ORCPT
+	with ESMTP id S933689AbaBDVMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:06 -0500
+	Tue, 4 Feb 2014 16:12:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Arnez <arnez@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.13 068/140] s390/compat: fix PSW32_USER_BITS definition
-Date: Tue,  4 Feb 2014 13:10:55 -0800
-Message-Id: <20140204211038.901488093@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 085/140] ALSA: hda - Correct AD1986A 3stack pin configs
+Date: Tue,  4 Feb 2014 13:11:12 -0800
+Message-Id: <20140204211039.393174496@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,38 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 075dfd82102d2048e43e1cbf48d558d915c50072 upstream.
+commit ed0e0d0617a8dc3d8b82c6e54827f269f2247b07 upstream.
 
-PSW32_USER_BITS should define the primary address space for user space
-instead of the home address space.
-Symptom of this bug is that gdb doesn't work in compat mode.
+The 3stack pin configs for AD1986A codec had incorrect values that
+resulted in broken mic and line-in.
 
-The bug was introduced with e258d719ff28 "s390/uaccess: always run the kernel
-in home space" and f26946d7ecad "s390/compat: make psw32_user_bits a constant
-value again".
-
-Reported-by: Andreas Arnez <arnez@linux.vnet.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/compat.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_analog.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/s390/include/asm/compat.h
-+++ b/arch/s390/include/asm/compat.h
-@@ -38,7 +38,8 @@
- 
- #define PSW32_USER_BITS (PSW32_MASK_DAT | PSW32_MASK_IO | PSW32_MASK_EXT | \
- 			 PSW32_DEFAULT_KEY | PSW32_MASK_BASE | \
--			 PSW32_MASK_MCHECK | PSW32_MASK_PSTATE | PSW32_ASC_HOME)
-+			 PSW32_MASK_MCHECK | PSW32_MASK_PSTATE | \
-+			 PSW32_ASC_PRIMARY)
- 
- #define COMPAT_USER_HZ		100
- #define COMPAT_UTS_MACHINE	"s390\0\0\0\0"
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -280,11 +280,11 @@ static const struct hda_fixup ad1986a_fi
+ 		.v.pins = (const struct hda_pintbl[]) {
+ 			{ 0x1a, 0x02214021 }, /* headphone */
+ 			{ 0x1b, 0x01014011 }, /* front */
+-			{ 0x1c, 0x01013012 }, /* surround */
+-			{ 0x1d, 0x01019015 }, /* clfe */
++			{ 0x1c, 0x01813030 }, /* line-in */
++			{ 0x1d, 0x01a19020 }, /* rear mic */
+ 			{ 0x1e, 0x411111f0 }, /* N/A */
+ 			{ 0x1f, 0x02a190f0 }, /* mic */
+-			{ 0x20, 0x018130f0 }, /* line-in */
++			{ 0x20, 0x411111f0 }, /* N/A */
+ 			{}
+ 		},
+ 	},
 
 
