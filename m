@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935304AbaBDV4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:56:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56972 "EHLO
+	id S935355AbaBDV5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:57:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56952 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934239AbaBDVJf (ORCPT
+	with ESMTP id S934086AbaBDVJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:35 -0500
+	Tue, 4 Feb 2014 16:09:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [PATCH 3.12 117/133] alpha: fix broken network checksum
-Date: Tue,  4 Feb 2014 13:08:38 -0800
-Message-Id: <20140204210740.336662867@linuxfoundation.org>
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 115/133] net: gre: use icmp_hdr() to get inner ip header
+Date: Tue,  4 Feb 2014 13:08:36 -0800
+Message-Id: <20140204210740.281728905@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,50 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-commit 0ef38d70d4118b2ce1a538d14357be5ff9dc2bbd upstream.
+[ Upstream commit c0c0c50ff7c3e331c90bab316d21f724fb9e1994 ]
 
-The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 breaks networking on
-alpha (there is a follow-up fix 5cfe8f1ba5eebe6f4b6e5858cdb1a5be4f3272a6,
-but networking is still broken even with the second patch).
+When dealing with icmp messages, the skb->data points the
+ip header that triggered the sending of the icmp message.
 
-The patch 3ddc5b46a8e90f3c9251338b60191d0a804b0d92 makes
-csum_partial_copy_from_user check the pointer with access_ok. However,
-csum_partial_copy_from_user is called also from csum_partial_copy_nocheck
-and csum_partial_copy_nocheck is called on kernel pointers and it is
-supposed not to check pointer validity.
+In gre_cisco_err(), the parse_gre_header() is called, and the
+iptunnel_pull_header() is called to pull the skb at the end of
+the parse_gre_header(), so the skb->data doesn't point the
+inner ip header.
 
-This bug results in ssh session hangs if the system is loaded and bulk
-data are printed to ssh terminal.
+Unfortunately, the ipgre_err still needs those ip addresses in
+inner ip header to look up tunnel by ip_tunnel_lookup().
 
-This patch fixes csum_partial_copy_nocheck to call set_fs(KERNEL_DS), so
-that access_ok in csum_partial_copy_from_user accepts kernel-space
-addresses.
+So just use icmp_hdr() to get inner ip header instead of skb->data.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/alpha/lib/csum_partial_copy.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ net/ipv4/ip_gre.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/alpha/lib/csum_partial_copy.c
-+++ b/arch/alpha/lib/csum_partial_copy.c
-@@ -378,6 +378,11 @@ csum_partial_copy_from_user(const void _
- __wsum
- csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
- {
--	return csum_partial_copy_from_user((__force const void __user *)src,
--			dst, len, sum, NULL);
-+	__wsum checksum;
-+	mm_segment_t oldfs = get_fs();
-+	set_fs(KERNEL_DS);
-+	checksum = csum_partial_copy_from_user((__force const void __user *)src,
-+						dst, len, sum, NULL);
-+	set_fs(oldfs);
-+	return checksum;
- }
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -178,7 +178,7 @@ static int ipgre_err(struct sk_buff *skb
+ 	else
+ 		itn = net_generic(net, ipgre_net_id);
+ 
+-	iph = (const struct iphdr *)skb->data;
++	iph = (const struct iphdr *)(icmp_hdr(skb) + 1);
+ 	t = ip_tunnel_lookup(itn, skb->dev->ifindex, tpi->flags,
+ 			     iph->daddr, iph->saddr, tpi->key);
+ 
 
 
