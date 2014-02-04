@@ -1,125 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416AbaBDTWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:22:49 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:50003 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174AbaBDTWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:22:45 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 05/17] mmc: mmci: Put the device into low power state at system suspend
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-6-git-send-email-ulf.hansson@linaro.org>
-Date: Tue, 04 Feb 2014 11:22:42 -0800
-In-Reply-To: <1391529538-21685-6-git-send-email-ulf.hansson@linaro.org> (Ulf
-	Hansson's message of "Tue, 4 Feb 2014 16:58:46 +0100")
-Message-ID: <8738jyu1h9.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	id S1755054AbaBDTXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:23:36 -0500
+Received: from imap.thunk.org ([74.207.234.97]:54139 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753984AbaBDTXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 14:23:34 -0500
+Date: Tue, 4 Feb 2014 19:23:25 +0000
+From: tytso@mit.edu
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stephan Mueller <smueller@chronox.de>,
+        =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
+        blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
+        tg@mirbsd.de, sandyinchina@gmail.com
+Subject: Re: [RFC PATCH 0/5] CPU Jitter RNG
+Message-ID: <20140204192325.GA11831@thunk.org>
+Mail-Followup-To: tytso@mit.edu, "H. Peter Anvin" <hpa@zytor.com>,
+	Stephan Mueller <smueller@chronox.de>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
+	blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
+	tg@mirbsd.de, sandyinchina@gmail.com
+References: <2039634.jSmQAS6tdi@myon.chronox.de>
+ <20140204170823.GF12768@thunk.org>
+ <52F13A1C.3040003@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F13A1C.3040003@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulf Hansson <ulf.hansson@linaro.org> writes:
+On Tue, Feb 04, 2014 at 11:06:04AM -0800, H. Peter Anvin wrote:
+> 
+> The quantum noise sources there are in a system are generally two
+> independent clocks running against each other.  However, independent
+> clocks are rare; instead, most clocks are in fact slaved against each
+> other using PLLs and similar structures.
 
-> Due to the available runtime PM callbacks, we are now able to put our
-> device into low power state at system suspend.
->
-> Earlier we could not accomplish this without trusting a power domain
-> for the device to take care of it. Now we are able to cope with
-> scenarios both with and without a power domain.
->
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
->  drivers/mmc/host/mmci.c |   45 +++++++++++++++++++++++++--------------------
->  1 file changed, 25 insertions(+), 20 deletions(-)
->
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index c88da1c..074e0cb 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -1723,33 +1723,38 @@ static int mmci_remove(struct amba_device *dev)
->  	return 0;
->  }
->  
-> -#ifdef CONFIG_SUSPEND
-> -static int mmci_suspend(struct device *dev)
-> +#ifdef CONFIG_PM_SLEEP
-> +static int mmci_suspend_late(struct device *dev)
->  {
-> -	struct amba_device *adev = to_amba_device(dev);
-> -	struct mmc_host *mmc = amba_get_drvdata(adev);
-> +	int ret = 0;
->  
-> -	if (mmc) {
-> -		struct mmci_host *host = mmc_priv(mmc);
-> -		pm_runtime_get_sync(dev);
-> -		writel(0, host->base + MMCIMASK0);
-> -	}
-> +	if (pm_runtime_status_suspended(dev))
-> +		return 0;
->  
-> -	return 0;
-> +	if (dev->pm_domain && dev->pm_domain->ops.runtime_suspend)
-> +		ret = dev->pm_domain->ops.runtime_suspend(dev);
-> +	else
-> +		ret = dev->bus->pm->runtime_suspend(dev);
-> +
-> +	if (!ret)
-> +		pm_runtime_set_suspended(dev);
+One of the things that would be useful for us to understand is in
+general, where in a system we have independent clocks.  For example, I
+think (correct me if I'm wrong), a 2.5" or 3.5" HDD has its own clock
+which is separate from the CPU/chipset.  That is actually how and
+where we get any entropy; I am not at all convinced that we are
+getting any variation from "chaotic air turbulence in the HDD" ---
+that paper was published in 1994, and hard drive technologies have
+changed quite a bit since then, with extra layers of caching, track
+bufers, etc.
 
-Isn't this basically open-coding pm_runtime_suspend()...
+However, where a decade ago the ethernet card probably had its own
+independent clock crystal/oscillator, I'm going to guess that these
+days with SOC's and even on laptops, with ethernet device part of the
+chipset, it is probably being driven off the same master oscillator.
 
-> +	return ret;
->  }
->  
-> -static int mmci_resume(struct device *dev)
-> +static int mmci_resume_early(struct device *dev)
->  {
-> -	struct amba_device *adev = to_amba_device(dev);
-> -	struct mmc_host *mmc = amba_get_drvdata(adev);
-> +	int ret = 0;
->  
-> -	if (mmc) {
-> -		struct mmci_host *host = mmc_priv(mmc);
-> -		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
-> -		pm_runtime_put(dev);
-> -	}
-> +	if (pm_runtime_status_suspended(dev))
-> +		return 0;
->  
-> -	return 0;
-> +	if (dev->pm_domain && dev->pm_domain->ops.runtime_resume)
-> +		ret = dev->pm_domain->ops.runtime_resume(dev);
-> +	else
-> +		ret = dev->bus->pm->runtime_resume(dev);
-> +
-> +	return ret;
+I wonder if there's anyway we can either figure out manually, or
+preferably, automatically at boot time, which devices actually have
+independent clock oscillators.
 
-...and this is pm_runtime_resume()? (though both terribly simplified.)
-
-This is starting to show that building with PM_SLEEP but not PM_RUNTIME
-is going to force open-coding a lot of stuff that the runtime PM
-framework already provides.  So either we need some helper functions so
-we're not sprinkling manual calls to bus/pm_domain callbacks all over
-the place, or maybe where we need to go is have a way for platforms that
-really are "runtime PM centric" to declare that even PM_SLEEP depends on
-PM_RUNTIME.  
-
-I'm trying to thing of a good reason to not make PM_SLEEP depend on
-PM_RUNTIME for platforms like this.
-
-Kevin
+							- Ted
 
