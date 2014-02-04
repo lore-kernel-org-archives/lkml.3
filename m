@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaBDW1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:27:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56569 "EHLO
+	id S1755157AbaBDW1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:27:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933864AbaBDVIN (ORCPT
+	with ESMTP id S933515AbaBDVIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:13 -0500
+	Tue, 4 Feb 2014 16:08:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.12 021/133] USB: cypress_m8: fix ring-indicator detection and reporting
-Date: Tue,  4 Feb 2014 13:07:02 -0800
-Message-Id: <20140204210737.626000521@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 038/133] rtlwifi: Add missing code to PWDB statics routine
+Date: Tue,  4 Feb 2014 13:07:19 -0800
+Message-Id: <20140204210738.109563981@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,33 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 440ebadeae9298d7de3d4d105342691841ec88d0 upstream.
+commit d82403a9f407217b6aed5260aa92a120e8e98310 upstream.
 
-Fix ring-indicator (RI) status-bit definition, which was defined as CTS,
-effectively preventing RI-changes from being detected while reporting
-false RI status.
-
-This bug predates git.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cypress_m8.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/stats.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/usb/serial/cypress_m8.h
-+++ b/drivers/usb/serial/cypress_m8.h
-@@ -63,7 +63,7 @@
- #define UART_DSR	0x20	/* data set ready - flow control - device to host */
- #define CONTROL_RTS	0x10	/* request to send - flow control - host to device */
- #define UART_CTS	0x10	/* clear to send - flow control - device to host */
--#define UART_RI		0x10	/* ring indicator - modem - device to host */
-+#define UART_RI		0x80	/* ring indicator - modem - device to host */
- #define UART_CD		0x40	/* carrier detect - modem - device to host */
- #define CYP_ERROR	0x08	/* received from input report - device to host */
- /* Note - the below has nothing to do with the "feature report" reset */
+--- a/drivers/net/wireless/rtlwifi/stats.c
++++ b/drivers/net/wireless/rtlwifi/stats.c
+@@ -176,6 +176,7 @@ static void rtl_process_pwdb(struct ieee
+ 	struct rtl_sta_info *drv_priv = NULL;
+ 	struct ieee80211_sta *sta = NULL;
+ 	long undec_sm_pwdb;
++	long undec_sm_cck;
+ 
+ 	rcu_read_lock();
+ 	if (rtlpriv->mac80211.opmode != NL80211_IFTYPE_STATION)
+@@ -185,12 +186,16 @@ static void rtl_process_pwdb(struct ieee
+ 	if (sta) {
+ 		drv_priv = (struct rtl_sta_info *) sta->drv_priv;
+ 		undec_sm_pwdb = drv_priv->rssi_stat.undec_sm_pwdb;
++		undec_sm_cck = drv_priv->rssi_stat.undec_sm_cck;
+ 	} else {
+ 		undec_sm_pwdb = rtlpriv->dm.undec_sm_pwdb;
++		undec_sm_cck = rtlpriv->dm.undec_sm_cck;
+ 	}
+ 
+ 	if (undec_sm_pwdb < 0)
+ 		undec_sm_pwdb = pstatus->rx_pwdb_all;
++	if (undec_sm_cck < 0)
++		undec_sm_cck = pstatus->rx_pwdb_all;
+ 	if (pstatus->rx_pwdb_all > (u32) undec_sm_pwdb) {
+ 		undec_sm_pwdb = (((undec_sm_pwdb) *
+ 		      (RX_SMOOTH_FACTOR - 1)) +
+@@ -200,6 +205,15 @@ static void rtl_process_pwdb(struct ieee
+ 		undec_sm_pwdb = (((undec_sm_pwdb) * (RX_SMOOTH_FACTOR - 1)) +
+ 		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
+ 	}
++	if (pstatus->rx_pwdb_all > (u32) undec_sm_cck) {
++		undec_sm_cck = (((undec_sm_pwdb) *
++		      (RX_SMOOTH_FACTOR - 1)) +
++		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
++		undec_sm_cck = undec_sm_cck + 1;
++	} else {
++		undec_sm_pwdb = (((undec_sm_cck) * (RX_SMOOTH_FACTOR - 1)) +
++		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
++	}
+ 
+ 	if (sta) {
+ 		drv_priv->rssi_stat.undec_sm_pwdb = undec_sm_pwdb;
 
 
