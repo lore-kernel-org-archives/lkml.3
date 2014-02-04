@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaBDV6k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:58:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56956 "EHLO
+	id S1755284AbaBDV7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:59:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57851 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933660AbaBDVJ3 (ORCPT
+	with ESMTP id S1755229AbaBDV6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:29 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.12 133/133] powerpc: Make sure "cache" directory is removed when offlining cpu
-Date: Tue,  4 Feb 2014 13:08:54 -0800
-Message-Id: <20140204210740.800447320@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
-References: <20140204210737.008598235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Feb 2014 16:58:38 -0500
+Date: Tue, 4 Feb 2014 13:58:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 2/3] mm: vmscan: get rid of DEFAULT_SEEKS and document
+ shrink_slab logic
+Message-Id: <20140204135836.05c09c765073513e62edd174@linux-foundation.org>
+In-Reply-To: <e204471853100447541ce36b198c0d45bf06379c.1389982079.git.vdavydov@parallels.com>
+References: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com>
+	<e204471853100447541ce36b198c0d45bf06379c.1389982079.git.vdavydov@parallels.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 17 Jan 2014 23:25:30 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-------------------
+> Each shrinker must define the number of seeks it takes to recreate a
+> shrinkable cache object. It is used to balance slab reclaim vs page
+> reclaim: assuming it costs one seek to replace an LRU page, we age equal
+> percentages of the LRU and ageable caches. So far, everything sounds
+> clear, but the code implementing this behavior is rather confusing.
+> 
+> First, there is the DEFAULT_SEEKS constant, which equals 2 for some
+> reason:
+> 
+>   #define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
+> 
+> Most shrinkers define `seeks' to be equal to DEFAULT_SEEKS, some use
+> DEFAULT_SEEKS*N, and there are a few that totally ignore it. What is
+> peculiar, dcache and icache shrinkers have seeks=DEFAULT_SEEKS although
+> recreating an inode typically requires one seek. Does this mean that we
+> scan twice more inodes than we should?
+> 
+> Actually, no. The point is that vmscan handles DEFAULT_SEEKS as if it
+> were 1 (`delta' is the number of objects we are going to scan):
+> 
+>   shrink_slab_node():
+>     delta = (4 * nr_pages_scanned) / shrinker->seeks;
+>     delta *= freeable;
+>     do_div(delta, lru_pages + 1);
+> 
+> i.e.
+> 
+>             2 * nr_pages_scanned    DEFAULT_SEEKS
+>     delta = -------------------- * --------------- * freeable;
+>                  lru_pages         shrinker->seeks
+> 
+> Here we double the number of pages scanned in order to take into account
+> moves of on-LRU pages from the inactive list to the active list, which
+> we do not count in nr_pages_scanned.
+> 
+> That said, shrinker->seeks=DEFAULT_SEEKS*N is equivalent to N seeks, so
+> why on the hell do we need it?
+> 
+> IMO, the existence of the DEFAULT_SEEKS constant only causes confusion
+> for both users of the shrinker interface and those trying to understand
+> how slab shrinking works. The meaning of the `seeks' is perfectly
+> explained by the comment to it and there is no need in any obscure
+> constants for using it.
+> 
+> That's why I'm sending this patch which completely removes DEFAULT_SEEKS
+> and makes all shrinkers use N instead of N*DEFAULT_SEEKS, documenting
+> the idea lying behind shrink_slab() in the meanwhile.
+> 
+> Unfortunately, there are a few shrinkers that define seeks=1, which is
+> impossible to transfer to the new interface intact, namely:
+> 
+>   nfsd_reply_cache_shrinker
+>   ttm_pool_manager::mm_shrink
+>   ttm_pool_manager::mm_shrink
+>   dm_bufio_client::shrinker
+> 
+> It seems to me their authors were simply deceived by this mysterious
+> DEFAULT_SEEKS constant, because I've found no documentation why these
+> particular caches should be scanned more aggressively than the page and
+> other slab caches. For them, this patch leaves seeks=1. Thus, it DOES
+> introduce a functional change: the shrinkers enumerated above will be
+> scanned twice less intensively than they are now. I do not think that
+> this will cause any problems though.
+> 
 
-From: Paul Mackerras <paulus@samba.org>
+um, yes.  DEFAULT_SEEKS is supposed to be "the number of seeks if you
+don't know any better".  Using DEFAULT_SEEKS*n is just daft.
 
-commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
+So why did I originally make DEFAULT_SEEKS=2?  Because I figured that to
+recreate (say) an inode would require a seek to the inode data then a
+seek back.  Is it legitimate to include the
+seek-back-to-what-you-were-doing-before seek in the cost of an inode
+reclaim?  I guess so...
 
-The code in remove_cache_dir() is supposed to remove the "cache"
-subdirectory from the sysfs directory for a CPU when that CPU is
-being offlined.  It tries to do this by calling kobject_put() on
-the kobject for the subdirectory.  However, the subdirectory only
-gets removed once the last reference goes away, and the reference
-being put here may well not be the last reference.  That means
-that the "cache" subdirectory may still exist when the offlining
-operation has finished.  If the same CPU subsequently gets onlined,
-the code tries to add a new "cache" subdirectory.  If the old
-subdirectory has not yet been removed, we get a WARN_ON in the
-sysfs code, with stack trace, and an error message printed on the
-console.  Further, we ultimately end up with an online cpu with no
-"cache" subdirectory.
+If a filesystem were to require a seek to the superblock for every
+inode read (ok, bad example) then the cost of reestablishing that inode
+would be 3.
 
-This fixes it by doing an explicit kobject_del() at the point where
-we want the subdirectory to go away.  kobject_del() removes the sysfs
-directory even though the object still exists in memory.  The object
-will get freed at some point in the future.  A subsequent onlining
-operation can create a new sysfs directory, even if the old object
-still exists in memory, without causing any problems.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/powerpc/kernel/cacheinfo.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/arch/powerpc/kernel/cacheinfo.c
-+++ b/arch/powerpc/kernel/cacheinfo.c
-@@ -794,6 +794,9 @@ static void remove_cache_dir(struct cach
- {
- 	remove_index_dirs(cache_dir);
- 
-+	/* Remove cache dir from sysfs */
-+	kobject_del(cache_dir->kobj);
-+
- 	kobject_put(cache_dir->kobj);
- 
- 	kfree(cache_dir);
-
+All that being said, why did you go through and halve everything?  The
+cost of reestablishing an ext2 inode should be "2 seeks", but the patch
+makes it "1".
 
