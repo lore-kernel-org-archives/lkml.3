@@ -1,218 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaBDHRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 02:17:38 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39602 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaBDHRe (ORCPT
+	id S1752735AbaBDHjV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 02:39:21 -0500
+Received: from relay.parallels.com ([195.214.232.42]:41394 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaBDHjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 02:17:34 -0500
-Message-ID: <52F09404.3060502@hitachi.com>
-Date: Tue, 04 Feb 2014 16:17:24 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 4 Feb 2014 02:39:15 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
+        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: [PATCH] memcg, slab: cleanup memcg cache creation
+Date: Tue, 4 Feb 2014 11:39:07 +0400
+Message-ID: <1391499547-1426-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <52F08842.8050906@parallels.com>
+References: <52F08842.8050906@parallels.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, hskinnemoen@gmail.com,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        egtvedt@samfundet.no,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
- to CONFIG_KRETPROBES enabled area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com>
-In-Reply-To: <52F077A1.3020701@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/02/04 14:16), Chen Gang wrote:
-> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
-> are useless, so need move them to CONFIG_KPROBES enabled area.
-> 
-> Now, *kretprobe* generic implementation are all implemented in 2 files:
-> 
->  - in "include/linux/kprobes.h":
-> 
->      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
->      move some *kprobe() declarations which kretprobe*() call, to front.
->      not touch kretprobe_blacklist[] which is architecture's variable.
-> 
->  - in "kernel/kprobes.c":
-> 
->      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
->      define kretprobe_flush_task() to let kprobe_flush_task() call.
->      define init_kretprobes() to let init_kprobes() call.
-> 
-> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
-> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
-> bzImage and Modpost modules) under x86_64 defconfig.
+This patch cleanups the memcg cache creation path as follows:
+ - Move memcg cache name creation to a separate function to be called
+   from kmem_cache_create_memcg(). This allows us to get rid of the
+   mutex protecting the temporary buffer used for the name formatting,
+   because the whole cache creation path is protected by the slab_mutex.
+ - Get rid of memcg_create_kmem_cache(). This function serves as a proxy
+   to kmem_cache_create_memcg(). After separating the cache name
+   creation path, it would be reduced to a function call, so let's
+   inline it.
 
-Thanks for the fix! and I have some comments below.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ include/linux/memcontrol.h |    9 +++++
+ mm/memcontrol.c            |   89 ++++++++++++++++++++------------------------
+ mm/slab_common.c           |    5 ++-
+ 3 files changed, 54 insertions(+), 49 deletions(-)
 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  include/linux/kprobes.h |  58 +++++----
->  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
->  2 files changed, 222 insertions(+), 164 deletions(-)
-> 
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index 925eaf2..c0d1212 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
->  	return 1;
->  }
->  
-> +int disable_kprobe(struct kprobe *kp);
-> +int enable_kprobe(struct kprobe *kp);
-> +
-> +void dump_kprobe(struct kprobe *kp);
-> +
-> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
-> +
->  #ifdef CONFIG_KRETPROBES
->  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
->  				   struct pt_regs *regs);
->  extern int arch_trampoline_kprobe(struct kprobe *p);
-> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
-> +	unsigned long orig_ret_address, unsigned long trampoline_address)
-> +{
-> +	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
-> +		printk(KERN_ERR
-> +			"kretprobe BUG!: Processing kretprobe %p @ %p\n",
-> +			ri->rp, ri->rp->kp.addr);
-> +		BUG();
-> +	}
-> +}
-> +static inline int disable_kretprobe(struct kretprobe *rp)
-> +{
-> +	return disable_kprobe(&rp->kp);
-> +}
-> +static inline int enable_kretprobe(struct kretprobe *rp)
-> +{
-> +	return enable_kprobe(&rp->kp);
-> +}
-> +
->  #else /* CONFIG_KRETPROBES */
->  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
->  					struct pt_regs *regs)
-> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
->  {
->  	return 0;
->  }
-> -#endif /* CONFIG_KRETPROBES */
-> -
-> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
-> -
->  static inline void kretprobe_assert(struct kretprobe_instance *ri,
->  	unsigned long orig_ret_address, unsigned long trampoline_address)
->  {
-> -	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
-> -		printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
-> -				ri->rp, ri->rp->kp.addr);
-> -		BUG();
-> -	}
->  }
-> +static inline int disable_kretprobe(struct kretprobe *rp)
-> +{
-> +	return 0;
-> +}
-> +static inline int enable_kretprobe(struct kretprobe *rp)
-> +{
-> +	return 0;
-> +}
-
-No, these should returns -EINVAL or -ENOSYS, since these are user API.
-Anyway, I don't think those inlined functions to be changed, because
-most of them are internal functions. If CONFIG_KRETPROBES=n, it just
-be ignored.
-
-So, I think you don't need to change kprobes.h.
-
-
-> +
-> +#endif /* CONFIG_KRETPROBES */
->  
->  #ifdef CONFIG_KPROBES_SANITY_TEST
->  extern int init_test_probes(void);
-> @@ -379,11 +406,6 @@ void unregister_kretprobes(struct kretprobe **rps, int num);
->  void kprobe_flush_task(struct task_struct *tk);
->  void recycle_rp_inst(struct kretprobe_instance *ri, struct hlist_head *head);
->  
-> -int disable_kprobe(struct kprobe *kp);
-> -int enable_kprobe(struct kprobe *kp);
-> -
-> -void dump_kprobe(struct kprobe *kp);
-> -
->  #else /* !CONFIG_KPROBES: */
->  
->  static inline int kprobes_built_in(void)
-> @@ -459,14 +481,6 @@ static inline int enable_kprobe(struct kprobe *kp)
->  	return -ENOSYS;
->  }
->  #endif /* CONFIG_KPROBES */
-> -static inline int disable_kretprobe(struct kretprobe *rp)
-> -{
-> -	return disable_kprobe(&rp->kp);
-> -}
-> -static inline int enable_kretprobe(struct kretprobe *rp)
-> -{
-> -	return enable_kprobe(&rp->kp);
-> -}
->  static inline int disable_jprobe(struct jprobe *jp)
->  {
->  	return disable_kprobe(&jp->kp);
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index ceeadfc..e305a81 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-[...]
-> @@ -1936,8 +1955,44 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->  	return 0;
->  }
->  
-> +void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
-> +				struct hlist_head *head)
-> +{
-> +}
-> +
-> +void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
-> +			 struct hlist_head **head, unsigned long *flags)
-> +__acquires(hlist_lock)
-> +{
-> +}
-> +
-> +void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
-> +	unsigned long *flags)
-> +__releases(hlist_lock)
-> +{
-> +}
-> +
-
-> +static void __kprobes kretprobe_flush_task(struct task_struct *tk)
-> +{
-> +}
-> +
-> +static void __init init_kretprobes(void)
-> +{
-> +}
-
-These should be macros, as I did for optprobe functions
-with !CONFIG_OPTPROBES.
-
-Other parts looks good to me!;)
-
-Thank you!
-
-
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index abd0113b6620..84e4801fc36c 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -497,6 +497,9 @@ void __memcg_kmem_commit_charge(struct page *page,
+ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+ 
+ int memcg_cache_id(struct mem_cgroup *memcg);
++
++char *memcg_create_cache_name(struct mem_cgroup *memcg,
++			      struct kmem_cache *root_cache);
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache);
+ void memcg_free_cache_params(struct kmem_cache *s);
+@@ -641,6 +644,12 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
+ 	return -1;
+ }
+ 
++static inline char *memcg_create_cache_name(struct mem_cgroup *memcg,
++					    struct kmem_cache *root_cache)
++{
++	return NULL;
++}
++
+ static inline int memcg_alloc_cache_params(struct mem_cgroup *memcg,
+ 		struct kmem_cache *s, struct kmem_cache *root_cache)
+ {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 53385cd4e6f0..43e08b7bb365 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3193,6 +3193,32 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 	return 0;
+ }
+ 
++char *memcg_create_cache_name(struct mem_cgroup *memcg,
++			      struct kmem_cache *root_cache)
++{
++	static char *buf = NULL;
++
++	/*
++	 * We need a mutex here to protect the shared buffer. Since this is
++	 * expected to be called only on cache creation, we can employ the
++	 * slab_mutex for that purpose.
++	 */
++	lockdep_assert_held(&slab_mutex);
++
++	if (!buf) {
++		buf = kmalloc(PATH_MAX, GFP_KERNEL);
++		if (!buf)
++			return NULL;
++	}
++
++	rcu_read_lock();
++	snprintf(buf, PATH_MAX, "%s(%d:%s)", root_cache->name,
++		 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
++	rcu_read_unlock();
++
++	return kstrdup(buf, GFP_KERNEL);
++}
++
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache)
+ {
+@@ -3397,44 +3423,6 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+ 	schedule_work(&cachep->memcg_params->destroy);
+ }
+ 
+-static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+-						  struct kmem_cache *s)
+-{
+-	struct kmem_cache *new = NULL;
+-	static char *tmp_name = NULL;
+-	static DEFINE_MUTEX(mutex);	/* protects tmp_name */
+-
+-	BUG_ON(!memcg_can_account_kmem(memcg));
+-
+-	mutex_lock(&mutex);
+-	/*
+-	 * kmem_cache_create_memcg duplicates the given name and
+-	 * cgroup_name for this name requires RCU context.
+-	 * This static temporary buffer is used to prevent from
+-	 * pointless shortliving allocation.
+-	 */
+-	if (!tmp_name) {
+-		tmp_name = kmalloc(PATH_MAX, GFP_KERNEL);
+-		if (!tmp_name)
+-			goto out;
+-	}
+-
+-	rcu_read_lock();
+-	snprintf(tmp_name, PATH_MAX, "%s(%d:%s)", s->name,
+-			 memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
+-	rcu_read_unlock();
+-
+-	new = kmem_cache_create_memcg(memcg, tmp_name, s->object_size, s->align,
+-				      (s->flags & ~SLAB_PANIC), s->ctor, s);
+-	if (new)
+-		new->allocflags |= __GFP_KMEMCG;
+-	else
+-		new = s;
+-out:
+-	mutex_unlock(&mutex);
+-	return new;
+-}
+-
+ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ {
+ 	struct kmem_cache *c;
+@@ -3481,12 +3469,6 @@ void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ 	mutex_unlock(&activate_kmem_mutex);
+ }
+ 
+-struct create_work {
+-	struct mem_cgroup *memcg;
+-	struct kmem_cache *cachep;
+-	struct work_struct work;
+-};
+-
+ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+ {
+ 	struct kmem_cache *cachep;
+@@ -3504,13 +3486,24 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+ 	mutex_unlock(&memcg->slab_caches_mutex);
+ }
+ 
++struct create_work {
++	struct mem_cgroup *memcg;
++	struct kmem_cache *cachep;
++	struct work_struct work;
++};
++
+ static void memcg_create_cache_work_func(struct work_struct *w)
+ {
+-	struct create_work *cw;
++	struct create_work *cw = container_of(w, struct create_work, work);
++	struct mem_cgroup *memcg = cw->memcg;
++	struct kmem_cache *s = cw->cachep;
++	struct kmem_cache *new;
+ 
+-	cw = container_of(w, struct create_work, work);
+-	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+-	css_put(&cw->memcg->css);
++	new = kmem_cache_create_memcg(memcg, s->name, s->object_size, s->align,
++				      (s->flags & ~SLAB_PANIC), s->ctor, s);
++	if (new)
++		new->allocflags |= __GFP_KMEMCG;
++	css_put(&memcg->css);
+ 	kfree(cw);
+ }
+ 
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index e77b51eb7347..11857abf7057 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -215,7 +215,10 @@ kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+ 	s->align = calculate_alignment(flags, align, size);
+ 	s->ctor = ctor;
+ 
+-	s->name = kstrdup(name, GFP_KERNEL);
++	if (memcg)
++		s->name = memcg_create_cache_name(memcg, parent_cache);
++	else
++		s->name = kstrdup(name, GFP_KERNEL);
+ 	if (!s->name)
+ 		goto out_free_cache;
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.10.4
 
