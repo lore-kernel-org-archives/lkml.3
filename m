@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaBDEsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 23:48:24 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:43804 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaBDEsQ (ORCPT
+	id S1754282AbaBDEtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 23:49:04 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58609 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464AbaBDEsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Feb 2014 23:48:16 -0500
-X-AuditID: cbfee68e-b7f566d000002344-34-52f0710eace8
+X-AuditID: cbfee68d-b7fcd6d00000315b-2a-52f0710ee46f
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 2/2] f2fs: clean up with a macro
-Date: Tue, 04 Feb 2014 13:46:44 +0900
-Message-id: <1391489204-19695-2-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 1/2] f2fs: fix the potential mismatch between dir's i_size and
+ i_blocks
+Date: Tue, 04 Feb 2014 13:46:43 +0900
+Message-id: <1391489204-19695-1-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-In-reply-to: <1391489204-19695-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1391489204-19695-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zA12+wg9BBvsPy1tc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH2ZCtjwRaJim+N
-	S5gbGNeIdDFyckgImEjM+NHFBGGLSVy4t54NxBYSWMYocWlGEkzNgnPPmLsYuYDiixgljn6Z
-	wgJR1MQk8bG3oouRg4NNQFti834DkLCIALPEgqnnGUHqmQUmMEr8X/QerF5YwEBi5tYedhCb
-	RUBV4uuluewgvbwC7hIPzlhD7NKW2PZ8IiOIzSngIfFr30smiFXuEs/eX2EHmSkh8JtN4son
-	mDkCEt8mH2IBmSMhICux6QAzxBxJiYMrbrBMYBRewMiwilE0tSC5oDgpvchIrzgxt7g0L10v
-	OT93EyMkXPt2MN48YH2IMRlo3ERmKdHkfGC455XEGxqbGVmYmpgaG5lbmpEmrCTOu+hhUpCQ
-	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGRkuRAIlcmbs78x8kdRlYdU3d0xAtrhDQ6bu1/7/u
-	/ZMLTmv+k+dd8u+h69R0h14/rRv/imU/Tbs0jYnn0oGDRq/TFT2ffonUnNqsM2vSzcM7nflr
-	paRWr6qZJtHmvuIvq1NOw272Xf/PTnPmWH5Q5bvFqXv2q+omRsY6spv/uCqdVT795Z/5dkos
-	xRmJhlrMRcWJAF80EehtAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jAV2+wg9BBqceSVtc3/WXyeLSIneL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zA12+wg9BBjNWSlhc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXF98QqmgvV8Fa8X
+	32JtYDzB1cXIySEhYCIx6c4UNghbTOLCvfVANheHkMAyRolDi2cywhQd3XyZBSKxiFFix98W
+	ZpCEkEATk8TH3oouRg4ONgFtic37DUDCIgLMEgumnmcEqWcWmMAo8X/RexaQhLBApMSvK1OZ
+	QGwWAVWJAwvngs3hFXCX2D67gRVimbbEtucTwZolBB6zSWz7+AKqQUDi2+RDLCDLJARkJTYd
+	YIaol5Q4uOIGywRGwQWMDKsYRVMLkguKk9KLDPWKE3OLS/PS9ZLzczcxQkKwdwfj7QPWhxiT
+	gcZNZJYSTc4HhnBeSbyhsZmRhamJqbGRuaUZacJK4rxJD5OChATSE0tSs1NTC1KL4otKc1KL
+	DzEycXBKNTDqeG6yVWl+LJdpm60vtOJ4WKoah2T81lRLPtGz9QaX1WPfe/Af2iYu0MbX/Uty
+	4aEOL77XLJdaVpbMT12l5MqjM113DuMBm1XuO8pLEsVqo664xRZ87JwlqMb5rvQuG7P+mdju
+	x35hUw1qtsQt1dpjqtqwLeL/ednFx34fSGJYryKz7NPGt0osxRmJhlrMRcWJALc8zJtXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAV2+wg9BBlvWi1hc3/WXyeLSIneL
 	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
 	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ix9mQrY8EWiYpvjUuYGxjXiHQxcnJICJhILDj3jBnCFpO4cG89WxcjF4eQ
-	wCJGiaNfprCAJIQEmpgkPvZWdDFycLAJaEts3m8AEhYRYJZYMPU8I0g9s8AERon/i96D1QsL
-	GEjM3NrDDmKzCKhKfL00lx2kl1fAXeLBGWuIXdoS255PZASxOQU8JH7te8kEscpd4tn7K+wT
-	GHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOh2dSOxhXNlgcYhTgYFTi4VVQ+RAk
-	xJpYVlyZe4hRgoNZSYT3oAVQiDclsbIqtSg/vqg0J7X4EGMy0FETmaVEk/OBsZpXEm9obGJm
-	ZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYz7Or8GTLV3/dTCcvb4nYuR
-	XXLCaZtVkudvat30S+lGk5Pm5ffPV8mL/JjTtnf/fpHW10vs9IVnX3gdK2hZsWxHyCqG2wcY
-	fta7TLP2DNrS/ONguf82tbJ/1s0Bd387F9i1zuu8mitkKnHpjMSHzEKeEz5PksuFooMSD80z
-	W3pB8MFlXcmw+G1KLMUZiYZazEXFiQCyxq0oywIAAA==
+	SBBcj5EBGkhYx5hxffEKpoL1fBWvF99ibWA8wdXFyMkhIWAicXTzZRYIW0ziwr31bF2MXBxC
+	AosYJXb8bWEGSQgJNDFJfOyt6GLk4GAT0JbYvN8AJCwiwCyxYOp5RpB6ZoEJjBL/F70HGyQs
+	ECnx68pUJhCbRUBV4sDCuWBzeAXcJbbPbmCFWKYtse35RMYJjNwLGBlWMYqmFiQXFCel5xrq
+	FSfmFpfmpesl5+duYgQH+DOpHYwrGywOMQpwMCrx8CqofAgSYk0sK67MPcQowcGsJMJ70AIo
+	xJuSWFmVWpQfX1Sak1p8iDEZaPtEZinR5Hxg9OWVxBsam5gZWRqZWRiZmJuTJqwkznug1TpQ
+	SCA9sSQ1OzW1ILUIZgsTB6dUA2Nd9vHuqHmhEw580ly9tXTNE7Wbd0V+tNtF3jG/YSd9lP/1
+	pbXrnykXsjTJcDXc11ZcYp63dsHuZ0c0/jEXPe2cscapra64d95m/S3brI+s3dnQv2XS8QVv
+	o6oyz3xvi4+K7KnfoBX7vljBpEPtBsf15/uM4q7W71O+Vp4dk2xSMFMkYh7Hsv1KLMUZiYZa
+	zEXFiQA2DvXYtAIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,86 +46,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds GET_BLKOFF_FROM_SEG0 to clean up some codes.
+This is the erroneous scenario.
+
+                             i_size    on-disk i_size    i_blocks
+__f2fs_add_link()             4096           4096           2
+ get_new_data_page            8192           4096           3
+ -ENOSPC = init_inode_metadata
+ checkpoint                     -            4096           3
+ POR and reboot
+
+__f2fs_add_link()             4096           4096           3
+ page = get_new_data_page (page->index = 1 by NEW_ADDR)
+ add a dentry to the page successfully
+
+f2fs_rmdir()
+ f2fs_empty_dir()             4096           4096           3
+ f2fs_unlink() goes, since there is no valid dentry due to i_size = 4096.
+ But, still there is one dentry in page->index = 1.
+
+So this patch moves the code to write dir->i_size into on-disk i_size in order
+to sync dir's i_size, on-disk i_size, and its i_blocks.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/recovery.c |  3 +--
- fs/f2fs/segment.c  | 11 ++++-------
- fs/f2fs/segment.h  |  3 +++
- 3 files changed, 8 insertions(+), 9 deletions(-)
+ fs/f2fs/dir.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index f1b0b89..bda04a0 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -218,8 +218,7 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
- {
- 	struct seg_entry *sentry;
- 	unsigned int segno = GET_SEGNO(sbi, blkaddr);
--	unsigned short blkoff = GET_SEGOFF_FROM_SEG0(sbi, blkaddr) &
--					(sbi->blocks_per_seg - 1);
-+	unsigned short blkoff = GET_BLKOFF_FROM_SEG0(sbi, blkaddr);
- 	struct f2fs_summary sum;
- 	nid_t ino, nid;
- 	void *kaddr;
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index fba510b..e87946a 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -405,7 +405,7 @@ static void update_sit_entry(struct f2fs_sb_info *sbi, block_t blkaddr, int del)
- 
- 	se = get_seg_entry(sbi, segno);
- 	new_vblocks = se->valid_blocks + del;
--	offset = GET_SEGOFF_FROM_SEG0(sbi, blkaddr) & (sbi->blocks_per_seg - 1);
-+	offset = GET_BLKOFF_FROM_SEG0(sbi, blkaddr);
- 
- 	f2fs_bug_on((new_vblocks >> (sizeof(unsigned short) << 3) ||
- 				(new_vblocks > sbi->blocks_per_seg)));
-@@ -987,8 +987,7 @@ void recover_data_page(struct f2fs_sb_info *sbi,
- 		change_curseg(sbi, type, true);
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 2b7c255..bfcb4ae 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -395,9 +395,6 @@ static void update_parent_metadata(struct inode *dir, struct inode *inode,
+ 		set_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
  	}
  
--	curseg->next_blkoff = GET_SEGOFF_FROM_SEG0(sbi, new_blkaddr) &
--					(sbi->blocks_per_seg - 1);
-+	curseg->next_blkoff = GET_BLKOFF_FROM_SEG0(sbi, new_blkaddr);
- 	__add_sum_entry(sbi, type, sum);
+-	if (is_inode_flag_set(F2FS_I(dir), FI_UPDATE_DIR))
+-		update_inode_page(dir);
+-
+ 	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK))
+ 		clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
+ }
+@@ -511,7 +508,10 @@ add_dentry:
  
- 	refresh_sit_entry(sbi, old_blkaddr, new_blkaddr);
-@@ -1026,8 +1025,7 @@ void rewrite_node_page(struct f2fs_sb_info *sbi,
- 		curseg->next_segno = segno;
- 		change_curseg(sbi, type, true);
- 	}
--	curseg->next_blkoff = GET_SEGOFF_FROM_SEG0(sbi, new_blkaddr) &
--					(sbi->blocks_per_seg - 1);
-+	curseg->next_blkoff = GET_BLKOFF_FROM_SEG0(sbi, new_blkaddr);
- 	__add_sum_entry(sbi, type, sum);
- 
- 	/* change the current log to the next block addr in advance */
-@@ -1035,8 +1033,7 @@ void rewrite_node_page(struct f2fs_sb_info *sbi,
- 		curseg->next_segno = next_segno;
- 		change_curseg(sbi, type, true);
- 	}
--	curseg->next_blkoff = GET_SEGOFF_FROM_SEG0(sbi, next_blkaddr) &
--					(sbi->blocks_per_seg - 1);
-+	curseg->next_blkoff = GET_BLKOFF_FROM_SEG0(sbi, next_blkaddr);
- 
- 	/* rewrite node page */
- 	set_page_writeback(page);
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index 5731682..4024546 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -57,6 +57,9 @@
- 	((blk_addr) - SM_I(sbi)->seg0_blkaddr)
- #define GET_SEGNO_FROM_SEG0(sbi, blk_addr)				\
- 	(GET_SEGOFF_FROM_SEG0(sbi, blk_addr) >> sbi->log_blocks_per_seg)
-+#define GET_BLKOFF_FROM_SEG0(sbi, blk_addr)				\
-+	(GET_SEGOFF_FROM_SEG0(sbi, blk_addr) & (sbi->blocks_per_seg - 1))
-+
- #define GET_SEGNO(sbi, blk_addr)					\
- 	(((blk_addr == NULL_ADDR) || (blk_addr == NEW_ADDR)) ?		\
- 	NULL_SEGNO : GET_L2R_SEGNO(FREE_I(sbi),			\
+ 	update_parent_metadata(dir, inode, current_depth);
+ fail:
+-	clear_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
++	if (is_inode_flag_set(F2FS_I(dir), FI_UPDATE_DIR)) {
++		update_inode_page(dir);
++		clear_inode_flag(F2FS_I(dir), FI_UPDATE_DIR);
++	}
+ 	kunmap(dentry_page);
+ 	f2fs_put_page(dentry_page, 1);
+ 	return err;
 -- 
 1.8.4.474.g128a96c
 
