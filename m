@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934769AbaBDWOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:14:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56710 "EHLO
+	id S935222AbaBDWOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:14:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56705 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934006AbaBDVIo (ORCPT
+	with ESMTP id S933998AbaBDVIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:44 -0500
+	Tue, 4 Feb 2014 16:08:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.12 077/133] ASoC: wm5110: Extend SYSCLK patch file for rev D
-Date: Tue,  4 Feb 2014 13:07:58 -0800
-Message-Id: <20140204210739.209514179@linuxfoundation.org>
+        Magnus Reftel <magnus.reftel@lockless.no>,
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 076/133] ASoC: adau1701: Fix ADAU1701_SEROCTL_WORD_LEN_16 constant
+Date: Tue,  4 Feb 2014 13:07:57 -0800
+Message-Id: <20140204210739.181792967@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,77 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 34354792432b6e0a3b156819a1a19716c50d3473 upstream.
+commit e20970ada3f699c113fe64b04492af083d11a7d8 upstream.
 
-Latest evaluation of the the device has given some patch file additions
-for improved performance.
+The driver defines ADAU1701_SEROCTL_WORD_LEN_16 as 0x10 while it should be b10,
+so 0x2. This patch fixes it.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Reported-by: Magnus Reftel <magnus.reftel@lockless.no>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm5110.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ sound/soc/codecs/adau1701.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -43,6 +43,54 @@ static const struct reg_default wm5110_s
- 	{ 0x3133, 0x1201 },
- 	{ 0x3183, 0x1501 },
- 	{ 0x31D3, 0x1401 },
-+	{ 0x0049, 0x01ea },
-+	{ 0x004a, 0x01f2 },
-+	{ 0x0057, 0x01e7 },
-+	{ 0x0058, 0x01fb },
-+	{ 0x33ce, 0xc4f5 },
-+	{ 0x33cf, 0x1361 },
-+	{ 0x33d0, 0x0402 },
-+	{ 0x33d1, 0x4700 },
-+	{ 0x33d2, 0x026d },
-+	{ 0x33d3, 0xff00 },
-+	{ 0x33d4, 0x026d },
-+	{ 0x33d5, 0x0101 },
-+	{ 0x33d6, 0xc4f5 },
-+	{ 0x33d7, 0x0361 },
-+	{ 0x33d8, 0x0402 },
-+	{ 0x33d9, 0x6701 },
-+	{ 0x33da, 0xc4f5 },
-+	{ 0x33db, 0x136f },
-+	{ 0x33dc, 0xc4f5 },
-+	{ 0x33dd, 0x134f },
-+	{ 0x33de, 0xc4f5 },
-+	{ 0x33df, 0x131f },
-+	{ 0x33e0, 0x026d },
-+	{ 0x33e1, 0x4f01 },
-+	{ 0x33e2, 0x026d },
-+	{ 0x33e3, 0xf100 },
-+	{ 0x33e4, 0x026d },
-+	{ 0x33e5, 0x0001 },
-+	{ 0x33e6, 0xc4f5 },
-+	{ 0x33e7, 0x0361 },
-+	{ 0x33e8, 0x0402 },
-+	{ 0x33e9, 0x6601 },
-+	{ 0x33ea, 0xc4f5 },
-+	{ 0x33eb, 0x136f },
-+	{ 0x33ec, 0xc4f5 },
-+	{ 0x33ed, 0x134f },
-+	{ 0x33ee, 0xc4f5 },
-+	{ 0x33ef, 0x131f },
-+	{ 0x33f0, 0x026d },
-+	{ 0x33f1, 0x4e01 },
-+	{ 0x33f2, 0x026d },
-+	{ 0x33f3, 0xf000 },
-+	{ 0x33f6, 0xc4f5 },
-+	{ 0x33f7, 0x1361 },
-+	{ 0x33f8, 0x0402 },
-+	{ 0x33f9, 0x4600 },
-+	{ 0x33fa, 0x026d },
-+	{ 0x33fb, 0xfe00 },
- };
+--- a/sound/soc/codecs/adau1701.c
++++ b/sound/soc/codecs/adau1701.c
+@@ -71,7 +71,7 @@
  
- static int wm5110_sysclk_ev(struct snd_soc_dapm_widget *w,
+ #define ADAU1701_SEROCTL_WORD_LEN_24	0x0000
+ #define ADAU1701_SEROCTL_WORD_LEN_20	0x0001
+-#define ADAU1701_SEROCTL_WORD_LEN_16	0x0010
++#define ADAU1701_SEROCTL_WORD_LEN_16	0x0002
+ #define ADAU1701_SEROCTL_WORD_LEN_MASK	0x0003
+ 
+ #define ADAU1701_AUXNPOW_VBPD		0x40
 
 
