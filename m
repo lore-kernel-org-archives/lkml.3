@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935714AbaBDWPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:15:36 -0500
-Received: from ozlabs.org ([203.10.76.45]:56035 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933993AbaBDWP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:15:28 -0500
-Date: Wed, 5 Feb 2014 09:15:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Subject: Re: [PATCH] MAINTAINERS: Update drm/i915 git repo
-Message-Id: <20140205091521.8fc819ff64a46e0a122f16a6@canb.auug.org.au>
-In-Reply-To: <CAKMK7uE99=xfj0gDSv5gdqFALQ6yWWEzmeD1sCnW9KkqMBFZ8Q@mail.gmail.com>
-References: <1391540451-24169-1-git-send-email-daniel.vetter@ffwll.ch>
-	<CAKMK7uE99=xfj0gDSv5gdqFALQ6yWWEzmeD1sCnW9KkqMBFZ8Q@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN"
+	id S935717AbaBDWQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:16:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56693 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933980AbaBDVIl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 16:08:41 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, jidanni@jidanni.org
+Subject: [PATCH 3.12 063/133] xhci: Set scatter-gather limit to avoid failed block writes.
+Date: Tue,  4 Feb 2014 13:07:44 -0800
+Message-Id: <20140204210738.810212356@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
+References: <20140204210737.008598235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Daniel,
+------------------
 
-On Tue, 4 Feb 2014 20:15:03 +0100 Daniel Vetter <daniel.vetter@ffwll.ch> wr=
-ote:
->
-> On Tue, Feb 4, 2014 at 8:00 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wr=
-ote:
-> > Moved to a common location so that Jani also can push to it, to avoid
-> > moving it every time I go on vacation. Please update autobuilders and
-> > everything else pointing at the drm-intel.git repo, the old one won't
-> > be updated any more.
-> >
-> > Cc: Dave Airlie <airlied@gmail.com>
-> > Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->=20
-> Oops, forgotten to cc our linux-next maintainer about this. Branch
-> names are  still the same and I've checked that my scripts recreated
-> them all properly. So this should be good to go for the next -next.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-Thanks for letting me know - all updated now.
+commit f2d9b991c549f159dc9ae81f77d8206c790cbfee upstream.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Commit 35773dac5f862cb1c82ea151eba3e2f6de51ec3e "usb: xhci: Link TRB
+must not occur within a USB payload burst" attempted to fix an issue
+found with USB ethernet adapters, and inadvertently broke USB storage
+devices.  The patch attempts to ensure that transfers never span a
+segment, and rejects transfers that have more than 63 entries (or
+possibly less, if some entries cross 64KB boundaries).
 
---Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN
-Content-Type: application/pgp-signature
+usb-storage limits the maximum transfer size to 120K, and we had assumed
+the block layer would pass a scatter-gather list of 4K entries,
+resulting in no more than 31 sglist entries:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+http://marc.info/?l=linux-usb&m=138498190419312&w=2
 
-iQIcBAEBCAAGBQJS8WZ+AAoJEMDTa8Ir7ZwVXdUP/3j/ktm9Vm19jLGmlnmXJIkq
-R+qQDaIrHs42hmluF2PiML1IE57UqNfJs/6bMb2ecXabDckqlGEnK/3wD/udaFxm
-iyYZduX4GySdzQdNHkyXkq8hTtngDAeqhFGJbOmfivaY1FojHoSRXpVSAuR0u0jI
-qk5r5qdN/4NngYWQkXw3GNocCH7Z9qZNWRIDB6cJbc42uf1LHwpWUCKHrwrCLlwT
-JSA3GWdL2VA1YcCAbzu8K/JhjFbW/8IbcV/wMM2d2Ww2NLpz8KFr9+WsNikA2LiZ
-qh97MpK4yIh0XzrZtH+j4trKnc5qHg0yef4jlIzkG2YVhuJWpHpfaE4lC6ijMfsk
-kROss9zoOdk8F8WbcCO8uLFsnpPN5pdKeUKTRZkKm0nt9J6kLc5ZjiExNW3on/2b
-qA0kkQeq2mgGYlapPVM++cCFbziJzcwwNYzaR6u8EFaNZsnU9E2+9RQx8RUIrzA8
-kKMxW0ZNlB8ORn81oR50LkVCQTJ3eDhVjEspQYrr7hlFXO58XqvO0AROYIXapqF/
-fel+CYb7bL9rbeE0tgSkYjbZe+RDlGCzJE0XbsvspK63zZfcOeTHJPPzsSmYKCwA
-Q8IJOkhszkCPIXVwsRXmQXdXglU9H8KdSkJhehDMO57N37OmugWPbbwoPzvPjTzF
-Up5iCCHHmilUkygzppJR
-=yWr8
------END PGP SIGNATURE-----
+That assumption was wrong, since we've seen the driver reject a write
+that was 218 sectors long (of probably 512 bytes each):
 
---Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN--
+Jan  1 07:04:49 jidanni5 kernel: [  559.624704] xhci_hcd 0000:00:14.0: Too many fragments 79, max 63
+...
+Jan  1 07:04:58 jidanni5 kernel: [  568.622583] Write(10): 2a 00 00 06 85 0e 00 00 da 00
+
+Limit the number of scatter-gather entries to half a ring segment.  That
+should be margin enough in case some entries cross 64KB boundaries.
+Increase the number of TRBs per segment from 64 to 256, which should
+result in ring segments fitting on a 4K page.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: jidanni@jidanni.org
+References: http://bugs.debian.org/733907
+Fixes: 35773dac5f86 ('usb: xhci: Link TRB must not occur within a USB payload burst')
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/xhci.c |    4 ++--
+ drivers/usb/host/xhci.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4727,8 +4727,8 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+ 	struct device		*dev = hcd->self.controller;
+ 	int			retval;
+ 
+-	/* Accept arbitrarily long scatter-gather lists */
+-	hcd->self.sg_tablesize = ~0;
++	/* Limit the block layer scatter-gather lists to half a segment. */
++	hcd->self.sg_tablesize = TRBS_PER_SEGMENT / 2;
+ 
+ 	/* support to build packet from discontinuous buffers */
+ 	hcd->self.no_sg_constraint = 1;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1262,7 +1262,7 @@ union xhci_trb {
+  * since the command ring is 64-byte aligned.
+  * It must also be greater than 16.
+  */
+-#define TRBS_PER_SEGMENT	64
++#define TRBS_PER_SEGMENT	256
+ /* Allow two commands + a link TRB, along with any reserved command TRBs */
+ #define MAX_RSVD_CMD_TRBS	(TRBS_PER_SEGMENT - 3)
+ #define TRB_SEGMENT_SIZE	(TRBS_PER_SEGMENT*16)
+
+
