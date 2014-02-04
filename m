@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935041AbaBDVV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:21:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57501 "EHLO
+	id S934723AbaBDVMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57258 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934731AbaBDVMm (ORCPT
+	with ESMTP id S934329AbaBDVL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:42 -0500
+	Tue, 4 Feb 2014 16:11:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Pugliese <thomas.pugliese@gmail.com>
-Subject: [PATCH 3.13 130/140] usb: core: get config and string descriptors for unauthorized devices
-Date: Tue,  4 Feb 2014 13:11:57 -0800
-Message-Id: <20140204211040.680997117@linuxfoundation.org>
+        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
+        Siva Krishna Kumar Reddy Yerramreddy 
+	<siva.krishna.kumar.reddy.yerramreddy@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>
+Subject: [PATCH 3.13 076/140] misc: mic: bug fix for interrupt acknowledgement in MSI/INTx case.
+Date: Tue,  4 Feb 2014 13:11:03 -0800
+Message-Id: <20140204211039.131302018@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,126 +32,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
+From: Dasaratharaman Chandramouli <dasaratharaman.chandramouli@intel.com>
 
-commit 83e83ecb79a8225e79bc8e54e9aff3e0e27658a2 upstream.
+commit df5e4e8b576108f88f79e5b4c984d51d460d2360 upstream.
 
-There is no need to skip querying the config and string descriptors for
-unauthorized WUSB devices when usb_new_device is called.  It is allowed
-by WUSB spec.  The only action that needs to be delayed until
-authorization time is the set config.  This change allows user mode
-tools to see the config and string descriptors earlier in enumeration
-which is needed for some WUSB devices to function properly on Android
-systems.  It also reduces the amount of divergent code paths needed
-for WUSB devices.
+The interrupt handler (mic_interrupt), called in the MSI/INTx mode,
+writes to the interrupt sources register to acknowledge the
+interrupt and then calls the corresponding callback handlers to handle
+the same. These callback handlers acknowledge the interrupts again
+leading to missed interrupts. This patch fixes the issue by removing
+the interrupt acknowlegment code from the callback handlers.
 
-Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
+Reviewed-by: Siva Krishna Kumar Reddy Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
+Signed-off-by: Dasaratharaman Chandramouli <dasaratharaman.chandramouli@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/config.c |    7 -------
- drivers/usb/core/hub.c    |   39 +++++++--------------------------------
- 2 files changed, 7 insertions(+), 39 deletions(-)
+ drivers/misc/mic/host/mic_device.h |    3 +++
+ drivers/misc/mic/host/mic_main.c   |    2 +-
+ drivers/misc/mic/host/mic_virtio.c |    2 +-
+ drivers/misc/mic/host/mic_x100.c   |   36 ++++++++++++++++++++----------------
+ 4 files changed, 25 insertions(+), 18 deletions(-)
 
---- a/drivers/usb/core/config.c
-+++ b/drivers/usb/core/config.c
-@@ -651,10 +651,6 @@ void usb_destroy_configuration(struct us
+--- a/drivers/misc/mic/host/mic_device.h
++++ b/drivers/misc/mic/host/mic_device.h
+@@ -134,6 +134,8 @@ struct mic_device {
+  * @send_intr: Send an interrupt for a particular doorbell on the card.
+  * @ack_interrupt: Hardware specific operations to ack the h/w on
+  * receipt of an interrupt.
++ * @intr_workarounds: Hardware specific workarounds needed after
++ * handling an interrupt.
+  * @reset: Reset the remote processor.
+  * @reset_fw_ready: Reset firmware ready field.
+  * @is_fw_ready: Check if firmware is ready for OS download.
+@@ -149,6 +151,7 @@ struct mic_hw_ops {
+ 	void (*write_spad)(struct mic_device *mdev, unsigned int idx, u32 val);
+ 	void (*send_intr)(struct mic_device *mdev, int doorbell);
+ 	u32 (*ack_interrupt)(struct mic_device *mdev);
++	void (*intr_workarounds)(struct mic_device *mdev);
+ 	void (*reset)(struct mic_device *mdev);
+ 	void (*reset_fw_ready)(struct mic_device *mdev);
+ 	bool (*is_fw_ready)(struct mic_device *mdev);
+--- a/drivers/misc/mic/host/mic_main.c
++++ b/drivers/misc/mic/host/mic_main.c
+@@ -115,7 +115,7 @@ static irqreturn_t mic_shutdown_db(int i
+ 	struct mic_device *mdev = data;
+ 	struct mic_bootparam *bootparam = mdev->dp;
+ 
+-	mdev->ops->ack_interrupt(mdev);
++	mdev->ops->intr_workarounds(mdev);
+ 
+ 	switch (bootparam->shutdown_status) {
+ 	case MIC_HALTED:
+--- a/drivers/misc/mic/host/mic_virtio.c
++++ b/drivers/misc/mic/host/mic_virtio.c
+@@ -369,7 +369,7 @@ static irqreturn_t mic_virtio_intr_handl
+ 	struct mic_vdev *mvdev = data;
+ 	struct mic_device *mdev = mvdev->mdev;
+ 
+-	mdev->ops->ack_interrupt(mdev);
++	mdev->ops->intr_workarounds(mdev);
+ 	schedule_work(&mvdev->virtio_bh_work);
+ 	return IRQ_HANDLED;
+ }
+--- a/drivers/misc/mic/host/mic_x100.c
++++ b/drivers/misc/mic/host/mic_x100.c
+@@ -174,35 +174,38 @@ static void mic_x100_send_intr(struct mi
+ }
+ 
+ /**
+- * mic_ack_interrupt - Device specific interrupt handling.
+- * @mdev: pointer to mic_device instance
++ * mic_x100_ack_interrupt - Read the interrupt sources register and
++ * clear it. This function will be called in the MSI/INTx case.
++ * @mdev: Pointer to mic_device instance.
   *
-  * hub-only!! ... and only in reset path, or usb_new_device()
-  * (used by real hubs and virtual root hubs)
-- *
-- * NOTE: if this is a WUSB device and is not authorized, we skip the
-- *       whole thing. A non-authorized USB device has no
-- *       configurations.
+- * Returns: bitmask of doorbell events triggered.
++ * Returns: bitmask of interrupt sources triggered.
   */
- int usb_get_configuration(struct usb_device *dev)
+ static u32 mic_x100_ack_interrupt(struct mic_device *mdev)
  {
-@@ -666,8 +662,6 @@ int usb_get_configuration(struct usb_dev
- 	struct usb_config_descriptor *desc;
+-	u32 reg = 0;
+-	struct mic_mw *mw = &mdev->mmio;
+ 	u32 sicr0 = MIC_X100_SBOX_BASE_ADDRESS + MIC_X100_SBOX_SICR0;
++	u32 reg = mic_mmio_read(&mdev->mmio, sicr0);
++	mic_mmio_write(&mdev->mmio, reg, sicr0);
++	return reg;
++}
++
++/**
++ * mic_x100_intr_workarounds - These hardware specific workarounds are
++ * to be invoked everytime an interrupt is handled.
++ * @mdev: Pointer to mic_device instance.
++ *
++ * Returns: none
++ */
++static void mic_x100_intr_workarounds(struct mic_device *mdev)
++{
++	struct mic_mw *mw = &mdev->mmio;
  
- 	cfgno = 0;
--	if (dev->authorized == 0)	/* Not really an error */
--		goto out_not_authorized;
- 	result = -ENOMEM;
- 	if (ncfg > USB_MAXCONFIG) {
- 		dev_warn(ddev, "too many configurations: %d, "
-@@ -751,7 +745,6 @@ int usb_get_configuration(struct usb_dev
+ 	/* Clear pending bit array. */
+ 	if (MIC_A0_STEP == mdev->stepping)
+ 		mic_mmio_write(mw, 1, MIC_X100_SBOX_BASE_ADDRESS +
+ 			MIC_X100_SBOX_MSIXPBACR);
  
- err:
- 	kfree(desc);
--out_not_authorized:
- 	dev->descriptor.bNumConfigurations = cfgno;
- err2:
- 	if (result == -ENOMEM)
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2239,17 +2239,13 @@ static int usb_enumerate_device(struct u
- 			return err;
- 		}
- 	}
--	if (udev->wusb == 1 && udev->authorized == 0) {
--		udev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--		udev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--		udev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--	} else {
--		/* read the standard strings and cache them if present */
--		udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
--		udev->manufacturer = usb_cache_string(udev,
--						      udev->descriptor.iManufacturer);
--		udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
+-	if (mdev->irq_info.num_vectors <= 1) {
+-		reg = mic_mmio_read(mw, sicr0);
+-
+-		if (unlikely(!reg))
+-			goto done;
+-
+-		mic_mmio_write(mw, reg, sicr0);
 -	}
-+
-+	/* read the standard strings and cache them if present */
-+	udev->product = usb_cache_string(udev, udev->descriptor.iProduct);
-+	udev->manufacturer = usb_cache_string(udev,
-+					      udev->descriptor.iManufacturer);
-+	udev->serial = usb_cache_string(udev, udev->descriptor.iSerialNumber);
-+
- 	err = usb_enumerate_device_otg(udev);
- 	if (err < 0)
- 		return err;
-@@ -2431,16 +2427,6 @@ int usb_deauthorize_device(struct usb_de
- 	usb_dev->authorized = 0;
- 	usb_set_configuration(usb_dev, -1);
- 
--	kfree(usb_dev->product);
--	usb_dev->product = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--	kfree(usb_dev->manufacturer);
--	usb_dev->manufacturer = kstrdup("n/a (unauthorized)", GFP_KERNEL);
--	kfree(usb_dev->serial);
--	usb_dev->serial = kstrdup("n/a (unauthorized)", GFP_KERNEL);
 -
--	usb_destroy_configuration(usb_dev);
--	usb_dev->descriptor.bNumConfigurations = 0;
--
- out_unauthorized:
- 	usb_unlock_device(usb_dev);
- 	return 0;
-@@ -2468,17 +2454,7 @@ int usb_authorize_device(struct usb_devi
- 		goto error_device_descriptor;
- 	}
+ 	if (mdev->stepping >= MIC_B0_STEP)
+ 		mdev->intr_ops->enable_interrupts(mdev);
+-done:
+-	return reg;
+ }
  
--	kfree(usb_dev->product);
--	usb_dev->product = NULL;
--	kfree(usb_dev->manufacturer);
--	usb_dev->manufacturer = NULL;
--	kfree(usb_dev->serial);
--	usb_dev->serial = NULL;
--
- 	usb_dev->authorized = 1;
--	result = usb_enumerate_device(usb_dev);
--	if (result < 0)
--		goto error_enumerate;
- 	/* Choose and set the configuration.  This registers the interfaces
- 	 * with the driver core and lets interface drivers bind to them.
- 	 */
-@@ -2494,7 +2470,6 @@ int usb_authorize_device(struct usb_devi
- 	}
- 	dev_info(&usb_dev->dev, "authorized to connect\n");
- 
--error_enumerate:
- error_device_descriptor:
- 	usb_autosuspend_device(usb_dev);
- error_autoresume:
+ /**
+@@ -553,6 +556,7 @@ struct mic_hw_ops mic_x100_ops = {
+ 	.write_spad = mic_x100_write_spad,
+ 	.send_intr = mic_x100_send_intr,
+ 	.ack_interrupt = mic_x100_ack_interrupt,
++	.intr_workarounds = mic_x100_intr_workarounds,
+ 	.reset = mic_x100_hw_reset,
+ 	.reset_fw_ready = mic_x100_reset_fw_ready,
+ 	.is_fw_ready = mic_x100_is_fw_ready,
 
 
