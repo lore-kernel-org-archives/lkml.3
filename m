@@ -1,124 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaBDBip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 20:38:45 -0500
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:17497 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388AbaBDBin (ORCPT
+	id S1753955AbaBDBj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 20:39:29 -0500
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:42736 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870AbaBDBjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 20:38:43 -0500
-X-AuditID: cbfec37b-b7f216d000006a8d-52-52f044a175cb
-Message-id: <52F04488.4060202@partner.samsung.com>
-Date: Mon, 03 Feb 2014 17:38:16 -0800
-From: Daniel Phillips <d.phillips@partner.samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "tux3@tux3.org" <tux3@tux3.org>
-Subject: Tux3 Report: Our blocker list
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.4]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9hX92FLh+CDA7t0bTYs/cki8XlXXPY
-	LD4c+MzowOzx7ekrNo/Pm+QCmKK4bFJSczLLUov07RK4Mh7Pyi7YIl/RPuUTWwPjf4kuRk4O
-	CQETidZ9XYwQtpjEhXvr2boYuTiEBJYxSnRd/swI4fQySax8epUJwtnAKPFv1RIgh4ODV8BI
-	Yu3+KJBuFgFVif2rtjCB2GwCZhJLj58Bs0UFIiRWLnnACmLzCghK/Jh8jwVkjojAckaJjq5d
-	YEXCAmoSP54tBTuDWcBaYuWkbVC2vMTmNW+ZQWwhAV2Jv99+MEGcqiCx4sYblgmMArOQzJ2F
-	pH0WkvYFjMyrGMVKi5MLipPSUyuM9IoTc4tL89L1kvNzNzFCQrR6B+PdrzaHGAU4GJV4eE8o
-	fggSYk0sK67MPcQowcGsJMJ70AIoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgTGn4uv5hv5UbW/t
-	Xl6dp0+TOS32zkm8YhhZ0sFZvNJt/6yoKbv/SZWejWv7qX12ytUdc9UyL56afXt528+0lHsv
-	D2c+Kps6w89/a7HLkdony7tqrq6IctCbd2fFa9/Hk/ysWMtuFtXZqh59dmODLs+fNOEYs6b7
-	PnyHlnrueXQ9/HbnsqRu5mlKLMUZiYZazEXFiQDeJyzVLwIAAA==
+	Mon, 3 Feb 2014 20:39:16 -0500
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Feb 2014 20:39:16 EST
+From: Greg Thelen <gthelen@google.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 0/4] memcg: Low-limit reclaim
+References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+	<xr93sis6obb5.fsf@gthelen.mtv.corp.google.com>
+	<20140130123044.GB13509@dhcp22.suse.cz>
+	<xr931tzphu50.fsf@gthelen.mtv.corp.google.com>
+	<20140203144341.GI2495@dhcp22.suse.cz>
+Date: Mon, 03 Feb 2014 17:33:13 -0800
+Message-ID: <xr93zjm7br1i.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.130007 (Ma Gnus v0.7) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Korea Linux Forum last fall, Linus asked, haven't I been hearing
-about Tux3 for ten years? I said, no, that was Tux2, completely
-different. You only heard about Tux3 for six years.
+On Mon, Feb 03 2014, Michal Hocko wrote:
 
-Well, that is about long enough to keep hearing about an out of tree
-filesystem. Last time we talked about merging, the main criticisms were
-stylistic things, long since fixed. After that, we decided to address
-some glaring issues rather than let innocent victims hit them the hard
-way. Though victims of a new filesystem are theoretically limited to
-battle hardened veterans, in practice it does not work out that way. In
-reality, if you just need to flip a config flag then all kinds of
-people will try the code. If it then does stupid things it immediately 
-acquires a reputation that could take years to shake. Not fun. So we 
-decided to fill in some holes first.
+> On Thu 30-01-14 16:28:27, Greg Thelen wrote:
+>> On Thu, Jan 30 2014, Michal Hocko wrote:
+>> 
+>> > On Wed 29-01-14 11:08:46, Greg Thelen wrote:
+>> > [...]
+>> >> The series looks useful.  We (Google) have been using something similar.
+>> >> In practice such a low_limit (or memory guarantee), doesn't nest very
+>> >> well.
+>> >> 
+>> >> Example:
+>> >>   - parent_memcg: limit 500, low_limit 500, usage 500
+>> >>     1 privately charged non-reclaimable page (e.g. mlock, slab)
+>> >>   - child_memcg: limit 500, low_limit 500, usage 499
+>> >
+>> > I am not sure this is a good example. Your setup basically say that no
+>> > single page should be reclaimed. I can imagine this might be useful in
+>> > some cases and I would like to allow it but it sounds too extreme (e.g.
+>> > a load which would start trashing heavily once the reclaim starts and it
+>> > makes more sense to start it again rather than crowl - think about some
+>> > mathematical simulation which might diverge).
+>> 
+>> Pages will still be reclaimed the usage_in_bytes is exceeds
+>> limit_in_bytes.  I see the low_limit as a way to tell the kernel: don't
+>> reclaim my memory due to external pressure, but internal pressure is
+>> different.
+>
+> That sounds strange and very confusing to me. What if the internal
+> pressure comes from children memcgs? Lowlimit is intended for protecting
+> a group from reclaim and it shouldn't matter whether the reclaim is a
+> result of the internal or external pressure.
+>
+>> >> If a streaming file cache workload (e.g. sha1sum) starts gobbling up
+>> >> page cache it will lead to an oom kill instead of reclaiming. 
+>> >
+>> > Does it make any sense to protect all of such memory although it is
+>> > easily reclaimable?
+>> 
+>> I think protection makes sense in this case.  If I know my workload
+>> needs 500 to operate well, then I reserve 500 using low_limit.  My app
+>> doesn't want to run with less than its reservation.
+>> 
+>> >> One could argue that this is working as intended because child_memcg
+>> >> was promised 500 but can only get 499.  So child_memcg is oom killed
+>> >> rather than being forced to operate below its promised low limit.
+>> >> 
+>> >> This has led to various internal workarounds like:
+>> >> - don't charge any memory to interior tree nodes (e.g. parent_memcg);
+>> >>   only charge memory to cgroup leafs.  This gets tricky when dealing
+>> >>   with reparented memory inherited to parent from child during cgroup
+>> >>   deletion.
+>> >
+>> > Do those need any protection at all?
+>> 
+>> Interior tree nodes don't need protection from their children.  But
+>> children and interior nodes need protection from siblings and parents.
+>
+> Why? They contains only reparented pages in the above case. Those would
+> be #1 candidate for reclaim in most cases, no?
 
-Here is our remaining blocker list:
+I think we're on the same page.  My example interior node has reclaimed
+pages and is a #1 candidate for reclaim induced from charges against
+parent_memcg, but not a candidate for reclaim due to global memory
+pressure induced by a sibling of parent_memcg.
 
-  1) Allocation policy: simple minded linear block allocation is good
-     for benchmarks but ages poorly, so add a respectable allocation
-     policy.
+>> >> - don't set low_limit on non leafs (e.g. do not set low limit on
+>> >>   parent_memcg).  This constrains the cgroup layout a bit.  Some
+>> >>   customers want to purchase $MEM and setup their workload with a few
+>> >>   child cgroups.  A system daemon hands out $MEM by setting low_limit
+>> >>   for top-level containers (e.g. parent_memcg).  Thereafter such
+>> >>   customers are able to partition their workload with sub memcg below
+>> >>   child_memcg.  Example:
+>> >>      parent_memcg
+>> >>          \
+>> >>           child_memcg
+>> >>             /     \
+>> >>         server   backup
+>> >
+>> > I think that the low_limit makes sense where you actually want to
+>> > protect something from reclaim. And backup sounds like a bad fit for
+>> > that.
+>> 
+>> The backup job would presumably have a small low_limit, but it may still
+>> have a minimum working set required to make useful forward progress.
+>> 
+>> Example:
+>>   parent_memcg
+>>       \
+>>        child_memcg limit 500, low_limit 500, usage 500
+>>          /     \
+>>          |   backup   limit 10, low_limit 10, usage 10
+>>          |
+>>       server limit 490, low_limit 490, usage 490
+>> 
+>> One could argue that problems appear when
+>> server.low_limit+backup.lower_limit=child_memcg.limit.  So the safer
+>> configuration is leave some padding:
+>>   server.low_limit + backup.low_limit + padding = child_memcg.limit
+>> but this just defers the problem.  As memory is reparented into parent,
+>> then padding must grow.
+>
+> Which all sounds like a drawback of internal vs. external pressure
+> semantic which you have mentioned above.
 
-  2) Mmap consistency: mmap writes may interact with block forking
-     caused by write(2) to leave stale pages in cache - fix it.
+Huh?  I probably confused matters with the internal vs external talk
+above.  Forgetting about that, I'm happy with the following
+configuration assuming low_limit_fallback (ll_fallback) is eventually
+available.
 
-  3) ENOSPC: Volume full conditions must be predicted by the frontend,
-     not detected in the backend when it is too late to enforce ACID
-     guarantees, and the prediction must be accurate or users will be
-     annoyed by ENOSPC errors on a volume that is far from full.
+   parent_memcg
+       \
+        child_memcg limit 500, low_limit 500, usage 500, ll_fallback 0
+          /     \
+          |   backup   limit 10, low_limit 10, usage 10, ll_fallback 1
+          |
+       server limit 490, low_limit 490, usage 490, ll_fallback 1
 
-After that, plenty of issues remain before anyone should deploy Tux3 for
-real work, however none are in the "fill up your volume and it eats
-itself" category. Items 1 and 2 above are nearly done and item 3 is
-designed in detail, so we are close to a flag day where we offer up the 
-Tux3 patch for serious review.
+>> >>   Thereafter customers often want some weak isolation between server and
+>> >>   backup.  To avoid undesired oom kills the server/backup isolation is
+>> >>   provided with a softer memory guarantee (e.g. soft_limit).  The soft
+>> >>   limit acts like the low_limit until priority becomes desperate.
+>> >
+>> > Johannes was already suggesting that the low_limit should allow for a
+>> > weaker semantic as well. I am not very much inclined to that but I can
+>> > leave with a knob which would say oom_on_lowlimit (on by default but
+>> > allowed to be set to 0). We would fallback to the full reclaim if
+>> > no groups turn out to be reclaimable.
+>> 
+>> I like the strong semantic of your low_limit at least at level:1 cgroups
+>> (direct children of root).  But I have also encountered situations where
+>> a strict guarantee is too strict and a mere preference is desirable.
+>> Perhaps the best plan is to continue with the proposed strict low_limit
+>> and eventually provide an additional mechanism which provides weaker
+>> guarantees (e.g. soft_limit or something else if soft_limit cannot be
+>> altered).  These two would offer good support for a variety of use
+>> cases.
+>> 
+>> I thinking of something like:
+>> 
+>> bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
+>> 		struct mem_cgroup *root,
+>> 		int priority)
+>> {
+>> 	do {
+>> 		if (memcg == root)
+>> 			break;
+>> 		if (!res_counter_low_limit_excess(&memcg->res))
+>> 			return false;
+>> 		if ((priority >= DEF_PRIORITY - 2) &&
+>> 		    !res_counter_soft_limit_exceed(&memcg->res))
+>> 			return false;
+>> 	} while ((memcg = parent_mem_cgroup(memcg)));
+>> 	return true;
+>> }
+>
+> Mixing soft limit into the picture is more than confusing because it
+> has its own meaning now and we shouldn't recycle it until it is dead
+> completely.
+> Another thing which seems to be more serious is that such a reclaim
+> logic would inherently lead to a potential over reclaim because 2
+> priority cycles would be wasted with no progress and when we finally
+> find somebody then it gets hammered more at lower priority.
+>
+> What I would like much more is to fallback to ignore low_limit if
+> nothing is reclaimable due to low_limit. That would be controlled on a
+> memcg level (something like memory.low_limit_fallback).
 
-You can watch our progress here:
+Sure, but that would require a sweep through the candidate memcg to
+confirm that all cgroups are operating below their low limit.  I suppose
+we could have an optimization where the number of children above
+low_limit is recorded in the parent.  Then reclaim in the parent would
+immediately determine if low_limit should be violated (if
+memory.low_limit_fallback=1).  But this can be deferred to later
+patches.
 
-     https://github.com/OGAWAHirofumi/tux3/commits/hirofumi
+>> But this soft_limit,priority extension can be added later.
+>
+> Yes, I would like to have the strong semantic first and then deal with a
+> weaker form. Either by a new limit or a flag.
 
-and here:
-
-    http://buildbot.tux3.org:8010/waterfall
-
-This is the amazing test infrastructure Hirofumi set up using buildbot
-and hardware contributed by Miracle Linux. It goes to work whenever new
-patches arrive on Github. You can see it testing the allocation patches
-that landed this weekend.
-
-One thing that happened over the last couple of months is, we added
-allocation group counts and thus adopted yet another main design
-feature of Ext4. This required some new, persistent metadata, with a
-risk of regressing our benchmarks, but we will actually end up more
-efficient for reasons I will delve into on the Tux3 mailing list.
-
-Incidentally, the Tux3 kernel patch grew very little over the last
-year. In spite of many improvements, we remain just over 18K lines of
-code including whitespace. By comparison, Ext4 is 52K, Btrfs is 94K and
-XFS is 96K. Though none of these can be reasonably described as
-bloated, Tux3 is tighter by a multiple.
-
-Overall, we tend to devote as much work to removing code as adding it.
-As a result, we think Tux3 upholds the traditional Unix Philosophy
-pretty well. Though it is fashionable to attack this time honored credo
-on the basis of practicality, you can have orthogonal design and great
-functionality too. We view lightness and tightness as a major
-contribution, ranking just as high as performance and resilience. This
-is about both maintainability and personal satisfaction.
-
-We do expect our code base to grow faster as the focus shifts from base
-functionality to features and scaling. To name a few: snapshots; data
-compression; directory indexing; online repair; quotas. But we also have
-opportunities to remove code, so a year from now I expect a code base
-that is only modestly bigger and includes most of this list.
-
-Interested developers and testers are welcome to drop by for a chat:
-
-     http://tux3.org/contribute.html
-     irc.oftc.net #tux3
-
-With most of the tedious groundwork out of the way, this is the fun
-part of the process where we get to obsess endlessly over matters of
-fit and finish.
-
-Regards,
-
-Daniel
-
+Sounds good.
