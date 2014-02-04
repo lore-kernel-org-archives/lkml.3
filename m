@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935817AbaBDXDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:03:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56082 "EHLO
+	id S936083AbaBDXDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:03:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933073AbaBDVB5 (ORCPT
+	with ESMTP id S933063AbaBDVB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:01:57 -0500
+	Tue, 4 Feb 2014 16:01:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ethan Wilson <ethan.wilson@shiftmail.org>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 002/104] md/raid5: fix long-standing problem with bitmap handling on write failure.
-Date: Tue,  4 Feb 2014 13:01:05 -0800
-Message-Id: <20140204210222.802113082@linuxfoundation.org>
+        Jack Pham <jackp@codeaurora.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.10 019/104] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
+Date: Tue,  4 Feb 2014 13:01:22 -0800
+Message-Id: <20140204210223.284309779@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,46 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jack Pham <jackp@codeaurora.org>
 
-commit 9f97e4b128d2ea90a5f5063ea0ee3b0911f4c669 upstream.
+commit 9005355af23856c55a5538c9024355785424821b upstream.
 
-Before a write starts we set a bit in the write-intent bitmap.
-When the write completes we clear that bit if the write was successful
-to all devices.  However if the write wasn't fully successful we
-should not clear the bit.  If the faulty drive is subsequently
-re-added, the fact that the bit is still set ensure that we will
-re-write the data that is missing.
+If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
+doesn't try to free a bogus PCI IRQ or dereference an invalid
+pci_dev when the xHCI device is actually a platform_device.
 
-This logic is mediated by the STRIPE_DEGRADED flag - we only clear the
-bitmap bit when this flag is not set.
-Currently we correctly set the flag if a write starts when some
-devices are failed or missing.  But we do *not* set the flag if some
-device failed during the write attempt.
-This is wrong and can result in clearing the bit inappropriately.
+This patch should be backported to kernels as old as 3.9, that
+contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
+"xhci-plat: Don't enable legacy PCI interrupts."
 
-So: set the flag when a write fails.
-
-This bug has been present since bitmaps were introduces, so the fix is
-suitable for any -stable kernel.
-
-Reported-by: Ethan Wilson <ethan.wilson@shiftmail.org>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Jack Pham <jackp@codeaurora.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -1893,6 +1893,7 @@ static void raid5_end_write_request(stru
- 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
- 	} else {
- 		if (!uptodate) {
-+			set_bit(STRIPE_DEGRADED, &sh->state);
- 			set_bit(WriteErrorSeen, &rdev->flags);
- 			set_bit(R5_WriteError, &sh->dev[i].flags);
- 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -315,6 +315,9 @@ static void xhci_cleanup_msix(struct xhc
+ 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
+ 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+ 
++	if (xhci->quirks & XHCI_PLAT)
++		return;
++
+ 	xhci_free_irq(xhci);
+ 
+ 	if (xhci->msix_entries) {
 
 
