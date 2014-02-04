@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935521AbaBDWDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:03:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56879 "EHLO
+	id S934888AbaBDWD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:03:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934149AbaBDVJP (ORCPT
+	with ESMTP id S934150AbaBDVJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:15 -0500
+	Tue, 4 Feb 2014 16:09:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yegor Yefremov <yegorslists@googlemail.com>
-Subject: [PATCH 3.12 064/133] serial: add support for 200 v3 series Titan card
-Date: Tue,  4 Feb 2014 13:07:45 -0800
-Message-Id: <20140204210738.837583959@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 109/133] s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions
+Date: Tue,  4 Feb 2014 13:08:30 -0800
+Message-Id: <20140204210740.111160460@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,36 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yegor Yefremov <yegorslists@googlemail.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 48c0247d7b7bf58abb85a39021099529df365c4d upstream.
+[ Upstream commit 3af57f78c38131b7a66e2b01e06fdacae01992a3 ]
 
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+The s390 bpf jit compiler emits the signed divide instructions "dr" and "d"
+for unsigned divisions.
+This can cause problems: the dividend will be zero extended to a 64 bit value
+and the divisor is the 32 bit signed value as specified A or X accumulator,
+even though A and X are supposed to be treated as unsigned values.
+
+The divide instrunctions will generate an exception if the result cannot be
+expressed with a 32 bit signed value.
+This is the case if e.g. the dividend is 0xffffffff and the divisor either 1
+or also 0xffffffff (signed: -1).
+
+To avoid all these issues simply use unsigned divide instructions.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/s390/net/bpf_jit_comp.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1545,6 +1545,7 @@ pci_wch_ch353_setup(struct serial_privat
- #define PCI_DEVICE_ID_TITAN_800E	0xA014
- #define PCI_DEVICE_ID_TITAN_200EI	0xA016
- #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
-+#define PCI_DEVICE_ID_TITAN_200V3	0xA306
- #define PCI_DEVICE_ID_TITAN_400V3	0xA310
- #define PCI_DEVICE_ID_TITAN_410V3	0xA312
- #define PCI_DEVICE_ID_TITAN_800V3	0xA314
-@@ -4140,6 +4141,9 @@ static struct pci_device_id serial_pci_t
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200EISI,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_oxsemi_2_4000000 },
-+	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200V3,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_b0_bt_2_921600 },
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_400V3,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_4_921600 },
+--- a/arch/s390/net/bpf_jit_comp.c
++++ b/arch/s390/net/bpf_jit_comp.c
+@@ -368,16 +368,16 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* dr %r4,%r12 */
+-		EMIT2(0x1d4c);
++		/* dlr %r4,%r12 */
++		EMIT4(0xb997004c);
+ 		break;
+ 	case BPF_S_ALU_DIV_K: /* A /= K */
+ 		if (K == 1)
+ 			break;
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* d %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
++		/* dl %r4,<d(K)>(%r13) */
++		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
+ 		break;
+ 	case BPF_S_ALU_MOD_X: /* A %= X */
+ 		jit->seen |= SEEN_XREG | SEEN_RET0;
+@@ -387,8 +387,8 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* dr %r4,%r12 */
+-		EMIT2(0x1d4c);
++		/* dlr %r4,%r12 */
++		EMIT4(0xb997004c);
+ 		/* lr %r5,%r4 */
+ 		EMIT2(0x1854);
+ 		break;
+@@ -400,8 +400,8 @@ static int bpf_jit_insn(struct bpf_jit *
+ 		}
+ 		/* lhi %r4,0 */
+ 		EMIT4(0xa7480000);
+-		/* d %r4,<d(K)>(%r13) */
+-		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
++		/* dl %r4,<d(K)>(%r13) */
++		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
+ 		/* lr %r5,%r4 */
+ 		EMIT2(0x1854);
+ 		break;
 
 
