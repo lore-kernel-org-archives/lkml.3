@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824AbaBDWYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:24:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56607 "EHLO
+	id S935852AbaBDWYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:24:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56604 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933896AbaBDVIV (ORCPT
+	with ESMTP id S933894AbaBDVIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:08:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        ZHAO Gang <gamerh2o@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 048/133] ath9k: Use correct channel for RX packets
-Date: Tue,  4 Feb 2014 13:07:29 -0800
-Message-Id: <20140204210738.393897903@linuxfoundation.org>
+Subject: [PATCH 3.12 047/133] b43: fix the wrong assignment of status.freq in b43_rx()
+Date: Tue,  4 Feb 2014 13:07:28 -0800
+Message-Id: <20140204210738.365388939@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,81 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: ZHAO Gang <gamerh2o@gmail.com>
 
-commit ff9a93f2ebb88ac7aab9568de80b64b92078e96d upstream.
+commit 64e5acb09ca6b50c97299cff9ef51299470b29f2 upstream.
 
-Accessing the current channel definition in mac80211
-when processing RX packets is problematic because it
-could have been updated when a scan is issued. Since a
-channel change involves flushing the existing packets
-in the RX queue before a chip-reset is done, they would
-be processed using the wrong band/channel information.
+Use the right function to update frequency value.
 
-To avoid this, use the current channel information
-maintained in the driver.
+If rx skb is probe response or beacon, the wrong frequency value can
+cause problem that bss info can't be updated when it should be.
 
-Reported-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Fixes: 8318d78a44d4 ("cfg80211 API for channels/bitrates, mac80211 and driver conversion")
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/net/wireless/b43/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -848,20 +848,15 @@ static int ath9k_process_rate(struct ath
- 	enum ieee80211_band band;
- 	unsigned int i = 0;
- 	struct ath_softc __maybe_unused *sc = common->priv;
-+	struct ath_hw *ah = sc->sc_ah;
- 
--	band = hw->conf.chandef.chan->band;
-+	band = ah->curchan->chan->band;
- 	sband = hw->wiphy->bands[band];
- 
--	switch (hw->conf.chandef.width) {
--	case NL80211_CHAN_WIDTH_5:
-+	if (IS_CHAN_QUARTER_RATE(ah->curchan))
- 		rxs->flag |= RX_FLAG_5MHZ;
--		break;
--	case NL80211_CHAN_WIDTH_10:
-+	else if (IS_CHAN_HALF_RATE(ah->curchan))
- 		rxs->flag |= RX_FLAG_10MHZ;
--		break;
--	default:
--		break;
--	}
- 
- 	if (rx_stats->rs_rate & 0x80) {
- 		/* HT rate */
-@@ -1175,6 +1170,14 @@ static int ath9k_rx_skb_preprocess(struc
- 		ath_start_rx_poll(sc, 3);
- 	}
- 
-+	/*
-+	 * This shouldn't happen, but have a safety check anyway.
-+	 */
-+	if (WARN_ON(!ah->curchan)) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+
- 	if (ath9k_process_rate(common, hw, rx_stats, rx_status)) {
- 		ret =-EINVAL;
- 		goto exit;
-@@ -1182,8 +1185,8 @@ static int ath9k_rx_skb_preprocess(struc
- 
- 	ath9k_process_rssi(common, hw, rx_stats, rx_status);
- 
--	rx_status->band = hw->conf.chandef.chan->band;
--	rx_status->freq = hw->conf.chandef.chan->center_freq;
-+	rx_status->band = ah->curchan->chan->band;
-+	rx_status->freq = ah->curchan->chan->center_freq;
- 	rx_status->antenna = rx_stats->rs_antenna;
- 	rx_status->flag |= RX_FLAG_MACTIME_END;
- 
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -821,10 +821,10 @@ void b43_rx(struct b43_wldev *dev, struc
+ 		 * channel number in b43. */
+ 		if (chanstat & B43_RX_CHAN_5GHZ) {
+ 			status.band = IEEE80211_BAND_5GHZ;
+-			status.freq = b43_freq_to_channel_5ghz(chanid);
++			status.freq = b43_channel_to_freq_5ghz(chanid);
+ 		} else {
+ 			status.band = IEEE80211_BAND_2GHZ;
+-			status.freq = b43_freq_to_channel_2ghz(chanid);
++			status.freq = b43_channel_to_freq_2ghz(chanid);
+ 		}
+ 		break;
+ 	default:
 
 
