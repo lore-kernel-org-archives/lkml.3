@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936160AbaBDXHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:07:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55979 "EHLO
+	id S964817AbaBDXJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:09:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932766AbaBDVAl (ORCPT
+	with ESMTP id S932682AbaBDVAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:41 -0500
+	Tue, 4 Feb 2014 16:00:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 26/37] ALSA: Enable CONFIG_ZONE_DMA for smaller PCI DMA masks
-Date: Tue,  4 Feb 2014 13:01:02 -0800
-Message-Id: <20140204210056.747720283@linuxfoundation.org>
+        Brecht Machiels <brecht@mos6581.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.4 23/37] rtc-cmos: Add an alarm disable quirk
+Date: Tue,  4 Feb 2014 13:00:59 -0800
+Message-Id: <20140204210056.664788925@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -28,122 +32,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Borislav Petkov <bp@alien8.de>
 
-commit 80ab8eae70e51d578ebbeb228e0f7a562471b8b7 upstream.
+commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
 
-The PCI devices with DMA masks smaller than 32bit should enable
-CONFIG_ZONE_DMA.  Since the recent change of page allocator, page
-allocations via dma_alloc_coherent() with the limited DMA mask bits
-may fail more frequently, ended up with no available buffers, when
-CONFIG_ZONE_DMA isn't enabled.  With CONFIG_ZONE_DMA, the system has
-much more chance to obtain such pages.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=68221
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+However, there are at least two b0rked BIOSes we know about:
+
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
+
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
+
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
+
+Cc: Brecht Machiels <brecht@mos6581.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/Kconfig |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -30,6 +30,7 @@ config SND_ALS300
- 	select SND_PCM
- 	select SND_AC97_CODEC
- 	select SND_OPL3_LIB
-+	select ZONE_DMA
- 	help
- 	  Say 'Y' or 'M' to include support for Avance Logic ALS300/ALS300+
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
  
-@@ -54,6 +55,7 @@ config SND_ALI5451
- 	tristate "ALi M5451 PCI Audio Controller"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the integrated AC97 sound
- 	  device on motherboards using the ALi M5451 Audio Controller
-@@ -158,6 +160,7 @@ config SND_AZT3328
- 	select SND_PCM
- 	select SND_RAWMIDI
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for Aztech AZF3328 (PCI168)
- 	  soundcards.
-@@ -463,6 +466,7 @@ config SND_EMU10K1
- 	select SND_HWDEP
- 	select SND_RAWMIDI
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y to include support for Sound Blaster PCI 512, Live!,
- 	  Audigy and E-mu APS (partially supported) soundcards.
-@@ -478,6 +482,7 @@ config SND_EMU10K1X
- 	tristate "Emu10k1X (Dell OEM Version)"
- 	select SND_AC97_CODEC
- 	select SND_RAWMIDI
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the Dell OEM version of the
- 	  Sound Blaster Live!.
-@@ -511,6 +516,7 @@ config SND_ES1938
- 	select SND_OPL3_LIB
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Solo-1
- 	  (ES1938, ES1946, ES1969) chips.
-@@ -522,6 +528,7 @@ config SND_ES1968
- 	tristate "ESS ES1968/1978 (Maestro-1/2/2E)"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Maestro
- 	  1/2/2E chips.
-@@ -602,6 +609,7 @@ config SND_ICE1712
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
- 	select BITREVERSE
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on the
- 	  ICE1712 (Envy24) chip.
-@@ -688,6 +696,7 @@ config SND_LX6464ES
- config SND_MAESTRO3
- 	tristate "ESS Allegro/Maestro3"
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Maestro 3
- 	  (Allegro) chips.
-@@ -782,6 +791,7 @@ config SND_SIS7019
- 	tristate "SiS 7019 Audio Accelerator"
- 	depends on X86 && !X86_64
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the SiS 7019 Audio Accelerator.
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
+ 	return 0;
+ }
  
-@@ -793,6 +803,7 @@ config SND_SONICVIBES
- 	select SND_OPL3_LIB
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on the S3
- 	  SonicVibes chip.
-@@ -804,6 +815,7 @@ config SND_TRIDENT
- 	tristate "Trident 4D-Wave DX/NX; SiS 7018"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on Trident
- 	  4D-Wave DX/NX or SiS 7018 chips.
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
++
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
++{
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
++}
++
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
+ 
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1166,6 +1214,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
+ 	}
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
+ 
 
 
