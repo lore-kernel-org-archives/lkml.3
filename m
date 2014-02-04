@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149AbaBDVCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56072 "EHLO
+	id S964926AbaBDW6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:58:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452AbaBDVBz (ORCPT
+	with ESMTP id S933132AbaBDVCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:01:55 -0500
+	Tue, 4 Feb 2014 16:02:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heinrich Siebmanns <H.Siebmanns@t-online.de>,
-        Colin Leitner <colin.leitner@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 017/104] USB: ftdi_sio: added CS5 quirk for broken smartcard readers
-Date: Tue,  4 Feb 2014 13:01:20 -0800
-Message-Id: <20140204210223.229683999@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 030/104] rtlwifi: rtl8192c: Add routines to save/restore power index registers
+Date: Tue,  4 Feb 2014 13:01:33 -0800
+Message-Id: <20140204210223.591868148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -30,67 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c1f15196ac3b541d084dc80a8fbd8a74c6a0bd44 upstream.
+commit 97204e93f01868eeba6ae5c4f3270f32905bb418 upstream.
 
-Genuine FTDI chips support only CS7/8. A previous fix in commit
-8704211f65a2 ("USB: ftdi_sio: fixed handling of unsupported CSIZE
-setting") enforced this limitation and reported it back to userspace.
-
-However, certain types of smartcard readers depend on specific
-driver behaviour that requests 0 data bits (not 5) to change into a
-different operating mode if CS5 has been set.
-
-This patch reenables this behaviour for all FTDI devices.
-
-Tagged to be added to stable, because it affects a lot of users of
-embedded systems which rely on these readers to work properly.
-
-Reported-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Tested-by: Heinrich Siebmanns <H.Siebmanns@t-online.de>
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c |   36 ++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2132,10 +2132,20 @@ static void ftdi_set_termios(struct tty_
- 	}
+--- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c
+@@ -158,6 +158,42 @@ static const u8 cckswing_table_ch14[CCK_
+ 	{0x09, 0x08, 0x07, 0x04, 0x00, 0x00, 0x00, 0x00}
+ };
  
- 	/*
--	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
-+	 * All FTDI UART chips are limited to CS7/8. We shouldn't pretend to
- 	 * support CS5/6 and revert the CSIZE setting instead.
-+	 *
-+	 * CS5 however is used to control some smartcard readers which abuse
-+	 * this limitation to switch modes. Original FTDI chips fall back to
-+	 * eight data bits.
-+	 *
-+	 * TODO: Implement a quirk to only allow this with mentioned
-+	 *       readers. One I know of (Argolis Smartreader V1)
-+	 *       returns "USB smartcard server" as iInterface string.
-+	 *       The vendor didn't bother with a custom VID/PID of
-+	 *       course.
- 	 */
--	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
-+	if (C_CSIZE(tty) == CS6) {
- 		dev_warn(ddev, "requested CSIZE setting not supported\n");
- 
- 		termios->c_cflag &= ~CSIZE;
-@@ -2182,6 +2192,9 @@ no_skip:
- 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
- 	}
- 	switch (cflag & CSIZE) {
-+	case CS5:
-+		dev_dbg(ddev, "Setting CS5 quirk\n");
-+		break;
- 	case CS7:
- 		urb_value |= 7;
- 		dev_dbg(ddev, "Setting CS7\n");
++static u32 power_index_reg[6] = {0xc90, 0xc91, 0xc92, 0xc98, 0xc99, 0xc9a};
++
++void dm_restorepowerindex(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8	index;
++
++	for (index = 0; index < 6; index++)
++		rtl_write_byte(rtlpriv, power_index_reg[index],
++			       rtlpriv->dm.powerindex_backup[index]);
++}
++EXPORT_SYMBOL_GPL(dm_restorepowerindex);
++
++void dm_writepowerindex(struct ieee80211_hw *hw, u8 value)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8 index;
++
++	for (index = 0; index < 6; index++)
++		rtl_write_byte(rtlpriv, power_index_reg[index], value);
++}
++EXPORT_SYMBOL_GPL(dm_writepowerindex);
++
++void dm_savepowerindex(struct ieee80211_hw *hw)
++{
++	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	u8 index;
++	u8 tmp;
++
++	for (index = 0; index < 6; index++) {
++		tmp = rtl_read_byte(rtlpriv, power_index_reg[index]);
++		rtlpriv->dm.powerindex_backup[index] = tmp;
++	}
++}
++EXPORT_SYMBOL_GPL(dm_savepowerindex);
++
+ static void rtl92c_dm_diginit(struct ieee80211_hw *hw)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 
 
