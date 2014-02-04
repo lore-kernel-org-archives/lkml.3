@@ -1,806 +1,1497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936081AbaBDWhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:37:17 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58130 "EHLO
+	id S936095AbaBDWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:37:57 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58214 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933521AbaBDWhM (ORCPT
+	with ESMTP id S932975AbaBDWhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:37:12 -0500
+	Tue, 4 Feb 2014 17:37:47 -0500
 From: Kumar Gala <galak@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org
-Subject: [PATCH 2/5] clocksource: qcom: Move clocksource code out of mach-msm
-Date: Tue,  4 Feb 2014 16:36:58 -0600
-Message-Id: <1391553421-26914-3-git-send-email-galak@codeaurora.org>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] arm: qcom: Split Qualcomm support into legacy and multiplatform
+Date: Tue,  4 Feb 2014 16:37:41 -0600
+Message-Id: <1391553461-26963-1-git-send-email-galak@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1391553421-26914-1-git-send-email-galak@codeaurora.org>
-References: <1391553421-26914-1-git-send-email-galak@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We intent to share the clocksource code for MSM platforms between legacy
-and multiplatform supported qcom SoCs.
+Introduce a new mach-qcom that will support SoCs that intend to be
+multiplatform compatiable while keeping mach-msm to legacy SoC/board
+support that will not transition over to multiplatform.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+As part of this, we move support for MSM8X60, MSM8960 and MSM8974 over
+to mach-qcom.
+
 Signed-off-by: Kumar Gala <galak@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig        |  13 +-
- arch/arm/mach-msm/Makefile       |   1 -
- arch/arm/mach-msm/timer.c        | 333 ---------------------------------------
- drivers/clocksource/Kconfig      |   4 +
- drivers/clocksource/Makefile     |   1 +
- drivers/clocksource/qcom-timer.c | 329 ++++++++++++++++++++++++++++++++++++++
- 6 files changed, 339 insertions(+), 342 deletions(-)
- delete mode 100644 arch/arm/mach-msm/timer.c
- create mode 100644 drivers/clocksource/qcom-timer.c
+ MAINTAINERS                   |   8 ++
+ arch/arm/Kconfig              |   7 +-
+ arch/arm/Kconfig.debug        |   2 +-
+ arch/arm/Makefile             |   1 +
+ arch/arm/boot/dts/Makefile    |   6 +-
+ arch/arm/mach-msm/Kconfig     |  45 +------
+ arch/arm/mach-msm/Makefile    |   6 -
+ arch/arm/mach-msm/board-dt.c  |  41 ------
+ arch/arm/mach-msm/platsmp.c   | 137 -------------------
+ arch/arm/mach-msm/scm-boot.c  |  39 ------
+ arch/arm/mach-msm/scm-boot.h  |  22 ----
+ arch/arm/mach-msm/scm.c       | 299 ------------------------------------------
+ arch/arm/mach-msm/scm.h       |  25 ----
+ arch/arm/mach-qcom/Kconfig    |  33 +++++
+ arch/arm/mach-qcom/Makefile   |   5 +
+ arch/arm/mach-qcom/board.c    |  40 ++++++
+ arch/arm/mach-qcom/scm-boot.c |  39 ++++++
+ arch/arm/mach-qcom/scm-boot.h |  22 ++++
+ arch/arm/mach-qcom/scm.c      | 299 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-qcom/scm.h      |  25 ++++
+ arch/arm/mach-qcom/smp.c      | 137 +++++++++++++++++++
+ 21 files changed, 619 insertions(+), 619 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/board-dt.c
+ delete mode 100644 arch/arm/mach-msm/platsmp.c
+ delete mode 100644 arch/arm/mach-msm/scm-boot.c
+ delete mode 100644 arch/arm/mach-msm/scm-boot.h
+ delete mode 100644 arch/arm/mach-msm/scm.c
+ delete mode 100644 arch/arm/mach-msm/scm.h
+ create mode 100644 arch/arm/mach-qcom/Kconfig
+ create mode 100644 arch/arm/mach-qcom/Makefile
+ create mode 100644 arch/arm/mach-qcom/board.c
+ create mode 100644 arch/arm/mach-qcom/scm-boot.c
+ create mode 100644 arch/arm/mach-qcom/scm-boot.h
+ create mode 100644 arch/arm/mach-qcom/scm.c
+ create mode 100644 arch/arm/mach-qcom/scm.h
+ create mode 100644 arch/arm/mach-qcom/smp.c
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b2cf5cf..402be60 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1167,6 +1167,14 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://www.arm.linux.org.uk/
+ S:	Maintained
+ 
++ARM/QUALCOMM SUPPORT
++M:	Kumar Gala <galak@codeaurora.org>
++M:	David Brown <davidb@codeaurora.org>
++L:	linux-arm-msm@vger.kernel.org
++S:	Maintained
++F:	arch/arm/mach-qcom/
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git
++
+ ARM/RADISYS ENP2611 MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e254198..f093f20 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -657,9 +657,8 @@ config ARCH_PXA
+ 	help
+ 	  Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
+ 
+-config ARCH_MSM_NODT
+-	bool "Qualcomm MSM"
+-	select ARCH_MSM
++config ARCH_MSM
++	bool "Qualcomm MSM (non-multiplatform)"
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
+@@ -1005,6 +1004,8 @@ source "arch/arm/plat-pxa/Kconfig"
+ 
+ source "arch/arm/mach-mmp/Kconfig"
+ 
++source "arch/arm/mach-qcom/Kconfig"
++
+ source "arch/arm/mach-realview/Kconfig"
+ 
+ source "arch/arm/mach-rockchip/Kconfig"
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 0531da8..4491c7b 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -956,7 +956,7 @@ config DEBUG_STI_UART
+ 
+ config DEBUG_MSM_UART
+ 	bool
+-	depends on ARCH_MSM
++	depends on ARCH_MSM || ARCH_QCOM
+ 
+ config DEBUG_LL_INCLUDE
+ 	string
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 08a9ef5..51e5bed 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -180,6 +180,7 @@ machine-$(CONFIG_ARCH_OMAP2PLUS)	+= omap2
+ machine-$(CONFIG_ARCH_ORION5X)		+= orion5x
+ machine-$(CONFIG_ARCH_PICOXCELL)	+= picoxcell
+ machine-$(CONFIG_ARCH_PXA)		+= pxa
++machine-$(CONFIG_ARCH_QCOM)		+= qcom
+ machine-$(CONFIG_ARCH_REALVIEW)		+= realview
+ machine-$(CONFIG_ARCH_ROCKCHIP)		+= rockchip
+ machine-$(CONFIG_ARCH_RPC)		+= rpc
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index b9d6a8b..c9eaf1f 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -118,9 +118,6 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+ 	kirkwood-ts219-6282.dtb
+ dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+ dtb-$(CONFIG_ARCH_MOXART) += moxart-uc7112lx.dtb
+-dtb-$(CONFIG_ARCH_MSM) += qcom-msm8660-surf.dtb \
+-	qcom-msm8960-cdp.dtb \
+-	qcom-apq8074-dragonboard.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+ 	armada-370-mirabox.dtb \
+ 	armada-370-netgear-rn102.dtb \
+@@ -232,6 +229,9 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	dra7-evm.dtb
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
+ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
++dtb-$(CONFIG_ARCH_QCOM) += qcom-msm8660-surf.dtb \
++	qcom-msm8960-cdp.dtb \
++	qcom-apq8074-dragonboard.dtb
+ dtb-$(CONFIG_ARCH_U8500) += ste-snowball.dtb \
+ 	ste-hrefprev60-stuib.dtb \
+ 	ste-hrefprev60-tvk.dtb \
 diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 9625cf3..3c4eca7 100644
+index 3c4eca7..a7f959e 100644
 --- a/arch/arm/mach-msm/Kconfig
 +++ b/arch/arm/mach-msm/Kconfig
-@@ -21,7 +21,7 @@ config ARCH_MSM8X60
- 	select CPU_V7
- 	select HAVE_SMP
- 	select MSM_SCM if SMP
--	select MSM_TIMER
-+	select CLKSRC_QCOM
- 
- config ARCH_MSM8960
- 	bool "Enable support for MSM8960"
-@@ -29,7 +29,7 @@ config ARCH_MSM8960
- 	select CPU_V7
- 	select HAVE_SMP
- 	select MSM_SCM if SMP
--	select MSM_TIMER
-+	select CLKSRC_QCOM
- 
- config ARCH_MSM8974
- 	bool "Enable support for MSM8974"
-@@ -54,7 +54,7 @@ config ARCH_MSM7X00A
- 	select MACH_TROUT if !MACH_HALIBUT
- 	select MSM_PROC_COMM
- 	select MSM_SMD
--	select MSM_TIMER
-+	select CLKSRC_QCOM
- 	select MSM_SMD_PKG3
- 
- config ARCH_MSM7X30
-@@ -66,7 +66,7 @@ config ARCH_MSM7X30
- 	select MSM_GPIOMUX
- 	select MSM_PROC_COMM
- 	select MSM_SMD
--	select MSM_TIMER
-+	select CLKSRC_QCOM
- 	select MSM_VIC
- 
- config ARCH_QSD8X50
-@@ -78,7 +78,7 @@ config ARCH_QSD8X50
- 	select MSM_GPIOMUX
- 	select MSM_PROC_COMM
- 	select MSM_SMD
--	select MSM_TIMER
-+	select CLKSRC_QCOM
- 	select MSM_VIC
- 
- endchoice
-@@ -153,7 +153,4 @@ config MSM_GPIOMUX
- config MSM_SCM
- 	bool
- 
--config MSM_TIMER
+@@ -1,50 +1,9 @@
+-config ARCH_MSM
 -	bool
 -
- endif
+-config ARCH_MSM_DT
+-	bool "Qualcomm MSM DT Support" if ARCH_MULTI_V7
+-	select ARCH_MSM
+-	select ARCH_REQUIRE_GPIOLIB
+-	select CLKSRC_OF
+-	select GENERIC_CLOCKEVENTS
+-	help
+-	  Support for Qualcomm's devicetree based MSM systems.
+-
+ if ARCH_MSM
+ 
+-menu "Qualcomm MSM SoC Selection"
+-	depends on ARCH_MSM_DT
+-
+-config ARCH_MSM8X60
+-	bool "Enable support for MSM8X60"
+-	select ARM_GIC
+-	select CPU_V7
+-	select HAVE_SMP
+-	select MSM_SCM if SMP
+-	select CLKSRC_QCOM
+-
+-config ARCH_MSM8960
+-	bool "Enable support for MSM8960"
+-	select ARM_GIC
+-	select CPU_V7
+-	select HAVE_SMP
+-	select MSM_SCM if SMP
+-	select CLKSRC_QCOM
+-
+-config ARCH_MSM8974
+-	bool "Enable support for MSM8974"
+-	select ARM_GIC
+-	select CPU_V7
+-	select HAVE_ARM_ARCH_TIMER
+-	select HAVE_SMP
+-	select MSM_SCM if SMP
+-
+-endmenu
+-
+ choice
+ 	prompt "Qualcomm MSM SoC Type"
+ 	default ARCH_MSM7X00A
+-	depends on ARCH_MSM_NODT
++	depends on ARCH_MSM
+ 
+ config ARCH_MSM7X00A
+ 	bool "MSM7x00A / MSM7x01A"
+@@ -99,7 +58,7 @@ config  MSM_VIC
+ 	bool
+ 
+ menu "Qualcomm MSM Board Type"
+-	depends on ARCH_MSM_NODT
++	depends on ARCH_MSM
+ 
+ config MACH_HALIBUT
+ 	depends on ARCH_MSM
 diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 8327f60..04b1bee 100644
+index 04b1bee..27c078a 100644
 --- a/arch/arm/mach-msm/Makefile
 +++ b/arch/arm/mach-msm/Makefile
-@@ -1,4 +1,3 @@
--obj-$(CONFIG_MSM_TIMER) += timer.o
- obj-$(CONFIG_MSM_PROC_COMM) += clock.o
+@@ -13,17 +13,11 @@ obj-$(CONFIG_ARCH_QSD8X50) += dma.o io.o
  
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
+ obj-$(CONFIG_MSM_SMD) += last_radio_log.o
+-obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
+-
+-CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
+-
+-obj-$(CONFIG_SMP) += platsmp.o
+ 
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o board-trout-panel.o devices-msm7x00.o
+ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
+ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+ obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+-obj-$(CONFIG_ARCH_MSM_DT) += board-dt.o
+ obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
+ obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
+diff --git a/arch/arm/mach-msm/board-dt.c b/arch/arm/mach-msm/board-dt.c
 deleted file mode 100644
-index fd16449..0000000
---- a/arch/arm/mach-msm/timer.c
+index 1f11d93..0000000
+--- a/arch/arm/mach-msm/board-dt.c
 +++ /dev/null
-@@ -1,333 +0,0 @@
+@@ -1,41 +0,0 @@
+-/* Copyright (c) 2010-2012,2013 The Linux Foundation. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-#include <linux/init.h>
+-#include <linux/of.h>
+-#include <linux/of_platform.h>
+-
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-
+-#include "common.h"
+-
+-static const char * const msm_dt_match[] __initconst = {
+-	"qcom,msm8660-fluid",
+-	"qcom,msm8660-surf",
+-	"qcom,msm8960-cdp",
+-	NULL
+-};
+-
+-static const char * const apq8074_dt_match[] __initconst = {
+-	"qcom,apq8074-dragonboard",
+-	NULL
+-};
+-
+-DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
+-	.smp = smp_ops(msm_smp_ops),
+-	.dt_compat = msm_dt_match,
+-MACHINE_END
+-
+-DT_MACHINE_START(APQ_DT, "Qualcomm MSM (Flattened Device Tree)")
+-	.dt_compat = apq8074_dt_match,
+-MACHINE_END
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+deleted file mode 100644
+index 251a91e..0000000
+--- a/arch/arm/mach-msm/platsmp.c
++++ /dev/null
+@@ -1,137 +0,0 @@
 -/*
+- *  Copyright (C) 2002 ARM Ltd.
+- *  All Rights Reserved
+- *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 - *
-- * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/init.h>
+-#include <linux/errno.h>
+-#include <linux/delay.h>
+-#include <linux/device.h>
+-#include <linux/smp.h>
+-#include <linux/io.h>
+-
+-#include <asm/cputype.h>
+-#include <asm/smp_plat.h>
+-
+-#include "scm-boot.h"
+-#include "common.h"
+-
+-#define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
+-#define SCSS_CPU1CORE_RESET 0xD80
+-#define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
+-
+-extern void secondary_startup(void);
+-
+-static DEFINE_SPINLOCK(boot_lock);
+-
+-#ifdef CONFIG_HOTPLUG_CPU
+-static void __ref msm_cpu_die(unsigned int cpu)
+-{
+-	wfi();
+-}
+-#endif
+-
+-static inline int get_core_count(void)
+-{
+-	/* 1 + the PART[1:0] field of MIDR */
+-	return ((read_cpuid_id() >> 4) & 3) + 1;
+-}
+-
+-static void msm_secondary_init(unsigned int cpu)
+-{
+-	/*
+-	 * Synchronise with the boot thread.
+-	 */
+-	spin_lock(&boot_lock);
+-	spin_unlock(&boot_lock);
+-}
+-
+-static void prepare_cold_cpu(unsigned int cpu)
+-{
+-	int ret;
+-	ret = scm_set_boot_addr(virt_to_phys(secondary_startup),
+-				SCM_FLAG_COLDBOOT_CPU1);
+-	if (ret == 0) {
+-		void __iomem *sc1_base_ptr;
+-		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
+-		if (sc1_base_ptr) {
+-			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
+-			writel(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
+-			writel(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
+-			iounmap(sc1_base_ptr);
+-		}
+-	} else
+-		printk(KERN_DEBUG "Failed to set secondary core boot "
+-				  "address\n");
+-}
+-
+-static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
+-{
+-	static int cold_boot_done;
+-
+-	/* Only need to bring cpu out of reset this way once */
+-	if (cold_boot_done == false) {
+-		prepare_cold_cpu(cpu);
+-		cold_boot_done = true;
+-	}
+-
+-	/*
+-	 * set synchronisation state between this boot processor
+-	 * and the secondary one
+-	 */
+-	spin_lock(&boot_lock);
+-
+-	/*
+-	 * Send the secondary CPU a soft interrupt, thereby causing
+-	 * the boot monitor to read the system wide flags register,
+-	 * and branch to the address found there.
+-	 */
+-	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+-
+-	/*
+-	 * now the secondary core is starting up let it run its
+-	 * calibrations, then wait for it to finish
+-	 */
+-	spin_unlock(&boot_lock);
+-
+-	return 0;
+-}
+-
+-/*
+- * Initialise the CPU possible map early - this describes the CPUs
+- * which may be present or become present in the system. The msm8x60
+- * does not support the ARM SCU, so just set the possible cpu mask to
+- * NR_CPUS.
+- */
+-static void __init msm_smp_init_cpus(void)
+-{
+-	unsigned int i, ncores = get_core_count();
+-
+-	if (ncores > nr_cpu_ids) {
+-		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
+-			ncores, nr_cpu_ids);
+-		ncores = nr_cpu_ids;
+-	}
+-
+-	for (i = 0; i < ncores; i++)
+-		set_cpu_possible(i, true);
+-}
+-
+-static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
+-{
+-}
+-
+-struct smp_operations msm_smp_ops __initdata = {
+-	.smp_init_cpus		= msm_smp_init_cpus,
+-	.smp_prepare_cpus	= msm_smp_prepare_cpus,
+-	.smp_secondary_init	= msm_secondary_init,
+-	.smp_boot_secondary	= msm_boot_secondary,
+-#ifdef CONFIG_HOTPLUG_CPU
+-	.cpu_die		= msm_cpu_die,
+-#endif
+-};
+diff --git a/arch/arm/mach-msm/scm-boot.c b/arch/arm/mach-msm/scm-boot.c
+deleted file mode 100644
+index 45cee3e..0000000
+--- a/arch/arm/mach-msm/scm-boot.c
++++ /dev/null
+@@ -1,39 +0,0 @@
+-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 - *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
 - *
 - * This program is distributed in the hope that it will be useful,
 - * but WITHOUT ANY WARRANTY; without even the implied warranty of
 - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 - * GNU General Public License for more details.
 - *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+- * 02110-1301, USA.
 - */
 -
--#include <linux/clocksource.h>
--#include <linux/clockchips.h>
--#include <linux/cpu.h>
--#include <linux/init.h>
--#include <linux/interrupt.h>
--#include <linux/irq.h>
--#include <linux/io.h>
--#include <linux/of.h>
--#include <linux/of_address.h>
--#include <linux/of_irq.h>
--#include <linux/sched_clock.h>
+-#include <linux/module.h>
+-#include <linux/slab.h>
 -
--#include <asm/mach/time.h>
+-#include "scm.h"
+-#include "scm-boot.h"
 -
--#include "common.h"
--
--#define TIMER_MATCH_VAL			0x0000
--#define TIMER_COUNT_VAL			0x0004
--#define TIMER_ENABLE			0x0008
--#define TIMER_ENABLE_CLR_ON_MATCH_EN	BIT(1)
--#define TIMER_ENABLE_EN			BIT(0)
--#define TIMER_CLEAR			0x000C
--#define DGT_CLK_CTL			0x10
--#define DGT_CLK_CTL_DIV_4		0x3
--#define TIMER_STS_GPT0_CLR_PEND		BIT(10)
--
--#define GPT_HZ 32768
--
--#define MSM_DGT_SHIFT 5
--
--static void __iomem *event_base;
--static void __iomem *sts_base;
--
--static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
+-/*
+- * Set the cold/warm boot address for one of the CPU cores.
+- */
+-int scm_set_boot_addr(phys_addr_t addr, int flags)
 -{
--	struct clock_event_device *evt = dev_id;
--	/* Stop the timer tick */
--	if (evt->mode == CLOCK_EVT_MODE_ONESHOT) {
--		u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
--		ctrl &= ~TIMER_ENABLE_EN;
--		writel_relaxed(ctrl, event_base + TIMER_ENABLE);
--	}
--	evt->event_handler(evt);
--	return IRQ_HANDLED;
+-	struct {
+-		unsigned int flags;
+-		phys_addr_t  addr;
+-	} cmd;
+-
+-	cmd.addr = addr;
+-	cmd.flags = flags;
+-	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
+-			&cmd, sizeof(cmd), NULL, 0);
 -}
+-EXPORT_SYMBOL(scm_set_boot_addr);
+diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+deleted file mode 100644
+index 7be32ff..0000000
+--- a/arch/arm/mach-msm/scm-boot.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-#ifndef __MACH_SCM_BOOT_H
+-#define __MACH_SCM_BOOT_H
 -
--static int msm_timer_set_next_event(unsigned long cycles,
--				    struct clock_event_device *evt)
--{
--	u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
+-#define SCM_BOOT_ADDR			0x1
+-#define SCM_FLAG_COLDBOOT_CPU1		0x1
+-#define SCM_FLAG_WARMBOOT_CPU1		0x2
+-#define SCM_FLAG_WARMBOOT_CPU0		0x4
 -
--	ctrl &= ~TIMER_ENABLE_EN;
--	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
+-int scm_set_boot_addr(phys_addr_t addr, int flags);
 -
--	writel_relaxed(ctrl, event_base + TIMER_CLEAR);
--	writel_relaxed(cycles, event_base + TIMER_MATCH_VAL);
--
--	if (sts_base)
--		while (readl_relaxed(sts_base) & TIMER_STS_GPT0_CLR_PEND)
--			cpu_relax();
--
--	writel_relaxed(ctrl | TIMER_ENABLE_EN, event_base + TIMER_ENABLE);
--	return 0;
--}
--
--static void msm_timer_set_mode(enum clock_event_mode mode,
--			      struct clock_event_device *evt)
--{
--	u32 ctrl;
--
--	ctrl = readl_relaxed(event_base + TIMER_ENABLE);
--	ctrl &= ~(TIMER_ENABLE_EN | TIMER_ENABLE_CLR_ON_MATCH_EN);
--
--	switch (mode) {
--	case CLOCK_EVT_MODE_RESUME:
--	case CLOCK_EVT_MODE_PERIODIC:
--		break;
--	case CLOCK_EVT_MODE_ONESHOT:
--		/* Timer is enabled in set_next_event */
--		break;
--	case CLOCK_EVT_MODE_UNUSED:
--	case CLOCK_EVT_MODE_SHUTDOWN:
--		break;
--	}
--	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
--}
--
--static struct clock_event_device __percpu *msm_evt;
--
--static void __iomem *source_base;
--
--static notrace cycle_t msm_read_timer_count(struct clocksource *cs)
--{
--	return readl_relaxed(source_base + TIMER_COUNT_VAL);
--}
--
--static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
--{
--	/*
--	 * Shift timer count down by a constant due to unreliable lower bits
--	 * on some targets.
--	 */
--	return msm_read_timer_count(cs) >> MSM_DGT_SHIFT;
--}
--
--static struct clocksource msm_clocksource = {
--	.name	= "dg_timer",
--	.rating	= 300,
--	.read	= msm_read_timer_count,
--	.mask	= CLOCKSOURCE_MASK(32),
--	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
--};
--
--static int msm_timer_irq;
--static int msm_timer_has_ppi;
--
--static int msm_local_timer_setup(struct clock_event_device *evt)
--{
--	int cpu = smp_processor_id();
--	int err;
--
--	evt->irq = msm_timer_irq;
--	evt->name = "msm_timer";
--	evt->features = CLOCK_EVT_FEAT_ONESHOT;
--	evt->rating = 200;
--	evt->set_mode = msm_timer_set_mode;
--	evt->set_next_event = msm_timer_set_next_event;
--	evt->cpumask = cpumask_of(cpu);
--
--	clockevents_config_and_register(evt, GPT_HZ, 4, 0xffffffff);
--
--	if (msm_timer_has_ppi) {
--		enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
--	} else {
--		err = request_irq(evt->irq, msm_timer_interrupt,
--				IRQF_TIMER | IRQF_NOBALANCING |
--				IRQF_TRIGGER_RISING, "gp_timer", evt);
--		if (err)
--			pr_err("request_irq failed\n");
--	}
--
--	return 0;
--}
--
--static void msm_local_timer_stop(struct clock_event_device *evt)
--{
--	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
--	disable_percpu_irq(evt->irq);
--}
--
--static int msm_timer_cpu_notify(struct notifier_block *self,
--					   unsigned long action, void *hcpu)
--{
--	/*
--	 * Grab cpu pointer in each case to avoid spurious
--	 * preemptible warnings
--	 */
--	switch (action & ~CPU_TASKS_FROZEN) {
--	case CPU_STARTING:
--		msm_local_timer_setup(this_cpu_ptr(msm_evt));
--		break;
--	case CPU_DYING:
--		msm_local_timer_stop(this_cpu_ptr(msm_evt));
--		break;
--	}
--
--	return NOTIFY_OK;
--}
--
--static struct notifier_block msm_timer_cpu_nb = {
--	.notifier_call = msm_timer_cpu_notify,
--};
--
--static u64 notrace msm_sched_clock_read(void)
--{
--	return msm_clocksource.read(&msm_clocksource);
--}
--
--static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
--				  bool percpu)
--{
--	struct clocksource *cs = &msm_clocksource;
--	int res = 0;
--
--	msm_timer_irq = irq;
--	msm_timer_has_ppi = percpu;
--
--	msm_evt = alloc_percpu(struct clock_event_device);
--	if (!msm_evt) {
--		pr_err("memory allocation failed for clockevents\n");
--		goto err;
--	}
--
--	if (percpu)
--		res = request_percpu_irq(irq, msm_timer_interrupt,
--					 "gp_timer", msm_evt);
--
--	if (res) {
--		pr_err("request_percpu_irq failed\n");
--	} else {
--		res = register_cpu_notifier(&msm_timer_cpu_nb);
--		if (res) {
--			free_percpu_irq(irq, msm_evt);
--			goto err;
--		}
--
--		/* Immediately configure the timer on the boot CPU */
--		msm_local_timer_setup(__this_cpu_ptr(msm_evt));
--	}
--
--err:
--	writel_relaxed(TIMER_ENABLE_EN, source_base + TIMER_ENABLE);
--	res = clocksource_register_hz(cs, dgt_hz);
--	if (res)
--		pr_err("clocksource_register failed\n");
--	sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
--}
--
--#ifdef CONFIG_OF
--static void __init msm_dt_timer_init(struct device_node *np)
--{
--	u32 freq;
--	int irq;
--	struct resource res;
--	u32 percpu_offset;
--	void __iomem *base;
--	void __iomem *cpu0_base;
--
--	base = of_iomap(np, 0);
--	if (!base) {
--		pr_err("Failed to map event base\n");
--		return;
--	}
--
--	/* We use GPT0 for the clockevent */
--	irq = irq_of_parse_and_map(np, 1);
--	if (irq <= 0) {
--		pr_err("Can't get irq\n");
--		return;
--	}
--
--	/* We use CPU0's DGT for the clocksource */
--	if (of_property_read_u32(np, "cpu-offset", &percpu_offset))
--		percpu_offset = 0;
--
--	if (of_address_to_resource(np, 0, &res)) {
--		pr_err("Failed to parse DGT resource\n");
--		return;
--	}
--
--	cpu0_base = ioremap(res.start + percpu_offset, resource_size(&res));
--	if (!cpu0_base) {
--		pr_err("Failed to map source base\n");
--		return;
--	}
--
--	if (of_property_read_u32(np, "clock-frequency", &freq)) {
--		pr_err("Unknown frequency\n");
--		return;
--	}
--
--	event_base = base + 0x4;
--	sts_base = base + 0x88;
--	source_base = cpu0_base + 0x24;
--	freq /= 4;
--	writel_relaxed(DGT_CLK_CTL_DIV_4, source_base + DGT_CLK_CTL);
--
--	msm_timer_init(freq, 32, irq, !!percpu_offset);
--}
--CLOCKSOURCE_OF_DECLARE(kpss_timer, "qcom,kpss-timer", msm_dt_timer_init);
--CLOCKSOURCE_OF_DECLARE(scss_timer, "qcom,scss-timer", msm_dt_timer_init);
 -#endif
+diff --git a/arch/arm/mach-msm/scm.c b/arch/arm/mach-msm/scm.c
+deleted file mode 100644
+index c536fd6..0000000
+--- a/arch/arm/mach-msm/scm.c
++++ /dev/null
+@@ -1,299 +0,0 @@
+-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+- * 02110-1301, USA.
+- */
 -
--static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
--				u32 sts)
+-#include <linux/slab.h>
+-#include <linux/io.h>
+-#include <linux/module.h>
+-#include <linux/mutex.h>
+-#include <linux/errno.h>
+-#include <linux/err.h>
+-
+-#include <asm/cacheflush.h>
+-
+-#include "scm.h"
+-
+-/* Cache line size for msm8x60 */
+-#define CACHELINESIZE 32
+-
+-#define SCM_ENOMEM		-5
+-#define SCM_EOPNOTSUPP		-4
+-#define SCM_EINVAL_ADDR		-3
+-#define SCM_EINVAL_ARG		-2
+-#define SCM_ERROR		-1
+-#define SCM_INTERRUPTED		1
+-
+-static DEFINE_MUTEX(scm_lock);
+-
+-/**
+- * struct scm_command - one SCM command buffer
+- * @len: total available memory for command and response
+- * @buf_offset: start of command buffer
+- * @resp_hdr_offset: start of response buffer
+- * @id: command to be executed
+- * @buf: buffer returned from scm_get_command_buffer()
+- *
+- * An SCM command is laid out in memory as follows:
+- *
+- *	------------------- <--- struct scm_command
+- *	| command header  |
+- *	------------------- <--- scm_get_command_buffer()
+- *	| command buffer  |
+- *	------------------- <--- struct scm_response and
+- *	| response header |      scm_command_to_response()
+- *	------------------- <--- scm_get_response_buffer()
+- *	| response buffer |
+- *	-------------------
+- *
+- * There can be arbitrary padding between the headers and buffers so
+- * you should always use the appropriate scm_get_*_buffer() routines
+- * to access the buffers in a safe manner.
+- */
+-struct scm_command {
+-	u32	len;
+-	u32	buf_offset;
+-	u32	resp_hdr_offset;
+-	u32	id;
+-	u32	buf[0];
+-};
+-
+-/**
+- * struct scm_response - one SCM response buffer
+- * @len: total available memory for response
+- * @buf_offset: start of response data relative to start of scm_response
+- * @is_complete: indicates if the command has finished processing
+- */
+-struct scm_response {
+-	u32	len;
+-	u32	buf_offset;
+-	u32	is_complete;
+-};
+-
+-/**
+- * alloc_scm_command() - Allocate an SCM command
+- * @cmd_size: size of the command buffer
+- * @resp_size: size of the response buffer
+- *
+- * Allocate an SCM command, including enough room for the command
+- * and response headers as well as the command and response buffers.
+- *
+- * Returns a valid &scm_command on success or %NULL if the allocation fails.
+- */
+-static struct scm_command *alloc_scm_command(size_t cmd_size, size_t resp_size)
 -{
--	void __iomem *base;
+-	struct scm_command *cmd;
+-	size_t len = sizeof(*cmd) + sizeof(struct scm_response) + cmd_size +
+-		resp_size;
 -
--	base = ioremap(addr, SZ_256);
--	if (!base) {
--		pr_err("Failed to map timer base\n");
+-	cmd = kzalloc(PAGE_ALIGN(len), GFP_KERNEL);
+-	if (cmd) {
+-		cmd->len = len;
+-		cmd->buf_offset = offsetof(struct scm_command, buf);
+-		cmd->resp_hdr_offset = cmd->buf_offset + cmd_size;
+-	}
+-	return cmd;
+-}
+-
+-/**
+- * free_scm_command() - Free an SCM command
+- * @cmd: command to free
+- *
+- * Free an SCM command.
+- */
+-static inline void free_scm_command(struct scm_command *cmd)
+-{
+-	kfree(cmd);
+-}
+-
+-/**
+- * scm_command_to_response() - Get a pointer to a scm_response
+- * @cmd: command
+- *
+- * Returns a pointer to a response for a command.
+- */
+-static inline struct scm_response *scm_command_to_response(
+-		const struct scm_command *cmd)
+-{
+-	return (void *)cmd + cmd->resp_hdr_offset;
+-}
+-
+-/**
+- * scm_get_command_buffer() - Get a pointer to a command buffer
+- * @cmd: command
+- *
+- * Returns a pointer to the command buffer of a command.
+- */
+-static inline void *scm_get_command_buffer(const struct scm_command *cmd)
+-{
+-	return (void *)cmd->buf;
+-}
+-
+-/**
+- * scm_get_response_buffer() - Get a pointer to a response buffer
+- * @rsp: response
+- *
+- * Returns a pointer to a response buffer of a response.
+- */
+-static inline void *scm_get_response_buffer(const struct scm_response *rsp)
+-{
+-	return (void *)rsp + rsp->buf_offset;
+-}
+-
+-static int scm_remap_error(int err)
+-{
+-	switch (err) {
+-	case SCM_ERROR:
+-		return -EIO;
+-	case SCM_EINVAL_ADDR:
+-	case SCM_EINVAL_ARG:
+-		return -EINVAL;
+-	case SCM_EOPNOTSUPP:
+-		return -EOPNOTSUPP;
+-	case SCM_ENOMEM:
 -		return -ENOMEM;
 -	}
--	event_base = base + event;
--	source_base = base + source;
--	if (sts)
--		sts_base = base + sts;
--
--	return 0;
+-	return -EINVAL;
 -}
 -
--void __init msm7x01_timer_init(void)
+-static u32 smc(u32 cmd_addr)
 -{
--	struct clocksource *cs = &msm_clocksource;
+-	int context_id;
+-	register u32 r0 asm("r0") = 1;
+-	register u32 r1 asm("r1") = (u32)&context_id;
+-	register u32 r2 asm("r2") = cmd_addr;
+-	do {
+-		asm volatile(
+-			__asmeq("%0", "r0")
+-			__asmeq("%1", "r0")
+-			__asmeq("%2", "r1")
+-			__asmeq("%3", "r2")
+-#ifdef REQUIRES_SEC
+-			".arch_extension sec\n"
+-#endif
+-			"smc	#0	@ switch to secure world\n"
+-			: "=r" (r0)
+-			: "r" (r0), "r" (r1), "r" (r2)
+-			: "r3");
+-	} while (r0 == SCM_INTERRUPTED);
 -
--	if (msm_timer_map(0xc0100000, 0x0, 0x10, 0x0))
--		return;
--	cs->read = msm_read_timer_count_shift;
--	cs->mask = CLOCKSOURCE_MASK((32 - MSM_DGT_SHIFT));
--	/* 600 KHz */
--	msm_timer_init(19200000 >> MSM_DGT_SHIFT, 32 - MSM_DGT_SHIFT, 7,
--			false);
+-	return r0;
 -}
 -
--void __init msm7x30_timer_init(void)
+-static int __scm_call(const struct scm_command *cmd)
 -{
--	if (msm_timer_map(0xc0100000, 0x4, 0x24, 0x80))
--		return;
--	msm_timer_init(24576000 / 4, 32, 1, false);
+-	int ret;
+-	u32 cmd_addr = virt_to_phys(cmd);
+-
+-	/*
+-	 * Flush the entire cache here so callers don't have to remember
+-	 * to flush the cache when passing physical addresses to the secure
+-	 * side in the buffer.
+-	 */
+-	flush_cache_all();
+-	ret = smc(cmd_addr);
+-	if (ret < 0)
+-		ret = scm_remap_error(ret);
+-
+-	return ret;
 -}
 -
--void __init qsd8x50_timer_init(void)
+-/**
+- * scm_call() - Send an SCM command
+- * @svc_id: service identifier
+- * @cmd_id: command identifier
+- * @cmd_buf: command buffer
+- * @cmd_len: length of the command buffer
+- * @resp_buf: response buffer
+- * @resp_len: length of the response buffer
+- *
+- * Sends a command to the SCM and waits for the command to finish processing.
+- */
+-int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
+-		void *resp_buf, size_t resp_len)
 -{
--	if (msm_timer_map(0xAC100000, 0x0, 0x10, 0x34))
--		return;
--	msm_timer_init(19200000 / 4, 32, 7, false);
+-	int ret;
+-	struct scm_command *cmd;
+-	struct scm_response *rsp;
+-
+-	cmd = alloc_scm_command(cmd_len, resp_len);
+-	if (!cmd)
+-		return -ENOMEM;
+-
+-	cmd->id = (svc_id << 10) | cmd_id;
+-	if (cmd_buf)
+-		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
+-
+-	mutex_lock(&scm_lock);
+-	ret = __scm_call(cmd);
+-	mutex_unlock(&scm_lock);
+-	if (ret)
+-		goto out;
+-
+-	rsp = scm_command_to_response(cmd);
+-	do {
+-		u32 start = (u32)rsp;
+-		u32 end = (u32)scm_get_response_buffer(rsp) + resp_len;
+-		start &= ~(CACHELINESIZE - 1);
+-		while (start < end) {
+-			asm ("mcr p15, 0, %0, c7, c6, 1" : : "r" (start)
+-			     : "memory");
+-			start += CACHELINESIZE;
+-		}
+-	} while (!rsp->is_complete);
+-
+-	if (resp_buf)
+-		memcpy(resp_buf, scm_get_response_buffer(rsp), resp_len);
+-out:
+-	free_scm_command(cmd);
+-	return ret;
 -}
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index cd6950f..81caa16 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -140,3 +140,7 @@ config VF_PIT_TIMER
- 	bool
- 	help
- 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
-+
-+config CLKSRC_QCOM
-+	bool
-+	depends on ARCH_MSM
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index c7ca50a..2e0c0cc 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_CLKSRC_EFM32)	+= time-efm32.o
- obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
- obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
- obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
-+obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
- 
- obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
- obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
-diff --git a/drivers/clocksource/qcom-timer.c b/drivers/clocksource/qcom-timer.c
+-EXPORT_SYMBOL(scm_call);
+-
+-u32 scm_get_version(void)
+-{
+-	int context_id;
+-	static u32 version = -1;
+-	register u32 r0 asm("r0");
+-	register u32 r1 asm("r1");
+-
+-	if (version != -1)
+-		return version;
+-
+-	mutex_lock(&scm_lock);
+-
+-	r0 = 0x1 << 8;
+-	r1 = (u32)&context_id;
+-	do {
+-		asm volatile(
+-			__asmeq("%0", "r0")
+-			__asmeq("%1", "r1")
+-			__asmeq("%2", "r0")
+-			__asmeq("%3", "r1")
+-#ifdef REQUIRES_SEC
+-			".arch_extension sec\n"
+-#endif
+-			"smc	#0	@ switch to secure world\n"
+-			: "=r" (r0), "=r" (r1)
+-			: "r" (r0), "r" (r1)
+-			: "r2", "r3");
+-	} while (r0 == SCM_INTERRUPTED);
+-
+-	version = r1;
+-	mutex_unlock(&scm_lock);
+-
+-	return version;
+-}
+-EXPORT_SYMBOL(scm_get_version);
+diff --git a/arch/arm/mach-msm/scm.h b/arch/arm/mach-msm/scm.h
+deleted file mode 100644
+index 00b31ea..0000000
+--- a/arch/arm/mach-msm/scm.h
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 and
+- * only version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-#ifndef __MACH_SCM_H
+-#define __MACH_SCM_H
+-
+-#define SCM_SVC_BOOT			0x1
+-#define SCM_SVC_PIL			0x2
+-
+-extern int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
+-		void *resp_buf, size_t resp_len);
+-
+-#define SCM_VERSION(major, minor) (((major) << 16) | ((minor) & 0xFF))
+-
+-extern u32 scm_get_version(void);
+-
+-#endif
+diff --git a/arch/arm/mach-qcom/Kconfig b/arch/arm/mach-qcom/Kconfig
 new file mode 100644
-index 0000000..dca829e
+index 0000000..755b0db
 --- /dev/null
-+++ b/drivers/clocksource/qcom-timer.c
-@@ -0,0 +1,329 @@
-+/*
++++ b/arch/arm/mach-qcom/Kconfig
+@@ -0,0 +1,33 @@
++config ARCH_QCOM
++	bool "Qualcomm Support" if ARCH_MULTI_V7
++	select ARCH_REQUIRE_GPIOLIB
++	select CLKSRC_OF
++	select GENERIC_CLOCKEVENTS
++	select ARM_GIC
++	select HAVE_SMP
++	select QCOM_SCM if SMP
++	help
++	  Support for Qualcomm's devicetree based systems.
++
++if ARCH_QCOM
++
++menu "Qualcomm SoC Selection"
++
++config ARCH_MSM8X60
++	bool "Enable support for MSM8X60"
++	select CLKSRC_QCOM
++
++config ARCH_MSM8960
++	bool "Enable support for MSM8960"
++	select CLKSRC_QCOM
++
++config ARCH_MSM8974
++	bool "Enable support for MSM8974"
++	select HAVE_ARM_ARCH_TIMER
++
++endmenu
++
++config QCOM_SCM
++	bool
++
++endif
+diff --git a/arch/arm/mach-qcom/Makefile b/arch/arm/mach-qcom/Makefile
+new file mode 100644
+index 0000000..c0ba0ef
+--- /dev/null
++++ b/arch/arm/mach-qcom/Makefile
+@@ -0,0 +1,5 @@
++obj-y			:= board.o
++obj-$(CONFIG_SMP)	+= smp.o
++obj-$(CONFIG_QCOM_SCM)	+= scm.o scm-boot.o
++
++CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
+diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
+new file mode 100644
+index 0000000..4529f6b
+--- /dev/null
++++ b/arch/arm/mach-qcom/board.c
+@@ -0,0 +1,40 @@
++/* Copyright (c) 2010-2014 The Linux Foundation. All rights reserved.
 + *
-+ * Copyright (C) 2007 Google, Inc.
-+ * Copyright (c) 2009-2012,2014, The Linux Foundation. All rights reserved.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/init.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++
++extern struct smp_operations msm_smp_ops;
++
++static const char * const qcom_dt_match[] __initconst = {
++	"qcom,msm8660-surf",
++	"qcom,msm8960-cdp",
++	NULL
++};
++
++static const char * const apq8074_dt_match[] __initconst = {
++	"qcom,apq8074-dragonboard",
++	NULL
++};
++
++DT_MACHINE_START(QCOM_DT, "Qualcomm (Flattened Device Tree)")
++	.smp = smp_ops(msm_smp_ops),
++	.dt_compat = qcom_dt_match,
++MACHINE_END
++
++DT_MACHINE_START(APQ_DT, "Qualcomm (Flattened Device Tree)")
++	.dt_compat = apq8074_dt_match,
++MACHINE_END
+diff --git a/arch/arm/mach-qcom/scm-boot.c b/arch/arm/mach-qcom/scm-boot.c
+new file mode 100644
+index 0000000..45cee3e
+--- /dev/null
++++ b/arch/arm/mach-qcom/scm-boot.c
+@@ -0,0 +1,39 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+#include <linux/clocksource.h>
-+#include <linux/clockchips.h>
-+#include <linux/cpu.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/sched_clock.h>
++#include <linux/module.h>
++#include <linux/slab.h>
 +
-+#define TIMER_MATCH_VAL			0x0000
-+#define TIMER_COUNT_VAL			0x0004
-+#define TIMER_ENABLE			0x0008
-+#define TIMER_ENABLE_CLR_ON_MATCH_EN	BIT(1)
-+#define TIMER_ENABLE_EN			BIT(0)
-+#define TIMER_CLEAR			0x000C
-+#define DGT_CLK_CTL			0x10
-+#define DGT_CLK_CTL_DIV_4		0x3
-+#define TIMER_STS_GPT0_CLR_PEND		BIT(10)
++#include "scm.h"
++#include "scm-boot.h"
 +
-+#define GPT_HZ 32768
-+
-+#define MSM_DGT_SHIFT 5
-+
-+static void __iomem *event_base;
-+static void __iomem *sts_base;
-+
-+static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
++/*
++ * Set the cold/warm boot address for one of the CPU cores.
++ */
++int scm_set_boot_addr(phys_addr_t addr, int flags)
 +{
-+	struct clock_event_device *evt = dev_id;
-+	/* Stop the timer tick */
-+	if (evt->mode == CLOCK_EVT_MODE_ONESHOT) {
-+		u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
-+		ctrl &= ~TIMER_ENABLE_EN;
-+		writel_relaxed(ctrl, event_base + TIMER_ENABLE);
-+	}
-+	evt->event_handler(evt);
-+	return IRQ_HANDLED;
++	struct {
++		unsigned int flags;
++		phys_addr_t  addr;
++	} cmd;
++
++	cmd.addr = addr;
++	cmd.flags = flags;
++	return scm_call(SCM_SVC_BOOT, SCM_BOOT_ADDR,
++			&cmd, sizeof(cmd), NULL, 0);
 +}
++EXPORT_SYMBOL(scm_set_boot_addr);
+diff --git a/arch/arm/mach-qcom/scm-boot.h b/arch/arm/mach-qcom/scm-boot.h
+new file mode 100644
+index 0000000..7be32ff
+--- /dev/null
++++ b/arch/arm/mach-qcom/scm-boot.h
+@@ -0,0 +1,22 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#ifndef __MACH_SCM_BOOT_H
++#define __MACH_SCM_BOOT_H
 +
-+static int msm_timer_set_next_event(unsigned long cycles,
-+				    struct clock_event_device *evt)
-+{
-+	u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
++#define SCM_BOOT_ADDR			0x1
++#define SCM_FLAG_COLDBOOT_CPU1		0x1
++#define SCM_FLAG_WARMBOOT_CPU1		0x2
++#define SCM_FLAG_WARMBOOT_CPU0		0x4
 +
-+	ctrl &= ~TIMER_ENABLE_EN;
-+	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
++int scm_set_boot_addr(phys_addr_t addr, int flags);
 +
-+	writel_relaxed(ctrl, event_base + TIMER_CLEAR);
-+	writel_relaxed(cycles, event_base + TIMER_MATCH_VAL);
-+
-+	if (sts_base)
-+		while (readl_relaxed(sts_base) & TIMER_STS_GPT0_CLR_PEND)
-+			cpu_relax();
-+
-+	writel_relaxed(ctrl | TIMER_ENABLE_EN, event_base + TIMER_ENABLE);
-+	return 0;
-+}
-+
-+static void msm_timer_set_mode(enum clock_event_mode mode,
-+			      struct clock_event_device *evt)
-+{
-+	u32 ctrl;
-+
-+	ctrl = readl_relaxed(event_base + TIMER_ENABLE);
-+	ctrl &= ~(TIMER_ENABLE_EN | TIMER_ENABLE_CLR_ON_MATCH_EN);
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_RESUME:
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		/* Timer is enabled in set_next_event */
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		break;
-+	}
-+	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
-+}
-+
-+static struct clock_event_device __percpu *msm_evt;
-+
-+static void __iomem *source_base;
-+
-+static notrace cycle_t msm_read_timer_count(struct clocksource *cs)
-+{
-+	return readl_relaxed(source_base + TIMER_COUNT_VAL);
-+}
-+
-+static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
-+{
-+	/*
-+	 * Shift timer count down by a constant due to unreliable lower bits
-+	 * on some targets.
-+	 */
-+	return msm_read_timer_count(cs) >> MSM_DGT_SHIFT;
-+}
-+
-+static struct clocksource msm_clocksource = {
-+	.name	= "dg_timer",
-+	.rating	= 300,
-+	.read	= msm_read_timer_count,
-+	.mask	= CLOCKSOURCE_MASK(32),
-+	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+static int msm_timer_irq;
-+static int msm_timer_has_ppi;
-+
-+static int msm_local_timer_setup(struct clock_event_device *evt)
-+{
-+	int cpu = smp_processor_id();
-+	int err;
-+
-+	evt->irq = msm_timer_irq;
-+	evt->name = "msm_timer";
-+	evt->features = CLOCK_EVT_FEAT_ONESHOT;
-+	evt->rating = 200;
-+	evt->set_mode = msm_timer_set_mode;
-+	evt->set_next_event = msm_timer_set_next_event;
-+	evt->cpumask = cpumask_of(cpu);
-+
-+	clockevents_config_and_register(evt, GPT_HZ, 4, 0xffffffff);
-+
-+	if (msm_timer_has_ppi) {
-+		enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
-+	} else {
-+		err = request_irq(evt->irq, msm_timer_interrupt,
-+				IRQF_TIMER | IRQF_NOBALANCING |
-+				IRQF_TRIGGER_RISING, "gp_timer", evt);
-+		if (err)
-+			pr_err("request_irq failed\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static void msm_local_timer_stop(struct clock_event_device *evt)
-+{
-+	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-+	disable_percpu_irq(evt->irq);
-+}
-+
-+static int msm_timer_cpu_notify(struct notifier_block *self,
-+					   unsigned long action, void *hcpu)
-+{
-+	/*
-+	 * Grab cpu pointer in each case to avoid spurious
-+	 * preemptible warnings
-+	 */
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		msm_local_timer_setup(this_cpu_ptr(msm_evt));
-+		break;
-+	case CPU_DYING:
-+		msm_local_timer_stop(this_cpu_ptr(msm_evt));
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block msm_timer_cpu_nb = {
-+	.notifier_call = msm_timer_cpu_notify,
-+};
-+
-+static u64 notrace msm_sched_clock_read(void)
-+{
-+	return msm_clocksource.read(&msm_clocksource);
-+}
-+
-+static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
-+				  bool percpu)
-+{
-+	struct clocksource *cs = &msm_clocksource;
-+	int res = 0;
-+
-+	msm_timer_irq = irq;
-+	msm_timer_has_ppi = percpu;
-+
-+	msm_evt = alloc_percpu(struct clock_event_device);
-+	if (!msm_evt) {
-+		pr_err("memory allocation failed for clockevents\n");
-+		goto err;
-+	}
-+
-+	if (percpu)
-+		res = request_percpu_irq(irq, msm_timer_interrupt,
-+					 "gp_timer", msm_evt);
-+
-+	if (res) {
-+		pr_err("request_percpu_irq failed\n");
-+	} else {
-+		res = register_cpu_notifier(&msm_timer_cpu_nb);
-+		if (res) {
-+			free_percpu_irq(irq, msm_evt);
-+			goto err;
-+		}
-+
-+		/* Immediately configure the timer on the boot CPU */
-+		msm_local_timer_setup(__this_cpu_ptr(msm_evt));
-+	}
-+
-+err:
-+	writel_relaxed(TIMER_ENABLE_EN, source_base + TIMER_ENABLE);
-+	res = clocksource_register_hz(cs, dgt_hz);
-+	if (res)
-+		pr_err("clocksource_register failed\n");
-+	sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
-+}
-+
-+#ifdef CONFIG_OF
-+static void __init msm_dt_timer_init(struct device_node *np)
-+{
-+	u32 freq;
-+	int irq;
-+	struct resource res;
-+	u32 percpu_offset;
-+	void __iomem *base;
-+	void __iomem *cpu0_base;
-+
-+	base = of_iomap(np, 0);
-+	if (!base) {
-+		pr_err("Failed to map event base\n");
-+		return;
-+	}
-+
-+	/* We use GPT0 for the clockevent */
-+	irq = irq_of_parse_and_map(np, 1);
-+	if (irq <= 0) {
-+		pr_err("Can't get irq\n");
-+		return;
-+	}
-+
-+	/* We use CPU0's DGT for the clocksource */
-+	if (of_property_read_u32(np, "cpu-offset", &percpu_offset))
-+		percpu_offset = 0;
-+
-+	if (of_address_to_resource(np, 0, &res)) {
-+		pr_err("Failed to parse DGT resource\n");
-+		return;
-+	}
-+
-+	cpu0_base = ioremap(res.start + percpu_offset, resource_size(&res));
-+	if (!cpu0_base) {
-+		pr_err("Failed to map source base\n");
-+		return;
-+	}
-+
-+	if (of_property_read_u32(np, "clock-frequency", &freq)) {
-+		pr_err("Unknown frequency\n");
-+		return;
-+	}
-+
-+	event_base = base + 0x4;
-+	sts_base = base + 0x88;
-+	source_base = cpu0_base + 0x24;
-+	freq /= 4;
-+	writel_relaxed(DGT_CLK_CTL_DIV_4, source_base + DGT_CLK_CTL);
-+
-+	msm_timer_init(freq, 32, irq, !!percpu_offset);
-+}
-+CLOCKSOURCE_OF_DECLARE(kpss_timer, "qcom,kpss-timer", msm_dt_timer_init);
-+CLOCKSOURCE_OF_DECLARE(scss_timer, "qcom,scss-timer", msm_dt_timer_init);
 +#endif
+diff --git a/arch/arm/mach-qcom/scm.c b/arch/arm/mach-qcom/scm.c
+new file mode 100644
+index 0000000..c536fd6
+--- /dev/null
++++ b/arch/arm/mach-qcom/scm.c
+@@ -0,0 +1,299 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
 +
-+static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
-+				u32 sts)
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/errno.h>
++#include <linux/err.h>
++
++#include <asm/cacheflush.h>
++
++#include "scm.h"
++
++/* Cache line size for msm8x60 */
++#define CACHELINESIZE 32
++
++#define SCM_ENOMEM		-5
++#define SCM_EOPNOTSUPP		-4
++#define SCM_EINVAL_ADDR		-3
++#define SCM_EINVAL_ARG		-2
++#define SCM_ERROR		-1
++#define SCM_INTERRUPTED		1
++
++static DEFINE_MUTEX(scm_lock);
++
++/**
++ * struct scm_command - one SCM command buffer
++ * @len: total available memory for command and response
++ * @buf_offset: start of command buffer
++ * @resp_hdr_offset: start of response buffer
++ * @id: command to be executed
++ * @buf: buffer returned from scm_get_command_buffer()
++ *
++ * An SCM command is laid out in memory as follows:
++ *
++ *	------------------- <--- struct scm_command
++ *	| command header  |
++ *	------------------- <--- scm_get_command_buffer()
++ *	| command buffer  |
++ *	------------------- <--- struct scm_response and
++ *	| response header |      scm_command_to_response()
++ *	------------------- <--- scm_get_response_buffer()
++ *	| response buffer |
++ *	-------------------
++ *
++ * There can be arbitrary padding between the headers and buffers so
++ * you should always use the appropriate scm_get_*_buffer() routines
++ * to access the buffers in a safe manner.
++ */
++struct scm_command {
++	u32	len;
++	u32	buf_offset;
++	u32	resp_hdr_offset;
++	u32	id;
++	u32	buf[0];
++};
++
++/**
++ * struct scm_response - one SCM response buffer
++ * @len: total available memory for response
++ * @buf_offset: start of response data relative to start of scm_response
++ * @is_complete: indicates if the command has finished processing
++ */
++struct scm_response {
++	u32	len;
++	u32	buf_offset;
++	u32	is_complete;
++};
++
++/**
++ * alloc_scm_command() - Allocate an SCM command
++ * @cmd_size: size of the command buffer
++ * @resp_size: size of the response buffer
++ *
++ * Allocate an SCM command, including enough room for the command
++ * and response headers as well as the command and response buffers.
++ *
++ * Returns a valid &scm_command on success or %NULL if the allocation fails.
++ */
++static struct scm_command *alloc_scm_command(size_t cmd_size, size_t resp_size)
 +{
-+	void __iomem *base;
++	struct scm_command *cmd;
++	size_t len = sizeof(*cmd) + sizeof(struct scm_response) + cmd_size +
++		resp_size;
 +
-+	base = ioremap(addr, SZ_256);
-+	if (!base) {
-+		pr_err("Failed to map timer base\n");
++	cmd = kzalloc(PAGE_ALIGN(len), GFP_KERNEL);
++	if (cmd) {
++		cmd->len = len;
++		cmd->buf_offset = offsetof(struct scm_command, buf);
++		cmd->resp_hdr_offset = cmd->buf_offset + cmd_size;
++	}
++	return cmd;
++}
++
++/**
++ * free_scm_command() - Free an SCM command
++ * @cmd: command to free
++ *
++ * Free an SCM command.
++ */
++static inline void free_scm_command(struct scm_command *cmd)
++{
++	kfree(cmd);
++}
++
++/**
++ * scm_command_to_response() - Get a pointer to a scm_response
++ * @cmd: command
++ *
++ * Returns a pointer to a response for a command.
++ */
++static inline struct scm_response *scm_command_to_response(
++		const struct scm_command *cmd)
++{
++	return (void *)cmd + cmd->resp_hdr_offset;
++}
++
++/**
++ * scm_get_command_buffer() - Get a pointer to a command buffer
++ * @cmd: command
++ *
++ * Returns a pointer to the command buffer of a command.
++ */
++static inline void *scm_get_command_buffer(const struct scm_command *cmd)
++{
++	return (void *)cmd->buf;
++}
++
++/**
++ * scm_get_response_buffer() - Get a pointer to a response buffer
++ * @rsp: response
++ *
++ * Returns a pointer to a response buffer of a response.
++ */
++static inline void *scm_get_response_buffer(const struct scm_response *rsp)
++{
++	return (void *)rsp + rsp->buf_offset;
++}
++
++static int scm_remap_error(int err)
++{
++	switch (err) {
++	case SCM_ERROR:
++		return -EIO;
++	case SCM_EINVAL_ADDR:
++	case SCM_EINVAL_ARG:
++		return -EINVAL;
++	case SCM_EOPNOTSUPP:
++		return -EOPNOTSUPP;
++	case SCM_ENOMEM:
 +		return -ENOMEM;
 +	}
-+	event_base = base + event;
-+	source_base = base + source;
-+	if (sts)
-+		sts_base = base + sts;
++	return -EINVAL;
++}
++
++static u32 smc(u32 cmd_addr)
++{
++	int context_id;
++	register u32 r0 asm("r0") = 1;
++	register u32 r1 asm("r1") = (u32)&context_id;
++	register u32 r2 asm("r2") = cmd_addr;
++	do {
++		asm volatile(
++			__asmeq("%0", "r0")
++			__asmeq("%1", "r0")
++			__asmeq("%2", "r1")
++			__asmeq("%3", "r2")
++#ifdef REQUIRES_SEC
++			".arch_extension sec\n"
++#endif
++			"smc	#0	@ switch to secure world\n"
++			: "=r" (r0)
++			: "r" (r0), "r" (r1), "r" (r2)
++			: "r3");
++	} while (r0 == SCM_INTERRUPTED);
++
++	return r0;
++}
++
++static int __scm_call(const struct scm_command *cmd)
++{
++	int ret;
++	u32 cmd_addr = virt_to_phys(cmd);
++
++	/*
++	 * Flush the entire cache here so callers don't have to remember
++	 * to flush the cache when passing physical addresses to the secure
++	 * side in the buffer.
++	 */
++	flush_cache_all();
++	ret = smc(cmd_addr);
++	if (ret < 0)
++		ret = scm_remap_error(ret);
++
++	return ret;
++}
++
++/**
++ * scm_call() - Send an SCM command
++ * @svc_id: service identifier
++ * @cmd_id: command identifier
++ * @cmd_buf: command buffer
++ * @cmd_len: length of the command buffer
++ * @resp_buf: response buffer
++ * @resp_len: length of the response buffer
++ *
++ * Sends a command to the SCM and waits for the command to finish processing.
++ */
++int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
++		void *resp_buf, size_t resp_len)
++{
++	int ret;
++	struct scm_command *cmd;
++	struct scm_response *rsp;
++
++	cmd = alloc_scm_command(cmd_len, resp_len);
++	if (!cmd)
++		return -ENOMEM;
++
++	cmd->id = (svc_id << 10) | cmd_id;
++	if (cmd_buf)
++		memcpy(scm_get_command_buffer(cmd), cmd_buf, cmd_len);
++
++	mutex_lock(&scm_lock);
++	ret = __scm_call(cmd);
++	mutex_unlock(&scm_lock);
++	if (ret)
++		goto out;
++
++	rsp = scm_command_to_response(cmd);
++	do {
++		u32 start = (u32)rsp;
++		u32 end = (u32)scm_get_response_buffer(rsp) + resp_len;
++		start &= ~(CACHELINESIZE - 1);
++		while (start < end) {
++			asm ("mcr p15, 0, %0, c7, c6, 1" : : "r" (start)
++			     : "memory");
++			start += CACHELINESIZE;
++		}
++	} while (!rsp->is_complete);
++
++	if (resp_buf)
++		memcpy(resp_buf, scm_get_response_buffer(rsp), resp_len);
++out:
++	free_scm_command(cmd);
++	return ret;
++}
++EXPORT_SYMBOL(scm_call);
++
++u32 scm_get_version(void)
++{
++	int context_id;
++	static u32 version = -1;
++	register u32 r0 asm("r0");
++	register u32 r1 asm("r1");
++
++	if (version != -1)
++		return version;
++
++	mutex_lock(&scm_lock);
++
++	r0 = 0x1 << 8;
++	r1 = (u32)&context_id;
++	do {
++		asm volatile(
++			__asmeq("%0", "r0")
++			__asmeq("%1", "r1")
++			__asmeq("%2", "r0")
++			__asmeq("%3", "r1")
++#ifdef REQUIRES_SEC
++			".arch_extension sec\n"
++#endif
++			"smc	#0	@ switch to secure world\n"
++			: "=r" (r0), "=r" (r1)
++			: "r" (r0), "r" (r1)
++			: "r2", "r3");
++	} while (r0 == SCM_INTERRUPTED);
++
++	version = r1;
++	mutex_unlock(&scm_lock);
++
++	return version;
++}
++EXPORT_SYMBOL(scm_get_version);
+diff --git a/arch/arm/mach-qcom/scm.h b/arch/arm/mach-qcom/scm.h
+new file mode 100644
+index 0000000..00b31ea
+--- /dev/null
++++ b/arch/arm/mach-qcom/scm.h
+@@ -0,0 +1,25 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#ifndef __MACH_SCM_H
++#define __MACH_SCM_H
++
++#define SCM_SVC_BOOT			0x1
++#define SCM_SVC_PIL			0x2
++
++extern int scm_call(u32 svc_id, u32 cmd_id, const void *cmd_buf, size_t cmd_len,
++		void *resp_buf, size_t resp_len);
++
++#define SCM_VERSION(major, minor) (((major) << 16) | ((minor) & 0xFF))
++
++extern u32 scm_get_version(void);
++
++#endif
+diff --git a/arch/arm/mach-qcom/smp.c b/arch/arm/mach-qcom/smp.c
+new file mode 100644
+index 0000000..67823a7
+--- /dev/null
++++ b/arch/arm/mach-qcom/smp.c
+@@ -0,0 +1,137 @@
++/*
++ *  Copyright (C) 2002 ARM Ltd.
++ *  All Rights Reserved
++ *  Copyright (c) 2010, Code Aurora Forum. All rights reserved.
++ *  Copyright (c) 2014 The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/smp.h>
++#include <linux/io.h>
++
++#include <asm/cputype.h>
++#include <asm/smp_plat.h>
++
++#include "scm-boot.h"
++
++#define VDD_SC1_ARRAY_CLAMP_GFS_CTL 0x15A0
++#define SCSS_CPU1CORE_RESET 0xD80
++#define SCSS_DBG_STATUS_CORE_PWRDUP 0xE64
++
++extern void secondary_startup(void);
++
++static DEFINE_SPINLOCK(boot_lock);
++
++#ifdef CONFIG_HOTPLUG_CPU
++static void __ref msm_cpu_die(unsigned int cpu)
++{
++	wfi();
++}
++#endif
++
++static inline int get_core_count(void)
++{
++	/* 1 + the PART[1:0] field of MIDR */
++	return ((read_cpuid_id() >> 4) & 3) + 1;
++}
++
++static void msm_secondary_init(unsigned int cpu)
++{
++	/*
++	 * Synchronise with the boot thread.
++	 */
++	spin_lock(&boot_lock);
++	spin_unlock(&boot_lock);
++}
++
++static void prepare_cold_cpu(unsigned int cpu)
++{
++	int ret;
++	ret = scm_set_boot_addr(virt_to_phys(secondary_startup),
++				SCM_FLAG_COLDBOOT_CPU1);
++	if (ret == 0) {
++		void __iomem *sc1_base_ptr;
++		sc1_base_ptr = ioremap_nocache(0x00902000, SZ_4K*2);
++		if (sc1_base_ptr) {
++			writel(0, sc1_base_ptr + VDD_SC1_ARRAY_CLAMP_GFS_CTL);
++			writel(0, sc1_base_ptr + SCSS_CPU1CORE_RESET);
++			writel(3, sc1_base_ptr + SCSS_DBG_STATUS_CORE_PWRDUP);
++			iounmap(sc1_base_ptr);
++		}
++	} else
++		printk(KERN_DEBUG "Failed to set secondary core boot "
++				  "address\n");
++}
++
++static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	static int cold_boot_done;
++
++	/* Only need to bring cpu out of reset this way once */
++	if (cold_boot_done == false) {
++		prepare_cold_cpu(cpu);
++		cold_boot_done = true;
++	}
++
++	/*
++	 * set synchronisation state between this boot processor
++	 * and the secondary one
++	 */
++	spin_lock(&boot_lock);
++
++	/*
++	 * Send the secondary CPU a soft interrupt, thereby causing
++	 * the boot monitor to read the system wide flags register,
++	 * and branch to the address found there.
++	 */
++	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
++
++	/*
++	 * now the secondary core is starting up let it run its
++	 * calibrations, then wait for it to finish
++	 */
++	spin_unlock(&boot_lock);
 +
 +	return 0;
 +}
 +
-+void __init msm7x01_timer_init(void)
++/*
++ * Initialise the CPU possible map early - this describes the CPUs
++ * which may be present or become present in the system. The msm8x60
++ * does not support the ARM SCU, so just set the possible cpu mask to
++ * NR_CPUS.
++ */
++static void __init msm_smp_init_cpus(void)
 +{
-+	struct clocksource *cs = &msm_clocksource;
++	unsigned int i, ncores = get_core_count();
 +
-+	if (msm_timer_map(0xc0100000, 0x0, 0x10, 0x0))
-+		return;
-+	cs->read = msm_read_timer_count_shift;
-+	cs->mask = CLOCKSOURCE_MASK((32 - MSM_DGT_SHIFT));
-+	/* 600 KHz */
-+	msm_timer_init(19200000 >> MSM_DGT_SHIFT, 32 - MSM_DGT_SHIFT, 7,
-+			false);
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
++	}
++
++	for (i = 0; i < ncores; i++)
++		set_cpu_possible(i, true);
 +}
 +
-+void __init msm7x30_timer_init(void)
++static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
 +{
-+	if (msm_timer_map(0xc0100000, 0x4, 0x24, 0x80))
-+		return;
-+	msm_timer_init(24576000 / 4, 32, 1, false);
 +}
 +
-+void __init qsd8x50_timer_init(void)
-+{
-+	if (msm_timer_map(0xAC100000, 0x0, 0x10, 0x34))
-+		return;
-+	msm_timer_init(19200000 / 4, 32, 7, false);
-+}
++struct smp_operations msm_smp_ops __initdata = {
++	.smp_init_cpus		= msm_smp_init_cpus,
++	.smp_prepare_cpus	= msm_smp_prepare_cpus,
++	.smp_secondary_init	= msm_secondary_init,
++	.smp_boot_secondary	= msm_boot_secondary,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_die		= msm_cpu_die,
++#endif
++};
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
