@@ -1,45 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbaBDV7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:59:18 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:48987 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755287AbaBDV7P (ORCPT
+	id S934523AbaBDV77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:59:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934200AbaBDVJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:59:15 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH] DT: Add vendor prefix for Spansion Inc.
-Date: Tue,  4 Feb 2014 22:59:09 +0100
-Message-Id: <1391551149-15958-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 4 Feb 2014 16:09:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.12 129/133] target/iscsi: Fix network portal creation race
+Date: Tue,  4 Feb 2014 13:08:50 -0800
+Message-Id: <20140204210740.675617657@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
+References: <20140204210737.008598235@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This is already in active use in several DTS files.
+------------------
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+From: Andy Grover <agrover@redhat.com>
+
+commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
+
+When creating network portals rapidly, such as when restoring a
+configuration, LIO's code to reuse existing portals can return a false
+negative if the thread hasn't run yet and set np_thread_state to
+ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
+when attempting to bind to the same address/port.
+
+This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
+so even if the thread hasn't run yet, iscsit_get_np will return the
+existing np.
+
+Also, convert np_lock -> np_mutex + hold across adding new net portal
+to g_np_list to prevent a race where two threads may attempt to create
+the same network portal, resulting in one of them failing.
+
+(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
+(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target.c |   34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 3f900cd51bf0..29afbdedec3c 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -78,6 +78,7 @@ silabs	Silicon Laboratories
- simtek
- sirf	SiRF Technology, Inc.
- snps 	Synopsys, Inc.
-+spansion	Spansion Inc.
- st	STMicroelectronics
- ste	ST-Ericsson
- stericsson	ST-Ericsson
--- 
-1.7.9.5
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -52,7 +52,7 @@
+ static LIST_HEAD(g_tiqn_list);
+ static LIST_HEAD(g_np_list);
+ static DEFINE_SPINLOCK(tiqn_lock);
+-static DEFINE_SPINLOCK(np_lock);
++static DEFINE_MUTEX(np_lock);
+ 
+ static struct idr tiqn_idr;
+ struct idr sess_idr;
+@@ -307,6 +307,9 @@ bool iscsit_check_np_match(
+ 	return false;
+ }
+ 
++/*
++ * Called with mutex np_lock held
++ */
+ static struct iscsi_np *iscsit_get_np(
+ 	struct __kernel_sockaddr_storage *sockaddr,
+ 	int network_transport)
+@@ -314,11 +317,10 @@ static struct iscsi_np *iscsit_get_np(
+ 	struct iscsi_np *np;
+ 	bool match;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_for_each_entry(np, &g_np_list, np_list) {
+-		spin_lock(&np->np_thread_lock);
++		spin_lock_bh(&np->np_thread_lock);
+ 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
+-			spin_unlock(&np->np_thread_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			continue;
+ 		}
+ 
+@@ -330,13 +332,11 @@ static struct iscsi_np *iscsit_get_np(
+ 			 * while iscsi_tpg_add_network_portal() is called.
+ 			 */
+ 			np->np_exports++;
+-			spin_unlock(&np->np_thread_lock);
+-			spin_unlock_bh(&np_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			return np;
+ 		}
+-		spin_unlock(&np->np_thread_lock);
++		spin_unlock_bh(&np->np_thread_lock);
+ 	}
+-	spin_unlock_bh(&np_lock);
+ 
+ 	return NULL;
+ }
+@@ -350,16 +350,22 @@ struct iscsi_np *iscsit_add_np(
+ 	struct sockaddr_in6 *sock_in6;
+ 	struct iscsi_np *np;
+ 	int ret;
++
++	mutex_lock(&np_lock);
++
+ 	/*
+ 	 * Locate the existing struct iscsi_np if already active..
+ 	 */
+ 	np = iscsit_get_np(sockaddr, network_transport);
+-	if (np)
++	if (np) {
++		mutex_unlock(&np_lock);
+ 		return np;
++	}
+ 
+ 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
+ 	if (!np) {
+ 		pr_err("Unable to allocate memory for struct iscsi_np\n");
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+@@ -382,6 +388,7 @@ struct iscsi_np *iscsit_add_np(
+ 	ret = iscsi_target_setup_login_socket(np, sockaddr);
+ 	if (ret != 0) {
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 
+@@ -390,6 +397,7 @@ struct iscsi_np *iscsit_add_np(
+ 		pr_err("Unable to create kthread: iscsi_np\n");
+ 		ret = PTR_ERR(np->np_thread);
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 	/*
+@@ -400,10 +408,10 @@ struct iscsi_np *iscsit_add_np(
+ 	 * point because iscsi_np has not been added to g_np_list yet.
+ 	 */
+ 	np->np_exports = 1;
++	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_add_tail(&np->np_list, &g_np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, np->np_transport->name);
+@@ -470,9 +478,9 @@ int iscsit_del_np(struct iscsi_np *np)
+ 
+ 	np->np_transport->iscsit_free_np(np);
+ 
+-	spin_lock_bh(&np_lock);
++	mutex_lock(&np_lock);
+ 	list_del(&np->np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, np->np_transport->name);
+
 
