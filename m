@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbaBDKzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:55:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48815 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaBDKzp (ORCPT
+	id S1753655AbaBDLCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 06:02:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35102 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaBDLCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:55:45 -0500
-Message-ID: <52F0A4C9.9060306@pengutronix.de>
-Date: Tue, 04 Feb 2014 09:28:57 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.2.0
+	Tue, 4 Feb 2014 06:02:23 -0500
+Date: Tue, 4 Feb 2014 11:02:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-sunxi@googlegroups.com,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com,
+        Kevin Hilman <khilman@linaro.org>
+Message-ID: <20140204110209.GQ22609@sirena.org.uk>
+References: <1391165752-1819-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1391165752-1819-4-git-send-email-maxime.ripard@free-electrons.com>
+ <20140131124809.GE22609@sirena.org.uk>
+ <20140131224704.GI2950@lukather>
+ <20140204002110.GP22609@sirena.org.uk>
+ <20140204090926.GI25625@lukather>
 MIME-Version: 1.0
-To: Andreas Larsson <andreas@gaisler.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/5] can: sja1000: cleanups and new OF property
-References: <1391175277-19833-1-git-send-email-florian.vaussard@epfl.ch> <52EBA7E2.6090007@pengutronix.de> <52EBAA28.1070307@gaisler.com> <52F0A29C.9000604@gaisler.com>
-In-Reply-To: <52F0A29C.9000604@gaisler.com>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="4fAHtNshMupKGqoWSBxT0DGbLa4Gxmit6"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	protocol="application/pgp-signature"; boundary="pNTAM9ZU3uJ+Foyt"
+Content-Disposition: inline
+In-Reply-To: <20140204090926.GI25625@lukather>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 3/5] spi: sunxi: Add Allwinner A31 SPI controller
+ driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---4fAHtNshMupKGqoWSBxT0DGbLa4Gxmit6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 02/04/2014 09:19 AM, Andreas Larsson wrote:
+--pNTAM9ZU3uJ+Foyt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Works splendidly. You can add:
->=20
-> Tested-by: Andreas Larsson <andreas@gaisler.com>
+On Tue, Feb 04, 2014 at 10:09:26AM +0100, Maxime Ripard wrote:
+> On Tue, Feb 04, 2014 at 12:21:10AM +0000, Mark Brown wrote:
 
-Thanks,
+> > It isn't awesome, no.  Ideally the runtime PM code would do this but
+> > then you couldn't ifdef the operations which as far as I can tell is the
+> > main thing people want from disabling it and it gets complicated for
+> > devices that genuinely do power up on startup so here we are.
 
-Marc
+> We discussed it with Kevin on IRC, and he suggested that we move that
+> pm_runtime initialization to the SPI core, but I guess that would also
+> mean that all drivers shouldn't ifdef the operations, so that the core
+> can call the runtime_resume callback directly.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+No, that's not going to be robust - it means drivers can't do any power
+sequencing of their own.
 
+> However, I don't really get why any driver should be doing so, since
+> you still need these functions to at least to the device
+> suspend/resume in the probe/remove, and you don't really want to
+> duplicate the code.
 
---4fAHtNshMupKGqoWSBxT0DGbLa4Gxmit6
+I don't think it's particularly useful to support disabling runtime PM
+in the first place but some drivers do different things when doing
+runtime management to those they do on first init - for example there
+may be additional steps that only need to be done during first power up.
+
+--pNTAM9ZU3uJ+Foyt
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iEYEARECAAYFAlLwpMkACgkQjTAFq1RaXHOgSgCfQtKZ6mHOKcBNMNpHNvkmo/m1
-Kx4An2FBWVgNhIsip+DW4t0DjU2ofNyt
-=cNUl
+iQIcBAEBAgAGBQJS8MitAAoJELSic+t+oim9xgkP/joV3euZEX/ko4Nk5pCOa1ZT
+udQL6wL0FvY8Lmzipk6YfDjpP8lQg41nSGhT+9A1RXxM6iG6VTPFAUX8Ld/uTBRt
+aM53x68YW7dRZydtW9fuw14zQ0bAGTQDds/3REM5fsAxYfyOy2mi+0OJnEho1DQK
+sAtw51OVwz5KU0IQhgRTiuzPWYmoLyT6pJeDbWekkd5Q+ytl87e0jJYJniVCUW0F
+/7p5eW/XdVyPdUnT13gh/5PQ/IepbIFQe6XF7OBHXPs9+T53lYKG2HW7mWrK8bp2
+56rhxqelfPGXoUvLuVqsBpW5ZiDCIavQPsZ1VDoIhdMi3oPOv+sZy9euLszLadL+
+3jCfrgmAUaYthERd2T7Q1oKUcjaOkkiTVGKULW2ejj1KfILdnMRmJdukeqIlmC0I
+D/zcnqt02hgTN0BLccDp/vQUp0zdz0f9VNluURDpMirSXr7ZErsc2uK0+mVIqYIj
+cCqo5f/+tATXtZAlFeXwR4lAKXdIY6RpAiHSiisAfE3mhb6sfFoKsSNG3zclVq4D
+aEsgA19N1goiCbn0PLaCl9KPe6KtMmOyU9XzIXg/AypV9mMAh4syqAzz2R01bOrM
+ht5AH80Z6AqOi6LYPMS9dgl7F0TaYlUFxSYNTBUWVf/KlxTCzRSFKy0QbQ7mNUN2
+Ymxc+tDS62ugUFI1XQSF
+=ExHT
 -----END PGP SIGNATURE-----
 
---4fAHtNshMupKGqoWSBxT0DGbLa4Gxmit6--
+--pNTAM9ZU3uJ+Foyt--
