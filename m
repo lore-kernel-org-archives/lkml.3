@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936138AbaBDWjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:39:33 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58591 "EHLO
+	id S936158AbaBDWjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:39:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58579 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936110AbaBDWjD (ORCPT
+	with ESMTP id S936102AbaBDWjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:39:03 -0500
+	Tue, 4 Feb 2014 17:39:01 -0500
 From: Kumar Gala <galak@codeaurora.org>
 To: linux-arm-msm@vger.kernel.org
 Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/5] ARM: qcom: Rename various msm prefixed functions to qcom
-Date: Tue,  4 Feb 2014 16:38:52 -0600
-Message-Id: <1391553532-27001-6-git-send-email-galak@codeaurora.org>
+        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org
+Subject: [PATCH v2 4/5] clocksource: qcom: split building of legacy vs multiplatform support
+Date: Tue,  4 Feb 2014 16:38:51 -0600
+Message-Id: <1391553532-27001-5-git-send-email-galak@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1391553532-27001-1-git-send-email-galak@codeaurora.org>
 References: <1391553532-27001-1-git-send-email-galak@codeaurora.org>
@@ -21,102 +21,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mach-qcom will support a number of different Qualcomm SoC platforms
-we replace the msm prefix on function names with qcom to be a bit more
-generic.
+The majority of the clocksource code for the Qualcomm platform is shared
+between newer (multiplatform) and older platforms.  However there is a bit
+of code that isn't, so only build it for the appropriate config.
 
+Acked-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Kumar Gala <galak@codeaurora.org>
 ---
- arch/arm/mach-qcom/board.c |  4 ++--
- arch/arm/mach-qcom/smp.c   | 22 +++++++++++-----------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/clocksource/qcom-timer.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
-index 4529f6b..830f69c 100644
---- a/arch/arm/mach-qcom/board.c
-+++ b/arch/arm/mach-qcom/board.c
-@@ -17,7 +17,7 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- 
--extern struct smp_operations msm_smp_ops;
-+extern struct smp_operations qcom_smp_ops;
- 
- static const char * const qcom_dt_match[] __initconst = {
- 	"qcom,msm8660-surf",
-@@ -31,7 +31,7 @@ static const char * const apq8074_dt_match[] __initconst = {
- };
- 
- DT_MACHINE_START(QCOM_DT, "Qualcomm (Flattened Device Tree)")
--	.smp = smp_ops(msm_smp_ops),
-+	.smp = smp_ops(qcom_smp_ops),
- 	.dt_compat = qcom_dt_match,
- MACHINE_END
- 
-diff --git a/arch/arm/mach-qcom/smp.c b/arch/arm/mach-qcom/smp.c
-index 67823a7..9c53ea7 100644
---- a/arch/arm/mach-qcom/smp.c
-+++ b/arch/arm/mach-qcom/smp.c
-@@ -30,7 +30,7 @@ extern void secondary_startup(void);
- static DEFINE_SPINLOCK(boot_lock);
- 
- #ifdef CONFIG_HOTPLUG_CPU
--static void __ref msm_cpu_die(unsigned int cpu)
-+static void __ref qcom_cpu_die(unsigned int cpu)
- {
- 	wfi();
- }
-@@ -42,7 +42,7 @@ static inline int get_core_count(void)
- 	return ((read_cpuid_id() >> 4) & 3) + 1;
+diff --git a/drivers/clocksource/qcom-timer.c b/drivers/clocksource/qcom-timer.c
+index dca829e..e807acf 100644
+--- a/drivers/clocksource/qcom-timer.c
++++ b/drivers/clocksource/qcom-timer.c
+@@ -106,15 +106,6 @@ static notrace cycle_t msm_read_timer_count(struct clocksource *cs)
+ 	return readl_relaxed(source_base + TIMER_COUNT_VAL);
  }
  
--static void msm_secondary_init(unsigned int cpu)
-+static void qcom_secondary_init(unsigned int cpu)
- {
- 	/*
- 	 * Synchronise with the boot thread.
-@@ -70,7 +70,7 @@ static void prepare_cold_cpu(unsigned int cpu)
- 				  "address\n");
+-static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
+-{
+-	/*
+-	 * Shift timer count down by a constant due to unreliable lower bits
+-	 * on some targets.
+-	 */
+-	return msm_read_timer_count(cs) >> MSM_DGT_SHIFT;
+-}
+-
+ static struct clocksource msm_clocksource = {
+ 	.name	= "dg_timer",
+ 	.rating	= 300,
+@@ -228,7 +219,7 @@ err:
+ 	sched_clock_register(msm_sched_clock_read, sched_bits, dgt_hz);
  }
  
--static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
-+static int qcom_boot_secondary(unsigned int cpu, struct task_struct *idle)
+-#ifdef CONFIG_OF
++#ifdef CONFIG_ARCH_QCOM
+ static void __init msm_dt_timer_init(struct device_node *np)
  {
- 	static int cold_boot_done;
+ 	u32 freq;
+@@ -281,7 +272,7 @@ static void __init msm_dt_timer_init(struct device_node *np)
+ }
+ CLOCKSOURCE_OF_DECLARE(kpss_timer, "qcom,kpss-timer", msm_dt_timer_init);
+ CLOCKSOURCE_OF_DECLARE(scss_timer, "qcom,scss-timer", msm_dt_timer_init);
+-#endif
++#else
  
-@@ -108,7 +108,7 @@ static int msm_boot_secondary(unsigned int cpu, struct task_struct *idle)
-  * does not support the ARM SCU, so just set the possible cpu mask to
-  * NR_CPUS.
-  */
--static void __init msm_smp_init_cpus(void)
-+static void __init qcom_smp_init_cpus(void)
- {
- 	unsigned int i, ncores = get_core_count();
- 
-@@ -122,16 +122,16 @@ static void __init msm_smp_init_cpus(void)
- 		set_cpu_possible(i, true);
+ static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
+ 				u32 sts)
+@@ -301,6 +292,15 @@ static int __init msm_timer_map(phys_addr_t addr, u32 event, u32 source,
+ 	return 0;
  }
  
--static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
-+static void __init qcom_smp_prepare_cpus(unsigned int max_cpus)
++static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
++{
++	/*
++	 * Shift timer count down by a constant due to unreliable lower bits
++	 * on some targets.
++	 */
++	return msm_read_timer_count(cs) >> MSM_DGT_SHIFT;
++}
++
+ void __init msm7x01_timer_init(void)
  {
+ 	struct clocksource *cs = &msm_clocksource;
+@@ -327,3 +327,4 @@ void __init qsd8x50_timer_init(void)
+ 		return;
+ 	msm_timer_init(19200000 / 4, 32, 7, false);
  }
- 
--struct smp_operations msm_smp_ops __initdata = {
--	.smp_init_cpus		= msm_smp_init_cpus,
--	.smp_prepare_cpus	= msm_smp_prepare_cpus,
--	.smp_secondary_init	= msm_secondary_init,
--	.smp_boot_secondary	= msm_boot_secondary,
-+struct smp_operations qcom_smp_ops __initdata = {
-+	.smp_init_cpus		= qcom_smp_init_cpus,
-+	.smp_prepare_cpus	= qcom_smp_prepare_cpus,
-+	.smp_secondary_init	= qcom_secondary_init,
-+	.smp_boot_secondary	= qcom_boot_secondary,
- #ifdef CONFIG_HOTPLUG_CPU
--	.cpu_die		= msm_cpu_die,
-+	.cpu_die		= qcom_cpu_die,
- #endif
- };
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
