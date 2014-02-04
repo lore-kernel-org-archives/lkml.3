@@ -1,65 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaBDTV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:21:56 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50110 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069AbaBDTVu (ORCPT
+	id S932416AbaBDTWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:22:49 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50003 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174AbaBDTWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:21:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: Add architecture support for PCI
-Date: Tue, 04 Feb 2014 20:21:38 +0100
-Message-ID: <4118142.2mQ5BlBdTZ@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140204191055.GC25695@obsidianresearch.com>
-References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com> <8676627.b6SYsazoah@wuerfel> <20140204191055.GC25695@obsidianresearch.com>
+	Tue, 4 Feb 2014 14:22:45 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 05/17] mmc: mmci: Put the device into low power state at system suspend
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	<1391529538-21685-6-git-send-email-ulf.hansson@linaro.org>
+Date: Tue, 04 Feb 2014 11:22:42 -0800
+In-Reply-To: <1391529538-21685-6-git-send-email-ulf.hansson@linaro.org> (Ulf
+	Hansson's message of "Tue, 4 Feb 2014 16:58:46 +0100")
+Message-ID: <8738jyu1h9.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Bki1vnegN/BTBJ6i+V5nDqk5Wj+1UpbftvDC/fmooLn
- cu5a4tVMBSNSiPNpQaeIgYfeiT33i6iJlEs/Rw3BWWNypn3osS
- WYK3w8viwPmeNQgsLeHhrh+wceH58DAptA//Ntd30WK6Fzufbx
- ESkn1/9UQ7iKTVZPIx/cHACb4XPTZSckLFw/VKY6W9DJQy5Psz
- sPqFbDXob7OKZn0hBVfFPphMajO4InSjwQ6bL0xXzRbCfS1vRh
- nVJCm3d3tg1xGJ3FITgEPDmbzydpZRL9EvKGxIGzw1KPZSJtwm
- y88wwPoisdpz/k58OxHx2OKZGatdBFSGTGKFJ5uavIDINkAwJc
- f2BQ4xYrLEIc/BGsQrMs=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 February 2014 12:10:55 Jason Gunthorpe wrote:
-> 
-> For instance to support peer-to-peer IO you need to have a consisent,
-> non-overlapping set of bus/device/function/tag to uniquely route TLPs
-> within the chip. Cross domain TLP routing in HW is non-trivial.
+Ulf Hansson <ulf.hansson@linaro.org> writes:
 
-Yes, that is a good reason.
+> Due to the available runtime PM callbacks, we are now able to put our
+> device into low power state at system suspend.
+>
+> Earlier we could not accomplish this without trusting a power domain
+> for the device to take care of it. Now we are able to cope with
+> scenarios both with and without a power domain.
+>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> ---
+>  drivers/mmc/host/mmci.c |   45 +++++++++++++++++++++++++--------------------
+>  1 file changed, 25 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+> index c88da1c..074e0cb 100644
+> --- a/drivers/mmc/host/mmci.c
+> +++ b/drivers/mmc/host/mmci.c
+> @@ -1723,33 +1723,38 @@ static int mmci_remove(struct amba_device *dev)
+>  	return 0;
+>  }
+>  
+> -#ifdef CONFIG_SUSPEND
+> -static int mmci_suspend(struct device *dev)
+> +#ifdef CONFIG_PM_SLEEP
+> +static int mmci_suspend_late(struct device *dev)
+>  {
+> -	struct amba_device *adev = to_amba_device(dev);
+> -	struct mmc_host *mmc = amba_get_drvdata(adev);
+> +	int ret = 0;
+>  
+> -	if (mmc) {
+> -		struct mmci_host *host = mmc_priv(mmc);
+> -		pm_runtime_get_sync(dev);
+> -		writel(0, host->base + MMCIMASK0);
+> -	}
+> +	if (pm_runtime_status_suspended(dev))
+> +		return 0;
+>  
+> -	return 0;
+> +	if (dev->pm_domain && dev->pm_domain->ops.runtime_suspend)
+> +		ret = dev->pm_domain->ops.runtime_suspend(dev);
+> +	else
+> +		ret = dev->bus->pm->runtime_suspend(dev);
+> +
+> +	if (!ret)
+> +		pm_runtime_set_suspended(dev);
 
-> IOMMUs (and SR-IOv) rely on the BDF to identify the originating device
-> for each TLP. Multiple domains means a much more complex IOMMU
-> environment.
+Isn't this basically open-coding pm_runtime_suspend()...
 
-I fear we already have to support complex IOMMU setups on ARM,
-whether there are multiple PCI domains or not. But it would be
-nice in theory not to require it.
+> +	return ret;
+>  }
+>  
+> -static int mmci_resume(struct device *dev)
+> +static int mmci_resume_early(struct device *dev)
+>  {
+> -	struct amba_device *adev = to_amba_device(dev);
+> -	struct mmc_host *mmc = amba_get_drvdata(adev);
+> +	int ret = 0;
+>  
+> -	if (mmc) {
+> -		struct mmci_host *host = mmc_priv(mmc);
+> -		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
+> -		pm_runtime_put(dev);
+> -	}
+> +	if (pm_runtime_status_suspended(dev))
+> +		return 0;
+>  
+> -	return 0;
+> +	if (dev->pm_domain && dev->pm_domain->ops.runtime_resume)
+> +		ret = dev->pm_domain->ops.runtime_resume(dev);
+> +	else
+> +		ret = dev->bus->pm->runtime_resume(dev);
+> +
+> +	return ret;
 
-> Failure to integrate on-chip devices into the PCI world also means
-> thing like SR-IOv won't work sanely with on-chip devices.
+...and this is pm_runtime_resume()? (though both terribly simplified.)
 
-I'd consider this a feature ;)
+This is starting to show that building with PM_SLEEP but not PM_RUNTIME
+is going to force open-coding a lot of stuff that the runtime PM
+framework already provides.  So either we need some helper functions so
+we're not sprinkling manual calls to bus/pm_domain callbacks all over
+the place, or maybe where we need to go is have a way for platforms that
+really are "runtime PM centric" to declare that even PM_SLEEP depends on
+PM_RUNTIME.  
 
-But you are probably right: people will do SR-IOV whether we like
-it or not, and they will try to do it on non-PCI devices too,
-and great suffering will be involved.
+I'm trying to thing of a good reason to not make PM_SLEEP depend on
+PM_RUNTIME for platforms like this.
 
-	Arnd
+Kevin
+
