@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827AbaBDRJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:09:44 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:41539 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaBDRJl (ORCPT
+	id S1754886AbaBDRJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:09:54 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42424 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735AbaBDRJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:09:41 -0500
-From: kosaki.motohiro@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org
-Subject: [PATCH] __set_page_dirty uses spin_lock_irqsave instead of spin_lock_irq
-Date: Tue,  4 Feb 2014 12:09:36 -0500
-Message-Id: <1391533776-2425-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 4 Feb 2014 12:09:51 -0500
+Message-ID: <52F11EDB.6020500@wwwdotorg.org>
+Date: Tue, 04 Feb 2014 10:09:47 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Patrice Chotard <patrice.chotard@st.com>
+Subject: Re: [PATCH v2] pinctrl: protect pinctrl_list add
+References: <20140203113900.GD1725@redhat.com> <52F00653.40802@wwwdotorg.org> <20140204080105.GA1428@redhat.com> <20140204080709.GB1428@redhat.com>
+In-Reply-To: <20140204080709.GB1428@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On 02/04/2014 01:07 AM, Stanislaw Gruszka wrote:
+> We have few fedora bug reports about list corruption on pinctrl,
+> for example:
+> https://bugzilla.redhat.com/show_bug.cgi?id=1051918
+> 
+> Most likely corruption happen due lack of protection of pinctrl_list
+> when adding new nodes to it. Patch corrects that.
+> 
+> Fixes: 42fed7ba44e ("pinctrl: move subsystem mutex to pinctrl_dev struct")
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 
-To use spin_{un}lock_irq is dangerous if caller disabled interrupt.
-During aio buffer migration, we have a possibility to see the
-following call stack.
-
-aio_migratepage  [disable interrupt]
-  migrate_page_copy
-    clear_page_dirty_for_io
-      set_page_dirty
-        __set_page_dirty_buffers
-          __set_page_dirty
-            spin_lock_irq
-
-This mean, current aio migration is a deadlockable. spin_lock_irqsave
-is a safer alternative and we should use it.
-
-Reported-by: David Rientjes rientjes@google.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: stable@vger.kernel.org
----
- fs/buffer.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 651dba1..27265a8 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -654,14 +654,16 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
- static void __set_page_dirty(struct page *page,
- 		struct address_space *mapping, int warn)
- {
--	spin_lock_irq(&mapping->tree_lock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mapping->tree_lock, flags);
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
- 		account_page_dirtied(page, mapping);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 	}
--	spin_unlock_irq(&mapping->tree_lock);
-+	spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
- }
- 
--- 
-1.7.1
-
+Acked-by: Stephen  Warren <swarren@nvidia.com>
+(but not tested)
