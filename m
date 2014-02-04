@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935710AbaBDWPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:15:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56696 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933993AbaBDVIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3.12 074/133] perf kvm: Fix kvm report without guestmount.
-Date: Tue,  4 Feb 2014 13:07:55 -0800
-Message-Id: <20140204210739.123225320@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
-References: <20140204210737.008598235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S935714AbaBDWPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:15:36 -0500
+Received: from ozlabs.org ([203.10.76.45]:56035 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933993AbaBDWP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 17:15:28 -0500
+Date: Wed, 5 Feb 2014 09:15:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: Re: [PATCH] MAINTAINERS: Update drm/i915 git repo
+Message-Id: <20140205091521.8fc819ff64a46e0a122f16a6@canb.auug.org.au>
+In-Reply-To: <CAKMK7uE99=xfj0gDSv5gdqFALQ6yWWEzmeD1sCnW9KkqMBFZ8Q@mail.gmail.com>
+References: <1391540451-24169-1-git-send-email-daniel.vetter@ffwll.ch>
+	<CAKMK7uE99=xfj0gDSv5gdqFALQ6yWWEzmeD1sCnW9KkqMBFZ8Q@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Daniel,
 
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+On Tue, 4 Feb 2014 20:15:03 +0100 Daniel Vetter <daniel.vetter@ffwll.ch> wr=
+ote:
+>
+> On Tue, Feb 4, 2014 at 8:00 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wr=
+ote:
+> > Moved to a common location so that Jani also can push to it, to avoid
+> > moving it every time I go on vacation. Please update autobuilders and
+> > everything else pointing at the drm-intel.git repo, the old one won't
+> > be updated any more.
+> >
+> > Cc: Dave Airlie <airlied@gmail.com>
+> > Cc: Jani Nikula <jani.nikula@linux.intel.com>
+> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>=20
+> Oops, forgotten to cc our linux-next maintainer about this. Branch
+> names are  still the same and I've checked that my scripts recreated
+> them all properly. So this should be good to go for the next -next.
 
-commit ad85ace07a05062ef6b59c35a5e80b6eaee1eee6 upstream.
+Thanks for letting me know - all updated now.
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
-can not get the perf information from perf data file. All sample are
-shown as unknown.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+--Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN
+Content-Type: application/pgp-signature
 
-This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-and added. Then the default guest which with pid == 0 will never get a symbol.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-And because the new machine initialized here has no kernel map created, the symbol delivered to
-it will be marked as "unknown".
+iQIcBAEBCAAGBQJS8WZ+AAoJEMDTa8Ir7ZwVXdUP/3j/ktm9Vm19jLGmlnmXJIkq
+R+qQDaIrHs42hmluF2PiML1IE57UqNfJs/6bMb2ecXabDckqlGEnK/3wD/udaFxm
+iyYZduX4GySdzQdNHkyXkq8hTtngDAeqhFGJbOmfivaY1FojHoSRXpVSAuR0u0jI
+qk5r5qdN/4NngYWQkXw3GNocCH7Z9qZNWRIDB6cJbc42uf1LHwpWUCKHrwrCLlwT
+JSA3GWdL2VA1YcCAbzu8K/JhjFbW/8IbcV/wMM2d2Ww2NLpz8KFr9+WsNikA2LiZ
+qh97MpK4yIh0XzrZtH+j4trKnc5qHg0yef4jlIzkG2YVhuJWpHpfaE4lC6ijMfsk
+kROss9zoOdk8F8WbcCO8uLFsnpPN5pdKeUKTRZkKm0nt9J6kLc5ZjiExNW3on/2b
+qA0kkQeq2mgGYlapPVM++cCFbziJzcwwNYzaR6u8EFaNZsnU9E2+9RQx8RUIrzA8
+kKMxW0ZNlB8ORn81oR50LkVCQTJ3eDhVjEspQYrr7hlFXO58XqvO0AROYIXapqF/
+fel+CYb7bL9rbeE0tgSkYjbZe+RDlGCzJE0XbsvspK63zZfcOeTHJPPzsSmYKCwA
+Q8IJOkhszkCPIXVwsRXmQXdXglU9H8KdSkJhehDMO57N37OmugWPbbwoPzvPjTzF
+Up5iCCHHmilUkygzppJR
+=yWr8
+-----END PGP SIGNATURE-----
 
-This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
-
-Verification steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- tools/perf/util/session.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -870,6 +870,7 @@ static struct machine *
- 					       struct perf_sample *sample)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
- 
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -882,7 +883,11 @@ static struct machine *
- 		else
- 			pid = sample->pid;
- 
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
- 	}
- 
- 	return &session->machines.host;
-
-
+--Signature=_Wed__5_Feb_2014_09_15_21_+1100_69YNvLR6WdQww0oN--
