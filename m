@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933220AbaBDVCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56116 "EHLO
+	id S964908AbaBDW4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:56:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452AbaBDVCI (ORCPT
+	with ESMTP id S933198AbaBDVCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:08 -0500
+	Tue, 4 Feb 2014 16:02:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        yury <urykhy@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 032/104] rtlwifi: rtl8192cu: Fix some code in RF handling
-Date: Tue,  4 Feb 2014 13:01:35 -0800
-Message-Id: <20140204210223.646257205@linuxfoundation.org>
+Subject: [PATCH 3.10 038/104] b43: Fix lockdep splat
+Date: Tue,  4 Feb 2014 13:01:41 -0800
+Message-Id: <20140204210223.810035112@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -31,67 +31,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit e9b0784bb9de3152e787ee779868c626b137fb3b upstream.
+commit 09164043f63c947a49797750a09ca1cd7c31108e upstream.
 
+In https://bugzilla.kernel.org/show_bug.cgi?id=67561, a locking dependency is reported
+when b43 is used with hostapd, and rfkill is used to kill the radio output.
+
+The lockdep splat (in part) is as follows:
+
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.12.0 #1 Not tainted
+-------------------------------------------------------
+rfkill/10040 is trying to acquire lock:
+ (rtnl_mutex){+.+.+.}, at: [<ffffffff8146f282>] rtnl_lock+0x12/0x20
+
+but task is already holding lock:
+ (rfkill_global_mutex){+.+.+.}, at: [<ffffffffa04832ca>] rfkill_fop_write+0x6a/0x170 [rfkill]
+
+--snip--
+
+Chain exists of:
+  rtnl_mutex --> misc_mtx --> rfkill_global_mutex
+
+The fix is to move the initialization of the hardware random number generator
+outside the code range covered by the rtnl_mutex.
+
+Reported-by: yury <urykhy@gmail.com>
+Tested-by: yury <urykhy@gmail.com>
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |   29 +++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+ drivers/net/wireless/b43/main.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
-@@ -85,17 +85,15 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
- 	if (mac->act_scanning) {
- 		tx_agc[RF90_PATH_A] = 0x3f3f3f3f;
- 		tx_agc[RF90_PATH_B] = 0x3f3f3f3f;
--		if (turbo_scanoff) {
--			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
--				tx_agc[idx1] = ppowerlevel[idx1] |
--				    (ppowerlevel[idx1] << 8) |
--				    (ppowerlevel[idx1] << 16) |
--				    (ppowerlevel[idx1] << 24);
--				if (rtlhal->interface == INTF_USB) {
--					if (tx_agc[idx1] > 0x20 &&
--					    rtlefuse->external_pa)
--						tx_agc[idx1] = 0x20;
--				}
-+		for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
-+			tx_agc[idx1] = ppowerlevel[idx1] |
-+			    (ppowerlevel[idx1] << 8) |
-+			    (ppowerlevel[idx1] << 16) |
-+			    (ppowerlevel[idx1] << 24);
-+			if (rtlhal->interface == INTF_USB) {
-+				if (tx_agc[idx1] > 0x20 &&
-+				    rtlefuse->external_pa)
-+					tx_agc[idx1] = 0x20;
- 			}
- 		}
- 	} else {
-@@ -107,7 +105,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
- 			   TXHIGHPWRLEVEL_LEVEL2) {
- 			tx_agc[RF90_PATH_A] = 0x00000000;
- 			tx_agc[RF90_PATH_B] = 0x00000000;
--		} else{
-+		} else {
- 			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
- 				tx_agc[idx1] = ppowerlevel[idx1] |
- 				    (ppowerlevel[idx1] << 8) |
-@@ -373,7 +371,12 @@ static void _rtl92c_write_ofdm_power_reg
- 			    regoffset == RTXAGC_B_MCS07_MCS04)
- 				regoffset = 0xc98;
- 			for (i = 0; i < 3; i++) {
--				writeVal = (writeVal > 6) ? (writeVal - 6) : 0;
-+				if (i != 2)
-+					writeVal = (writeVal > 8) ?
-+						   (writeVal - 8) : 0;
-+				else
-+					writeVal = (writeVal > 6) ?
-+						   (writeVal - 6) : 0;
- 				rtl_write_byte(rtlpriv, (u32)(regoffset + i),
- 					      (u8)writeVal);
- 			}
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2422,6 +2422,7 @@ error:
+ 
+ static int b43_one_core_attach(struct b43_bus_dev *dev, struct b43_wl *wl);
+ static void b43_one_core_detach(struct b43_bus_dev *dev);
++static int b43_rng_init(struct b43_wl *wl);
+ 
+ static void b43_request_firmware(struct work_struct *work)
+ {
+@@ -2473,6 +2474,10 @@ start_ieee80211:
+ 		goto err_one_core_detach;
+ 	wl->hw_registred = true;
+ 	b43_leds_register(wl->current_dev);
++
++	/* Register HW RNG driver */
++	b43_rng_init(wl);
++
+ 	goto out;
+ 
+ err_one_core_detach:
+@@ -4634,9 +4639,6 @@ static void b43_wireless_core_exit(struc
+ 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
+ 		return;
+ 
+-	/* Unregister HW RNG driver */
+-	b43_rng_exit(dev->wl);
+-
+ 	b43_set_status(dev, B43_STAT_UNINIT);
+ 
+ 	/* Stop the microcode PSM. */
+@@ -4779,9 +4781,6 @@ static int b43_wireless_core_init(struct
+ 
+ 	b43_set_status(dev, B43_STAT_INITIALIZED);
+ 
+-	/* Register HW RNG driver */
+-	b43_rng_init(dev->wl);
+-
+ out:
+ 	return err;
+ 
+@@ -5442,6 +5441,9 @@ static void b43_bcma_remove(struct bcma_
+ 
+ 	b43_one_core_detach(wldev->dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	b43_leds_unregister(wl);
+ 
+ 	ieee80211_free_hw(wl->hw);
+@@ -5519,6 +5521,9 @@ static void b43_ssb_remove(struct ssb_de
+ 
+ 	b43_one_core_detach(dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	if (list_empty(&wl->devlist)) {
+ 		b43_leds_unregister(wl);
+ 		/* Last core on the chip unregistered.
 
 
