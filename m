@@ -1,120 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaBDNcc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 08:32:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54128 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677AbaBDN3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:29:09 -0500
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -v2 1/6] memcg: do not replicate try_get_mem_cgroup_from_mm in __mem_cgroup_try_charge
-Date: Tue,  4 Feb 2014 14:28:55 +0100
-Message-Id: <1391520540-17436-2-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.9.rc1
-In-Reply-To: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+	id S1754196AbaBDNgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 08:36:54 -0500
+Received: from smtp-out-089.synserver.de ([212.40.185.89]:1098 "EHLO
+	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaBDNgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 08:36:51 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 18705
+Message-ID: <52F0ECF2.9070102@metafoo.de>
+Date: Tue, 04 Feb 2014 14:36:50 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH v3 2/5] ASoC: tda998x: add a codec driver
+ for the TDA998x
+References: <cover.1391274627.git.moinejf@free.fr> <ae68394f080f0ea5acaf3377cb1d18f29e42c646.1391274628.git.moinejf@free.fr> <20140204133014.GA22609@sirena.org.uk>
+In-Reply-To: <20140204133014.GA22609@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner has pointed out that __mem_cgroup_try_charge duplicates
-try_get_mem_cgroup_from_mm for charges which came without a memcg. The
-only reason seems to be a tiny optimization when css_tryget is not
-called if the charge can be consumed from the stock. Nevertheless
-css_tryget is very cheap since it has been reworked to use per-cpu
-counting so this optimization doesn't give us anything these days.
+On 02/04/2014 02:30 PM, Mark Brown wrote:
+[...]
+>
+> What does this actually do?  No information is being passed in to the
+> core function here, not even any information on if it's starting or
+> stopping.  Looking at the rest of the code I can't help thinking it
+> might be clearer to inline this possibly with a lookup helper, the code
+> is very small and the lack of parameters makes it hard to follow.
+>
+>> +static const struct snd_soc_dapm_route tda_routes[] = {
+>> +	{ "hdmi-out", NULL, "HDMI I2S Playback" },
+>> +	{ "hdmi-out", NULL, "HDMI SPDIF Playback" },
+>> +};
+>
+> S/PDIF.
 
-So let's drop the code duplication so that the code is more readable.
-While we are at it also remove a very confusing comment in
-try_get_mem_cgroup_from_mm.
+Won't this cause issues with the debugfs widget entries? It's fixable by 
+escaping it (replace it by a dash or something) in the debugfs widget 
+filename, but I don't think we do this right now.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 49 ++++++++-----------------------------------------
- 1 file changed, 8 insertions(+), 41 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 53385cd4e6f0..042e4ff36c05 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1081,11 +1081,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
- 
- 	if (!mm)
- 		return NULL;
--	/*
--	 * Because we have no locks, mm->owner's may be being moved to other
--	 * cgroup. We use css_tryget() here even if this looks
--	 * pessimistic (rather than adding locks here).
--	 */
-+
- 	rcu_read_lock();
- 	do {
- 		memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
-@@ -2759,45 +2755,15 @@ again:
- 			goto done;
- 		css_get(&memcg->css);
- 	} else {
--		struct task_struct *p;
--
--		rcu_read_lock();
--		p = rcu_dereference(mm->owner);
--		/*
--		 * Because we don't have task_lock(), "p" can exit.
--		 * In that case, "memcg" can point to root or p can be NULL with
--		 * race with swapoff. Then, we have small risk of mis-accouning.
--		 * But such kind of mis-account by race always happens because
--		 * we don't have cgroup_mutex(). It's overkill and we allo that
--		 * small race, here.
--		 * (*) swapoff at el will charge against mm-struct not against
--		 * task-struct. So, mm->owner can be NULL.
--		 */
--		memcg = mem_cgroup_from_task(p);
--		if (!memcg)
-+		memcg = try_get_mem_cgroup_from_mm(mm);
-+		if (!memcg) {
- 			memcg = root_mem_cgroup;
--		if (mem_cgroup_is_root(memcg)) {
--			rcu_read_unlock();
--			goto done;
--		}
--		if (consume_stock(memcg, nr_pages)) {
--			/*
--			 * It seems dagerous to access memcg without css_get().
--			 * But considering how consume_stok works, it's not
--			 * necessary. If consume_stock success, some charges
--			 * from this memcg are cached on this cpu. So, we
--			 * don't need to call css_get()/css_tryget() before
--			 * calling consume_stock().
--			 */
--			rcu_read_unlock();
- 			goto done;
- 		}
--		/* after here, we may be blocked. we need to get refcnt */
--		if (!css_tryget(&memcg->css)) {
--			rcu_read_unlock();
--			goto again;
--		}
--		rcu_read_unlock();
-+		if (mem_cgroup_is_root(memcg))
-+			goto done_put;
-+		if (consume_stock(memcg, nr_pages))
-+			goto done_put;
- 	}
- 
- 	do {
-@@ -2834,6 +2800,7 @@ again:
- 
- 	if (batch > nr_pages)
- 		refill_stock(memcg, batch - nr_pages);
-+done_put:
- 	css_put(&memcg->css);
- done:
- 	*ptr = memcg;
--- 
-1.9.rc1
+- Lars
 
