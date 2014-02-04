@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaBDBvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 20:51:33 -0500
-Received: from sh.osrg.net ([192.16.179.4]:59876 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388AbaBDBvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 20:51:31 -0500
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-nilfs <linux-nilfs@vger.kernel.org>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andreas Rohner <andreas.rohner@gmx.net>
-Subject: [PATCH] nilfs2: add description of NILFS_IOCTL_SET_SUINFO ioctl
-Date: Tue,  4 Feb 2014 10:50:00 +0900
-Message-Id: <1391478600-7512-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.9.3
-X-Dispatcher: imput version 20100215(IM150)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (sh.osrg.net [192.16.179.4]); Tue, 04 Feb 2014 10:51:18 +0900 (JST)
+	id S1753996AbaBDBxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 20:53:36 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59138 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbaBDBxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 20:53:34 -0500
+X-Original-SENDERIP: 10.177.222.146
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 4 Feb 2014 10:53:32 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, compaction: avoid isolating pinned pages fix
+Message-ID: <20140204015332.GA14779@lge.com>
+References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com>
+ <20140203095329.GH6732@suse.de>
+ <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com>
+ <20140204000237.GA17331@lge.com>
+ <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add description of NILFS_IOCTL_SET_SUINFO ioctl in
-Documentation/filesystems/nilfs2.txt to make it up-to-date.
+On Mon, Feb 03, 2014 at 05:20:46PM -0800, David Rientjes wrote:
+> On Tue, 4 Feb 2014, Joonsoo Kim wrote:
+> 
+> > I think that you need more code to skip this type of page correctly.
+> > Without page_mapped() check, this code makes migratable pages be skipped,
+> > since if page_mapped() case, page_count() may be more than zero.
+> > 
+> > So I think that you need following change.
+> > 
+> > (!page_mapping(page) && !page_mapped(page) && page_count(page))
+> > 
+> 
+> These pages returned by get_user_pages() will have a mapcount of 1 so this 
+> wouldn't actually fix the massive lock contention.  page_mapping() is only 
+> going to be NULL for pages off the lru like these are for 
+> PAGE_MAPPING_ANON.
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Andreas Rohner <andreas.rohner@gmx.net>
----
- Documentation/filesystems/nilfs2.txt |    7 +++++++
- 1 file changed, 7 insertions(+)
+Okay. It can't fix your situation. Anyway, *normal* anon pages may be mapped
+and have positive page_count(), so your code such as
+'!page_mapping(page) && page_count(page)' makes compaction skip these *normal*
+anon pages and this is incorrect behaviour.
 
-diff --git a/Documentation/filesystems/nilfs2.txt b/Documentation/filesystems/nilfs2.txt
-index 06887d4..8b887ae 100644
---- a/Documentation/filesystems/nilfs2.txt
-+++ b/Documentation/filesystems/nilfs2.txt
-@@ -111,6 +111,13 @@ Table of NILFS2 specific ioctls
- 			        nilfs_resize utilities and by nilfs_cleanerd
- 			        daemon.
- 
-+ NILFS_IOCTL_SET_SUINFO         Modify segment usage info of requested
-+				segments. This ioctl is used by
-+				nilfs_cleanerd daemon to skip unnecessary
-+				cleaning operation of segments and reduce
-+				performance penalty or wear of flash device
-+				due to redundant move of in-use blocks.
-+
-  NILFS_IOCTL_GET_SUSTAT         Return segment usage statistics. This ioctl
- 			        is used in lssu, nilfs_resize utilities and
- 			        by nilfs_cleanerd daemon.
--- 
-1.7.9.3
-
+Thanks.
