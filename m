@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964780AbaBDVic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:38:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57251 "EHLO
+	id S932699AbaBDVjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:39:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934531AbaBDVL4 (ORCPT
+	with ESMTP id S932652AbaBDVLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:56 -0500
+	Tue, 4 Feb 2014 16:11:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yegor Yefremov <yegorslists@googlemail.com>
-Subject: [PATCH 3.13 065/140] serial: add support for 200 v3 series Titan card
-Date: Tue,  4 Feb 2014 13:10:52 -0800
-Message-Id: <20140204211038.814854275@linuxfoundation.org>
+        Aaro Koskinen <aaro.koskinen@nsn.com>
+Subject: [PATCH 3.13 064/140] uio: fix devm_request_irq usage
+Date: Tue,  4 Feb 2014 13:10:51 -0800
+Message-Id: <20140204211038.787039294@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,36 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yegor Yefremov <yegorslists@googlemail.com>
+From: Aaro Koskinen <aaro.koskinen@nsn.com>
 
-commit 48c0247d7b7bf58abb85a39021099529df365c4d upstream.
+commit 632fefaf1fff7c344191c363e08a43cf006fe60e upstream.
 
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Commit e6789cd3dfb553077606ccafeb05e0043f072481 (uio: Simplify uio error
+path by using devres functions) converted uio to use devm_request_irq().
+This introduced a change in behaviour since the IRQ is associated with
+the parent device instead of the created UIO device. The IRQ will remain
+active after uio_unregister_device() is called, and some drivers will
+crash because of this. The patch fixes this.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/uio/uio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1744,6 +1744,7 @@ pci_wch_ch353_setup(struct serial_privat
- #define PCI_DEVICE_ID_TITAN_800E	0xA014
- #define PCI_DEVICE_ID_TITAN_200EI	0xA016
- #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
-+#define PCI_DEVICE_ID_TITAN_200V3	0xA306
- #define PCI_DEVICE_ID_TITAN_400V3	0xA310
- #define PCI_DEVICE_ID_TITAN_410V3	0xA312
- #define PCI_DEVICE_ID_TITAN_800V3	0xA314
-@@ -4427,6 +4428,9 @@ static struct pci_device_id serial_pci_t
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200EISI,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_oxsemi_2_4000000 },
-+	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200V3,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_b0_bt_2_921600 },
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_400V3,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_4_921600 },
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -847,7 +847,7 @@ int __uio_register_device(struct module
+ 	info->uio_dev = idev;
+ 
+ 	if (info->irq && (info->irq != UIO_IRQ_CUSTOM)) {
+-		ret = devm_request_irq(parent, info->irq, uio_interrupt,
++		ret = devm_request_irq(idev->dev, info->irq, uio_interrupt,
+ 				  info->irq_flags, info->name, idev);
+ 		if (ret)
+ 			goto err_request_irq;
 
 
