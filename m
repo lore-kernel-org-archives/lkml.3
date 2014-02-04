@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaBDQTA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:19:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:49617 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074AbaBDQSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:18:48 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Murray <amurray@embedded-bits.co.uk>
-Subject: Re: [PATCH] arm64: Add architecture support for PCI
-Date: Tue, 4 Feb 2014 17:18:41 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-pci" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel" <linaro-kernel@lists.linaro.org>
-References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com> <20140204122951.GC27975@e106497-lin.cambridge.arm.com> <CAPcvp5HN4pBysOdS5_ep_3Lp7GDDKw4YrgmKjYzBet7PtaOLUg@mail.gmail.com>
-In-Reply-To: <CAPcvp5HN4pBysOdS5_ep_3Lp7GDDKw4YrgmKjYzBet7PtaOLUg@mail.gmail.com>
+	id S1754583AbaBDQUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:20:17 -0500
+Received: from mail.eperm.de ([89.247.134.16]:51440 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431AbaBDQUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:20:14 -0500
+From: Stephan Mueller <smueller@chronox.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
+        John Crispin <blogic@openwrt.org>, andrewmcgr@gmail.com,
+        Thorsten Glaser <tg@mirbsd.de>, sandyinchina@gmail.com
+Subject: Re: [PATCH 2/5] CPU Jitter RNG: Enable compilation
+Date: Tue, 04 Feb 2014 17:19:52 +0100
+Message-ID: <3579180.ti4z33qfDe@tauon>
+User-Agent: KMail/4.11.5 (Linux/3.12.7-300.fc20.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdUpgifUHOYbYLDiLfDdTQ74PBUjjEJWGopg3BwD+qWR6g@mail.gmail.com>
+References: <2039634.jSmQAS6tdi@myon.chronox.de> <3180926.X9oRPa7ARL@myon.chronox.de> <CAMuHMdUpgifUHOYbYLDiLfDdTQ74PBUjjEJWGopg3BwD+qWR6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402041718.41931.arnd@arndb.de>
-X-Provags-ID: V02:K0:/3df7JX9jNw+h4n0Tgw12W9RdZB8WBv7jhniQxGrKbf
- DoDJxyKsdeK5ewBv4hxPwhyJVvIlRgVjxbo1vEc+f9uo+KM+wC
- djHnAYG8TFv8hnlwbzrulbZiN32VOnxoqFwBnkOOLI1vpItd4b
- F797AKuzePQV+j878CThLMRjXOjkDSjicw22WdV5IFzH+YllAY
- hT38Y4TpqaJbfgCy1va620N5hmSzDIHBff5ZDJgZDRPeH03JCg
- lFUStUvAO8te02a1rEMsh2AiOttCCDFi+9tNytczWiKwikiQOo
- URlJyzZY3GKfQewoLUi8LD1iUdopqascqQrikQ/5QaxBA6AALa
- yweJ1pf3kLpbIITPyg1vrznBTJ4JKEf4fmte7Q5KB
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 February 2014, Andrew Murray wrote:
-> On 4 February 2014 12:29, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Mon, Feb 03, 2014 at 10:34:40PM +0000, Andrew Murray wrote:
-> >> On 3 February 2014 18:43, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> > diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-> >> > index 4cc813e..ce5bad2 100644
-> >> > --- a/arch/arm64/include/asm/io.h
-> >> > +++ b/arch/arm64/include/asm/io.h
-> >> > @@ -120,9 +120,13 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
-> >> >  /*
-> >> >   *  I/O port access primitives.
-> >> >   */
-> >> > +#define arch_has_dev_port()    (0)
-> >> >  #define IO_SPACE_LIMIT         0xffff
-> >> >  #define PCI_IOBASE             ((void __iomem *)(MODULES_VADDR - SZ_2M))
-> >> >
-> >> > +#define ioport_map(port, nr)   (PCI_IOBASE + ((port) & IO_SPACE_LIMIT))
-> >> > +#define ioport_unmap(addr)
-> >>
-> >> I'm not sure that this will work. The in[bwl], out[bwl] macros in
-> >> arch/arm64/include/asm/io.h already add the PCI_IOBASE offset.
-> >>
-> >> Instead of these two #defines, why not just enforce that
-> >> GENERIC_PCI_IOMAP is enabled? Or at least wrap these defines with 'if
-> >> (!config_enabled(CONFIG_GENERIC_PCI_IOMAP))' or similar.
-> >
-> > GENERIC_PCI_IOMAP is enabled for AArch64. We have select GENERIC_IOMAP in
-> > arch/arm64/Kconfig which in turn selects GENERIC_PCI_IOMAP in lib/Kconfig.
-> 
-> Sorry, it was intent to suggest using the ioport_[map|unmap] functions
-> in lib/iomap.c instead of defining something similar here. I guess you
-> will also need to also define CONFIG_HAS_IOPORT for this to happen.
+Am Dienstag, 4. Februar 2014, 14:39:54 schrieb Geert Uytterhoeven:
 
-We do want CONFIG_HAS_IOPORT, but I would say that we should not use
-CONFIG_GENERIC_IOMAP. As I explained in another reply, enabling this
-was probably a simple mistake, and we only need this if we want I/O
-spaces that are /not/ memory mapped. IMHO any ARM64 system that doesn't
-map its PCI I/O space into MMIO space can live without I/O port
-access.
+Hi Geert,
 
-	Arnd
+>On Tue, Feb 4, 2014 at 1:40 PM, Stephan Mueller <smueller@chronox.de> 
+wrote:
+>> +CFLAGS_jitterentropy-base.o    = -O0
+>
+>Why? if really needed, this deserves a comment.
+
+Sorry to have not explained all details in the email.
+
+Please consider the following rationale found in the jitterentropy-
+base.c, given for jent_fold_time:
+
+ * The code is deliberately inefficient and shall stay that way. This 
+function
+ * is the root cause why the code shall be compiled without 
+optimization. This
+ * function not only acts as folding operation, but this function's 
+execution
+ * is used to measure the CPU execution time jitter. Any change to the 
+loop in
+ * this function implies that careful retesting must be done.
+
+The idea of the RNG is to measure the execution timing of a set of 
+instruction. The set of instructions that are measured as part of the 
+execution timing jitter measurement is exactly the jent_fold_time 
+function. When the compiler applies optimizations, one really does not 
+know how this deliberately inefficient loop is made more efficient. When 
+it is made more efficient by the compiler, it is unclear how much 
+instructions are really executed. And the less instructions, the less 
+timing variations the RNG gets, the less entropy the RNG picks up.
+
+Please note that all testing that is executed shows that optimizations 
+do not really matter. But there are some very old systems (AMD 
+Semperons, very old Pentiums) who show timing variations which border to 
+the lowest allowed variations when enabling optimizations. When 
+disabling optimizations, all the expected timing variations are present. 
+And for an RNG, it is always important to have "leeway" in the amount of 
+entropy sampled from the raw noise, i.e. it is better to be too 
+conservative and underestimate the entropy by a significant amount.
+
+As the entire RNG is intended to be based on timing variations, I felt 
+that the entire C file can be compiled without optimizations. In this 
+case, even the post-processing of the data while collecting entropy even 
+adds more entropy, albeit this impact was not subject to testing or 
+analysis -- at least it will not diminish the measured timing 
+variations.
+
+Also, I consider the execution speed of the entropy collection is not 
+really an issue because the RNG delivers random numbers at a 
+comparatively high rate. Any other noise source feeding into random.c 
+delivers data with far less speed.
+
+For more details, please see [1] section 5.1 below the presented graphs.
+
+[1] http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html
+
+Ciao
+Stephan
