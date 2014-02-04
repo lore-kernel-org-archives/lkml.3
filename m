@@ -1,84 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaBDN3f (ORCPT <rfc822;w@1wt.eu>);
+	id S1754697AbaBDN3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 08:29:39 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:47264 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675AbaBDN3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 08:29:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54154 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527AbaBDN3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:29:16 -0500
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -v2 6/6] Revert "mm: memcg: fix race condition between memcg teardown and swapin"
-Date: Tue,  4 Feb 2014 14:29:00 +0100
-Message-Id: <1391520540-17436-7-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.9.rc1
-In-Reply-To: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+Message-ID: <52F0EB30.2070401@hitachi.com>
+Date: Tue, 04 Feb 2014 22:29:20 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
+        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
+	<hskinnemoen@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
+ to CONFIG_KRETPROBES enabled area
+References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com>
+In-Reply-To: <52F0D7F3.7000901@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 96f1c58d853497a757463e0b57fed140d6858f3a
-because it is no longer needed after "memcg: make sure that memcg is not
-offline when charging" which makes sure that no charges will be accepted
-after mem_cgroup_reparent_charges has started.
+(2014/02/04 21:07), Chen Gang wrote:
+> On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
+>> (2014/02/04 14:16), Chen Gang wrote:
+>>> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
+>>> are useless, so need move them to CONFIG_KPROBES enabled area.
+>>>
+>>> Now, *kretprobe* generic implementation are all implemented in 2 files:
+>>>
+>>>  - in "include/linux/kprobes.h":
+>>>
+>>>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
+>>>      move some *kprobe() declarations which kretprobe*() call, to front.
+>>>      not touch kretprobe_blacklist[] which is architecture's variable.
+>>>
+>>>  - in "kernel/kprobes.c":
+>>>
+>>>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
+>>>      define kretprobe_flush_task() to let kprobe_flush_task() call.
+>>>      define init_kretprobes() to let init_kprobes() call.
+>>>
+>>> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
+>>> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
+>>> bzImage and Modpost modules) under x86_64 defconfig.
+>>
+>> Thanks for the fix! and I have some comments below.
+>>
+>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>> ---
+>>>  include/linux/kprobes.h |  58 +++++----
+>>>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
+>>>  2 files changed, 222 insertions(+), 164 deletions(-)
+>>>
+>>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+>>> index 925eaf2..c0d1212 100644
+>>> --- a/include/linux/kprobes.h
+>>> +++ b/include/linux/kprobes.h
+>>> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
+>>>   return 1;
+>>>  }
+>>>  
+>>> +int disable_kprobe(struct kprobe *kp);
+>>> +int enable_kprobe(struct kprobe *kp);
+>>> +
+>>> +void dump_kprobe(struct kprobe *kp);
+>>> +
+>>> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>> +
+>>>  #ifdef CONFIG_KRETPROBES
+>>>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
+>>>     struct pt_regs *regs);
+>>>  extern int arch_trampoline_kprobe(struct kprobe *p);
+>>> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>>> + unsigned long orig_ret_address, unsigned long trampoline_address)
+>>> +{
+>>> + if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>>> + printk(KERN_ERR
+>>> + "kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>>> + ri->rp, ri->rp->kp.addr);
+>>> + BUG();
+>>> + }
+>>> +}
+>>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>> +{
+>>> + return disable_kprobe(&rp->kp);
+>>> +}
+>>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>> +{
+>>> + return enable_kprobe(&rp->kp);
+>>> +}
+>>> +
+>>>  #else /* CONFIG_KRETPROBES */
+>>>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
+>>>   struct pt_regs *regs)
+>>> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
+>>>  {
+>>>   return 0;
+>>>  }
+>>> -#endif /* CONFIG_KRETPROBES */
+>>> -
+>>> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>> -
+>>>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>>>   unsigned long orig_ret_address, unsigned long trampoline_address)
+>>>  {
+>>> - if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>>> - printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>>> - ri->rp, ri->rp->kp.addr);
+>>> - BUG();
+>>> - }
+>>>  }
+>>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>> +{
+>>> + return 0;
+>>> +}
+>>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>> +{
+>>> + return 0;
+>>> +}
+>>
+>> No, these should returns -EINVAL or -ENOSYS, since these are user API.
+> 
+> OK, thanks, it sounds reasonable to me.
+> 
+>> Anyway, I don't think those inlined functions to be changed, because
+>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
+>> be ignored.
+>>
+> 
+> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
+> disable_kretprobe(), and enable_kretprobe() are not ignored.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 36 ------------------------------------
- 1 file changed, 36 deletions(-)
+Really? where are they called? I mean, those functions do not have
+any instance unless your module uses it (but that is not what the kernel
+itself should help).
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 46b9f461cedf..6226977d53d0 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6623,42 +6623,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
--	/*
--	 * XXX: css_offline() would be where we should reparent all
--	 * memory to prepare the cgroup for destruction.  However,
--	 * memcg does not do css_tryget() and res_counter charging
--	 * under the same RCU lock region, which means that charging
--	 * could race with offlining.  Offlining only happens to
--	 * cgroups with no tasks in them but charges can show up
--	 * without any tasks from the swapin path when the target
--	 * memcg is looked up from the swapout record and not from the
--	 * current task as it usually is.  A race like this can leak
--	 * charges and put pages with stale cgroup pointers into
--	 * circulation:
--	 *
--	 * #0                        #1
--	 *                           lookup_swap_cgroup_id()
--	 *                           rcu_read_lock()
--	 *                           mem_cgroup_lookup()
--	 *                           css_tryget()
--	 *                           rcu_read_unlock()
--	 * disable css_tryget()
--	 * call_rcu()
--	 *   offline_css()
--	 *     reparent_charges()
--	 *                           res_counter_charge()
--	 *                           css_put()
--	 *                             css_free()
--	 *                           pc->mem_cgroup = dead memcg
--	 *                           add page to lru
--	 *
--	 * The bulk of the charges are still moved in offline_css() to
--	 * avoid pinning a lot of pages in case a long-term reference
--	 * like a swapout record is deferring the css_free() to long
--	 * after offlining.  But this makes sure we catch any charges
--	 * made after offlining:
--	 */
--	mem_cgroup_reparent_charges(memcg);
- 
- 	memcg_destroy_kmem(memcg);
- 	__mem_cgroup_free(memcg);
+> 
+>> So, I think you don't need to change kprobes.h.
+>>
+> 
+> So "kprobes.h" still need be changed.
+
+Is there any concrete problem you have?
+
+> 
+>>> +
+>>> +#endif /* CONFIG_KRETPROBES */
+>>>  
+>>>  #ifdef CONFIG_KPROBES_SANITY_TEST
+>>>  extern int init_test_probes(void);
+>>> @@ -379,11 +406,6 @@ void unregister_kretprobes(struct kretprobe **rps, int num);
+>>>  void kprobe_flush_task(struct task_struct *tk);
+>>>  void recycle_rp_inst(struct kretprobe_instance *ri, struct hlist_head *head);
+>>>  
+>>> -int disable_kprobe(struct kprobe *kp);
+>>> -int enable_kprobe(struct kprobe *kp);
+>>> -
+>>> -void dump_kprobe(struct kprobe *kp);
+>>> -
+>>>  #else /* !CONFIG_KPROBES: */
+>>>  
+>>>  static inline int kprobes_built_in(void)
+>>> @@ -459,14 +481,6 @@ static inline int enable_kprobe(struct kprobe *kp)
+>>>   return -ENOSYS;
+>>>  }
+>>>  #endif /* CONFIG_KPROBES */
+>>> -static inline int disable_kretprobe(struct kretprobe *rp)
+>>> -{
+>>> - return disable_kprobe(&rp->kp);
+>>> -}
+>>> -static inline int enable_kretprobe(struct kretprobe *rp)
+>>> -{
+>>> - return enable_kprobe(&rp->kp);
+>>> -}
+>>>  static inline int disable_jprobe(struct jprobe *jp)
+>>>  {
+>>>   return disable_kprobe(&jp->kp);
+>>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+>>> index ceeadfc..e305a81 100644
+>>> --- a/kernel/kprobes.c
+>>> +++ b/kernel/kprobes.c
+>> [...]
+>>> @@ -1936,8 +1955,44 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+>>>   return 0;
+>>>  }
+>>>  
+>>> +void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
+>>> + struct hlist_head *head)
+>>> +{
+>>> +}
+>>> +
+>>> +void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
+>>> + struct hlist_head **head, unsigned long *flags)
+>>> +__acquires(hlist_lock)
+>>> +{
+>>> +}
+>>> +
+>>> +void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
+>>> + unsigned long *flags)
+>>> +__releases(hlist_lock)
+>>> +{
+>>> +}
+>>> +
+>>
+>>> +static void __kprobes kretprobe_flush_task(struct task_struct *tk)
+>>> +{
+>>> +}
+>>> +
+>>> +static void __init init_kretprobes(void)
+>>> +{
+>>> +}
+>>
+>> These should be macros, as I did for optprobe functions
+>> with !CONFIG_OPTPROBES.
+>>
+> 
+> OK, thanks, it sounds reasonable to me.
+> 
+>  - For new added static functions: kretprobe_flush_task(), and
+>    init_kretprobes() need be changed to macros
+> 
+>  - For extern functions: recycle_rp_inst(), kretprobe_hash_lock(), and
+>    kretprobe_has_unlock(), need use dummy functions.
+> 
+>  - For original static function: pre_handler_kretprobe(), need still
+>    use dummy function (for function pointer comparing).
+
+Right :)
+
+Thanks!
+
+> 
+> 
+>> Other parts looks good to me!;)
+>>
+>> Thank you!
+>>
+>>
+> 
+> Thanks.
+> 
+
+
 -- 
-1.9.rc1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
