@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934869AbaBDVYr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:24:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57478 "EHLO
+	id S934811AbaBDVYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:24:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934698AbaBDVMh (ORCPT
+	with ESMTP id S934699AbaBDVMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:12:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>
-Subject: [PATCH 3.13 125/140] parisc: fix cache-flushing
-Date: Tue,  4 Feb 2014 13:11:52 -0800
-Message-Id: <20140204211040.542649214@linuxfoundation.org>
+        Andreas Schwab <schwab@linux-m68k.org>, Alexander Graf <agraf@suse.de>
+Subject: [PATCH 3.13 126/140] KVM: PPC: Book3S HV: use xics_wake_cpu only when defined
+Date: Tue,  4 Feb 2014 13:11:53 -0800
+Message-Id: <20140204211040.570142225@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,81 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 57737c49dd72c96cfbcd4f66559f3ffc399aeb4f upstream.
+commit 48eaef0518a565d3852e301c860e1af6a6db5a84 upstream.
 
-This commit:
-f8dae00684d678afa13041ef170cecfd1297ed40: parisc: Ensure full cache coherency for kmap/kunmap
-caused negative caching side-effects, e.g. hanging processes with expect and
-too many inequivalent alias messages from flush_dcache_page() on Debian 5 systems.
-
-This patch now partly reverts it and has been in production use on our debian buildd
-makeservers since a week without any major problems.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/cacheflush.h |    2 --
- arch/parisc/include/asm/page.h       |    3 ++-
- arch/parisc/kernel/cache.c           |   14 ++++++++++++++
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ arch/powerpc/kvm/book3s_hv.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/include/asm/cacheflush.h
-+++ b/arch/parisc/include/asm/cacheflush.h
-@@ -132,7 +132,6 @@ void mark_rodata_ro(void);
- static inline void *kmap(struct page *page)
- {
- 	might_sleep();
--	flush_dcache_page(page);
- 	return page_address(page);
- }
+--- a/arch/powerpc/kvm/book3s_hv.c
++++ b/arch/powerpc/kvm/book3s_hv.c
+@@ -85,10 +85,13 @@ static void kvmppc_fast_vcpu_kick_hv(str
  
-@@ -144,7 +143,6 @@ static inline void kunmap(struct page *p
- static inline void *kmap_atomic(struct page *page)
- {
- 	pagefault_disable();
--	flush_dcache_page(page);
- 	return page_address(page);
- }
- 
---- a/arch/parisc/include/asm/page.h
-+++ b/arch/parisc/include/asm/page.h
-@@ -29,7 +29,8 @@ struct page;
- void clear_page_asm(void *page);
- void copy_page_asm(void *to, void *from);
- #define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
--#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
-+void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+			struct page *pg);
- 
- /* #define CONFIG_PARISC_TMPALIAS */
- 
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -388,6 +388,20 @@ void flush_kernel_dcache_page_addr(void
- }
- EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
- 
-+void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+	struct page *pg)
-+{
-+       /* Copy using kernel mapping.  No coherency is needed (all in
-+	  kunmap) for the `to' page.  However, the `from' page needs to
-+	  be flushed through a mapping equivalent to the user mapping
-+	  before it can be accessed through the kernel mapping. */
-+	preempt_disable();
-+	flush_dcache_page_asm(__pa(vfrom), vaddr);
-+	preempt_enable();
-+	copy_page_asm(vto, vfrom);
-+}
-+EXPORT_SYMBOL(copy_user_page);
-+
- void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
- {
- 	unsigned long flags;
+ 	/* CPU points to the first thread of the core */
+ 	if (cpu != me && cpu >= 0 && cpu < nr_cpu_ids) {
++#ifdef CONFIG_KVM_XICS
+ 		int real_cpu = cpu + vcpu->arch.ptid;
+ 		if (paca[real_cpu].kvm_hstate.xics_phys)
+ 			xics_wake_cpu(real_cpu);
+-		else if (cpu_online(cpu))
++		else
++#endif
++		if (cpu_online(cpu))
+ 			smp_send_reschedule(cpu);
+ 	}
+ 	put_cpu();
+@@ -1189,7 +1192,9 @@ static void kvmppc_start_thread(struct k
+ 	smp_wmb();
+ #if defined(CONFIG_PPC_ICP_NATIVE) && defined(CONFIG_SMP)
+ 	if (vcpu->arch.ptid) {
++#ifdef CONFIG_KVM_XICS
+ 		xics_wake_cpu(cpu);
++#endif
+ 		++vc->n_woken;
+ 	}
+ #endif
 
 
