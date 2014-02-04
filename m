@@ -1,260 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935071AbaBDVWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:22:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57466 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934726AbaBDVMm (ORCPT
+	id S935087AbaBDVWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:22:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63549 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934730AbaBDVWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 129/140] hpfs: remember free space
-Date: Tue,  4 Feb 2014 13:11:56 -0800
-Message-Id: <20140204211040.653174464@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 16:22:01 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH v7 2/3] trivial: PM / Hibernate: clean up checkpatch in hibernate.c
+Date: Tue, 04 Feb 2014 22:36:29 +0100
+Message-ID: <9487103.2jnJmCRm9n@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1391546631-7715-3-git-send-email-sebastian.capella@linaro.org>
+References: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org> <1391546631-7715-3-git-send-email-sebastian.capella@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, February 04, 2014 12:43:50 PM Sebastian Capella wrote:
+> Checkpatch reports several warnings in hibernate.c
+> printk use removed, long lines wrapped, whitespace cleanup,
+> extend short msleeps, while loops on two lines.
 
-------------------
+Well, this isn't a trivial patch.
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> ---
+>  kernel/power/hibernate.c |   62 ++++++++++++++++++++++++----------------------
+>  1 file changed, 32 insertions(+), 30 deletions(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index 0121dab..cd1e30c 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -94,7 +94,7 @@ EXPORT_SYMBOL(system_entering_hibernation);
+>  #ifdef CONFIG_PM_DEBUG
+>  static void hibernation_debug_sleep(void)
+>  {
+> -	printk(KERN_INFO "hibernation debug: Waiting for 5 seconds.\n");
+> +	pr_info("hibernation debug: Waiting for 5 seconds.\n");
+>  	mdelay(5000);
+>  }
+>  
+> @@ -239,7 +239,7 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+>  		centisecs = 1;	/* avoid div-by-zero */
+>  	k = nr_pages * (PAGE_SIZE / 1024);
+>  	kps = (k * 100) / centisecs;
+> -	printk(KERN_INFO "PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
+> +	pr_info("PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
+>  			msg, k,
+>  			centisecs / 100, centisecs % 100,
+>  			kps / 1000, (kps % 1000) / 10);
+> @@ -260,8 +260,7 @@ static int create_image(int platform_mode)
+>  
+>  	error = dpm_suspend_end(PMSG_FREEZE);
+>  	if (error) {
+> -		printk(KERN_ERR "PM: Some devices failed to power down, "
+> -			"aborting hibernation\n");
+> +		pr_err("PM: Some devices failed to power down, aborting hibernation\n");
+>  		return error;
+>  	}
+>  
+> @@ -277,8 +276,7 @@ static int create_image(int platform_mode)
+>  
+>  	error = syscore_suspend();
+>  	if (error) {
+> -		printk(KERN_ERR "PM: Some system devices failed to power down, "
+> -			"aborting hibernation\n");
+> +		pr_err("PM: Some system devices failed to power down, aborting hibernation\n");
+>  		goto Enable_irqs;
+>  	}
+>  
+> @@ -289,8 +287,7 @@ static int create_image(int platform_mode)
+>  	save_processor_state();
+>  	error = swsusp_arch_suspend();
+>  	if (error)
+> -		printk(KERN_ERR "PM: Error %d creating hibernation image\n",
+> -			error);
+> +		pr_err("PM: Error %d creating hibernation image\n", error);
+>  	/* Restore control flow magically appears here */
+>  	restore_processor_state();
+>  	if (!in_suspend) {
+> @@ -413,8 +410,7 @@ static int resume_target_kernel(bool platform_mode)
+>  
+>  	error = dpm_suspend_end(PMSG_QUIESCE);
+>  	if (error) {
+> -		printk(KERN_ERR "PM: Some devices failed to power down, "
+> -			"aborting resume\n");
+> +		pr_err("PM: Some devices failed to power down, aborting resume\n");
+>  		return error;
+>  	}
+>  
+> @@ -550,7 +546,8 @@ int hibernation_platform_enter(void)
+>  
+>  	hibernation_ops->enter();
+>  	/* We should never get here */
+> -	while (1);
+> +	while (1)
+> +		;
 
-commit 2cbe5c76fc5e38e9af4b709593146e4b8272b69e upstream.
+Please remove this change from the patch.  I don't care about checkpatch
+complaining here.
 
-Previously, hpfs scanned all bitmaps each time the user asked for free
-space using statfs.  This patch changes it so that hpfs scans the
-bitmaps only once, remembes the free space and on next invocation of
-statfs it returns the value instantly.
+>  
+>   Power_up:
+>  	syscore_resume();
+> @@ -611,8 +608,7 @@ static void power_down(void)
+>  		 */
+>  		error = swsusp_unmark();
+>  		if (error)
+> -			printk(KERN_ERR "PM: Swap will be unusable! "
+> -			                "Try swapon -a.\n");
+> +			pr_err("PM: Swap will be unusable! Try swapon -a.\n");
+>  		return;
+>  #endif
+>  	}
+> @@ -621,8 +617,9 @@ static void power_down(void)
+>  	 * Valid image is on the disk, if we continue we risk serious data
+>  	 * corruption after resume.
+>  	 */
+> -	printk(KERN_CRIT "PM: Please power down manually\n");
+> -	while(1);
+> +	pr_crit("PM: Please power down manually\n");
+> +	while (1)
+> +		;
 
-New versions of wine are hammering on the statfs syscall very heavily,
-making some games unplayable when they're stored on hpfs, with load
-times in minutes.
+Same here.
 
-This should be backported to the stable kernels because it fixes
-user-visible problem (excessive level load times in wine).
+>  }
+>  
+>  /**
+> @@ -644,9 +641,9 @@ int hibernate(void)
+>  	if (error)
+>  		goto Exit;
+>  
+> -	printk(KERN_INFO "PM: Syncing filesystems ... ");
+> +	pr_info("PM: Syncing filesystems ... ");
+>  	sys_sync();
+> -	printk("done.\n");
+> +	pr_cont("done.\n");
+>  
+>  	error = freeze_processes();
+>  	if (error)
+> @@ -670,7 +667,7 @@ int hibernate(void)
+>  		if (nocompress)
+>  			flags |= SF_NOCOMPRESS_MODE;
+>  		else
+> -		        flags |= SF_CRC32_MODE;
+> +			flags |= SF_CRC32_MODE;
+>  
+>  		pr_debug("PM: writing image.\n");
+>  		error = swsusp_write(flags);
+> @@ -750,7 +747,7 @@ static int software_resume(void)
+>  	pr_debug("PM: Checking hibernation image partition %s\n", resume_file);
+>  
+>  	if (resume_delay) {
+> -		printk(KERN_INFO "Waiting %dsec before reading resume device...\n",
+> +		pr_info("Waiting %dsec before reading resume device...\n",
+>  			resume_delay);
+>  		ssleep(resume_delay);
+>  	}
+> @@ -765,7 +762,7 @@ static int software_resume(void)
+>  	if (isdigit(resume_file[0]) && resume_wait) {
+>  		int partno;
+>  		while (!get_gendisk(swsusp_resume_device, &partno))
+> -			msleep(10);
+> +			msleep(20);
 
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+That's the reason why it is not trivial.
 
----
- fs/hpfs/alloc.c   |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- fs/hpfs/hpfs_fn.h |    2 -
- fs/hpfs/super.c   |   29 ++++++++++++++++++-----
- 3 files changed, 87 insertions(+), 10 deletions(-)
+First, the change being made doesn't belong in this patch.
 
---- a/fs/hpfs/alloc.c
-+++ b/fs/hpfs/alloc.c
-@@ -8,6 +8,58 @@
- 
- #include "hpfs_fn.h"
- 
-+static void hpfs_claim_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free)) {
-+			hpfs_error(s, "free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free--;
-+	}
-+}
-+
-+static void hpfs_claim_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free >= sbi->sb_fs_size)) {
-+			hpfs_error(s, "free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free++;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free_dnodes)) {
-+			hpfs_error(s, "dirband free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes--;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free_dnodes >= sbi->sb_dirband_size / 4)) {
-+			hpfs_error(s, "dirband free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes++;
-+	}
-+}
-+
- /*
-  * Check if a sector is allocated in bitmap
-  * This is really slow. Turned on only if chk==2
-@@ -203,9 +255,15 @@ secno hpfs_alloc_sector(struct super_blo
- 	}
- 	sec = 0;
- 	ret:
-+	if (sec) {
-+		i = 0;
-+		do
-+			hpfs_claim_alloc(s, sec + i);
-+		while (unlikely(++i < n));
-+	}
- 	if (sec && f_p) {
- 		for (i = 0; i < forward; i++) {
--			if (!hpfs_alloc_if_possible(s, sec + i + 1)) {
-+			if (!hpfs_alloc_if_possible(s, sec + n + i)) {
- 				hpfs_error(s, "Prealloc doesn't work! Wanted %d, allocated at %08x, can't allocate %d", forward, sec, i);
- 				sec = 0;
- 				break;
-@@ -228,6 +286,7 @@ static secno alloc_in_dirband(struct sup
- 	nr >>= 2;
- 	sec = alloc_in_bmp(s, (~0x3fff) | nr, 1, 0);
- 	if (!sec) return 0;
-+	hpfs_claim_dirband_alloc(s, sec);
- 	return ((sec & 0x3fff) << 2) + sbi->sb_dirband_start;
- }
- 
-@@ -242,6 +301,7 @@ int hpfs_alloc_if_possible(struct super_
- 		bmp[(sec & 0x3fff) >> 5] &= cpu_to_le32(~(1 << (sec & 0x1f)));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_alloc(s, sec);
- 		return 1;
- 	}
- 	hpfs_brelse4(&qbh);
-@@ -275,6 +335,7 @@ void hpfs_free_sectors(struct super_bloc
- 		return;
- 	}
- 	bmp[(sec & 0x3fff) >> 5] |= cpu_to_le32(1 << (sec & 0x1f));
-+	hpfs_claim_free(s, sec);
- 	if (!--n) {
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-@@ -359,6 +420,7 @@ void hpfs_free_dnode(struct super_block
- 		bmp[ssec >> 5] |= cpu_to_le32(1 << (ssec & 0x1f));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_dirband_free(s, dno);
- 	}
- }
- 
-@@ -366,7 +428,7 @@ struct dnode *hpfs_alloc_dnode(struct su
- 			 dnode_secno *dno, struct quad_buffer_head *qbh)
- {
- 	struct dnode *d;
--	if (hpfs_count_one_bitmap(s, hpfs_sb(s)->sb_dmap) > FREE_DNODES_ADD) {
-+	if (hpfs_get_free_dnodes(s) > FREE_DNODES_ADD) {
- 		if (!(*dno = alloc_in_dirband(s, near)))
- 			if (!(*dno = hpfs_alloc_sector(s, near, 4, 0))) return NULL;
- 	} else {
---- a/fs/hpfs/hpfs_fn.h
-+++ b/fs/hpfs/hpfs_fn.h
-@@ -312,7 +312,7 @@ static inline struct hpfs_sb_info *hpfs_
- __printf(2, 3)
- void hpfs_error(struct super_block *, const char *, ...);
- int hpfs_stop_cycles(struct super_block *, int, int *, int *, char *);
--unsigned hpfs_count_one_bitmap(struct super_block *, secno);
-+unsigned hpfs_get_free_dnodes(struct super_block *);
- 
- /*
-  * local time (HPFS) to GMT (Unix)
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -121,7 +121,7 @@ static void hpfs_put_super(struct super_
- 	call_rcu(&hpfs_sb(s)->rcu, lazy_free_sbi);
- }
- 
--unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
-+static unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
- {
- 	struct quad_buffer_head qbh;
- 	unsigned long *bits;
-@@ -129,7 +129,7 @@ unsigned hpfs_count_one_bitmap(struct su
- 
- 	bits = hpfs_map_4sectors(s, secno, &qbh, 0);
- 	if (!bits)
--		return 0;
-+		return (unsigned)-1;
- 	count = bitmap_weight(bits, 2048 * BITS_PER_BYTE);
- 	hpfs_brelse4(&qbh);
- 	return count;
-@@ -144,30 +144,45 @@ static unsigned count_bitmaps(struct sup
- 		hpfs_prefetch_bitmap(s, n);
- 	}
- 	for (n = 0; n < n_bands; n++) {
-+		unsigned c;
- 		hpfs_prefetch_bitmap(s, n + COUNT_RD_AHEAD);
--		count += hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		c = hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		if (c != (unsigned)-1)
-+			count += c;
- 	}
- 	return count;
- }
- 
-+unsigned hpfs_get_free_dnodes(struct super_block *s)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes == (unsigned)-1) {
-+		unsigned c = hpfs_count_one_bitmap(s, sbi->sb_dmap);
-+		if (c == (unsigned)-1)
-+			return 0;
-+		sbi->sb_n_free_dnodes = c;
-+	}
-+	return sbi->sb_n_free_dnodes;
-+}
-+
- static int hpfs_statfs(struct dentry *dentry, struct kstatfs *buf)
- {
- 	struct super_block *s = dentry->d_sb;
- 	struct hpfs_sb_info *sbi = hpfs_sb(s);
- 	u64 id = huge_encode_dev(s->s_bdev->bd_dev);
-+
- 	hpfs_lock(s);
- 
--	/*if (sbi->sb_n_free == -1) {*/
-+	if (sbi->sb_n_free == (unsigned)-1)
- 		sbi->sb_n_free = count_bitmaps(s);
--		sbi->sb_n_free_dnodes = hpfs_count_one_bitmap(s, sbi->sb_dmap);
--	/*}*/
-+
- 	buf->f_type = s->s_magic;
- 	buf->f_bsize = 512;
- 	buf->f_blocks = sbi->sb_fs_size;
- 	buf->f_bfree = sbi->sb_n_free;
- 	buf->f_bavail = sbi->sb_n_free;
- 	buf->f_files = sbi->sb_dirband_size / 4;
--	buf->f_ffree = sbi->sb_n_free_dnodes;
-+	buf->f_ffree = hpfs_get_free_dnodes(s);
- 	buf->f_fsid.val[0] = (u32)id;
- 	buf->f_fsid.val[1] = (u32)(id >> 32);
- 	buf->f_namelen = 254;
+Second, what's the problem with the original value?
 
+>  	}
+>  
+>  	if (!swsusp_resume_device) {
+> @@ -776,8 +773,9 @@ static int software_resume(void)
+>  		wait_for_device_probe();
+>  
+>  		if (resume_wait) {
+> -			while ((swsusp_resume_device = name_to_dev_t(resume_file)) == 0)
+> -				msleep(10);
+> +			while ((swsusp_resume_device =
+> +					name_to_dev_t(resume_file)) == 0)
+> +				msleep(20);
 
+And here?
+
+>  			async_synchronize_full();
+>  		}
+>  
+> @@ -826,7 +824,7 @@ static int software_resume(void)
+>  	if (!error)
+>  		hibernation_restore(flags & SF_PLATFORM_MODE);
+>  
+> -	printk(KERN_ERR "PM: Failed to load hibernation image, recovering.\n");
+> +	pr_err("PM: Failed to load hibernation image, recovering.\n");
+>  	swsusp_free();
+>  	free_basic_memory_bitmaps();
+>   Thaw:
+> @@ -965,7 +963,7 @@ power_attr(disk);
+>  static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
+>  			   char *buf)
+>  {
+> -	return sprintf(buf,"%d:%d\n", MAJOR(swsusp_resume_device),
+> +	return sprintf(buf, "%d:%d\n", MAJOR(swsusp_resume_device),
+>  		       MINOR(swsusp_resume_device));
+>  }
+>  
+> @@ -986,7 +984,7 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	lock_system_sleep();
+>  	swsusp_resume_device = res;
+>  	unlock_system_sleep();
+> -	printk(KERN_INFO "PM: Starting manual resume from disk\n");
+> +	pr_info("PM: Starting manual resume from disk\n");
+>  	noresume = 0;
+>  	software_resume();
+>  	ret = n;
+> @@ -996,13 +994,15 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  
+>  power_attr(resume);
+>  
+> -static ssize_t image_size_show(struct kobject *kobj, struct kobj_attribute *attr,
+> +static ssize_t image_size_show(struct kobject *kobj,
+> +			       struct kobj_attribute *attr,
+>  			       char *buf)
+
+Why can't you leave the code as is here?
+
+>  {
+>  	return sprintf(buf, "%lu\n", image_size);
+>  }
+>  
+> -static ssize_t image_size_store(struct kobject *kobj, struct kobj_attribute *attr,
+> +static ssize_t image_size_store(struct kobject *kobj,
+> +				struct kobj_attribute *attr,
+>  				const char *buf, size_t n)
+
+And here?
+
+>  {
+>  	unsigned long size;
+> @@ -1039,7 +1039,7 @@ static ssize_t reserved_size_store(struct kobject *kobj,
+>  
+>  power_attr(reserved_size);
+>  
+> -static struct attribute * g[] = {
+> +static struct attribute *g[] = {
+>  	&disk_attr.attr,
+>  	&resume_attr.attr,
+>  	&image_size_attr.attr,
+> @@ -1066,7 +1066,7 @@ static int __init resume_setup(char *str)
+>  	if (noresume)
+>  		return 1;
+>  
+> -	strncpy( resume_file, str, 255 );
+> +	strncpy(resume_file, str, 255);
+>  	return 1;
+>  }
+>  
+> @@ -1106,7 +1106,9 @@ static int __init resumewait_setup(char *str)
+>  
+>  static int __init resumedelay_setup(char *str)
+>  {
+> -	resume_delay = simple_strtoul(str, NULL, 0);
+> +	int ret = kstrtoint(str, 0, &resume_delay);
+> +	/* mask must_check warn; on failure, leaves resume_delay unchanged */
+> +	(void)ret;
+
+And that's not a trivial change surely?
+
+And why didn't you do (void)kstrtoint(str, 0, &resume_delay); instead?
+
+>  	return 1;
+>  }
+>  
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
