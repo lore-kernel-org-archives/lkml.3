@@ -1,254 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833AbaBDRFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:05:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:40501 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754010AbaBDRFF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:05:05 -0500
-Date: Tue, 4 Feb 2014 12:05:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Smith <dsmith@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Igor Zhbanov <i.zhbanov@samsung.com>,
-        Christoph Hellwig <hch@infradead.org>, Paul Menage <menage@google.com>
-Subject: [RFC][PATCH] exec: Fix use after free of tracepoint
- trace_sched_process_exec
-Message-ID: <20140204120500.041b5175@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1754743AbaBDRI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:08:27 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35277 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaBDRIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 12:08:23 -0500
+Date: Tue, 4 Feb 2014 17:07:46 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-mmc@vger.kernel.org
+Message-ID: <20140204170746.GD22609@sirena.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+ <1391529538-21685-9-git-send-email-ulf.hansson@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3L1hu/R33NquA63z"
+Content-Disposition: inline
+In-Reply-To: <1391529538-21685-9-git-send-email-ulf.hansson@linaro.org>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 08/17] spi: pl022: Fully gate clocks at request inactivity
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Igor reported garbage in a trace that looked like this:
 
-           login-1718  [000] ...1  1340.195118: sched_process_exec: filename=/bin/login pid=1718 old_pid=1718
- systemd-cgroups-2061  [006] ...1  1341.672207: sched_process_exec: filename=/usr/lib/systemd/systemd-cgroups-agent pid=2061 old_pid=2061
- systemd-cgroups-2063  [004] ...1  1341.673437: sched_process_exec: filename=ÀÈûÉ pid=2063 old_pid=2063
+--3L1hu/R33NquA63z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-See the junk in the last line for filename.
+On Tue, Feb 04, 2014 at 04:58:49PM +0100, Ulf Hansson wrote:
+> Use clk_disable_unprepare and clk_prepare_enable from the runtime PM
+> callbacks, to fully gate|ungate clocks. Potentially this will save more
+> power, depending on the clock tree for the current SOC.
 
-Investigating this, I found that the problem is where the tracepoint
-lies. In exec.c exec_binprm() we have:
+The same patch has already been applied (I noticed and fixed it while
+doing unrelated code review).
 
-	ret = search_binary_handler(bprm);
-	if (ret >= 0) {
-		audit_bprm(bprm);
-		trace_sched_process_exec(current, old_pid, bprm);
+>  	pinctrl_pm_select_default_state(dev);
+> -	clk_enable(pl022->clk);
+> +	clk_prepare_enable(pl022->clk);
 
-The tracepoint uses bprm->filename to record the process that was
-executed. The problem is that the handlers called in
-search_binary_handler() can release the process' old memory for the
-new memory. The bprm->filename is not in this memory, but the issue is
-when this happens, if the parent used a vfork() it will wake up at
-that moment. To explain exactly what happens, we have this:
+Someone should really make this check errors though!
 
-cgroup_release_agent()
- agentbuf = kstrdup();
- argv[0] = argentbuf;
- call_usermodehelper(argv[0],...,UMH_WAIT_EXEC);
-  call_usermodehelper_setup()
-    sub_info->path = path; (argv[0] from parameter)
-    sub_info->work = __call_usermodehelper;
-  call_usermodehelper_exec()
-    queue_work(subinfo->work);
-    wait_for_completion();
+--3L1hu/R33NquA63z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Now the work gets called:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-__call_usermodehelper
-  kernel_thread(call_helper, CLONE_VFORK);
+iQIcBAEBAgAGBQJS8R5fAAoJELSic+t+oim9+KAP/14mFD5xmmvH/r8MoIs9oN3r
+nZ4cbt/EFSqLZncm8QuG5HRA+ZOzw0z8REs3UzLrjNkEsTmt9KNUxoYyEniHeS1N
+mmsbJY77oyj12oaLv31fqh3YZGJoUVoq1Cp5/crgtADMTqjEqn/RRZmvwFnextdN
+d/DPVMrx8v4kNNGQ64cj4zf/SdKJtbF+KlvkyVal7S/SVZWoZ0eUXC9d/lTBAP0w
+pk6ipMZ7Rc4DYBdkmexq5jZCHS3lm4ndsDmnMKxKPHGLO3oXD0uswZ7NSa/q9uj1
+8V+MlIP5P0Ah2H0g2Iz967esOmIv8MidHgG5Ae0aJdG/SI6YxgGGn2VFfLCzko2Q
+OCXAKSVzJy7qEWUwaeVM1AedAho3GsfCsLqTPaWoOnw7R1Znu+TW/y6TSh0/z+S/
+SYaWl1uIp3wJ6j37L1cSnurEvzuwNFvhPYjkQVQuuWVuwosG90+1egmj/uag2NQe
+ZZVfm3KmZfo0xC6vNKk9aCt9ENsNBN5J11FEZzn7/ygxk84ctxqmtCcJ8+REqeUx
+j8zMq8morWlL+IEOR3AzIJRWICUhr2TT4LZANy8iBlKDvoKRdRECrI9Ln+t1vTPm
+gAMcaGgRKjdjDNEKADmytoxxsH/u71FpYBTddg5z4STn8RbhXSJWnXc5VePul1Ku
+HH/aJCZdeAcAn1r80GxJ
+=k7iL
+-----END PGP SIGNATURE-----
 
-Notice the VFORK flag. This means that the parent will sleep till the
-child exits or execs.
-
-call_helper()
-  ____call_usermodehelper()
-    do_execve(subinfo->path)
-      filename = subinfo->path; (filename is allocated agentbuf)
-      do_execve_common(filename)
-        bprm->filename = filename;
-        exec_bprm(bprm)
-          search_binary_handler(bprm)
-            fmt->load_binary() (load_elf_binary);
-              load_elf_binary()
-                flush_old_exec()
-                  exec_mmap()
-                    mm_release()
-                      if (tsk->vfork_done)
-                         complete_vfork_done(tsk);
-
-Here we wake up the parent. The one that called
-kthread_thread(call_helper). Now that one continues to run:
-
- 	case UMH_WAIT_EXEC:
-		if (pid < 0)
-			sub_info->retval = pid;
-		umh_complete(sub_info);
-
-Now this wakes up the process that's waiting for completion. Which
-continues to run and does:
-
-		kfree(agentbuf);
-
-This is what bprm->filename points to.
-
-When the search_binary_handler() returns, (with a possibility that
-filename has been freed), when it calls the tracepoint, the tracepoint
-will record bogus data. Luckily it didn't crash the kernel.
-
-Adding a few strategic trace_printks, we can see this happening:
-
-     kworker/3:1-51    [003] ....    59.700772: cgroup_release_agent: agentbuf = ffff880114fc28c0 /usr/lib/systemd/systemd-cgroups-agent
- systemd-cgroups-1925  [005] ....    59.700866: do_execve_common.isra.25: calling search_binary_handler (bprm->filename=ffff880114fc28c0 /usr/lib/systemd/systemd-cgroups-agent
- systemd-cgroups-1925  [005] ....    59.700867: search_binary_handler: fmt->load_binary = load_misc_binary+0x0/0x302
- systemd-cgroups-1925  [005] ....    59.700868: search_binary_handler: fmt->load_binary = load_script+0x0/0x1e8
- systemd-cgroups-1925  [005] ....    59.700868: search_binary_handler: fmt->load_binary = load_elf_binary+0x0/0x179b
- systemd-cgroups-1925  [005] ....    59.700876: flush_old_exec: calling exec_mmap bprm->filename=ffff880114fc28c0 /usr/lib/systemd/systemd-cgroups-agent
- systemd-cgroups-1925  [005] ....    59.700876: flush_old_exec: calling mm_release
- systemd-cgroups-1925  [005] ....    59.700876: mm_release: tsk->vfork_done = ffff880000091d68
-     kworker/3:1-51    [003] ....    59.700904: cgroup_release_agent: freeing agentbuf
- systemd-cgroups-1925  [005] ....    59.700911: do_execve_common.isra.25: back from binary (bprm->filename=ffff880114fc28c0 @$üÿÿ/systemd/systemd-cgroups-agent
- systemd-cgroups-1925  [005] ...1    59.700912: sched_process_exec: filename=@$üÿÿ/systemd/systemd-cgroups-agent pid=1925 old_pid=1925
-
-
-The junk starts after "freeing agentbuf"
-
-Now to fix this we need to save the filename before calling
-search_binary_handler(). But we don't want to save it if we are not
-tracing. Why slow everyone else down?  To prevent this, I added
-a static key branch (nop or unconditional jump) that gets enabled when
-the tracepoint sched_process_exec is registered, and disabled when the
-tracepoint is unregistered.
-
-When the tracepoint is registered, the filename will be allocated by a
-kstrdup and freed after the call. If filename fails to allocate, we
-simply fall back to brpm->tcomm (just the name, not the path).
-
-This works, but is rather ugly. Looking for any other suggestions here.
-
-Reported-by: Igor Zhbanov <i.zhbanov@samsung.com>
-[ I'm assuming this is the right person. All I have is a nick "IZh" on IRC]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/fs/exec.c b/fs/exec.c
-index e1529b4..9bb1b0f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1407,9 +1407,22 @@ int search_binary_handler(struct linux_binprm *bprm)
- }
- EXPORT_SYMBOL(search_binary_handler);
- 
-+static struct static_key sched_process_exec_key = STATIC_KEY_INIT_FALSE;
-+
-+void sched_process_exec_key_reg(void)
-+{
-+	static_key_slow_inc(&sched_process_exec_key);
-+}
-+
-+void sched_process_exec_key_unreg(void)
-+{
-+	static_key_slow_dec(&sched_process_exec_key);
-+}
-+
- static int exec_binprm(struct linux_binprm *bprm)
- {
- 	pid_t old_pid, old_vpid;
-+	char *filename;
- 	int ret;
- 
- 	/* Need to fetch pid before load_binary changes it */
-@@ -1418,10 +1431,34 @@ static int exec_binprm(struct linux_binprm *bprm)
- 	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
- 	rcu_read_unlock();
- 
--	ret = search_binary_handler(bprm);
-+	/*
-+	 * When the sched_process_exec tracepoint is activated, it
-+	 * enables the static key sched_process_exec_key to do some more
-+	 * work. The issue is that the tracepoint wants to record the
-+	 * filename of the bprm but only if search_binary_handler() returns
-+	 * without an error. The problem is that the search_binary_handler()
-+	 * may call mm_release() which can wake up the parent that did a vfork
-+	 * (see cgroup call_usermodehelper()) and the parent may free bprm->filename.
-+	 *
-+	 * The filename must be saved before calling search_binary_handler().
-+	 * But as this is only needed for tracing, only do this work if
-+	 * the tracepoint is enabled.
-+	 *
-+	 * The static key usage removes conditional branches as well.
-+	 */ 
-+	if (static_key_false(&sched_process_exec_key)) {
-+		/* If filename fails to alloc, just use tcomm */
-+		filename = kstrdup(bprm->filename, GFP_KERNEL);
-+		ret = search_binary_handler(bprm);
-+		if (ret >= 0)
-+			trace_sched_process_exec(current, old_pid,
-+						 filename ? filename : bprm->tcomm);
-+		kfree(filename);
-+	} else
-+		ret = search_binary_handler(bprm);
-+
- 	if (ret >= 0) {
- 		audit_bprm(bprm);
--		trace_sched_process_exec(current, old_pid, bprm);
- 		ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
- 		proc_exec_connector(current);
- 	}
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 67e1bbf..a7eaa06 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -276,30 +276,35 @@ TRACE_EVENT(sched_process_fork,
- 		__entry->child_comm, __entry->child_pid)
- );
- 
-+extern void sched_process_exec_key_reg(void);
-+extern void sched_process_exec_key_unreg(void);
-+
- /*
-  * Tracepoint for exec:
-  */
--TRACE_EVENT(sched_process_exec,
-+TRACE_EVENT_FN(sched_process_exec,
- 
--	TP_PROTO(struct task_struct *p, pid_t old_pid,
--		 struct linux_binprm *bprm),
-+	TP_PROTO(struct task_struct *p, pid_t old_pid, char *filename),
- 
--	TP_ARGS(p, old_pid, bprm),
-+	TP_ARGS(p, old_pid, filename),
- 
- 	TP_STRUCT__entry(
--		__string(	filename,	bprm->filename	)
-+		__string(	filename,	filename	)
- 		__field(	pid_t,		pid		)
- 		__field(	pid_t,		old_pid		)
- 	),
- 
- 	TP_fast_assign(
--		__assign_str(filename, bprm->filename);
-+		__assign_str(filename, filename);
- 		__entry->pid		= p->pid;
- 		__entry->old_pid	= old_pid;
- 	),
- 
- 	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
--		  __entry->pid, __entry->old_pid)
-+		  __entry->pid, __entry->old_pid),
-+
-+	sched_process_exec_key_reg,
-+	sched_process_exec_key_unreg
- );
- 
- /*
+--3L1hu/R33NquA63z--
