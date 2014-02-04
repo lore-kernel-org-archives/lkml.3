@@ -1,134 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaBDQZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:25:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751333AbaBDQZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:25:47 -0500
-Date: Tue, 4 Feb 2014 11:25:04 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Will.Deacon@arm.com, arndb@arndb.de,
-        linux-kernel@vger.kernel.org,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        viro@zeniv.linux.org.uk, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/6] audit: Enable arm64 support
-Message-ID: <20140204162504.GA18507@madcap2.tricolour.ca>
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
- <1389946399-4525-2-git-send-email-takahiro.akashi@linaro.org>
- <20140123141808.GD27520@arm.com>
- <52E5EAC1.2070306@linaro.org>
- <20140129202127.GA24068@madcap2.tricolour.ca>
- <20140129223652.GA13702@madcap2.tricolour.ca>
- <52EF304F.80202@linaro.org>
- <20140203160659.GA19292@madcap2.tricolour.ca>
+	id S1754204AbaBDQ3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:29:41 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:57649 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDQ3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:29:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203160659.GA19292@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140204122212.GO8874@twins.programming.kicks-ass.net>
+References: <20140204122212.GO8874@twins.programming.kicks-ass.net>
+Date: Tue, 4 Feb 2014 08:29:36 -0800
+X-Google-Sender-Auth: aPZUOkizMvRmnkXI2TQ0KwKkChA
+Message-ID: <CA+55aFz6LGt35C2ex6qCM8cQDowmr9HR-+hR9bMXJPE707+k-A@mail.gmail.com>
+Subject: Re: [RFC][PATCH] ia64: Fix atomic ops vs memory barriers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/03, Richard Guy Briggs wrote:
-> On 14/02/03, AKASHI Takahiro wrote:
-> > Richard,
-> 
-> Takahiro,
+On Tue, Feb 4, 2014 at 4:22 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> The below patch assumes the SDM is right (TM), and fixes the atomic_t,
+> cmpxchg() and xchg() implementations by inserting a mf before the
+> cmpxchg.acq (or xchg).
 
-Takahiro,
+You picked the wrong thing to be right. The SDM is wrong.
 
-> > On 01/30/2014 07:36 AM, Richard Guy Briggs wrote:
-> > >On 14/01/29, Richard Guy Briggs wrote:
-> > >>On 14/01/27, AKASHI Takahiro wrote:
-> > >>>[To audit maintainers]
-> > >>>
-> > >>>On 01/23/2014 11:18 PM, Catalin Marinas wrote:
-> > >>>>On Fri, Jan 17, 2014 at 08:13:14AM +0000, AKASHI Takahiro wrote:
-> > >>>>>--- a/include/uapi/linux/audit.h
-> > >>>>>+++ b/include/uapi/linux/audit.h
-> > >>>>>@@ -327,6 +327,8 @@ enum {
-> > >>>>>  /* distinguish syscall tables */
-> > >>>>>  #define __AUDIT_ARCH_64BIT 0x80000000
-> > >>>>>  #define __AUDIT_ARCH_LE	   0x40000000
-> > >>>>>+#define AUDIT_ARCH_AARCH64	(EM_AARCH64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> > >>>>>+#define AUDIT_ARCH_AARCH64EB	(EM_AARCH64|__AUDIT_ARCH_64BIT)
-> > >>>>>  #define AUDIT_ARCH_ALPHA	(EM_ALPHA|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
-> > >>>>>  #define AUDIT_ARCH_ARM		(EM_ARM|__AUDIT_ARCH_LE)
-> > >>>>>  #define AUDIT_ARCH_ARMEB	(EM_ARM)
-> > >>>>>diff --git a/init/Kconfig b/init/Kconfig
-> > >>>>>index 79383d3..3aae602 100644
-> > >>>>>--- a/init/Kconfig
-> > >>>>>+++ b/init/Kconfig
-> > >>>>>@@ -284,7 +284,7 @@ config AUDIT
-> > >>>>>
-> > >>>>>  config AUDITSYSCALL
-> > >>>>>  	bool "Enable system-call auditing support"
-> > >>>>>-	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT))
-> > >>>>>+	depends on AUDIT && (X86 || PARISC || PPC || S390 || IA64 || UML || SPARC64 || SUPERH || (ARM && AEABI && !OABI_COMPAT) || ARM64)
-> > >>>>
-> > >>>>The usual comment for such changes: could you please clean this up and
-> > >>>>just use something like "depends on HAVE_ARCH_AUDITSYSCALL"?
-> > >>>
-> > >>>Do you agree to this change?
-> > >>>
-> > >>>If so, I can create a patch, but have some concerns:
-> > >>>1) I can't verify it on other architectures than (arm &) arm64.
-> > >>>2) Some architectures (microblaze, mips, openrisc) are not listed here, but
-> > >>>    their ptrace.c have a call to audit_syscall_entry/exit().
-> > >>>    (audit_syscall_entry/exit are null if !AUDITSYSCALL, though)
-> > >>
-> > >>I can try: ppc s390 x86_64 ppc64 i686 s390x
-> > >
-> > >These arches above all pass compile and basic tests with the following patches applied:
-> > >
-> > >	audit: correct a type mismatch in audit_syscall_exit() pending (already upstream)
-> > >
-> > >	audit: Modify a set of system calls in audit class definitions (already upstream)
-> > >
-> > >	[PATCH v3] audit: Add generic compat syscall support
-> > >
-> > >	[PATCH v2] audit: Enable arm64 support
-> > >	[PATCH v2] arm64: Add regs_return_value() in syscall.h
-> > >	[PATCH v2] arm64: Add audit support
-> > >	[PATCH v2] arm64: audit: Add 32-bit (compat) syscall support
-> > >	[PATCH v2] arm64: audit: Add makefile rule to create unistd_32.h for compat syscalls
-> > >	[PATCH v2] arm64: audit: Add audit hook in ptrace/syscall_trace
-> > 
-> > I think that you missed Catalin's suggestion.
-> 
-> I didn't miss his suggestions.  I think they are a good way to go, but I
-> wanted to make a test at referrable point in time to validate the work
-> to that point and to avoid introducing errors by mis-interpreting ideas
-> that were not yet fully-formed patches.
-> 
-> > Please use the patch I will post after this message and try it again, please?
-> 
-> I was certainly intending to do so.
+Last time this came up, Tony explained it thus:
 
-I have tested the new sets from Catalin and you and everything passes ok.
+>> Worse still - early processor implementations actually just ignored
+>> the acquire/release and did a full fence all the time.  Unfortunately
+>> this meant a lot of badly written code that used .acq when they really
+>> wanted .rel became legacy out in the wild - so when we made a cpu
+>> that strictly did the .acq or .rel ... all that code started breaking - so
+>> we had to back-pedal and keep the "legacy" behavior of a full fence :-(
 
-> > Thanks,
-> > -Takahiro AKASHI
-> > 
-> > >>>So I'm afraid that the change might break someone's assumption.
-> > >>>
-> > >>>Thanks,
-> > >>>-Takahiro AKASHI
-> > >>
-> > >>- RGB
-> > >
-> > >- RGB
-> 
-> - RGB
+and since ia64 is basically on life support as an architecture, we can
+pretty much agree that the SDM is dead, and the only thing that
+matters is implementation.
 
-- RGB
+The above quote was strictly in the context of just cmpxchg, though,
+so it's possible that the "fetchadd" instruction acts differently. I
+would personally expect it to have the same issues, but let's see what
+Tony says.. Tony?
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+                Linus
