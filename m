@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935865AbaBDWvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:51:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56228 "EHLO
+	id S933286AbaBDVCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56135 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933302AbaBDVCZ (ORCPT
+	with ESMTP id S933187AbaBDVCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:25 -0500
+	Tue, 4 Feb 2014 16:02:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3.10 057/104] perf kvm: Fix kvm report without guestmount.
-Date: Tue,  4 Feb 2014 13:02:00 -0800
-Message-Id: <20140204210224.336308567@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 036/104] mwifiex: fix wrong 11ac bits setting in fw_cap_info
+Date: Tue,  4 Feb 2014 13:01:39 -0800
+Message-Id: <20140204210223.755311719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -30,79 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit ad85ace07a05062ef6b59c35a5e80b6eaee1eee6 upstream.
+commit 1e202242ee1432d68a8bea4919b2ae0ef19d9e06 upstream.
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
-can not get the perf information from perf data file. All sample are
-shown as unknown.
+bit 14 is actually reserved and bit 12 & 13 should be used for
+11ac capability in fw_cap_info.
 
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
-
-This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-and added. Then the default guest which with pid == 0 will never get a symbol.
-
-And because the new machine initialized here has no kernel map created, the symbol delivered to
-it will be marked as "unknown".
-
-This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
-
-Verification steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
-
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/session.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/fw.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -811,6 +811,7 @@ static struct machine *
- 					       union perf_event *event)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
+--- a/drivers/net/wireless/mwifiex/fw.h
++++ b/drivers/net/wireless/mwifiex/fw.h
+@@ -228,7 +228,7 @@ enum MWIFIEX_802_11_PRIVACY_FILTER {
  
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -822,7 +823,11 @@ static struct machine *
- 		else
- 			pid = event->ip.pid;
+ /* HW_SPEC fw_cap_info */
  
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
- 	}
+-#define ISSUPP_11ACENABLED(fw_cap_info) (fw_cap_info & (BIT(13)|BIT(14)))
++#define ISSUPP_11ACENABLED(fw_cap_info) (fw_cap_info & (BIT(12)|BIT(13)))
  
- 	return &session->machines.host;
+ #define GET_VHTCAP_CHWDSET(vht_cap_info)    ((vht_cap_info >> 2) & 0x3)
+ #define GET_VHTNSSMCS(mcs_mapset, nss) ((mcs_mapset >> (2 * (nss - 1))) & 0x3)
 
 
