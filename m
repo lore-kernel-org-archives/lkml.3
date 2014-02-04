@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964884AbaBDWyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:54:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56180 "EHLO
+	id S936410AbaBDWyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:54:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56162 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237AbaBDVCR (ORCPT
+	with ESMTP id S933240AbaBDVCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:17 -0500
+	Tue, 4 Feb 2014 16:02:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aristeu Rozanski <aris@redhat.com>, mark gross <mark.gross@intel.com>,
-        Borislav Petkov <bp@suse.de>, Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH 3.10 006/104] e752x_edac: Fix pci_dev usage count
-Date: Tue,  4 Feb 2014 13:01:09 -0800
-Message-Id: <20140204210222.918654022@linuxfoundation.org>
+        David Ertman <davidx.m.ertman@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 3.10 007/104] e1000e: fix compiler warnings
+Date: Tue,  4 Feb 2014 13:01:10 -0800
+Message-Id: <20140204210222.945902250@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,41 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aristeu Rozanski <aris@redhat.com>
+From: David Ertman <davidx.m.ertman@intel.com>
 
-commit 90ed4988b8c030d65b41b7d13140e9376dc6ec5a upstream.
+commit 9e6c3b63399dd424d33a34e08b77f2cab0b84cdc upstream.
 
-In case the device 0, function 1 is not found using pci_get_device(),
-pci_scan_single_device() will be used but, differently than
-pci_get_device(), it allocates a pci_dev but doesn't does bump the usage
-count on the pci_dev and after few module removals and loads the pci_dev
-will be freed.
+This patch is to fix a compiler warning of __bad_udelay due to a value
+of >999 being passed as a parameter to udelay() in the function
+e1000e_phy_has_link_generic().  This affects the gcc compiler when
+it is given a flag of -O3 and the icc compiler.
 
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-Reviewed-by: mark gross <mark.gross@intel.com>
-Link: http://lkml.kernel.org/r/20131205153755.GL4545@redhat.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Jean Delvare <jdelvare@suse.de>
+This patch is also making the change from mdelay() to msleep() in the
+same function, since it was determined though code inspection that this
+function is never called in atomic context.
+
+Signed-off-by: David Ertman <davidx.m.ertman@intel.com>
+Acked-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/e752x_edac.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/e1000e/phy.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/edac/e752x_edac.c
-+++ b/drivers/edac/e752x_edac.c
-@@ -1182,9 +1182,11 @@ static int e752x_get_devs(struct pci_dev
- 	pvt->bridge_ck = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				pvt->dev_info->err_dev, pvt->bridge_ck);
- 
--	if (pvt->bridge_ck == NULL)
-+	if (pvt->bridge_ck == NULL) {
- 		pvt->bridge_ck = pci_scan_single_device(pdev->bus,
- 							PCI_DEVFN(0, 1));
-+		pci_dev_get(pvt->bridge_ck);
-+	}
- 
- 	if (pvt->bridge_ck == NULL) {
- 		e752x_printk(KERN_ERR, "error reporting device not found:"
+--- a/drivers/net/ethernet/intel/e1000e/phy.c
++++ b/drivers/net/ethernet/intel/e1000e/phy.c
+@@ -1757,19 +1757,23 @@ s32 e1000e_phy_has_link_generic(struct e
+ 		 * it across the board.
+ 		 */
+ 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
+-		if (ret_val)
++		if (ret_val) {
+ 			/* If the first read fails, another entity may have
+ 			 * ownership of the resources, wait and try again to
+ 			 * see if they have relinquished the resources yet.
+ 			 */
+-			udelay(usec_interval);
++			if (usec_interval >= 1000)
++				msleep(usec_interval / 1000);
++			else
++				udelay(usec_interval);
++		}
+ 		ret_val = e1e_rphy(hw, MII_BMSR, &phy_status);
+ 		if (ret_val)
+ 			break;
+ 		if (phy_status & BMSR_LSTATUS)
+ 			break;
+ 		if (usec_interval >= 1000)
+-			mdelay(usec_interval / 1000);
++			msleep(usec_interval / 1000);
+ 		else
+ 			udelay(usec_interval);
+ 	}
 
 
