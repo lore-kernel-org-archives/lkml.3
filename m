@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaBDQ4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:56:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54228 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaBDQ4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:56:36 -0500
-Date: Tue, 4 Feb 2014 08:57:42 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: Peng Tao <bergwolf@gmail.com>, linux-kernel@vger.kernel.org,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH 2/4] staging/lustre/obdclass: read jobid from proc
-Message-ID: <20140204165742.GA19660@kroah.com>
-References: <1383132636-8952-1-git-send-email-bergwolf@gmail.com>
- <1383132636-8952-2-git-send-email-bergwolf@gmail.com>
- <20131030132101.GD30087@kroah.com>
- <20140204061210.GA944142@fiona.linuxhacker.ru>
+	id S932396AbaBDQ6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:58:33 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:42788 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753987AbaBDQ6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:58:30 -0500
+Message-ID: <52F11C29.8080809@mm-sol.com>
+Date: Tue, 04 Feb 2014 18:58:17 +0200
+From: Georgi Djakov <gdjakov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204061210.GA944142@fiona.linuxhacker.ru>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Christopher Covington <cov@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, cjb@laptop.org, devicetree@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v8 0/3] mmc: sdhci-msm: Add support for Qualcomm chipsets
+References: <1391107507-17321-1-git-send-email-gdjakov@mm-sol.com> <52F0E8C6.5090006@codeaurora.org>
+In-Reply-To: <52F0E8C6.5090006@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:12:10AM +0400, Oleg Drokin wrote:
-> Hello!
-> 
-> On Wed, Oct 30, 2013 at 06:21:01AM -0700, Greg Kroah-Hartman wrote:
-> > > - * stored in between the "env_start" & "env_end" of task struct.
-> > > +static char *self_environ_file = "/proc/self/environ";
-> > 
-> > Heh, no, that's not ok at all.
-> > 
-> > This is a _huge_ sign that you are doing something wrong in your driver
-> > if you need something that isn't exported, or that you have to dig out
-> > of proc.
-> > 
-> > Sorry, I can't take this, please fix the underlying problems that would
-> > even think that you need access to the environment from within a kernel
-> > driver.
-> 
-> I took a stab at this.
-> This is not a final patch, I know there's still some number of checkpatch
-> warnings and the proc layout is not finalized yet for example.
-> 
-> But before I spend any more time in polishing this, can you please take a look
-> and advise if this direction would be acceptable for you when driven to
-> completion?
+Hi Christopher,
 
-What exactly are you doing here?  Calling out to userspace for what
-information?  And how are you going to handle namespaces and containers
-by doing that?  Are you going to block in the kernel for this
-information?
+On 02/04/2014 03:19 PM, Christopher Covington wrote:
+> Hi Georgi,
+>
+> On 01/30/2014 01:45 PM, Georgi Djakov wrote:
+>> This patchset adds basic support of the Secure Digital Host Controller
+>> Interface compliant controller found in Qualcomm chipsets.
+>>
+>> Tested with eMMC and various micro SD cards on APQ8074 Dragonboard.
+>
+> [...]
+>
+>>   .../devicetree/bindings/mmc/sdhci-msm.txt          |   83 ++
+>>   drivers/mmc/host/Kconfig                           |   13 +
+>>   drivers/mmc/host/Makefile                          |    1 +
+>>   drivers/mmc/host/sdhci-msm.c                       |  938 ++++++++++++++++++++
+>>   4 files changed, 1035 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+>>   create mode 100644 drivers/mmc/host/sdhci-msm.c
+>
+> You must have added entries to the Dragonboard device tree source to test
+> these changes. Why not include them with this patchset? Is there a stand-alone
+> patch that I've overlooked?
+>
 
-What are you trying to solve with this code in the first place?
+There have been recently many changes to the devicetree files and in 
+order to avoid possible conflicts i have not added DT nodes yet. But 
+I'll consider adding them, and maybe enable it in the defconfig too. 
+Thanks for your suggestion.
 
-greg k-h
+To get it working, take a look at the binding example or just use the 
+following:
+
+sdhci1@f9824900 {
+         compatible = "qcom,sdhci-msm";
+         reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
+         reg-names = "hc_mem", "core_mem";
+         interrupts = <0 123 0>, <0 138 0>;
+         interrupt-names = "hc_irq", "pwr_irq";
+         bus-width = <8>;
+         non-removable;
+         clocks = <&gcc GCC_SDCC1_APPS_CLK>, <&gcc GCC_SDCC1_AHB_CLK>;
+         clock-names = "core", "iface";
+};
+
+sdhci2@f98a4900 {
+         compatible = "qcom,sdhci-msm";
+         reg = <0xf98a4900 0x11c>, <0xf98a4000 0x800>;
+         reg-names = "hc_mem", "core_mem";
+         interrupts = <0 125 0>, <0 221 0>;
+         interrupt-names = "hc_irq", "pwr_irq";
+         bus-width = <4>;
+         clocks = <&gcc GCC_SDCC2_APPS_CLK>, <&gcc GCC_SDCC2_AHB_CLK>;
+         clock-names = "core", "iface";
+};
+
+
+Thanks,
+Georgi
+
