@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964948AbaBDXLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:11:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55987 "EHLO
+	id S936185AbaBDXLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:11:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55985 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932645AbaBDVAg (ORCPT
+	with ESMTP id S932605AbaBDVAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:36 -0500
+	Tue, 4 Feb 2014 16:00:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang Shilong <wangsl.fnst@cn.fujitsu.com>, Josef Bacik <jbacik@fb.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.4 36/37] Btrfs: handle EAGAIN case properly in btrfs_drop_snapshot()
-Date: Tue,  4 Feb 2014 13:01:12 -0800
-Message-Id: <20140204210057.027963475@linuxfoundation.org>
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.4 35/37] target/iscsi: Fix network portal creation race
+Date: Tue,  4 Feb 2014 13:01:11 -0800
+Message-Id: <20140204210056.999860369@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -29,32 +29,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+From: Andy Grover <agrover@redhat.com>
 
-commit 90515e7f5d7d24cbb2a4038a3f1b5cfa2921aa17 upstream.
+commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
 
-We may return early in btrfs_drop_snapshot(), we shouldn't
-call btrfs_std_err() for this case, fix it.
+When creating network portals rapidly, such as when restoring a
+configuration, LIO's code to reuse existing portals can return a false
+negative if the thread hasn't run yet and set np_thread_state to
+ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
+when attempting to bind to the same address/port.
 
-Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
+so even if the thread hasn't run yet, iscsit_get_np will return the
+existing np.
+
+Also, convert np_lock -> np_mutex + hold across adding new net portal
+to g_np_list to prevent a race where two threads may attempt to create
+the same network portal, resulting in one of them failing.
+
+(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
+(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c |   34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -7033,7 +7033,7 @@ out:
- 	 */
- 	if (root_dropped == false)
- 		btrfs_add_dead_root(root);
--	if (err)
-+	if (err && err != -EAGAIN)
- 		btrfs_std_error(root->fs_info, err);
- 	return err;
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -50,7 +50,7 @@
+ static LIST_HEAD(g_tiqn_list);
+ static LIST_HEAD(g_np_list);
+ static DEFINE_SPINLOCK(tiqn_lock);
+-static DEFINE_SPINLOCK(np_lock);
++static DEFINE_MUTEX(np_lock);
+ 
+ static struct idr tiqn_idr;
+ struct idr sess_idr;
+@@ -262,6 +262,9 @@ int iscsit_deaccess_np(struct iscsi_np *
+ 	return 0;
  }
+ 
++/*
++ * Called with mutex np_lock held
++ */
+ static struct iscsi_np *iscsit_get_np(
+ 	struct __kernel_sockaddr_storage *sockaddr,
+ 	int network_transport)
+@@ -272,11 +275,10 @@ static struct iscsi_np *iscsit_get_np(
+ 	int ip_match = 0;
+ 	u16 port;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_for_each_entry(np, &g_np_list, np_list) {
+-		spin_lock(&np->np_thread_lock);
++		spin_lock_bh(&np->np_thread_lock);
+ 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
+-			spin_unlock(&np->np_thread_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			continue;
+ 		}
+ 
+@@ -309,13 +311,11 @@ static struct iscsi_np *iscsit_get_np(
+ 			 * while iscsi_tpg_add_network_portal() is called.
+ 			 */
+ 			np->np_exports++;
+-			spin_unlock(&np->np_thread_lock);
+-			spin_unlock_bh(&np_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			return np;
+ 		}
+-		spin_unlock(&np->np_thread_lock);
++		spin_unlock_bh(&np->np_thread_lock);
+ 	}
+-	spin_unlock_bh(&np_lock);
+ 
+ 	return NULL;
+ }
+@@ -329,16 +329,22 @@ struct iscsi_np *iscsit_add_np(
+ 	struct sockaddr_in6 *sock_in6;
+ 	struct iscsi_np *np;
+ 	int ret;
++
++	mutex_lock(&np_lock);
++
+ 	/*
+ 	 * Locate the existing struct iscsi_np if already active..
+ 	 */
+ 	np = iscsit_get_np(sockaddr, network_transport);
+-	if (np)
++	if (np) {
++		mutex_unlock(&np_lock);
+ 		return np;
++	}
+ 
+ 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
+ 	if (!np) {
+ 		pr_err("Unable to allocate memory for struct iscsi_np\n");
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+@@ -361,6 +367,7 @@ struct iscsi_np *iscsit_add_np(
+ 	ret = iscsi_target_setup_login_socket(np, sockaddr);
+ 	if (ret != 0) {
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 
+@@ -369,6 +376,7 @@ struct iscsi_np *iscsit_add_np(
+ 		pr_err("Unable to create kthread: iscsi_np\n");
+ 		ret = PTR_ERR(np->np_thread);
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 	/*
+@@ -379,10 +387,10 @@ struct iscsi_np *iscsit_add_np(
+ 	 * point because iscsi_np has not been added to g_np_list yet.
+ 	 */
+ 	np->np_exports = 1;
++	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_add_tail(&np->np_list, &g_np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, (np->np_network_transport == ISCSI_TCP) ?
+@@ -453,9 +461,9 @@ int iscsit_del_np(struct iscsi_np *np)
+ 	}
+ 	iscsit_del_np_comm(np);
+ 
+-	spin_lock_bh(&np_lock);
++	mutex_lock(&np_lock);
+ 	list_del(&np->np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, (np->np_network_transport == ISCSI_TCP) ?
 
 
