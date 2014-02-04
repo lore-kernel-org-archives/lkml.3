@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465AbaBDVCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56267 "EHLO
+	id S933436AbaBDVCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56262 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933187AbaBDVCd (ORCPT
+	with ESMTP id S933377AbaBDVCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:33 -0500
+	Tue, 4 Feb 2014 16:02:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 3.10 066/104] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
-Date: Tue,  4 Feb 2014 13:02:09 -0800
-Message-Id: <20140204210224.581655383@linuxfoundation.org>
+Subject: [PATCH 3.10 065/104] tpm/tpm_i2c_stm_st33: Check return code of get_burstcount
+Date: Tue,  4 Feb 2014 13:02:08 -0800
+Message-Id: <20140204210224.554527608@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -30,60 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Huewe <PeterHuewe@gmx.de>
 
-commit 747d35bd9bb4ae6bd74b19baa5bbe32f3e0cee11 upstream.
+commit 85c5e0d451125c6ddb78663972e40af810b83644 upstream.
 
-Depending on the implementation strcmp might return the difference between
-two strings not only -1,0,1 consequently
- if (strcmp (a,b) == -1)
-might lead to taking the wrong branch
+The 'get_burstcount' function can in some circumstances 'return -EBUSY' which
+in tpm_stm_i2c_send is stored in an 'u32 burstcnt'
+thus converting the signed value into an unsigned value, resulting
+in 'burstcnt' being huge.
+Changing the type to u32 only does not solve the problem as the signed
+value is converted to an unsigned in I2C_WRITE_DATA, resulting in the
+same effect.
 
--> compare with < 0  instead,
-which in any case is more canonical.
+Thus
+-> Change type of burstcnt to u32 (the return type of get_burstcount)
+-> Add a check for the return value of 'get_burstcount' and propagate a
+potential error.
 
+This makes also sense in the 'I2C_READ_DATA' case, where the there is no
+signed/unsigned conversion.
+
+found by coverity
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm_ppi.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/char/tpm/tpm_i2c_stm_st33.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/char/tpm/tpm_ppi.c
-+++ b/drivers/char/tpm/tpm_ppi.c
-@@ -172,7 +172,7 @@ static ssize_t tpm_store_ppi_request(str
- 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
- 	 * version 1.1
- 	 */
--	if (strcmp(version, "1.1") == -1)
-+	if (strcmp(version, "1.1") < 0)
- 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
- 	else
- 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
-@@ -182,7 +182,7 @@ static ssize_t tpm_store_ppi_request(str
- 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
- 	 * for compatibility, and use package type since 1.2 according to spec.
- 	 */
--	if (strcmp(version, "1.2") == -1) {
-+	if (strcmp(version, "1.2") < 0) {
- 		params[3].type = ACPI_TYPE_BUFFER;
- 		params[3].buffer.length = sizeof(req);
- 		sscanf(buf, "%d", &req);
-@@ -248,7 +248,7 @@ static ssize_t tpm_show_ppi_transition_a
- 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
- 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
- 	 */
--	if (strcmp(version, "1.2") == -1) {
-+	if (strcmp(version, "1.2") < 0) {
- 		params[3].type = ACPI_TYPE_BUFFER;
- 		params[3].buffer.length =  0;
- 		params[3].buffer.pointer = NULL;
-@@ -390,7 +390,7 @@ static ssize_t show_ppi_operations(char
- 	kfree(output.pointer);
- 	output.length = ACPI_ALLOCATE_BUFFER;
- 	output.pointer = NULL;
--	if (strcmp(version, "1.2") == -1)
-+	if (strcmp(version, "1.2") < 0)
- 		return -EPERM;
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -410,6 +410,8 @@ static int recv_data(struct tpm_chip *ch
+ 			     &chip->vendor.read_queue)
+ 	       == 0) {
+ 		burstcnt = get_burstcount(chip);
++		if (burstcnt < 0)
++			return burstcnt;
+ 		len = min_t(int, burstcnt, count - size);
+ 		I2C_READ_DATA(client, TPM_DATA_FIFO, buf + size, len);
+ 		size += len;
+@@ -451,7 +453,8 @@ static irqreturn_t tpm_ioserirq_handler(
+ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 			    size_t len)
+ {
+-	u32 status, burstcnt = 0, i, size;
++	u32 status, i, size;
++	int burstcnt = 0;
+ 	int ret;
+ 	u8 data;
+ 	struct i2c_client *client;
+@@ -482,6 +485,8 @@ static int tpm_stm_i2c_send(struct tpm_c
  
- 	params[2].integer.value = TPM_PPI_FN_GETOPR;
+ 	for (i = 0; i < len - 1;) {
+ 		burstcnt = get_burstcount(chip);
++		if (burstcnt < 0)
++			return burstcnt;
+ 		size = min_t(int, len - i - 1, burstcnt);
+ 		ret = I2C_WRITE_DATA(client, TPM_DATA_FIFO, buf, size);
+ 		if (ret < 0)
 
 
