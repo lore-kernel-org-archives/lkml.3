@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaBDWE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:04:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56885 "EHLO
+	id S935548AbaBDWFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:05:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56875 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934141AbaBDVJN (ORCPT
+	with ESMTP id S934132AbaBDVJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:13 -0500
+	Tue, 4 Feb 2014 16:09:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 072/133] rtc: max8907: weekday encoding fixes
-Date: Tue,  4 Feb 2014 13:07:53 -0800
-Message-Id: <20140204210739.067485681@linuxfoundation.org>
+        Maximilian Attems <maks@stro.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.12 070/133] parport: parport_pc: remove double PCI ID for NetMos
+Date: Tue,  4 Feb 2014 13:07:51 -0800
+Message-Id: <20140204210739.006406694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,98 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 75ea799df4cb07e505c91b4abaa87bc28aad3e66 upstream.
+commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
 
-The current MAX8907 driver has two issues related to weekday value
-handling:
+In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+was at the v2.4.26 time frame. The patch made into 2.6.14.
+Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+NetMOS based PCI cards providing serial and parallel ports") which made
+into v2.6.9-rc1.
+Now we have two different entries for the same PCI id.
+I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+0x1000 / 0x0020 so it should match PCI_ANY).
 
-1)
+While here I also drop the entry for titan_1284p2 which is the same as
+netmos_9815.
 
-The HW WEEKDAY register has range 0..6 rather than 1..7 as documented.
-Note that I validated the actual HW range by observing the HW register
-roll from 6->0 rather than 6->7->1 as would otherwise be expected.
-
-This matches Linux's tm_wday range of 0..6.
-
-When the CMOS RAM content is lost, the date returned from the device is
-2007-01-01 00:00:00, which is a Monday.  The WEEKDAY register reads 1 in
-this case.  This matches the numbering in Linux's tm_wday field.
-
-Hence we should write Linux's tm_wday value to the register without
-modifying it.  Hence, remove the +1/-1 calculations for WEEKDAY/tm_wday.
-
-2)
-
-There's no need to make alarms match on the WEEKDAY register, since the
-other fields together uniquely define the alarm date/time.  Ignoring the
-WEEKDAY value in the match isolates the driver from any incorrect value in
-the current time copy of the WEEKDAY register.
-
-Each change individually, or both together, solves an issue that I
-observed; "hwclock -r" would time out waiting for its alarm to fire if the
-CMOS RAM content had been lost, and hence the WEEKDAY register value
-mismatched what the driver expected it to be.  "hwclock -w" would solve
-this by over-writing the HW default WEEKDAY register value with what the
-driver expected.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Cc: Maximilian Attems <maks@stro.at>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-max8907.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/parport/parport_pc.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
---- a/drivers/rtc/rtc-max8907.c
-+++ b/drivers/rtc/rtc-max8907.c
-@@ -51,7 +51,7 @@ static irqreturn_t max8907_irq_handler(i
- {
- 	struct max8907_rtc *rtc = data;
- 
--	regmap_update_bits(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0x7f, 0);
-+	regmap_write(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0);
- 
- 	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
- 
-@@ -64,7 +64,7 @@ static void regs_to_tm(u8 *regs, struct
- 		bcd2bin(regs[RTC_YEAR1]) - 1900;
- 	tm->tm_mon = bcd2bin(regs[RTC_MONTH] & 0x1f) - 1;
- 	tm->tm_mday = bcd2bin(regs[RTC_DATE] & 0x3f);
--	tm->tm_wday = (regs[RTC_WEEKDAY] & 0x07) - 1;
-+	tm->tm_wday = (regs[RTC_WEEKDAY] & 0x07);
- 	if (regs[RTC_HOUR] & HOUR_12) {
- 		tm->tm_hour = bcd2bin(regs[RTC_HOUR] & 0x01f);
- 		if (tm->tm_hour == 12)
-@@ -88,7 +88,7 @@ static void tm_to_regs(struct rtc_time *
- 	regs[RTC_YEAR1] = bin2bcd(low);
- 	regs[RTC_MONTH] = bin2bcd(tm->tm_mon + 1);
- 	regs[RTC_DATE] = bin2bcd(tm->tm_mday);
--	regs[RTC_WEEKDAY] = tm->tm_wday + 1;
-+	regs[RTC_WEEKDAY] = tm->tm_wday;
- 	regs[RTC_HOUR] = bin2bcd(tm->tm_hour);
- 	regs[RTC_MIN] = bin2bcd(tm->tm_min);
- 	regs[RTC_SEC] = bin2bcd(tm->tm_sec);
-@@ -153,7 +153,7 @@ static int max8907_rtc_set_alarm(struct
- 	tm_to_regs(&alrm->time, regs);
- 
- 	/* Disable alarm while we update the target time */
--	ret = regmap_update_bits(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0x7f, 0);
-+	ret = regmap_write(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -163,8 +163,7 @@ static int max8907_rtc_set_alarm(struct
- 		return ret;
- 
- 	if (alrm->enabled)
--		ret = regmap_update_bits(rtc->regmap, MAX8907_REG_ALARM0_CNTL,
--					 0x7f, 0x7f);
-+		ret = regmap_write(rtc->regmap, MAX8907_REG_ALARM0_CNTL, 0x77);
- 
- 	return ret;
- }
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2596,8 +2596,6 @@ enum parport_pc_pci_cards {
+ 	syba_2p_epp,
+ 	syba_1p_ecp,
+ 	titan_010l,
+-	titan_1284p1,
+-	titan_1284p2,
+ 	avlab_1p,
+ 	avlab_2p,
+ 	oxsemi_952,
+@@ -2656,8 +2654,6 @@ static struct parport_pc_pci {
+ 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
+ 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
+ 	/* titan_010l */		{ 1, { { 3, -1 }, } },
+-	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
+-	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
+ 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
+ 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
+@@ -2673,8 +2669,8 @@ static struct parport_pc_pci {
+ 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
+ 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
+-	/* netmos_9805 */               { 1, { { 0, -1 }, } },
+-	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
++	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
++	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
+ 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
+@@ -2718,8 +2714,6 @@ static const struct pci_device_id parpor
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
+ 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
+-	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
+-	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
+ 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
+ 	/* AFAVLAB_TK9902 */
+ 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
 
 
