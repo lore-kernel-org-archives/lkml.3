@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaBDTgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:36:21 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:57306 "EHLO zene.cmpxchg.org"
+	id S1755008AbaBDTha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:37:30 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:58624 "EHLO kolab.o2s.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487AbaBDTgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:36:18 -0500
-Date: Tue, 4 Feb 2014 14:36:11 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH -v2 2/6] memcg: cleanup charge routines
-Message-ID: <20140204193611.GS6963@cmpxchg.org>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-3-git-send-email-mhocko@suse.cz>
- <20140204160509.GN6963@cmpxchg.org>
- <20140204161230.GN4890@dhcp22.suse.cz>
- <20140204164050.GR6963@cmpxchg.org>
- <20140204191125.GA26000@dhcp22.suse.cz>
+	id S1752828AbaBDTh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 14:37:27 -0500
+From: David =?ISO-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
+To: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH v2 0/6] ARM: sunxi: Add driver for SD/MMC hosts found on allwinner sunxi SOCs
+Date: Tue, 04 Feb 2014 20:37 +0100
+Message-ID: <2036604.9RXHkpag8W@dizzy-6.o2s.ch>
+Organization: O2S GmbH
+User-Agent: KMail/4.11.4 (Linux/3.11.6-4-desktop; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20140204191648.29809.14611.stgit@dizzy-6.o2s.ch>
+References: <20140204191648.29809.14611.stgit@dizzy-6.o2s.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204191125.GA26000@dhcp22.suse.cz>
+Content-Type: multipart/signed; boundary="nextPart6914529.0bO68eztNJ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 08:11:25PM +0100, Michal Hocko wrote:
-> On Tue 04-02-14 11:40:50, Johannes Weiner wrote:
-> > On Tue, Feb 04, 2014 at 05:12:30PM +0100, Michal Hocko wrote:
-> > > On Tue 04-02-14 11:05:09, Johannes Weiner wrote:
-> > > > On Tue, Feb 04, 2014 at 02:28:56PM +0100, Michal Hocko wrote:
-> > > > > -	/*
-> > > > > -	 * We always charge the cgroup the mm_struct belongs to.
-> > > > > -	 * The mm_struct's mem_cgroup changes on task migration if the
-> > > > > -	 * thread group leader migrates. It's possible that mm is not
-> > > > > -	 * set, if so charge the root memcg (happens for pagecache usage).
-> > > > > -	 */
-> > > > > -	if (!*ptr && !mm)
-> > > > > -		*ptr = root_mem_cgroup;
-> > > > 
-> > > > [...]
-> > > > 
-> > > > >  /*
-> > > > > + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
-> > > > > + * if mm is NULL). Returns NULL if memcg is under OOM.
-> > > > > + */
-> > > > > +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
-> > > > > +				   gfp_t gfp_mask,
-> > > > > +				   unsigned int nr_pages,
-> > > > > +				   bool oom)
-> > > > > +{
-> > > > > +	struct mem_cgroup *memcg;
-> > > > > +	int ret;
-> > > > > +
-> > > > > +	/*
-> > > > > +	 * We always charge the cgroup the mm_struct belongs to.
-> > > > > +	 * The mm_struct's mem_cgroup changes on task migration if the
-> > > > > +	 * thread group leader migrates. It's possible that mm is not
-> > > > > +	 * set, if so charge the root memcg (happens for pagecache usage).
-> > > > > +	 */
-> > > > > +	if (!mm)
-> > > > > +		goto bypass;
-> > > > 
-> > > > Why shuffle it around right before you remove it anyway?  Just start
-> > > > the series off with the patches that delete stuff without having to
-> > > > restructure anything, get those out of the way.
-> > > 
-> > > As mentioned in the previous email. I wanted to have this condition
-> > > removal bisectable. So it is removed in the next patch when it is
-> > > replaced by VM_BUG_ON.
-> > 
-> > I'm not suggesting to sneak the removal into *this* patch,
-> 
-> OK
-> 
-> > just put the simple stand-alone patches that remove stuff first in the
-> > series.
-> 
-> In this particular case, though, the reduced condition is much easier
-> to review IMO. Just look at the jungle of different *ptr vs. mm
-> combinations described in this patch description which would have to be
-> reviewed separately if I moved the removal before this patch.
-> The ptr part of the original condition went away naturally here while
-> the reasoning why there is no code path implicitly relying on (!ptr &&
-> !mm) resulting in bypass would be harder.
 
-You just have to check ptr=NULL callsites...?  "Callsites that don't
-provide their own memcg pass a valid mm pointer for lookup."
+--nextPart6914529.0bO68eztNJ
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Anyway, I'm just telling you what threw me off during review.
+Hi
+I forgot to mention that the autoparenting patch of Emilios is a crucial 
+depency...
+http://git.o2s.ch/?p=linux-next.git;a=commit;h=f8e936772672a3a6ec934558d2a7aef030c663c4
+Without it, the clock will return the wrong value and the card will refuse to 
+initialize
+
+regards
+david
+--nextPart6914529.0bO68eztNJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEABECAAYFAlLxQWsACgkQAeZw77btGjr+cACcCPHTHkFKjxLx6RD34E+MMR1r
+tAYAoKen1mYCa5cG4CtyTHLjNO657oN6
+=qtJ2
+-----END PGP SIGNATURE-----
+
+--nextPart6914529.0bO68eztNJ--
+
