@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484AbaBDWno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:43:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56323 "EHLO
+	id S935240AbaBDWoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:44:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933459AbaBDVCn (ORCPT
+	with ESMTP id S933448AbaBDVCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:43 -0500
+	Tue, 4 Feb 2014 16:02:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bob Falken <NetFestivalHaveFun@gmx.com>,
+        Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
+        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 079/104] net: rds: fix per-cpu helper usage
-Date: Tue,  4 Feb 2014 13:02:22 -0800
-Message-Id: <20140204210224.945471610@linuxfoundation.org>
+Subject: [PATCH 3.10 077/104] net: avoid reference counter overflows on fib_rules in multicast forwarding
+Date: Tue,  4 Feb 2014 13:02:20 -0800
+Message-Id: <20140204210224.890246916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,52 +33,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit c196403b79aa241c3fefb3ee5bb328aa7c5cc860 ]
+[ Upstream commit 95f4a45de1a0f172b35451fc52283290adb21f6e ]
 
-commit ae4b46e9d "net: rds: use this_cpu_* per-cpu helper" broke per-cpu
-handling for rds. chpfirst is the result of __this_cpu_read(), so it is
-an absolute pointer and not __percpu. Therefore, __this_cpu_write()
-should not operate on chpfirst, but rather on cache->percpu->first, just
-like __this_cpu_read() did before.
+Bob Falken reported that after 4G packets, multicast forwarding stopped
+working. This was because of a rule reference counter overflow which
+freed the rule as soon as the overflow happend.
 
-Signed-off-byd Gerald Schaefer <gerald.schaefer@de.ibm.com>
+This patch solves this by adding the FIB_LOOKUP_NOREF flag to
+fib_rules_lookup calls. This is safe even from non-rcu locked sections
+as in this case the flag only implies not taking a reference to the rule,
+which we don't need at all.
+
+Rules only hold references to the namespace, which are guaranteed to be
+available during the call of the non-rcu protected function reg_vif_xmit
+because of the interface reference which itself holds a reference to
+the net namespace.
+
+Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
+Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
+Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/ib_recv.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/ipv4/ipmr.c  |    7 +++++--
+ net/ipv6/ip6mr.c |    7 +++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/net/rds/ib_recv.c
-+++ b/net/rds/ib_recv.c
-@@ -421,8 +421,7 @@ static void rds_ib_recv_cache_put(struct
- 				 struct rds_ib_refill_cache *cache)
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -157,9 +157,12 @@ static struct mr_table *ipmr_get_table(s
+ static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
+ 			   struct mr_table **mrt)
  {
- 	unsigned long flags;
--	struct list_head *old;
--	struct list_head __percpu *chpfirst;
-+	struct list_head *old, *chpfirst;
+-	struct ipmr_result res;
+-	struct fib_lookup_arg arg = { .result = &res, };
+ 	int err;
++	struct ipmr_result res;
++	struct fib_lookup_arg arg = {
++		.result = &res,
++		.flags = FIB_LOOKUP_NOREF,
++	};
  
- 	local_irq_save(flags);
+ 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
+ 			       flowi4_to_flowi(flp4), 0, &arg);
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -141,9 +141,12 @@ static struct mr6_table *ip6mr_get_table
+ static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
+ 			    struct mr6_table **mrt)
+ {
+-	struct ip6mr_result res;
+-	struct fib_lookup_arg arg = { .result = &res, };
+ 	int err;
++	struct ip6mr_result res;
++	struct fib_lookup_arg arg = {
++		.result = &res,
++		.flags = FIB_LOOKUP_NOREF,
++	};
  
-@@ -432,7 +431,7 @@ static void rds_ib_recv_cache_put(struct
- 	else /* put on front */
- 		list_add_tail(new_item, chpfirst);
- 
--	__this_cpu_write(chpfirst, new_item);
-+	__this_cpu_write(cache->percpu->first, new_item);
- 	__this_cpu_inc(cache->percpu->count);
- 
- 	if (__this_cpu_read(cache->percpu->count) < RDS_IB_RECYCLE_BATCH_COUNT)
-@@ -452,7 +451,7 @@ static void rds_ib_recv_cache_put(struct
- 	} while (old);
- 
- 
--	__this_cpu_write(chpfirst, NULL);
-+	__this_cpu_write(cache->percpu->first, NULL);
- 	__this_cpu_write(cache->percpu->count, 0);
- end:
- 	local_irq_restore(flags);
+ 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
+ 			       flowi6_to_flowi(flp6), 0, &arg);
 
 
