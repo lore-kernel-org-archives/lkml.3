@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640AbaBDVD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56385 "EHLO
+	id S933702AbaBDVDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933516AbaBDVCz (ORCPT
+	with ESMTP id S933566AbaBDVDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:55 -0500
+	Tue, 4 Feb 2014 16:03:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vijaya Mohan Guvva <vmohan@brocade.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 098/104] SCSI: bfa: Chinook quad port 16G FC HBA claim issue
-Date: Tue,  4 Feb 2014 13:02:41 -0800
-Message-Id: <20140204210225.497700705@linuxfoundation.org>
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH 3.10 088/104] Revert "ip6tnl: fix use after free of fb_tnl_dev"
+Date: Tue,  4 Feb 2014 13:02:31 -0800
+Message-Id: <20140204210225.202185269@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,54 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vijaya Mohan Guvva <vmohan@brocade.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit dcaf9aed995c2b2a49fb86bbbcfa2f92c797ab5d upstream.
+[ No relevant upstream commit. ]
 
-Bfa driver crash is observed while pushing the firmware on to chinook
-quad port card due to uninitialized bfi_image_ct2 access which gets
-initialized only for CT2 ASIC based cards after request_firmware().
-For quard port chinook (CT2 ASIC based), bfi_image_ct2 is not getting
-initialized as there is no check for chinook PCI device ID before
-request_firmware and instead bfi_image_cb is initialized as it is the
-default case for card type check.
+This reverts commit 22c3ec552c29cf4bd4a75566088950fe57d860c4.
 
-This patch includes changes to read the right firmware for quad port chinook.
+This patch is not the right fix, it introduces a memory leak when a netns is
+destroyed (the FB device is never deleted).
 
-Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reported-by: Steven Rostedt <srostedt@redhat.com>
+Tested-by: Steven Rostedt <srostedt@redhat.com> (and our entire MRG team)
+Tested-by: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Tested-by: John Kacur <jkacur@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/scsi/bfa/bfad.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/ipv6/ip6_tunnel.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1824,7 +1824,7 @@ out:
- static u32 *
- bfad_load_fwimg(struct pci_dev *pdev)
- {
--	if (pdev->device == BFA_PCI_DEVICE_ID_CT2) {
-+	if (bfa_asic_id_ct2(pdev->device)) {
- 		if (bfi_image_ct2_size == 0)
- 			bfad_read_firmware(pdev, &bfi_image_ct2,
- 				&bfi_image_ct2_size, BFAD_FW_FILE_CT2);
-@@ -1834,12 +1834,14 @@ bfad_load_fwimg(struct pci_dev *pdev)
- 			bfad_read_firmware(pdev, &bfi_image_ct,
- 				&bfi_image_ct_size, BFAD_FW_FILE_CT);
- 		return bfi_image_ct;
--	} else {
-+	} else if (bfa_asic_id_cb(pdev->device)) {
- 		if (bfi_image_cb_size == 0)
- 			bfad_read_firmware(pdev, &bfi_image_cb,
- 				&bfi_image_cb_size, BFAD_FW_FILE_CB);
- 		return bfi_image_cb;
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1711,6 +1711,8 @@ static void __net_exit ip6_tnl_destroy_t
+ 		}
  	}
-+
-+	return NULL;
+ 
++	t = rtnl_dereference(ip6n->tnls_wc[0]);
++	unregister_netdevice_queue(t->dev, &list);
+ 	unregister_netdevice_many(&list);
  }
  
- static void
 
 
