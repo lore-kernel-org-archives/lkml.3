@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934884AbaBDVNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:13:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57432 "EHLO
+	id S934910AbaBDVNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:13:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934666AbaBDVM2 (ORCPT
+	with ESMTP id S934773AbaBDVMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:28 -0500
+	Tue, 4 Feb 2014 16:12:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.13 072/140] s390/uapi: fix struct statfs64 definition
-Date: Tue,  4 Feb 2014 13:10:59 -0800
-Message-Id: <20140204211039.017992895@linuxfoundation.org>
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 140/140] powerpc: Make sure "cache" directory is removed when offlining cpu
+Date: Tue,  4 Feb 2014 13:12:07 -0800
+Message-Id: <20140204211040.971993709@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,44 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 4e078146dff728f4865270a47710d57797e81eb6 upstream.
+commit 91b973f90c1220d71923e7efe1e61f5329806380 upstream.
 
-With b8668fd0a7e1b59f "s390/uapi: change struct statfs[64] member types
-to unsigned values" the size of a couple of struct statfs64 member got
-incorrectly changed from 64 to 32 bit for 32 bit builds.
+The code in remove_cache_dir() is supposed to remove the "cache"
+subdirectory from the sysfs directory for a CPU when that CPU is
+being offlined.  It tries to do this by calling kobject_put() on
+the kobject for the subdirectory.  However, the subdirectory only
+gets removed once the last reference goes away, and the reference
+being put here may well not be the last reference.  That means
+that the "cache" subdirectory may still exist when the offlining
+operation has finished.  If the same CPU subsequently gets onlined,
+the code tries to add a new "cache" subdirectory.  If the old
+subdirectory has not yet been removed, we get a WARN_ON in the
+sysfs code, with stack trace, and an error message printed on the
+console.  Further, we ultimately end up with an online cpu with no
+"cache" subdirectory.
 
-Fix this by changing the type of couple of struct statfs64 members from
-unsigned long to unsigned long long.
-The definition of struct compat_statfs64 was correct however.
+This fixes it by doing an explicit kobject_del() at the point where
+we want the subdirectory to go away.  kobject_del() removes the sysfs
+directory even though the object still exists in memory.  The object
+will get freed at some point in the future.  A subsequent onlining
+operation can create a new sysfs directory, even if the old object
+still exists in memory, without causing any problems.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/uapi/asm/statfs.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/powerpc/kernel/cacheinfo.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/s390/include/uapi/asm/statfs.h
-+++ b/arch/s390/include/uapi/asm/statfs.h
-@@ -35,11 +35,11 @@ struct statfs {
- struct statfs64 {
- 	unsigned int	f_type;
- 	unsigned int	f_bsize;
--	unsigned long	f_blocks;
--	unsigned long	f_bfree;
--	unsigned long	f_bavail;
--	unsigned long	f_files;
--	unsigned long	f_ffree;
-+	unsigned long long f_blocks;
-+	unsigned long long f_bfree;
-+	unsigned long long f_bavail;
-+	unsigned long long f_files;
-+	unsigned long long f_ffree;
- 	__kernel_fsid_t f_fsid;
- 	unsigned int	f_namelen;
- 	unsigned int	f_frsize;
+--- a/arch/powerpc/kernel/cacheinfo.c
++++ b/arch/powerpc/kernel/cacheinfo.c
+@@ -794,6 +794,9 @@ static void remove_cache_dir(struct cach
+ {
+ 	remove_index_dirs(cache_dir);
+ 
++	/* Remove cache dir from sysfs */
++	kobject_del(cache_dir->kobj);
++
+ 	kobject_put(cache_dir->kobj);
+ 
+ 	kfree(cache_dir);
 
 
