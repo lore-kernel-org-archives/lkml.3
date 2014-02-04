@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935229AbaBDVsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:48:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57120 "EHLO
+	id S1755223AbaBDVsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:48:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934402AbaBDVL2 (ORCPT
+	with ESMTP id S934405AbaBDVL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:28 -0500
+	Tue, 4 Feb 2014 16:11:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 040/140] mwifiex: add missing endian conversion for fw_tsf
-Date: Tue,  4 Feb 2014 13:10:27 -0800
-Message-Id: <20140204211038.110016829@linuxfoundation.org>
+        Jack Pham <jackp@codeaurora.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.13 023/140] usb: xhci: Check for XHCI_PLAT in xhci_cleanup_msix()
+Date: Tue,  4 Feb 2014 13:10:10 -0800
+Message-Id: <20140204211037.625096602@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,41 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Jack Pham <jackp@codeaurora.org>
 
-commit 9795229752c31da0c5f8a7dc4c827665327b52f9 upstream.
+commit 9005355af23856c55a5538c9024355785424821b upstream.
 
-It is u64 data received from firmware. Little endian to cpu
-conversion is required here.
+If CONFIG_PCI is enabled, make sure xhci_cleanup_msix()
+doesn't try to free a bogus PCI IRQ or dereference an invalid
+pci_dev when the xHCI device is actually a platform_device.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch should be backported to kernels as old as 3.9, that
+contain the commit 52fb61250a7a132b0cfb9f4a1060a1f3c49e5a25
+"xhci-plat: Don't enable legacy PCI interrupts."
+
+Signed-off-by: Jack Pham <jackp@codeaurora.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/scan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1681,7 +1681,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 		const u8 *ie_buf;
- 		size_t ie_len;
- 		u16 channel = 0;
--		u64 fw_tsf = 0;
-+		__le64 fw_tsf = 0;
- 		u16 beacon_size = 0;
- 		u32 curr_bcn_bytes;
- 		u32 freq;
-@@ -1815,7 +1815,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
- 					      ie_buf, ie_len, rssi, GFP_KERNEL);
- 				bss_priv = (struct mwifiex_bss_priv *)bss->priv;
- 				bss_priv->band = band;
--				bss_priv->fw_tsf = fw_tsf;
-+				bss_priv->fw_tsf = le64_to_cpu(fw_tsf);
- 				if (priv->media_connected &&
- 				    !memcmp(bssid,
- 					    priv->curr_bss_params.bss_descriptor
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -321,6 +321,9 @@ static void xhci_cleanup_msix(struct xhc
+ 	struct usb_hcd *hcd = xhci_to_hcd(xhci);
+ 	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+ 
++	if (xhci->quirks & XHCI_PLAT)
++		return;
++
+ 	xhci_free_irq(xhci);
+ 
+ 	if (xhci->msix_entries) {
 
 
