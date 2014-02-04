@@ -1,138 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaBDGZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 01:25:01 -0500
-Received: from www84.your-server.de ([213.133.104.84]:56590 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbaBDGYx (ORCPT
+	id S1752691AbaBDG11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 01:27:27 -0500
+Received: from relay.parallels.com ([195.214.232.42]:57468 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaBDG1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 01:24:53 -0500
-Message-ID: <1391495134.957.2.camel@wall-e.seibold.net>
-Subject: Re: [PATCH 7/8] Add 32 bit VDSO time support for 32 bit kernel
-From: Stefani Seibold <stefani@seibold.net>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Tue, 04 Feb 2014 07:25:34 +0100
-In-Reply-To: <CALCETrXPraCrvUR=L1iw+=dnxDHwf3AM0QMNPtSEf40G+80pPg@mail.gmail.com>
-References: <1391340435-5130-1-git-send-email-stefani@seibold.net>
-	 <1391340435-5130-8-git-send-email-stefani@seibold.net>
-	 <CALCETrXNVoJBUncHbWWuQ7LAf2ZoWOY8uJBeg_VD1+MmwJ07Rg@mail.gmail.com>
-	 <1391377190.9266.6.camel@wall-e.seibold.net>
-	 <CALCETrX2K6DeGO7v+8Qed03xbKd0dcsoWVPg6fp6+KNGHnC+eA@mail.gmail.com>
-	 <1391413467.965.21.camel@wall-e.seibold.net>
-	 <CALCETrWvPkJo=3o3EZ+ZnFJgKak-7GjcJbsinn6z7wsB3393hg@mail.gmail.com>
-	 <1391464885.1080.18.camel@wall-e.seibold.net>
-	 <CALCETrXPraCrvUR=L1iw+=dnxDHwf3AM0QMNPtSEf40G+80pPg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
+	Tue, 4 Feb 2014 01:27:20 -0500
+Message-ID: <52F08842.8050906@parallels.com>
+Date: Tue, 4 Feb 2014 10:27:14 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <rientjes@google.com>, <penberg@kernel.org>,
+        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH v2 2/7] memcg, slab: cleanup memcg cache name creation
+References: <cover.1391441746.git.vdavydov@parallels.com> <ec86147b3dfd5bf7da5b34e12b7a4e4881f49690.1391441746.git.vdavydov@parallels.com> <20140203140835.c414b6222abfd9c349648e2a@linux-foundation.org>
+In-Reply-To: <20140203140835.c414b6222abfd9c349648e2a@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 03.02.2014, 14:04 -0800 schrieb Andy Lutomirski:
-> On Mon, Feb 3, 2014 at 2:01 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> > Am Montag, den 03.02.2014, 08:36 -0800 schrieb Andy Lutomirski:
-> >> On Sun, Feb 2, 2014 at 11:44 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> >> > Am Sonntag, den 02.02.2014, 16:12 -0800 schrieb Andy Lutomirski:
-> >> >> On Sun, Feb 2, 2014 at 1:39 PM, Stefani Seibold <stefani@seibold.net> wrote:
-> >> >> > Am Sonntag, den 02.02.2014, 08:46 -0800 schrieb Andy Lutomirski:
-> >> >> >> On Sun, Feb 2, 2014 at 3:27 AM,  <stefani@seibold.net> wrote:
-> >> >> >> > From: Stefani Seibold <stefani@seibold.net>
-> >> >> >> >
-> >> >> >> > This patch add the time support for 32 bit a VDSO to a 32 bit kernel.
-> >> >> >>
-> >> >> >> [...]
-> >> >> >>
-> >> >> >> Can you address the review comments from last time around?  For
-> >> >> >> example, this still seems to have redundant vvar and hpet mappings, it
-> >> >> >> doesn't use the VVAR macro, it moves the 32-bit compat vDSO, etc.
-> >> >> >>
-> >> >> >
-> >> >> > I will address the compat VDSO issue.
-> >> >> >
-> >> >> > But the VVAR macro will be not a part of this patch set. If you depend
-> >> >> > on this, feel free to create one. From my point of view this is not
-> >> >> > feasible without a macro hacking, because the address accessing the vvar
-> >> >> > area differs in kernel and VDSO user mode.
-> >> >>
-> >> >> Sorry, but "I will make the code messier for no apparent reason and I
-> >> >> will not offer to fix it in the same series" gets my NAK.
-> >> >>
-> >> >> Hint: I'm talking about two or three lines of code in vvar.h.
-> >> >>
-> >> >
-> >> > A hint back: if you threat me with a NAK for a requested code sequence
-> >> > which currently no user, this is far away from professional. I am not
-> >> > your trainee.
-> >> >
-> >> > BTW: If it is so easy, send me the two or three lines and i will merge
-> >> > it ;-)
-> >>
-> >> Something to the effect of:
-> >>
-> >> #elif defined(BUILD_VDSO32)
-> >> #define VVAR(name) (*vvar_ ## name)
-> >> #endif
-> >>
-> >> Should do the trick.
-> >
-> > You are wrong...
-> >
-> > #ifdef BUILD_VDSO32
-> >
-> > #define DECLARE_VVAR(offset, type, name) \
-> >         extern type vvar_ ## name __attribute__((visibility("hidden")));
-> >
-> > #define VVAR(name) (vvar_ ## name)
-> >
-> > #else
-> >
-> > /* Base address of vvars.  This is not ABI. */
-> > #ifdef CONFIG_X86_64
-> > #define VVAR_ADDRESS (-10*1024*1024 - 4096)
-> > #else
-> > extern char __vvar_page;
-> >
-> > #define VVAR_ADDRESS (&__vvar_page)
-> > #endif
-> >
-> > This would do the trick!
-> >
-> > But for 64 bit to 32 bit conversation layer in vclock_gettime.c there is
-> > still a
-> >
-> > struct arch_vsyscall_gtod_data arch_vvar_vsyscall_gtod_data
-> >         __attribute__((visibility("hidden")));
-> > #define gtod (&arch_vvar_vsyscall_gtod_data)
-> >
-> > needed, because vvar_vsyscall_gtod_data is the 32 bit version, which
-> > would result in incorrect access of the struct members. So my code can't
-> > use this VVAR macro.
-> 
-> For 32-on-64, I must have read your code wrong.  Are you sticking two
-> copies of the same struct with different layout into the vvar page?
-> If so, wouldn't it be better to only have the variant with a common
-> layout and use it for all versions of the vdso?
-> 
+On 02/04/2014 02:08 AM, Andrew Morton wrote:
+> On Mon, 3 Feb 2014 19:54:37 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+>
+>> The way memcg_create_kmem_cache() creates the name for a memcg cache
+>> looks rather strange: it first formats the name in the static buffer
+>> tmp_name protected by a mutex, then passes the pointer to the buffer to
+>> kmem_cache_create_memcg(), which finally duplicates it to the cache
+>> name.
+>>
+>> Let's clean this up by moving memcg cache name creation to a separate
+>> function to be called by kmem_cache_create_memcg(), and estimating the
+>> length of the name string before copying anything to it so that we won't
+>> need a temporary buffer.
+>>
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -3193,6 +3193,37 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>>  	return 0;
+>>  }
+>>  
+>> +static int memcg_print_cache_name(char *buf, size_t size,
+>> +		struct mem_cgroup *memcg, struct kmem_cache *root_cache)
+>> +{
+>> +	int ret;
+>> +
+>> +	rcu_read_lock();
+>> +	ret = snprintf(buf, size, "%s(%d:%s)", root_cache->name,
+>> +		       memcg_cache_id(memcg), cgroup_name(memcg->css.cgroup));
+>> +	rcu_read_unlock();
+>> +	return ret;
+>> +}
+>> +
+>> +char *memcg_create_cache_name(struct mem_cgroup *memcg,
+>> +			      struct kmem_cache *root_cache)
+>> +{
+>> +	int len;
+>> +	char *name;
+>> +
+>> +	/*
+>> +	 * We cannot use kasprintf() here, because cgroup_name() must be called
+>> +	 * under RCU protection.
+>> +	 */
+>> +	len = memcg_print_cache_name(NULL, 0, memcg, root_cache);
+>> +
+>> +	name = kmalloc(len + 1, GFP_KERNEL);
+>> +	if (name)
+>> +		memcg_print_cache_name(name, len + 1, memcg, root_cache);
+> but but but this assumes that cgroup_name(memcg->css.cgroup) did not
+> change between the two calls to memcg_print_cache_name().  If that is
+> the case then the locking was unneeded anyway.
 
-No, only one. But for depend on 32/64 bit the layout differs.
+Oops, I missed that. Thank you for pointing me out. It seems the usage
+of the temporary buffer is inevitable. However, a dedicated mutex
+protecting it can be removed, because we already hold the slab_mutex
+while calling this function. Will rework.
 
-We discuss this topic some days before, so please have a look at the
-code and the previous posts.
+Thanks.
 
-- Stefani
-
+>
+>> +	return name;
+>> +}
+>> +
+>>  int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+>>  			     struct kmem_cache *root_cache)
+>>  {
+>> @@ -3397,44 +3428,6 @@ void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
+>>  	schedule_work(&cachep->memcg_params->destroy);
+>>  }
+>>  
 
