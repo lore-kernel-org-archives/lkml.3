@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935212AbaBDVay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:30:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57373 "EHLO
+	id S935249AbaBDVbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:31:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57350 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934463AbaBDVMR (ORCPT
+	with ESMTP id S934604AbaBDVMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:17 -0500
+	Tue, 4 Feb 2014 16:12:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Lior Amsalem <alior@marvell.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.13 099/140] ARM: mvebu: update the SATA compatible string for Armada 370/XP
-Date: Tue,  4 Feb 2014 13:11:26 -0800
-Message-Id: <20140204211039.804098560@linuxfoundation.org>
+Subject: [PATCH 3.13 097/140] ata: sata_mv: introduce compatible string "marvell, armada-370-sata"
+Date: Tue,  4 Feb 2014 13:11:24 -0800
+Message-Id: <20140204211039.746344423@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -35,10 +35,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Simon Guinot <simon.guinot@sequanux.org>
 
-commit a96cc303e42ad7830dde929aad0046e448a05505 upstream.
+commit b1f5c73bd5a4752efb7d7af019034044b08aafe9 upstream.
 
-This patch updates the Armada 370/XP SATA node with the new compatible
-string "marvell,armada-370-sata".
+The sata_mv driver supports the SATA IP found in several Marvell SoCs.
+As some new SATA registers have been introduced with the Armada 370/XP
+SoCs, a way to identify them is needed.
+
+This patch introduces a new compatible string for the SATA IP found in
+Armada 370/XP SoCs.
 
 Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
@@ -52,19 +56,30 @@ Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/devicetree/bindings/ata/marvell.txt |    2 +-
+ drivers/ata/sata_mv.c                             |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -152,7 +152,7 @@
- 			};
+--- a/Documentation/devicetree/bindings/ata/marvell.txt
++++ b/Documentation/devicetree/bindings/ata/marvell.txt
+@@ -1,7 +1,7 @@
+ * Marvell Orion SATA
  
- 			sata@a0000 {
--				compatible = "marvell,orion-sata";
-+				compatible = "marvell,armada-370-sata";
- 				reg = <0xa0000 0x5000>;
- 				interrupts = <55>;
- 				clocks = <&gateclk 15>, <&gateclk 30>;
+ Required Properties:
+-- compatibility : "marvell,orion-sata"
++- compatibility : "marvell,orion-sata" or "marvell,armada-370-sata"
+ - reg           : Address range of controller
+ - interrupts    : Interrupt controller is using
+ - nr-ports      : Number of SATA ports in use.
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -4209,6 +4209,7 @@ static int mv_platform_resume(struct pla
+ 
+ #ifdef CONFIG_OF
+ static struct of_device_id mv_sata_dt_ids[] = {
++	{ .compatible = "marvell,armada-370-sata", },
+ 	{ .compatible = "marvell,orion-sata", },
+ 	{},
+ };
 
 
