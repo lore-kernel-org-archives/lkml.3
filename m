@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789AbaBDWKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:10:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56782 "EHLO
+	id S935663AbaBDWKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:10:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57876 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933482AbaBDVI5 (ORCPT
+	with ESMTP id S934289AbaBDWKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:57 -0500
+	Tue, 4 Feb 2014 17:10:03 -0500
+Date: Tue, 4 Feb 2014 14:11:09 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.12 092/133] vfs: Is mounted should be testing mnt_ns for NULL or error.
-Date: Tue,  4 Feb 2014 13:08:13 -0800
-Message-Id: <20140204210739.633728792@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
-References: <20140204210737.008598235@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
+Message-ID: <20140204221109.GA906@kroah.com>
+References: <20140204210055.992134150@linuxfoundation.org>
+ <20140204215221.GA2127@bender.morinfr.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140204215221.GA2127@bender.morinfr.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 04, 2014 at 10:52:21PM +0100, Guillaume Morin wrote:
+> On 04 Feb 13:00, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.4.79 release.
+> > There are 37 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > (snip)
+> > Borislav Petkov <bp@alien8.de>
+> >     rtc-cmos: Add an alarm disable quirk
+> 
+> This is just one of the 3 patches posted by John Stultz on
+> http://git.linaro.org/people/john.stultz/linux.git/shortlog/refs/heads/stable/3.4/timefix
 
-------------------
+I have no idea what that tree is, nor what I am supposed to do with it.
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+> The other 2 are backports of 6fdda9a9c5db367130cf32df5d6618d08b89f46a
+> (timekeeping: Avoid possible deadlock from clock_was_set_delayed) and
+> ec145babe754f9ea1079034a108104b6001e001c (timekeeping: fix 32-bit
+> overflow in get_monotonic_boottime)
+> 
+> Could you explain why there were not included?
 
-commit 260a459d2e39761fbd39803497205ce1690bc7b1 upstream.
+Can you explain why I would include them?
 
-A bug was introduced with the is_mounted helper function in
-commit f7a99c5b7c8bd3d3f533c8b38274e33f3da9096e
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Sat Jun 9 00:59:08 2012 -0400
+> Are you simply planning to include these in 3.4.80?
 
-    get rid of ->mnt_longterm
+I have no idea what people send me in the future...
 
-    it's enough to set ->mnt_ns of internal vfsmounts to something
-    distinct from all struct mnt_namespace out there; then we can
-    just use the check for ->mnt_ns != NULL in the fast path of
-    mntput_no_expire()
+> Sorry if this was discussed somewhere but the original thread does not
+> say when/if they are going to be included in 3.4.
 
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+What original thread?
 
-The intent was to test if the real_mount(vfsmount)->mnt_ns was
-NULL_OR_ERR but the code is actually testing real_mount(vfsmount)
-and always returning true.
+confused,
 
-The result is d_absolute_path returning paths it should be hiding.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/mount.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/mount.h
-+++ b/fs/mount.h
-@@ -73,7 +73,7 @@ static inline int mnt_has_parent(struct
- static inline int is_mounted(struct vfsmount *mnt)
- {
- 	/* neither detached nor internal? */
--	return !IS_ERR_OR_NULL(real_mount(mnt));
-+	return !IS_ERR_OR_NULL(real_mount(mnt)->mnt_ns);
- }
- 
- extern struct mount *__lookup_mnt(struct vfsmount *, struct dentry *, int);
-
-
+greg k-h
