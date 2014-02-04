@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935148AbaBDV2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:28:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57437 "EHLO
+	id S935176AbaBDV2f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:28:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57428 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933555AbaBDVM2 (ORCPT
+	with ESMTP id S934658AbaBDVM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:28 -0500
+	Tue, 4 Feb 2014 16:12:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maximilian Attems <maks@stro.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.13 073/140] parport: parport_pc: remove double PCI ID for NetMos
-Date: Tue,  4 Feb 2014 13:11:00 -0800
-Message-Id: <20140204211039.046618003@linuxfoundation.org>
+        Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 3.13 071/140] KVM: s390: ioeventfd: ignore leftmost bits
+Date: Tue,  4 Feb 2014 13:10:58 -0800
+Message-Id: <20140204211038.988170713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,74 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
 
-commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
+commit ff1f3cb4b3ac5d039f02679f34cb1498d110d241 upstream.
 
-In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
-the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
-was at the v2.4.26 time frame. The patch made into 2.6.14.
-Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
-NetMOS based PCI cards providing serial and parallel ports") which made
-into v2.6.9-rc1.
-Now we have two different entries for the same PCI id.
-I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
-This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
-ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
-specified -1 (=none). Both share the same PCI-ID (my card has subsystem
-0x1000 / 0x0020 so it should match PCI_ANY).
+The diagnose 500 subcode 3 contains the 32 bit subchannel id in bits 32-63
+(counting from the left). As for other I/O instructions, bits 0-31 should be
+ignored and thus not be passed to kvm_io_bus_write_cookie().
 
-While here I also drop the entry for titan_1284p2 which is the same as
-netmos_9815.
+This fixes a bug where the guest passed non-zero bits 0-31 which the
+host tried to interpret, leading to ioeventfd notification failures.
 
-Cc: Maximilian Attems <maks@stro.at>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/parport/parport_pc.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ arch/s390/kvm/diag.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2600,8 +2600,6 @@ enum parport_pc_pci_cards {
- 	syba_2p_epp,
- 	syba_1p_ecp,
- 	titan_010l,
--	titan_1284p1,
--	titan_1284p2,
- 	avlab_1p,
- 	avlab_2p,
- 	oxsemi_952,
-@@ -2660,8 +2658,6 @@ static struct parport_pc_pci {
- 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
- 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
- 	/* titan_010l */		{ 1, { { 3, -1 }, } },
--	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
--	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
- 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
- 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
-@@ -2677,8 +2673,8 @@ static struct parport_pc_pci {
- 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
- 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
--	/* netmos_9805 */               { 1, { { 0, -1 }, } },
--	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
-+	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
-+	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
- 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
- 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
- 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
-@@ -2722,8 +2718,6 @@ static const struct pci_device_id parpor
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
- 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
--	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
--	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
- 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
- 	/* AFAVLAB_TK9902 */
- 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
+--- a/arch/s390/kvm/diag.c
++++ b/arch/s390/kvm/diag.c
+@@ -121,7 +121,7 @@ static int __diag_virtio_hypercall(struc
+ 	 * - gpr 4 contains the index on the bus (optionally)
+ 	 */
+ 	ret = kvm_io_bus_write_cookie(vcpu->kvm, KVM_VIRTIO_CCW_NOTIFY_BUS,
+-				      vcpu->run->s.regs.gprs[2],
++				      vcpu->run->s.regs.gprs[2] & 0xffffffff,
+ 				      8, &vcpu->run->s.regs.gprs[3],
+ 				      vcpu->run->s.regs.gprs[4]);
+ 
 
 
