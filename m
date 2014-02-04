@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934791AbaBDVpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:45:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57149 "EHLO
+	id S935132AbaBDVpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:45:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57141 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934433AbaBDVLf (ORCPT
+	with ESMTP id S934423AbaBDVLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:35 -0500
+	Tue, 4 Feb 2014 16:11:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 048/140] ath9k: Use correct channel for RX packets
-Date: Tue,  4 Feb 2014 13:10:35 -0800
-Message-Id: <20140204211038.330975926@linuxfoundation.org>
+Subject: [PATCH 3.13 045/140] b43: Fix unload oops if firmware is not available
+Date: Tue,  4 Feb 2014 13:10:32 -0800
+Message-Id: <20140204211038.248570291@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,81 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit ff9a93f2ebb88ac7aab9568de80b64b92078e96d upstream.
+commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
 
-Accessing the current channel definition in mac80211
-when processing RX packets is problematic because it
-could have been updated when a scan is issued. Since a
-channel change involves flushing the existing packets
-in the RX queue before a chip-reset is done, they would
-be processed using the wrong band/channel information.
+The asyncronous firmware load uses a completion struct to hold firmware
+processing until the user-space routines are up and running. There is.
+however, a problem in that the waiter is nevered canceled during teardown.
+As a result, unloading the driver when firmware is not available causes an oops.
 
-To avoid this, use the current channel information
-maintained in the driver.
+To be able to access the completion structure at teardown, it had to be moved
+into the b43_wldev structure.
 
-Reported-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+This patch also fixes a typo in a comment.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/net/wireless/b43/b43.h  |    4 ++--
+ drivers/net/wireless/b43/main.c |   10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -851,20 +851,15 @@ static int ath9k_process_rate(struct ath
- 	enum ieee80211_band band;
- 	unsigned int i = 0;
- 	struct ath_softc __maybe_unused *sc = common->priv;
-+	struct ath_hw *ah = sc->sc_ah;
+--- a/drivers/net/wireless/b43/b43.h
++++ b/drivers/net/wireless/b43/b43.h
+@@ -731,8 +731,6 @@ enum b43_firmware_file_type {
+ struct b43_request_fw_context {
+ 	/* The device we are requesting the fw for. */
+ 	struct b43_wldev *dev;
+-	/* a completion event structure needed if this call is asynchronous */
+-	struct completion fw_load_complete;
+ 	/* a pointer to the firmware object */
+ 	const struct firmware *blob;
+ 	/* The type of firmware to request. */
+@@ -809,6 +807,8 @@ enum {
+ struct b43_wldev {
+ 	struct b43_bus_dev *dev;
+ 	struct b43_wl *wl;
++	/* a completion event structure needed if this call is asynchronous */
++	struct completion fw_load_complete;
  
--	band = hw->conf.chandef.chan->band;
-+	band = ah->curchan->chan->band;
- 	sband = hw->wiphy->bands[band];
+ 	/* The device initialization status.
+ 	 * Use b43_status() to query. */
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2070,6 +2070,7 @@ void b43_do_release_fw(struct b43_firmwa
  
--	switch (hw->conf.chandef.width) {
--	case NL80211_CHAN_WIDTH_5:
-+	if (IS_CHAN_QUARTER_RATE(ah->curchan))
- 		rxs->flag |= RX_FLAG_5MHZ;
--		break;
--	case NL80211_CHAN_WIDTH_10:
-+	else if (IS_CHAN_HALF_RATE(ah->curchan))
- 		rxs->flag |= RX_FLAG_10MHZ;
--		break;
--	default:
--		break;
--	}
+ static void b43_release_firmware(struct b43_wldev *dev)
+ {
++	complete(&dev->fw_load_complete);
+ 	b43_do_release_fw(&dev->fw.ucode);
+ 	b43_do_release_fw(&dev->fw.pcm);
+ 	b43_do_release_fw(&dev->fw.initvals);
+@@ -2095,7 +2096,7 @@ static void b43_fw_cb(const struct firmw
+ 	struct b43_request_fw_context *ctx = context;
  
- 	if (rx_stats->rs_rate & 0x80) {
- 		/* HT rate */
-@@ -1248,6 +1243,14 @@ static int ath9k_rx_skb_preprocess(struc
- 		ath_start_rx_poll(sc, 3);
+ 	ctx->blob = firmware;
+-	complete(&ctx->fw_load_complete);
++	complete(&ctx->dev->fw_load_complete);
+ }
+ 
+ int b43_do_request_fw(struct b43_request_fw_context *ctx,
+@@ -2142,7 +2143,7 @@ int b43_do_request_fw(struct b43_request
  	}
- 
-+	/*
-+	 * This shouldn't happen, but have a safety check anyway.
-+	 */
-+	if (WARN_ON(!ah->curchan)) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+
- 	if (ath9k_process_rate(common, hw, rx_stats, rx_status)) {
- 		ret =-EINVAL;
- 		goto exit;
-@@ -1255,8 +1258,8 @@ static int ath9k_rx_skb_preprocess(struc
- 
- 	ath9k_process_rssi(common, hw, rx_stats, rx_status);
- 
--	rx_status->band = hw->conf.chandef.chan->band;
--	rx_status->freq = hw->conf.chandef.chan->center_freq;
-+	rx_status->band = ah->curchan->chan->band;
-+	rx_status->freq = ah->curchan->chan->center_freq;
- 	rx_status->antenna = rx_stats->rs_antenna;
- 	rx_status->flag |= RX_FLAG_MACTIME_END;
- 
+ 	if (async) {
+ 		/* do this part asynchronously */
+-		init_completion(&ctx->fw_load_complete);
++		init_completion(&ctx->dev->fw_load_complete);
+ 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
+ 					      ctx->dev->dev->dev, GFP_KERNEL,
+ 					      ctx, b43_fw_cb);
+@@ -2150,12 +2151,11 @@ int b43_do_request_fw(struct b43_request
+ 			pr_err("Unable to load firmware\n");
+ 			return err;
+ 		}
+-		/* stall here until fw ready */
+-		wait_for_completion(&ctx->fw_load_complete);
++		wait_for_completion(&ctx->dev->fw_load_complete);
+ 		if (ctx->blob)
+ 			goto fw_ready;
+ 	/* On some ARM systems, the async request will fail, but the next sync
+-	 * request works. For this reason, we dall through here
++	 * request works. For this reason, we fall through here
+ 	 */
+ 	}
+ 	err = request_firmware(&ctx->blob, ctx->fwname,
 
 
