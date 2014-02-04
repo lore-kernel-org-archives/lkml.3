@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936170AbaBDWlC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:41:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56364 "EHLO
+	id S935716AbaBDWk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:40:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56367 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933412AbaBDVCv (ORCPT
+	with ESMTP id S933495AbaBDVCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:02:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3.10 050/104] serial: 8250: enable UART_BUG_NOMSR for Tegra
-Date: Tue,  4 Feb 2014 13:01:53 -0800
-Message-Id: <20140204210224.143974900@linuxfoundation.org>
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 3.10 051/104] KVM: s390: fix diagnose code extraction
+Date: Tue,  4 Feb 2014 13:01:54 -0800
+Message-Id: <20140204210224.172736306@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,65 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 3685f19e07802ec4207b52465c408f185b66490e upstream.
+commit 743db27c526e0f31cc507959d662e97e2048a86f upstream.
 
-Tegra chips have 4 or 5 identical UART modules embedded. UARTs C..E have
-their MODEM-control signals tied off to a static state. However UARTs A
-and B can optionally route those signals to/from package pins, depending
-on the exact pinmux configuration.
+The diagnose code to be used is the contents of the base register (if not
+zero), plus the displacement. The current code ignores the base register
+contents. So let's fix that...
 
-When these signals are not routed to package pins, false interrupts may
-trigger either temporarily, or permanently, all while not showing up in
-the IIR; it will read as NO_INT. This will eventually lead to the UART
-IRQ being disabled due to unhandled interrupts. When this happens, the
-kernel may print e.g.:
-
-    irq 68: nobody cared (try booting with the "irqpoll" option)
-
-In order to prevent this, enable UART_BUG_NOMSR. This prevents
-UART_IER_MSI from being enabled, which prevents the false interrupts
-from triggering.
-
-In practice, this is not needed under any of the following conditions:
-
-* On Tegra chips after Tegra30, since the HW bug has apparently been
-  fixed.
-
-* On UARTs C..E since their MODEM control signals are tied to the correct
-  static state which doesn't trigger the issue.
-
-* On UARTs A..B if the MODEM control signals are routed out to package
-  pins, since they will then carry valid signals.
-
-However, we ignore these exceptions for now, since they are only relevant
-if a board actually hooks up more than a 4-wire UART, and no currently
-supported board does this. If we ever support a board that does, we can
-refine the algorithm that enables UART_BUG_NOMSR to take those exceptions
-into account, and/or read a flag from DT/... that indicates that the
-board has hooked up and pinmux'd more than a 4-wire UART.
-
-Reported-by: Olof Johansson <olof@lixom.net> # autotester
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_core.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/s390/kvm/diag.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2670,6 +2670,10 @@ static void serial8250_config_port(struc
- 	if (port->type == PORT_16550A && port->iotype == UPIO_AU)
- 		up->bugs |= UART_BUG_NOMSR;
+--- a/arch/s390/kvm/diag.c
++++ b/arch/s390/kvm/diag.c
+@@ -130,7 +130,7 @@ static int __diag_virtio_hypercall(struc
  
-+	/* HW bugs may trigger IRQ while IIR == NO_INT */
-+	if (port->type == PORT_TEGRA)
-+		up->bugs |= UART_BUG_NOMSR;
-+
- 	if (port->type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
- 		autoconfig_irq(up);
+ int kvm_s390_handle_diag(struct kvm_vcpu *vcpu)
+ {
+-	int code = (vcpu->arch.sie_block->ipb & 0xfff0000) >> 16;
++	int code = kvm_s390_get_base_disp_rs(vcpu) & 0xffff;
  
+ 	trace_kvm_s390_handle_diag(vcpu, code);
+ 	switch (code) {
 
 
