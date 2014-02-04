@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934785AbaBDVXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:23:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57483 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934701AbaBDVMi (ORCPT
+	id S934260AbaBDVXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:23:50 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39498 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934702AbaBDVMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:12:38 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mihai Caraman <mihai.caraman@freescale.com>,
-        Alexander Graf <agraf@suse.de>
-Subject: [PATCH 3.13 127/140] KVM: PPC: e500: Fix bad address type in deliver_tlb_misss()
-Date: Tue,  4 Feb 2014 13:11:54 -0800
-Message-Id: <20140204211040.597769590@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18glovHY8OnqdHWEuRHmGglD19nQqBO9Iw=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 09ED351D6B4
+Date: Tue, 4 Feb 2014 16:12:19 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] irqchip: dove: drivers for v3.14
+Message-ID: <20140204211219.GK8533@titan.lakedaemon.net>
+References: <20131201172914.GV2879@titan.lakedaemon.net>
+ <20131211175037.GY10053@titan.lakedaemon.net>
+ <20140110183430.GO19878@titan.lakedaemon.net>
+ <20140128173531.GT29184@titan.lakedaemon.net>
+ <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1402041959110.24986@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 04, 2014 at 07:59:58PM +0100, Thomas Gleixner wrote:
+> On Tue, 28 Jan 2014, Jason Cooper wrote:
+> > I see you pulled in mvebu/irqchip-fixes.  Thanks for that.  It's getting
+> > near to the end of the merge window and there's been no activity on this
+> > pull request.
+> > 
+> > Please let us know if there's anything we can do to assist.
+> 
+> Nah. I simply forgot about it. About to send a pull request to Linus.
 
-------------------
+hmmm.  I see the pull request contains the patches from
+mvebu/irqchip-fixes (armada), but not the patches from mvebu/irqchip
+(dove):
 
-From: Mihai Caraman <mihai.caraman@freescale.com>
+  40b367d95fb3 irqchip: irq-dove: Add PMU interrupt controller.
 
-commit 70713fe315ed14cd1bb07d1a7f33e973d136ae3d upstream.
-
-Use gva_t instead of unsigned int for eaddr in deliver_tlb_miss().
-
-Signed-off-by: Mihai Caraman <mihai.caraman@freescale.com>
-Signed-off-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/powerpc/kvm/e500_mmu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/powerpc/kvm/e500_mmu.c
-+++ b/arch/powerpc/kvm/e500_mmu.c
-@@ -127,7 +127,7 @@ static int kvmppc_e500_tlb_index(struct
- }
- 
- static inline void kvmppc_e500_deliver_tlb_miss(struct kvm_vcpu *vcpu,
--		unsigned int eaddr, int as)
-+		gva_t eaddr, int as)
- {
- 	struct kvmppc_vcpu_e500 *vcpu_e500 = to_e500(vcpu);
- 	unsigned int victim, tsized;
+which is what this thread was originally a pull request for.
 
 
+Are you planning to send a second pull request to Linus?
+
+thx,
+
+Jason.
