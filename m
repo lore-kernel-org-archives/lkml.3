@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934460AbaBDVLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:11:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57085 "EHLO
+	id S935104AbaBDVo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:44:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57174 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934375AbaBDVLV (ORCPT
+	with ESMTP id S934458AbaBDVLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:21 -0500
+	Tue, 4 Feb 2014 16:11:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 032/140] rtlwifi: rtl8192c: Add new definitions in the dm_common header
-Date: Tue,  4 Feb 2014 13:10:19 -0800
-Message-Id: <20140204211037.884178861@linuxfoundation.org>
+Subject: [PATCH 3.13 028/140] rtlwifi: rtl8192c: Prevent reconnect attempts if not connected
+Date: Tue,  4 Feb 2014 13:10:15 -0800
+Message-Id: <20140204211037.770835740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -31,46 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c908c74e005de780fddbe8cb6fcd44803f5d4b74 upstream.
+commit 8fd77aec1a9d6f4328fc0244f21932114e066df3 upstream.
 
-Changes in the gain-control mechanism will require some changes in the header.
+This driver has a watchdog timer that attempts to reconnect when beacon frames
+are not seen for 6 seconds. This patch disables that reconnect whenever the
+device has never been connected.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/rtlwifi/base.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.h
-@@ -91,6 +91,17 @@
- #define TX_POWER_NEAR_FIELD_THRESH_LVL2		74
- #define TX_POWER_NEAR_FIELD_THRESH_LVL1		67
- 
-+#define DYNAMIC_FUNC_DISABLE			0x0
-+#define DYNAMIC_FUNC_DIG			BIT(0)
-+#define DYNAMIC_FUNC_HP				BIT(1)
-+#define DYNAMIC_FUNC_SS				BIT(2) /*Tx Power Tracking*/
-+#define DYNAMIC_FUNC_BT				BIT(3)
-+#define DYNAMIC_FUNC_ANT_DIV			BIT(4)
-+
-+#define	RSSI_CCK				0
-+#define	RSSI_OFDM				1
-+#define	RSSI_DEFAULT				2
-+
- struct swat_t {
- 	u8 failure_cnt;
- 	u8 try_flag;
-@@ -167,5 +178,8 @@ void rtl92c_phy_lc_calibrate(struct ieee
- void rtl92c_phy_iq_calibrate(struct ieee80211_hw *hw, bool recovery);
- void rtl92c_dm_dynamic_txpower(struct ieee80211_hw *hw);
- void rtl92c_dm_bt_coexist(struct ieee80211_hw *hw);
-+void dm_savepowerindex(struct ieee80211_hw *hw);
-+void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
-+void dm_restorepowerindex(struct ieee80211_hw *hw);
- 
- #endif
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -1437,7 +1437,8 @@ void rtl_watchdog_wq_callback(void *data
+ 			/* if we can't recv beacon for 6s, we should
+ 			 * reconnect this AP
+ 			 */
+-			if (rtlpriv->link_info.roam_times >= 3) {
++			if ((rtlpriv->link_info.roam_times >= 3) &&
++			    !is_zero_ether_addr(rtlpriv->mac80211.bssid)) {
+ 				RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 					 "AP off, try to reconnect now\n");
+ 				rtlpriv->link_info.roam_times = 0;
 
 
