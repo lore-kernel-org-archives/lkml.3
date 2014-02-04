@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaBDOwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:52:41 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:50660 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172AbaBDOw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:52:27 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 1/6] fat: add i_disksize to represent uninitialized size
-References: <1387953050-2692-1-git-send-email-linkinjeon@gmail.com>
-	<87ioswx1xq.fsf@devron.myhome.or.jp>
-	<CAKYAXd91w8rtXpq45Ckj+6kGWAnn9Gj80EezpomyXO6+yggivQ@mail.gmail.com>
-	<87y51rue2a.fsf@devron.myhome.or.jp>
-Date: Tue, 04 Feb 2014 23:52:21 +0900
-In-Reply-To: <87y51rue2a.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Tue, 04 Feb 2014 23:50:53 +0900")
-Message-ID: <87txcfudzu.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1754644AbaBDOxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:53:45 -0500
+Received: from mga14.intel.com ([143.182.124.37]:31113 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752631AbaBDOxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 09:53:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,780,1384329600"; 
+   d="scan'208";a="338703564"
+Message-ID: <52F0FEF5.1010908@linux.intel.com>
+Date: Tue, 04 Feb 2014 06:53:41 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+CC: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>, Preeti Murthy <preeti.lkml@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC PATCH 3/3] idle: store the idle state index in the struct
+ rq
+References: <CAM4v1pPwmRUOtNeGh5sZmj+wAsC8RstofNA5Gx862SEECvW-Lg@mail.gmail.com> <20140131090230.GM5002@laptop.programming.kicks-ass.net> <52EB6F65.8050008@linux.vnet.ibm.com> <52EBBC23.8020603@linux.intel.com> <52EBC33A.6080101@linaro.org> <52EBC645.2040607@linux.intel.com> <alpine.LFD.2.11.1401311236470.2312@knanqh.ubzr> <20140203125441.GD19029@e103034-lin> <52EFA9D3.1030601@linux.intel.com> <20140203145605.GL8874@twins.programming.kicks-ass.net> <20140204091405.GB19156@gmail.com>
+In-Reply-To: <20140204091405.GB19156@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+> Yeah, so we could put the parameters back by measuring it in
+> user-space via a nice utility in tools/, and by matching it to
+> relevant hardware signatures (CPU type and cache sizes), plus doing
+> some defaults for when we don't have any signature... possibly based
+> on a fuzzy search to find the 'closest' system in the table of
+> constants.
+>
+> That would stabilize the boot-to-boot figures while still keeping most
+> of the system specific-ness, in a maintainable fashion.
+>
+> The downside is that we'd have to continuously maintain a table of all
+> this info, with new entries added when new CPUs are introduced on the
+> market. That's an upside too, btw.
 
->>> Don't we need to update ->i_disksize after cont_write_begin()?
->> We don't need to update i_disksize after cont_write_begin.
->> It is taken care by the fat_get_block after the allocation.
->> For all write paths we align the mmu_private and i_disksize from
->> fat_fill_inode and fat_get_block.
->
-> fat_fill_inode() just set i_disksize to i_size. So, it is not aligned by
-> cluster size or block size.
->
-> E.g. ->mmu_private = 500. Then, cont_write_begin() can set ->mmu_private
-> to 512 on some case. In this case, fat_get_block() will not be called,
-> because no new allocation.
->
-> If this is true, it would be possible to have ->mmu_private == 512 and
-> ->i_disksize == 500. 
->
-> I'm missing something?
+for bigger systems this will also depend on the chipset and even motherboard
+since inter-CPU communication may go via a 3rd party chip and the speed of that
+will depend on how far they are apart...
 
-BTW, even if above was right, I'm not checking whether updating
-->i_disksize after cont_write_begin() is right fix or not.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+like a 32 socket machine it'll be very different from a 2 socket machine,
+and from the 32 socket machine from another vendor
+
+
