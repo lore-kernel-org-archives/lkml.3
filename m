@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416AbaBDQCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:02:11 -0500
-Received: from www.sr71.net ([198.145.64.142]:49974 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748AbaBDQCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:02:07 -0500
-Message-ID: <52F10EFC.9090901@sr71.net>
-Date: Tue, 04 Feb 2014 08:02:04 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 3/3] Kconfig: organize memory-related config options
-References: <20140131172443.2EDC06E7@viggo.jf.intel.com> <20140131172448.3376826D@viggo.jf.intel.com>
-In-Reply-To: <20140131172448.3376826D@viggo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754779AbaBDQCm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:02:42 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:37322 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162AbaBDP7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 10:59:46 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Cc: Alessandro Rubini <rubini@unipv.it>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 10/17] spi: pl022: Remove redundant pinctrl to default state in probe
+Date: Tue,  4 Feb 2014 16:58:51 +0100
+Message-Id: <1391529538-21685-11-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm sending this through the kbuild maintainer (Michal Marek), and he
-asked that I collect a few acks from some mm folks.  I'm ccing the folks
-who put some of these option in there, or touched them recently.  A
-friendly ack or two would be appreciated.
+The driver core is now taking care of putting our pins into default
+state at probe. Thus we can remove the redundant call for it in probe.
 
-On 01/31/2014 09:24 AM, Dave Hansen wrote:
-> This continues in a series of patches to clean up the
-> configuration menus.  I believe they've become really hard to
-> navigate and there are some simple things we can do to make
-> things easier to find.
-> 
-> This creates a "Memory Options" menu and moves some things like
-> swap and slab configuration under them.  It also moves SLUB_DEBUG
-> to the debugging menu.
-> 
-> After this patch, the menu has the following options:
-> 
->   [ ] Memory placement aware NUMA scheduler
->   [*] Enable VM event counters for /proc/vmstat
->   [ ] Disable heap randomization
->   [*] Support for paging of anonymous memory (swap)
->       Choose SLAB allocator (SLUB (Unqueued Allocator))
->   [*] SLUB per cpu partial cache
->   [*] SLUB: attempt to use double-cmpxchg operations
+Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ drivers/spi/spi-pl022.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index 2f44c81..3ddd8da 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -2109,8 +2109,6 @@ static int pl022_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pl022->chipselects = devm_kzalloc(dev, num_cs * sizeof(int),
+ 					  GFP_KERNEL);
+ 
+-	pinctrl_pm_select_default_state(dev);
+-
+ 	/*
+ 	 * Bus Number Which has been Assigned to this SSP controller
+ 	 * on this board
+-- 
+1.7.9.5
 
