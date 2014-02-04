@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935505AbaBDXLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:11:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55979 "EHLO
+	id S932557AbaBDVAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:00:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932600AbaBDVAe (ORCPT
+	with ESMTP id S1755113AbaBDVAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:00:34 -0500
+	Tue, 4 Feb 2014 16:00:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vijaya Mohan Guvva <vmohan@brocade.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.4 34/37] SCSI: bfa: Chinook quad port 16G FC HBA claim issue
-Date: Tue,  4 Feb 2014 13:01:10 -0800
-Message-Id: <20140204210056.972693337@linuxfoundation.org>
+        Jan Prinsloo <janroot@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 10/37] rtlwifi: rtl8192cu: Add new device ID
+Date: Tue,  4 Feb 2014 13:00:46 -0800
+Message-Id: <20140204210056.301878141@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -29,54 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vijaya Mohan Guvva <vmohan@brocade.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dcaf9aed995c2b2a49fb86bbbcfa2f92c797ab5d upstream.
+commit f87f960b2fb802f26ee3b00c19320e57a9c583ff upstream.
 
-Bfa driver crash is observed while pushing the firmware on to chinook
-quad port card due to uninitialized bfi_image_ct2 access which gets
-initialized only for CT2 ASIC based cards after request_firmware().
-For quard port chinook (CT2 ASIC based), bfi_image_ct2 is not getting
-initialized as there is no check for chinook PCI device ID before
-request_firmware and instead bfi_image_cb is initialized as it is the
-default case for card type check.
-
-This patch includes changes to read the right firmware for quad port chinook.
-
-Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Jan Prinsloo <janroot@gmail.com>
+Tested-by: Jan Prinsloo <janroot@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/bfa/bfad.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1615,7 +1615,7 @@ out:
- static u32 *
- bfad_load_fwimg(struct pci_dev *pdev)
- {
--	if (pdev->device == BFA_PCI_DEVICE_ID_CT2) {
-+	if (bfa_asic_id_ct2(pdev->device)) {
- 		if (bfi_image_ct2_size == 0)
- 			bfad_read_firmware(pdev, &bfi_image_ct2,
- 				&bfi_image_ct2_size, BFAD_FW_FILE_CT2);
-@@ -1625,12 +1625,14 @@ bfad_load_fwimg(struct pci_dev *pdev)
- 			bfad_read_firmware(pdev, &bfi_image_ct,
- 				&bfi_image_ct_size, BFAD_FW_FILE_CT);
- 		return bfi_image_ct;
--	} else {
-+	} else if (bfa_asic_id_cb(pdev->device)) {
- 		if (bfi_image_cb_size == 0)
- 			bfad_read_firmware(pdev, &bfi_image_cb,
- 				&bfi_image_cb_size, BFAD_FW_FILE_CB);
- 		return bfi_image_cb;
- 	}
-+
-+	return NULL;
- }
- 
- static void
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -306,6 +306,7 @@ static struct usb_device_id rtl8192c_usb
+ 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
++	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
+ 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
+ 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
+ 	/* HP - Lite-On ,8188CUS Slim Combo */
 
 
