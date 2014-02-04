@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318AbaBDLQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 06:16:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27946 "EHLO mx1.redhat.com"
+	id S1754390AbaBDLQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 06:16:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23163 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754141AbaBDLPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 06:15:54 -0500
+	id S1754160AbaBDLP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 06:15:56 -0500
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
@@ -13,9 +13,9 @@ Cc: Alexander Gordeev <agordeev@redhat.com>,
         Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
         DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH 14/22] mpt2sas: Use pci_enable_msix_range()
-Date: Tue,  4 Feb 2014 12:17:00 +0100
-Message-Id: <9502363c4325496286e36221acaff63da3af42b0.1391512266.git.agordeev@redhat.com>
+Subject: [PATCH 15/22] mpt3sas: Use pci_enable_msix_range()
+Date: Tue,  4 Feb 2014 12:17:01 +0100
+Message-Id: <de0561cedef079511f9bf17e0903d93cd11785ac.1391512266.git.agordeev@redhat.com>
 In-Reply-To: <cover.1391512266.git.agordeev@redhat.com>
 References: <cover.1391512266.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,31 +36,30 @@ Cc: DL-MPTFusionLinux@lsi.com
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/scsi/mpt3sas/mpt3sas_base.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 3901edc..a0662cb 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1432,10 +1432,13 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
+index fa78506..46f1fba 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_base.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
+@@ -1747,10 +1747,13 @@ _base_enable_msix(struct MPT3SAS_ADAPTER *ioc)
  	for (i = 0, a = entries; i < ioc->reply_queue_count; i++, a++)
  		a->entry = i;
  
 -	r = pci_enable_msix(ioc->pdev, entries, ioc->reply_queue_count);
 -	if (r) {
--		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "pci_enable_msix "
--		    "failed (r=%d) !!!\n", ioc->name, r));
 +	r = pci_enable_msix_range(ioc->pdev,
 +				  entries,
 +				  ioc->reply_queue_count,
 +				  ioc->reply_queue_count);
 +	if (r < 0) {
-+		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT
-+		    "pci_enable_msix_range failed (r=%d) !!!\n", ioc->name, r));
+ 		dfailprintk(ioc, pr_info(MPT3SAS_FMT
+-			"pci_enable_msix failed (r=%d) !!!\n",
++			"pci_enable_msix_range failed (r=%d) !!!\n",
+ 			ioc->name, r));
  		kfree(entries);
  		goto try_ioapic;
- 	}
 -- 
 1.7.7.6
 
