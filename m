@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934715AbaBDWCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:02:12 -0500
+	id S935410AbaBDWCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:02:16 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934165AbaBDVJT (ORCPT
+	with ESMTP id S933584AbaBDVJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:19 -0500
+	Tue, 4 Feb 2014 16:09:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 3.12 122/133] ALSA: hda - hdmi: introduce patch_nvhdmi()
-Date: Tue,  4 Feb 2014 13:08:43 -0800
-Message-Id: <20140204210740.474822435@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mihai Caraman <mihai.caraman@freescale.com>,
+        Alexander Graf <agraf@suse.de>
+Subject: [PATCH 3.12 120/133] KVM: PPC: e500: Fix bad address type in deliver_tlb_misss()
+Date: Tue,  4 Feb 2014 13:08:41 -0800
+Message-Id: <20140204210740.418818481@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,110 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Mihai Caraman <mihai.caraman@freescale.com>
 
-(This is a backport of *part* of upstream 611885bc963a "ALSA: hda -
-hdmi: Disallow unsupported 2ch remapping on NVIDIA codecs" to stable
-3.10 through 3.12. Later stable already contain all of the original
-patch.)
+commit 70713fe315ed14cd1bb07d1a7f33e973d136ae3d upstream.
 
-Mainline commit 611885bc963a "ALSA: hda - hdmi: Disallow unsupported 2ch
-remapping on NVIDIA codecs" introduces function patch_nvhdmi(). That
-function is edited by 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
-dynamically enabled". In order to backport the PIN_OUT patch, I am first
-back-porting just the addition of function patch_nvhdmi(), so that the
-conflicts applying the PIN_OUT patch are simplified.
+Use gva_t instead of unsigned int for eaddr in deliver_tlb_miss().
 
-Ideally, one might backport all of 611885bc963a. However, that commit
-doesn't apply to stable kernels, since it relies on a chain of other
-patches which implement new features.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[swarren, extracted just a small part of the original patch]
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Mihai Caraman <mihai.caraman@freescale.com>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   60 +++++++++++++++++++++++++++------------------
- 1 file changed, 37 insertions(+), 23 deletions(-)
+ arch/powerpc/kvm/e500_mmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -2560,6 +2560,20 @@ static int patch_nvhdmi_8ch_7x(struct hd
- 	return 0;
+--- a/arch/powerpc/kvm/e500_mmu.c
++++ b/arch/powerpc/kvm/e500_mmu.c
+@@ -127,7 +127,7 @@ static int kvmppc_e500_tlb_index(struct
  }
  
-+static int patch_nvhdmi(struct hda_codec *codec)
-+{
-+	struct hdmi_spec *spec;
-+	int err;
-+
-+	err = patch_generic_hdmi(codec);
-+	if (err)
-+		return err;
-+
-+	spec = codec->spec;
-+
-+	return 0;
-+}
-+
- /*
-  * ATI-specific implementations
-  *
-@@ -2632,30 +2646,30 @@ static const struct hda_codec_preset snd
- { .id = 0x10de0005, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
- { .id = 0x10de0006, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
- { .id = 0x10de0007, .name = "MCP79/7A HDMI",	.patch = patch_nvhdmi_8ch_7x },
--{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_generic_hdmi },
--{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_generic_hdmi },
-+{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_nvhdmi },
-+{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_nvhdmi },
- /* 17 is known to be absent */
--{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
--{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
-+{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
+ static inline void kvmppc_e500_deliver_tlb_miss(struct kvm_vcpu *vcpu,
+-		unsigned int eaddr, int as)
++		gva_t eaddr, int as)
+ {
+ 	struct kvmppc_vcpu_e500 *vcpu_e500 = to_e500(vcpu);
+ 	unsigned int victim, tsized;
 
 
