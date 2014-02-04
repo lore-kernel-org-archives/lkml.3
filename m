@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaBDPDt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:03:49 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:65502 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaBDPDq (ORCPT
+	id S1754266AbaBDPHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 10:07:04 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:55496 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaBDPHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:03:46 -0500
-Message-ID: <1391526218.5532.33.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.12.9-rt13
-From: Mike Galbraith <bitbucket@online.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Tue, 04 Feb 2014 16:03:38 +0100
-In-Reply-To: <20140203194841.GA17108@linutronix.de>
-References: <20140203194841.GA17108@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 4 Feb 2014 10:07:00 -0500
+Message-ID: <52F1020A.3050202@gmail.com>
+Date: Tue, 04 Feb 2014 16:06:50 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Kamil Debski <k.debski@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        matt.porter@linaro.org, tjakobi@math.uni-bielefeld.de
+Subject: Re: [PATCH v6 8/8] usb: ehci-exynos: Change to use phy provided by
+ the generic phy framework
+References: <Pine.LNX.4.44L0.1401291530001.23560-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1401291530001.23560-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:x8MXykSjqlxhlW0i68rHSpTbD76/Ehee8G0GL5rgpAS
- fLkvxLzIJf/vG9R2a9HjPcc4+KVOduADLBJZaKL8CAV0gHj+GR
- iR2wwhq0AlME05NL3nIMsEhQ3tClhow8JY/7Z7oD5rvOiGm9b6
- 1wAFfzDonMwXMhl4Je+4fZ5Lg2MABf/jsOc/QKRRp8ufnV50jh
- MKo3Fvj4dcgetC7IzWCO3CXBCOVqEqXIWLQbfoLBvCe652H5Il
- 613UVz92cNlDMa1v2mNdqkkkp5e2QfOdkZkLUoEshbxy32GeIb
- o243+E7j6pmpFRD0cywgp2d+H6pdld7/mt+U0fdlSB+lPHKrQo
- fd6TP6P+kq6OeQ3EU4N6t6qjeRriauKGumfBqZDFxCD7bxJZij
- l1pqLnhLbHyig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-03 at 20:48 +0100, Sebastian Andrzej Siewior wrote:
+Hi Alan,
 
-> Known issues:
+On 29.01.2014 21:42, Alan Stern wrote:
+> On Wed, 29 Jan 2014, Kamil Debski wrote:
+>
+>> Change the phy provider used from the old one using the USB phy
+>> framework to a new one using the Generic phy framework.
+>>
+>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+>> ---
+>>   .../devicetree/bindings/usb/exynos-usb.txt         |   13 +++
+>>   drivers/usb/host/ehci-exynos.c                     |   97 +++++++++++++-------
+>>   2 files changed, 76 insertions(+), 34 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>> index d967ba1..25e199a 100644
+>> --- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>> @@ -12,6 +12,10 @@ Required properties:
+>>    - interrupts: interrupt number to the cpu.
+>>    - clocks: from common clock binding: handle to usb clock.
+>>    - clock-names: from common clock binding: Shall be "usbhost".
+>> +  - port: if in the SoC there are EHCI phys, they should be listed here.
+>> +One phy per port. Each port should have its reg entry with a consecutive
+>> +number. Also it should contain phys and phy-names entries specifying the
+>> +phy used by the port.
+>
+> What is the reg entry number used for?  As far as I can see, it isn't
+> used for anything.  In which case, why have it at all?
 
-> Mike said that it caused two of his 64 CPUs to spin for five minutes
->         doing nothing. Therefore it is disabled in the queue. Everyone
->         who wants test it may do so :)
+The reg property is here to identify which EHCI port the node is 
+describing. This should be mentioned in the documentation, though, as 
+well as the whole description of port nodes should be written in a more 
+structured manner, just as other properties.
 
-I put rt13 on an 8 socket Opetron (48 core) box, with patch enabled.  It
-box did NOT reproduce the hangs the 8 socket (1 node, bleh) DL980 did.
-
-Nor did it explode running hotplug stress, but then it deadlocks before
-BOOM would have happened on the DL980.  kdump isn't working properly on
-this box (not an rt issue, userspace), so..
-
--Mike
-
+Best regards,
+Tomasz
