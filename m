@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256AbaBDVCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56131 "EHLO
+	id S964875AbaBDWxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:53:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56184 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933180AbaBDVCK (ORCPT
+	with ESMTP id S933252AbaBDVCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:10 -0500
+	Tue, 4 Feb 2014 16:02:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        David Binderman <dcb314@hotmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 034/104] rtlwifi: rtl8188ee: Fix typo in code
-Date: Tue,  4 Feb 2014 13:01:37 -0800
-Message-Id: <20140204210223.700590203@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Robert Lippert <rlippert@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 008/104] mm/mempolicy.c: fix mempolicy printing in numa_maps
+Date: Tue,  4 Feb 2014 13:01:11 -0800
+Message-Id: <20140204210222.973662464@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -30,33 +33,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: David Rientjes <rientjes@google.com>
 
-commit f699273d6a624266ebc9198774f06ee64a3847a1 upstream.
+commit 8790c71a18e5d2d93532ae250bcf5eddbba729cd upstream.
 
-The static analyser "cppcheck" shows the following typo:
-drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:1081]: (style) Same expression on both sides of '!='.
+As a result of commit 5606e3877ad8 ("mm: numa: Migrate on reference
+policy"), /proc/<pid>/numa_maps prints the mempolicy for any <pid> as
+"prefer:N" for the local node, N, of the process reading the file.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: David Binderman <dcb314@hotmail.com>
-Cc: David Binderman <dcb314@hotmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This should only be printed when the mempolicy of <pid> is
+MPOL_PREFERRED for node N.
+
+If the process is actually only using the default mempolicy for local
+node allocation, make sure "default" is printed as expected.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Robert Lippert <rlippert@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: <stable@vger.kernel.org>	[3.7+]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/dm.c |    2 +-
+ mm/mempolicy.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-@@ -1078,7 +1078,7 @@ static void rtl88e_dm_txpower_tracking_c
- 				rtldm->swing_flag_ofdm = true;
- 			}
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2801,7 +2801,7 @@ int mpol_to_str(char *buffer, int maxlen
+ 	 */
+ 	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
  
--			if (rtldm->swing_idx_cck != rtldm->swing_idx_cck) {
-+			if (rtldm->swing_idx_cck_cur != rtldm->swing_idx_cck) {
- 				rtldm->swing_idx_cck_cur = rtldm->swing_idx_cck;
- 				rtldm->swing_flag_cck = true;
- 			}
+-	if (!pol || pol == &default_policy)
++	if (!pol || pol == &default_policy || (pol->flags & MPOL_F_MORON))
+ 		mode = MPOL_DEFAULT;
+ 	else
+ 		mode = pol->mode;
 
 
