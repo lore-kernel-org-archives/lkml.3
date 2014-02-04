@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934702AbaBDVk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:40:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52330 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933586AbaBDVkv (ORCPT
+	id S934498AbaBDVLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:11:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57133 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934418AbaBDVLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:40:51 -0500
-Message-ID: <1391550040.3003.28.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
- from device tree
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Date: Tue, 04 Feb 2014 21:40:40 +0000
-In-Reply-To: <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
-References: <7510122.cayuQ6qt8r@wuerfel>
-	 <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-	 <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Cl4GTycUti78AzhdcRFk"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.239
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 4 Feb 2014 16:11:31 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eliad Peller <eliadx.peller@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.13 043/140] iwlwifi: mvm: fix missing cleanup in .start() error path
+Date: Tue,  4 Feb 2014 13:10:30 -0800
+Message-Id: <20140204211038.192916606@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
+References: <20140204211036.967663852@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
---=-Cl4GTycUti78AzhdcRFk
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Tue, 2014-02-04 at 12:39 -0800, Florian Fainelli wrote:
-> 2014-01-17 Matthew Garrett <matthew.garrett@nebula.com>:
-> > Some hardware may be broken in interesting and board-specific ways, suc=
-h
-> > that various bits of functionality don't work. This patch provides a
-> > mechanism for overriding mii registers during init based on the content=
-s of
-> > the device tree data, allowing board-specific fixups without having to
-> > pollute generic code.
->=20
-> It would be good to explain exactly how your hardware is broken
-> exactly. I really do not think that such a fine-grained setting where
-> you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
-> remain usable makes that much sense. In general, Gigabit might be
-> badly broken, but 100 and 10Mbits/sec should work fine. How about the
-> MASTER-SLAVE bit, is overriding it really required?
+From: Eliad Peller <eliadx.peller@intel.com>
 
-Yes, it is entirely possible that one or other of the clock modes
-(locally generated vs recovered) is not reliable.
+commit 91b0d1198417cf4fd9a7bd4138b6909f0b359099 upstream.
 
-> Is not a PHY fixup registered for a specific OUI the solution you are
-> looking for?
-[...]
+Cleanup of iwl_mvm_leds was missing in case of error,
+resulting in the following warning:
 
-The fault is in the board, not the PHY.
+WARNING: at lib/kobject.c:196 kobject_add_internal+0x1f4/0x210()
+kobject_add_internal failed for phy0-led with -EEXIST, don't try to register things with the same name in the same directory.
 
-Ben.
+which prevents further reloads of the driver.
 
---=20
-Ben Hutchings
-One of the nice things about standards is that there are so many of them.
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---=-Cl4GTycUti78AzhdcRFk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+---
+ drivers/net/wireless/iwlwifi/mvm/ops.c |    1 +
+ 1 file changed, 1 insertion(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+--- a/drivers/net/wireless/iwlwifi/mvm/ops.c
++++ b/drivers/net/wireless/iwlwifi/mvm/ops.c
+@@ -470,6 +470,7 @@ iwl_op_mode_mvm_start(struct iwl_trans *
+ 
+  out_unregister:
+ 	ieee80211_unregister_hw(mvm->hw);
++	iwl_mvm_leds_exit(mvm);
+  out_free:
+ 	iwl_phy_db_free(mvm->phy_db);
+ 	kfree(mvm->scan_cmd);
 
-iQIVAwUAUvFeWOe/yOyVhhEJAQpirA/+PmyKReUFK6DjC7cFUusU3xKKTESbGss9
-fOMUi5Cb218mFx6bJi6AYqaK7W9EimD0SjzsV1E2NzAE+120/FcETG+nftYkhXjR
-7/Zzyoxg2HFKAx/EhRznb1pmr0zS0b0ixQAI7Yc9MvV3pLUQwqrX2I8vcWHr0eyf
-ggdTO7NRe2CQZf8WRXrY4WGfNge6bVm95LmqP2cyMknMLNL8sip3G0I0V8CW/ni8
-57d+0UTI128jNsNFtVIGgivyz5N4u727lexAFIvxStUuH3JN907YkKDTPRIJK78S
-5qf57AdJNUJfgIhpzgnKFTG1+lXXf8ZYlBzTSp1pqdcXKHf2w9D6kLg1om1ZSgdl
-bOl0PWbtdqc7FU4cVrB0lAJluEy6ABSQSzZaMDlWT4NHR8gqRu5IaY68vib+AxyS
-odynOkWwY6b+hTSV9r2JCapcCd/2mcNgQ9E5N5pepO4bSL8CNlH5/m/PQnvjlxiq
-cWdaiHxu4wOxlAPnwScM2jgeFHOksLnCdFNQNFev9TUAgye7jYOiWgk5o/7E+lM1
-hcGpA047u41ul6FLMMUuNnlbJV6aGnBNgjdEJiLqUbLYrA9MefcgJVWN90Wrcabk
-ftBseLlr/Jc8RNHr9fwPqOTaKxPotq6acquvrrsFfWsjWsTM+BI1Hs8REUTApahW
-blwiyDniAuQ=
-=fXK0
------END PGP SIGNATURE-----
 
---=-Cl4GTycUti78AzhdcRFk--
