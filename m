@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaBDRSb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:18:31 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:50213 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530AbaBDRS3 (ORCPT
+	id S1754754AbaBDRWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:22:15 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:39532 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaBDRWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:18:29 -0500
-Message-ID: <52F12008.4040103@linux.vnet.ibm.com>
-Date: Tue, 04 Feb 2014 22:44:48 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
-        galak@kernel.crashing.org, paul.gortmaker@windriver.com,
-        paulus@samba.org, mingo@kernel.org, mikey@neuling.org,
-        shangw@linux.vnet.ibm.com, rafael.j.wysocki@intel.com, agraf@suse.de,
-        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
-        john.stultz@linaro.org, anton@samba.org, chenhui.zhao@freescale.com,
-        deepthi@linux.vnet.ibm.com, r58472@freescale.com, geoff@infradead.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH V2 1/2] time: Change the return type of clockevents_notify()
- to integer
-References: <20140124065501.17564.39363.stgit@preeti.in.ibm.com> <20140124065739.17564.97259.stgit@preeti.in.ibm.com> <alpine.DEB.2.02.1402041100250.24986@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1402041100250.24986@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020417-3864-0000-0000-00000C41EFCB
+	Tue, 4 Feb 2014 12:22:13 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCHv2 1/2] of: add __of_add_property() without lock operations
+To: Xiubo Li <Li.Xiubo@freescale.com>, robh+dt@kernel.org
+Cc: panto@antoniou-consulting.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>
+In-Reply-To: <1390370260-11273-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1390370260-11273-1-git-send-email-Li.Xiubo@freescale.com>
+Date: Tue, 04 Feb 2014 17:22:05 +0000
+Message-Id: <20140204172205.C1EFFC4050F@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 03:31 PM, Thomas Gleixner wrote:
-> On Fri, 24 Jan 2014, Preeti U Murthy wrote:
->> -extern void tick_broadcast_oneshot_control(unsigned long reason);
->> +extern int tick_broadcast_oneshot_control(unsigned long reason);
+On Wed, 22 Jan 2014 13:57:39 +0800, Xiubo Li <Li.Xiubo@freescale.com> wrote:
+> There two places will use the same code for adding one new property to
+> the DT node. Adding __of_add_property() and prepare for fixing
+> of_update_property()'s bug.
 > 
->> -static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
->> +static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
-> 
->> -static inline void tick_broadcast_oneshot_control(unsigned long reason) { }
->> +static inline int tick_broadcast_oneshot_control(unsigned long reason) { }
-> 
-> The inline stubs need to return 0.
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 
-Oh right! Apologies!
-Thanks.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+Applied, thanks.
 
-Regards
-Preeti U Murthy
+g.
+
+> ---
+>  drivers/of/base.c | 38 ++++++++++++++++++++++++--------------
+>  1 file changed, 24 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index f807d0e..b86b77a 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1469,11 +1469,31 @@ static int of_property_notify(int action, struct device_node *np,
+>  #endif
+>  
+>  /**
+> + * __of_add_property - Add a property to a node without lock operations
+> + */
+> +static int __of_add_property(struct device_node *np, struct property *prop)
+> +{
+> +	struct property **next;
+> +
+> +	prop->next = NULL;
+> +	next = &np->properties;
+> +	while (*next) {
+> +		if (strcmp(prop->name, (*next)->name) == 0)
+> +			/* duplicate ! don't insert it */
+> +			return -EEXIST;
+> +
+> +		next = &(*next)->next;
+> +	}
+> +	*next = prop;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+>   * of_add_property - Add a property to a node
+>   */
+>  int of_add_property(struct device_node *np, struct property *prop)
+>  {
+> -	struct property **next;
+>  	unsigned long flags;
+>  	int rc;
+>  
+> @@ -1481,27 +1501,17 @@ int of_add_property(struct device_node *np, struct property *prop)
+>  	if (rc)
+>  		return rc;
+>  
+> -	prop->next = NULL;
+>  	raw_spin_lock_irqsave(&devtree_lock, flags);
+> -	next = &np->properties;
+> -	while (*next) {
+> -		if (strcmp(prop->name, (*next)->name) == 0) {
+> -			/* duplicate ! don't insert it */
+> -			raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> -			return -1;
+> -		}
+> -		next = &(*next)->next;
+> -	}
+> -	*next = prop;
+> +	rc = __of_add_property(np, prop);
+>  	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+>  
+>  #ifdef CONFIG_PROC_DEVICETREE
+>  	/* try to add to proc as well if it was initialized */
+> -	if (np->pde)
+> +	if (!rc && np->pde)
+>  		proc_device_tree_add_prop(np->pde, prop);
+>  #endif /* CONFIG_PROC_DEVICETREE */
+>  
+> -	return 0;
+> +	return rc;
+>  }
+>  
+>  /**
+> -- 
+> 1.8.4
+> 
+> 
 
