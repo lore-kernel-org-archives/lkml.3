@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaBDJFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 04:05:41 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:56775 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaBDJFV (ORCPT
+	id S1754098AbaBDJFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 04:05:52 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:63765 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100AbaBDJF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 04:05:21 -0500
-Message-ID: <52F0AD44.6090203@atmel.com>
-Date: Tue, 4 Feb 2014 10:05:08 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] clk: at91: propagate rate change on system clks
-References: <1391426731-9392-1-git-send-email-b.brezillon@overkiz.com> <1391426731-9392-4-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1391426731-9392-4-git-send-email-b.brezillon@overkiz.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 4 Feb 2014 04:05:28 -0500
+Message-ID: <1391504723.2663.4.camel@snow.station>
+Subject: Re: same ext4 file system corruption on different machines
+From: Luca Ognibene <luca.ognibene@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Date: Tue, 04 Feb 2014 10:05:23 +0100
+In-Reply-To: <20140131030028.GB7118@thunk.org>
+References: <1390999955.2601.22.camel@snow.station>
+	 <1391000743.2601.26.camel@snow.station> <20140129173826.GA30419@thunk.org>
+	 <1391068749.2680.6.camel@snow.station> <20140131030028.GB7118@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2014 12:25, Boris BREZILLON :
-> System clks are just gates, and thus do not provide any rate operations.
-> Authorize clk rate change to be propagated to system clk parents.
+Il giorno gio, 30/01/2014 alle 22.00 -0500, Theodore Ts'o ha scritto:
+> On Thu, Jan 30, 2014 at 08:59:09AM +0100, Luca Ognibene wrote:
+> > Yes it's indeed very strange.. i tend to rule out application errors
+> > because i don't write directly to the device so i don't think i can
+> > break a filesystem from userspace. I've checked previous and next blocks
+> > and they seem ok, only the block 524320 is getting corrupted. Any idea
+> > on what should i look for now?
 > 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> Are you willing to try 3.12.9 or 3.13.1 upstream kernel?  Let's see if
+> changing the kernel makes any difference.  I don't recall any ext4
+> problems like this, but maybe it's device driver problem.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+I'll try but my problem is that i can't replicate it.. i have to wait
+weeks to see it happen on clients machines.
 
-> ---
->  drivers/clk/at91/clk-system.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
-> index 8f7c043..a98557b 100644
-> --- a/drivers/clk/at91/clk-system.c
-> +++ b/drivers/clk/at91/clk-system.c
-> @@ -84,7 +84,8 @@ at91_clk_register_system(struct at91_pmc *pmc, const char *name,
->  	 * (see drivers/memory) which would request and enable the ddrck clock.
->  	 * When this is done we will be able to remove CLK_IGNORE_UNUSED flag.
->  	 */
-> -	init.flags = CLK_IGNORE_UNUSED;
-> +	init.flags = CLK_SET_RATE_GATE | CLK_SET_RATE_PARENT |
-> +		     CLK_IGNORE_UNUSED;
->  
->  	sys->id = id;
->  	sys->hw.init = &init;
-> 
+> The other thing I'd ask is whether you can swap out the hard drive
+> interface --- can you use a USB 3.0 attached drive, or something like
+> that?
 
+I can't do that, sorry.
 
--- 
-Nicolas Ferre
+ciao
+Luca
+
