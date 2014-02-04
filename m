@@ -1,225 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaBDMIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 07:08:13 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:46706 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaBDMIK convert rfc822-to-8bit (ORCPT
+	id S1754175AbaBDMJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 07:09:53 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:12454 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaBDMJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 07:08:10 -0500
-Date: Tue, 4 Feb 2014 12:08:02 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH] pci: Add support for creating a generic host_bridge from
- device tree
-Message-ID: <20140204120801.GB27975@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>
-References: <1391452428-22917-1-git-send-email-Liviu.Dudau@arm.com>
- <3523674.i9iUPinOAk@wuerfel>
- <20140203221743.GB24036@e106497-lin.cambridge.arm.com>
- <4524393.8AzpATULMB@wuerfel>
-MIME-Version: 1.0
-In-Reply-To: <4524393.8AzpATULMB@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 04 Feb 2014 12:08:02.0398 (UTC) FILETIME=[C0BB37E0:01CF21A1]
-X-MC-Unique: 114020412080401101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Tue, 4 Feb 2014 07:09:50 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-51-52f0d88c4ac6
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
+Subject: [PATCH v2 0/5] reserved-memory regions/CMA in devicetree, again
+Date: Tue, 04 Feb 2014 13:09:28 +0100
+Message-id: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e+xgG7PjQ9BBicnaFn8nXSM3eJDUyuz
+	xfwj51gt+t8sZLU48GcHo8Wb3g4Wi53r3jFanG16w26xvXMGu8WXKw+ZLDY9vsZqsbBtCYvF
+	5V1z2CzWHrnLbrHh5UEmi6XXLzJZLDjewmrxZ7qcxanrn9ksJkxfy2Kx6f5aRou/2zexWLw6
+	2MZisX7GaxaLVbv+MDpIeqyZt4bR4/evSYwerydPYPS43NfL5LFz1l12j543Lawed67tYfPY
+	vKTe4/a/x8weV040sXqs+/OKyaP/r4FH35ZVjB6fN8l5bJwbGsAfxWWTkpqTWZZapG+XwJVx
+	cd0+5oKXUhXfjj5jbGDsFu1i5OSQEDCRmHviFCOELSZx4d56ti5GLg4hgUWMEmdnvmCBcFqZ
+	JF59nM0OUsUmYCjR9baLDcQWEVjIKPF5HlgRs8A0NonPC1+ygiSEBTwk/n24CTaWRUBVYueR
+	hcwgNq+Au8Sbv1+BajiA1ilIzJlkM4GRewEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M
+	4Lh5JrWDcWWDxSFGAQ5GJR5eBZUPQUKsiWXFlbmHGCU4mJVEeM23AYV4UxIrq1KL8uOLSnNS
+	iw8xSnOwKInzHmi1DhQSSE8sSc1OTS1ILYLJMnFwSjUwmsVf8DZY9zl5ia3L6jiDwJgFTxnO
+	dsfY5Ej4zd19oXbW8XfHX2t3d+299uTnoSa1Bmmx82670uQ5xfL6BNo/lDxW1TyY491j4LJw
+	z0/zQINX69dMF827uCCPWXyrx/cX7+4eufHrlnN5/EHpTS1NE1g3ldnlF9+Zk5S5vDC7o/xE
+	nJY262dVJZbijERDLeai4kQAAHLM95cCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:09:44AM +0000, Arnd Bergmann wrote:
-> On Monday 03 February 2014 22:17:44 Liviu Dudau wrote:
-> > On Mon, Feb 03, 2014 at 07:31:31PM +0000, Arnd Bergmann wrote:
-> > > Let's try to come up with nomenclature so we can talk about this better
-> > >
-> > > The ioport_resource is in "logical I/O space", which is a Linux fiction,
-> > > it goes from 0 to IO_SPACE_LIMIT (2MB on ARM) and is mapped into "virtual
-> > > I/O space", which start at (void __iomem *)PCI_IO_VIRT_BASE.
-> > >
-> > > Each PCI domain can have its own "bus I/O aperture", which is typically
-> > > between 0x1000 and 0xffff and reflects the address that is used in PCI
-> > > transactions and in BARs.
-> > 
-> > Actually, the bus I/O aperture can start from 0x0000 if you are talking about
-> > PCI bus addresses.
-> 
-> Right.
-> 
-> > > The aperture here reflects the subset of the
-> > > 4GB bus I/O space that is actually mapped into a CPU visible "physical
-> > > I/O aperture" using an inbound mapping of the host bridge. The physical
-> > > I/O aperture in turn gets mapped to the virtual I/O space using
-> > > pci_ioremap_io.
-> > 
-> > Agree.
-> > 
-> > > The difference between a bus I/O address and a logical
-> > > I/O address is stored in the io_offset.
-> > 
-> > Not exactly. If that would be true that means that for an I/O range that
-> > start at bus I/O address zero but physical I/O apperture starts at
-> > 0x40000000 the io_offset is zero. For me, the io_offset should be 0x40000000.
-> 
-> That's not how we do it on any of the existing host controllers.
-> Typically the io_offset is zero for the first one, and may be
-> either zero for all the others (meaning BARs get > 64KB values
-> for secondary buses) or between 64KB and 2MB (meaning each bus
-> starts at I/O port number 0).
+Hi all!
 
-In that case it is probably worth to rename my variable into phys_io_offset.
+This is an updated version of the second attempt to add basic support
+for dynamic allocation of memory reserved regions defined in device
+tree.
 
-I need to go back over my driver code. My assumptions were probably wrong
-wrt to meaning of the io_offset.
+The initial code for this feature were posted here [1], merged as commit
+9d8eab7af79cb4ce2de5de39f82c455b1f796963 ("drivers: of: add
+initialization code for dma reserved memory") and later reverted by
+commit 1931ee143b0ab72924944bc06e363d837ba05063. For more information,
+see [2]. Finally a new bindings has been proposed [3] and Josh
+Cartwright a few days ago prepared some code which implements those
+bindings [4]. This finally pushed me again to find some time to finish
+this task and review the code. Josh agreed to give me the ownership of
+this series to continue preparing them for mainline inclusion.
 
-> 
-> > Let me see if I can summarise this correctly, using only CPU addresses:
-> > 
-> > 0x0000 - IO_SPACE_LIMIT           <-  logical I/O address
-> > 0xPPPPPPPP - 0xPPPPPPPP+IO_SIZE   <-  physical address for PCI I/O space
-> > 0xVVVVVVVV - 0xVVVVVVVV+IO_SPACE_LIMIT <- virtual address for I/O
-> > 
-> > The io_offset then is 0xPPPPPPPP - logical I/O address. At least that is
-> > the intent of the io_offset variable that I introduced in pci_host_bridge.
-> 
-> That is highly confusing then, because we already have something called
-> io_offset with a different meaning. I would call 0xPPPPPPPP the io_phys_base
-> if I had to come up with a variable name for it.
-> 
-> > The bus I/O address is generated by the host bridge, I think we can ignore
-> > it here as it tends to confuse the message.
-> 
-> No, it's important because the PCI core code has to transform between
-> bus I/O address and logical I/O address when accessing the BARs.
-> 
-> > > So much for basic definitions. When a device driver calls pci_request_region,
-> > > the port number it sees is the bus I/O port number adjusted using the
-> > > io_offset to turn it into a logical I/O port number, which should
-> > > always be within the host bridge window, which in turn is a subset
-> > > of the ioport_resource.
-> > 
-> > My understanding is that device drivers all user port numbers that are logical
-> > I/O numbers, so no io_offset needs to be applied here. It is only when one
-> > wants to access the port, that the translation happens. First, inb or outb
-> > will add the PCI_IO_VIRT_BASE to generate the virtual address, the MMU will
-> > then convert that address to physical address and the host bridge will
-> > then translate the physical address into bus address.
-> 
-> This is correct. The bus I/O number is not visible to the device driver,
-> but it is what you put into the 'ranges' property in DT, and it gets
-> used during PCI resource scanning.
-> 
-> 
-> > > > And that is why the code in probe.c has been added to deal with that. It is
-> > > > too early to do the adjustments here as all we have is the list of resources
-> > > > and that might get culled by the architecture fixup code. Remembering the
-> > > > io_offset will happen once the pci_host_bridge gets created, and the resources
-> > > > are then adjusted.
-> > >
-> > > So you want to register an incorrect I/O resource first and then
-> > > have it fixed up later, rather than registering the correct
-> > > one from the start as everyone else?
-> > 
-> > The incorrect I/O resource is added to a temporary list of resources, it has not
-> > been attached yet to the list of windows in the bridge. What gets added is the
-> > I/O resource as described if it would be an ordinary resource.
-> 
-> I'm not completely sure I'm following here, but let's work out the
-> other things first, this will probably get clearer then.
-> 
-> > > > > > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > > > > > index 6e34498..16febae 100644
-> > > > > > --- a/drivers/pci/probe.c
-> > > > > > +++ b/drivers/pci/probe.c
-> > > > > > @@ -1787,6 +1787,17 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> > > > > >     list_for_each_entry_safe(window, n, resources, list) {
-> > > > > >             list_move_tail(&window->list, &bridge->windows);
-> > > > > >             res = window->res;
-> > > > > > +           /*
-> > > > > > +            * IO resources are stored in the kernel with a CPU start
-> > > > > > +            * address of zero. Adjust the data accordingly and remember
-> > > > > > +            * the offset
-> > > > > > +            */
-> > > > > > +           if (resource_type(res) == IORESOURCE_IO) {
-> > > > > > +                   bridge->io_offset = res->start;
-> > > > > > +                   res->end -= res->start;
-> > > > > > +                   window->offset -= res->start;
-> > > > > > +                   res->start = 0;
-> > > > > > +           }
-> > 
-> > Here, we correct for the fact that IORESOURCE_IO is not a normal resource, because Linux wants
-> > a logical I/O as start and end address, not the physical CPU address. We adjust to that and
-> > remember the offset.
-> 
-> But the offset (phys_base) doesn't actually matter to the PCI core or
-> the driver. Why save it?
+For more information please refer to the changlelog below.
 
-Because I need it later for the host bridge ATR setup.
+[1]: http://lkml.kernel.org/g/1377527959-5080-1-git-send-email-m.szyprowski@samsung.com
+[2]: http://lkml.kernel.org/g/1381476448-14548-1-git-send-email-m.szyprowski@samsung.com
+[3]: http://lkml.kernel.org/g/20131030134702.19B57C402A0@trevor.secretlab.ca
+[4]: http://thread.gmane.org/gmane.linux.documentation/19579
 
-> 
-> > > > > >             offset = window->offset;
-> > > > > >             if (res->flags & IORESOURCE_BUS)
-> > > > >
-> > > > > Won't this break all existing host bridges?
-> > > >
-> > > > I am not sure. I believe not, due to what I've explained earlier, but you might be right.
-> > > >
-> > > > The adjustment happens before the resource is added to the host bridge windows and translates
-> > > > it from MMIO range into IO range.
-> > >
-> > > AFAICT, the resource_type of the resource you register above should be
-> > > IORESOURCE_MEM, so you are not actually matching it here.
-> > 
-> > No, all resources are added here. For IORESOURCE_IO we do an adjustment.
-> 
-> But there should never be an IORESOURCE_IO resource structure that is
-> not in IO space, i.e. within ioport_resource. Doing an "adjustment"
-> is not an operation defined on this structure. What I meant above is that
-> the pci range parser gets this right and gives you a resource that looks
-> like { .flags = IORESOURCE_MEM, .start = phys_base, .end = phys_base +
-> size - 1}, while the resource we want to register is { .flags = IORESOURCE_IO,
-> .start = log_base, .end = log_base + size -1}. In the of_pci_range struct for
-> the I/O space, the "pci_space" is IORESOURCE_IO (for the pci_addr), while the
-> "flags" are IORESOURCE_MEM, to go along with the cpu_addr.
+Changelog:
 
-The pci range parser gives me a range with .flags = IORESOURCE_IO for IO space. It
-does not convert it to IORESOURCE_MEM. Hence the need for adjustment.
+v2:
+- removed copying of the node name
+- split shared-dma-pool handling into separate files (one for CMA and one
+  for dma_declare_coherent based implementations) for making the code easier
+  to understand
+- added support for AMBA devices, changed prototypes to use struct decice
+  instead of struct platform_device
+- renamed some functions to better match other names used in drivers/of/
+- restructured the rest of the code a bit for better readability
+- added 'reusable' property to exmaple linux,cma node in documentation
+- exclusive dma (dma_coherent) is used for only handling 'shared-dma-pool'
+  regions without 'reusable' property and CMA is used only for handling
+  'shared-dma-pool' regions with 'reusable' property.
 
-Best regards,
-Liviu
+v1: http://thread.gmane.org/gmane.linux.documentation/19579
+- initial version prepared by Josh Cartwright
 
-> 
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Summary:
+
+Grant Likely (1):
+  of: document bindings for reserved-memory nodes
+
+Josh Cartwright (2):
+  drivers: of: implement reserved-memory handling for dma
+  drivers: of: implement reserved-memory handling for cma
+
+Marek Szyprowski (2):
+  drivers: of: add initialization code for reserved memory
+  ARM: init: add support for reserved memory defined by device tree
+
+ .../bindings/reserved-memory/reserved-memory.txt   |  138 ++++++++++++
+ arch/arm/mm/init.c                                 |    3 +
+ drivers/of/Kconfig                                 |   20 ++
+ drivers/of/Makefile                                |    3 +
+ drivers/of/of_reserved_mem.c                       |  219 ++++++++++++++++++++
+ drivers/of/of_reserved_mem_cma.c                   |   75 +++++++
+ drivers/of/of_reserved_mem_dma.c                   |   78 +++++++
+ drivers/of/platform.c                              |    7 +
+ include/asm-generic/vmlinux.lds.h                  |   11 +
+ include/linux/of_reserved_mem.h                    |   62 ++++++
+ 10 files changed, 616 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reserved-memory/reserved-memory.txt
+ create mode 100644 drivers/of/of_reserved_mem.c
+ create mode 100644 drivers/of/of_reserved_mem_cma.c
+ create mode 100644 drivers/of/of_reserved_mem_dma.c
+ create mode 100644 include/linux/of_reserved_mem.h
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.7.9.5
 
