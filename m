@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935986AbaBDWbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:31:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56530 "EHLO
+	id S935035AbaBDWba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:31:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56536 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933817AbaBDVID (ORCPT
+	with ESMTP id S933821AbaBDVID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:08:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        PaX Team <pageexec@freemail.hu>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 008/133] x86, x32: Correct invalid use of user timespec in the kernel
-Date: Tue,  4 Feb 2014 13:06:49 -0800
-Message-Id: <20140204210737.256433620@linuxfoundation.org>
+        Dave Young <dyoung@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Toshi Kani <toshi.kani@hp.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.12 009/133] x86/efi: Fix off-by-one bug in EFI Boot Services reservation
+Date: Tue,  4 Feb 2014 13:06:50 -0800
+Message-Id: <20140204210737.284533740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,80 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: PaX Team <pageexec@freemail.hu>
+From: Dave Young <dyoung@redhat.com>
 
-commit 2def2ef2ae5f3990aabdbe8a755911902707d268 upstream.
+commit a7f84f03f660d93574ac88835d056c0d6468aebe upstream.
 
-The x32 case for the recvmsg() timout handling is broken:
+Current code check boot service region with kernel text region by:
+start+size >= __pa_symbol(_text)
+The end of the above region should be start + size - 1 instead.
 
-  asmlinkage long compat_sys_recvmmsg(int fd, struct compat_mmsghdr __user *mmsg,
-                                      unsigned int vlen, unsigned int flags,
-                                      struct compat_timespec __user *timeout)
-  {
-          int datagrams;
-          struct timespec ktspec;
+I see this problem in ovmf + Fedora 19 grub boot:
+text start: 1000000 md start: 800000 md size: 800000
 
-          if (flags & MSG_CMSG_COMPAT)
-                  return -EINVAL;
-
-          if (COMPAT_USE_64BIT_TIME)
-                  return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
-                                        flags | MSG_CMSG_COMPAT,
-                                        (struct timespec *) timeout);
-          ...
-
-The timeout pointer parameter is provided by userland (hence the __user
-annotation) but for x32 syscalls it's simply cast to a kernel pointer
-and is passed to __sys_recvmmsg which will eventually directly
-dereference it for both reading and writing.  Other callers to
-__sys_recvmmsg properly copy from userland to the kernel first.
-
-The bug was introduced by commit ee4fa23c4bfc ("compat: Use
-COMPAT_USE_64BIT_TIME in net/compat.c") and should affect all kernels
-since 3.4 (and perhaps vendor kernels if they backported x32 support
-along with this code).
-
-Note that CONFIG_X86_X32_ABI gets enabled at build time and only if
-CONFIG_X86_X32 is enabled and ld can build x32 executables.
-
-Other uses of COMPAT_USE_64BIT_TIME seem fine.
-
-This addresses CVE-2014-0038.
-
-Signed-off-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/compat.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -780,21 +780,16 @@ asmlinkage long compat_sys_recvmmsg(int
- 	if (flags & MSG_CMSG_COMPAT)
- 		return -EINVAL;
- 
--	if (COMPAT_USE_64BIT_TIME)
--		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
--				      flags | MSG_CMSG_COMPAT,
--				      (struct timespec *) timeout);
--
- 	if (timeout == NULL)
- 		return __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				      flags | MSG_CMSG_COMPAT, NULL);
- 
--	if (get_compat_timespec(&ktspec, timeout))
-+	if (compat_get_timespec(&ktspec, timeout))
- 		return -EFAULT;
- 
- 	datagrams = __sys_recvmmsg(fd, (struct mmsghdr __user *)mmsg, vlen,
- 				   flags | MSG_CMSG_COMPAT, &ktspec);
--	if (datagrams > 0 && put_compat_timespec(&ktspec, timeout))
-+	if (datagrams > 0 && compat_put_timespec(&ktspec, timeout))
- 		datagrams = -EFAULT;
- 
- 	return datagrams;
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -440,7 +440,7 @@ void __init efi_reserve_boot_services(vo
+ 		 * - Not within any part of the kernel
+ 		 * - Not the bios reserved area
+ 		*/
+-		if ((start+size >= __pa_symbol(_text)
++		if ((start + size > __pa_symbol(_text)
+ 				&& start <= __pa_symbol(_end)) ||
+ 			!e820_all_mapped(start, start+size, E820_RAM) ||
+ 			memblock_is_region_reserved(start, size)) {
 
 
