@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaBDGz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 01:55:57 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:50508 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931AbaBDGzq (ORCPT
+	id S1753443AbaBDG5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 01:57:43 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:55840 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369AbaBDG5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 01:55:46 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v3 5/6] fat: permit to return phy block number by fibmap in fallocated region
-References: <1387953112-2828-1-git-send-email-linkinjeon@gmail.com>
-	<87eh3kx1n6.fsf@devron.myhome.or.jp>
-	<CAKYAXd9mm6KmMu6XvQoFynQtyAC8yR5rCd12SMoB_PFgojbEiw@mail.gmail.com>
-	<87a9e7wq6w.fsf@devron.myhome.or.jp>
-	<CAKYAXd8K9tO2zyZvHtMRA54=XvWowaA3SVa2H6_R5bnmKgG5Dg@mail.gmail.com>
-Date: Tue, 04 Feb 2014 15:55:37 +0900
-In-Reply-To: <CAKYAXd8K9tO2zyZvHtMRA54=XvWowaA3SVa2H6_R5bnmKgG5Dg@mail.gmail.com>
-	(Namjae Jeon's message of "Tue, 4 Feb 2014 13:03:16 +0900")
-Message-ID: <8761ovwemu.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Tue, 4 Feb 2014 01:57:36 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: broonie@kernel.org
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] spi: fix pointer-integer size mismatch warning
+Date: Tue,  4 Feb 2014 15:58:09 +0900
+Message-Id: <1391497089-6831-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+Fix the pointer-integer size mismatch warning below:
+	drivers/spi/spi-gpio.c: In function ‘spi_gpio_setup’:
+	drivers/spi/spi-gpio.c:252:8: warning: cast from pointer to integer of
+			different size [-Wpointer-to-int-cast]
+	   cs = (unsigned int) spi->controller_data;
+	        ^
 
-> 2014-02-04, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>>>>  	/* fat_get_cluster() assumes the requested blocknr isn't truncated.
->>>>> */
->>>>>  	down_read(&MSDOS_I(mapping->host)->truncate_lock);
->>>>> +	/* To get block number beyond file size in fallocated region */
->>>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 1);
->>>>>  	blocknr = generic_block_bmap(mapping, block, fat_get_block);
->>>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 0);
->>>>>  	up_read(&MSDOS_I(mapping->host)->truncate_lock);
->>>>
->>>> This is racy. While user is using bmap, kernel can allocate new blocks.
->>>> We should use another function for this.
->>> I understand that fat can map fallocated blocks in read case while
->>> user is using bmap.
->>> But I can not find the case allocate new blocks.
->>> If I am missing something, Could you please elaborate more ?
->>> Is it a case of _bmap request returning the block number for block
->>> allocated in parallel write path ?
->>
->> ->beyond_size is global for inode. So, write(2) path on same inode with
->> bmap() also can see 1 set by bmap() while another process is using bmap().
-> 'create' flag  will be 1 in write(2) path. ->beyond_isize will only be
-> checked when 'create' flag is 0. Is there any case to be racy by
-> beyond_isize in write(2) path ?
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ drivers/spi/spi-gpio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ah, so instead of write, it will assign physical address to buffers
-beyond i_size for simple read if race?  In this case, it is still wrong.
+diff --git a/drivers/spi/spi-gpio.c b/drivers/spi/spi-gpio.c
+index cfc9fb3..406bbd7 100644
+--- a/drivers/spi/spi-gpio.c
++++ b/drivers/spi/spi-gpio.c
+@@ -249,7 +249,7 @@ static int spi_gpio_setup(struct spi_device *spi)
+ 		/*
+ 		 * ... otherwise, take it from spi->controller_data
+ 		 */
+-		cs = (unsigned int) spi->controller_data;
++		cs = (unsigned int)(uintptr_t) spi->controller_data;
+ 	}
+ 
+ 	if (!spi->controller_state) {
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.8.3.2
+
