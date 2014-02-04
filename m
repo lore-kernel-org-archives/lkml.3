@@ -1,297 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbaBDUkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 15:40:24 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:49453 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792AbaBDUkW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 15:40:22 -0500
+	id S932166AbaBDUkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 15:40:51 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48289 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754644AbaBDUks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 15:40:48 -0500
+Message-ID: <52F15000.2080102@zytor.com>
+Date: Tue, 04 Feb 2014 12:39:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 4 Feb 2014 12:39:41 -0800
-Message-ID: <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
- from device tree
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Stephan Mueller <smueller@chronox.de>,
+        =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
+        John Crispin <blogic@openwrt.org>, andrewmcgr@gmail.com,
+        Thorsten Glaser <tg@mirbsd.de>, sandyinchina@gmail.com
+Subject: Re: [RFC PATCH 0/5] CPU Jitter RNG
+References: <2039634.jSmQAS6tdi@myon.chronox.de>	<20140204170823.GF12768@thunk.org>	<52F13A1C.3040003@zytor.com>	<20140204192325.GA11831@thunk.org> <CAMuHMdV5tLX7L6m4Q+1tMu_LF0bhxErVJuXDcga8VAmGV91dZg@mail.gmail.com>
+In-Reply-To: <CAMuHMdV5tLX7L6m4Q+1tMu_LF0bhxErVJuXDcga8VAmGV91dZg@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-17 Matthew Garrett <matthew.garrett@nebula.com>:
-> Some hardware may be broken in interesting and board-specific ways, such
-> that various bits of functionality don't work. This patch provides a
-> mechanism for overriding mii registers during init based on the contents of
-> the device tree data, allowing board-specific fixups without having to
-> pollute generic code.
+On 02/04/2014 11:39 AM, Geert Uytterhoeven wrote:
+> On Tue, Feb 4, 2014 at 8:23 PM,  <tytso@mit.edu> wrote:
+>> However, where a decade ago the ethernet card probably had its own
+>> independent clock crystal/oscillator, I'm going to guess that these
+>> days with SOC's and even on laptops, with ethernet device part of the
+>> chipset, it is probably being driven off the same master oscillator.
+> 
+> USB typically still has its own crystal.
 
-It would be good to explain exactly how your hardware is broken
-exactly. I really do not think that such a fine-grained setting where
-you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
-remain usable makes that much sense. In general, Gigabit might be
-badly broken, but 100 and 10Mbits/sec should work fine. How about the
-MASTER-SLAVE bit, is overriding it really required?
+USB and the Ethernet PHY frequently do still have their own crystals,
+for reasons not entirely clear to me.  However, what all of these have
+in common is that they are way out in the periphery.
 
-Is not a PHY fixup registered for a specific OUI the solution you are
-looking for? I am also concerned that this creates PHY troubleshooting
-issues much harder to debug than before as we may have no idea about
-how much information has been put in Device Tree to override that.
+>> I wonder if there's anyway we can either figure out manually, or
+>> preferably, automatically at boot time, which devices actually have
+>> independent clock oscillators.
+> 
+> You may find this information in the DT on some platforms (if you're
+> lucky).
 
-Finally, how about making this more general just like the BCM87xx PHY
-driver, which is supplied value/reg pairs directly? There are 16
-common MII registers, and 16 others for vendor specific registers,
-this is just covering for about 2% of the possible changes.
+On most systems today, all the high speed clocks (CPU, memory, etc.) are
+all fed from a single oscillator.  On PCs there used to be a separate
+14.31818 MHz oscillator for the PIT, PMTIMER and HPET, but that is
+increasingly handled by a frequency converter from the main bus clock.
+Oscillators are expensive, and true asynchronous domains cause problems
+with metastability.
 
->
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->
-> V3: Break the main function out into some helper functions and store the
-> values in some structs.
->
->  Documentation/devicetree/bindings/net/phy.txt | 21 +++++++
->  drivers/net/phy/phy_device.c                  | 29 ++++++++-
->  drivers/of/of_net.c                           | 87 +++++++++++++++++++++++++++
->  include/linux/of_net.h                        | 12 ++++
->  4 files changed, 148 insertions(+), 1 deletion(-)
->
-> diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-> index 7cd18fb..fc50f02 100644
-> --- a/Documentation/devicetree/bindings/net/phy.txt
-> +++ b/Documentation/devicetree/bindings/net/phy.txt
-> @@ -23,6 +23,21 @@ Optional Properties:
->    assume clause 22. The compatible list may also contain other
->    elements.
->
-> +The following properties may be added to either the phy node or the parent
-> +ethernet device. If not present, the hardware defaults will be used.
-> +
-> +- phy-mii-advertise-10half: 1 to advertise half-duplex 10MBit, 0 to disable
-> +- phy-mii-advertise-10full: 1 to advertise full-duplex 10MBit, 0 to disable
-> +- phy-mii-advertise-100half: 1 to advertise half-duplex 100MBit, 0 to disable
-> +- phy-mii-advertise-100full: 1 to advertise full-duplex 100MBit, 0 to disable
-> +- phy-mii-advertise-100base4: 1 to advertise 100base4, 0 to disable
-> +- phy-mii-advertise-1000half: 1 to advertise half-duplex 1000MBit, 0 to disable
-> +- phy-mii-advertise-1000full: 1 to advertise full-duplex 1000MBit, 0 to disable
-> +- phy-mii-manual-master: 1 to enable manual master/slave configuration, 0
-> +  to disable manual master/slave configuration
-> +- phy-mii-as-master: 1 to configure phy to act as master, 0 to configure phy
-> +  to act as slave. Ignored if manual master/slave configuration is not enabled.
-> +
->  Example:
->
->  ethernet-phy@0 {
-> @@ -32,4 +47,10 @@ ethernet-phy@0 {
->         interrupts = <35 1>;
->         reg = <0>;
->         device_type = "ethernet-phy";
-> +       // Disable advertising of full duplex 1000MBit
-> +       phy-mii-advertise-1000full = <0>;
-> +       // Force manual phy master/slave configuration
-> +       phy-mii-manual-master = <1>;
-> +       // Forcibly configure phy as slave
-> +       phy-mii-as-master = <0>;
->  };
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index d6447b3..91793bc 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -33,6 +33,7 @@
->  #include <linux/mii.h>
->  #include <linux/ethtool.h>
->  #include <linux/phy.h>
-> +#include <linux/of_net.h>
->
->  #include <asm/io.h>
->  #include <asm/irq.h>
-> @@ -497,6 +498,28 @@ void phy_disconnect(struct phy_device *phydev)
->  }
->  EXPORT_SYMBOL(phy_disconnect);
->
-> +int phy_override_from_of(struct phy_device *phydev)
-> +{
-> +       int reg, regval;
-> +       u16 val, mask;
-> +
-> +       /* Check for phy register overrides from OF */
-> +       for (reg = 0; reg < 16; reg++) {
-> +               if (!of_get_mii_register(phydev, reg, &val, &mask)) {
-> +                       if (!mask)
-> +                               continue;
-> +                       regval = phy_read(phydev, reg);
-> +                       if (regval < 0)
-> +                               continue;
-> +                       regval &= ~mask;
-> +                       regval |= val;
-> +                       phy_write(phydev, reg, regval);
-> +               }
-> +       }
-> +
-> +       return 0;
-> +}
-> +
->  int phy_init_hw(struct phy_device *phydev)
->  {
->         int ret;
-> @@ -508,7 +531,11 @@ int phy_init_hw(struct phy_device *phydev)
->         if (ret < 0)
->                 return ret;
->
-> -       return phydev->drv->config_init(phydev);
-> +       ret = phydev->drv->config_init(phydev);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return phy_override_from_of(phydev);
->  }
->
->  /**
-> diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
-> index 8f9be2e..75751b7 100644
-> --- a/drivers/of/of_net.c
-> +++ b/drivers/of/of_net.c
-> @@ -93,3 +93,90 @@ const void *of_get_mac_address(struct device_node *np)
->         return NULL;
->  }
->  EXPORT_SYMBOL(of_get_mac_address);
-> +
-> +struct mii_override {
-> +       char *prop;
-> +       u32 supported;
-> +       u16 value;
-> +};
-> +
-> +static struct mii_override mii_advertise_override[] = {
-> +       { "phy-mii-advertise-10half", SUPPORTED_10baseT_Half,
-> +         ADVERTISE_10HALF },
-> +       { "phy-mii-advertise-10full", SUPPORTED_10baseT_Full,
-> +         ADVERTISE_10FULL },
-> +       { "phy-mii-advertise-100half", SUPPORTED_100baseT_Half,
-> +         ADVERTISE_100HALF },
-> +       { "phy-mii-advertise-100full", SUPPORTED_100baseT_Full,
-> +         ADVERTISE_100FULL },
-> +       { "phy-mii-advertise-100base4", 0, ADVERTISE_100BASE4 },
-> +       { NULL },
-> +};
-> +
-> +static struct mii_override mii_gigabit_override[] = {
-> +       { "phy-mii-advertise-1000half", SUPPORTED_1000baseT_Half,
-> +         ADVERTISE_1000HALF },
-> +       { "phy-mii-advertise-1000full", SUPPORTED_1000baseT_Full,
-> +         ADVERTISE_1000FULL },
-> +       { "phy-mii-as-master", 0, CTL1000_AS_MASTER },
-> +       { "phy-mii-manual-master", 0, CTL1000_ENABLE_MASTER },
-> +       { NULL },
-> +};
-> +
-> +static void mii_handle_override(struct mii_override *override_list,
-> +                               struct phy_device *phydev, u16 *val, u16 *mask)
-> +{
-> +       struct device *dev = &phydev->dev;
-> +       struct device_node *np = dev->of_node;
-> +       struct mii_override *override;
-> +       u32 tmp;
-> +
-> +       if (!np && dev->parent->of_node)
-> +               np = dev->parent->of_node;
-> +
-> +       if (!np)
-> +               return;
-> +
-> +       for (override = &override_list[0]; override->prop != NULL; override++) {
-> +               if (!of_property_read_u32(np, override->prop, &tmp)) {
-> +                       if (tmp) {
-> +                               *val |= override->value;
-> +                               phydev->advertising |= override->supported;
-> +                       } else {
-> +                               phydev->advertising &= ~(override->supported);
-> +                       }
-> +
-> +                       *mask |= override->value;
-> +               }
-> +       }
-> +
-> +       return;
-> +}
-> +
-> +/**
-> + * Provide phy register overrides from the device tree. Some hardware may
-> + * be broken in interesting and board-specific ways, so we want a mechanism
-> + * for the board data to provide overrides for default values. This should be
-> + * called during phy init.
-> + */
-> +int of_get_mii_register(struct phy_device *phydev, int reg, u16 *val,
-> +                       u16 *mask)
-> +{
-> +       *val = 0;
-> +       *mask = 0;
-> +
-> +       switch (reg) {
-> +       case MII_ADVERTISE:
-> +               mii_handle_override(mii_advertise_override, phydev, val, mask);
-> +               break;
-> +
-> +       case MII_CTRL1000:
-> +               mii_handle_override(mii_gigabit_override, phydev, val, mask);
-> +               break;
-> +
-> +       default:
-> +               return -EINVAL;
-> +       }
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL(of_get_mii_register);
-> diff --git a/include/linux/of_net.h b/include/linux/of_net.h
-> index 34597c8..2e478bc 100644
-> --- a/include/linux/of_net.h
-> +++ b/include/linux/of_net.h
-> @@ -7,10 +7,14 @@
->  #ifndef __LINUX_OF_NET_H
->  #define __LINUX_OF_NET_H
->
-> +#include <linux/phy.h>
-> +
->  #ifdef CONFIG_OF_NET
->  #include <linux/of.h>
->  extern int of_get_phy_mode(struct device_node *np);
->  extern const void *of_get_mac_address(struct device_node *np);
-> +extern int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-> +                              u16 *mask);
->  #else
->  static inline int of_get_phy_mode(struct device_node *np)
->  {
-> @@ -21,6 +25,14 @@ static inline const void *of_get_mac_address(struct device_node *np)
->  {
->         return NULL;
->  }
-> +static inline int of_get_mii_register(struct phy_device *np, int reg, u16 *val,
-> +                                     u16 *mask)
-> +{
-> +       *val = 0;
-> +       *mask = 0;
-> +
-> +       return -EINVAL;
-> +}
->  #endif
->
->  #endif /* __LINUX_OF_NET_H */
-> --
-> 1.8.4.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	-hpa
 
 
 
--- 
-Florian
