@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934033AbaBDVIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:08:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56633 "EHLO
+	id S935374AbaBDWMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:12:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933913AbaBDVIZ (ORCPT
+	with ESMTP id S934026AbaBDVIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:25 -0500
+	Tue, 4 Feb 2014 16:08:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.12 026/133] usb: ehci: add freescale imx28 special write register method
-Date: Tue,  4 Feb 2014 13:07:07 -0800
-Message-Id: <20140204210737.771970651@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 3.12 066/133] serial: 8250: enable UART_BUG_NOMSR for Tegra
+Date: Tue,  4 Feb 2014 13:07:47 -0800
+Message-Id: <20140204210738.893712272@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -30,75 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
+commit 3685f19e07802ec4207b52465c408f185b66490e upstream.
 
-According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
-register error issue", All USB register write operations must
-use the ARM SWP instruction. So, we implement a special ehci_write
-for imx28.
+Tegra chips have 4 or 5 identical UART modules embedded. UARTs C..E have
+their MODEM-control signals tied off to a static state. However UARTs A
+and B can optionally route those signals to/from package pins, depending
+on the exact pinmux configuration.
 
-Discussion for it at below:
-http://marc.info/?l=linux-usb&m=137996395529294&w=2
+When these signals are not routed to package pins, false interrupts may
+trigger either temporarily, or permanently, all while not showing up in
+the IIR; it will read as NO_INT. This will eventually lead to the UART
+IRQ being disabled due to unhandled interrupts. When this happens, the
+kernel may print e.g.:
 
-Without this patcheset, imx28 works unstable at high AHB bus loading.
-If the bus loading is not high, the imx28 usb can work well at the most
-of time. There is a IC errata for this problem, usually, we consider
-IC errata is a problem not a new feature, and this workaround is needed
-for that, so we need to add them to stable tree 3.11+.
+    irq 68: nobody cared (try booting with the "irqpoll" option)
 
-Cc: robert.hodaszi@digi.com
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+In order to prevent this, enable UART_BUG_NOMSR. This prevents
+UART_IER_MSI from being enabled, which prevents the false interrupts
+from triggering.
+
+In practice, this is not needed under any of the following conditions:
+
+* On Tegra chips after Tegra30, since the HW bug has apparently been
+  fixed.
+
+* On UARTs C..E since their MODEM control signals are tied to the correct
+  static state which doesn't trigger the issue.
+
+* On UARTs A..B if the MODEM control signals are routed out to package
+  pins, since they will then carry valid signals.
+
+However, we ignore these exceptions for now, since they are only relevant
+if a board actually hooks up more than a 4-wire UART, and no currently
+supported board does this. If we ever support a board that does, we can
+refine the algorithm that enables UART_BUG_NOMSR to take those exceptions
+into account, and/or read a flag from DT/... that indicates that the
+board has hooked up and pinmux'd more than a 4-wire UART.
+
+Reported-by: Olof Johansson <olof@lixom.net> # autotester
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci.h |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/tty/serial/8250/8250_core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -203,6 +203,7 @@ struct ehci_hcd {			/* one per controlle
- 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
- 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
- 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
-+	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2670,6 +2670,10 @@ static void serial8250_config_port(struc
+ 	if (port->type == PORT_16550A && port->iotype == UPIO_AU)
+ 		up->bugs |= UART_BUG_NOMSR;
  
- 	/* required for usb32 quirk */
- 	#define OHCI_CTRL_HCFS          (3 << 6)
-@@ -679,6 +680,18 @@ static inline unsigned int ehci_readl(co
- #endif
- }
- 
-+#ifdef CONFIG_SOC_IMX28
-+static inline void imx28_ehci_writel(const unsigned int val,
-+		volatile __u32 __iomem *addr)
-+{
-+	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
-+}
-+#else
-+static inline void imx28_ehci_writel(const unsigned int val,
-+		volatile __u32 __iomem *addr)
-+{
-+}
-+#endif
- static inline void ehci_writel(const struct ehci_hcd *ehci,
- 		const unsigned int val, __u32 __iomem *regs)
- {
-@@ -687,7 +700,10 @@ static inline void ehci_writel(const str
- 		writel_be(val, regs) :
- 		writel(val, regs);
- #else
--	writel(val, regs);
-+	if (ehci->imx28_write_fix)
-+		imx28_ehci_writel(val, regs);
-+	else
-+		writel(val, regs);
- #endif
- }
++	/* HW bugs may trigger IRQ while IIR == NO_INT */
++	if (port->type == PORT_TEGRA)
++		up->bugs |= UART_BUG_NOMSR;
++
+ 	if (port->type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
+ 		autoconfig_irq(up);
  
 
 
