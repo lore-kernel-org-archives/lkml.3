@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaBDQw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:52:27 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:60765 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaBDQwX (ORCPT
+	id S932086AbaBDQxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:53:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:50862 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604AbaBDQw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:52:23 -0500
-Message-ID: <1391532741.8900.1.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client fixes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Torvalds Linus <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Tue, 04 Feb 2014 11:52:21 -0500
-Organization: PrimaryData Inc
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	Tue, 4 Feb 2014 11:52:57 -0500
+Message-ID: <52F11AE5.9000502@infradead.org>
+Date: Tue, 04 Feb 2014 08:52:53 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-media <linux-media@vger.kernel.org>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: linux-next: Tree for Feb 4 (media/radio/si4713/radio-usb-si4713.c)
+References: <20140204160704.0cf4cb0ccf45f413056e7f34@canb.auug.org.au>
+In-Reply-To: <20140204160704.0cf4cb0ccf45f413056e7f34@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/03/2014 09:07 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> This tree fails (more than usual) the powerpc allyesconfig build.
+> 
+> Changes since 20140203:
+> 
 
-The following changes since commit 8a1f006ad302ea178aefb1f8c67e679c696289e9:
+on i386:
 
-  Merge tag 'nfs-for-3.14-2' of git://git.linux-nfs.org/projects/trondmy/linux-nfs (2014-01-31 15:39:07 -0800)
+# CONFIG_I2C is not set
 
-are available in the git repository at:
+  CC [M]  drivers/media/radio/si4713/radio-usb-si4713.o
+drivers/media/radio/si4713/radio-usb-si4713.c: In function 'usb_si4713_video_device_release':
+drivers/media/radio/si4713/radio-usb-si4713.c:147:2: error: implicit declaration of function 'i2c_del_adapter' [-Werror=implicit-function-declaration]
+drivers/media/radio/si4713/radio-usb-si4713.c: In function 'si4713_register_i2c_adapter':
+drivers/media/radio/si4713/radio-usb-si4713.c:424:2: error: implicit declaration of function 'i2c_add_adapter' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[5]: *** [drivers/media/radio/si4713/radio-usb-si4713.o] Error 1
 
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.14-3
-
-for you to fetch changes up to 88a78a912ee059467ae6db7429a6efe4654620a5:
-
-  Merge branch 'acl_fixes' into linux-next (2014-02-03 17:13:45 -0500)
-
-----------------------------------------------------------------
-
-NFS client bugfixes for Linux 3.14
-
-Highlights:
-
-- Fix NFSv3 acl regressions
-- Fix NFSv4 memory corruption due to slot table abuse in nfs4_proc_open_confirm
-- nfs4_destroy_session must call rpc_destroy_waitqueue
-
-----------------------------------------------------------------
-Noah Massey (1):
-      nfs: fix setting of ACLs on file creation.
-
-Trond Myklebust (6):
-      NFSv4: Fix memory corruption in nfs4_proc_open_confirm
-      NFSv4.1: nfs4_destroy_session must call rpc_destroy_waitqueue
-      NFSv3: Remove unused function nfs3_proc_set_default_acl
-      NFSv3: Fix return value of nfs3_proc_setacls
-      fs: get_acl() must be allowed to return EOPNOTSUPP
-      Merge branch 'acl_fixes' into linux-next
-
- fs/nfs/nfs3acl.c        | 34 ++++++++++++----------------------
- fs/nfs/nfs4client.c     |  2 +-
- fs/nfs/nfs4proc.c       |  8 ++++----
- fs/nfs/nfs4session.c    | 25 ++++++++++++++++++++-----
- fs/nfs/nfs4session.h    |  2 +-
- fs/posix_acl.c          | 18 ++++++++++++------
- include/linux/nfs_xdr.h |  2 ++
- 7 files changed, 52 insertions(+), 39 deletions(-)
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
+~Randy
