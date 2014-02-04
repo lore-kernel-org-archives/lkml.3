@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934824AbaBDVoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:44:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57167 "EHLO
+	id S934435AbaBDVLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:11:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57034 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934446AbaBDVLj (ORCPT
+	with ESMTP id S934329AbaBDVLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:39 -0500
+	Tue, 4 Feb 2014 16:11:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Prinsloo <janroot@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 026/140] rtlwifi: rtl8192cu: Add new device ID
-Date: Tue,  4 Feb 2014 13:10:13 -0800
-Message-Id: <20140204211037.708654363@linuxfoundation.org>
+        Jun zhang <zhang.jun92@zte.com.cn>
+Subject: [PATCH 3.13 018/140] usb: option: add new zte 3g modem pids to option driver
+Date: Tue,  4 Feb 2014 13:10:05 -0800
+Message-Id: <20140204211037.484863271@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,29 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: =?UTF-8?q?=E5=BC=A0=E5=90=9B?= <zjn77777@163.com>
 
-commit f87f960b2fb802f26ee3b00c19320e57a9c583ff upstream.
+commit 4d90b819ae4c7ea8fd5e2bb7edc68c0f334be2e4 upstream.
 
-Reported-by: Jan Prinsloo <janroot@gmail.com>
-Tested-by: Jan Prinsloo <janroot@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jun zhang <zhang.jun92@zte.com.cn>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -307,6 +307,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
-+	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
- 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
- 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
- 	/* HP - Lite-On ,8188CUS Slim Combo */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1447,6 +1447,17 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xffe9, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8b, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8c, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8d, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8e, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff8f, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff90, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff91, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff92, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
+ 
+ 	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
 
 
