@@ -1,126 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669AbaBDQMg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:12:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59214 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753192AbaBDQMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:12:32 -0500
-Date: Tue, 4 Feb 2014 17:12:30 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH -v2 2/6] memcg: cleanup charge routines
-Message-ID: <20140204161230.GN4890@dhcp22.suse.cz>
-References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
- <1391520540-17436-3-git-send-email-mhocko@suse.cz>
- <20140204160509.GN6963@cmpxchg.org>
+	id S1754266AbaBDQOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:14:05 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47346 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaBDQOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:14:01 -0500
+Date: Tue, 4 Feb 2014 17:14:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sricharan R <r.sricharan@ti.com>
+cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk, tony@atomide.com, rnayak@ti.com,
+        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com,
+        robherring2@gmail.com, galak@codeaurora.org, rob.herring@calxeda.com,
+        santosh.shilimkar@ti.com, nm@ti.com, bcousson@baylibre.com,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for
+ Crossbar IP
+In-Reply-To: <52EF7D85.5070705@ti.com>
+Message-ID: <alpine.DEB.2.02.1402041713470.24986@ionos.tec.linutronix.de>
+References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <1386066445-28245-3-git-send-email-r.sricharan@ti.com> <52D7B2CA.8080902@ti.com> <52EF7D85.5070705@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140204160509.GN6963@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 04-02-14 11:05:09, Johannes Weiner wrote:
-> On Tue, Feb 04, 2014 at 02:28:56PM +0100, Michal Hocko wrote:
-[...]
-> > +static bool current_bypass_charge(void)
-> > +{
-> > +	/*
-> > +	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
-> > +	 * in system level. So, allow to go ahead dying process in addition to
-> > +	 * MEMDIE process.
-> > +	 */
-> > +	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> > +		     || fatal_signal_pending(current)))
-> > +		return true;
-> > +
-> > +	return false;
-> > +}
-> 
-> I'd just leave it inline at this point, it lines up nicely with the
-> other pre-charge checks in try_charge, which is at this point short
-> enough to take this awkward 3-liner.
+On Mon, 3 Feb 2014, Sricharan R wrote:
+> > I already have your reviewed-by tag for the first patch in this series.
+> > 
+> > Kevin was pointing out that irqchip maintainer tag is needed for this patch as well
+> > to be merged. We are planning to take this series through arm-soc tree.
+> > 
+> > Can i please have your tag for this patch as well ?
 
-I can keep it inline of course. I thought having it out of line would
-make it more obvious what are the bypass conditions. But as there is
-still mem_cgroup_is_root then it is probably not the best thing to do.
-
-> > +static int mem_cgroup_try_charge_memcg(gfp_t gfp_mask,
-> >  				   unsigned int nr_pages,
-> > -				   struct mem_cgroup **ptr,
-> > +				   struct mem_cgroup *memcg,
-> >  				   bool oom)
-> >  {
-> >  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
-> >  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> > -	struct mem_cgroup *memcg = NULL;
-> >  	int ret;
-> >  
-> > -	/*
-> > -	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
-> > -	 * in system level. So, allow to go ahead dying process in addition to
-> > -	 * MEMDIE process.
-> > -	 */
-> > -	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> > -		     || fatal_signal_pending(current)))
-> > +	if (mem_cgroup_is_root(memcg) || current_bypass_charge())
-> >  		goto bypass;
-> >  
-> >  	if (unlikely(task_in_memcg_oom(current)))
-> >  		goto nomem;
-> >  
-> > +	if (consume_stock(memcg, nr_pages))
-> > +		return 0;
-> > +
-> >  	if (gfp_mask & __GFP_NOFAIL)
-> >  		oom = false;
-> >  
-> > -	/*
-> > -	 * We always charge the cgroup the mm_struct belongs to.
-> > -	 * The mm_struct's mem_cgroup changes on task migration if the
-> > -	 * thread group leader migrates. It's possible that mm is not
-> > -	 * set, if so charge the root memcg (happens for pagecache usage).
-> > -	 */
-> > -	if (!*ptr && !mm)
-> > -		*ptr = root_mem_cgroup;
-> 
-> [...]
-> 
-> >  /*
-> > + * Charges and returns memcg associated with the given mm (or root_mem_cgroup
-> > + * if mm is NULL). Returns NULL if memcg is under OOM.
-> > + */
-> > +static struct mem_cgroup *mem_cgroup_try_charge_mm(struct mm_struct *mm,
-> > +				   gfp_t gfp_mask,
-> > +				   unsigned int nr_pages,
-> > +				   bool oom)
-> > +{
-> > +	struct mem_cgroup *memcg;
-> > +	int ret;
-> > +
-> > +	/*
-> > +	 * We always charge the cgroup the mm_struct belongs to.
-> > +	 * The mm_struct's mem_cgroup changes on task migration if the
-> > +	 * thread group leader migrates. It's possible that mm is not
-> > +	 * set, if so charge the root memcg (happens for pagecache usage).
-> > +	 */
-> > +	if (!mm)
-> > +		goto bypass;
-> 
-> Why shuffle it around right before you remove it anyway?  Just start
-> the series off with the patches that delete stuff without having to
-> restructure anything, get those out of the way.
-
-As mentioned in the previous email. I wanted to have this condition
-removal bisectable. So it is removed in the next patch when it is
-replaced by VM_BUG_ON.
--- 
-Michal Hocko
-SUSE Labs
+Acked-by-me
