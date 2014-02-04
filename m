@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaBDFvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 00:51:50 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:34299 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbaBDFvl (ORCPT
+	id S1751989AbaBDFyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 00:54:33 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:64444 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbaBDFy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 00:51:41 -0500
-Date: Mon, 3 Feb 2014 23:51:31 -0600
-From: David Fries <david@fries.net>
-To: "zbr@ioremap.net" <zbr@ioremap.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] w1: refcnt fix, skip non-error send, docs
-Message-ID: <20140204055131.GI5342@spacedout.fries.net>
-References: <1391390104-31154-1-git-send-email-David@Fries.net>
- <9071391471978@web15j.yandex.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9071391471978@web15j.yandex.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Mon, 03 Feb 2014 23:51:32 -0600 (CST)
+	Tue, 4 Feb 2014 00:54:27 -0500
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] regulator: core: Make regulator object reflect configured voltage
+Date: Mon,  3 Feb 2014 21:54:28 -0800
+Message-Id: <1391493268-3242-1-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 03:59:38AM +0400, zbr@ioremap.net wrote:
-> Hi
-> 
-> 03.02.2014, 05:15, "David Fries" <David@Fries.net>:
-> 
-> >  I could submit these patches as in, which would require the previous
-> >  set, or I could merge the documentation into the previous set and
-> >  resubmit them all since they haven't made it into the kernel tree yet.
-> >  Opinions?
-> >
-> >  Here's a small refcnt fix, skipping sending non-error messages, and
-> >  documentation and comment updates.
-> >
-> >  non-error error messages:
-> >  Currently every master or slave command is sending a response with
-> >  w1_netlink_send_error no matter if there is an error or not.  This
-> >  makes commands like list slaves W1_CMD_LIST_SLAVES or W1_CMD_READ
-> >  return two messages, one with data and one without.  That is a problem
-> >  with the list slaves because they are identical except for one having
-> >  data and one not, and since there could be no slaves known to the
-> >  kernel you can't just discard the no data case, unless the program
-> >  were to expect two replies.  So I propose only sending the error reply
-> >  if there is an error, in which case there wouldn't be a normal reply
-> >  (such as read).  This would mean commands like write would no longer
-> >  return a response unless there was an error.  If an application wanted
-> >  to verify the kernel received the write message it could follow it by
-> >  a read to verify the data or just that read came after write and had a
-> >  response so write must have completed without error.  I think it is
-> >  safe to do away with the extra replies.  If someone sees a big enough
-> >  need for this, I could modify it so all commands return one response,
-> >  with commands like write always calling send error even if there
-> >  wasn't one.
-> 
-> I created this protocol to handle cases like nothing is returned, but yet userspace knows
-> operations has been completed. Also, you can not really change it at this time - there are
-> already userspace application which may depend on the last ack to find out its request completed.
-> 
-> Reference counter fix is correct, please submit it in the separate patch.
+In the case when a regulator is initialized from DT with equal min and max
+voltages the voltage is applied on initialization and future calls to
+regulator_set_voltage fails. This behavious is different than if the regulator
+is configured to be a span and therefor requires logic to handle this
+difference in the consumer driver.
 
-Help me understand what the protocol is supposed to be.  Assuming
-there aren't any errors, is there supposed to be a
-w1_netlink_send_error generated reply per netlink packet (cn_msg), per
-w1_netlink_msg, or per w1_netlink_cmd?
+Eliminate this difference by populating the min_uV and max_uV of the newly
+created regulator from the constraints so that calles to regulator_set_voltage
+is considered no-ops and not a failure.
 
-What about the cn_msg seq and ack values?  I assume the kernel
-response should carry the same seq number as the request, but what
-should the ack be set to?
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+---
+ drivers/regulator/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index d85f313..9c82d37 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1209,6 +1209,16 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
+ 	    _regulator_is_enabled(rdev))
+ 		regulator->always_on = true;
+ 
++	/*
++	 * Make the regulator reflect the configured voltage selected in
++	 * machine_constraints_voltage()
++	 */
++	if (rdev->constraints->apply_uV &&
++	    rdev->constraints->min_uV == rdev->constraints->max_uV) {
++		regulator->min_uV = rdev->constraints->min_uV;
++		regulator->max_uV = rdev->constraints->min_uV;
++	}
++
+ 	mutex_unlock(&rdev->mutex);
+ 	return regulator;
+ overflow_err:
 -- 
-David Fries <david@fries.net>    PGP pub CB1EE8F0
-http://fries.net/~david/
+1.7.9.5
+
