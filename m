@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935234AbaBDVbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:31:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57364 "EHLO
+	id S935262AbaBDVc3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:32:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934610AbaBDVMQ (ORCPT
+	with ESMTP id S934601AbaBDVMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:16 -0500
+	Tue, 4 Feb 2014 16:12:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lior Amsalem <alior@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.13 098/140] ata: sata_mv: fix disk hotplug for Armada 370/XP SoCs
-Date: Tue,  4 Feb 2014 13:11:25 -0800
-Message-Id: <20140204211039.774830071@linuxfoundation.org>
+        Thomas Huth <thuth@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 3.13 069/140] KVM: s390: Always store status during SIGP STOP_AND_STORE_STATUS
+Date: Tue,  4 Feb 2014 13:10:56 -0800
+Message-Id: <20140204211038.929687964@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -34,95 +30,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lior Amsalem <alior@marvell.com>
+From: Thomas Huth <thuth@linux.vnet.ibm.com>
 
-commit 9013d64e661fc2a37a1742670202171c27fef4b5 upstream.
+commit e879892c725217a4af1012f31ae56be762473216 upstream.
 
-On Armada 370/XP SoCs, once a disk is removed from a SATA port, then the
-re-plug events are not detected by the sata_mv driver. This patch fixes
-the issue by updating the PHY speed in the LP_PHY_CTL register (0x58)
-according to the SControl speed.
+The SIGP order STOP_AND_STORE_STATUS is defined to stop a CPU and store
+its status. However, we only stored the status if the CPU was still
+running, so make sure that the status is now also stored if the CPU was
+already stopped. This fixes the problem that the CPU information was
+not stored correctly in kdump files, rendering them unreadable.
 
-Note that this fix is only applied if the compatible string
-"marvell,armada-370-sata" is found in the SATA DT node.
-
-Fixes: 9ae6f740b49f ("arm: mach-mvebu: add support for Armada 370 and Armada XP with DT")
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Signed-off-by: Nadav Haklai <nadavh@marvell.com>
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_mv.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ arch/s390/kvm/kvm-s390.c |   25 +++++++++++++++----------
+ arch/s390/kvm/kvm-s390.h |    4 ++--
+ arch/s390/kvm/sigp.c     |   15 ++++++++++++++-
+ 3 files changed, 31 insertions(+), 13 deletions(-)
 
---- a/drivers/ata/sata_mv.c
-+++ b/drivers/ata/sata_mv.c
-@@ -304,6 +304,7 @@ enum {
- 	MV5_LTMODE		= 0x30,
- 	MV5_PHY_CTL		= 0x0C,
- 	SATA_IFCFG		= 0x050,
-+	LP_PHY_CTL		= 0x058,
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -885,7 +885,7 @@ static int __guestcopy(struct kvm_vcpu *
+  * KVM_S390_STORE_STATUS_NOADDR: -> 0x1200 on 64 bit
+  * KVM_S390_STORE_STATUS_PREFIXED: -> prefix
+  */
+-int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
++int kvm_s390_store_status_unloaded(struct kvm_vcpu *vcpu, unsigned long addr)
+ {
+ 	unsigned char archmode = 1;
+ 	int prefix;
+@@ -903,15 +903,6 @@ int kvm_s390_vcpu_store_status(struct kv
+ 	} else
+ 		prefix = 0;
  
- 	MV_M2_PREAMP_MASK	= 0x7e0,
+-	/*
+-	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
+-	 * copying in vcpu load/put. Lets update our copies before we save
+-	 * it into the save area
+-	 */
+-	save_fp_ctl(&vcpu->arch.guest_fpregs.fpc);
+-	save_fp_regs(vcpu->arch.guest_fpregs.fprs);
+-	save_access_regs(vcpu->run->s.regs.acrs);
+-
+ 	if (__guestcopy(vcpu, addr + offsetof(struct save_area, fp_regs),
+ 			vcpu->arch.guest_fpregs.fprs, 128, prefix))
+ 		return -EFAULT;
+@@ -956,6 +947,20 @@ int kvm_s390_vcpu_store_status(struct kv
+ 	return 0;
+ }
  
-@@ -431,6 +432,7 @@ enum {
- 	MV_HP_CUT_THROUGH	= (1 << 10),	/* can use EDMA cut-through */
- 	MV_HP_FLAG_SOC		= (1 << 11),	/* SystemOnChip, no PCI */
- 	MV_HP_QUIRK_LED_BLINK_EN = (1 << 12),	/* is led blinking enabled? */
-+	MV_HP_FIX_LP_PHY_CTL	= (1 << 13),	/* fix speed in LP_PHY_CTL ? */
- 
- 	/* Port private flags (pp_flags) */
- 	MV_PP_FLAG_EDMA_EN	= (1 << 0),	/* is EDMA engine enabled? */
-@@ -1358,6 +1360,7 @@ static int mv_scr_write(struct ata_link
- 
- 	if (ofs != 0xffffffffU) {
- 		void __iomem *addr = mv_ap_base(link->ap) + ofs;
-+		struct mv_host_priv *hpriv = link->ap->host->private_data;
- 		if (sc_reg_in == SCR_CONTROL) {
- 			/*
- 			 * Workaround for 88SX60x1 FEr SATA#26:
-@@ -1374,6 +1377,18 @@ static int mv_scr_write(struct ata_link
- 			 */
- 			if ((val & 0xf) == 1 || (readl(addr) & 0xf) == 1)
- 				val |= 0xf000;
-+
-+			if (hpriv->hp_flags & MV_HP_FIX_LP_PHY_CTL) {
-+				void __iomem *lp_phy_addr =
-+					mv_ap_base(link->ap) + LP_PHY_CTL;
-+				/*
-+				 * Set PHY speed according to SControl speed.
-+				 */
-+				if ((val & 0xf0) == 0x10)
-+					writelfl(0x7, lp_phy_addr);
-+				else
-+					writelfl(0x227, lp_phy_addr);
-+			}
- 		}
- 		writelfl(val, addr);
- 		return 0;
-@@ -4110,6 +4125,15 @@ static int mv_platform_probe(struct plat
- 	if (rc)
- 		goto err;
- 
++int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
++{
 +	/*
-+	 * To allow disk hotplug on Armada 370/XP SoCs, the PHY speed must be
-+	 * updated in the LP_PHY_CTL register.
++	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
++	 * copying in vcpu load/put. Lets update our copies before we save
++	 * it into the save area
 +	 */
-+	if (pdev->dev.of_node &&
-+		of_device_is_compatible(pdev->dev.of_node,
-+					"marvell,armada-370-sata"))
-+		hpriv->hp_flags |= MV_HP_FIX_LP_PHY_CTL;
++	save_fp_ctl(&vcpu->arch.guest_fpregs.fpc);
++	save_fp_regs(vcpu->arch.guest_fpregs.fprs);
++	save_access_regs(vcpu->run->s.regs.acrs);
 +
- 	/* initialize adapter */
- 	rc = mv_init_host(host);
- 	if (rc)
++	return kvm_s390_store_status_unloaded(vcpu, addr);
++}
++
+ static int kvm_vcpu_ioctl_enable_cap(struct kvm_vcpu *vcpu,
+ 				     struct kvm_enable_cap *cap)
+ {
+--- a/arch/s390/kvm/kvm-s390.h
++++ b/arch/s390/kvm/kvm-s390.h
+@@ -150,8 +150,8 @@ int kvm_s390_handle_eb(struct kvm_vcpu *
+ int kvm_s390_handle_sigp(struct kvm_vcpu *vcpu);
+ 
+ /* implemented in kvm-s390.c */
+-int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu,
+-				 unsigned long addr);
++int kvm_s390_store_status_unloaded(struct kvm_vcpu *vcpu, unsigned long addr);
++int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr);
+ void s390_vcpu_block(struct kvm_vcpu *vcpu);
+ void s390_vcpu_unblock(struct kvm_vcpu *vcpu);
+ void exit_sie(struct kvm_vcpu *vcpu);
+--- a/arch/s390/kvm/sigp.c
++++ b/arch/s390/kvm/sigp.c
+@@ -130,6 +130,7 @@ unlock:
+ static int __inject_sigp_stop(struct kvm_s390_local_interrupt *li, int action)
+ {
+ 	struct kvm_s390_interrupt_info *inti;
++	int rc = SIGP_CC_ORDER_CODE_ACCEPTED;
+ 
+ 	inti = kzalloc(sizeof(*inti), GFP_ATOMIC);
+ 	if (!inti)
+@@ -139,6 +140,8 @@ static int __inject_sigp_stop(struct kvm
+ 	spin_lock_bh(&li->lock);
+ 	if ((atomic_read(li->cpuflags) & CPUSTAT_STOPPED)) {
+ 		kfree(inti);
++		if ((action & ACTION_STORE_ON_STOP) != 0)
++			rc = -ESHUTDOWN;
+ 		goto out;
+ 	}
+ 	list_add_tail(&inti->list, &li->list);
+@@ -150,7 +153,7 @@ static int __inject_sigp_stop(struct kvm
+ out:
+ 	spin_unlock_bh(&li->lock);
+ 
+-	return SIGP_CC_ORDER_CODE_ACCEPTED;
++	return rc;
+ }
+ 
+ static int __sigp_stop(struct kvm_vcpu *vcpu, u16 cpu_addr, int action)
+@@ -174,6 +177,16 @@ static int __sigp_stop(struct kvm_vcpu *
+ unlock:
+ 	spin_unlock(&fi->lock);
+ 	VCPU_EVENT(vcpu, 4, "sent sigp stop to cpu %x", cpu_addr);
++
++	if ((action & ACTION_STORE_ON_STOP) != 0 && rc == -ESHUTDOWN) {
++		/* If the CPU has already been stopped, we still have
++		 * to save the status when doing stop-and-store. This
++		 * has to be done after unlocking all spinlocks. */
++		struct kvm_vcpu *dst_vcpu = kvm_get_vcpu(vcpu->kvm, cpu_addr);
++		rc = kvm_s390_store_status_unloaded(dst_vcpu,
++						KVM_S390_STORE_STATUS_NOADDR);
++	}
++
+ 	return rc;
+ }
+ 
 
 
