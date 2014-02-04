@@ -1,156 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935144AbaBDV1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:27:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57444 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934672AbaBDVM3 (ORCPT
+	id S935162AbaBDV1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:27:40 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54728 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935148AbaBDV1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:29 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brecht Machiels <brecht@mos6581.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.13 074/140] rtc-cmos: Add an alarm disable quirk
-Date: Tue,  4 Feb 2014 13:11:01 -0800
-Message-Id: <20140204211039.075264563@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
-References: <20140204211036.967663852@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Tue, 4 Feb 2014 16:27:34 -0500
+Date: Tue, 4 Feb 2014 13:27:32 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] fdtable: Avoid triggering OOMs from alloc_fdmem
+In-Reply-To: <871tzirdwf.fsf@xmission.com>
+Message-ID: <alpine.DEB.2.02.1402041312410.26019@chino.kir.corp.google.com>
+References: <87r47jsb2p.fsf@xmission.com> <1391530721.4301.8.camel@edumazet-glaptop2.roam.corp.google.com> <871tzirdwf.fsf@xmission.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 4 Feb 2014, Eric W. Biederman wrote:
 
-------------------
+> My gut feel says if there is a code path that has __GFP_NOWARN and
+> because of PAGE_ALLOC_COSTLY_ORDER we loop forever then there is
+> something fishy going on.
+> 
 
-From: Borislav Petkov <bp@alien8.de>
+The __GFP_NOWARN without __GFP_NORETRY in alloc_fdmem() is pointless 
+because we already know that the allocation is PAGE_ALLOC_COSTLY_ORDER or 
+smaller.  That function encodes specific knowledge of the page allocator's 
+implementation so it leads me to believe that __GFP_NOWARN was intended to 
+be __GFP_NORETRY from the start.  Otherwise, it's just set pointlessly and 
+specifically allows for the oom killing that you're now reporting.  Since 
+it can fallback to vmalloc() after exhausting all of the page allocator's 
+capabilities, the __GFP_NOWARN|__GFP_NORETRY seems entirely appropriate.
 
-commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
+The vmalloc() has never been called in this function because of the 
+infinite loop in kmalloc() because of its allocation context, but it 
+definitely seems better than oom killing something.
 
-41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
-functionality to disable the RTC wake alarm when shutting down the box.
+Acked-by: David Rientjes <rientjes@google.com>
 
-However, there are at least two b0rked BIOSes we know about:
+> I would love to hear some people who are more current on the mm
+> subsystem than I am chime in.  It might be that the darn fix is going to
+> be to teach __alloc_pages_slowpath to not loop forever, unless order == 0.
 
-https://bugzilla.novell.com/show_bug.cgi?id=812592
-https://bugzilla.novell.com/show_bug.cgi?id=805740
+It doesn't loop forever, it will either return NULL because of its 
+allocation context or the oom killer will kill something, even for order-3 
+allocations.  In the case that you've modified, you have sane fallback 
+behavior that can be utilized rather than the oom killer and __GFP_NORETRY 
+was reasonable from the start.
 
-where, when wakeup alarm is enabled in the BIOS, the machine reboots
-automatically right after shutdown, regardless of what wakeup time is
-programmed.
-
-Bisecting the issue lead to this patch so disable its functionality with
-a DMI quirk only for those boxes.
-
-Cc: Brecht Machiels <brecht@mos6581.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-[jstultz: Changed variable name for clarity, added extra dmi entry]
-Tested-by: Brecht Machiels <brecht@mos6581.org>
-Tested-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/rtc/rtc-cmos.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 51 insertions(+), 1 deletion(-)
-
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -34,11 +34,11 @@
- #include <linux/interrupt.h>
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
--#include <linux/mod_devicetable.h>
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/dmi.h>
- 
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
- 	return 0;
- }
- 
-+/*
-+ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
-+ */
-+static bool alarm_disable_quirk;
-+
-+static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
-+{
-+	alarm_disable_quirk = true;
-+	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
-+	pr_info("RTC alarms disabled\n");
-+	return 0;
-+}
-+
-+static const struct dmi_system_id rtc_quirks[] __initconst = {
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "IBM Truman",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
-+		},
-+	},
-+	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Gigabyte GA-990XA-UD3",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
-+		},
-+	},
-+	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
-+	{
-+		.callback = set_alarm_disable_quirk,
-+		.ident    = "Toshiba Satellite L300",
-+		.matches  = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
-+		},
-+	},
-+	{}
-+};
-+
- static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
- {
- 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
-@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
- 	if (!is_valid_irq(cmos->irq))
- 		return -EINVAL;
- 
-+	if (alarm_disable_quirk)
-+		return 0;
-+
- 	spin_lock_irqsave(&rtc_lock, flags);
- 
- 	if (enabled)
-@@ -1157,6 +1205,8 @@ static int __init cmos_init(void)
- 			platform_driver_registered = true;
- 	}
- 
-+	dmi_check_system(rtc_quirks);
-+
- 	if (retval == 0)
- 		return 0;
- 
-
-
+The question is simple enough: do we want to change 
+PAGE_ALLOC_COSTLY_ORDER to be smaller so that order-3 does return NULL 
+without oom killing?  Perhaps there's an argument to be made that does 
+exactly that, but by not setting __GFP_NORETRY you are really demanding 
+order-3 memory at the time you allocate it and are willing to accept the 
+consequences to free that memory.  Should we make everything except for 
+order-0 inherently __GFP_NORETRY and introduce a replacement __GFP_RETRY?  
+That's doable as well, but it would be a massive effort.
