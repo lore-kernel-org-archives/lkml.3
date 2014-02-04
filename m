@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaBDHAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 02:00:22 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:46789 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaBDHAS (ORCPT
+	id S1753716AbaBDHBC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 02:01:02 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59164 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaBDHAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 02:00:18 -0500
+	Tue, 4 Feb 2014 02:00:55 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+To: gregkh@linuxfoundation.org, dulshani.gunawardhana89@gmail.com,
+        shaun@XResource.ca, lisa@xenapiadmin.com, sima.baymani@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] staging: cxt1e1: fix pointer-integer size mismatch warning
+Date: Tue,  4 Feb 2014 16:01:26 +0900
+Message-Id: <1391497286-6951-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-In-Reply-To: <8761ovwemu.fsf@devron.myhome.or.jp>
-References: <1387953112-2828-1-git-send-email-linkinjeon@gmail.com>
-	<87eh3kx1n6.fsf@devron.myhome.or.jp>
-	<CAKYAXd9mm6KmMu6XvQoFynQtyAC8yR5rCd12SMoB_PFgojbEiw@mail.gmail.com>
-	<87a9e7wq6w.fsf@devron.myhome.or.jp>
-	<CAKYAXd8K9tO2zyZvHtMRA54=XvWowaA3SVa2H6_R5bnmKgG5Dg@mail.gmail.com>
-	<8761ovwemu.fsf@devron.myhome.or.jp>
-Date: Tue, 4 Feb 2014 16:00:17 +0900
-Message-ID: <CAKYAXd8MNy=tp3U26u-5G21ZHcQ8gPRTrrEbAvhZKcvFJJRyZQ@mail.gmail.com>
-Subject: Re: [PATCH v3 5/6] fat: permit to return phy block number by fibmap
- in fallocated region
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-04, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> 2014-02-04, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->>> Namjae Jeon <linkinjeon@gmail.com> writes:
->>>
->>>>>>  	/* fat_get_cluster() assumes the requested blocknr isn't truncated.
->>>>>> */
->>>>>>  	down_read(&MSDOS_I(mapping->host)->truncate_lock);
->>>>>> +	/* To get block number beyond file size in fallocated region */
->>>>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 1);
->>>>>>  	blocknr = generic_block_bmap(mapping, block, fat_get_block);
->>>>>> +	atomic_set(&MSDOS_I(mapping->host)->beyond_isize, 0);
->>>>>>  	up_read(&MSDOS_I(mapping->host)->truncate_lock);
->>>>>
->>>>> This is racy. While user is using bmap, kernel can allocate new
->>>>> blocks.
->>>>> We should use another function for this.
->>>> I understand that fat can map fallocated blocks in read case while
->>>> user is using bmap.
->>>> But I can not find the case allocate new blocks.
->>>> If I am missing something, Could you please elaborate more ?
->>>> Is it a case of _bmap request returning the block number for block
->>>> allocated in parallel write path ?
->>>
->>> ->beyond_size is global for inode. So, write(2) path on same inode with
->>> bmap() also can see 1 set by bmap() while another process is using
->>> bmap().
->> 'create' flag  will be 1 in write(2) path. ->beyond_isize will only be
->> checked when 'create' flag is 0. Is there any case to be racy by
->> beyond_isize in write(2) path ?
->
-> Ah, so instead of write, it will assign physical address to buffers
-> beyond i_size for simple read if race?  In this case, it is still wrong.
-Right. I will fix this case.
-Thanks for review!
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Fix the pointer-integer size mismatch warning below:
+	drivers/staging/cxt1e1/functions.c: In function ‘VMETRO_TRACE’:
+	drivers/staging/cxt1e1/functions.c:268:21: warning: cast from pointer
+			to integer of different size [-Wpointer-to-int-cast]
+	     u_int32_t   y = (u_int32_t) x;
+			     ^
+
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ drivers/staging/cxt1e1/functions.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/cxt1e1/functions.c b/drivers/staging/cxt1e1/functions.c
+index 95218e2..8f19a39 100644
+--- a/drivers/staging/cxt1e1/functions.c
++++ b/drivers/staging/cxt1e1/functions.c
+@@ -265,7 +265,7 @@ extern ci_t *CI;                /* dummy pointer to board ZERO's data */
+ void
+ VMETRO_TRACE (void *x)
+ {
+-    u_int32_t   y = (u_int32_t) x;
++    u_int32_t   y = (u_int32_t)(uintptr_t) x;
+ 
+     pci_write_32 ((u_int32_t *) &CI->cpldbase->leds, y);
+ }
+-- 
+1.8.3.2
+
