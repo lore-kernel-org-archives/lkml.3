@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445AbaBDT1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:27:33 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:56607 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaBDT1b (ORCPT
+	id S1754800AbaBDTbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:31:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48847 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735AbaBDTbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:27:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH 09/10] watchdog: xilinx: Add missing binding
-Date: Tue, 4 Feb 2014 20:27:15 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-doc@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <3121595.GbLMuGPlvA@wuerfel> <4c4539fe-e810-4c0a-9a01-c1e4c67ea661@AM1EHSMHS007.ehs.local>
-In-Reply-To: <4c4539fe-e810-4c0a-9a01-c1e4c67ea661@AM1EHSMHS007.ehs.local>
+	Tue, 4 Feb 2014 14:31:44 -0500
+Date: Tue, 4 Feb 2014 20:31:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Remove hpet vclock support
+In-Reply-To: <d348afdb2f6acc41dde0381396226b69a0358f8b.1391210357.git.luto@amacapital.net>
+Message-ID: <alpine.DEB.2.02.1402042011400.24986@ionos.tec.linutronix.de>
+References: <d348afdb2f6acc41dde0381396226b69a0358f8b.1391210357.git.luto@amacapital.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402042027.15898.arnd@arndb.de>
-X-Provags-ID: V02:K0:WEt0hmQRc/9xiwOlns99eMV8SpuCA6l3RftCL/jg+af
- Rage8ao6AEz3Fw6iScwaJ4D4G/Ra4ex4r42vDzqgowNFTFrknh
- vO/z1snmaQ/503vhpy8gOps6754ConeITA3fGcvmPmTXN9/7UZ
- /SXkawFOY3mw/cMLYfYZhc0k9bFbqcmcVZbHNFtYpHLq30spUe
- Uhp60JHuCPKVI5OitJlpjucRUO7khK2+QdOh5G4KMtT8y1EDWt
- HQy51ITfrNH2PEXED1qUVSkFiuS/tA9Y0yYGjJBXQa21v5K3eM
- dz3d67jyUd1mPeJy756rL6zSAhuN79THwQwmNiIjjHNDPtMuky
- RO0wFZuRnFJkp2+0HrYFb0FHNnw+Nihep8yzP148u
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 February 2014, Michal Simek wrote:
-> On 02/03/2014 04:32 PM, Arnd Bergmann wrote:
-> > On Monday 03 February 2014 16:13:47 Michal Simek wrote:
-> >> Intention wasn't to fix binding but document current one
-> >> which is in mainline for a long time.
-> > 
-> > Ok, I see.
-> > 
-> >> Apart of this - yes, wdt-enable-once is nowayout and wdt-interval should be timeout
-> >> is seconds, and clock-frequency should go out and use CCF for getting clock.
-> > 
-> > Could we make a common binding then, and document that the xilinx
-> > watchdog can optionally provide either one?
-> 
-> Do you mean to have 2 DT bindings?
-> 
-> This binding is used from 2011-07.
-> It means it was generated for all hw designs at least from this time.
-> I would say from DT usage on Microblaze because it is not special case
-> in our dt generator.
+On Fri, 31 Jan 2014, Andy Lutomirski wrote:
 
-I certainly wasn't suggesting to break the binding, quite the contrary.
-What I tried to say is that the properties look like they should be
-useful for different kinds of watchdogs, not just xilinx, so it would
-be good to have a common definition using generic strings.
+> The HPET is so amazingly slow that this is barely a win.  It adds
 
-The xilinx driver would definitely have to keep supporting the traditional
-property names, but it could also support the generic names in the
-future.
+That's nonsense. It's definitely a win to access HPET directly
+especially on older systems with TSC wreckage. Why do you want to
+enforce a syscall if we can read out the data straight from user
+space. The systems which are forced to use HPET have slower syscalls
+than those which have a proper TSC.
 
-> xlnx,XXX are XXX parameters which you have to setup in tools
-> and get synthesized. This is valid for all xilinx IPs. We have full
-> IP description by generating xlnx,XXX parameters directly from tools
-> because we know all variants which can happen.
->
-> Just back to your previous post:
-> "I'm not sure about the enable-once flag, which seems to just map to the
-> "nowayout" watchdog option that is not a hardware feature at all"
-> this is hw feature which you can select in tools because this is fpga. :-)
+> complexity, and it scares me a tiny bit to map a piece of crappy
+> hardware where every userspace program can poke at it (even if said
+> poking is read-only).  Let's just remove it.
 
-Ah, so you mean the properties are not settings that the driver
-programs into the hardware, but they are hardware properties that the
-driver reports to user space?
+What's scary about granting user space access to a read only resource?
+ 
+> This is probably a tiny speedup on kvmclock systems.
+ 
+Oh, now you are coming to the real point of your change:
 
-	Arnd
+    You want to save a few cycles in a guest system.
+
+So you justify that by completely unbacked assumptions and a pointless
+blurb about scariness.
+
+We are not removing existing functionality which is useful for parts
+of our userbase just to make financial online gambling faster.
+
+>  #ifdef CONFIG_PARAVIRT_CLOCK
+>  
+>  static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+> @@ -157,8 +151,6 @@ notrace static inline u64 vgetsns(int *mode)
+>  	cycles_t cycles;
+>  	if (gtod->clock.vclock_mode == VCLOCK_TSC)
+>  		cycles = vread_tsc();
+> -	else if (gtod->clock.vclock_mode == VCLOCK_HPET)
+> -		cycles = vread_hpet();
+>  #ifdef CONFIG_PARAVIRT_CLOCK
+>  	else if (gtod->clock.vclock_mode == VCLOCK_PVCLOCK)
+>  		cycles = vread_pvclock(mode);
+
+I really doubt, that your tiny speedup is even measurable simply
+because the branch prediction wont fail and the cache foot print is
+not that excitingly smaller. I could be wrong as usual, but its up to
+you to provide proper numbers which prove that:
+
+    - there is no impact for the actual forced to use HPET systems
+
+    - there is a measurable improvement for the PV clock case
+
+and not before you tried to revert the evaluation order of VCLOCK_HPET
+and VCLOCK_PVCLOCK.
+
+Thanks,
+
+	tglx
