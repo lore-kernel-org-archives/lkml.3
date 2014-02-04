@@ -1,49 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569AbaBDNVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 08:21:31 -0500
-Received: from mga11.intel.com ([192.55.52.93]:52713 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753796AbaBDNV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:21:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,779,1384329600"; 
-   d="scan'208";a="469639536"
-Date: Tue, 4 Feb 2014 15:28:31 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Bin Gao <bin.gao@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Bin Gao <bin.gao@intel.com>
-Subject: Re: [PATCH v2] x86, tsc: Add missing Baytrail frequency to the table
-Message-ID: <20140204132831.GA18029@intel.com>
-References: <20140123150912.7ee822a0@alan.etchedpixels.co.uk>
- <1390553196-15346-1-git-send-email-mika.westerberg@linux.intel.com>
- <4460FA1017EA3844B646E90DA4E984057D5A4E9F@ORSMSX103.amr.corp.intel.com>
- <20140125090923.GA106810@bin.fm.intel.com>
- <20140127102002.GT18029@intel.com>
- <20140128120407.GB18029@intel.com>
- <20140129214754.GA102071@bin.fm.intel.com>
+	id S1754185AbaBDNXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 08:23:21 -0500
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:56794 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaBDNXS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 08:23:18 -0500
+X-Greylist: delayed 53317 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Feb 2014 08:23:18 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140129214754.GA102071@bin.fm.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [78.145.137.174]
+In-Reply-To: <20140204122951.GC27975@e106497-lin.cambridge.arm.com>
+References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com>
+	<1391453028-23191-2-git-send-email-Liviu.Dudau@arm.com>
+	<CAPcvp5EF_=G=VwWLfbw6mwczErTHeq4AbVALYpuAzb3c5eb2rA@mail.gmail.com>
+	<20140204122951.GC27975@e106497-lin.cambridge.arm.com>
+Date: Tue, 4 Feb 2014 13:23:17 +0000
+Message-ID: <CAPcvp5HN4pBysOdS5_ep_3Lp7GDDKw4YrgmKjYzBet7PtaOLUg@mail.gmail.com>
+Subject: Re: [PATCH] arm64: Add architecture support for PCI
+From: Andrew Murray <amurray@embedded-bits.co.uk>
+To: Andrew Murray <amurray@embedded-bits.co.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 29, 2014 at 01:47:54PM -0800, Bin Gao wrote:
-> On Tue, Jan 28, 2014 at 02:04:07PM +0200, Mika Westerberg wrote:
-> > Actually it does not work. I had the fallback path still in the patch when
-> > I tried.
-> 
-> Let's merge the ptach v2 then(continue on msr calibration retuning 0).
-> All supported SoCs now have the correct frequency ID coding
-> so continuing on non-PIC SoCs has very very small possibility.
+On 4 February 2014 12:29, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> On Mon, Feb 03, 2014 at 10:34:40PM +0000, Andrew Murray wrote:
+>> On 3 February 2014 18:43, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>> > diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+>> > index 4cc813e..ce5bad2 100644
+>> > --- a/arch/arm64/include/asm/io.h
+>> > +++ b/arch/arm64/include/asm/io.h
+>> > @@ -120,9 +120,13 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+>> >  /*
+>> >   *  I/O port access primitives.
+>> >   */
+>> > +#define arch_has_dev_port()    (0)
+>> >  #define IO_SPACE_LIMIT         0xffff
+>> >  #define PCI_IOBASE             ((void __iomem *)(MODULES_VADDR - SZ_2M))
+>> >
+>> > +#define ioport_map(port, nr)   (PCI_IOBASE + ((port) & IO_SPACE_LIMIT))
+>> > +#define ioport_unmap(addr)
+>>
+>> I'm not sure that this will work. The in[bwl], out[bwl] macros in
+>> arch/arm64/include/asm/io.h already add the PCI_IOBASE offset.
+>>
+>> Instead of these two #defines, why not just enforce that
+>> GENERIC_PCI_IOMAP is enabled? Or at least wrap these defines with 'if
+>> (!config_enabled(CONFIG_GENERIC_PCI_IOMAP))' or similar.
+>
+> GENERIC_PCI_IOMAP *is* enabled for AArch64. We have select GENERIC_IOMAP in
+> arch/arm64/Kconfig which in turn selects GENERIC_PCI_IOMAP in lib/Kconfig.
 
-x86 maintainers, any comments on this patch (v2)? Without the patch some
-Baytrail systems fail to boot 3.14-rc1.
+Sorry, it was intent to suggest using the ioport_[map|unmap] functions
+in lib/iomap.c instead of defining something similar here. I guess you
+will also need to also define CONFIG_HAS_IOPORT for this to happen.
+
+Andrew Murray
+
+>
+> Best regards,
+> Liviu
+>
+>>
+>> > +
+>> >  static inline u8 inb(unsigned long addr)
+>> >  {
+>> >         return readb(addr + PCI_IOBASE);
+>>
+>>
+>> Andrew Murray
+>>
+>
+> --
+> ====================
+> | I would like to |
+> | fix the world,  |
+> | but they're not |
+> | giving me the   |
+>  \ source code!  /
+>   ---------------
+>     ¯\_(ツ)_/¯
+>
+> -- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
+>
+> ARM Limited, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2557590
+> ARM Holdings plc, Registered office 110 Fulbourn Road, Cambridge CB1 9NJ, Registered in England & Wales, Company No:  2548782
+>
