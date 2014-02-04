@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935132AbaBDVpw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:45:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57141 "EHLO
+	id S934952AbaBDVps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:45:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57146 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934423AbaBDVLd (ORCPT
+	with ESMTP id S934428AbaBDVLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:33 -0500
+	Tue, 4 Feb 2014 16:11:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        ZHAO Gang <gamerh2o@gmail.com>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 045/140] b43: Fix unload oops if firmware is not available
-Date: Tue,  4 Feb 2014 13:10:32 -0800
-Message-Id: <20140204211038.248570291@linuxfoundation.org>
+Subject: [PATCH 3.13 047/140] b43: fix the wrong assignment of status.freq in b43_rx()
+Date: Tue,  4 Feb 2014 13:10:34 -0800
+Message-Id: <20140204211038.303091183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,91 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: ZHAO Gang <gamerh2o@gmail.com>
 
-commit 0673effd41dba323d6a280ef37b5ef29f3f5a653 upstream.
+commit 64e5acb09ca6b50c97299cff9ef51299470b29f2 upstream.
 
-The asyncronous firmware load uses a completion struct to hold firmware
-processing until the user-space routines are up and running. There is.
-however, a problem in that the waiter is nevered canceled during teardown.
-As a result, unloading the driver when firmware is not available causes an oops.
+Use the right function to update frequency value.
 
-To be able to access the completion structure at teardown, it had to be moved
-into the b43_wldev structure.
+If rx skb is probe response or beacon, the wrong frequency value can
+cause problem that bss info can't be updated when it should be.
 
-This patch also fixes a typo in a comment.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Fixes: 8318d78a44d4 ("cfg80211 API for channels/bitrates, mac80211 and driver conversion")
+Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/b43.h  |    4 ++--
- drivers/net/wireless/b43/main.c |   10 +++++-----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/wireless/b43/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/b43/b43.h
-+++ b/drivers/net/wireless/b43/b43.h
-@@ -731,8 +731,6 @@ enum b43_firmware_file_type {
- struct b43_request_fw_context {
- 	/* The device we are requesting the fw for. */
- 	struct b43_wldev *dev;
--	/* a completion event structure needed if this call is asynchronous */
--	struct completion fw_load_complete;
- 	/* a pointer to the firmware object */
- 	const struct firmware *blob;
- 	/* The type of firmware to request. */
-@@ -809,6 +807,8 @@ enum {
- struct b43_wldev {
- 	struct b43_bus_dev *dev;
- 	struct b43_wl *wl;
-+	/* a completion event structure needed if this call is asynchronous */
-+	struct completion fw_load_complete;
- 
- 	/* The device initialization status.
- 	 * Use b43_status() to query. */
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2070,6 +2070,7 @@ void b43_do_release_fw(struct b43_firmwa
- 
- static void b43_release_firmware(struct b43_wldev *dev)
- {
-+	complete(&dev->fw_load_complete);
- 	b43_do_release_fw(&dev->fw.ucode);
- 	b43_do_release_fw(&dev->fw.pcm);
- 	b43_do_release_fw(&dev->fw.initvals);
-@@ -2095,7 +2096,7 @@ static void b43_fw_cb(const struct firmw
- 	struct b43_request_fw_context *ctx = context;
- 
- 	ctx->blob = firmware;
--	complete(&ctx->fw_load_complete);
-+	complete(&ctx->dev->fw_load_complete);
- }
- 
- int b43_do_request_fw(struct b43_request_fw_context *ctx,
-@@ -2142,7 +2143,7 @@ int b43_do_request_fw(struct b43_request
- 	}
- 	if (async) {
- 		/* do this part asynchronously */
--		init_completion(&ctx->fw_load_complete);
-+		init_completion(&ctx->dev->fw_load_complete);
- 		err = request_firmware_nowait(THIS_MODULE, 1, ctx->fwname,
- 					      ctx->dev->dev->dev, GFP_KERNEL,
- 					      ctx, b43_fw_cb);
-@@ -2150,12 +2151,11 @@ int b43_do_request_fw(struct b43_request
- 			pr_err("Unable to load firmware\n");
- 			return err;
+--- a/drivers/net/wireless/b43/xmit.c
++++ b/drivers/net/wireless/b43/xmit.c
+@@ -821,10 +821,10 @@ void b43_rx(struct b43_wldev *dev, struc
+ 		 * channel number in b43. */
+ 		if (chanstat & B43_RX_CHAN_5GHZ) {
+ 			status.band = IEEE80211_BAND_5GHZ;
+-			status.freq = b43_freq_to_channel_5ghz(chanid);
++			status.freq = b43_channel_to_freq_5ghz(chanid);
+ 		} else {
+ 			status.band = IEEE80211_BAND_2GHZ;
+-			status.freq = b43_freq_to_channel_2ghz(chanid);
++			status.freq = b43_channel_to_freq_2ghz(chanid);
  		}
--		/* stall here until fw ready */
--		wait_for_completion(&ctx->fw_load_complete);
-+		wait_for_completion(&ctx->dev->fw_load_complete);
- 		if (ctx->blob)
- 			goto fw_ready;
- 	/* On some ARM systems, the async request will fail, but the next sync
--	 * request works. For this reason, we dall through here
-+	 * request works. For this reason, we fall through here
- 	 */
- 	}
- 	err = request_firmware(&ctx->blob, ctx->fwname,
+ 		break;
+ 	default:
 
 
