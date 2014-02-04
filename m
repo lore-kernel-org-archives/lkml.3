@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936325AbaBDWsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:48:52 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:59055 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934007AbaBDWsr (ORCPT
+	id S936342AbaBDWtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:49:04 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:63063 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934007AbaBDWsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:48:47 -0500
-Message-ID: <52F16E4C.3080207@linaro.org>
-Date: Tue, 04 Feb 2014 14:48:44 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 4 Feb 2014 17:48:55 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
-References: <20140204210055.992134150@linuxfoundation.org> <20140204215221.GA2127@bender.morinfr.org> <20140204221109.GA906@kroah.com> <20140204222203.GA6688@bender.morinfr.org> <20140204223150.GA2696@kroah.com>
-In-Reply-To: <20140204223150.GA2696@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1391550040.3003.28.camel@deadeye.wl.decadent.org.uk>
+References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
+ <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com> <1391550040.3003.28.camel@deadeye.wl.decadent.org.uk>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 4 Feb 2014 14:48:15 -0800
+Message-ID: <CAGVrzcbwiVCj0oETXms6ek+QG13BEbgydLzUEckuGFOhSx0iXQ@mail.gmail.com>
+Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
+ from device tree
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 02:31 PM, Greg Kroah-Hartman wrote:
-> On Tue, Feb 04, 2014 at 11:22:05PM +0100, Guillaume Morin wrote:
->> On 04 Feb 14:11, Greg Kroah-Hartman wrote:
->>>>> Borislav Petkov <bp@alien8.de>
->>>>>     rtc-cmos: Add an alarm disable quirk
->>>> This is just one of the 3 patches posted by John Stultz on
->>>> http://git.linaro.org/people/john.stultz/linux.git/shortlog/refs/heads/stable/3.4/timefix
->>> I have no idea what that tree is, nor what I am supposed to do with it.
->> Ok, sorry. This is all coming from 
->> http://article.gmane.org/gmane.linux.kernel.stable/77575/
+2014-02-04 Ben Hutchings <ben@decadent.org.uk>:
+> On Tue, 2014-02-04 at 12:39 -0800, Florian Fainelli wrote:
+>> 2014-01-17 Matthew Garrett <matthew.garrett@nebula.com>:
+>> > Some hardware may be broken in interesting and board-specific ways, such
+>> > that various bits of functionality don't work. This patch provides a
+>> > mechanism for overriding mii registers during init based on the contents of
+>> > the device tree data, allowing board-specific fixups without having to
+>> > pollute generic code.
 >>
->> I assumed you were aware of it because you participated in the thread
->> and one of the patch mentioned in this message (Borislav's change) is
->> applied to the 3.4 branch
-> John said he would submit those patches after -rc2 came out, I wasn't
-> aware that this specific patch was part of that series, sorry, should I
-> drop it for now?
+>> It would be good to explain exactly how your hardware is broken
+>> exactly. I really do not think that such a fine-grained setting where
+>> you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
+>> remain usable makes that much sense. In general, Gigabit might be
+>> badly broken, but 100 and 10Mbits/sec should work fine. How about the
+>> MASTER-SLAVE bit, is overriding it really required?
+>
+> Yes, it is entirely possible that one or other of the clock modes
+> (locally generated vs recovered) is not reliable.
 
-Yea. Hold off on it for now, I'll resubmit it after -rc2.
+That one is not covered in the existing Ethernet PHY binding, okay for
+handling it.
 
-thanks
--john
+>
+>> Is not a PHY fixup registered for a specific OUI the solution you are
+>> looking for?
+> [...]
+>
+> The fault is in the board, not the PHY.
 
+What kind of fault at the board level are we talking about? Lack of
+specific twisted pair wiring to the RJ-45 jack? Out of spec RXC/TXC on
+a (R)GMII path? If the latter, this is going to be via vendor-specific
+MII registers, and should be a good enough reason for registering a
+PHY fixup. What about pad control, and Ethernet MACs specicif register
+affecting the internal delays and such?
+-- 
+Florian
