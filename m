@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198AbaBDTid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:38:33 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:64020 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaBDTia (ORCPT
+	id S1754973AbaBDTji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:39:38 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:45674 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaBDTjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:38:30 -0500
-Message-ID: <52F141AE.8010402@gmail.com>
-Date: Tue, 04 Feb 2014 20:38:22 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-To: David Miller <davem@davemloft.net>
-CC: f.fainelli@gmail.com, mugunthanvnm@ti.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v2 0/5] net: phy: Ethernet PHY powerdown optimization
-References: <1386513631-11284-1-git-send-email-sebastian.hesselbarth@gmail.com> <1386926429-28818-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131217.144313.1563516273987934449.davem@davemloft.net>
-In-Reply-To: <20131217.144313.1563516273987934449.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Feb 2014 14:39:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140204192325.GA11831@thunk.org>
+References: <2039634.jSmQAS6tdi@myon.chronox.de>
+	<20140204170823.GF12768@thunk.org>
+	<52F13A1C.3040003@zytor.com>
+	<20140204192325.GA11831@thunk.org>
+Date: Tue, 4 Feb 2014 20:39:34 +0100
+X-Google-Sender-Auth: FhodWGFVUR1NO_xB6du8Y_9cmfM
+Message-ID: <CAMuHMdV5tLX7L6m4Q+1tMu_LF0bhxErVJuXDcga8VAmGV91dZg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] CPU Jitter RNG
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephan Mueller <smueller@chronox.de>,
+        =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>, dave.taht@gmail.com,
+        John Crispin <blogic@openwrt.org>, andrewmcgr@gmail.com,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Thorsten Glaser <tg@mirbsd.de>, sandyinchina@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2013 08:43 PM, David Miller wrote:
-> From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Date: Fri, 13 Dec 2013 10:20:24 +0100
->
->> This is v2 of the ethernet PHY power optimization patches to reduce
->> power consumption of network PHYs with link that are either unused or
->> the corresponding netdev is down.
->>
->> Compared to the last version, this patch set drops a patch to disable
->> unused PHYs after late initcall, as it is not compatible with a modular
->> mdio bus [1]. I'll investigate different ways to have a modular mdio bus
->> driver get notified when driver loading is done.
->>
->> Again, a branch with v2 applied to v3.13-rc2 can also be found at
->> https://github.com/shesselba/linux-dove.git topic/ethphy-power-v2
->>
->> [1] http://www.spinics.net/lists/arm-kernel/msg293028.html
->
-> Series applied, thanks.
->
+On Tue, Feb 4, 2014 at 8:23 PM,  <tytso@mit.edu> wrote:
+> However, where a decade ago the ethernet card probably had its own
+> independent clock crystal/oscillator, I'm going to guess that these
+> days with SOC's and even on laptops, with ethernet device part of the
+> chipset, it is probably being driven off the same master oscillator.
 
-David, Mungunthan, Florian,
+USB typically still has its own crystal.
 
-as expected the above patches create a Linux to bootloader dependency
-that surfaces dumb bootloaders not initializing PHYs correctly.
+> I wonder if there's anyway we can either figure out manually, or
+> preferably, automatically at boot time, which devices actually have
+> independent clock oscillators.
 
-Andrew has a Kirkwood based board that does not power-up and restart
-auto-negotiation on the powered down PHY after a warm restart. While
-this specific bootloader allows a soft-workaround by issuing the
-required PHY writes before accessing the interface, others may not.
+You may find this information in the DT on some platforms (if you're
+lucky).
 
-I think we should allow the user to soft-disable the automatic
-power-down of PHYs, i.e. by exploiting a kernel parameter.
+Gr{oetje,eeting}s,
 
-Do you have any preference for naming it? My call would be something
-like libphy.suspend_halted = [0,1] with 1 being the default.
+                        Geert
 
-Sebastian
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
