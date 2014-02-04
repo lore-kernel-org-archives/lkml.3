@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934555AbaBDVMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:12:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57158 "EHLO
+	id S934578AbaBDVMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57154 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439AbaBDVLh (ORCPT
+	with ESMTP id S934441AbaBDVLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:37 -0500
+	Tue, 4 Feb 2014 16:11:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        robert.hodaszi@digi.com, Peter Chen <peter.chen@freescale.com>,
         Alan Stern <stern@rowland.harvard.edu>,
-        "Du, Changbin" <changbinx.du@intel.com>
-Subject: [PATCH 3.13 024/140] USB: fix race between hub_disconnect and recursively_mark_NOTATTACHED
-Date: Tue,  4 Feb 2014 13:10:11 -0800
-Message-Id: <20140204211037.653499397@linuxfoundation.org>
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.13 025/140] usb: ehci: add freescale imx28 special write register method
+Date: Tue,  4 Feb 2014 13:10:12 -0800
+Message-Id: <20140204211037.681112291@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -29,92 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 543d7784b07ffd16cc82a9cb4e1e0323fd0040f1 upstream.
+commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
 
-There is a race in the hub driver between hub_disconnect() and
-recursively_mark_NOTATTACHED().  This race can be triggered if the
-driver is unbound from a device at the same time as the bus's root hub
-is removed.  When the race occurs, it can cause an oops:
+According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
+register error issue", All USB register write operations must
+use the ARM SWP instruction. So, we implement a special ehci_write
+for imx28.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000015c
-IP: [<c16d5fb0>] recursively_mark_NOTATTACHED+0x20/0x60
-Call Trace:
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d5fc4>] recursively_mark_NOTATTACHED+0x34/0x60
- [<c16d6082>] usb_set_device_state+0x92/0x120
- [<c16d862b>] usb_disconnect+0x2b/0x1a0
- [<c16dd4c0>] usb_remove_hcd+0xb0/0x160
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c1704efc>] ehci_mid_remove+0x1c/0x30
- [<c1704f26>] ehci_mid_stop_host+0x16/0x30
- [<c16f7698>] penwell_otg_work+0xd28/0x3520
- [<c19c945b>] ? __schedule+0x39b/0x7f0
- [<c19cdb9d>] ? sub_preempt_count+0x3d/0x50
- [<c125e97d>] process_one_work+0x11d/0x3d0
- [<c19c7f4d>] ? mutex_unlock+0xd/0x10
- [<c125e0e5>] ? manage_workers.isra.24+0x1b5/0x270
- [<c125f009>] worker_thread+0xf9/0x320
- [<c19ca846>] ? _raw_spin_unlock_irqrestore+0x26/0x50
- [<c125ef10>] ? rescuer_thread+0x2b0/0x2b0
- [<c1264ac4>] kthread+0x94/0xa0
- [<c19d0f77>] ret_from_kernel_thread+0x1b/0x28
- [<c1264a30>] ? kthread_create_on_node+0xc0/0xc0
+Discussion for it at below:
+http://marc.info/?l=linux-usb&m=137996395529294&w=2
 
-One problem is that recursively_mark_NOTATTACHED() uses the intfdata
-value and hub->hdev->maxchild while hub_disconnect() is clearing them.
-Another problem is that it uses hub->ports[i] while the port device is
-being released.
+Without this patcheset, imx28 works unstable at high AHB bus loading.
+If the bus loading is not high, the imx28 usb can work well at the most
+of time. There is a IC errata for this problem, usually, we consider
+IC errata is a problem not a new feature, and this workaround is needed
+for that, so we need to add them to stable tree 3.11+.
 
-To fix this race, we need to hold the device_state_lock while
-hub_disconnect() changes the values.  (Note that usb_disconnect()
-and hub_port_connect_change() already acquire this lock at similar
-critical times during a USB device's life cycle.)  We also need to
-remove the port devices after maxchild has been set to 0, instead of
-before.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: "Du, Changbin" <changbinx.du@intel.com>
-Tested-by: "Du, Changbin" <changbinx.du@intel.com>
+Cc: robert.hodaszi@digi.com
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/usb/host/ehci.h |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1607,7 +1607,7 @@ static void hub_disconnect(struct usb_in
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -225,6 +225,7 @@ struct ehci_hcd {			/* one per controlle
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
+ 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
+ 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
++	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
+ 
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -728,6 +729,18 @@ static inline unsigned int ehci_readl(co
+ #endif
+ }
+ 
++#ifdef CONFIG_SOC_IMX28
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++}
++#else
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++}
++#endif
+ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		const unsigned int val, __u32 __iomem *regs)
  {
- 	struct usb_hub *hub = usb_get_intfdata(intf);
- 	struct usb_device *hdev = interface_to_usbdev(intf);
--	int i;
-+	int port1;
+@@ -736,7 +749,10 @@ static inline void ehci_writel(const str
+ 		writel_be(val, regs) :
+ 		writel(val, regs);
+ #else
+-	writel(val, regs);
++	if (ehci->imx28_write_fix)
++		imx28_ehci_writel(val, regs);
++	else
++		writel(val, regs);
+ #endif
+ }
  
- 	/* Take the hub off the event list and don't let it be added again */
- 	spin_lock_irq(&hub_event_lock);
-@@ -1622,11 +1622,15 @@ static void hub_disconnect(struct usb_in
- 	hub->error = 0;
- 	hub_quiesce(hub, HUB_DISCONNECT);
- 
--	usb_set_intfdata (intf, NULL);
-+	/* Avoid races with recursively_mark_NOTATTACHED() */
-+	spin_lock_irq(&device_state_lock);
-+	port1 = hdev->maxchild;
-+	hdev->maxchild = 0;
-+	usb_set_intfdata(intf, NULL);
-+	spin_unlock_irq(&device_state_lock);
- 
--	for (i = 0; i < hdev->maxchild; i++)
--		usb_hub_remove_port_device(hub, i + 1);
--	hub->hdev->maxchild = 0;
-+	for (; port1 > 0; --port1)
-+		usb_hub_remove_port_device(hub, port1);
- 
- 	if (hub->hdev->speed == USB_SPEED_HIGH)
- 		highspeed_hubs--;
 
 
