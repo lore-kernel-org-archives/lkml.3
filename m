@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaBDAzr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 19:55:47 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49519 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317AbaBDAzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 19:55:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140128152457.GB16534@redhat.com>
-References: <1390899916-23566-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1390899916-23566-3-git-send-email-tangchen@cn.fujitsu.com>
-	<20140128152457.GB16534@redhat.com>
-Date: Mon, 3 Feb 2014 19:55:38 -0500
-X-Google-Sender-Auth: nIY0rQOGCFTNtuYLqC0OxvfGUjA
-Message-ID: <CA+5PVA5M=NK2VrCL+FaVruCeT7BDzx-+gXGXERpFeonPLKOaHg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] numa, mem-hotplug: Fix array index overflow when
- synchronizing nid to memblock.reserved.
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Dave Jones <davej@redhat.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, zhangyanfei@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, x86 <x86@kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753616AbaBDA6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 19:58:38 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:56931 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864AbaBDA6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Feb 2014 19:58:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Bob Liu <bob.liu@oracle.com>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 03/10] lib: radix-tree: radix_tree_delete_item()
+Date: Mon,  3 Feb 2014 19:53:35 -0500
+Message-Id: <1391475222-1169-4-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
+References: <1391475222-1169-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 28, 2014 at 10:24 AM, Dave Jones <davej@redhat.com> wrote:
-> On Tue, Jan 28, 2014 at 05:05:16PM +0800, Tang Chen wrote:
->  > The following path will cause array out of bound.
->  >
->  > memblock_add_region() will always set nid in memblock.reserved to MAX_NUMNODES.
->  > In numa_register_memblks(), after we set all nid to correct valus in memblock.reserved,
->  > we called setup_node_data(), and used memblock_alloc_nid() to allocate memory, with
->  > nid set to MAX_NUMNODES.
->  >
->  > The nodemask_t type can be seen as a bit array. And the index is 0 ~ MAX_NUMNODES-1.
->  >
->  > After that, when we call node_set() in numa_clear_kernel_node_hotplug(), the nodemask_t
->  > got an index of value MAX_NUMNODES, which is out of [0 ~ MAX_NUMNODES-1].
->  >
->  > See below:
->  >
->  > numa_init()
->  >  |---> numa_register_memblks()
->  >  |      |---> memblock_set_node(memory)              set correct nid in memblock.memory
->  >  |      |---> memblock_set_node(reserved)    set correct nid in memblock.reserved
->  >  |      |......
->  >  |      |---> setup_node_data()
->  >  |             |---> memblock_alloc_nid()    here, nid is set to MAX_NUMNODES (1024)
->  >  |......
->  >  |---> numa_clear_kernel_node_hotplug()
->  >         |---> node_set()                     here, we have an index 1024, and overflowed
->  >
->  > This patch moves nid setting to numa_clear_kernel_node_hotplug() to fix this problem.
->  >
->  > Reported-by: Dave Jones <davej@redhat.com>
->  > Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
->  > Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->  > ---
->  >  arch/x86/mm/numa.c | 19 +++++++++++--------
->  >  1 file changed, 11 insertions(+), 8 deletions(-)
->
-> This does seem to solve the problem (In conjunction with David's variant of the other patch).
+Provide a function that does not just delete an entry at a given
+index, but also allows passing in an expected item.  Delete only if
+that item is still located at the specified index.
 
-Is this (and the first in the series) going to land in Linus' tree
-soon?  I don't see them in -rc1 and people are still hitting the early
-oops Dave did without this.
+This is handy when lockless tree traversals want to delete entries as
+well because they don't have to do an second, locked lookup to verify
+the slot has not changed under them before deleting the entry.
 
-josh
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/radix-tree.h |  1 +
+ lib/radix-tree.c           | 31 +++++++++++++++++++++++++++----
+ 2 files changed, 28 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 403940787be1..1bf0a9c388d9 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -219,6 +219,7 @@ static inline void radix_tree_replace_slot(void **pslot, void *item)
+ int radix_tree_insert(struct radix_tree_root *, unsigned long, void *);
+ void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
+ void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
++void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
+ void *radix_tree_delete(struct radix_tree_root *, unsigned long);
+ unsigned int
+ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 7811ed3b4e70..f442e3243607 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -1335,15 +1335,18 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
+ }
+ 
+ /**
+- *	radix_tree_delete    -    delete an item from a radix tree
++ *	radix_tree_delete_item    -    delete an item from a radix tree
+  *	@root:		radix tree root
+  *	@index:		index key
++ *	@item:		expected item
+  *
+- *	Remove the item at @index from the radix tree rooted at @root.
++ *	Remove @item at @index from the radix tree rooted at @root.
+  *
+- *	Returns the address of the deleted item, or NULL if it was not present.
++ *	Returns the address of the deleted item, or NULL if it was not present
++ *	or the entry at the given @index was not @item.
+  */
+-void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
++void *radix_tree_delete_item(struct radix_tree_root *root,
++			     unsigned long index, void *item)
+ {
+ 	struct radix_tree_node *node = NULL;
+ 	struct radix_tree_node *slot = NULL;
+@@ -1378,6 +1381,11 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+ 	if (slot == NULL)
+ 		goto out;
+ 
++	if (item && slot != item) {
++		slot = NULL;
++		goto out;
++	}
++
+ 	/*
+ 	 * Clear all tags associated with the item to be deleted.
+ 	 * This way of doing it would be inefficient, but seldom is any set.
+@@ -1422,6 +1430,21 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+ out:
+ 	return slot;
+ }
++EXPORT_SYMBOL(radix_tree_delete_item);
++
++/**
++ *	radix_tree_delete    -    delete an item from a radix tree
++ *	@root:		radix tree root
++ *	@index:		index key
++ *
++ *	Remove the item at @index from the radix tree rooted at @root.
++ *
++ *	Returns the address of the deleted item, or NULL if it was not present.
++ */
++void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
++{
++	return radix_tree_delete_item(root, index, NULL);
++}
+ EXPORT_SYMBOL(radix_tree_delete);
+ 
+ /**
+-- 
+1.8.5.3
+
