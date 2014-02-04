@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512AbaBDVCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56305 "EHLO
+	id S935540AbaBDWgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:36:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56391 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933377AbaBDVCk (ORCPT
+	with ESMTP id S933521AbaBDVC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:40 -0500
+	Tue, 4 Feb 2014 16:02:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH 3.10 075/104] inet_diag: fix inet_diag_dump_icsk() timewait socket state logic
-Date: Tue,  4 Feb 2014 13:02:18 -0800
-Message-Id: <20140204210224.835847706@linuxfoundation.org>
+        Asias He <asias.hejun@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.10 099/104] virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
+Date: Tue,  4 Feb 2014 13:02:42 -0800
+Message-Id: <20140204210225.525962387@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,62 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Asias He <asias.hejun@gmail.com>
 
-[ Based upon upstream commit 70315d22d3c7383f9a508d0aab21e2eb35b2303a ]
+commit f466f75385369a181409e46da272db3de6f5c5cb upstream.
 
-Fix inet_diag_dump_icsk() to reflect the fact that both TIME_WAIT and
-FIN_WAIT2 connections are represented by inet_timewait_sock (not just
-TIME_WAIT). Thus:
+vqs are freed in virtscsi_freeze but the hotcpu_notifier is not
+unregistered. We will have a use-after-free usage when the notifier
+callback is called after virtscsi_freeze.
 
-(a) We need to iterate through the time_wait buckets if the user wants
-either TIME_WAIT or FIN_WAIT2. (Before fixing this, "ss -nemoi state
-fin-wait-2" would not return any sockets, even if there were some in
-FIN_WAIT2.)
+Fixes: 285e71ea6f3583a85e27cb2b9a7d8c35d4c0d558
+("virtio-scsi: reset virtqueue affinity when doing cpu hotplug")
 
-(b) We need to check tw_substate to see if the user wants to dump
-sockets in the particular substate (TIME_WAIT or FIN_WAIT2) that a
-given connection is in. (Before fixing this, "ss -nemoi state
-time-wait" would actually return sockets in state FIN_WAIT2.)
-
-An analogous fix is in v3.13: 70315d22d3c7383f9a508d0aab21e2eb35b2303a
-("inet_diag: fix inet_diag_dump_icsk() to use correct state for
-timewait sockets") but that patch is quite different because 3.13 code
-is very different in this area due to the unification of TCP hash
-tables in 05dbc7b ("tcp/dccp: remove twchain") in v3.13-rc1.
-
-I tested that this applies cleanly between v3.3 and v3.12, and tested
-that it works in both 3.3 and 3.12. It does not apply cleanly to 3.2
-and earlier (though it makes semantic sense), and semantically is not
-the right fix for 3.13 and beyond (as mentioned above).
-
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Asias He <asias.hejun@gmail.com>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/inet_diag.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -961,7 +961,7 @@ next_normal:
- 			++num;
- 		}
+---
+ drivers/scsi/virtio_scsi.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -957,6 +957,10 @@ static void virtscsi_remove(struct virti
+ #ifdef CONFIG_PM
+ static int virtscsi_freeze(struct virtio_device *vdev)
+ {
++	struct Scsi_Host *sh = virtio_scsi_host(vdev);
++	struct virtio_scsi *vscsi = shost_priv(sh);
++
++	unregister_hotcpu_notifier(&vscsi->nb);
+ 	virtscsi_remove_vqs(vdev);
+ 	return 0;
+ }
+@@ -965,8 +969,17 @@ static int virtscsi_restore(struct virti
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
++	int err;
++
++	err = virtscsi_init(vdev, vscsi);
++	if (err)
++		return err;
++
++	err = register_hotcpu_notifier(&vscsi->nb);
++	if (err)
++		vdev->config->del_vqs(vdev);
  
--		if (r->idiag_states & TCPF_TIME_WAIT) {
-+		if (r->idiag_states & (TCPF_TIME_WAIT | TCPF_FIN_WAIT2)) {
- 			struct inet_timewait_sock *tw;
+-	return virtscsi_init(vdev, vscsi);
++	return err;
+ }
+ #endif
  
- 			inet_twsk_for_each(tw, node,
-@@ -971,6 +971,8 @@ next_normal:
- 
- 				if (num < s_num)
- 					goto next_dying;
-+				if (!(r->idiag_states & (1 << tw->tw_substate)))
-+					goto next_dying;
- 				if (r->sdiag_family != AF_UNSPEC &&
- 						tw->tw_family != r->sdiag_family)
- 					goto next_dying;
 
 
