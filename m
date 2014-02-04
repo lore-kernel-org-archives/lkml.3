@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934985AbaBDVTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:19:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57466 "EHLO
+	id S934323AbaBDVUO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:20:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934558AbaBDVMq (ORCPT
+	with ESMTP id S934748AbaBDVMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:46 -0500
+	Tue, 4 Feb 2014 16:12:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.13 137/140] Btrfs: setup inode location during btrfs_init_inode_locked
-Date: Tue,  4 Feb 2014 13:12:04 -0800
-Message-Id: <20140204211040.888042515@linuxfoundation.org>
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.13 135/140] target/iscsi: Fix network portal creation race
+Date: Tue,  4 Feb 2014 13:12:02 -0800
+Message-Id: <20140204211040.828417180@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,87 +29,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Andy Grover <agrover@redhat.com>
 
-commit 90d3e592e99b8e374ead2b45148abf506493a959 upstream.
+commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
 
-We have a race during inode init because the BTRFS_I(inode)->location is setup
-after the inode hash table lock is dropped.  btrfs_find_actor uses the location
-field, so our search might not find an existing inode in the hash table if we
-race with the inode init code.
+When creating network portals rapidly, such as when restoring a
+configuration, LIO's code to reuse existing portals can return a false
+negative if the thread hasn't run yet and set np_thread_state to
+ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
+when attempting to bind to the same address/port.
 
-This commit changes things to setup the location field sooner.  Also the find actor now
-uses only the location objectid to match inodes.  For inode hashing, we just
-need a unique and stable test, it doesn't have to reflect the inode numbers we
-show to userland.
+This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
+so even if the thread hasn't run yet, iscsit_get_np will return the
+existing np.
 
-Signed-off-by: Chris Mason <clm@fb.com>
+Also, convert np_lock -> np_mutex + hold across adding new net portal
+to g_np_list to prevent a race where two threads may attempt to create
+the same network portal, resulting in one of them failing.
+
+(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
+(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/inode.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |   34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -60,7 +60,7 @@
- #include "hash.h"
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -52,7 +52,7 @@
+ static LIST_HEAD(g_tiqn_list);
+ static LIST_HEAD(g_np_list);
+ static DEFINE_SPINLOCK(tiqn_lock);
+-static DEFINE_SPINLOCK(np_lock);
++static DEFINE_MUTEX(np_lock);
  
- struct btrfs_iget_args {
--	u64 ino;
-+	struct btrfs_key *location;
- 	struct btrfs_root *root;
- };
- 
-@@ -4818,7 +4818,9 @@ again:
- static int btrfs_init_locked_inode(struct inode *inode, void *p)
- {
- 	struct btrfs_iget_args *args = p;
--	inode->i_ino = args->ino;
-+	inode->i_ino = args->location->objectid;
-+	memcpy(&BTRFS_I(inode)->location, args->location,
-+	       sizeof(*args->location));
- 	BTRFS_I(inode)->root = args->root;
- 	return 0;
- }
-@@ -4826,19 +4828,19 @@ static int btrfs_init_locked_inode(struc
- static int btrfs_find_actor(struct inode *inode, void *opaque)
- {
- 	struct btrfs_iget_args *args = opaque;
--	return args->ino == btrfs_ino(inode) &&
-+	return args->location->objectid == BTRFS_I(inode)->location.objectid &&
- 		args->root == BTRFS_I(inode)->root;
+ static struct idr tiqn_idr;
+ struct idr sess_idr;
+@@ -307,6 +307,9 @@ bool iscsit_check_np_match(
+ 	return false;
  }
  
- static struct inode *btrfs_iget_locked(struct super_block *s,
--				       u64 objectid,
-+				       struct btrfs_key *location,
- 				       struct btrfs_root *root)
- {
- 	struct inode *inode;
- 	struct btrfs_iget_args args;
--	unsigned long hashval = btrfs_inode_hash(objectid, root);
-+	unsigned long hashval = btrfs_inode_hash(location->objectid, root);
++/*
++ * Called with mutex np_lock held
++ */
+ static struct iscsi_np *iscsit_get_np(
+ 	struct __kernel_sockaddr_storage *sockaddr,
+ 	int network_transport)
+@@ -314,11 +317,10 @@ static struct iscsi_np *iscsit_get_np(
+ 	struct iscsi_np *np;
+ 	bool match;
  
--	args.ino = objectid;
-+	args.location = location;
- 	args.root = root;
+-	spin_lock_bh(&np_lock);
+ 	list_for_each_entry(np, &g_np_list, np_list) {
+-		spin_lock(&np->np_thread_lock);
++		spin_lock_bh(&np->np_thread_lock);
+ 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
+-			spin_unlock(&np->np_thread_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			continue;
+ 		}
  
- 	inode = iget5_locked(s, hashval, btrfs_find_actor,
-@@ -4855,13 +4857,11 @@ struct inode *btrfs_iget(struct super_bl
- {
- 	struct inode *inode;
+@@ -330,13 +332,11 @@ static struct iscsi_np *iscsit_get_np(
+ 			 * while iscsi_tpg_add_network_portal() is called.
+ 			 */
+ 			np->np_exports++;
+-			spin_unlock(&np->np_thread_lock);
+-			spin_unlock_bh(&np_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			return np;
+ 		}
+-		spin_unlock(&np->np_thread_lock);
++		spin_unlock_bh(&np->np_thread_lock);
+ 	}
+-	spin_unlock_bh(&np_lock);
  
--	inode = btrfs_iget_locked(s, location->objectid, root);
-+	inode = btrfs_iget_locked(s, location, root);
- 	if (!inode)
+ 	return NULL;
+ }
+@@ -350,16 +350,22 @@ struct iscsi_np *iscsit_add_np(
+ 	struct sockaddr_in6 *sock_in6;
+ 	struct iscsi_np *np;
+ 	int ret;
++
++	mutex_lock(&np_lock);
++
+ 	/*
+ 	 * Locate the existing struct iscsi_np if already active..
+ 	 */
+ 	np = iscsit_get_np(sockaddr, network_transport);
+-	if (np)
++	if (np) {
++		mutex_unlock(&np_lock);
+ 		return np;
++	}
+ 
+ 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
+ 	if (!np) {
+ 		pr_err("Unable to allocate memory for struct iscsi_np\n");
++		mutex_unlock(&np_lock);
  		return ERR_PTR(-ENOMEM);
+ 	}
  
- 	if (inode->i_state & I_NEW) {
--		BTRFS_I(inode)->root = root;
--		memcpy(&BTRFS_I(inode)->location, location, sizeof(*location));
- 		btrfs_read_locked_inode(inode);
- 		if (!is_bad_inode(inode)) {
- 			inode_tree_add(inode);
+@@ -382,6 +388,7 @@ struct iscsi_np *iscsit_add_np(
+ 	ret = iscsi_target_setup_login_socket(np, sockaddr);
+ 	if (ret != 0) {
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 
+@@ -390,6 +397,7 @@ struct iscsi_np *iscsit_add_np(
+ 		pr_err("Unable to create kthread: iscsi_np\n");
+ 		ret = PTR_ERR(np->np_thread);
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 	/*
+@@ -400,10 +408,10 @@ struct iscsi_np *iscsit_add_np(
+ 	 * point because iscsi_np has not been added to g_np_list yet.
+ 	 */
+ 	np->np_exports = 1;
++	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 
+-	spin_lock_bh(&np_lock);
+ 	list_add_tail(&np->np_list, &g_np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, np->np_transport->name);
+@@ -470,9 +478,9 @@ int iscsit_del_np(struct iscsi_np *np)
+ 
+ 	np->np_transport->iscsit_free_np(np);
+ 
+-	spin_lock_bh(&np_lock);
++	mutex_lock(&np_lock);
+ 	list_del(&np->np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
+ 
+ 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, np->np_transport->name);
 
 
