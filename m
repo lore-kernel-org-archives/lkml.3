@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935731AbaBDWQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:16:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56658 "EHLO
+	id S935472AbaBDWQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:16:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933868AbaBDVIh (ORCPT
+	with ESMTP id S933965AbaBDVIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:08:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Roszko <mark.roszko@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.12 058/133] tty/serial: at91: disable uart timer at start of shutdown
-Date: Tue,  4 Feb 2014 13:07:39 -0800
-Message-Id: <20140204210738.671590494@linuxfoundation.org>
+Subject: [PATCH 3.12 059/133] ARM: at91: at91sam9g45: set default mmc pinctrl-names
+Date: Tue,  4 Feb 2014 13:07:40 -0800
+Message-Id: <20140204210738.699501591@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,93 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Roszko <mark.roszko@gmail.com>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit 8bc661bfc0c2d221e209f4205bdaaf574d50100c upstream.
+commit 0645b93f6c223b594c0dca348e2ae0a23bccf6e3 upstream.
 
-The uart timer will schedule a tasklet when it fires. It is possible that it
-can fire inside _shutdown before it is killed in the dma and pdc cleanup
-routines. This causes a tasklet that exists after the port is shutdown, so when
-the kernel finally executes it, it panics as the tty port is NULL.
+pinctrl-names property was missing from mmc nodes.
 
-This is a somewhat rare condition but its possible if a program keeps on
-opening/closing the port. It has been observed in particular with systemd
-boot messages that were causing a kernel panic because of this behavior.
-
-Moving the timer deletion to the beginning of the function stops a tasklet from
-being scheduled unexpectedly.
-
-Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
-[nicolas.ferre@atmel.com: modify commit message, call setup_timer() in any case]
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/atmel_serial.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ arch/arm/boot/dts/at91sam9g45.dtsi |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -824,9 +824,6 @@ static void atmel_release_rx_dma(struct
- 	atmel_port->desc_rx = NULL;
- 	atmel_port->chan_rx = NULL;
- 	atmel_port->cookie_rx = -EINVAL;
--
--	if (!atmel_port->is_usart)
--		del_timer_sync(&atmel_port->uart_timer);
- }
- 
- static void atmel_rx_from_dma(struct uart_port *port)
-@@ -1228,9 +1225,6 @@ static void atmel_release_rx_pdc(struct
- 				 DMA_FROM_DEVICE);
- 		kfree(pdc->buf);
- 	}
--
--	if (!atmel_port->is_usart)
--		del_timer_sync(&atmel_port->uart_timer);
- }
- 
- static void atmel_rx_from_pdc(struct uart_port *port)
-@@ -1587,12 +1581,13 @@ static int atmel_startup(struct uart_por
- 	/* enable xmit & rcvr */
- 	UART_PUT_CR(port, ATMEL_US_TXEN | ATMEL_US_RXEN);
- 
-+	setup_timer(&atmel_port->uart_timer,
-+			atmel_uart_timer_callback,
-+			(unsigned long)port);
-+
- 	if (atmel_use_pdc_rx(port)) {
- 		/* set UART timeout */
- 		if (!atmel_port->is_usart) {
--			setup_timer(&atmel_port->uart_timer,
--					atmel_uart_timer_callback,
--					(unsigned long)port);
- 			mod_timer(&atmel_port->uart_timer,
- 					jiffies + uart_poll_timeout(port));
- 		/* set USART timeout */
-@@ -1607,9 +1602,6 @@ static int atmel_startup(struct uart_por
- 	} else if (atmel_use_dma_rx(port)) {
- 		/* set UART timeout */
- 		if (!atmel_port->is_usart) {
--			setup_timer(&atmel_port->uart_timer,
--					atmel_uart_timer_callback,
--					(unsigned long)port);
- 			mod_timer(&atmel_port->uart_timer,
- 					jiffies + uart_poll_timeout(port));
- 		/* set USART timeout */
-@@ -1635,6 +1627,12 @@ static void atmel_shutdown(struct uart_p
- 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
- 
- 	/*
-+	 * Prevent any tasklets being scheduled during
-+	 * cleanup
-+	 */
-+	del_timer_sync(&atmel_port->uart_timer);
-+
-+	/*
- 	 * Clear out any scheduled tasklets before
- 	 * we destroy the buffers
- 	 */
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -618,6 +618,7 @@
+ 				compatible = "atmel,hsmci";
+ 				reg = <0xfff80000 0x600>;
+ 				interrupts = <11 IRQ_TYPE_LEVEL_HIGH 0>;
++				pinctrl-names = "default";
+ 				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(0)>;
+ 				dma-names = "rxtx";
+ 				#address-cells = <1>;
+@@ -629,6 +630,7 @@
+ 				compatible = "atmel,hsmci";
+ 				reg = <0xfffd0000 0x600>;
+ 				interrupts = <29 IRQ_TYPE_LEVEL_HIGH 0>;
++				pinctrl-names = "default";
+ 				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(13)>;
+ 				dma-names = "rxtx";
+ 				#address-cells = <1>;
 
 
