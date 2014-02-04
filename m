@@ -1,155 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727AbaBDTyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:54:49 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:16412 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115AbaBDTyp (ORCPT
+	id S1755008AbaBDTzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:55:00 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35487 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaBDTy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:54:45 -0500
-X-IronPort-AV: E=Sophos;i="4.95,781,1384300800"; 
-   d="scan'208";a="97926588"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net v3] xen-netback: Fix Rx stall due to race condition 
-Date: Tue, 4 Feb 2014 19:54:37 +0000
-Message-ID: <1391543677-24039-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 4 Feb 2014 14:54:56 -0500
+Date: Tue, 4 Feb 2014 19:54:47 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Message-ID: <20140204195447.GY22609@sirena.org.uk>
+References: <cover.1391274627.git.moinejf@free.fr>
+ <8e4231b7a55802f58a14dd07ac5cd8b0babb1dce.1391274628.git.moinejf@free.fr>
+ <20140204181213.GO22609@sirena.org.uk>
+ <20140204200239.1baf309b@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aV+nM5O4EiZgYTzs"
+Content-Disposition: inline
+In-Reply-To: <20140204200239.1baf309b@armhf>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 3/5] ASoC: tda998x: add DT documentation of the
+ tda998x CODEC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent patch to fix receive side flow control
-(11b57f90257c1d6a91cee720151b69e0c2020cf6: xen-netback: stop vif thread
-spinning if frontend is unresponsive) solved the spinning thread problem,
-however caused an another one. The receive side can stall, if:
-- [THREAD] xenvif_rx_action sets rx_queue_stopped to true
-- [INTERRUPT] interrupt happens, and sets rx_event to true
-- [THREAD] then xenvif_kthread sets rx_event to false
-- [THREAD] rx_work_todo doesn't return true anymore
 
-Also, if interrupt sent but there is still no room in the ring, it take quite a
-long time until xenvif_rx_action realize it. This patch ditch that two variable,
-and rework rx_work_todo. If the thread finds it can't fit more skb's into the
-ring, it saves the last slot estimation into rx_last_skb_slots, otherwise it's
-kept as 0. Then rx_work_todo will check if:
-- there is something to send to the ring (like before)
-- there is space for the topmost packet in the queue
+--aV+nM5O4EiZgYTzs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I think that's more natural and optimal thing to test than two bool which are
-set somewhere else.
+On Tue, Feb 04, 2014 at 08:02:39PM +0100, Jean-Francois Moine wrote:
+> Mark Brown <broonie@kernel.org> wrote:
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Reviewed-by: Paul Durrant <paul.durrant@citrix.com>
-Acked-by: Wei Liu <wei.liu2@citrix.com>
----
-v2:
-- Improve description of the problem
+> > On Sat, Feb 01, 2014 at 05:48:49PM +0100, Jean-Francois Moine wrote:
 
-v3:
-- Change subject and resend against net to emphasize this is a bugfix
+> > > +	- compatible: must be "nxp,tda998x-codec".
 
- drivers/net/xen-netback/common.h    |    6 +-----
- drivers/net/xen-netback/interface.c |    1 -
- drivers/net/xen-netback/netback.c   |   16 ++++++----------
- 3 files changed, 7 insertions(+), 16 deletions(-)
+> > It's not clear to me why there's a separate compatible here - as far as
+> > I can see this can only appear as part of one of these devices and
+> > there's no addressing or other information that'd account for chip
+> > variation so I'd not expect to need to bind this independently of the
+> > parent.
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 4c76bcb..ae413a2 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -143,11 +143,7 @@ struct xenvif {
- 	char rx_irq_name[IFNAMSIZ+4]; /* DEVNAME-rx */
- 	struct xen_netif_rx_back_ring rx;
- 	struct sk_buff_head rx_queue;
--	bool rx_queue_stopped;
--	/* Set when the RX interrupt is triggered by the frontend.
--	 * The worker thread may need to wake the queue.
--	 */
--	bool rx_event;
-+	RING_IDX rx_last_skb_slots;
- 
- 	/* This array is allocated seperately as it is large */
- 	struct gnttab_copy *grant_copy_op;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index b9de31e..7669d49 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -100,7 +100,6 @@ static irqreturn_t xenvif_rx_interrupt(int irq, void *dev_id)
- {
- 	struct xenvif *vif = dev_id;
- 
--	vif->rx_event = true;
- 	xenvif_kick_thread(vif);
- 
- 	return IRQ_HANDLED;
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 2738563..bb241d0 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -477,7 +477,6 @@ static void xenvif_rx_action(struct xenvif *vif)
- 	unsigned long offset;
- 	struct skb_cb_overlay *sco;
- 	bool need_to_notify = false;
--	bool ring_full = false;
- 
- 	struct netrx_pending_operations npo = {
- 		.copy  = vif->grant_copy_op,
-@@ -487,7 +486,7 @@ static void xenvif_rx_action(struct xenvif *vif)
- 	skb_queue_head_init(&rxq);
- 
- 	while ((skb = skb_dequeue(&vif->rx_queue)) != NULL) {
--		int max_slots_needed;
-+		RING_IDX max_slots_needed;
- 		int i;
- 
- 		/* We need a cheap worse case estimate for the number of
-@@ -510,9 +509,10 @@ static void xenvif_rx_action(struct xenvif *vif)
- 		if (!xenvif_rx_ring_slots_available(vif, max_slots_needed)) {
- 			skb_queue_head(&vif->rx_queue, skb);
- 			need_to_notify = true;
--			ring_full = true;
-+			vif->rx_last_skb_slots = max_slots_needed;
- 			break;
--		}
-+		} else
-+			vif->rx_last_skb_slots = 0;
- 
- 		sco = (struct skb_cb_overlay *)skb->cb;
- 		sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
-@@ -523,8 +523,6 @@ static void xenvif_rx_action(struct xenvif *vif)
- 
- 	BUG_ON(npo.meta_prod > ARRAY_SIZE(vif->meta));
- 
--	vif->rx_queue_stopped = !npo.copy_prod && ring_full;
--
- 	if (!npo.copy_prod)
- 		goto done;
- 
-@@ -1727,8 +1725,8 @@ static struct xen_netif_rx_response *make_rx_response(struct xenvif *vif,
- 
- static inline int rx_work_todo(struct xenvif *vif)
- {
--	return (!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) ||
--		vif->rx_event;
-+	return !skb_queue_empty(&vif->rx_queue) &&
-+	       xenvif_rx_ring_slots_available(vif, vif->rx_last_skb_slots);
- }
- 
- static inline int tx_work_todo(struct xenvif *vif)
-@@ -1814,8 +1812,6 @@ int xenvif_kthread(void *data)
- 		if (!skb_queue_empty(&vif->rx_queue))
- 			xenvif_rx_action(vif);
- 
--		vif->rx_event = false;
--
- 		if (skb_queue_empty(&vif->rx_queue) &&
- 		    netif_queue_stopped(vif->dev))
- 			xenvif_start_queue(vif);
+> If there is no 'compatible', the CODEC module is not loaded, and, when
+> the module is in the core, no CODEC device can be created from the DT.
+
+You're confusing implementation details with device tree specification
+here.  We can easily handle loading a subdriver without having to put
+anything in the device tree, just create a platform device like we do
+with MFDs.
+
+--aV+nM5O4EiZgYTzs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8UWEAAoJELSic+t+oim9mBoP/iOWL3+ui3vOiZmu1ytj1RLR
+frT3ePQ+8wF2mTaDx23u8i8ijG6ZlgAslVFwZb1/jKu/2H4paCF9YGVqv0ilRGLw
+PtbEgXScTxC+M1DJyIf4b4F5h0d7PBXaBVMTRx2Hs1Mz/7/Z9TwbLslXT/txGX/G
+RfAqppgYkg6aj/DQeShW1GjzW13nG+lV5j6ShjJJ/2qkpdT536/berUmOahdgvlV
+CzbsyPYoyY07vkptX+UJDuBc495cSrdKJlNDY9CheIV+X+V8Y6sL7bn0Zv8aERXw
+GxrfF7PDiSwvCk29zFqIVTXyDktl6UuPuuG+oYm3wT8ZFY3c3hZnIT40rHOapMH7
+apjvfwK2N2d10YUsWKPlLf2ouMX/xcgxCnHwV6X30Y6SN3QrT9sfEEFoTE2Z+s9p
+Zdzv5ZfP9OwezpzdiSz4kJ4dRPbk//9QKwXmymb8MIguD0xHphbKk/u27CIEzHkb
+fhuOigpW2YGQ0I8kfxdD+V6WkwqksTi6c2Y2LxdVMac2DidieBJIMeDUMf84+mYp
+3OJfk1637Cmy99SD0NgS58lo7Fc83K9KJyoRzRSS381mjJvjdQcUEuHuKPz0hq8t
+TP/lPCHExlk55ps/pzQktTZcrJa8YRsd682RX6SUdnlf5m+WfhibDFu53J3dQLnj
+ZU3j8MOYw8Lh46UyIQbO
+=vhoH
+-----END PGP SIGNATURE-----
+
+--aV+nM5O4EiZgYTzs--
