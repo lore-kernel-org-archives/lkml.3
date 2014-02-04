@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934087AbaBDVJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56684 "EHLO
+	id S935649AbaBDWIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:08:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56815 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933973AbaBDVIj (ORCPT
+	with ESMTP id S934091AbaBDVJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:39 -0500
+	Tue, 4 Feb 2014 16:09:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philip Pokorny <ppokorny@penguincomputing.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.12 061/133] hwmon: (k10temp) Add support for Kaveri CPUs
-Date: Tue,  4 Feb 2014 13:07:42 -0800
-Message-Id: <20140204210738.755080575@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Wolfram Sang <wsa@the-dreams.de>,
+        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.12 098/133] i2c: mv64xxx: Fix bus hang on A0 version of the Armada XP SoCs
+Date: Tue,  4 Feb 2014 13:08:19 -0800
+Message-Id: <20140204210739.804315330@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,29 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Pokorny <ppokorny@penguincomputing.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit d303b1b5fbb688282bbf72a534b9dfed7af9fe4f upstream.
+commit 6cf70ae928bae17077efc0d528dec49bc380438b upstream.
 
-Add new PCI ID to support new model "Kaveri" family.
+The first variants of Armada XP SoCs (A0 stepping) have issues related
+to the i2c controller which prevent to use the offload mechanism and
+lead to a kernel hang during boot.
 
-Signed-off-by: Philip Pokorny <ppokorny@penguincomputing.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The commit introduces a new the compatible string
+marvell,mv78230-a0-i2c for the i2c controller. When this compatible
+string is used the driver disables the offload mechanism and the
+kernel no more hangs on these SoCs.
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Reported-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/k10temp.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/i2c/busses/i2c-mv64xxx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -210,6 +210,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_i
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -692,6 +692,7 @@ static const struct of_device_id mv64xxx
+ 	{ .compatible = "allwinner,sun4i-i2c", .data = &mv64xxx_i2c_regs_sun4i},
+ 	{ .compatible = "marvell,mv64xxx-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
+ 	{ .compatible = "marvell,mv78230-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
++	{ .compatible = "marvell,mv78230-a0-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
  	{}
  };
+ MODULE_DEVICE_TABLE(of, mv64xxx_i2c_of_match_table);
+@@ -783,6 +784,10 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
+ 		drv_data->errata_delay = true;
+ 	}
+ 
++	if (of_device_is_compatible(np, "marvell,mv78230-a0-i2c")) {
++		drv_data->offload_enabled = false;
++		drv_data->errata_delay = true;
++	}
+ out:
+ 	return rc;
+ #endif
 
 
