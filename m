@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934134AbaBDW73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:59:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56106 "EHLO
+	id S936449AbaBDW7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:59:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56116 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115AbaBDVCF (ORCPT
+	with ESMTP id S933109AbaBDVCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:05 -0500
+	Tue, 4 Feb 2014 16:02:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 029/104] rtlwifi: Increase the RX queue length for USB drivers
-Date: Tue,  4 Feb 2014 13:01:32 -0800
-Message-Id: <20140204210223.564332989@linuxfoundation.org>
+Subject: [PATCH 3.10 027/104] rtlwifi: Set the link state
+Date: Tue,  4 Feb 2014 13:01:30 -0800
+Message-Id: <20140204210223.509715192@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -31,29 +31,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dc6405712268fe514d3dd89aa936c4397b0871b9 upstream.
+commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
 
-The current number of RX buffers queued is 32, which is too small under
-heavy load. That number is doubled.
+The present code fails to set the linked state when an interface is
+added.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/usb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -550,7 +550,7 @@ static void _rtl_rx_pre_process(struct i
- 	}
- }
- 
--#define __RX_SKB_MAX_QUEUED	32
-+#define __RX_SKB_MAX_QUEUED	64
- 
- static void _rtl_rx_work(unsigned long param)
- {
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -194,6 +194,7 @@ static int rtl_op_add_interface(struct i
+ 					rtlpriv->cfg->maps
+ 					[RTL_IBSS_INT_MASKS]);
+ 		}
++		mac->link_state = MAC80211_LINKED;
+ 		break;
+ 	case NL80211_IFTYPE_ADHOC:
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
 
 
