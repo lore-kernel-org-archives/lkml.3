@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaBDOuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 09:50:17 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38749 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaBDOuN (ORCPT
+	id S1754493AbaBDOvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 09:51:00 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:50656 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaBDOu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 09:50:13 -0500
-Message-ID: <52F0FE17.1050109@parallels.com>
-Date: Tue, 4 Feb 2014 18:49:59 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Tue, 4 Feb 2014 09:50:57 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v3 1/6] fat: add i_disksize to represent uninitialized size
+References: <1387953050-2692-1-git-send-email-linkinjeon@gmail.com>
+	<87ioswx1xq.fsf@devron.myhome.or.jp>
+	<CAKYAXd91w8rtXpq45Ckj+6kGWAnn9Gj80EezpomyXO6+yggivQ@mail.gmail.com>
+Date: Tue, 04 Feb 2014 23:50:53 +0900
+In-Reply-To: <CAKYAXd91w8rtXpq45Ckj+6kGWAnn9Gj80EezpomyXO6+yggivQ@mail.gmail.com>
+	(Namjae Jeon's message of "Tue, 4 Feb 2014 19:20:27 +0900")
+Message-ID: <87y51rue2a.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <penberg@kernel.org>,
-        <cl@linux.com>, <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 1/8] memcg: export kmemcg cache id via cgroup fs
-References: <cover.1391356789.git.vdavydov@parallels.com> <570a97e4dfaded0939a9ddbea49055019dcc5803.1391356789.git.vdavydov@parallels.com> <20140204144033.GE4890@dhcp22.suse.cz>
-In-Reply-To: <20140204144033.GE4890@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 06:40 PM, Michal Hocko wrote:
-> On Sun 02-02-14 20:33:46, Vladimir Davydov wrote:
->> Per-memcg kmem caches are named as follows:
+Namjae Jeon <linkinjeon@gmail.com> writes:
+
+> 2014-02-03, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>> Namjae Jeon <linkinjeon@gmail.com> writes:
 >>
->>   <global-cache-name>(<cgroup-kmem-id>:<cgroup-name>)
+>>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>>
+>>> Add i_disksize to represent uninitialized allocated size.
+>>> And mmu_private represent initialized allocated size.
 >>
->> where <cgroup-kmem-id> is the unique id of the memcg the cache belongs
->> to, <cgroup-name> is the relative name of the memcg on the cgroup fs.
->> Cache names are exposed to userspace for debugging purposes (e.g. via
->> sysfs in case of slub or via dmesg).
-> If this is only for debugging purposes then it shouldn't pollute regular
-> memcg cgroupfs namespace.
->
->> Using relative names makes it impossible in general (in case the cgroup
->> hierarchy is not flat) to find out which memcg a particular cache
->> belongs to, because <cgroup-kmem-id> is not known to the user. Since
->> using absolute cgroup names would be an overkill,
-> I do not consider it an overkill. We are using the full path when
-> dumping OOM information so I do not see any reason this should be any
-> different.
+>> Don't we need to update ->i_disksize after cont_write_begin()?
+> We don't need to update i_disksize after cont_write_begin.
+> It is taken care by the fat_get_block after the allocation.
+> For all write paths we align the mmu_private and i_disksize from
+> fat_fill_inode and fat_get_block.
 
-When we dump information, we simply print the cgroup path to dmesg and
-forget about it while the memcg cache's name will leave at least until
-the memcg is destroyed. Basically that means PATH_MAX *
-NR_KMEM_ACTIVE_MEMCGS * NR_SLAB_CACHES memory overhead at max.
+fat_fill_inode() just set i_disksize to i_size. So, it is not aligned by
+cluster size or block size.
 
-Anyway, I decided to drop this patch, so please see version 2 of this
-patchset (you must be in CC):
+E.g. ->mmu_private = 500. Then, cont_write_begin() can set ->mmu_private
+to 512 on some case. In this case, fat_get_block() will not be called,
+because no new allocation.
 
-https://lkml.org/lkml/2014/2/3/268
+If this is true, it would be possible to have ->mmu_private == 512 and
+->i_disksize == 500. 
+
+I'm missing something?
 
 Thanks.
-
->
->> let's fix this by
->> exporting the id of kmem-active memcg via cgroup fs file
->> "memory.kmem.id".
->>
->> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Nacked-by: Michal Hocko <mhocko@suse.cz>
->
->> ---
->>  mm/memcontrol.c |   12 ++++++++++++
->>  1 file changed, 12 insertions(+)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 53385cd4e6f0..91d242707404 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3113,6 +3113,14 @@ int memcg_cache_id(struct mem_cgroup *memcg)
->>  	return memcg ? memcg->kmemcg_id : -1;
->>  }
->>  
->> +static s64 mem_cgroup_cache_id_read(struct cgroup_subsys_state *css,
->> +				    struct cftype *cft)
->> +{
->> +	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
->> +
->> +	return memcg_can_account_kmem(memcg) ? memcg_cache_id(memcg) : -1;
->> +}
->> +
->>  static size_t memcg_caches_array_size(int num_groups)
->>  {
->>  	ssize_t size;
->> @@ -6301,6 +6309,10 @@ static struct cftype mem_cgroup_files[] = {
->>  #endif
->>  #ifdef CONFIG_MEMCG_KMEM
->>  	{
->> +		.name = "kmem.id",
->> +		.read_s64 = mem_cgroup_cache_id_read,
->> +	},
->> +	{
->>  		.name = "kmem.limit_in_bytes",
->>  		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
->>  		.write_string = mem_cgroup_write,
->> -- 
->> 1.7.10.4
->>
-
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
