@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935256AbaBDW42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:56:28 -0500
-Received: from mail.efficios.com ([78.47.125.74]:53116 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932452AbaBDW4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:56:24 -0500
-Date: Tue, 4 Feb 2014 22:56:24 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: tglx@linutronix.de
-Cc: Heinz.Egger@linutronix.de, bigeasy@linutronix.de,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Molnar, Ingo" <mingo@kernel.org>, rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Message-ID: <238497929.19329.1391554584871.JavaMail.zimbra@efficios.com>
-In-Reply-To: <104831840.19303.1391553779700.JavaMail.zimbra@efficios.com>
-Subject: Perf user-space ABI sequence lock memory barriers
+	id S933220AbaBDVCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56116 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932452AbaBDVCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 16:02:08 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 032/104] rtlwifi: rtl8192cu: Fix some code in RF handling
+Date: Tue,  4 Feb 2014 13:01:35 -0800
+Message-Id: <20140204210223.646257205@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [24.114.90.220]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF26 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Perf user-space ABI sequence lock memory barriers
-Thread-Index: tU4aEo8ChZC1MoMlGAd5jPvQvpZ8tw==
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I'm currently integrating user-space performance counters from
-Perf into LTTng-UST, and I'm noticing something odd regarding
-the home-made sequence lock found at:
+------------------
 
-kernel/events/core.c: perf_event_update_userpage()
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-        ++userpg->lock;
-        barrier();
-[...]
-        barrier();
-        ++userpg->lock;
+commit e9b0784bb9de3152e787ee779868c626b137fb3b upstream.
 
-This goes in pair with something like this at user-level:
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-        do {
-                seq = pc->lock;
-                barrier();
+---
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c |   29 +++++++++++++++-------------
+ 1 file changed, 16 insertions(+), 13 deletions(-)
 
-                idx = pc->index;
-                count = pc->offset;
-                if (idx)
-                        count += rdpmc(idx - 1);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
+@@ -85,17 +85,15 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
+ 	if (mac->act_scanning) {
+ 		tx_agc[RF90_PATH_A] = 0x3f3f3f3f;
+ 		tx_agc[RF90_PATH_B] = 0x3f3f3f3f;
+-		if (turbo_scanoff) {
+-			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
+-				tx_agc[idx1] = ppowerlevel[idx1] |
+-				    (ppowerlevel[idx1] << 8) |
+-				    (ppowerlevel[idx1] << 16) |
+-				    (ppowerlevel[idx1] << 24);
+-				if (rtlhal->interface == INTF_USB) {
+-					if (tx_agc[idx1] > 0x20 &&
+-					    rtlefuse->external_pa)
+-						tx_agc[idx1] = 0x20;
+-				}
++		for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
++			tx_agc[idx1] = ppowerlevel[idx1] |
++			    (ppowerlevel[idx1] << 8) |
++			    (ppowerlevel[idx1] << 16) |
++			    (ppowerlevel[idx1] << 24);
++			if (rtlhal->interface == INTF_USB) {
++				if (tx_agc[idx1] > 0x20 &&
++				    rtlefuse->external_pa)
++					tx_agc[idx1] = 0x20;
+ 			}
+ 		}
+ 	} else {
+@@ -107,7 +105,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(
+ 			   TXHIGHPWRLEVEL_LEVEL2) {
+ 			tx_agc[RF90_PATH_A] = 0x00000000;
+ 			tx_agc[RF90_PATH_B] = 0x00000000;
+-		} else{
++		} else {
+ 			for (idx1 = RF90_PATH_A; idx1 <= RF90_PATH_B; idx1++) {
+ 				tx_agc[idx1] = ppowerlevel[idx1] |
+ 				    (ppowerlevel[idx1] << 8) |
+@@ -373,7 +371,12 @@ static void _rtl92c_write_ofdm_power_reg
+ 			    regoffset == RTXAGC_B_MCS07_MCS04)
+ 				regoffset = 0xc98;
+ 			for (i = 0; i < 3; i++) {
+-				writeVal = (writeVal > 6) ? (writeVal - 6) : 0;
++				if (i != 2)
++					writeVal = (writeVal > 8) ?
++						   (writeVal - 8) : 0;
++				else
++					writeVal = (writeVal > 6) ?
++						   (writeVal - 6) : 0;
+ 				rtl_write_byte(rtlpriv, (u32)(regoffset + i),
+ 					      (u8)writeVal);
+ 			}
 
-                barrier();
-        } while (pc->lock != seq);
 
-As we see, only compiler barrier() are protecting all this.
-First question, is it possible that the update be performed
-by a thread running on a different CPU than the thread reading
-the info in user-space ?
-
-I would be tempted to use a volatile semantic on all reads of the
-lock field (ACCESS_ONCE()). Secondly, read sequence locks usually use a
-smp_rmb() at the end of the seqcount_begin(), and at the beginning
-of the seqcount_retry(). Moreover, this is usually matched
-by smp_wmb() in write_seqcount begin/end().
-
-Am I missing something special about this lock that makes these
-barriers unnecessary ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
