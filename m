@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaBDARB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 19:17:01 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:17074 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaBDAQ7 (ORCPT
+	id S1754063AbaBDASY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 19:18:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47568 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753886AbaBDASX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 19:16:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 16:15:35 -0800
-From: Andrew Chew <achew@nvidia.com>
-To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>, <swarren@wwwdotorg.org>,
-        <thierry.reding@gmail.com>, <rob@landley.net>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <abrestic@chromium.org>, <dgreid@chromium.org>, <katierh@chromium.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-watchdog@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        Andrew Chew <achew@nvidia.com>
-Subject: [PATCH v2 0/3] tegra30 watchdog support
-Date: Mon, 3 Feb 2014 16:17:32 -0800
-Message-ID: <1391473055-3158-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 3 Feb 2014 19:18:23 -0500
+Date: Mon, 3 Feb 2014 16:18:21 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, iamjoonsoo.kim@lge.com,
+        riel@redhat.com, mgorman@suse.de, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hughd@google.com, david@gibson.dropbear.id.au, js1304@gmail.com,
+        liwanp@linux.vnet.ibm.com, dhillf@gmail.com, rientjes@google.com,
+        aswin@hp.com, scott.norton@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] mm, hugetlb: fix race in region tracking
+Message-Id: <20140203161821.85b6754226ce7feaadc37810@linux-foundation.org>
+In-Reply-To: <1390958378.11839.37.camel@buesod1.americas.hpqcorp.net>
+References: <1390794746-16755-1-git-send-email-davidlohr@hp.com>
+	<1390794746-16755-4-git-send-email-davidlohr@hp.com>
+	<1390856576-ud1qp3fm-mutt-n-horiguchi@ah.jp.nec.com>
+	<1390859042.27421.4.camel@buesod1.americas.hpqcorp.net>
+	<1390874021-48f5mo0m-mutt-n-horiguchi@ah.jp.nec.com>
+	<1390876457.27421.19.camel@buesod1.americas.hpqcorp.net>
+	<1390955806-ljm7w9nq-mutt-n-horiguchi@ah.jp.nec.com>
+	<1390958378.11839.37.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series ultimately adds watchdog support for tegra30 and later
-chips.
+On Tue, 28 Jan 2014 17:19:38 -0800 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-The existing tegra clocksource driver (drivers/clocksource/tegra20_timer.c)
-sadly does not distinguish between tegra20 and tegra30 (and later), which
-it should have done since the contents of the timer register base have
-changed significantly.  In particular, tegra30 (and later) has more timers,
-and also hardware watchdog registers.
+> On Tue, 2014-01-28 at 19:36 -0500, Naoya Horiguchi wrote:
+> > On Mon, Jan 27, 2014 at 06:34:17PM -0800, Davidlohr Bueso wrote:
+> [...]
+> > > > If this retry is really essential for the fix, please comment the reason
+> > > > both in patch description and inline comment. It's very important for
+> > > > future code maintenance.
+> > > 
+> > > So we locate the corresponding region in the reserve map, and if we are
+> > > below the current region, then we allocate a new one. Since we dropped
+> > > the lock to allocate memory, we have to make sure that we still need the
+> > > new region and that we don't race with the new status of the reservation
+> > > map. This is the whole point of the retry, and I don't see it being
+> > > suboptimal.
+> > 
+> > I'm afraid that you don't explain why you need drop the lock for memory
+> > allocation. Are you saying that this unlocking comes from the difference
+> > between rwsem and spin lock?
+> 
+> Because you cannot go to sleep while holding a spinlock, which is
+> exactly what kmalloc(GFP_KERNEL) can do. We *might* get a way with it
+> with GFP_ATOMIC, I dunno, but I certainly prefer this approach better.
 
-The first patch adds nvidia,tegra30-timer to the list of compatibilty
-strings for the tegra timer device tree node, so that we can distinguish
-between tegra20 and tegra30 (and later).
+yup.  You could do
 
-The second patch separates out some macros that are interesting to other
-drivers (in particular, the tegra watchdog driver), and also adds the
-the missing timers that are present in tegra30 and later.
+	foo = kmalloc(size, GFP_NOWAIT);
+	if (!foo) {
+		spin_unlock(...);
+		foo = kmalloc(size, GFP_KERNEL);
+		if (!foo)
+			...
+		spin_lock(...);
+	}
 
-The third patch adds the actual watchdog driver.  This driver configures
-a single watchdog (watchdog 0), pairs it with timer 5
-(defined as TEGRA30_TIMER_WDT_* in the shared header file from the previous
-patch), and sets it up so that upon timer expiration, will cause the target
-system to reset.
+that avoids the lock/unlock once per allocation.  But it also increases
+the lock's average hold times....
 
-I've decided to encapsulate all related changes into one patch series, since
-I did not modify any device tree bindings and therefore don't need to review
-dt changes separately.  This way, everything can be seen within its complete
-context.
-
-Andrew Chew (3):
-  clocksource: tegra: Add nvidia,tegra30-timer compat
-  clocksource: tegra: Define timer bases in header file
-  watchdog: Add tegra watchdog
-
- Documentation/watchdog/watchdog-parameters.txt |   5 +
- drivers/clocksource/tegra20_timer.c            |  16 +-
- drivers/watchdog/Kconfig                       |  11 +
- drivers/watchdog/Makefile                      |   1 +
- drivers/watchdog/tegra_wdt.c                   | 372 +++++++++++++++++++++++++
- include/clocksource/tegra_timer.h              |  43 +++
- 6 files changed, 439 insertions(+), 9 deletions(-)
- create mode 100644 drivers/watchdog/tegra_wdt.c
- create mode 100644 include/clocksource/tegra_timer.h
-
--- 
-1.8.1.5
-
+		
