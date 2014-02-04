@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935279AbaBDWBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:01:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56922 "EHLO
+	id S935326AbaBDWBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:01:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56918 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934174AbaBDVJV (ORCPT
+	with ESMTP id S934169AbaBDVJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:21 -0500
+	Tue, 4 Feb 2014 16:09:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 124/133] hpfs: remember free space
-Date: Tue,  4 Feb 2014 13:08:45 -0800
-Message-Id: <20140204210740.532190168@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Uosis <uosisl@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 3.12 123/133] ALSA: hda/hdmi - allow PIN_OUT to be dynamically enabled
+Date: Tue,  4 Feb 2014 13:08:44 -0800
+Message-Id: <20140204210740.503086006@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,232 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 2cbe5c76fc5e38e9af4b709593146e4b8272b69e upstream.
+(This is upstream 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
+dynamically enabled", backported to stable 3.10 through 3.12. 3.13 and
+later can take the original patch.)
 
-Previously, hpfs scanned all bitmaps each time the user asked for free
-space using statfs.  This patch changes it so that hpfs scans the
-bitmaps only once, remembes the free space and on next invocation of
-statfs it returns the value instantly.
+Commit 384a48d71520 "ALSA: hda: HDMI: Support codecs with fewer cvts
+than pins" dynamically enabled each pin widget's PIN_OUT only when the
+pin was actively in use. This was required on certain NVIDIA CODECs for
+correct operation. Specifically, if multiple pin widgets each had their
+mux input select the same audio converter widget and each pin widget had
+PIN_OUT enabled, then only one of the pin widgets would actually receive
+the audio, and often not the one the user wanted!
 
-New versions of wine are hammering on the statfs syscall very heavily,
-making some games unplayable when they're stored on hpfs, with load
-times in minutes.
+However, this apparently broke some Intel systems, and commit
+6169b673618b "ALSA: hda - Always turn on pins for HDMI/DP" reverted the
+dynamic setting of PIN_OUT. This in turn broke the afore-mentioned NVIDIA
+CODECs.
 
-This should be backported to the stable kernels because it fixes
-user-visible problem (excessive level load times in wine).
+This change supports either dynamic or static handling of PIN_OUT,
+selected by a flag set up during CODEC initialization. This flag is
+enabled for all recent NVIDIA GPUs.
 
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Uosis <uosisl@gmail.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hpfs/alloc.c   |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- fs/hpfs/hpfs_fn.h |    2 -
- fs/hpfs/super.c   |   29 ++++++++++++++++++-----
- 3 files changed, 87 insertions(+), 10 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   40 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 36 insertions(+), 4 deletions(-)
 
---- a/fs/hpfs/alloc.c
-+++ b/fs/hpfs/alloc.c
-@@ -8,6 +8,58 @@
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -88,6 +88,9 @@ struct hdmi_spec {
+ 	unsigned int channels_max; /* max over all cvts */
  
- #include "hpfs_fn.h"
+ 	struct hdmi_eld temp_eld;
++
++	bool dyn_pin_out;
++
+ 	/*
+ 	 * Non-generic ATI/NVIDIA specific
+ 	 */
+@@ -452,15 +455,25 @@ static void hdmi_write_dip_byte(struct h
  
-+static void hpfs_claim_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free)) {
-+			hpfs_error(s, "free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free--;
-+	}
-+}
-+
-+static void hpfs_claim_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free >= sbi->sb_fs_size)) {
-+			hpfs_error(s, "free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free++;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free_dnodes)) {
-+			hpfs_error(s, "dirband free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes--;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free_dnodes >= sbi->sb_dirband_size / 4)) {
-+			hpfs_error(s, "dirband free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes++;
-+	}
-+}
-+
- /*
-  * Check if a sector is allocated in bitmap
-  * This is really slow. Turned on only if chk==2
-@@ -203,9 +255,15 @@ secno hpfs_alloc_sector(struct super_blo
- 	}
- 	sec = 0;
- 	ret:
-+	if (sec) {
-+		i = 0;
-+		do
-+			hpfs_claim_alloc(s, sec + i);
-+		while (unlikely(++i < n));
-+	}
- 	if (sec && f_p) {
- 		for (i = 0; i < forward; i++) {
--			if (!hpfs_alloc_if_possible(s, sec + i + 1)) {
-+			if (!hpfs_alloc_if_possible(s, sec + n + i)) {
- 				hpfs_error(s, "Prealloc doesn't work! Wanted %d, allocated at %08x, can't allocate %d", forward, sec, i);
- 				sec = 0;
- 				break;
-@@ -228,6 +286,7 @@ static secno alloc_in_dirband(struct sup
- 	nr >>= 2;
- 	sec = alloc_in_bmp(s, (~0x3fff) | nr, 1, 0);
- 	if (!sec) return 0;
-+	hpfs_claim_dirband_alloc(s, sec);
- 	return ((sec & 0x3fff) << 2) + sbi->sb_dirband_start;
- }
- 
-@@ -242,6 +301,7 @@ int hpfs_alloc_if_possible(struct super_
- 		bmp[(sec & 0x3fff) >> 5] &= cpu_to_le32(~(1 << (sec & 0x1f)));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_alloc(s, sec);
- 		return 1;
- 	}
- 	hpfs_brelse4(&qbh);
-@@ -275,6 +335,7 @@ void hpfs_free_sectors(struct super_bloc
- 		return;
- 	}
- 	bmp[(sec & 0x3fff) >> 5] |= cpu_to_le32(1 << (sec & 0x1f));
-+	hpfs_claim_free(s, sec);
- 	if (!--n) {
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-@@ -359,6 +420,7 @@ void hpfs_free_dnode(struct super_block
- 		bmp[ssec >> 5] |= cpu_to_le32(1 << (ssec & 0x1f));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_dirband_free(s, dno);
- 	}
- }
- 
-@@ -366,7 +428,7 @@ struct dnode *hpfs_alloc_dnode(struct su
- 			 dnode_secno *dno, struct quad_buffer_head *qbh)
+ static void hdmi_init_pin(struct hda_codec *codec, hda_nid_t pin_nid)
  {
- 	struct dnode *d;
--	if (hpfs_count_one_bitmap(s, hpfs_sb(s)->sb_dmap) > FREE_DNODES_ADD) {
-+	if (hpfs_get_free_dnodes(s) > FREE_DNODES_ADD) {
- 		if (!(*dno = alloc_in_dirband(s, near)))
- 			if (!(*dno = hpfs_alloc_sector(s, near, 4, 0))) return NULL;
- 	} else {
---- a/fs/hpfs/hpfs_fn.h
-+++ b/fs/hpfs/hpfs_fn.h
-@@ -311,7 +311,7 @@ static inline struct hpfs_sb_info *hpfs_
- __printf(2, 3)
- void hpfs_error(struct super_block *, const char *, ...);
- int hpfs_stop_cycles(struct super_block *, int, int *, int *, char *);
--unsigned hpfs_count_one_bitmap(struct super_block *, secno);
-+unsigned hpfs_get_free_dnodes(struct super_block *);
- 
- /*
-  * local time (HPFS) to GMT (Unix)
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -115,7 +115,7 @@ static void hpfs_put_super(struct super_
- 	kfree(sbi);
++	struct hdmi_spec *spec = codec->spec;
++	int pin_out;
++
+ 	/* Unmute */
+ 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
+ 		snd_hda_codec_write(codec, pin_nid, 0,
+ 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
+-	/* Enable pin out: some machines with GM965 gets broken output when
+-	 * the pin is disabled or changed while using with HDMI
+-	 */
++
++	if (spec->dyn_pin_out)
++		/* Disable pin out until stream is active */
++		pin_out = 0;
++	else
++		/* Enable pin out: some machines with GM965 gets broken output
++		 * when the pin is disabled or changed while using with HDMI
++		 */
++		pin_out = PIN_OUT;
++
+ 	snd_hda_codec_write(codec, pin_nid, 0,
+-			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
++			    AC_VERB_SET_PIN_WIDGET_CONTROL, pin_out);
  }
  
--unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
-+static unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
- {
- 	struct quad_buffer_head qbh;
- 	unsigned long *bits;
-@@ -123,7 +123,7 @@ unsigned hpfs_count_one_bitmap(struct su
+ static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
+@@ -1535,6 +1548,7 @@ static int generic_hdmi_playback_pcm_pre
+ 	struct hdmi_spec_per_pin *per_pin = get_pin(spec, pin_idx);
+ 	hda_nid_t pin_nid = per_pin->pin_nid;
+ 	bool non_pcm;
++	int pinctl;
  
- 	bits = hpfs_map_4sectors(s, secno, &qbh, 0);
- 	if (!bits)
--		return 0;
-+		return (unsigned)-1;
- 	count = bitmap_weight(bits, 2048 * BITS_PER_BYTE);
- 	hpfs_brelse4(&qbh);
- 	return count;
-@@ -138,30 +138,45 @@ static unsigned count_bitmaps(struct sup
- 		hpfs_prefetch_bitmap(s, n);
- 	}
- 	for (n = 0; n < n_bands; n++) {
-+		unsigned c;
- 		hpfs_prefetch_bitmap(s, n + COUNT_RD_AHEAD);
--		count += hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		c = hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		if (c != (unsigned)-1)
-+			count += c;
- 	}
- 	return count;
- }
+ 	non_pcm = check_non_pcm_per_cvt(codec, cvt_nid);
+ 	per_pin->channels = substream->runtime->channels;
+@@ -1544,6 +1558,14 @@ static int generic_hdmi_playback_pcm_pre
  
-+unsigned hpfs_get_free_dnodes(struct super_block *s)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes == (unsigned)-1) {
-+		unsigned c = hpfs_count_one_bitmap(s, sbi->sb_dmap);
-+		if (c == (unsigned)-1)
-+			return 0;
-+		sbi->sb_n_free_dnodes = c;
+ 	hdmi_setup_audio_infoframe(codec, per_pin, non_pcm);
+ 
++	if (spec->dyn_pin_out) {
++		pinctl = snd_hda_codec_read(codec, pin_nid, 0,
++					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++		snd_hda_codec_write(codec, pin_nid, 0,
++				    AC_VERB_SET_PIN_WIDGET_CONTROL,
++				    pinctl | PIN_OUT);
 +	}
-+	return sbi->sb_n_free_dnodes;
-+}
 +
- static int hpfs_statfs(struct dentry *dentry, struct kstatfs *buf)
- {
- 	struct super_block *s = dentry->d_sb;
- 	struct hpfs_sb_info *sbi = hpfs_sb(s);
- 	u64 id = huge_encode_dev(s->s_bdev->bd_dev);
-+
- 	hpfs_lock(s);
+ 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
+ }
  
--	/*if (sbi->sb_n_free == -1) {*/
-+	if (sbi->sb_n_free == (unsigned)-1)
- 		sbi->sb_n_free = count_bitmaps(s);
--		sbi->sb_n_free_dnodes = hpfs_count_one_bitmap(s, sbi->sb_dmap);
--	/*}*/
+@@ -1563,6 +1585,7 @@ static int hdmi_pcm_close(struct hda_pcm
+ 	int cvt_idx, pin_idx;
+ 	struct hdmi_spec_per_cvt *per_cvt;
+ 	struct hdmi_spec_per_pin *per_pin;
++	int pinctl;
+ 
+ 	if (hinfo->nid) {
+ 		cvt_idx = cvt_nid_to_cvt_index(spec, hinfo->nid);
+@@ -1579,6 +1602,14 @@ static int hdmi_pcm_close(struct hda_pcm
+ 			return -EINVAL;
+ 		per_pin = get_pin(spec, pin_idx);
+ 
++		if (spec->dyn_pin_out) {
++			pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
++					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++			snd_hda_codec_write(codec, per_pin->pin_nid, 0,
++					    AC_VERB_SET_PIN_WIDGET_CONTROL,
++					    pinctl & ~PIN_OUT);
++		}
 +
- 	buf->f_type = s->s_magic;
- 	buf->f_bsize = 512;
- 	buf->f_blocks = sbi->sb_fs_size;
- 	buf->f_bfree = sbi->sb_n_free;
- 	buf->f_bavail = sbi->sb_n_free;
- 	buf->f_files = sbi->sb_dirband_size / 4;
--	buf->f_ffree = sbi->sb_n_free_dnodes;
-+	buf->f_ffree = hpfs_get_free_dnodes(s);
- 	buf->f_fsid.val[0] = (u32)id;
- 	buf->f_fsid.val[1] = (u32)(id >> 32);
- 	buf->f_namelen = 254;
+ 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
+ 		per_pin->chmap_set = false;
+ 		memset(per_pin->chmap, 0, sizeof(per_pin->chmap));
+@@ -2570,6 +2601,7 @@ static int patch_nvhdmi(struct hda_codec
+ 		return err;
+ 
+ 	spec = codec->spec;
++	spec->dyn_pin_out = true;
+ 
+ 	return 0;
+ }
 
 
