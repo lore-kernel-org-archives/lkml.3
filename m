@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaBDARI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 19:17:08 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:4392 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464AbaBDARC (ORCPT
+	id S1753750AbaBDARG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 19:17:06 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:17085 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533AbaBDARC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Feb 2014 19:17:02 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 03 Feb 2014 16:15:13 -0800
+	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 16:15:38 -0800
 From: Andrew Chew <achew@nvidia.com>
 To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>, <swarren@wwwdotorg.org>,
         <thierry.reding@gmail.com>, <rob@landley.net>,
@@ -17,9 +17,9 @@ To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>, <swarren@wwwdotorg.org>,
 CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
         <linux-watchdog@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         Andrew Chew <achew@nvidia.com>
-Subject: [PATCH v2 2/3] clocksource: tegra: Define timer bases in header file
-Date: Mon, 3 Feb 2014 16:17:34 -0800
-Message-ID: <1391473055-3158-3-git-send-email-achew@nvidia.com>
+Subject: [PATCH v2 3/3] watchdog: Add tegra watchdog
+Date: Mon, 3 Feb 2014 16:17:35 -0800
+Message-ID: <1391473055-3158-4-git-send-email-achew@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1391473055-3158-1-git-send-email-achew@nvidia.com>
 References: <1391473055-3158-1-git-send-email-achew@nvidia.com>
@@ -29,126 +29,450 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added timers that are present in tegra30 and later, that are NOT in tegra20.
+Add a driver for the hardware watchdogs in NVIDIA Tegra SoCs (tegra30 and
+later).  This driver will configure one watchdog timer that will reset the
+system in the case of a watchdog timeout.
 
-Also, some of these timer bases are needed in the tegra watchdog driver, so
-separate them out into a header file that both the clocksource driver and
-the watchdog driver can share them.
+This driver binds to the nvidia,tegra30-timer device node and gets its
+register base from there.
 
 Signed-off-by: Andrew Chew <achew@nvidia.com>
 ---
- drivers/clocksource/tegra20_timer.c | 15 ++++++-------
- include/clocksource/tegra_timer.h   | 43 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 9 deletions(-)
- create mode 100644 include/clocksource/tegra_timer.h
+ Documentation/watchdog/watchdog-parameters.txt |   5 +
+ drivers/watchdog/Kconfig                       |  11 +
+ drivers/watchdog/Makefile                      |   1 +
+ drivers/watchdog/tegra_wdt.c                   | 372 +++++++++++++++++++++++++
+ 4 files changed, 389 insertions(+)
+ create mode 100644 drivers/watchdog/tegra_wdt.c
 
-diff --git a/drivers/clocksource/tegra20_timer.c b/drivers/clocksource/tegra20_timer.c
-index 73cfa56..2c49643 100644
---- a/drivers/clocksource/tegra20_timer.c
-+++ b/drivers/clocksource/tegra20_timer.c
-@@ -28,6 +28,8 @@
- #include <linux/of_irq.h>
- #include <linux/sched_clock.h>
+diff --git a/Documentation/watchdog/watchdog-parameters.txt b/Documentation/watchdog/watchdog-parameters.txt
+index f9492fe..b39f355 100644
+--- a/Documentation/watchdog/watchdog-parameters.txt
++++ b/Documentation/watchdog/watchdog-parameters.txt
+@@ -325,6 +325,11 @@ soft_noboot: Softdog action, set to 1 to ignore reboots, 0 to reboot
+ stmp3xxx_wdt:
+ heartbeat: Watchdog heartbeat period in seconds from 1 to 4194304, default 19
+ -------------------------------------------------
++tegra_wdt:
++heartbeat: Watchdog heartbeats in seconds. (default = 120)
++nowayout: Watchdog cannot be stopped once started
++	(default=kernel config parameter)
++-------------------------------------------------
+ ts72xx_wdt:
+ timeout: Watchdog timeout in seconds. (1 <= timeout <= 8, default=8)
+ nowayout: Disable watchdog shutdown on close
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 4c4c566..2852447 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -420,6 +420,17 @@ config SIRFSOC_WATCHDOG
+ 	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+ 	  the watchdog triggers the system will be reset.
  
-+#include <clocksource/tegra_timer.h>
++config TEGRA_WATCHDOG
++	tristate "Tegra watchdog"
++	depends on ARCH_TEGRA
++	select WATCHDOG_CORE
++	help
++	  Say Y here to include support for the watchdog timer
++	  embedded in NVIDIA Tegra SoCs.
 +
- #include <asm/mach/time.h>
- #include <asm/smp_twd.h>
++	  To compile this driver as a module, choose M here: the
++	  module will be called tegra_wdt.
++
+ # AVR32 Architecture
  
-@@ -39,11 +41,6 @@
- #define TIMERUS_USEC_CFG 0x14
- #define TIMERUS_CNTR_FREEZE 0x4c
+ config AT32AP700X_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 985a66c..1b5f3d5 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -58,6 +58,7 @@ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+ obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+ obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+ obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
++obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
  
--#define TIMER1_BASE 0x0
--#define TIMER2_BASE 0x8
--#define TIMER3_BASE 0x50
--#define TIMER4_BASE 0x58
--
- #define TIMER_PTV 0x0
- #define TIMER_PCR 0x4
- 
-@@ -64,7 +61,7 @@ static int tegra_timer_set_next_event(unsigned long cycles,
- 	u32 reg;
- 
- 	reg = 0x80000000 | ((cycles > 1) ? (cycles-1) : 0);
--	timer_writel(reg, TIMER3_BASE + TIMER_PTV);
-+	timer_writel(reg, TEGRA20_TIMER3_BASE + TIMER_PTV);
- 
- 	return 0;
- }
-@@ -74,12 +71,12 @@ static void tegra_timer_set_mode(enum clock_event_mode mode,
- {
- 	u32 reg;
- 
--	timer_writel(0, TIMER3_BASE + TIMER_PTV);
-+	timer_writel(0, TEGRA20_TIMER3_BASE + TIMER_PTV);
- 
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		reg = 0xC0000000 | ((1000000/HZ)-1);
--		timer_writel(reg, TIMER3_BASE + TIMER_PTV);
-+		timer_writel(reg, TEGRA20_TIMER3_BASE + TIMER_PTV);
- 		break;
- 	case CLOCK_EVT_MODE_ONESHOT:
- 		break;
-@@ -142,7 +139,7 @@ static void tegra_read_persistent_clock(struct timespec *ts)
- static irqreturn_t tegra_timer_interrupt(int irq, void *dev_id)
- {
- 	struct clock_event_device *evt = (struct clock_event_device *)dev_id;
--	timer_writel(1<<30, TIMER3_BASE + TIMER_PCR);
-+	timer_writel(1<<30, TEGRA20_TIMER3_BASE + TIMER_PCR);
- 	evt->event_handler(evt);
- 	return IRQ_HANDLED;
- }
-diff --git a/include/clocksource/tegra_timer.h b/include/clocksource/tegra_timer.h
+ # AVR32 Architecture
+ obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+diff --git a/drivers/watchdog/tegra_wdt.c b/drivers/watchdog/tegra_wdt.c
 new file mode 100644
-index 0000000..ea0bc8b
+index 0000000..eebe7fc
 --- /dev/null
-+++ b/include/clocksource/tegra_timer.h
-@@ -0,0 +1,43 @@
++++ b/drivers/watchdog/tegra_wdt.c
+@@ -0,0 +1,372 @@
 +/*
-+ * Copyright (C) 2010 Google, Inc.
++ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
 + *
-+ * Author:
-+ *	Colin Cross <ccross@google.com>
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
 + *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
 + */
 +
-+#ifndef __CLOCKSOURCE_TEGRA_TIMER_H
-+#define __CLOCKSOURCE_TEGRA_TIMER_H
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/miscdevice.h>
++#include <linux/watchdog.h>
 +
-+/* Tegra 20 timers */
-+#define TEGRA20_TIMER1_BASE	0x0
-+#define TEGRA20_TIMER2_BASE	0x8
-+#define TEGRA20_TIMER3_BASE	0x50
-+#define TEGRA20_TIMER4_BASE	0x58
++#include <clocksource/tegra_timer.h>
 +
-+/* Tegra 30 timers */
-+#define TEGRA30_TIMER1_BASE	TEGRA20_TIMER1_BASE
-+#define TEGRA30_TIMER2_BASE	TEGRA20_TIMER2_BASE
-+#define TEGRA30_TIMER3_BASE	TEGRA20_TIMER3_BASE
-+#define TEGRA30_TIMER4_BASE	TEGRA20_TIMER4_BASE
-+#define TEGRA30_TIMER5_BASE	0x60
-+#define TEGRA30_TIMER6_BASE	0x68
-+#define TEGRA30_TIMER7_BASE	0x70
-+#define TEGRA30_TIMER8_BASE	0x78
-+#define TEGRA30_TIMER9_BASE	0x80
-+#define TEGRA30_TIMER0_BASE	0x88
++/* minimum and maximum watchdog trigger timeout, in seconds */
++#define MIN_WDT_TIMEOUT			1
++#define MAX_WDT_TIMEOUT			255
 +
-+/* Used by the tegra watchdog timer */
-+#define TEGRA30_TIMER_WDT_BASE	TEGRA30_TIMER5_BASE
-+#define TEGRA30_TIMER_WDT_ID	5
++/*
++ * Base of the WDT registers, from the timer base address.  There are
++ * actually 5 watchdogs that can be configured (by pairing with an available
++ * timer), at bases 0x100 + (WDT ID) * 0x20, where WDT ID is 0 through 4.
++ * This driver only configures the first watchdog (WDT ID 0).
++ */
++#define WDT_BASE			0x100
++#define WDT_ID				0
++#define WDT_TIMER_BASE			TEGRA30_TIMER_WDT_BASE
++#define WDT_TIMER_ID			TEGRA30_TIMER_WDT_ID
 +
-+#endif /* __CLOCKSOURCE_TEGRA_TIMER_H */
++/* WDT registers */
++#define WDT_CFG				0x0
++#define WDT_CFG_PERIOD_SHIFT		4
++#define WDT_CFG_PERIOD_MASK		0xff
++#define WDT_CFG_INT_EN			(1 << 12)
++#define WDT_CFG_PMC2CAR_RST_EN		(1 << 15)
++#define WDT_STS				0x4
++#define WDT_STS_COUNT_SHIFT		4
++#define WDT_STS_COUNT_MASK		0xff
++#define WDT_STS_EXP_SHIFT		12
++#define WDT_STS_EXP_MASK		0x3
++#define WDT_CMD				0x8
++#define WDT_CMD_START_COUNTER		(1 << 0)
++#define WDT_CMD_DISABLE_COUNTER		(1 << 1)
++#define WDT_UNLOCK			(0xc)
++#define WDT_UNLOCK_PATTERN		(0xc45a << 0)
++
++/* Timer registers */
++#define TIMER_PTV			0x0
++#define TIMER_EN			(1 << 31)
++#define TIMER_PERIODIC			(1 << 30)
++
++struct tegra_wdt {
++	struct watchdog_device	wdd;
++	struct kref		kref;
++	void __iomem		*wdt_regs;
++	void __iomem		*tmr_regs;
++};
++
++#define WDT_HEARTBEAT 120
++static int heartbeat = WDT_HEARTBEAT;
++module_param(heartbeat, int, 0);
++MODULE_PARM_DESC(heartbeat, "Watchdog heartbeats in seconds. "
++	"(default = " __MODULE_STRING(WDT_HEARTBEAT) ")");
++
++static bool nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
++	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++static void tegra_wdt_release_resources(struct kref *r)
++{
++}
++
++static int tegra_wdt_start(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++	u32 val;
++
++	/* This thing has a fixed 1MHz clock.  Normally, we would set the
++	 * period to 1 second by writing 1000000ul, but the watchdog system
++	 * reset actually occurs on the 4th expiration of this counter,
++	 * so we set the period to 1/4 of this amount.
++	 */
++	val = 1000000ul / 4;
++	val |= (TIMER_EN | TIMER_PERIODIC);
++	writel(val, wdt->tmr_regs + TIMER_PTV);
++
++	/*
++	 * Set number of periods and start counter.
++	 *
++	 * Interrupt handler is not required for user space
++	 * WDT accesses, since the caller is responsible to ping the
++	 * WDT to reset the counter before expiration, through ioctls.
++	 */
++	val = WDT_TIMER_ID |
++	      (wdd->timeout << WDT_CFG_PERIOD_SHIFT) |
++	      WDT_CFG_PMC2CAR_RST_EN;
++	writel(val, wdt->wdt_regs + WDT_CFG);
++
++	writel(WDT_CMD_START_COUNTER, wdt->wdt_regs + WDT_CMD);
++
++	return 0;
++}
++
++static int tegra_wdt_stop(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	writel(WDT_UNLOCK_PATTERN, wdt->wdt_regs + WDT_UNLOCK);
++	writel(WDT_CMD_DISABLE_COUNTER, wdt->wdt_regs + WDT_CMD);
++	writel(0, wdt->tmr_regs + TIMER_PTV);
++
++	return 0;
++}
++
++static int tegra_wdt_ping(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	writel(WDT_CMD_START_COUNTER, wdt->wdt_regs + WDT_CMD);
++
++	return 0;
++}
++
++static int tegra_wdt_set_timeout(struct watchdog_device *wdd,
++				 unsigned int timeout)
++{
++	int ret;
++
++	ret = tegra_wdt_stop(wdd);
++	if (ret)
++		return ret;
++
++	wdd->timeout = clamp_t(int, timeout, MIN_WDT_TIMEOUT, MAX_WDT_TIMEOUT);
++
++	if (watchdog_active(wdd))
++		return tegra_wdt_start(wdd);
++
++	return 0;
++}
++
++static unsigned int tegra_wdt_get_timeleft(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++	u32 val;
++	int count;
++	int exp;
++
++	val = readl(wdt->wdt_regs + WDT_STS);
++
++	/* Current countdown (from timeout) */
++	count = (val >> WDT_STS_COUNT_SHIFT) & WDT_STS_COUNT_MASK;
++
++	/* Number of expirations (we are waiting for the 4th expiration) */
++	exp = (val >> WDT_STS_EXP_SHIFT) & WDT_STS_EXP_MASK;
++
++	/*
++	 * The entire thing is divided by 4 because we are ticking down 4 times
++	 * faster due to needing to wait for the 4th expiration.
++	 */
++	return (((3 - exp) * wdd->timeout) + count) / 4;
++}
++
++static void tegra_wdt_ref(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	kref_get(&wdt->kref);
++}
++
++static void tegra_wdt_unref(struct watchdog_device *wdd)
++{
++	struct tegra_wdt *wdt = watchdog_get_drvdata(wdd);
++
++	kref_put(&wdt->kref, tegra_wdt_release_resources);
++}
++
++static const struct watchdog_info tegra_wdt_info = {
++	.options	= WDIOF_SETTIMEOUT |
++			  WDIOF_MAGICCLOSE |
++			  WDIOF_KEEPALIVEPING,
++	.firmware_version = 0,
++	.identity	= "Tegra Watchdog",
++};
++
++static struct watchdog_ops tegra_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = tegra_wdt_start,
++	.stop = tegra_wdt_stop,
++	.ping = tegra_wdt_ping,
++	.set_timeout = tegra_wdt_set_timeout,
++	.get_timeleft = tegra_wdt_get_timeleft,
++	.ref = tegra_wdt_ref,
++	.ref = tegra_wdt_unref,
++};
++
++static int tegra_wdt_probe(struct platform_device *pdev)
++{
++	struct watchdog_device *wdd;
++	struct tegra_wdt *wdt;
++	struct resource *res;
++	struct resource *mem;
++	void __iomem *regs;
++	int ret;
++
++	/* This is the timer base. */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "incorrect resources\n");
++		return -ENOENT;
++	}
++
++	mem = devm_request_mem_region(&pdev->dev, res->start,
++				      resource_size(res),
++				      pdev->name);
++	if (!mem) {
++		dev_err(&pdev->dev, "unable to request memory resources\n");
++		return -EBUSY;
++	}
++
++	regs = devm_ioremap(&pdev->dev, mem->start,
++			    resource_size(mem));
++	if (!regs) {
++		dev_err(&pdev->dev, "unable to map registers\n");
++		return -ENOMEM;
++	}
++
++	/*
++	 * Allocate our watchdog driver data, which has the
++	 * struct watchdog_device nested within it.
++	 */
++	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
++	if (!wdt) {
++		dev_err(&pdev->dev, "out of memory\n");
++		return -ENOMEM;
++	}
++
++	/* Initialize struct tegra_wdt. */
++	wdt->wdt_regs = regs + WDT_BASE;
++	wdt->tmr_regs = regs + WDT_TIMER_BASE;
++
++	/* Initialize struct watchdog_device. */
++	wdd = &wdt->wdd;
++	wdd->timeout = heartbeat;
++	wdd->info = &tegra_wdt_info;
++	wdd->ops = &tegra_wdt_ops;
++	wdd->min_timeout = MIN_WDT_TIMEOUT;
++	wdd->max_timeout = MAX_WDT_TIMEOUT;
++
++	watchdog_set_drvdata(wdd, wdt);
++
++	kref_init(&wdt->kref);
++
++	ret = tegra_wdt_stop(wdd);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"failed to stop watchdog device\n");
++		return ret;
++	}
++
++	watchdog_set_nowayout(wdd, nowayout);
++
++	ret = watchdog_register_device(wdd);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"failed to register watchdog device\n");
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, wdt);
++
++	dev_info(&pdev->dev,
++		 "initialized wdt %d, using timer %d\n", WDT_ID, WDT_TIMER_ID);
++	dev_info(&pdev->dev,
++		 "enabled wdt %d (heartbeat = %d sec, nowayout = %d)\n",
++		 WDT_ID, heartbeat, nowayout);
++
++	return 0;
++}
++
++static int tegra_wdt_remove(struct platform_device *pdev)
++{
++	struct tegra_wdt *wdt = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = tegra_wdt_stop(&wdt->wdd);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to stop watchdog %d\n", WDT_ID);
++		return ret;
++	}
++
++	watchdog_unregister_device(&wdt->wdd);
++
++	kref_put(&wdt->kref, tegra_wdt_release_resources);
++
++	platform_set_drvdata(pdev, NULL);
++
++	dev_info(&pdev->dev, "removed wdt %d\n", WDT_ID);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int tegra_wdt_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	struct tegra_wdt *wdt = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = tegra_wdt_stop(&wdt->wdd);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to stop watchdog %d\n", WDT_ID);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int tegra_wdt_resume(struct platform_device *pdev)
++{
++	struct tegra_wdt *wdt = platform_get_drvdata(pdev);
++	int ret;
++
++	if (watchdog_active(&wdt->wdd)) {
++		ret = tegra_wdt_start(&wdt->wdd);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"failed to stop watchdog %d\n", WDT_ID);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++#endif
++
++static const struct of_device_id tegra_wdt_of_match[] = {
++	{ .compatible = "nvidia,tegra30-timer", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, tegra_wdt_of_match);
++
++static struct platform_driver tegra_wdt_driver = {
++	.probe		= tegra_wdt_probe,
++	.remove		= tegra_wdt_remove,
++#ifdef CONFIG_PM
++	.suspend	= tegra_wdt_suspend,
++	.resume		= tegra_wdt_resume,
++#endif
++	.driver		= {
++		.owner	= THIS_MODULE,
++		.name	= "tegra-wdt",
++		.of_match_table = tegra_wdt_of_match,
++	},
++};
++
++module_platform_driver(tegra_wdt_driver);
++
++MODULE_AUTHOR("NVIDIA Corporation");
++MODULE_DESCRIPTION("Tegra Watchdog Driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
++MODULE_ALIAS("platform:tegra-wdt");
 -- 
 1.8.1.5
 
