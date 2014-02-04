@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaBDQSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 11:18:48 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:39844 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaBDQSp (ORCPT
+	id S932137AbaBDQTA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:19:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:49617 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074AbaBDQSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 11:18:45 -0500
-Message-ID: <1391530721.4301.8.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] fdtable: Avoid triggering OOMs from alloc_fdmem
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
-Date: Tue, 04 Feb 2014 08:18:41 -0800
-In-Reply-To: <87r47jsb2p.fsf@xmission.com>
-References: <87r47jsb2p.fsf@xmission.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 4 Feb 2014 11:18:48 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Murray <amurray@embedded-bits.co.uk>
+Subject: Re: [PATCH] arm64: Add architecture support for PCI
+Date: Tue, 4 Feb 2014 17:18:41 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>
+References: <1391453028-23191-1-git-send-email-Liviu.Dudau@arm.com> <20140204122951.GC27975@e106497-lin.cambridge.arm.com> <CAPcvp5HN4pBysOdS5_ep_3Lp7GDDKw4YrgmKjYzBet7PtaOLUg@mail.gmail.com>
+In-Reply-To: <CAPcvp5HN4pBysOdS5_ep_3Lp7GDDKw4YrgmKjYzBet7PtaOLUg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201402041718.41931.arnd@arndb.de>
+X-Provags-ID: V02:K0:/3df7JX9jNw+h4n0Tgw12W9RdZB8WBv7jhniQxGrKbf
+ DoDJxyKsdeK5ewBv4hxPwhyJVvIlRgVjxbo1vEc+f9uo+KM+wC
+ djHnAYG8TFv8hnlwbzrulbZiN32VOnxoqFwBnkOOLI1vpItd4b
+ F797AKuzePQV+j878CThLMRjXOjkDSjicw22WdV5IFzH+YllAY
+ hT38Y4TpqaJbfgCy1va620N5hmSzDIHBff5ZDJgZDRPeH03JCg
+ lFUStUvAO8te02a1rEMsh2AiOttCCDFi+9tNytczWiKwikiQOo
+ URlJyzZY3GKfQewoLUi8LD1iUdopqascqQrikQ/5QaxBA6AALa
+ yweJ1pf3kLpbIITPyg1vrznBTJ4JKEf4fmte7Q5KB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-03 at 21:26 -0800, Eric W. Biederman wrote:
-> Recently due to a spike in connections per second memcached on 3
-> separate boxes triggered the OOM killer from accept.  At the time the
-> OOM killer was triggered there was 4GB out of 36GB free in zone 1. The
-> problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
-> hold a bitmap, and there was sufficient fragmentation that the largest
-> page available was 8KiB.
+On Tuesday 04 February 2014, Andrew Murray wrote:
+> On 4 February 2014 12:29, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > On Mon, Feb 03, 2014 at 10:34:40PM +0000, Andrew Murray wrote:
+> >> On 3 February 2014 18:43, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> >> > diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+> >> > index 4cc813e..ce5bad2 100644
+> >> > --- a/arch/arm64/include/asm/io.h
+> >> > +++ b/arch/arm64/include/asm/io.h
+> >> > @@ -120,9 +120,13 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+> >> >  /*
+> >> >   *  I/O port access primitives.
+> >> >   */
+> >> > +#define arch_has_dev_port()    (0)
+> >> >  #define IO_SPACE_LIMIT         0xffff
+> >> >  #define PCI_IOBASE             ((void __iomem *)(MODULES_VADDR - SZ_2M))
+> >> >
+> >> > +#define ioport_map(port, nr)   (PCI_IOBASE + ((port) & IO_SPACE_LIMIT))
+> >> > +#define ioport_unmap(addr)
+> >>
+> >> I'm not sure that this will work. The in[bwl], out[bwl] macros in
+> >> arch/arm64/include/asm/io.h already add the PCI_IOBASE offset.
+> >>
+> >> Instead of these two #defines, why not just enforce that
+> >> GENERIC_PCI_IOMAP is enabled? Or at least wrap these defines with 'if
+> >> (!config_enabled(CONFIG_GENERIC_PCI_IOMAP))' or similar.
+> >
+> > GENERIC_PCI_IOMAP is enabled for AArch64. We have select GENERIC_IOMAP in
+> > arch/arm64/Kconfig which in turn selects GENERIC_PCI_IOMAP in lib/Kconfig.
 > 
-> I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
-> but I do agree that order 3 allocations are very likely to succeed.
-> 
-> There are always pathologies where order > 0 allocations can fail when
-> there are copious amounts of free memory available.  Using the pigeon
-> hole principle it is easy to show that it requires 1 page more than 50%
-> of the pages being free to guarantee an order 1 (8KiB) allocation will
-> succeed, 1 page more than 75% of the pages being free to guarantee an
-> order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
-> the pages being free to guarantee an order 3 allocate will succeed.
-> 
-> A server churning memory with a lot of small requests and replies like
-> memcached is a common case that if anything can will skew the odds
-> against large pages being available.
-> 
-> Therefore let's not give external applications a practical way to kill
-> linux server applications, and specify __GFP_NORETRY to the kmalloc in
-> alloc_fdmem.  Unless I am misreading the code and by the time the code
-> reaches should_alloc_retry in __alloc_pages_slowpath (where
-> __GFP_NORETRY becomes signification).  We have already tried everything
-> reasonable to allocate a page and the only thing left to do is wait.  So
-> not waiting and falling back to vmalloc immediately seems like the
-> reasonable thing to do even if there wasn't a chance of triggering the
-> OOM killer.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/file.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/file.c b/fs/file.c
-> index 771578b33fb6..db25c2bdfe46 100644
-> --- a/fs/file.c
-> +++ b/fs/file.c
-> @@ -34,7 +34,7 @@ static void *alloc_fdmem(size_t size)
->  	 * vmalloc() if the allocation size will be considered "large" by the VM.
->  	 */
->  	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
-> -		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
-> +		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
->  		if (data != NULL)
->  			return data;
->  	}
+> Sorry, it was intent to suggest using the ioport_[map|unmap] functions
+> in lib/iomap.c instead of defining something similar here. I guess you
+> will also need to also define CONFIG_HAS_IOPORT for this to happen.
 
-Hi Eric
+We do want CONFIG_HAS_IOPORT, but I would say that we should not use
+CONFIG_GENERIC_IOMAP. As I explained in another reply, enabling this
+was probably a simple mistake, and we only need this if we want I/O
+spaces that are /not/ memory mapped. IMHO any ARM64 system that doesn't
+map its PCI I/O space into MMIO space can live without I/O port
+access.
 
-I wrote yesterday a similar patch adding __GFP_NORETRY in following
-paths. I feel that alloc_fdmem() is only a part of the problem ;)
-
-What do you think, should we merge our changes or have distinct
-patches ?
-
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 0c127dcdf6a8..5b6a9431b017 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1775,7 +1775,9 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
- 			while (order) {
- 				if (npages >= 1 << order) {
- 					page = alloc_pages(sk->sk_allocation |
--							   __GFP_COMP | __GFP_NOWARN,
-+							   __GFP_COMP |
-+							   __GFP_NOWARN |
-+							   __GFP_NORETRY,
- 							   order);
- 					if (page)
- 						goto fill_page;
-@@ -1845,7 +1847,7 @@ bool skb_page_frag_refill(unsigned int sz, struct page_frag *pfrag, gfp_t prio)
- 		gfp_t gfp = prio;
- 
- 		if (order)
--			gfp |= __GFP_COMP | __GFP_NOWARN;
-+			gfp |= __GFP_COMP | __GFP_NOWARN | __GFP_NORETRY;
- 		pfrag->page = alloc_pages(gfp, order);
- 		if (likely(pfrag->page)) {
- 			pfrag->offset = 0;
-
-
-
-
-
-
+	Arnd
