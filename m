@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109AbaBDRgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:36:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63386 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958AbaBDRf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:35:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,781,1384329600"; 
-   d="scan'208";a="469786119"
-Message-ID: <52F12406.4020405@intel.com>
-Date: Tue, 04 Feb 2014 09:31:50 -0800
-From: "Kamble, Nitin A" <nitin.a.kamble@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754719AbaBDRht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:37:49 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35343 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaBDRhq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 12:37:46 -0500
+Date: Tue, 4 Feb 2014 17:37:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-spi@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20140204173733.GI22609@sirena.org.uk>
+References: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irq: fix a Kconfig dependency
-References: <1391129410-54548-1-git-send-email-nitin.a.kamble@intel.com> <1391129410-54548-2-git-send-email-nitin.a.kamble@intel.com> <alpine.DEB.2.02.1401310223460.7183@chino.kir.corp.google.com> <52EBE112.5010203@intel.com>
-In-Reply-To: <52EBE112.5010203@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xgjcSYp0bZmR6cI7"
+Content-Disposition: inline
+In-Reply-To: <1391527445-14881-1-git-send-email-geert@linux-m68k.org>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 00/11] ARM: shmobile: RSPI RZ and QSPI SoC and board
+ integration
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 1/31/2014 9:44 AM, Kamble, Nitin A wrote:
->
-> On 1/31/2014 2:27 AM, David Rientjes wrote:
->> On Thu, 30 Jan 2014, nitin.a.kamble@intel.com wrote:
->>
->>> From: Nitin A Kamble <nitin.a.kamble@intel.com>
->>>
->>> The generic_chip.c uses interfaces from irq_domain.c which is 
->>> controlled by
->>> the IRQ_DOMAIN config option.
->>>
->>> Add a select statement in the Kconfig to reflect this requirement.
->>>
->>> Without this fix, the generic_chip.c compilation fails like this:
->>>
->>> linux/kernel/irq/generic-chip.c:400:11:
->>>    error: 'irq_domain_xlate_onetwocell' undeclared here (not in a 
->>> function)
->>>
->> You're not specifying which config option you have enabled that selects
->> CONFIG_GENERIC_IRQ_CHIP and does not select CONFIG_IRQ_DOMAIN, but it 
->> does
->> look like there is a dependency here.
-> It is enabled by GPIO_PCH as seen here:
->
-> config GPIO_PCH
->         tristate "Intel EG20T PCH/LAPIS Semiconductor 
-> IOH(ML7223/ML7831) GPIO"
->         depends on PCI && X86
->         select GENERIC_IRQ_CHIP
->         help
->           This driver is for PCH(Platform controller Hub) GPIO of 
-> Intel Topcliff
->           which is an IOH(Input/Output Hub) for x86 embedded processor.
->           This driver can access PCH GPIO device.
->
->>
->> So, if this dependency is reasonable, it begs the question of why we 
->> have
->> CONFIG_GENERIC_IRQ_CHIP at all and shouldn't just make generic-chip.c
->> depend on CONFIG_IRQ_DOMAIN.
-> Looking at the code there are cases where IRQ_DOMAIN functionality is 
-> used
-> without using the GENERIC_IRQ_CHIP. So making generic-chip.c depend
-> on CONFIG_IRQ_DOMAIN in the makefile will reduce the flexibility of using
-> these config options separately.
->
-> Nitin
->
->
-Hi David, Thomas,
-   Is there any more feedback for this fix? Currently kernel is not 
-building for the
-affected platform without this fix. and I am happy to help here to get 
-the fix
-pulled in sooner. Let me know.
+--xgjcSYp0bZmR6cI7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Nitin
+On Tue, Feb 04, 2014 at 04:23:54PM +0100, Geert Uytterhoeven wrote:
+> 	Hi Simon, Magnus,
+>=20
+> This patch series contains SoC and board integration for
+>   1. RSPI in the r7s72100 aka RZ/A1H SoC on the Genmai reference board,
+>   2. QSPI in the r8a7791 aka R-Car M2 SoC on the Koelsch reference board.
+> It was rebased on top of renesas-devel-v3.14-rc1-20140204.
 
+Can you please stop CCing arch/arm only patch serieses like this to the
+SPI list - they just mean I have to go through patchwork and mark them
+as not applicable.
+
+--xgjcSYp0bZmR6cI7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8SVaAAoJELSic+t+oim9dtEP/2/JmuBcFthd862KIXt2EU7R
+cLvKHGcxhuKBKXksQWBAYPAQ2S6oUqoIqnfTEO+9ffFT7ZU+MlqDxxcrpZEgS7IE
+w3ZFlwt7FoEK0GR2iFAp9FoGKq0rFqcv2e6sO5dOT2CVLUCWIuCXLZeJs5fjmaJQ
+LmFsJt3L3kvUaKtFdqmhd9SBakg9bAUhrq8L+LgvLUfO4A/g6P8NXlFzWJp23G51
+koeV7sqQmX2Tp2BgwJl78CGBiPArxB8A3vURSktqwewsP7xEcSP+DfeqJ3SF0YOI
+kI9i4L8oLyFgOISmf7ZpM554VAZgs68UNdkZ3Zv67rZ80xkCZ6zIBUtfVh5TFt/D
+Nc2vNEzCFMJkbU64iLah4eL6jUmBb7LZECL96k4ey5FSqBikSe8AXVeSkV6kR+sd
+BUYw3Y4xTYkvPMTKo7fSm6qTfs/AJM/R8/RBXjSmPCcVuHT2bT44jCFMSimGy6wM
+Dv0FYCLF5uho/hAxtNShCce5Xh0yeveHD+F7HCUJUBvzOtXvuCpUOBgvVICGkiGs
+2E0OC04+/KT0lh/1XBvRC2Bz+wqiAQ2/CnnnasoC+VwsoqCyk92jNB1H9XpY5sez
+122OpCt1CVXyBMAE0JoeO6svYgYch1nz8cjhUl9CcNbopev7JCjfAWUSWM2qrFnO
+fHZnBcj4J6S8xx9Ztt+N
+=lvIT
+-----END PGP SIGNATURE-----
+
+--xgjcSYp0bZmR6cI7--
