@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935021AbaBDVUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:20:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57478 "EHLO
+	id S935012AbaBDVUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:20:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439AbaBDVMo (ORCPT
+	with ESMTP id S934743AbaBDVMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:12:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.13 132/140] SCSI: qla4xxx: overflow in qla4xxx_set_chap_entry()
-Date: Tue,  4 Feb 2014 13:11:59 -0800
-Message-Id: <20140204211040.736192545@linuxfoundation.org>
+        Asias He <asias.hejun@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.13 133/140] virtio-scsi: Fix hotcpu_notifier use-after-free with virtscsi_freeze
+Date: Tue,  4 Feb 2014 13:12:00 -0800
+Message-Id: <20140204211040.764349416@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,51 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Asias He <asias.hejun@gmail.com>
 
-commit 3c60cfd73966797746530768d66597d025a69804 upstream.
+commit f466f75385369a181409e46da272db3de6f5c5cb upstream.
 
-We should cap the size of memcpy() because it comes from the network
-and can't be trusted.
+vqs are freed in virtscsi_freeze but the hotcpu_notifier is not
+unregistered. We will have a use-after-free usage when the notifier
+callback is called after virtscsi_freeze.
 
-Fixes: 26ffd7b45fe9 ('[SCSI] qla4xxx: Add support to set CHAP entries')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Fixes: 285e71ea6f3583a85e27cb2b9a7d8c35d4c0d558
+("virtio-scsi: reset virtqueue affinity when doing cpu hotplug")
+
+Signed-off-by: Asias He <asias.hejun@gmail.com>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla4xxx/ql4_os.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/scsi/virtio_scsi.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/qla4xxx/ql4_os.c
-+++ b/drivers/scsi/qla4xxx/ql4_os.c
-@@ -802,6 +802,7 @@ static int qla4xxx_set_chap_entry(struct
- 	int type;
- 	int rem = len;
- 	int rc = 0;
-+	int size;
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -956,6 +956,10 @@ static void virtscsi_remove(struct virti
+ #ifdef CONFIG_PM_SLEEP
+ static int virtscsi_freeze(struct virtio_device *vdev)
+ {
++	struct Scsi_Host *sh = virtio_scsi_host(vdev);
++	struct virtio_scsi *vscsi = shost_priv(sh);
++
++	unregister_hotcpu_notifier(&vscsi->nb);
+ 	virtscsi_remove_vqs(vdev);
+ 	return 0;
+ }
+@@ -964,8 +968,17 @@ static int virtscsi_restore(struct virti
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vdev);
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
++	int err;
++
++	err = virtscsi_init(vdev, vscsi);
++	if (err)
++		return err;
++
++	err = register_hotcpu_notifier(&vscsi->nb);
++	if (err)
++		vdev->config->del_vqs(vdev);
  
- 	memset(&chap_rec, 0, sizeof(chap_rec));
+-	return virtscsi_init(vdev, vscsi);
++	return err;
+ }
+ #endif
  
-@@ -816,12 +817,14 @@ static int qla4xxx_set_chap_entry(struct
- 			chap_rec.chap_type = param_info->value[0];
- 			break;
- 		case ISCSI_CHAP_PARAM_USERNAME:
--			memcpy(chap_rec.username, param_info->value,
--			       param_info->len);
-+			size = min_t(size_t, sizeof(chap_rec.username),
-+				     param_info->len);
-+			memcpy(chap_rec.username, param_info->value, size);
- 			break;
- 		case ISCSI_CHAP_PARAM_PASSWORD:
--			memcpy(chap_rec.password, param_info->value,
--			       param_info->len);
-+			size = min_t(size_t, sizeof(chap_rec.password),
-+				     param_info->len);
-+			memcpy(chap_rec.password, param_info->value, size);
- 			break;
- 		case ISCSI_CHAP_PARAM_PASSWORD_LEN:
- 			chap_rec.password_length = param_info->value[0];
 
 
