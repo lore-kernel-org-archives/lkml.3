@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936391AbaBDWxC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:53:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56198 "EHLO
+	id S933256AbaBDVCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933180AbaBDVCV (ORCPT
+	with ESMTP id S933180AbaBDVCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:21 -0500
+	Tue, 4 Feb 2014 16:02:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [PATCH 3.10 043/104] staging: vt6656: [BUG] BBvUpdatePreEDThreshold Always set sensitivity on bScanning
-Date: Tue,  4 Feb 2014 13:01:46 -0800
-Message-Id: <20140204210223.949209026@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        David Binderman <dcb314@hotmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 034/104] rtlwifi: rtl8188ee: Fix typo in code
+Date: Tue,  4 Feb 2014 13:01:37 -0800
+Message-Id: <20140204210223.700590203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -28,48 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 8f248dae133668bfb8e9379b4b3f0571c858b24a upstream.
+commit f699273d6a624266ebc9198774f06ee64a3847a1 upstream.
 
-byBBPreEDIndex value is initially 0, this means that from
-cold BBvUpdatePreEDThreshold is never set.
+The static analyser "cppcheck" shows the following typo:
+drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:1081]: (style) Same expression on both sides of '!='.
 
-This means that sensitivity may be in an ambiguous state,
-failing to scan any wireless points or at least distant ones.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Cc: David Binderman <dcb314@hotmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/baseband.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8188ee/dm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/vt6656/baseband.c
-+++ b/drivers/staging/vt6656/baseband.c
-@@ -1466,7 +1466,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
+@@ -1078,7 +1078,7 @@ static void rtl88e_dm_txpower_tracking_c
+ 				rtldm->swing_flag_ofdm = true;
+ 			}
  
-             if( bScanning )
-             {   // need Max sensitivity //RSSI -69, -70,....
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x30); //CR206(0xCE)
-@@ -1609,7 +1608,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
- 
-             if( bScanning )
-             {   // need Max sensitivity  //RSSI -69, -70, ...
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x24); //CR206(0xCE)
-@@ -1761,7 +1759,6 @@ void BBvUpdatePreEDThreshold(struct vnt_
-         case RF_VT3342A0: //RobertYu:20060627, testing table
-             if( bScanning )
-             {   // need Max sensitivity  //RSSI -67, -68, ...
--                if(pDevice->byBBPreEDIndex == 0) break;
-                 pDevice->byBBPreEDIndex = 0;
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xC9, 0x00); //CR201(0xC9)
-                 ControlvWriteByte(pDevice, MESSAGE_REQUEST_BBREG, 0xCE, 0x38); //CR206(0xCE)
+-			if (rtldm->swing_idx_cck != rtldm->swing_idx_cck) {
++			if (rtldm->swing_idx_cck_cur != rtldm->swing_idx_cck) {
+ 				rtldm->swing_idx_cck_cur = rtldm->swing_idx_cck;
+ 				rtldm->swing_flag_cck = true;
+ 			}
 
 
