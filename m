@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaBDCrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Feb 2014 21:47:12 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:34975 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326AbaBDCrK (ORCPT
+	id S1754187AbaBDCrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Feb 2014 21:47:24 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:2587 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326AbaBDCrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Feb 2014 21:47:10 -0500
-X-Original-SENDERIP: 10.177.220.194
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 4 Feb 2014 11:47:07 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Weijie Yang <weijie.yang@samsung.com>,
-        Shirish Pargaonkar <spargaonkar@suse.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v2] mm/zswap: add writethrough option
-Message-ID: <20140204024707.GC3481@bbox>
-References: <1387459407-29342-1-git-send-email-ddstreet@ieee.org>
- <1390831279-5525-1-git-send-email-ddstreet@ieee.org>
- <20140203150835.f55fd427d0ebb0c2943f266b@linux-foundation.org>
+	Mon, 3 Feb 2014 21:47:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 03 Feb 2014 18:45:54 -0800
+Message-ID: <52F054B1.3030305@nvidia.com>
+Date: Tue, 4 Feb 2014 11:47:13 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140203150835.f55fd427d0ebb0c2943f266b@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Eric Brower <ebrower@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>
+Subject: Re: [RFC 00/16] drm/nouveau: initial support for GK20A (Tegra K1)
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com> <CANq1E4R=DWp2WBWWBbLHE2FG9HWWP=bM4wvE8etoEr1PAp0+JA@mail.gmail.com>
+In-Reply-To: <CANq1E4R=DWp2WBWWBbLHE2FG9HWWP=bM4wvE8etoEr1PAp0+JA@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="windows-1256"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On 02/03/2014 08:25 PM, David Herrmann wrote:
+> Hi
+>
+> [..snip..]
+>> Finally, support for probing GK20A is added in the last 2 patches. It should be
+>> noted that contrary to what Nouveau currently expects, GK20A does not embed any
+>> display hardware (that part being handled by tegradrm). So this driver should
+>> really be only used through DRM render-nodes and collaborate with the display
+>> driver using PRIME. I have not yet figured out how to turn GK20A's instantiation
+>> of Nouveau into a render-node only driver without breaking support for existing
+>> desktop GPUs, and consequently the driver spawns a /dev/dri/cardX node which we
+>> should try to get rid of.
+>
+> You cannot get rid of cardX currently. It is implied by DRIVER_MODESET
+> and that flag should actually be called NOT_A_LEGACY_DRIVER. So you
+> cannot remove it. I did try to replace DRIVER_MODESET by an inverted
+> DRIVER_LEGACY flag some time ago, but I thought it's not worth it.
+>
+> Anyhow, you can easily add a new flag to make
+> drm_dev_register()/drm_dev_alloc() not create the drm_minor for
+> DRM_MINOR_LEGACY, which would prevent the card0 node from showing up.
+> But people started using the cardX interface as base interface so mesa
+> might not be able to open render-nodes if the related card-node is not
+> available (which is a bug in their code, so no reason to support that
+> by not adding stand-alone render-nodes).
 
-On Mon, Feb 03, 2014 at 03:08:35PM -0800, Andrew Morton wrote:
-> On Mon, 27 Jan 2014 09:01:19 -0500 Dan Streetman <ddstreet@ieee.org> wrote:
-> 
-> > Currently, zswap is writeback cache; stored pages are not sent
-> > to swap disk, and when zswap wants to evict old pages it must
-> > first write them back to swap cache/disk manually.  This avoids
-> > swap out disk I/O up front, but only moves that disk I/O to
-> > the writeback case (for pages that are evicted), and adds the
-> > overhead of having to uncompress the evicted pages and the
-> > need for an additional free page (to store the uncompressed page).
-> > 
-> > This optionally changes zswap to writethrough cache by enabling
-> > frontswap_writethrough() before registering, so that any
-> > successful page store will also be written to swap disk.  The
-> > default remains writeback.  To enable writethrough, the param
-> > zswap.writethrough=1 must be used at boot.
-> > 
-> > Whether writeback or writethrough will provide better performance
-> > depends on many factors including disk I/O speed/throughput,
-> > CPU speed(s), system load, etc.  In most cases it is likely
-> > that writeback has better performance than writethrough before
-> > zswap is full, but after zswap fills up writethrough has
-> > better performance than writeback.
-> > 
-> > The reason to add this option now is, first to allow any zswap
-> > user to be able to test using writethrough to determine if they
-> > get better performance than using writeback, and second to allow
-> > future updates to zswap, such as the possibility of dynamically
-> > switching between writeback and writethrough.
-> > 
-> > ...
-> >
-> > Based on specjbb testing on my laptop, the results for both writeback
-> > and writethrough are better than not using zswap at all, but writeback
-> > does seem to be better than writethrough while zswap isn't full.  Once
-> > it fills up, performance for writethrough is essentially close to not
-> > using zswap, while writeback seems to be worse than not using zswap.
-> > However, I think more testing on a wider span of systems and conditions
-> > is needed.  Additionally, I'm not sure that specjbb is measuring true
-> > performance under fully loaded cpu conditions, so additional cpu load
-> > might need to be added or specjbb parameters modified (I took the
-> > values from the 4 "warehouses" test run).
-> > 
-> > In any case though, I think having writethrough as an option is still
-> > useful.  More changes could be made, such as changing from writeback
-> > to writethrough based on the zswap % full.  And the patch doesn't
-> > change default behavior - writethrough must be specifically enabled.
-> > 
-> > The %-ized numbers I got from specjbb on average, using the default
-> > 20% max_pool_percent and varying the amount of heap used as shown:
-> > 
-> > ram | no zswap | writeback | writethrough
-> > 75     93.08     100         96.90
-> > 87     96.58     95.58       96.72
-> > 100    92.29     89.73       86.75
-> > 112    63.80     38.66       19.66
-> > 125    4.79      29.90       15.75
-> > 137    4.99      4.50        4.75
-> > 150    4.28      4.62        5.01
-> > 162    5.20      2.94        4.66
-> > 175    5.71      2.11        4.84
-> 
-> Changelog is very useful, thanks for taking the time.
-> 
-> It does sound like the feature is of marginal benefit.  Is "zswap
-> filled up" an interesting or useful case to optimize?
-> 
-> otoh the addition is pretty simple and we can later withdraw the whole
-> thing without breaking anyone's systems.
-> 
-> What do people think?
+Actually my mention of /dev/dri/cardX was misleading. I was rather 
+thinking about getting rid of the DRIVER_MODESET flag to correctly 
+expose what the card provides, not only to user-space, but to DRM 
+itself. The legacy node is ok as long as DRM itself correctly knows what 
+the driver can and cannot do and fails gracefully if the user tries to 
+set a mode.
 
-IMHO, Using overcommiting memory and swap, it's really thing
-we shold optimize once we decided to use writeback of zswap.
+DRIVER_MODESET is statically set in nouveau_drm.c, and the reason why I 
+cannot get rid of it is because the driver (and its features) is 
+registered with drm_pci_init() before the card is probed and its actual 
+features known.
 
-But I don't think writethrough isn't ideal solution for
-that case where zswap is full. Sometime, just dynamic disabling
-of zswap might be better due to reducing unnecessary
-comp/decomp overhead.
+For platform devices, you could check the card features before 
+registering it with drm_platform_init(), but then you have the issue 
+that the driver instance is referenced by every probed card, and thus 
+you cannot have cards with different capabilities.
 
-Dan said that it's good to have because someuser might find
-right example we didn't find in future. Although I'm not a
-huge fan of such justification for merging the patch(I tempted
-my patches several time with such claim), I don't object it
-(Actually, I have an idea to make zswap's writethough useful but
-it isn't related to this topic) any more if we could withdraw
-easily if it turns out a obstacle for future enhace.
+So it seems like handling this would require the driver_features to move 
+from drm_driver to drm_device, but that's quite a core change. As 
+pointed out by you and Daniel, we can certainly live with the control 
+and legacy nodes. Nonetheless I'd be curious to know how (and if) this 
+case can be correctly handled.
 
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+Alex.
+
