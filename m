@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934107AbaBDVJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56720 "EHLO
+	id S934919AbaBDWHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:07:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56833 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934013AbaBDVIr (ORCPT
+	with ESMTP id S934093AbaBDVJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:47 -0500
+	Tue, 4 Feb 2014 16:09:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 080/133] ALSA: hda - Dont create duplicated ctls for loopback paths
-Date: Tue,  4 Feb 2014 13:08:01 -0800
-Message-Id: <20140204210739.293461896@linuxfoundation.org>
+        Michal Schmidt <mschmidt@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 101/133] bnx2x: fix DMA unmapping of TSO split BDs
+Date: Tue,  4 Feb 2014 13:08:22 -0800
+Message-Id: <20140204210739.887151157@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,43 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-commit 43a8e50a46a4e1dd1451e4a4ffa1f7695fb7d287 upstream.
+[ Upstream commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 ]
 
-AD1986A mic pins (0x1d and 0x1f) share the same widget for controlling
-the loopback volume/mute, but the generic parser didn't check it.
-This ended up with the duplicated controls for the same effect.
+bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
 
-This patch adds the check of the duplication for avoiding it.
+  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
+  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
+  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
+  [unmap size=66 bytes]
 
-After this fix, there will be only one control although it affects
-both paths; this remaining issue should be fixed later in a different
-patch.
+The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
+using one DMA mapping for both, but it uses only the length of the first
+BD when unmapping.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66621
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch fixes the bug by unmapping the whole length of the two BDs.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/hda_generic.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -2857,9 +2857,11 @@ static bool look_for_mix_leaf_ctls(struc
- 	if (num_conns < idx)
- 		return false;
- 	nid = list[idx];
--	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
-+	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT) &&
-+	    !is_ctl_associated(codec, nid, HDA_OUTPUT, 0, NID_PATH_VOL_CTL))
- 		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
--	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
-+	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT) &&
-+	    !is_ctl_associated(codec, nid, HDA_OUTPUT, 0, NID_PATH_MUTE_CTL))
- 		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -160,6 +160,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	struct sk_buff *skb = tx_buf->skb;
+ 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
+ 	int nbd;
++	u16 split_bd_len = 0;
  
- 	return *mix_val || *mute_val;
+ 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
+ 	prefetch(&skb->end);
+@@ -167,10 +168,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
+ 	   txdata->txq_index, idx, tx_buf, skb);
+ 
+-	/* unmap first bd */
+ 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
+-	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
+-			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
+ 
+ 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
+ #ifdef BNX2X_STOP_ON_ERROR
+@@ -188,12 +186,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
+-	/* ...and the TSO split header bd since they have no mapping */
++	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
++		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
++		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
+ 		--nbd;
+ 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 	}
+ 
++	/* unmap first bd */
++	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
++			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
++			 DMA_TO_DEVICE);
++
+ 	/* now free frags */
+ 	while (nbd > 0) {
+ 
 
 
