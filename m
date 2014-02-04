@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935183AbaBDV2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:28:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57424 "EHLO
+	id S934639AbaBDVMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:12:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934654AbaBDVM0 (ORCPT
+	with ESMTP id S934500AbaBDVLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:12:26 -0500
+	Tue, 4 Feb 2014 16:11:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Wolfram Sang <wsa@the-dreams.de>,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.13 109/140] i2c: mv64xxx: Fix bus hang on A0 version of the Armada XP SoCs
-Date: Tue,  4 Feb 2014 13:11:36 -0800
-Message-Id: <20140204211040.088116530@linuxfoundation.org>
+        Marek Roszko <mark.roszko@gmail.com>,
+        Leilei Zhao <leilei.zhao@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 3.13 055/140] tty/serial: at91: Handle shutdown more safely
+Date: Tue,  4 Feb 2014 13:10:42 -0800
+Message-Id: <20140204211038.539037573@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -30,51 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Marek Roszko <mark.roszko@gmail.com>
 
-commit 6cf70ae928bae17077efc0d528dec49bc380438b upstream.
+commit 0cc7c6c7916b1b6f34350ff1473b80b9f7e459c0 upstream.
 
-The first variants of Armada XP SoCs (A0 stepping) have issues related
-to the i2c controller which prevent to use the offload mechanism and
-lead to a kernel hang during boot.
+Interrupts were being cleaned up late in the shutdown handler, it is possible
+that an interrupt can occur and schedule a tasklet that runs after the port is
+cleaned up. There is a null dereference due to this race condition with the
+following stacktrace:
 
-The commit introduces a new the compatible string
-marvell,mv78230-a0-i2c for the i2c controller. When this compatible
-string is used the driver disables the offload mechanism and the
-kernel no more hangs on these SoCs.
+[<c02092b0>] (atmel_tasklet_func+0x514/0x814) from [<c001fd34>] (tasklet_action+0x70/0xa8)
+[<c001fd34>] (tasklet_action+0x70/0xa8) from [<c001f60c>] (__do_softirq+0x90/0x144)
+[<c001f60c>] (__do_softirq+0x90/0x144) from [<c001fa18>] (irq_exit+0x40/0x4c)
+[<c001fa18>] (irq_exit+0x40/0x4c) from [<c000e298>] (handle_IRQ+0x64/0x84)
+[<c000e298>] (handle_IRQ+0x64/0x84) from [<c000d6c0>] (__irq_svc+0x40/0x50)
+[<c000d6c0>] (__irq_svc+0x40/0x50) from [<c0208060>] (atmel_rx_dma_release+0x88/0xb8)
+[<c0208060>] (atmel_rx_dma_release+0x88/0xb8) from [<c0209740>] (atmel_shutdown+0x104/0x160)
+[<c0209740>] (atmel_shutdown+0x104/0x160) from [<c0205e8c>] (uart_port_shutdown+0x2c/0x38)
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Reported-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: 930ab3d403ae (i2c: mv64xxx: Add I2C Transaction Generator support)
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-mv64xxx.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/tty/serial/atmel_serial.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -692,6 +692,7 @@ static const struct of_device_id mv64xxx
- 	{ .compatible = "allwinner,sun4i-i2c", .data = &mv64xxx_i2c_regs_sun4i},
- 	{ .compatible = "marvell,mv64xxx-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
- 	{ .compatible = "marvell,mv78230-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
-+	{ .compatible = "marvell,mv78230-a0-i2c", .data = &mv64xxx_i2c_regs_mv64xxx},
- 	{}
- };
- MODULE_DEVICE_TABLE(of, mv64xxx_i2c_of_match_table);
-@@ -783,6 +784,10 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
- 		drv_data->errata_delay = true;
- 	}
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -1650,12 +1650,24 @@ static int atmel_startup(struct uart_por
+ static void atmel_shutdown(struct uart_port *port)
+ {
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
++
++	/*
++	 * Clear out any scheduled tasklets before
++	 * we destroy the buffers
++	 */
++	tasklet_kill(&atmel_port->tasklet);
++
+ 	/*
+-	 * Ensure everything is stopped.
++	 * Ensure everything is stopped and
++	 * disable all interrupts, port and break condition.
+ 	 */
+ 	atmel_stop_rx(port);
+ 	atmel_stop_tx(port);
  
-+	if (of_device_is_compatible(np, "marvell,mv78230-a0-i2c")) {
-+		drv_data->offload_enabled = false;
-+		drv_data->errata_delay = true;
-+	}
- out:
- 	return rc;
- #endif
++	UART_PUT_CR(port, ATMEL_US_RSTSTA);
++	UART_PUT_IDR(port, -1);
++
++
+ 	/*
+ 	 * Shut-down the DMA.
+ 	 */
+@@ -1665,12 +1677,6 @@ static void atmel_shutdown(struct uart_p
+ 		atmel_port->release_tx(port);
+ 
+ 	/*
+-	 * Disable all interrupts, port and break condition.
+-	 */
+-	UART_PUT_CR(port, ATMEL_US_RSTSTA);
+-	UART_PUT_IDR(port, -1);
+-
+-	/*
+ 	 * Free the interrupt
+ 	 */
+ 	free_irq(port->irq, port);
 
 
