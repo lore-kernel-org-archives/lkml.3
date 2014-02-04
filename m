@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaBDNMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 08:12:21 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35163 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaBDNMS (ORCPT
+	id S1754484AbaBDNTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 08:19:19 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:25462 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517AbaBDNTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 08:12:18 -0500
-Date: Tue, 4 Feb 2014 13:12:11 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Manish Badarkhe <badarkhe.manish@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, gregkh@linuxfoundation.org
-Message-ID: <20140204131211.GZ22609@sirena.org.uk>
-References: <1391007448-26245-1-git-send-email-badarkhe.manish@gmail.com>
- <CAKDJKT65t+dkjEmjL_sKbmVZYiu+bGyT_7Kft1H22KwMh22u7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O0i8ts1wQXc4Kolf"
-Content-Disposition: inline
-In-Reply-To: <CAKDJKT65t+dkjEmjL_sKbmVZYiu+bGyT_7Kft1H22KwMh22u7Q@mail.gmail.com>
-X-Cookie: PARDON me, am I speaking ENGLISH?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V4 0/2] devm_* API operation for fixed regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 4 Feb 2014 08:19:10 -0500
+X-AuditID: cbfec372-b7fa96d000006a7b-da-52f0e8cd582c
+Date: Tue, 04 Feb 2014 11:19:03 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Rob Landley <rob@landley.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, LMML <linux-media@vger.kernel.org>,
+        Antti Palosaari <crope@iki.fi>
+Subject: Fw: [PATCH 34/52] devices.txt: add video4linux device for Software
+ Defined Radio
+Message-id: <20140204111903.5c2e928e@samsung.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/hEN2zLz4EGXTMEbWYs34Nm8Xq9UdY
+	LL43v2ezaF68ns3i8q45bBY9G7ayWqx7OZ3Fgd3j8NeFLB6vVs9k9Tgx4zeLx/65a9g9Wk9u
+	YvX4vEkugC2KyyYlNSezLLVI3y6BK6O5/wh7wR+BimOXDzM1MN7i7WLk4JAQMJFo2KTYxcgJ
+	ZIpJXLi3nq2LkYtDSGAJo8S+U1uZQBJCAt1MEotvB4PYLAKqEste32IEsdkEjCReNbawgtgi
+	AssYJTrnS4PYzAK5EgsenAGLCwtESxxru8gCYvMKGEq07j7PCrHMSeLV68lMEHFBiR+T77FA
+	9GpJbN7WxAphy0tsXvOWeQIj3ywkZbOQlM1CUraAkXkVo2hpcXJBcVJ6rqFecWJucWleul5y
+	fu4mRkjwFu1gfLbB6hCjAAejEg/vCcUPQUKsiWXFlbmHGCU4mJVEeM23AYV4UxIrq1KL8uOL
+	SnNSiw8xMnFwSjUw8kUlRPAq2nv9vWXjkXh/N+shd9nk9nXxF/lSWVbK/+j535nqvtYg2f3P
+	lJBCxlKGvtIHl3YenHm9PLN92XplXknO2R+maJ6MTK3JfHWlw0/xnid71Z6ipLspa+8e/zSD
+	8c26v5lFWrw3nt++ZaU1vzuq96bULyULA93wnyfLbrd+yc9t3tusxFKckWioxVxUnAgA/Gyw
+	VjwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan/Greg/Andrew/Rob,
 
---O0i8ts1wQXc4Kolf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Not sure who is currently maintaining Documentation/devices.txt.
 
-On Mon, Feb 03, 2014 at 06:45:04PM +0530, Manish Badarkhe wrote:
+We're needing to add support of a new type of V4L2 devices there.
 
-> Are there any review comments on this series?
+Could you please ack with the following patch? If this one is ok, I intend
+to send via my tree together with the patch series that implements support
+for it, if you agree.
 
-Don't send contentless pings, especially not less than a week after you
-sent the original patch.  That's just more mail to read.  You need to
-allow a reasonable time for review, for non-critical stuff a couple of
-weeks would be more reasonable.  In this case since you're touching the
-core devres code so please bear in mind that those folks need time to
-respond too.
+Thank you!
+Mauro
 
---O0i8ts1wQXc4Kolf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Forwarded message:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Date: Sat, 25 Jan 2014 19:10:28 +0200
+From: Antti Palosaari <crope@iki.fi>
+To: linux-media@vger.kernel.org
+Cc: Antti Palosaari <crope@iki.fi>, Hans Verkuil <hverkuil@xs4all.nl>
+Subject: [PATCH 34/52] devices.txt: add video4linux device for Software Defined Radio
 
-iQIcBAEBAgAGBQJS8OcoAAoJELSic+t+oim9zCsP/1b4Ru34ESO4eBAvFr+AHvyC
-q2HJuSzMwLkYzlp8N8Qzj2um0ZxUu8/LSHZLmLG7shx1U1GewFBvMlf4dukNqFvx
-0bLSoVRQfSzpB4tuQCeViHfv/zy3qzc2+iLr+xjEX61tHPqXZKHIT62A54y8npGP
-RQcHE48ZIvKuXx7QiKvKbOhaYcRAoObSe9GeMNje0zTRvBj+54AQH3ADaAOcflNg
-Q8ECk64TzJcmJL4Mp3z/0O922nP9tV5PJYLIRqzRWqBnsuCIWcFSFRj/m4qsjGpG
-XdUQpdLF5jZNfdPEkLcQzn5rX+nLK2wb6eFrOjEYxjoSYMt52Sf+W/NFQfI1r7Ml
-XzpFnsf2NVr1DWZMtTmLQE7vTeiFQBhyY2oJGMkwWveQbZd1VdUJjvzwpOdvPkFt
-7nrqS+8Ab9E19Vsd+lMjXqwt1y6gX4TiMvY5+rCw6+D7UO6cCQlPfk9gb70MzaHn
-uTRfBd8E3qqnSpab62DDfsSIxhRQ+QQGSaH3d7hLxCtrueurMmAvXmn2CSArrd8k
-M45I3Aj2yQ2Ms0ch7UQL6vKWkPTAlSxvYTursULmH12u0TI1yik6MmVShr/Zz9QR
-j5WixXnZXmItCVmS0NcdD2UTOM/UIFmyE+dXrhyOf77dPM6nveHb2zAzwwdxoJ5o
-DdfJ+QgxLoYAaR8SRQO4
-=pdcx
------END PGP SIGNATURE-----
 
---O0i8ts1wQXc4Kolf--
+Add new video4linux device named /dev/swradio for Software Defined
+Radio use. V4L device minor numbers are allocated dynamically
+nowadays, but there is still configuration option for old fixed style.
+Add note to mention that configuration option too.
+
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ Documentation/devices.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/Documentation/devices.txt b/Documentation/devices.txt
+index 80b7241..e852855 100644
+--- a/Documentation/devices.txt
++++ b/Documentation/devices.txt
+@@ -1490,10 +1490,17 @@ Your cooperation is appreciated.
+ 		 64 = /dev/radio0	Radio device
+ 		    ...
+ 		127 = /dev/radio63	Radio device
++		128 = /dev/swradio0	Software Defined Radio device
++		    ...
++		191 = /dev/swradio63	Software Defined Radio device
+ 		224 = /dev/vbi0		Vertical blank interrupt
+ 		    ...
+ 		255 = /dev/vbi31	Vertical blank interrupt
+ 
++		Minor numbers are allocated dynamically unless
++		CONFIG_VIDEO_FIXED_MINOR_RANGES (default n)
++		configuration option is set.
++
+  81 block	I2O hard disk
+ 		  0 = /dev/i2o/hdq	17th I2O hard disk, whole disk
+ 		 16 = /dev/i2o/hdr	18th I2O hard disk, whole disk
+-- 
+1.8.5.3
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-media" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+-- 
+
+Cheers,
+Mauro
