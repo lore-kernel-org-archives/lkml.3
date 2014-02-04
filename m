@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933595AbaBDVDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:03:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56339 "EHLO
+	id S933580AbaBDVDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:03:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56344 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933470AbaBDVCp (ORCPT
+	with ESMTP id S933187AbaBDVCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:45 -0500
+	Tue, 4 Feb 2014 16:02:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 082/104] s390/bpf,jit: fix 32 bit divisions, use unsigned divide instructions
-Date: Tue,  4 Feb 2014 13:02:25 -0800
-Message-Id: <20140204210225.035688484@linuxfoundation.org>
+Subject: [PATCH 3.10 083/104] ip_tunnel: clear IPCB in ip_tunnel_xmit() in case dst_link_failure() is called
+Date: Tue,  4 Feb 2014 13:02:26 -0800
+Message-Id: <20140204210225.062846237@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,74 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-[ Upstream commit 3af57f78c38131b7a66e2b01e06fdacae01992a3 ]
+[ Upstream commit 11c21a307d79ea5f6b6fc0d3dfdeda271e5e65f6 ]
 
-The s390 bpf jit compiler emits the signed divide instructions "dr" and "d"
-for unsigned divisions.
-This can cause problems: the dividend will be zero extended to a 64 bit value
-and the divisor is the 32 bit signed value as specified A or X accumulator,
-even though A and X are supposed to be treated as unsigned values.
+commit a622260254ee48("ip_tunnel: fix kernel panic with icmp_dest_unreach")
+clear IPCB in ip_tunnel_xmit()  , or else skb->cb[] may contain garbage from
+GSO segmentation layer.
 
-The divide instrunctions will generate an exception if the result cannot be
-expressed with a 32 bit signed value.
-This is the case if e.g. the dividend is 0xffffffff and the divisor either 1
-or also 0xffffffff (signed: -1).
+But commit 0e6fbc5b6c621("ip_tunnels: extend iptunnel_xmit()") refactor codes,
+and it clear IPCB behind the dst_link_failure().
 
-To avoid all these issues simply use unsigned divide instructions.
+So clear IPCB in ip_tunnel_xmit() just like commti a622260254ee48("ip_tunnel:
+fix kernel panic with icmp_dest_unreach").
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/s390/net/bpf_jit_comp.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ net/ipv4/ip_tunnel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/s390/net/bpf_jit_comp.c
-+++ b/arch/s390/net/bpf_jit_comp.c
-@@ -335,16 +335,16 @@ static int bpf_jit_insn(struct bpf_jit *
- 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
- 		/* lhi %r4,0 */
- 		EMIT4(0xa7480000);
--		/* dr %r4,%r12 */
--		EMIT2(0x1d4c);
-+		/* dlr %r4,%r12 */
-+		EMIT4(0xb997004c);
- 		break;
- 	case BPF_S_ALU_DIV_K: /* A /= K */
- 		if (K == 1)
- 			break;
- 		/* lhi %r4,0 */
- 		EMIT4(0xa7480000);
--		/* d %r4,<d(K)>(%r13) */
--		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
-+		/* dl %r4,<d(K)>(%r13) */
-+		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
- 		break;
- 	case BPF_S_ALU_MOD_X: /* A %= X */
- 		jit->seen |= SEEN_XREG | SEEN_RET0;
-@@ -354,8 +354,8 @@ static int bpf_jit_insn(struct bpf_jit *
- 		EMIT4_PCREL(0xa7840000, (jit->ret0_ip - jit->prg));
- 		/* lhi %r4,0 */
- 		EMIT4(0xa7480000);
--		/* dr %r4,%r12 */
--		EMIT2(0x1d4c);
-+		/* dlr %r4,%r12 */
-+		EMIT4(0xb997004c);
- 		/* lr %r5,%r4 */
- 		EMIT2(0x1854);
- 		break;
-@@ -367,8 +367,8 @@ static int bpf_jit_insn(struct bpf_jit *
- 		}
- 		/* lhi %r4,0 */
- 		EMIT4(0xa7480000);
--		/* d %r4,<d(K)>(%r13) */
--		EMIT4_DISP(0x5d40d000, EMIT_CONST(K));
-+		/* dl %r4,<d(K)>(%r13) */
-+		EMIT6_DISP(0xe340d000, 0x0097, EMIT_CONST(K));
- 		/* lr %r5,%r4 */
- 		EMIT2(0x1854);
- 		break;
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -636,6 +636,7 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+ 				tunnel->err_time + IPTUNNEL_ERR_TIMEO)) {
+ 			tunnel->err_count--;
+ 
++			memset(IPCB(skb), 0, sizeof(*IPCB(skb)));
+ 			dst_link_failure(skb);
+ 		} else
+ 			tunnel->err_count = 0;
 
 
