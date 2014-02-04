@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaBDIZC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 03:25:02 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:48136 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927AbaBDIYy (ORCPT
+	id S1753821AbaBDI1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 03:27:36 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:56865 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaBDI12 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 03:24:54 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: b.brezillon@overkiz.com, nicolas.ferre@atmel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v2] at91: pmc: Fixed irq's name allocation for programmable clocks
-Date: Tue,  4 Feb 2014 09:21:45 +0100
-Message-Id: <1391502105-24612-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com>
-References: <1391445961-20755-1-git-send-email-jjhiblot@traphandler.com>
+	Tue, 4 Feb 2014 03:27:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140204082110.GG26722@mwanda>
+References: <1391497163-6894-1-git-send-email-sj38.park@gmail.com> <20140204082110.GG26722@mwanda>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Tue, 4 Feb 2014 17:26:57 +0900
+Message-ID: <CAEjAshrT1z+-VsKPO6MYZ2=Ly8XqjJY_NVzsZkXhtUvMLTEBTA@mail.gmail.com>
+Subject: Re: [PATCH] staging: bcm: fix pointer-integer size mismatch warnings
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, lisa@xenapiadmin.com,
+        devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The name provided to request_irq() must be valid until the irq is released.
-This patch stores the name in the internal data structure.
+Hello,
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- drivers/clk/at91/clk-programmable.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On Tue, Feb 4, 2014 at 5:21 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Tue, Feb 04, 2014 at 03:59:23PM +0900, SeongJae Park wrote:
+>> Fix the pointer-integer size mismatch warnings below:
+>>       drivers/staging/bcm/CmHost.c: In function ‘StoreCmControlResponseMessage’:
+>>       drivers/staging/bcm/CmHost.c:1387:39: warning: cast to pointer from
+>>                       integer of different size [-Wint-to-pointer-cast]
+>>         pstAddIndication->psfAuthorizedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
+>>                                              ^
+>>       drivers/staging/bcm/CmHost.c:1426:37: warning: cast to pointer from
+>>                       integer of different size [-Wint-to-pointer-cast]
+>>         pstAddIndication->psfAdmittedSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
+>>                                            ^
+>>       drivers/staging/bcm/CmHost.c:1440:35: warning: cast to pointer from
+>>                       integer of different size [-Wint-to-pointer-cast]
+>>         pstAddIndication->psfActiveSet = (struct bcm_connect_mgr_params *)ntohl((ULONG)pstAddIndication->psfActiveSet);
+>>                                          ^
+>
+> No.  You haven't fixed the bug, you've just silenced the warning so now
+> someone has to spent hours and hours looking for it when it comes time
+> to write a proper fix.  Don't do that.
+>
 
-diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
-index 8e242c7..799b75c 100644
---- a/drivers/clk/at91/clk-programmable.c
-+++ b/drivers/clk/at91/clk-programmable.c
-@@ -44,6 +44,7 @@ struct clk_programmable {
- 	u8 css;
- 	u8 pres;
- 	u8 slckmck;
-+	char irq_name[11];
- 	const struct clk_programmable_layout *layout;
- };
- 
-@@ -247,7 +248,6 @@ at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
- 	struct clk_programmable *prog;
- 	struct clk *clk = NULL;
- 	struct clk_init_data init;
--	char irq_name[11];
- 
- 	if (id > PROG_ID_MAX)
- 		return ERR_PTR(-EINVAL);
-@@ -269,9 +269,9 @@ at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
- 	prog->irq = irq;
- 	init_waitqueue_head(&prog->wait);
- 	irq_set_status_flags(prog->irq, IRQ_NOAUTOEN);
--	snprintf(irq_name, sizeof(irq_name), "clk-prog%d", id);
-+	snprintf(prog->irq_name, sizeof(prog->irq_name), "clk-prog%d", id);
- 	ret = request_irq(prog->irq, clk_programmable_irq_handler,
--			  IRQF_TRIGGER_HIGH, irq_name, prog);
-+			  IRQF_TRIGGER_HIGH, prog->irq_name, prog);
- 	if (ret)
- 		return ERR_PTR(ret);
- 
--- 
-1.8.5.2
+I had thought silencing warning may be better in someway for some people.
+But, anyway, now I agree and respect your opinion. Thank you for the opinion :)
 
+> regards,
+> dan carpenter
+>
+>
