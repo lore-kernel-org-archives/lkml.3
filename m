@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935962AbaBDXNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 18:13:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55958 "EHLO
+	id S934175AbaBDXNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 18:13:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487AbaBDVAb (ORCPT
+	with ESMTP id S932547AbaBDVAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:00:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yegor Yefremov <yegorslists@googlemail.com>
-Subject: [PATCH 3.4 21/37] serial: add support for 200 v3 series Titan card
-Date: Tue,  4 Feb 2014 13:00:57 -0800
-Message-Id: <20140204210056.609340618@linuxfoundation.org>
+        Bob Falken <NetFestivalHaveFun@gmx.com>,
+        Patrick McHardy <kaber@trash.net>, Thomas Graf <tgraf@suug.ch>,
+        Julian Anastasov <ja@ssi.bg>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 30/37] net: avoid reference counter overflows on fib_rules in multicast forwarding
+Date: Tue,  4 Feb 2014 13:01:06 -0800
+Message-Id: <20140204210056.863418814@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210055.992134150@linuxfoundation.org>
 References: <20140204210055.992134150@linuxfoundation.org>
@@ -28,36 +33,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yegor Yefremov <yegorslists@googlemail.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 48c0247d7b7bf58abb85a39021099529df365c4d upstream.
+[ Upstream commit 95f4a45de1a0f172b35451fc52283290adb21f6e ]
 
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Bob Falken reported that after 4G packets, multicast forwarding stopped
+working. This was because of a rule reference counter overflow which
+freed the rule as soon as the overflow happend.
+
+This patch solves this by adding the FIB_LOOKUP_NOREF flag to
+fib_rules_lookup calls. This is safe even from non-rcu locked sections
+as in this case the flag only implies not taking a reference to the rule,
+which we don't need at all.
+
+Rules only hold references to the namespace, which are guaranteed to be
+available during the call of the non-rcu protected function reg_vif_xmit
+because of the interface reference which itself holds a reference to
+the net namespace.
+
+Fixes: f0ad0860d01e47 ("ipv4: ipmr: support multiple tables")
+Fixes: d1db275dd3f6e4 ("ipv6: ip6mr: support multiple tables")
+Reported-by: Bob Falken <NetFestivalHaveFun@gmx.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Julian Anastasov <ja@ssi.bg>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/ipmr.c  |    7 +++++--
+ net/ipv6/ip6mr.c |    7 +++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1142,6 +1142,7 @@ pci_xr17c154_setup(struct serial_private
- #define PCI_DEVICE_ID_TITAN_800E	0xA014
- #define PCI_DEVICE_ID_TITAN_200EI	0xA016
- #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
-+#define PCI_DEVICE_ID_TITAN_200V3	0xA306
- #define PCI_DEVICE_ID_TITAN_400V3	0xA310
- #define PCI_DEVICE_ID_TITAN_410V3	0xA312
- #define PCI_DEVICE_ID_TITAN_800V3	0xA314
-@@ -3456,6 +3457,9 @@ static struct pci_device_id serial_pci_t
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200EISI,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_oxsemi_2_4000000 },
-+	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_200V3,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_b0_bt_2_921600 },
- 	{	PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_400V3,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_4_921600 },
+--- a/net/ipv4/ipmr.c
++++ b/net/ipv4/ipmr.c
+@@ -154,9 +154,12 @@ static struct mr_table *ipmr_get_table(s
+ static int ipmr_fib_lookup(struct net *net, struct flowi4 *flp4,
+ 			   struct mr_table **mrt)
+ {
+-	struct ipmr_result res;
+-	struct fib_lookup_arg arg = { .result = &res, };
+ 	int err;
++	struct ipmr_result res;
++	struct fib_lookup_arg arg = {
++		.result = &res,
++		.flags = FIB_LOOKUP_NOREF,
++	};
+ 
+ 	err = fib_rules_lookup(net->ipv4.mr_rules_ops,
+ 			       flowi4_to_flowi(flp4), 0, &arg);
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -138,9 +138,12 @@ static struct mr6_table *ip6mr_get_table
+ static int ip6mr_fib_lookup(struct net *net, struct flowi6 *flp6,
+ 			    struct mr6_table **mrt)
+ {
+-	struct ip6mr_result res;
+-	struct fib_lookup_arg arg = { .result = &res, };
+ 	int err;
++	struct ip6mr_result res;
++	struct fib_lookup_arg arg = {
++		.result = &res,
++		.flags = FIB_LOOKUP_NOREF,
++	};
+ 
+ 	err = fib_rules_lookup(net->ipv6.mr6_rules_ops,
+ 			       flowi6_to_flowi(flp6), 0, &arg);
 
 
