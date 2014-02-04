@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934894AbaBDVUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:20:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57475 "EHLO
+	id S935021AbaBDVUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:20:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933696AbaBDVMo (ORCPT
+	with ESMTP id S934439AbaBDVMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Feb 2014 16:12:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 134/140] iscsi-target: Pre-allocate more tags to avoid ack starvation
-Date: Tue,  4 Feb 2014 13:12:01 -0800
-Message-Id: <20140204211040.798241406@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.13 132/140] SCSI: qla4xxx: overflow in qla4xxx_set_chap_entry()
+Date: Tue,  4 Feb 2014 13:11:59 -0800
+Message-Id: <20140204211040.736192545@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -28,44 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4a4caa29f1abcb14377e05d57c0793d338fb945d upstream.
+commit 3c60cfd73966797746530768d66597d025a69804 upstream.
 
-This patch addresses an traditional iscsi-target fabric ack starvation
-issue where iscsit_allocate_cmd() -> percpu_ida_alloc_state() ends up
-hitting slow path percpu-ida code, because iscsit_ack_from_expstatsn()
-is expected to free ack'ed tags after tag allocation.
+We should cap the size of memcpy() because it comes from the network
+and can't be trusted.
 
-This is done to take into account the tags waiting to be acknowledged
-and released in iscsit_ack_from_expstatsn(), but who's number are not
-directly limited by the CmdSN Window queue_depth being enforced by
-the target.
-
-So that said, this patch bumps up the pre-allocated number of
-per session tags to:
-
-  (max(queue_depth, ISCSIT_MIN_TAGS) * 2) + ISCSIT_EXTRA_TAGS
-
-for good measure to avoid the percpu_ida_alloc_state() slow path.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: 26ffd7b45fe9 ('[SCSI] qla4xxx: Add support to set CHAP entries')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_nego.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/qla4xxx/ql4_os.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_nego.c
-+++ b/drivers/target/iscsi/iscsi_target_nego.c
-@@ -1192,7 +1192,7 @@ get_target:
- 	 */
- alloc_tags:
- 	tag_num = max_t(u32, ISCSIT_MIN_TAGS, queue_depth);
--	tag_num += (tag_num / 2) + ISCSIT_EXTRA_TAGS;
-+	tag_num = (tag_num * 2) + ISCSIT_EXTRA_TAGS;
- 	tag_size = sizeof(struct iscsi_cmd) + conn->conn_transport->priv_size;
+--- a/drivers/scsi/qla4xxx/ql4_os.c
++++ b/drivers/scsi/qla4xxx/ql4_os.c
+@@ -802,6 +802,7 @@ static int qla4xxx_set_chap_entry(struct
+ 	int type;
+ 	int rem = len;
+ 	int rc = 0;
++	int size;
  
- 	ret = transport_alloc_session_tags(sess->se_sess, tag_num, tag_size);
+ 	memset(&chap_rec, 0, sizeof(chap_rec));
+ 
+@@ -816,12 +817,14 @@ static int qla4xxx_set_chap_entry(struct
+ 			chap_rec.chap_type = param_info->value[0];
+ 			break;
+ 		case ISCSI_CHAP_PARAM_USERNAME:
+-			memcpy(chap_rec.username, param_info->value,
+-			       param_info->len);
++			size = min_t(size_t, sizeof(chap_rec.username),
++				     param_info->len);
++			memcpy(chap_rec.username, param_info->value, size);
+ 			break;
+ 		case ISCSI_CHAP_PARAM_PASSWORD:
+-			memcpy(chap_rec.password, param_info->value,
+-			       param_info->len);
++			size = min_t(size_t, sizeof(chap_rec.password),
++				     param_info->len);
++			memcpy(chap_rec.password, param_info->value, size);
+ 			break;
+ 		case ISCSI_CHAP_PARAM_PASSWORD_LEN:
+ 			chap_rec.password_length = param_info->value[0];
 
 
