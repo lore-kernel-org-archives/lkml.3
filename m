@@ -1,139 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936084AbaBDWhv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:37:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:58113 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934123AbaBDWhJ (ORCPT
+	id S935536AbaBDWih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:38:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56375 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933506AbaBDVCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:37:09 -0500
-From: Kumar Gala <galak@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org
-Cc: Kumar Gala <galak@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] ARM: msm: kill off hotplug.c
-Date: Tue,  4 Feb 2014 16:36:57 -0600
-Message-Id: <1391553421-26914-2-git-send-email-galak@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1391553421-26914-1-git-send-email-galak@codeaurora.org>
-References: <1391553421-26914-1-git-send-email-galak@codeaurora.org>
+	Tue, 4 Feb 2014 16:02:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maximilian Attems <maks@stro.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.10 053/104] parport: parport_pc: remove double PCI ID for NetMos
+Date: Tue,  4 Feb 2014 13:01:56 -0800
+Message-Id: <20140204210224.226551305@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now hotplug.c only really implements msm_cpu_die as a wfi.  Just
-move that implementation into platsmp.c.  At the same time we use the
-existing wfi() instead of inline asm.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Kumar Gala <galak@codeaurora.org>
+------------------
+
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+
+commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
+
+In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+was at the v2.4.26 time frame. The patch made into 2.6.14.
+Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+NetMOS based PCI cards providing serial and parallel ports") which made
+into v2.6.9-rc1.
+Now we have two different entries for the same PCI id.
+I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+0x1000 / 0x0020 so it should match PCI_ANY).
+
+While here I also drop the entry for titan_1284p2 which is the same as
+netmos_9815.
+
+Cc: Maximilian Attems <maks@stro.at>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/mach-msm/Makefile  |  1 -
- arch/arm/mach-msm/common.h  |  1 -
- arch/arm/mach-msm/hotplug.c | 51 ---------------------------------------------
- arch/arm/mach-msm/platsmp.c |  7 +++++++
- 4 files changed, 7 insertions(+), 53 deletions(-)
- delete mode 100644 arch/arm/mach-msm/hotplug.c
+ drivers/parport/parport_pc.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 721f27f..8327f60 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -18,7 +18,6 @@ obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
- 
- CFLAGS_scm.o :=$(call as-instr,.arch_extension sec,-DREQUIRES_SEC=1)
- 
--obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
- obj-$(CONFIG_SMP) += platsmp.o
- 
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
-diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
-index 33c7725..0a4899b 100644
---- a/arch/arm/mach-msm/common.h
-+++ b/arch/arm/mach-msm/common.h
-@@ -24,7 +24,6 @@ extern void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
- 					  unsigned int mtype, void *caller);
- 
- extern struct smp_operations msm_smp_ops;
--extern void msm_cpu_die(unsigned int cpu);
- 
- struct msm_mmc_platform_data;
- 
-diff --git a/arch/arm/mach-msm/hotplug.c b/arch/arm/mach-msm/hotplug.c
-deleted file mode 100644
-index cea80fc..0000000
---- a/arch/arm/mach-msm/hotplug.c
-+++ /dev/null
-@@ -1,51 +0,0 @@
--/*
-- *  Copyright (C) 2002 ARM Ltd.
-- *  All Rights Reserved
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/kernel.h>
--#include <linux/errno.h>
--#include <linux/smp.h>
--
--#include <asm/smp_plat.h>
--
--#include "common.h"
--
--static inline void cpu_enter_lowpower(void)
--{
--}
--
--static inline void cpu_leave_lowpower(void)
--{
--}
--
--static inline void platform_do_lowpower(unsigned int cpu)
--{
--	asm("wfi"
--	    :
--	    :
--	    : "memory", "cc");
--}
--
--/*
-- * platform-specific code to shutdown a CPU
-- *
-- * Called with IRQs disabled
-- */
--void __ref msm_cpu_die(unsigned int cpu)
--{
--	/*
--	 * we're ready for shutdown now, so do it
--	 */
--	cpu_enter_lowpower();
--	platform_do_lowpower(cpu);
--
--	/*
--	 * bring this CPU back into the world of cache
--	 * coherency, and then restore interrupts
--	 */
--	cpu_leave_lowpower();
--}
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 3721b31..251a91e 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -29,6 +29,13 @@ extern void secondary_startup(void);
- 
- static DEFINE_SPINLOCK(boot_lock);
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static void __ref msm_cpu_die(unsigned int cpu)
-+{
-+	wfi();
-+}
-+#endif
-+
- static inline int get_core_count(void)
- {
- 	/* 1 + the PART[1:0] field of MIDR */
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2596,8 +2596,6 @@ enum parport_pc_pci_cards {
+ 	syba_2p_epp,
+ 	syba_1p_ecp,
+ 	titan_010l,
+-	titan_1284p1,
+-	titan_1284p2,
+ 	avlab_1p,
+ 	avlab_2p,
+ 	oxsemi_952,
+@@ -2656,8 +2654,6 @@ static struct parport_pc_pci {
+ 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
+ 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
+ 	/* titan_010l */		{ 1, { { 3, -1 }, } },
+-	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
+-	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
+ 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
+ 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
+@@ -2673,8 +2669,8 @@ static struct parport_pc_pci {
+ 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
+ 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
+-	/* netmos_9805 */               { 1, { { 0, -1 }, } },
+-	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
++	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
++	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
+ 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
+@@ -2718,8 +2714,6 @@ static const struct pci_device_id parpor
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
+ 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
+-	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
+-	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
+ 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
+ 	/* AFAVLAB_TK9902 */
+ 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
+
 
