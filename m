@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935357AbaBDWcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:32:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56491 "EHLO
+	id S964859AbaBDWdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:33:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342AbaBDVH6 (ORCPT
+	with ESMTP id S933793AbaBDVH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:07:58 -0500
+	Tue, 4 Feb 2014 16:07:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Molinari <mauromol@tiscali.it>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.12 003/133] drm/nouveau/bios: fix offset calculation for BMPv1 bioses
-Date: Tue,  4 Feb 2014 13:06:44 -0800
-Message-Id: <20140204210737.108638824@linuxfoundation.org>
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Matthieu Vanin <b47495@freescale.com>,
+        Peter Chen <peter.chen@freescale.com>
+Subject: [PATCH 3.12 017/133] usb: chipidea: udc: using MultO at TD as real mult value for ISO-TX
+Date: Tue,  4 Feb 2014 13:06:58 -0800
+Message-Id: <20140204210737.506822391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -29,46 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 5d2f4767c4eacab351b8450b0de4d3261fe1a957 upstream.
+commit 2fc5a7dace3c43e62402ab4e8800a8f1834ffe2a upstream.
 
-The only BIOS on record that needs the 14 offset has a bios major
-version 2 but BMP version 1.01. Another bunch of BIOSes that need the 18
-offset have BMP version 2.01 or 5.01 or higher. So instead of looking at the
-bios major version, look at the BMP version. BIOSes with BMP version 0
-do not contain a detectable script, so always return 0 for them.
+We have met a bug that the high bandwidth ISO-TX transfer has failed
+at the last packet if it is less than 1024, the TD status shows it
+is "Transaction Error".
 
-See https://bugs.freedesktop.org/show_bug.cgi?id=68835
+The root cause of this problem is: the mult value at qh is not correct
+for current TD's transfer length. We use TD list to queue un-transfer
+TDs, and change mult for new adding TDs. If new adding TDs transfer length
+less than 1024, but the queued un-transfer TDs transfer length is larger
+than 1024, the transfer error will occur, and vice versa.
+Usually, this problem occurs at the last packet, and the first packet for
+new frame.
 
-Reported-by: Mauro Molinari <mauromol@tiscali.it>
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+We fixed this problem by setting Mult at QH as the largest value (3), and
+set MultO (Multiplier Override) at TD according to every transfer length.
+It can cover both hardware version less than 2.3 (the real mult is MultO
+if it is not 0) and 2.3+ (the real mult is min(qh.mult, td.multo)).
+
+Since the MultO bits are only existed at TX TD, we keep the ISO-RX behavior
+unchanged.
+
+For stable tree: 3.11+.
+
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Reported-by: Matthieu Vanin <b47495@freescale.com>
+Tested-by: Matthieu Vanin <b47495@freescale.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/bios/init.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/chipidea/udc.c |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-@@ -365,13 +365,13 @@ static u16
- init_script(struct nouveau_bios *bios, int index)
- {
- 	struct nvbios_init init = { .bios = bios };
--	u16 data;
-+	u16 bmp_ver = bmp_version(bios), data;
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -394,6 +394,14 @@ static int add_td_to_list(struct ci_hw_e
+ 	node->ptr->token = cpu_to_le32(length << __ffs(TD_TOTAL_BYTES));
+ 	node->ptr->token &= cpu_to_le32(TD_TOTAL_BYTES);
+ 	node->ptr->token |= cpu_to_le32(TD_STATUS_ACTIVE);
++	if (hwep->type == USB_ENDPOINT_XFER_ISOC && hwep->dir == TX) {
++		u32 mul = hwreq->req.length / hwep->ep.maxpacket;
++
++		if (hwreq->req.length == 0
++				|| hwreq->req.length % hwep->ep.maxpacket)
++			mul++;
++		node->ptr->token |= mul << __ffs(TD_MULTO);
++	}
  
--	if (bmp_version(bios) && bmp_version(bios) < 0x0510) {
--		if (index > 1)
-+	if (bmp_ver && bmp_ver < 0x0510) {
-+		if (index > 1 || bmp_ver < 0x0100)
- 			return 0x0000;
+ 	temp = (u32) (hwreq->req.dma + hwreq->req.actual);
+ 	if (length) {
+@@ -516,10 +524,11 @@ static int _hardware_enqueue(struct ci_h
+ 	hwep->qh.ptr->td.token &=
+ 		cpu_to_le32(~(TD_STATUS_HALTED|TD_STATUS_ACTIVE));
  
--		data = bios->bmp_offset + (bios->version.major < 2 ? 14 : 18);
-+		data = bios->bmp_offset + (bmp_ver < 0x0200 ? 14 : 18);
- 		return nv_ro16(bios, data + (index * 2));
+-	if (hwep->type == USB_ENDPOINT_XFER_ISOC) {
++	if (hwep->type == USB_ENDPOINT_XFER_ISOC && hwep->dir == RX) {
+ 		u32 mul = hwreq->req.length / hwep->ep.maxpacket;
+ 
+-		if (hwreq->req.length % hwep->ep.maxpacket)
++		if (hwreq->req.length == 0
++				|| hwreq->req.length % hwep->ep.maxpacket)
+ 			mul++;
+ 		hwep->qh.ptr->cap |= mul << __ffs(QH_MULT);
  	}
+@@ -1172,6 +1181,12 @@ static int ep_enable(struct usb_ep *ep,
+ 	if (hwep->num)
+ 		cap |= QH_ZLT;
+ 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
++	/*
++	 * For ISO-TX, we set mult at QH as the largest value, and use
++	 * MultO at TD as real mult value.
++	 */
++	if (hwep->type == USB_ENDPOINT_XFER_ISOC && hwep->dir == TX)
++		cap |= 3 << __ffs(QH_MULT);
+ 
+ 	hwep->qh.ptr->cap = cpu_to_le32(cap);
  
 
 
