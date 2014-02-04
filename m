@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934125AbaBDVJK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:09:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56723 "EHLO
+	id S934950AbaBDWFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:05:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933916AbaBDVIs (ORCPT
+	with ESMTP id S934127AbaBDVJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:08:48 -0500
+	Tue, 4 Feb 2014 16:09:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 081/133] ALSA: Enable CONFIG_ZONE_DMA for smaller PCI DMA masks
-Date: Tue,  4 Feb 2014 13:08:02 -0800
-Message-Id: <20140204210739.322666647@linuxfoundation.org>
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 107/133] tcp: metrics: Avoid duplicate entries with the same destination-IP
+Date: Tue,  4 Feb 2014 13:08:28 -0800
+Message-Id: <20140204210740.055725948@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -28,122 +30,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit 80ab8eae70e51d578ebbeb228e0f7a562471b8b7 upstream.
+[ Upstream commit 77f99ad16a07aa062c2d30fae57b1fee456f6ef6 ]
 
-The PCI devices with DMA masks smaller than 32bit should enable
-CONFIG_ZONE_DMA.  Since the recent change of page allocator, page
-allocations via dma_alloc_coherent() with the limited DMA mask bits
-may fail more frequently, ended up with no available buffers, when
-CONFIG_ZONE_DMA isn't enabled.  With CONFIG_ZONE_DMA, the system has
-much more chance to obtain such pages.
+Because the tcp-metrics is an RCU-list, it may be that two
+soft-interrupts are inside __tcp_get_metrics() for the same
+destination-IP at the same time. If this destination-IP is not yet part of
+the tcp-metrics, both soft-interrupts will end up in tcpm_new and create
+a new entry for this IP.
+So, we will have two tcp-metrics with the same destination-IP in the list.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=68221
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch checks twice __tcp_get_metrics(). First without holding the
+lock, then while holding the lock. The second one is there to confirm
+that the entry has not been added by another soft-irq while waiting for
+the spin-lock.
+
+Fixes: 51c5d0c4b169b (tcp: Maintain dynamic metrics in local cache.)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/Kconfig |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/ipv4/tcp_metrics.c |   51 ++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 32 insertions(+), 19 deletions(-)
 
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -25,6 +25,7 @@ config SND_ALS300
- 	select SND_PCM
- 	select SND_AC97_CODEC
- 	select SND_OPL3_LIB
-+	select ZONE_DMA
- 	help
- 	  Say 'Y' or 'M' to include support for Avance Logic ALS300/ALS300+
+--- a/net/ipv4/tcp_metrics.c
++++ b/net/ipv4/tcp_metrics.c
+@@ -22,6 +22,9 @@
  
-@@ -49,6 +50,7 @@ config SND_ALI5451
- 	tristate "ALi M5451 PCI Audio Controller"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the integrated AC97 sound
- 	  device on motherboards using the ALi M5451 Audio Controller
-@@ -153,6 +155,7 @@ config SND_AZT3328
- 	select SND_PCM
- 	select SND_RAWMIDI
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for Aztech AZF3328 (PCI168)
- 	  soundcards.
-@@ -458,6 +461,7 @@ config SND_EMU10K1
- 	select SND_HWDEP
- 	select SND_RAWMIDI
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y to include support for Sound Blaster PCI 512, Live!,
- 	  Audigy and E-mu APS (partially supported) soundcards.
-@@ -473,6 +477,7 @@ config SND_EMU10K1X
- 	tristate "Emu10k1X (Dell OEM Version)"
- 	select SND_AC97_CODEC
- 	select SND_RAWMIDI
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the Dell OEM version of the
- 	  Sound Blaster Live!.
-@@ -506,6 +511,7 @@ config SND_ES1938
- 	select SND_OPL3_LIB
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Solo-1
- 	  (ES1938, ES1946, ES1969) chips.
-@@ -517,6 +523,7 @@ config SND_ES1968
- 	tristate "ESS ES1968/1978 (Maestro-1/2/2E)"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Maestro
- 	  1/2/2E chips.
-@@ -605,6 +612,7 @@ config SND_ICE1712
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
- 	select BITREVERSE
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on the
- 	  ICE1712 (Envy24) chip.
-@@ -692,6 +700,7 @@ config SND_LX6464ES
- config SND_MAESTRO3
- 	tristate "ESS Allegro/Maestro3"
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Maestro 3
- 	  (Allegro) chips.
-@@ -788,6 +797,7 @@ config SND_SIS7019
- 	tristate "SiS 7019 Audio Accelerator"
- 	depends on X86 && !X86_64
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the SiS 7019 Audio Accelerator.
+ int sysctl_tcp_nometrics_save __read_mostly;
  
-@@ -799,6 +809,7 @@ config SND_SONICVIBES
- 	select SND_OPL3_LIB
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on the S3
- 	  SonicVibes chip.
-@@ -810,6 +821,7 @@ config SND_TRIDENT
- 	tristate "Trident 4D-Wave DX/NX; SiS 7018"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on Trident
- 	  4D-Wave DX/NX or SiS 7018 chips.
++static struct tcp_metrics_block *__tcp_get_metrics(const struct inetpeer_addr *addr,
++						   struct net *net, unsigned int hash);
++
+ struct tcp_fastopen_metrics {
+ 	u16	mss;
+ 	u16	syn_loss:10;		/* Recurring Fast Open SYN losses */
+@@ -130,16 +133,41 @@ static void tcpm_suck_dst(struct tcp_met
+ 	}
+ }
+ 
++#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
++
++static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
++{
++	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
++		tcpm_suck_dst(tm, dst, false);
++}
++
++#define TCP_METRICS_RECLAIM_DEPTH	5
++#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
++
+ static struct tcp_metrics_block *tcpm_new(struct dst_entry *dst,
+ 					  struct inetpeer_addr *addr,
+-					  unsigned int hash,
+-					  bool reclaim)
++					  unsigned int hash)
+ {
+ 	struct tcp_metrics_block *tm;
+ 	struct net *net;
++	bool reclaim = false;
+ 
+ 	spin_lock_bh(&tcp_metrics_lock);
+ 	net = dev_net(dst->dev);
++
++	/* While waiting for the spin-lock the cache might have been populated
++	 * with this entry and so we have to check again.
++	 */
++	tm = __tcp_get_metrics(addr, net, hash);
++	if (tm == TCP_METRICS_RECLAIM_PTR) {
++		reclaim = true;
++		tm = NULL;
++	}
++	if (tm) {
++		tcpm_check_stamp(tm, dst);
++		goto out_unlock;
++	}
++
+ 	if (unlikely(reclaim)) {
+ 		struct tcp_metrics_block *oldest;
+ 
+@@ -169,17 +197,6 @@ out_unlock:
+ 	return tm;
+ }
+ 
+-#define TCP_METRICS_TIMEOUT		(60 * 60 * HZ)
+-
+-static void tcpm_check_stamp(struct tcp_metrics_block *tm, struct dst_entry *dst)
+-{
+-	if (tm && unlikely(time_after(jiffies, tm->tcpm_stamp + TCP_METRICS_TIMEOUT)))
+-		tcpm_suck_dst(tm, dst, false);
+-}
+-
+-#define TCP_METRICS_RECLAIM_DEPTH	5
+-#define TCP_METRICS_RECLAIM_PTR		(struct tcp_metrics_block *) 0x1UL
+-
+ static struct tcp_metrics_block *tcp_get_encode(struct tcp_metrics_block *tm, int depth)
+ {
+ 	if (tm)
+@@ -280,7 +297,6 @@ static struct tcp_metrics_block *tcp_get
+ 	struct inetpeer_addr addr;
+ 	unsigned int hash;
+ 	struct net *net;
+-	bool reclaim;
+ 
+ 	addr.family = sk->sk_family;
+ 	switch (addr.family) {
+@@ -300,13 +316,10 @@ static struct tcp_metrics_block *tcp_get
+ 	hash = hash_32(hash, net->ipv4.tcp_metrics_hash_log);
+ 
+ 	tm = __tcp_get_metrics(&addr, net, hash);
+-	reclaim = false;
+-	if (tm == TCP_METRICS_RECLAIM_PTR) {
+-		reclaim = true;
++	if (tm == TCP_METRICS_RECLAIM_PTR)
+ 		tm = NULL;
+-	}
+ 	if (!tm && create)
+-		tm = tcpm_new(dst, &addr, hash, reclaim);
++		tm = tcpm_new(dst, &addr, hash);
+ 	else
+ 		tcpm_check_stamp(tm, dst);
+ 
 
 
