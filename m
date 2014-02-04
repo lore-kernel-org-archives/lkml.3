@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933406AbaBDVCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:02:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56236 "EHLO
+	id S933465AbaBDVCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:02:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56267 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933327AbaBDVC1 (ORCPT
+	with ESMTP id S933187AbaBDVCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:27 -0500
+	Tue, 4 Feb 2014 16:02:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Magnus Reftel <magnus.reftel@lockless.no>,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 059/104] ASoC: adau1701: Fix ADAU1701_SEROCTL_WORD_LEN_16 constant
-Date: Tue,  4 Feb 2014 13:02:02 -0800
-Message-Id: <20140204210224.394236218@linuxfoundation.org>
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 3.10 066/104] tpm/tpm_ppi: Do not compare strcmp(a,b) == -1
+Date: Tue,  4 Feb 2014 13:02:09 -0800
+Message-Id: <20140204210224.581655383@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,32 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Peter Huewe <PeterHuewe@gmx.de>
 
-commit e20970ada3f699c113fe64b04492af083d11a7d8 upstream.
+commit 747d35bd9bb4ae6bd74b19baa5bbe32f3e0cee11 upstream.
 
-The driver defines ADAU1701_SEROCTL_WORD_LEN_16 as 0x10 while it should be b10,
-so 0x2. This patch fixes it.
+Depending on the implementation strcmp might return the difference between
+two strings not only -1,0,1 consequently
+ if (strcmp (a,b) == -1)
+might lead to taking the wrong branch
 
-Reported-by: Magnus Reftel <magnus.reftel@lockless.no>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+-> compare with < 0  instead,
+which in any case is more canonical.
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/adau1701.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/tpm/tpm_ppi.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/sound/soc/codecs/adau1701.c
-+++ b/sound/soc/codecs/adau1701.c
-@@ -64,7 +64,7 @@
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -172,7 +172,7 @@ static ssize_t tpm_store_ppi_request(str
+ 	 * is updated with function index from SUBREQ to SUBREQ2 since PPI
+ 	 * version 1.1
+ 	 */
+-	if (strcmp(version, "1.1") == -1)
++	if (strcmp(version, "1.1") < 0)
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ;
+ 	else
+ 		params[2].integer.value = TPM_PPI_FN_SUBREQ2;
+@@ -182,7 +182,7 @@ static ssize_t tpm_store_ppi_request(str
+ 	 * string/package type. For PPI version 1.0 and 1.1, use buffer type
+ 	 * for compatibility, and use package type since 1.2 according to spec.
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length = sizeof(req);
+ 		sscanf(buf, "%d", &req);
+@@ -248,7 +248,7 @@ static ssize_t tpm_show_ppi_transition_a
+ 	 * (e.g. Capella with PPI 1.0) need integer/string/buffer type, so for
+ 	 * compatibility, define params[3].type as buffer, if PPI version < 1.2
+ 	 */
+-	if (strcmp(version, "1.2") == -1) {
++	if (strcmp(version, "1.2") < 0) {
+ 		params[3].type = ACPI_TYPE_BUFFER;
+ 		params[3].buffer.length =  0;
+ 		params[3].buffer.pointer = NULL;
+@@ -390,7 +390,7 @@ static ssize_t show_ppi_operations(char
+ 	kfree(output.pointer);
+ 	output.length = ACPI_ALLOCATE_BUFFER;
+ 	output.pointer = NULL;
+-	if (strcmp(version, "1.2") == -1)
++	if (strcmp(version, "1.2") < 0)
+ 		return -EPERM;
  
- #define ADAU1701_SEROCTL_WORD_LEN_24	0x0000
- #define ADAU1701_SEROCTL_WORD_LEN_20	0x0001
--#define ADAU1701_SEROCTL_WORD_LEN_16	0x0010
-+#define ADAU1701_SEROCTL_WORD_LEN_16	0x0002
- #define ADAU1701_SEROCTL_WORD_LEN_MASK	0x0003
- 
- #define ADAU1701_AUXNPOW_VBPD		0x40
+ 	params[2].integer.value = TPM_PPI_FN_GETOPR;
 
 
