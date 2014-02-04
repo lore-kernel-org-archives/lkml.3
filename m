@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331AbaBDK1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 05:27:14 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:32870 "EHLO
+	id S1754404AbaBDKaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 05:30:21 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:61716 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831AbaBDK0f (ORCPT
+	with ESMTP id S1753630AbaBDKaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 05:26:35 -0500
+	Tue, 4 Feb 2014 05:30:17 -0500
 X-IronPort-AV: E=Sophos;i="4.95,778,1384300800"; 
-   d="scan'208";a="97665478"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-CC: Matt Rushton <mrushton@amazon.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, <xen-devel@lists.xen.org>,
-        Anthony Liguori <aliguori@amazon.com>, Matt Wilson <msw@amazon.com>
-Subject: [PATCH v2 1/4] xen-blkback: fix memory leak when persistent grants are used
-Date: Tue, 4 Feb 2014 11:26:12 +0100
-Message-ID: <1391509575-3949-2-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1391509575-3949-1-git-send-email-roger.pau@citrix.com>
-References: <1391509575-3949-1-git-send-email-roger.pau@citrix.com>
+   d="scan'208";a="97666866"
+Message-ID: <52F0C135.5050300@citrix.com>
+Date: Tue, 4 Feb 2014 10:30:13 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
+To: Roger Pau Monne <roger.pau@citrix.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        Matt Rushton <mrushton@amazon.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <xen-devel@lists.xen.org>,
+        Anthony Liguori <aliguori@amazon.com>, Matt Wilson <msw@amazon.com>
+Subject: Re: [PATCH v2 1/4] xen-blkback: fix memory leak when persistent grants
+ are used
+References: <1391509575-3949-1-git-send-email-roger.pau@citrix.com> <1391509575-3949-2-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1391509575-3949-2-git-send-email-roger.pau@citrix.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Rushton <mrushton@amazon.com>
+On 04/02/14 10:26, Roger Pau Monne wrote:
+> From: Matt Rushton <mrushton@amazon.com>
+> 
+> Currently shrink_free_pagepool() is called before the pages used for
+> persistent grants are released via free_persistent_gnts(). This
+> results in a memory leak when a VBD that uses persistent grants is
+> torn down.
 
-Currently shrink_free_pagepool() is called before the pages used for
-persistent grants are released via free_persistent_gnts(). This
-results in a memory leak when a VBD that uses persistent grants is
-torn down.
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "Roger Pau Monné" <roger.pau@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xen.org
-Cc: Anthony Liguori <aliguori@amazon.com>
-Signed-off-by: Matt Rushton <mrushton@amazon.com>
-Signed-off-by: Matt Wilson <msw@amazon.com>
----
- drivers/block/xen-blkback/blkback.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 6620b73..30ef7b3 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -625,9 +625,6 @@ purge_gnt_list:
- 			print_stats(blkif);
- 	}
- 
--	/* Since we are shutting down remove all pages from the buffer */
--	shrink_free_pagepool(blkif, 0 /* All */);
--
- 	/* Free all persistent grant pages */
- 	if (!RB_EMPTY_ROOT(&blkif->persistent_gnts))
- 		free_persistent_gnts(blkif, &blkif->persistent_gnts,
-@@ -636,6 +633,9 @@ purge_gnt_list:
- 	BUG_ON(!RB_EMPTY_ROOT(&blkif->persistent_gnts));
- 	blkif->persistent_gnt_c = 0;
- 
-+	/* Since we are shutting down remove all pages from the buffer */
-+	shrink_free_pagepool(blkif, 0 /* All */);
-+
- 	if (log_stats)
- 		print_stats(blkif);
- 
--- 
-1.7.7.5 (Apple Git-26)
-
+David
