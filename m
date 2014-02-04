@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964912AbaBDW6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:58:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56115 "EHLO
+	id S935651AbaBDW7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:59:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56110 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152AbaBDVCH (ORCPT
+	with ESMTP id S933120AbaBDVCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:02:07 -0500
+	Tue, 4 Feb 2014 16:02:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 031/104] rtlwifi: rtl8192cu: Update the power index registers
-Date: Tue,  4 Feb 2014 13:01:34 -0800
-Message-Id: <20140204210223.619012520@linuxfoundation.org>
+        Mauro Molinari <mauromol@tiscali.it>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.10 003/104] drm/nouveau/bios: fix offset calculation for BMPv1 bioses
+Date: Tue,  4 Feb 2014 13:01:06 -0800
+Message-Id: <20140204210222.829655372@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
 References: <20140204210222.731641778@linuxfoundation.org>
@@ -29,47 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 9806eacf5de27ab01d680c5d75c92a3a89734e4f upstream.
+commit 5d2f4767c4eacab351b8450b0de4d3261fe1a957 upstream.
 
-This patch uses the newly introduced power index register routines.
+The only BIOS on record that needs the 14 offset has a bios major
+version 2 but BMP version 1.01. Another bunch of BIOSes that need the 18
+offset have BMP version 2.01 or 5.01 or higher. So instead of looking at the
+bios major version, look at the BMP version. BIOSes with BMP version 0
+do not contain a detectable script, so always return 0 for them.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+See https://bugs.freedesktop.org/show_bug.cgi?id=68835
+
+Reported-by: Mauro Molinari <mauromol@tiscali.it>
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/dm.c |    9 +++++++++
- drivers/net/wireless/rtlwifi/rtl8192cu/dm.h |    3 +++
- 2 files changed, 12 insertions(+)
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/dm.c
-@@ -101,6 +101,15 @@ void rtl92cu_dm_dynamic_txpower(struct i
- 			 "PHY_SetTxPowerLevel8192S() Channel = %d\n",
- 			 rtlphy->current_channel);
- 		rtl92c_phy_set_txpower_level(hw, rtlphy->current_channel);
-+		if (rtlpriv->dm.dynamic_txhighpower_lvl ==
-+		    TXHIGHPWRLEVEL_NORMAL)
-+			dm_restorepowerindex(hw);
-+		else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
-+			 TXHIGHPWRLEVEL_LEVEL1)
-+			dm_writepowerindex(hw, 0x14);
-+		else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
-+			 TXHIGHPWRLEVEL_LEVEL2)
-+			dm_writepowerindex(hw, 0x10);
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
+@@ -366,13 +366,13 @@ static u16
+ init_script(struct nouveau_bios *bios, int index)
+ {
+ 	struct nvbios_init init = { .bios = bios };
+-	u16 data;
++	u16 bmp_ver = bmp_version(bios), data;
+ 
+-	if (bmp_version(bios) && bmp_version(bios) < 0x0510) {
+-		if (index > 1)
++	if (bmp_ver && bmp_ver < 0x0510) {
++		if (index > 1 || bmp_ver < 0x0100)
+ 			return 0x0000;
+ 
+-		data = bios->bmp_offset + (bios->version.major < 2 ? 14 : 18);
++		data = bios->bmp_offset + (bmp_ver < 0x0200 ? 14 : 18);
+ 		return nv_ro16(bios, data + (index * 2));
  	}
  
- 	rtlpriv->dm.last_dtp_lvl = rtlpriv->dm.dynamic_txhighpower_lvl;
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/dm.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/dm.h
-@@ -30,3 +30,6 @@
- #include "../rtl8192ce/dm.h"
- 
- void rtl92cu_dm_dynamic_txpower(struct ieee80211_hw *hw);
-+void dm_savepowerindex(struct ieee80211_hw *hw);
-+void dm_writepowerindex(struct ieee80211_hw *hw, u8 value);
-+void dm_restorepowerindex(struct ieee80211_hw *hw);
 
 
