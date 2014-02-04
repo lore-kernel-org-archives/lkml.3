@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936342AbaBDWtE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:49:04 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63063 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934007AbaBDWsz (ORCPT
+	id S936347AbaBDWtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 17:49:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56241 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933333AbaBDVC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 17:48:55 -0500
+	Tue, 4 Feb 2014 16:02:28 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexander Aristov <aristov.alexander@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 061/104] ALSA: rme9652: fix a missing comma in channel_map_9636_ds[]
+Date: Tue,  4 Feb 2014 13:02:04 -0800
+Message-Id: <20140204210224.445075999@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140204210222.731641778@linuxfoundation.org>
+References: <20140204210222.731641778@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <1391550040.3003.28.camel@deadeye.wl.decadent.org.uk>
-References: <7510122.cayuQ6qt8r@wuerfel> <1389999459-9483-1-git-send-email-matthew.garrett@nebula.com>
- <CAGVrzcZ4TFd=9KP+aoG47QbmqDJ1i23WBcEWDbzNRUfGmPvZHQ@mail.gmail.com> <1391550040.3003.28.camel@deadeye.wl.decadent.org.uk>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 4 Feb 2014 14:48:15 -0800
-Message-ID: <CAGVrzcbwiVCj0oETXms6ek+QG13BEbgydLzUEckuGFOhSx0iXQ@mail.gmail.com>
-Subject: Re: [PATCH V3] net/dt: Add support for overriding phy configuration
- from device tree
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-04 Ben Hutchings <ben@decadent.org.uk>:
-> On Tue, 2014-02-04 at 12:39 -0800, Florian Fainelli wrote:
->> 2014-01-17 Matthew Garrett <matthew.garrett@nebula.com>:
->> > Some hardware may be broken in interesting and board-specific ways, such
->> > that various bits of functionality don't work. This patch provides a
->> > mechanism for overriding mii registers during init based on the contents of
->> > the device tree data, allowing board-specific fixups without having to
->> > pollute generic code.
->>
->> It would be good to explain exactly how your hardware is broken
->> exactly. I really do not think that such a fine-grained setting where
->> you could disable, e.g: 100BaseT_Full, but allow 100BaseT_Half to
->> remain usable makes that much sense. In general, Gigabit might be
->> badly broken, but 100 and 10Mbits/sec should work fine. How about the
->> MASTER-SLAVE bit, is overriding it really required?
->
-> Yes, it is entirely possible that one or other of the clock modes
-> (locally generated vs recovered) is not reliable.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-That one is not covered in the existing Ethernet PHY binding, okay for
-handling it.
+------------------
 
->
->> Is not a PHY fixup registered for a specific OUI the solution you are
->> looking for?
-> [...]
->
-> The fault is in the board, not the PHY.
+From: Takashi Iwai <tiwai@suse.de>
 
-What kind of fault at the board level are we talking about? Lack of
-specific twisted pair wiring to the RJ-45 jack? Out of spec RXC/TXC on
-a (R)GMII path? If the latter, this is going to be via vendor-specific
-MII registers, and should be a good enough reason for registering a
-PHY fixup. What about pad control, and Ethernet MACs specicif register
-affecting the internal delays and such?
--- 
-Florian
+commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+
+The lack of comma leads to the wrong channel for an SPDIF channel.
+Unfortunately this wasn't caught by compiler because it's still a
+valid expression.
+
+Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/rme9652/rme9652.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/pci/rme9652/rme9652.c
++++ b/sound/pci/rme9652/rme9652.c
+@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
+ 	/* ADAT channels are remapped */
+ 	1, 3, 5, 7, 9, 11, 13, 15,
+ 	/* channels 8 and 9 are S/PDIF */
+-	24, 25
++	24, 25,
+ 	/* others don't exist */
+ 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+ };
+
+
