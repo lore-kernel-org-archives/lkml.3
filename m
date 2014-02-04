@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124AbaBDP7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 10:59:38 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:61321 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaBDP7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 10:59:32 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Cc: Alessandro Rubini <rubini@unipv.it>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 05/17] mmc: mmci: Put the device into low power state at system suspend
-Date: Tue,  4 Feb 2014 16:58:46 +0100
-Message-Id: <1391529538-21685-6-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+	id S1754823AbaBDQDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 11:03:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59037 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754677AbaBDQDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 11:03:38 -0500
+Date: Tue, 4 Feb 2014 17:03:36 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, rientjes@google.com, penberg@kernel.org,
+        cl@linux.com, glommer@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH v2 3/7] memcg, slab: separate memcg vs root cache
+ creation paths
+Message-ID: <20140204160336.GL4890@dhcp22.suse.cz>
+References: <cover.1391441746.git.vdavydov@parallels.com>
+ <81a403327163facea2b4c7b720fdc0ef62dd1dbf.1391441746.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <81a403327163facea2b4c7b720fdc0ef62dd1dbf.1391441746.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the available runtime PM callbacks, we are now able to put our
-device into low power state at system suspend.
+On Mon 03-02-14 19:54:38, Vladimir Davydov wrote:
+> Memcg-awareness turned kmem_cache_create() into a dirty interweaving of
+> memcg-only and except-for-memcg calls. To clean this up, let's create a
+> separate function handling memcg caches creation. Although this will
+> result in the two functions having several hunks of practically the same
+> code, I guess this is the case when readability fully covers the cost of
+> code duplication.
 
-Earlier we could not accomplish this without trusting a power domain
-for the device to take care of it. Now we are able to cope with
-scenarios both with and without a power domain.
+I don't know. The code is apparently cleaner because calling a function
+with NULL memcg just to go via several if (memcg) branches is ugly as
+hell. But having a duplicated function like this calls for a problem
+later.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- drivers/mmc/host/mmci.c |   45 +++++++++++++++++++++++++--------------------
- 1 file changed, 25 insertions(+), 20 deletions(-)
+Would it be possible to split kmem_cache_create into memcg independant
+part and do the rest in a single memcg branch?
+ 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  include/linux/memcontrol.h |   14 ++---
+>  include/linux/slab.h       |    9 ++-
+>  mm/memcontrol.c            |   16 ++----
+>  mm/slab_common.c           |  130 ++++++++++++++++++++++++++------------------
+>  4 files changed, 90 insertions(+), 79 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 84e4801fc36c..de79a9617e09 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -500,8 +500,8 @@ int memcg_cache_id(struct mem_cgroup *memcg);
+>  
+>  char *memcg_create_cache_name(struct mem_cgroup *memcg,
+>  			      struct kmem_cache *root_cache);
+> -int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+> -			     struct kmem_cache *root_cache);
+> +int memcg_alloc_cache_params(struct kmem_cache *s,
+> +		struct mem_cgroup *memcg, struct kmem_cache *root_cache);
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index c88da1c..074e0cb 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -1723,33 +1723,38 @@ static int mmci_remove(struct amba_device *dev)
- 	return 0;
- }
- 
--#ifdef CONFIG_SUSPEND
--static int mmci_suspend(struct device *dev)
-+#ifdef CONFIG_PM_SLEEP
-+static int mmci_suspend_late(struct device *dev)
- {
--	struct amba_device *adev = to_amba_device(dev);
--	struct mmc_host *mmc = amba_get_drvdata(adev);
-+	int ret = 0;
- 
--	if (mmc) {
--		struct mmci_host *host = mmc_priv(mmc);
--		pm_runtime_get_sync(dev);
--		writel(0, host->base + MMCIMASK0);
--	}
-+	if (pm_runtime_status_suspended(dev))
-+		return 0;
- 
--	return 0;
-+	if (dev->pm_domain && dev->pm_domain->ops.runtime_suspend)
-+		ret = dev->pm_domain->ops.runtime_suspend(dev);
-+	else
-+		ret = dev->bus->pm->runtime_suspend(dev);
-+
-+	if (!ret)
-+		pm_runtime_set_suspended(dev);
-+
-+	return ret;
- }
- 
--static int mmci_resume(struct device *dev)
-+static int mmci_resume_early(struct device *dev)
- {
--	struct amba_device *adev = to_amba_device(dev);
--	struct mmc_host *mmc = amba_get_drvdata(adev);
-+	int ret = 0;
- 
--	if (mmc) {
--		struct mmci_host *host = mmc_priv(mmc);
--		writel(MCI_IRQENABLE, host->base + MMCIMASK0);
--		pm_runtime_put(dev);
--	}
-+	if (pm_runtime_status_suspended(dev))
-+		return 0;
- 
--	return 0;
-+	if (dev->pm_domain && dev->pm_domain->ops.runtime_resume)
-+		ret = dev->pm_domain->ops.runtime_resume(dev);
-+	else
-+		ret = dev->bus->pm->runtime_resume(dev);
-+
-+	return ret;
- }
- #endif
- 
-@@ -1820,7 +1825,7 @@ static int mmci_runtime_resume(struct device *dev)
- #endif
- 
- static const struct dev_pm_ops mmci_dev_pm_ops = {
--	SET_SYSTEM_SLEEP_PM_OPS(mmci_suspend, mmci_resume)
-+	SET_LATE_SYSTEM_SLEEP_PM_OPS(mmci_suspend_late, mmci_resume_early)
- 	SET_PM_RUNTIME_PM_OPS(mmci_runtime_suspend, mmci_runtime_resume, NULL)
- };
- 
+Why is the parameters ordering changed? It really doesn't help
+review the patch. Also what does `s' stand for and can we use a more
+descriptive name, please?
+
+[...]
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
