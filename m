@@ -1,116 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaBDRcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 12:32:17 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50797 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932123AbaBDRcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 12:32:12 -0500
-Date: Tue, 4 Feb 2014 17:31:33 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: Re: [PATCH v3 3/3] arm64: audit: Add audit hook in
- ptrace/syscall_trace
-Message-ID: <20140204173133.GG664@mudshark.cambridge.arm.com>
-References: <1389946399-4525-1-git-send-email-takahiro.akashi@linaro.org>
- <1391410590-4884-1-git-send-email-takahiro.akashi@linaro.org>
- <1391410590-4884-4-git-send-email-takahiro.akashi@linaro.org>
+	id S932419AbaBDRcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 12:32:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:26798 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932212AbaBDRcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 12:32:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,781,1384329600"; 
+   d="scan'208";a="477935981"
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] Clarify CONFIG_DEBUG_INFO's bloaty nature
+References: <1391452183-2160-1-git-send-email-bp@alien8.de>
+	<alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
+	<CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
+	<20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
+	<alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
+	<20140204090809.GA19156@gmail.com>
+	<CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
+Date: Tue, 04 Feb 2014 09:32:13 -0800
+In-Reply-To: <CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
+	(Linus Torvalds's message of "Tue, 4 Feb 2014 08:36:14 -0800")
+Message-ID: <87fvny238i.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391410590-4884-4-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 06:56:30AM +0000, AKASHI Takahiro wrote:
-> This patch adds auditing functions on entry to or exit from
-> every system call invocation.
-> 
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> ---
->  arch/arm64/include/asm/thread_info.h |    1 +
->  arch/arm64/kernel/entry.S            |    3 +++
->  arch/arm64/kernel/ptrace.c           |   10 ++++++++++
->  3 files changed, 14 insertions(+)
-> 
-> diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-> index 720e70b..7468388 100644
-> --- a/arch/arm64/include/asm/thread_info.h
-> +++ b/arch/arm64/include/asm/thread_info.h
-> @@ -101,6 +101,7 @@ static inline struct thread_info *current_thread_info(void)
->  #define TIF_NEED_RESCHED	1
->  #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
->  #define TIF_SYSCALL_TRACE	8
-> +#define TIF_SYSCALL_AUDIT	9
->  #define TIF_POLLING_NRFLAG	16
->  #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
->  #define TIF_FREEZE		19
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index 827cbad..83c4b29 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -630,6 +630,9 @@ el0_svc_naked:					// compat entry point
->  	get_thread_info tsk
->  	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
->  	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
-> +#ifdef CONFIG_AUDITSYSCALL
-> +	tbnz	x16, #TIF_SYSCALL_AUDIT, __sys_trace // auditing syscalls?
-> +#endif
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+>
+> Trivial oneliner patch (independent of the discussion about improving
+> the documentation), so I'll just apply it.
+>
+> I can't imagine that this would be controversial:
+>
+>    config DEBUG_INFO
+>           bool "Compile the kernel with debug info"
+>   -       depends on DEBUG_KERNEL
+>   +       depends on DEBUG_KERNEL && !COMPILE_TEST
+>           help
+>
+> Hm?
 
-Could we avoid the back-to-back tbnz instructions with a single mask? It's
-not obvious that it will end up any better, but it would be good to know.
+I have used debug info on allyesconfig in the past to run statistics
+on the resulting binary. It's still useful, even though quite slow.
+Make it depend on !EXPERT or somesuch? I agree for normal usages it's fine.
 
->  	adr	lr, ret_fast_syscall		// return address
->  	cmp     scno, sc_nr                     // check upper syscall limit
->  	b.hs	ni_sys
-> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-> index 6777a21..75a3f23 100644
-> --- a/arch/arm64/kernel/ptrace.c
-> +++ b/arch/arm64/kernel/ptrace.c
-> @@ -19,6 +19,7 @@
->   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
->   */
->  
-> +#include <linux/audit.h>
->  #include <linux/kernel.h>
->  #include <linux/sched.h>
->  #include <linux/mm.h>
-> @@ -38,6 +39,7 @@
->  #include <asm/compat.h>
->  #include <asm/debug-monitors.h>
->  #include <asm/pgtable.h>
-> +#include <asm/syscall.h>
->  #include <asm/traps.h>
->  #include <asm/system_misc.h>
->  
-> @@ -1064,6 +1066,14 @@ asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
->  {
->  	unsigned long saved_reg;
->  
-> +	if (dir)
-> +		audit_syscall_exit(regs);
-> +	else
-> +		audit_syscall_entry(syscall_get_arch(current, regs),
-> +			(int)regs->syscallno,
-> +			regs->orig_x0, regs->regs[1],
-> +			regs->regs[2], regs->regs[3]);
-> +
+BTW you probably also want to do the same for the x86 instruction
+decoder test. It seems to be the biggest compile time waster in
+allyesconfig and I usually disable it too.
 
-Do we really want to perform the audit checks before the tracehook calls?
-Remember that the latter can rewrite all of the registers.
-
-Will
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
