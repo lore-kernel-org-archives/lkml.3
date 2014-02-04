@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934919AbaBDWHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 17:07:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56833 "EHLO
+	id S934087AbaBDVJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:09:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934093AbaBDVJF (ORCPT
+	with ESMTP id S933973AbaBDVIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:09:05 -0500
+	Tue, 4 Feb 2014 16:08:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 101/133] bnx2x: fix DMA unmapping of TSO split BDs
-Date: Tue,  4 Feb 2014 13:08:22 -0800
-Message-Id: <20140204210739.887151157@linuxfoundation.org>
+        Philip Pokorny <ppokorny@penguincomputing.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.12 061/133] hwmon: (k10temp) Add support for Kaveri CPUs
+Date: Tue,  4 Feb 2014 13:07:42 -0800
+Message-Id: <20140204210738.755080575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204210737.008598235@linuxfoundation.org>
 References: <20140204210737.008598235@linuxfoundation.org>
@@ -31,73 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Phil Pokorny <ppokorny@penguincomputing.com>
 
-[ Upstream commit 95e92fd40c967c363ad66b2fd1ce4dcd68132e54 ]
+commit d303b1b5fbb688282bbf72a534b9dfed7af9fe4f upstream.
 
-bnx2x triggers warnings with CONFIG_DMA_API_DEBUG=y:
+Add new PCI ID to support new model "Kaveri" family.
 
-  WARNING: CPU: 0 PID: 2253 at lib/dma-debug.c:887 check_unmap+0xf8/0x920()
-  bnx2x 0000:28:00.0: DMA-API: device driver frees DMA memory with
-  different size [device address=0x00000000da2b389e] [map size=1490 bytes]
-  [unmap size=66 bytes]
-
-The reason is that bnx2x splits a TSO BD into two BDs (headers + data)
-using one DMA mapping for both, but it uses only the length of the first
-BD when unmapping.
-
-This patch fixes the bug by unmapping the whole length of the two BDs.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Dmitry Kravkov <dmitry@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Philip Pokorny <ppokorny@penguincomputing.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -160,6 +160,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
- 	struct sk_buff *skb = tx_buf->skb;
- 	u16 bd_idx = TX_BD(tx_buf->first_bd), new_cons;
- 	int nbd;
-+	u16 split_bd_len = 0;
- 
- 	/* prefetch skb end pointer to speedup dev_kfree_skb() */
- 	prefetch(&skb->end);
-@@ -167,10 +168,7 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
- 	DP(NETIF_MSG_TX_DONE, "fp[%d]: pkt_idx %d  buff @(%p)->skb %p\n",
- 	   txdata->txq_index, idx, tx_buf, skb);
- 
--	/* unmap first bd */
- 	tx_start_bd = &txdata->tx_desc_ring[bd_idx].start_bd;
--	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
--			 BD_UNMAP_LEN(tx_start_bd), DMA_TO_DEVICE);
- 
- 	nbd = le16_to_cpu(tx_start_bd->nbd) - 1;
- #ifdef BNX2X_STOP_ON_ERROR
-@@ -188,12 +186,19 @@ static u16 bnx2x_free_tx_pkt(struct bnx2
- 	--nbd;
- 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 
--	/* ...and the TSO split header bd since they have no mapping */
-+	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
- 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
-+		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
-+		split_bd_len = BD_UNMAP_LEN(tx_data_bd);
- 		--nbd;
- 		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 	}
- 
-+	/* unmap first bd */
-+	dma_unmap_single(&bp->pdev->dev, BD_UNMAP_ADDR(tx_start_bd),
-+			 BD_UNMAP_LEN(tx_start_bd) + split_bd_len,
-+			 DMA_TO_DEVICE);
-+
- 	/* now free frags */
- 	while (nbd > 0) {
- 
+---
+ drivers/hwmon/k10temp.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -210,6 +210,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_i
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
++	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+ 	{}
+ };
 
 
