@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935383AbaBDVsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 16:48:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57117 "EHLO
+	id S934921AbaBDVth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 16:49:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934400AbaBDVL1 (ORCPT
+	with ESMTP id S933574AbaBDVL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 16:11:27 -0500
+	Tue, 4 Feb 2014 16:11:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Larry Finger <Larry.Finger@lwfinger.net>,
-        David Binderman <dcb314@hotmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 039/140] rtlwifi: rtl8188ee: Fix typo in code
-Date: Tue,  4 Feb 2014 13:10:26 -0800
-Message-Id: <20140204211038.082449969@linuxfoundation.org>
+Subject: [PATCH 3.13 037/140] rtlwifi: Add missing code to PWDB statics routine
+Date: Tue,  4 Feb 2014 13:10:24 -0800
+Message-Id: <20140204211038.027861631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140204211036.967663852@linuxfoundation.org>
 References: <20140204211036.967663852@linuxfoundation.org>
@@ -32,31 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit f699273d6a624266ebc9198774f06ee64a3847a1 upstream.
-
-The static analyser "cppcheck" shows the following typo:
-drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:1081]: (style) Same expression on both sides of '!='.
+commit d82403a9f407217b6aed5260aa92a120e8e98310 upstream.
 
 Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: David Binderman <dcb314@hotmail.com>
-Cc: David Binderman <dcb314@hotmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/dm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/stats.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-@@ -1078,7 +1078,7 @@ static void rtl88e_dm_txpower_tracking_c
- 				rtldm->swing_flag_ofdm = true;
- 			}
+--- a/drivers/net/wireless/rtlwifi/stats.c
++++ b/drivers/net/wireless/rtlwifi/stats.c
+@@ -176,6 +176,7 @@ static void rtl_process_pwdb(struct ieee
+ 	struct rtl_sta_info *drv_priv = NULL;
+ 	struct ieee80211_sta *sta = NULL;
+ 	long undec_sm_pwdb;
++	long undec_sm_cck;
  
--			if (rtldm->swing_idx_cck != rtldm->swing_idx_cck) {
-+			if (rtldm->swing_idx_cck_cur != rtldm->swing_idx_cck) {
- 				rtldm->swing_idx_cck_cur = rtldm->swing_idx_cck;
- 				rtldm->swing_flag_cck = true;
- 			}
+ 	rcu_read_lock();
+ 	if (rtlpriv->mac80211.opmode != NL80211_IFTYPE_STATION)
+@@ -185,12 +186,16 @@ static void rtl_process_pwdb(struct ieee
+ 	if (sta) {
+ 		drv_priv = (struct rtl_sta_info *) sta->drv_priv;
+ 		undec_sm_pwdb = drv_priv->rssi_stat.undec_sm_pwdb;
++		undec_sm_cck = drv_priv->rssi_stat.undec_sm_cck;
+ 	} else {
+ 		undec_sm_pwdb = rtlpriv->dm.undec_sm_pwdb;
++		undec_sm_cck = rtlpriv->dm.undec_sm_cck;
+ 	}
+ 
+ 	if (undec_sm_pwdb < 0)
+ 		undec_sm_pwdb = pstatus->rx_pwdb_all;
++	if (undec_sm_cck < 0)
++		undec_sm_cck = pstatus->rx_pwdb_all;
+ 	if (pstatus->rx_pwdb_all > (u32) undec_sm_pwdb) {
+ 		undec_sm_pwdb = (((undec_sm_pwdb) *
+ 		      (RX_SMOOTH_FACTOR - 1)) +
+@@ -200,6 +205,15 @@ static void rtl_process_pwdb(struct ieee
+ 		undec_sm_pwdb = (((undec_sm_pwdb) * (RX_SMOOTH_FACTOR - 1)) +
+ 		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
+ 	}
++	if (pstatus->rx_pwdb_all > (u32) undec_sm_cck) {
++		undec_sm_cck = (((undec_sm_pwdb) *
++		      (RX_SMOOTH_FACTOR - 1)) +
++		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
++		undec_sm_cck = undec_sm_cck + 1;
++	} else {
++		undec_sm_pwdb = (((undec_sm_cck) * (RX_SMOOTH_FACTOR - 1)) +
++		     (pstatus->rx_pwdb_all)) / (RX_SMOOTH_FACTOR);
++	}
+ 
+ 	if (sta) {
+ 		drv_priv->rssi_stat.undec_sm_pwdb = undec_sm_pwdb;
 
 
