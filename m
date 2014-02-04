@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaBDTXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 14:23:36 -0500
-Received: from imap.thunk.org ([74.207.234.97]:54139 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753984AbaBDTXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 14:23:34 -0500
-Date: Tue, 4 Feb 2014 19:23:25 +0000
-From: tytso@mit.edu
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stephan Mueller <smueller@chronox.de>,
-        =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
-        blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
-        tg@mirbsd.de, sandyinchina@gmail.com
-Subject: Re: [RFC PATCH 0/5] CPU Jitter RNG
-Message-ID: <20140204192325.GA11831@thunk.org>
-Mail-Followup-To: tytso@mit.edu, "H. Peter Anvin" <hpa@zytor.com>,
-	Stephan Mueller <smueller@chronox.de>,
-	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	macro@linux-mips.org, ralf@linux-mips.org, dave.taht@gmail.com,
-	blogic@openwrt.org, andrewmcgr@gmail.com, geert@linux-m68k.org,
-	tg@mirbsd.de, sandyinchina@gmail.com
-References: <2039634.jSmQAS6tdi@myon.chronox.de>
- <20140204170823.GF12768@thunk.org>
- <52F13A1C.3040003@zytor.com>
+	id S932498AbaBDTXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 14:23:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62742 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069AbaBDTXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 14:23:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Subject: Re: [RFC PATCH V3 1/4] pci: APM X-Gene PCIe controller driver
+Date: Tue, 4 Feb 2014 20:22:57 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Tanmay Inamdar <tinamdar@apm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches <patches@apm.com>,
+        Jon Masters <jcm@redhat.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+References: <1390599168-13150-1-git-send-email-tinamdar@apm.com> <4985267.LnsktRmabM@wuerfel> <20140203221559.GG2519@obsidianresearch.com>
+In-Reply-To: <20140203221559.GG2519@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F13A1C.3040003@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201402042022.57267.arnd@arndb.de>
+X-Provags-ID: V02:K0:InLZfh+jTH4zDRBfA6xmTy0PQcrHjWUtbNImKvILN3W
+ 5o1zCcUvWet1tz3EajZtEtOK1UOcAw1dsH/lms9kqbOudeBTCb
+ hKuqQV5vPh6Rh0FYdSbwCq+4z/cMtfrsCadjuzHRD8gx77ajtq
+ xGrmx9AyXBhbfGMQkI9xP6oo+2JgLwsrb9jP37XVz9F4W+BREF
+ Ct5vWCjGJ6gzXbjY7wg/izUe7gJYqlzaUqLUIL74Vp2fNMiw29
+ 36eeT8HNY/LCCJlSs254c7PDyC1e8O4cLjw52dpNPLq7/GnCQM
+ UKRAT4J4YfPlPjnIVznXQWMChiOpsDUSovKEUb/Yt+f2XGbCXo
+ yzEoSseNZDDPVLJLfdsW1yAdkNgwUb7Vg6O6BY4u/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 11:06:04AM -0800, H. Peter Anvin wrote:
+On Monday 03 February 2014, Jason Gunthorpe wrote:
+> On Mon, Feb 03, 2014 at 09:12:32PM +0100, Arnd Bergmann wrote:
 > 
-> The quantum noise sources there are in a system are generally two
-> independent clocks running against each other.  However, independent
-> clocks are rare; instead, most clocks are in fact slaved against each
-> other using PLLs and similar structures.
+> > Are you sure that is true for the root bridge as well? I don't
+> > remember the details, but I though that for the host bridge,
+> > we don't actually look at the BARs at all.
+> 
+> That is right, but this isn't a host bridge device, it is a PCI-PCI
+> bridge with root complex registers. The root complex bridge is not the
+> same as the host bridge.
+> 
+> Unfortunately the implementation is non-conforming. :(
 
-One of the things that would be useful for us to understand is in
-general, where in a system we have independent clocks.  For example, I
-think (correct me if I'm wrong), a 2.5" or 3.5" HDD has its own clock
-which is separate from the CPU/chipset.  That is actually how and
-where we get any entropy; I am not at all convinced that we are
-getting any variation from "chaotic air turbulence in the HDD" ---
-that paper was published in 1994, and hard drive technologies have
-changed quite a bit since then, with extra layers of caching, track
-bufers, etc.
+Ok, I see. I was probably asking the wrong question then earlier
+when I tried to find out what this is.
 
-However, where a decade ago the ethernet card probably had its own
-independent clock crystal/oscillator, I'm going to guess that these
-days with SOC's and even on laptops, with ethernet device part of the
-chipset, it is probably being driven off the same master oscillator.
-
-I wonder if there's anyway we can either figure out manually, or
-preferably, automatically at boot time, which devices actually have
-independent clock oscillators.
-
-							- Ted
-
+	Arnd
