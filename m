@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaBEVgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:36:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754459AbaBEVdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:33:36 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/9] HID: add inliners for ll_driver transport-layer callbacks
-Date: Wed,  5 Feb 2014 16:33:16 -0500
-Message-Id: <1391636004-29354-2-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1755908AbaBEVie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:38:34 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57669 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754330AbaBEVib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 16:38:31 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: gregkh@linuxfoundation.org, pavel@ucw.cz, len.brown@intel.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhuangzhi.li@intel.com
+Subject: Re: [PATCH 0/5] Enabling the asynchronous threads for other phases
+Date: Wed, 05 Feb 2014 22:53:01 +0100
+Message-ID: <2360514.bLFmJYMItS@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com>
+References: <1390207479-26064-1-git-send-email-chuansheng.liu@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those callbacks are not mandatory, so it's better to add inliners
-to use them safely.
+On Monday, January 20, 2014 04:44:34 PM Liu, Chuansheng wrote:
+> Hello,
+> 
+> This patch series are for enabling the asynchronous threads for the phases
+> resume_noirq, resume_early, suspend_noirq and suspend_late.
+> 
+> Just like commit 5af84b82701a and 97df8c12995, with async threads it will
+> reduce the system suspending and resuming time significantly.
+> 
+> With these patches, in my test platform, it saved 80% time in resume_noirq
+> phase.
+> 
+> Has done the suspend-resume stress test for a long time, please help to
+> review.
+> 
+> Best Regards,
+> 
+> [PATCH 1/5] PM: Adding two flags for async suspend_noirq and
+> [PATCH 2/5] PM: Enabling the asynchronous threads for resume_noirq
+> [PATCH 3/5] PM: Enabling the asyncronous threads for resume_early
+> [PATCH 4/5] PM: Enabling the asyncronous threads for suspend_noirq
+> [PATCH 5/5] PM: Enabling the asyncronous threads for suspend_late
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- include/linux/hid.h | 45 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+I've applied this to the bleeding-edge branch of the linux-pm.git tree, with
+minor changes related to coding style, white space etc.
 
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 003cc8e..dddcad0 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -680,6 +680,8 @@ struct hid_driver {
-  *	   shouldn't allocate anything to not leak memory
-  * @request: send report request to device (e.g. feature report)
-  * @wait: wait for buffered io to complete (send/recv reports)
-+ * @raw_request: send raw report request to device (e.g. feature report)
-+ * @output_report: send output report to device
-  * @idle: send idle request to device
-  */
- struct hid_ll_driver {
-@@ -974,6 +976,49 @@ static inline void hid_hw_request(struct hid_device *hdev,
- }
- 
- /**
-+ * hid_hw_raw_request - send report request to device
-+ *
-+ * @hdev: hid device
-+ * @reportnum: report ID
-+ * @buf: in/out data to transfer
-+ * @len: length of buf
-+ * @rtype: HID report type
-+ * @reqtype: HID_REQ_GET_REPORT or HID_REQ_SET_REPORT
-+ *
-+ * @return: count of data transfered, negative if error
-+ *
-+ * Same behavior as hid_hw_request, but with raw buffers instead.
-+ */
-+static inline int hid_hw_raw_request(struct hid_device *hdev,
-+				  unsigned char reportnum, __u8 *buf,
-+				  size_t len, unsigned char rtype, int reqtype)
-+{
-+	if (hdev->ll_driver->raw_request)
-+		return hdev->ll_driver->raw_request(hdev, reportnum, buf, len,
-+						    rtype, reqtype);
-+
-+	return -ENOSYS;
-+}
-+
-+/**
-+ * hid_hw_output_report - send output report to device
-+ *
-+ * @hdev: hid device
-+ * @buf: raw data to transfer
-+ * @len: length of buf
-+ *
-+ * @return: count of data transfered, negative if error
-+ */
-+static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
-+					size_t len)
-+{
-+	if (hdev->ll_driver->output_report)
-+		return hdev->ll_driver->output_report(hdev, buf, len);
-+
-+	return -ENOSYS;
-+}
-+
-+/**
-  * hid_hw_idle - send idle request to device
-  *
-  * @hdev: hid device
--- 
-1.8.3.1
+Can you please verify that the bleeding-edge branch works for you as expected?
+
+Rafael
 
