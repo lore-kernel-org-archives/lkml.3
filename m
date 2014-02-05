@@ -1,148 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaBELLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 06:11:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55223 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaBELLg (ORCPT
+	id S1752303AbaBELMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 06:12:10 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53002 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaBELMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 06:11:36 -0500
-Date: Wed, 5 Feb 2014 11:11:33 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: stable@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Anssi Hannula <anssi.hannula@iki.fi>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 1/2] ALSA: hda - hdmi: introduce patch_nvhdmi()
-Message-ID: <20140205111133.GA4539@hercules>
-References: <1391471644-16256-1-git-send-email-swarren@wwwdotorg.org>
+	Wed, 5 Feb 2014 06:12:07 -0500
+Message-ID: <52F21C8A.1040405@gmail.com>
+Date: Wed, 05 Feb 2014 19:12:10 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391471644-16256-1-git-send-email-swarren@wwwdotorg.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
+        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
+	<hskinnemoen@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] include/linux/kprobes.h: move all functions to their
+ matched area
+References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com> <52F1AB18.5040208@gmail.com> <52F1B1CE.2040204@gmail.com> <52F1C579.1080907@hitachi.com> <52F1CBAB.2070106@gmail.com> <52F1ED6D.6060503@hitachi.com>
+In-Reply-To: <52F1ED6D.6060503@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 04:54:03PM -0700, Stephen Warren wrote:
-> From: Anssi Hannula <anssi.hannula@iki.fi>
+On 02/05/2014 03:51 PM, Masami Hiramatsu wrote:
+> (2014/02/05 14:27), Chen Gang wrote:
+>> For dummy functions, it is not a good idea to still use the input
+>> parameters (not a good idea to assume they are still effect).
+>>
+>>  - let kprobe* static inline functions in CONFIG_KPROBES, dummy outside.
+>>
+>>  - let (en/dis)able_jprobe() in CONFIG_KPROBES, dummy outside.
+>>
+>>  - for kretprobe:
+>>
+>>    - let kretprobe_assert() only in CONFIG_KRETPROBES (internal use).
+>>
+>>    - remove kretprobe_inst_table_head() (cannot grep it in kernel wide).
+>>
+>>    - for (en/dis)able_kretprobe():
+>>
+>>        if CONFIG_KRETPROBES enabled, they use (en/dis)able_kprobe().
+>>        else if CONFIG_KPROBES enabled, return -EINVAL (not registered).
+>>        else, return -ENOSYS, just like (en/dis)able_kprobe() have done.
 > 
-> (This is a backport of *part* of upstream 611885bc963a "ALSA: hda -
-> hdmi: Disallow unsupported 2ch remapping on NVIDIA codecs" to stable
-> 3.10 through 3.12. Later stable already contain all of the original
-> patch.)
+> NAK. I don't increase complexity in this header file anymore,
+> unless we have any actual issue with sane usage.
+> 
+> Thank you,
+> 
 
-Thanks for these backports, Stephen.  I'll queue them for the 3.11 kernel
-as well.
-
-Cheers,
---
-Luis
+OK, I can understand, thanks. :-)
 
 
-> Mainline commit 611885bc963a "ALSA: hda - hdmi: Disallow unsupported 2ch
-> remapping on NVIDIA codecs" introduces function patch_nvhdmi(). That
-> function is edited by 75fae117a5db "ALSA: hda/hdmi - allow PIN_OUT to be
-> dynamically enabled". In order to backport the PIN_OUT patch, I am first
-> back-porting just the addition of function patch_nvhdmi(), so that the
-> conflicts applying the PIN_OUT patch are simplified.
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  include/linux/kprobes.h | 136 ++++++++++++++++++++++++++++++++----------------
+>>  1 file changed, 92 insertions(+), 44 deletions(-)
+>>
+>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+>> index 925eaf2..860313d 100644
+>> --- a/include/linux/kprobes.h
+>> +++ b/include/linux/kprobes.h
+>> @@ -129,30 +129,6 @@ struct kprobe {
+>>  				   */
+>>  #define KPROBE_FLAG_FTRACE	8 /* probe is using ftrace */
+>>  
+>> -/* Has this kprobe gone ? */
+>> -static inline int kprobe_gone(struct kprobe *p)
+>> -{
+>> -	return p->flags & KPROBE_FLAG_GONE;
+>> -}
+>> -
+>> -/* Is this kprobe disabled ? */
+>> -static inline int kprobe_disabled(struct kprobe *p)
+>> -{
+>> -	return p->flags & (KPROBE_FLAG_DISABLED | KPROBE_FLAG_GONE);
+>> -}
+>> -
+>> -/* Is this kprobe really running optimized path ? */
+>> -static inline int kprobe_optimized(struct kprobe *p)
+>> -{
+>> -	return p->flags & KPROBE_FLAG_OPTIMIZED;
+>> -}
+>> -
+>> -/* Is this kprobe uses ftrace ? */
+>> -static inline int kprobe_ftrace(struct kprobe *p)
+>> -{
+>> -	return p->flags & KPROBE_FLAG_FTRACE;
+>> -}
+>> -
+>>  /*
+>>   * Special probe type that uses setjmp-longjmp type tricks to resume
+>>   * execution at a specified entry with a matching prototype corresponding
+>> @@ -223,7 +199,42 @@ static inline int kprobes_built_in(void)
+>>  	return 1;
+>>  }
+>>  
+>> +/* Has this kprobe gone ? */
+>> +static inline int kprobe_gone(struct kprobe *p)
+>> +{
+>> +	return p->flags & KPROBE_FLAG_GONE;
+>> +}
+>> +
+>> +/* Is this kprobe disabled ? */
+>> +static inline int kprobe_disabled(struct kprobe *p)
+>> +{
+>> +	return p->flags & (KPROBE_FLAG_DISABLED | KPROBE_FLAG_GONE);
+>> +}
+>> +
+>> +/* Is this kprobe really running optimized path ? */
+>> +static inline int kprobe_optimized(struct kprobe *p)
+>> +{
+>> +	return p->flags & KPROBE_FLAG_OPTIMIZED;
+>> +}
+>> +
+>> +/* Is this kprobe uses ftrace ? */
+>> +static inline int kprobe_ftrace(struct kprobe *p)
+>> +{
+>> +	return p->flags & KPROBE_FLAG_FTRACE;
+>> +}
+>> +
+>>  #ifdef CONFIG_KRETPROBES
+>> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>> +	unsigned long orig_ret_address, unsigned long trampoline_address)
+>> +{
+>> +	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>> +		printk(KERN_ERR
+>> +			"kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>> +			ri->rp, ri->rp->kp.addr);
+>> +		BUG();
+>> +	}
+>> +}
+>> +
+>>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
+>>  				   struct pt_regs *regs);
+>>  extern int arch_trampoline_kprobe(struct kprobe *p);
+>> @@ -240,16 +251,6 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
+>>  
+>>  extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>  
+>> -static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>> -	unsigned long orig_ret_address, unsigned long trampoline_address)
+>> -{
+>> -	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>> -		printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>> -				ri->rp, ri->rp->kp.addr);
+>> -		BUG();
+>> -	}
+>> -}
+>> -
+>>  #ifdef CONFIG_KPROBES_SANITY_TEST
+>>  extern int init_test_probes(void);
+>>  #else
+>> @@ -340,7 +341,6 @@ struct kprobe *get_kprobe(void *addr);
+>>  void kretprobe_hash_lock(struct task_struct *tsk,
+>>  			 struct hlist_head **head, unsigned long *flags);
+>>  void kretprobe_hash_unlock(struct task_struct *tsk, unsigned long *flags);
+>> -struct hlist_head * kretprobe_inst_table_head(struct task_struct *tsk);
+>>  
+>>  /* kprobe_running() will just return the current_kprobe on this CPU */
+>>  static inline struct kprobe *kprobe_running(void)
+>> @@ -384,12 +384,60 @@ int enable_kprobe(struct kprobe *kp);
+>>  
+>>  void dump_kprobe(struct kprobe *kp);
+>>  
+>> +static inline int disable_jprobe(struct jprobe *jp)
+>> +{
+>> +	return disable_kprobe(&jp->kp);
+>> +}
+>> +
+>> +static inline int enable_jprobe(struct jprobe *jp)
+>> +{
+>> +	return enable_kprobe(&jp->kp);
+>> +}
+>> +
+>> +#ifdef CONFIG_KRETPROBES
+>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>> +{
+>> +	return disable_kprobe(&rp->kp);
+>> +}
+>> +
+>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>> +{
+>> +	return enable_kprobe(&rp->kp);
+>> +}
+>> +
+>> +#else /* CONFIG_KRETPROBES */
+>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>> +{
+>> +	return -EINVAL;
+>> +}
+>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>> +{
+>> +	return -EINVAL;
+>> +}
+>> +#endif /* CONFIG_KRETPROBES */
+>> +
+>>  #else /* !CONFIG_KPROBES: */
+>>  
+>>  static inline int kprobes_built_in(void)
+>>  {
+>>  	return 0;
+>>  }
+>> +static inline int kprobe_gone(struct kprobe *p)
+>> +{
+>> +	return 1;
+>> +}
+>> +static inline int kprobe_disabled(struct kprobe *p)
+>> +{
+>> +	return 1;
+>> +}
+>> +static inline int kprobe_optimized(struct kprobe *p)
+>> +{
+>> +	return 0;
+>> +}
+>> +static inline int kprobe_ftrace(struct kprobe *p)
+>> +{
+>> +	return 0;
+>> +}
+>>  static inline int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+>>  {
+>>  	return 0;
+>> @@ -458,22 +506,22 @@ static inline int enable_kprobe(struct kprobe *kp)
+>>  {
+>>  	return -ENOSYS;
+>>  }
+>> -#endif /* CONFIG_KPROBES */
+>> -static inline int disable_kretprobe(struct kretprobe *rp)
+>> +static inline int disable_jprobe(struct jprobe *jp)
+>>  {
+>> -	return disable_kprobe(&rp->kp);
+>> +	return -ENOSYS;
+>>  }
+>> -static inline int enable_kretprobe(struct kretprobe *rp)
+>> +static inline int enable_jprobe(struct jprobe *jp)
+>>  {
+>> -	return enable_kprobe(&rp->kp);
+>> +	return -ENOSYS;
+>>  }
+>> -static inline int disable_jprobe(struct jprobe *jp)
+>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>  {
+>> -	return disable_kprobe(&jp->kp);
+>> +	return -ENOSYS;
+>>  }
+>> -static inline int enable_jprobe(struct jprobe *jp)
+>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>  {
+>> -	return enable_kprobe(&jp->kp);
+>> +	return -ENOSYS;
+>>  }
+>> +#endif /* CONFIG_KPROBES */
+>>  
+>>  #endif /* _LINUX_KPROBES_H */
+>>
 > 
-> Ideally, one might backport all of 611885bc963a. However, that commit
-> doesn't apply to stable kernels, since it relies on a chain of other
-> patches which implement new features.
 > 
-> Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> [swarren, extracted just a small part of the original patch]
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  sound/pci/hda/patch_hdmi.c | 60 ++++++++++++++++++++++++++++------------------
->  1 file changed, 37 insertions(+), 23 deletions(-)
-> 
-> diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-> index f26c42c92db7..aad73a1fc2cd 100644
-> --- a/sound/pci/hda/patch_hdmi.c
-> +++ b/sound/pci/hda/patch_hdmi.c
-> @@ -2560,6 +2560,20 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
->  	return 0;
->  }
->  
-> +static int patch_nvhdmi(struct hda_codec *codec)
-> +{
-> +	struct hdmi_spec *spec;
-> +	int err;
-> +
-> +	err = patch_generic_hdmi(codec);
-> +	if (err)
-> +		return err;
-> +
-> +	spec = codec->spec;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * ATI-specific implementations
->   *
-> @@ -2632,30 +2646,30 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
->  { .id = 0x10de0005, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
->  { .id = 0x10de0006, .name = "MCP77/78 HDMI",	.patch = patch_nvhdmi_8ch_7x },
->  { .id = 0x10de0007, .name = "MCP79/7A HDMI",	.patch = patch_nvhdmi_8ch_7x },
-> -{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_generic_hdmi },
-> +{ .id = 0x10de000a, .name = "GPU 0a HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de000b, .name = "GPU 0b HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de000c, .name = "MCP89 HDMI",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de000d, .name = "GPU 0d HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0010, .name = "GPU 10 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0011, .name = "GPU 11 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0012, .name = "GPU 12 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0013, .name = "GPU 13 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0014, .name = "GPU 14 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0015, .name = "GPU 15 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0016, .name = "GPU 16 HDMI/DP",	.patch = patch_nvhdmi },
->  /* 17 is known to be absent */
-> -{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
-> -{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
-> +{ .id = 0x10de0018, .name = "GPU 18 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0019, .name = "GPU 19 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de001a, .name = "GPU 1a HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de001b, .name = "GPU 1b HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de001c, .name = "GPU 1c HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0040, .name = "GPU 40 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0041, .name = "GPU 41 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0042, .name = "GPU 42 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_nvhdmi },
-> +{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_nvhdmi },
->  { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
->  { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
->  { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
-> -- 
-> 1.8.1.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share and attitude like air, water and life which God blessed
