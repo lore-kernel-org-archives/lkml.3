@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422AbaBEIU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:20:56 -0500
-Received: from www84.your-server.de ([213.133.104.84]:36029 "EHLO
+	id S932483AbaBEIVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:21:21 -0500
+Received: from www84.your-server.de ([213.133.104.84]:36026 "EHLO
 	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085AbaBEITg (ORCPT
+	with ESMTP id S1754080AbaBEITf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:19:36 -0500
+	Wed, 5 Feb 2014 03:19:35 -0500
 From: stefani@seibold.net
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
@@ -15,12 +15,10 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         andriy.shevchenko@linux.intel.com
 Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
         Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v12 1/9] Make vsyscall_gtod_data handling x86 generic
-Date: Wed,  5 Feb 2014 09:19:56 +0100
-Message-Id: <1391588404-28147-2-git-send-email-stefani@seibold.net>
+Subject: [PATCH v12 0/9] Add 32 bit VDSO time function support
+Date: Wed,  5 Feb 2014 09:19:55 +0100
+Message-Id: <1391588404-28147-1-git-send-email-stefani@seibold.net>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391588404-28147-1-git-send-email-stefani@seibold.net>
-References: <1391588404-28147-1-git-send-email-stefani@seibold.net>
 X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,348 +26,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefani Seibold <stefani@seibold.net>
 
-This patch move the vsyscall_gtod_data handling out of vsyscall_64.c
-into an additonal file vsyscall_gtod.c to make the functionality
-available for x86 32 bit kernel.
+This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
+and vdso_time() to the 32 bit VDSO.
 
-It also adds a new vsyscall_32.c which setup the VVAR page.
+The reason to do this was to get a fast reliable time stamp. Many developers
+uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
+time functions a fast and a reliable way, because the kernel knows the
+best time source and the P- and C-state of the CPU.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/Kconfig                   |  4 +--
- arch/x86/include/asm/clocksource.h |  4 ---
- arch/x86/include/asm/fixmap.h      |  2 ++
- arch/x86/include/asm/vvar.h        |  6 ++++
- arch/x86/kernel/Makefile           |  3 +-
- arch/x86/kernel/hpet.c             |  4 ---
- arch/x86/kernel/setup.c            |  2 --
- arch/x86/kernel/tsc.c              |  2 --
- arch/x86/kernel/vmlinux.lds.S      |  3 --
- arch/x86/kernel/vsyscall_32.c      | 24 +++++++++++++++
- arch/x86/kernel/vsyscall_64.c      | 44 ----------------------------
- arch/x86/kernel/vsyscall_gtod.c    | 60 ++++++++++++++++++++++++++++++++++++++
- 12 files changed, 96 insertions(+), 62 deletions(-)
- create mode 100644 arch/x86/kernel/vsyscall_32.c
- create mode 100644 arch/x86/kernel/vsyscall_gtod.c
+The helper library to use the VDSO functions can be download at
+http://http://seibold.net/vdso.c
+The libary is very small, only 228 lines of code. Compile it with
+gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
+and use it with LD_PRELOAD=<path>/libvdso.so
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 940e50e..b556f00 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -107,9 +107,9 @@ config X86
- 	select HAVE_ARCH_SOFT_DIRTY
- 	select CLOCKSOURCE_WATCHDOG
- 	select GENERIC_CLOCKEVENTS
--	select ARCH_CLOCKSOURCE_DATA if X86_64
-+	select ARCH_CLOCKSOURCE_DATA
- 	select GENERIC_CLOCKEVENTS_BROADCAST if X86_64 || (X86_32 && X86_LOCAL_APIC)
--	select GENERIC_TIME_VSYSCALL if X86_64
-+	select GENERIC_TIME_VSYSCALL
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-diff --git a/arch/x86/include/asm/clocksource.h b/arch/x86/include/asm/clocksource.h
-index 16a57f4..eda81dc 100644
---- a/arch/x86/include/asm/clocksource.h
-+++ b/arch/x86/include/asm/clocksource.h
-@@ -3,8 +3,6 @@
- #ifndef _ASM_X86_CLOCKSOURCE_H
- #define _ASM_X86_CLOCKSOURCE_H
- 
--#ifdef CONFIG_X86_64
--
- #define VCLOCK_NONE 0  /* No vDSO clock available.	*/
- #define VCLOCK_TSC  1  /* vDSO should use vread_tsc.	*/
- #define VCLOCK_HPET 2  /* vDSO should use vread_hpet.	*/
-@@ -14,6 +12,4 @@ struct arch_clocksource_data {
- 	int vclock_mode;
- };
- 
--#endif /* CONFIG_X86_64 */
--
- #endif /* _ASM_X86_CLOCKSOURCE_H */
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 7252cd3..094d0cc 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -75,6 +75,8 @@ enum fixed_addresses {
- #ifdef CONFIG_X86_32
- 	FIX_HOLE,
- 	FIX_VDSO,
-+	VVAR_PAGE,
-+	VSYSCALL_HPET,
- #else
- 	VSYSCALL_LAST_PAGE,
- 	VSYSCALL_FIRST_PAGE = VSYSCALL_LAST_PAGE
-diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index d76ac40..7cd69af 100644
---- a/arch/x86/include/asm/vvar.h
-+++ b/arch/x86/include/asm/vvar.h
-@@ -17,7 +17,13 @@
-  */
- 
- /* Base address of vvars.  This is not ABI. */
-+#ifdef CONFIG_X86_64
- #define VVAR_ADDRESS (-10*1024*1024 - 4096)
-+#else
-+extern char __vvar_page;
-+
-+#define VVAR_ADDRESS (&__vvar_page)
-+#endif
- 
- #if defined(__VVAR_KERNEL_LDS)
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index cb648c8..3282eda 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -26,7 +26,8 @@ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
- obj-y			+= probe_roms.o
- obj-$(CONFIG_X86_32)	+= i386_ksyms_32.o
- obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
--obj-y			+= syscall_$(BITS).o
-+obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
-+obj-$(CONFIG_X86_32)	+= vsyscall_32.o
- obj-$(CONFIG_X86_64)	+= vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
- obj-$(CONFIG_SYSFS)	+= ksysfs.o
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index da85a8e..54263f0 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -74,9 +74,7 @@ static inline void hpet_writel(unsigned int d, unsigned int a)
- static inline void hpet_set_mapping(void)
- {
- 	hpet_virt_address = ioremap_nocache(hpet_address, HPET_MMAP_SIZE);
--#ifdef CONFIG_X86_64
- 	__set_fixmap(VSYSCALL_HPET, hpet_address, PAGE_KERNEL_VVAR_NOCACHE);
--#endif
- }
- 
- static inline void hpet_clear_mapping(void)
-@@ -752,9 +750,7 @@ static struct clocksource clocksource_hpet = {
- 	.mask		= HPET_MASK,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- 	.resume		= hpet_resume_counter,
--#ifdef CONFIG_X86_64
- 	.archdata	= { .vclock_mode = VCLOCK_HPET },
--#endif
- };
- 
- static int hpet_clocksource_register(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 06853e6..56ff330 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1182,9 +1182,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	tboot_probe();
- 
--#ifdef CONFIG_X86_64
- 	map_vsyscall();
--#endif
- 
- 	generic_apic_probe();
- 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 19e5adb..f49d1a2 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -988,9 +988,7 @@ static struct clocksource clocksource_tsc = {
- 	.mask                   = CLOCKSOURCE_MASK(64),
- 	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
- 				  CLOCK_SOURCE_MUST_VERIFY,
--#ifdef CONFIG_X86_64
- 	.archdata               = { .vclock_mode = VCLOCK_TSC },
--#endif
- };
- 
- void mark_tsc_unstable(char *reason)
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index da6b35a..1d4897b 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -147,7 +147,6 @@ SECTIONS
- 		_edata = .;
- 	} :data
- 
--#ifdef CONFIG_X86_64
- 
- 	. = ALIGN(PAGE_SIZE);
- 	__vvar_page = .;
-@@ -169,8 +168,6 @@ SECTIONS
- 
-        . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
- 
--#endif /* CONFIG_X86_64 */
--
- 	/* Init code and data - will be freed after init */
- 	. = ALIGN(PAGE_SIZE);
- 	.init.begin : AT(ADDR(.init.begin) - LOAD_OFFSET) {
-diff --git a/arch/x86/kernel/vsyscall_32.c b/arch/x86/kernel/vsyscall_32.c
-new file mode 100644
-index 0000000..f541dfa
---- /dev/null
-+++ b/arch/x86/kernel/vsyscall_32.c
-@@ -0,0 +1,24 @@
-+/*
-+ *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ *
-+ *  Modified for x86 32 bit arch by Stefani Seibold <stefani@seibold.net>
-+ *
-+ *  Thanks to hpa@transmeta.com for some useful hint.
-+ *  Special thanks to Ingo Molnar for his early experience with
-+ *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ *
-+ */
-+
-+#include <asm/vsyscall.h>
-+#include <asm/pgtable.h>
-+#include <asm/fixmap.h>
-+
-+void __init map_vsyscall(void)
-+{
-+	extern char __vvar_page;
-+	unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
-+
-+	__set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
-+}
-+
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 1f96f93..50622ed 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -47,14 +47,12 @@
- #include <asm/segment.h>
- #include <asm/desc.h>
- #include <asm/topology.h>
--#include <asm/vgtod.h>
- #include <asm/traps.h>
- 
- #define CREATE_TRACE_POINTS
- #include "vsyscall_trace.h"
- 
- DEFINE_VVAR(int, vgetcpu_mode);
--DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
- 
- static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
- 
-@@ -77,48 +75,6 @@ static int __init vsyscall_setup(char *str)
- }
- early_param("vsyscall", vsyscall_setup);
- 
--void update_vsyscall_tz(void)
--{
--	vsyscall_gtod_data.sys_tz = sys_tz;
--}
--
--void update_vsyscall(struct timekeeper *tk)
--{
--	struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
--
--	write_seqcount_begin(&vdata->seq);
--
--	/* copy vsyscall data */
--	vdata->clock.vclock_mode	= tk->clock->archdata.vclock_mode;
--	vdata->clock.cycle_last		= tk->clock->cycle_last;
--	vdata->clock.mask		= tk->clock->mask;
--	vdata->clock.mult		= tk->mult;
--	vdata->clock.shift		= tk->shift;
--
--	vdata->wall_time_sec		= tk->xtime_sec;
--	vdata->wall_time_snsec		= tk->xtime_nsec;
--
--	vdata->monotonic_time_sec	= tk->xtime_sec
--					+ tk->wall_to_monotonic.tv_sec;
--	vdata->monotonic_time_snsec	= tk->xtime_nsec
--					+ (tk->wall_to_monotonic.tv_nsec
--						<< tk->shift);
--	while (vdata->monotonic_time_snsec >=
--					(((u64)NSEC_PER_SEC) << tk->shift)) {
--		vdata->monotonic_time_snsec -=
--					((u64)NSEC_PER_SEC) << tk->shift;
--		vdata->monotonic_time_sec++;
--	}
--
--	vdata->wall_time_coarse.tv_sec	= tk->xtime_sec;
--	vdata->wall_time_coarse.tv_nsec	= (long)(tk->xtime_nsec >> tk->shift);
--
--	vdata->monotonic_time_coarse	= timespec_add(vdata->wall_time_coarse,
--							tk->wall_to_monotonic);
--
--	write_seqcount_end(&vdata->seq);
--}
--
- static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 			      const char *message)
- {
-diff --git a/arch/x86/kernel/vsyscall_gtod.c b/arch/x86/kernel/vsyscall_gtod.c
-new file mode 100644
-index 0000000..91862a4
---- /dev/null
-+++ b/arch/x86/kernel/vsyscall_gtod.c
-@@ -0,0 +1,60 @@
-+/*
-+ *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ *
-+ *  Modified for x86 32 bit architecture by
-+ *  Stefani Seibold <stefani@seibold.net>
-+ *
-+ *  Thanks to hpa@transmeta.com for some useful hint.
-+ *  Special thanks to Ingo Molnar for his early experience with
-+ *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ *
-+ */
-+
-+#include <linux/timekeeper_internal.h>
-+#include <asm/vgtod.h>
-+
-+DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data);
-+
-+void update_vsyscall_tz(void)
-+{
-+	vsyscall_gtod_data.sys_tz = sys_tz;
-+}
-+
-+void update_vsyscall(struct timekeeper *tk)
-+{
-+	struct vsyscall_gtod_data *vdata = &vsyscall_gtod_data;
-+
-+	write_seqcount_begin(&vdata->seq);
-+
-+	/* copy vsyscall data */
-+	vdata->clock.vclock_mode	= tk->clock->archdata.vclock_mode;
-+	vdata->clock.cycle_last		= tk->clock->cycle_last;
-+	vdata->clock.mask		= tk->clock->mask;
-+	vdata->clock.mult		= tk->mult;
-+	vdata->clock.shift		= tk->shift;
-+
-+	vdata->wall_time_sec		= tk->xtime_sec;
-+	vdata->wall_time_snsec		= tk->xtime_nsec;
-+
-+	vdata->monotonic_time_sec	= tk->xtime_sec
-+					+ tk->wall_to_monotonic.tv_sec;
-+	vdata->monotonic_time_snsec	= tk->xtime_nsec
-+					+ (tk->wall_to_monotonic.tv_nsec
-+						<< tk->shift);
-+	while (vdata->monotonic_time_snsec >=
-+					(((u64)NSEC_PER_SEC) << tk->shift)) {
-+		vdata->monotonic_time_snsec -=
-+					((u64)NSEC_PER_SEC) << tk->shift;
-+		vdata->monotonic_time_sec++;
-+	}
-+
-+	vdata->wall_time_coarse.tv_sec	= tk->xtime_sec;
-+	vdata->wall_time_coarse.tv_nsec	= (long)(tk->xtime_nsec >> tk->shift);
-+
-+	vdata->monotonic_time_coarse	= timespec_add(vdata->wall_time_coarse,
-+							tk->wall_to_monotonic);
-+
-+	write_seqcount_end(&vdata->seq);
-+}
-+
--- 
-1.8.5.3
+This kind of helper must be integrated into glibc, for x86 64 bit and
+PowerPC it is already there.
 
+Some linux 32 bit kernel benchmark results (all measurements are in nano
+seconds):
+
+Intel(R) Celeron(TM) CPU 400MHz
+
+Average time kernel call:
+ gettimeofday(): 1039
+ clock_gettime(): 1578
+ time(): 526
+Average time VDSO call:
+ gettimeofday(): 378
+ clock_gettime(): 303
+ time(): 60
+
+Celeron(R) Dual-Core CPU T3100 1.90GHz
+
+Average time kernel call:
+ gettimeofday(): 209
+ clock_gettime(): 406
+ time(): 135
+Average time VDSO call:
+ gettimeofday(): 51
+ clock_gettime(): 43
+ time(): 10
+
+So you can see a performance increase between 4 and 13, depending on the
+CPU and the function.
+
+The address layout of the VDSO has changed, because there is no fixed
+address space available on a x86 32 bit kernel, despite the name. Because
+someone decided to add an offset to the __FIXADDR_TOP for virtualization.
+
+Also the IA32 Emulation uses the whole 4 GB address space, so there is no
+fixed address available.
+
+This was the reason not depend on this kind of address and change the layout
+of the VDSO. The VDSO for a 32 bit application has now three pages:
+
+^ Higher Address
+|
++----------------------------------------+
++ VDSO page (includes code) ro+x         +
++----------------------------------------+
++ VVAR page (export kernel variables) ro +
++----------------------------------------+
++ HPET page (mapped registers) ro 
++----------------------------------------+
+|
+^ Lower Address
+
+The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
+HPET page are mapped before.
+
+In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
+So this decrease the available logical address room by 2 pages.
+
+The patch is against kernel 3.14 (e7651b819e90da924991d727d3c007200a18670d)
+
+Changelog:
+25.11.2012 - first release and proof of concept for linux 3.4
+11.12.2012 - Port to linux 3.7 and code cleanup
+12.12.2012 - fixes suggested by Andy Lutomirski
+           - fixes suggested by John Stultz
+           - use call VDSO32_vsyscall instead of int 80
+           - code cleanup
+17.12.2012 - support for IA32_EMULATION, this includes
+             - code cleanup
+             - include cleanup to fix compile warnings and errors
+             - move out seqcount from seqlock, enable use in VDSO
+             - map FIXMAP and HPET into the 32 bit address space
+18.12.2012 - split into separate patches
+30.01.2014 - revamp the code
+             - code clean up
+             - VDSO layout changed
+             - no fixed addresses
+             - port to 3.14
+01.02.2014 - code cleanup
+02.02.2014 - code cleanup
+             - split into more patches
+             - use HPET_COUNTER instead of hard coded value
+             - fix changelog to the right year ;-)
+02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
+             full compatible.
+03.02.2014 - code cleanup
+             - fix comment
+             - fix ABI break in vdso32.lds.S
+04.02.2014 - revamp IA32 emulation support
+             - introduce VVAR macro
+             - rearranged vsyscall_gtod_data struture for IA32 emulation support
+	     - code cleanup
+05.02.2014 - revamp IA32 emulation support
+             - replace seqcount_t by an unsigned, to make the vsyscall_gtod_data
+               structure independed of kernel config and functions.
