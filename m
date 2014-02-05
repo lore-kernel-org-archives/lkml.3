@@ -1,91 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaBEVen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:34:43 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57704 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754347AbaBEVej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:34:39 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI hotplug: Fix panic on eject to ejected device
-Date: Wed, 05 Feb 2014 22:49:09 +0100
-Message-ID: <1739091.GnvPn9iv7v@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <1391615569.5612.15.camel@misato.fc.hp.com>
-References: <1391561308-18893-1-git-send-email-toshi.kani@hp.com> <3540455.FvCglr7S6V@vostro.rjw.lan> <1391615569.5612.15.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754655AbaBEVds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:33:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753686AbaBEVdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 16:33:40 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 8/9] HID: introduce helper to access hid_output_raw_report()
+Date: Wed,  5 Feb 2014 16:33:23 -0500
+Message-Id: <1391636004-29354-9-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 05, 2014 08:52:49 AM Toshi Kani wrote:
-> On Wed, 2014-02-05 at 11:05 +0000, Rafael J. Wysocki wrote:
-> > On Tuesday, February 04, 2014 05:48:28 PM Toshi Kani wrote:
-> > > When an eject request is sent to an ejected ACPI device, the following
-> > > panic occurs:
-> > > 
-> > >  ACPI: \_SB_.SCK3.CPU3: ACPI_NOTIFY_EJECT_REQUEST event
-> > >  BUG: unable to handle kernel NULL pointer dereference at 0000000000000070
-> > >  IP: [<ffffffff813a7cfe>] acpi_device_hotplug+0x10b/0x33b
-> > > 	:
-> > >  Call Trace:
-> > >  [<ffffffff813a24da>] acpi_hotplug_work_fn+0x1c/0x27
-> > >  [<ffffffff8109cbe5>] process_one_work+0x175/0x430
-> > >  [<ffffffff8109d7db>] worker_thread+0x11b/0x3a0
-> > > 
-> > > This is becase device->handler is NULL in acpi_device_hotplug().
-> > > This case was used to fail in acpi_hotplug_notify_cb() as the target
-> > > had no acpi_deivce.  However, acpi_device now exists after ejection.
-> > > 
-> > > Added a check to verify if acpi_device->handler is valid for an
-> > > eject request in acpi_hotplug_notify_cb().  Note that handler passed
-> > > from an argument is still valid while acpi_device->handler is NULL.
-> > > 
-> > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > ---
-> > >  drivers/acpi/scan.c |    5 +++--
-> > >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > > index 7384158..5cf6adf 100644
-> > > --- a/drivers/acpi/scan.c
-> > > +++ b/drivers/acpi/scan.c
-> > > @@ -484,7 +484,6 @@ static void acpi_device_hotplug(void *data, u32 src)
-> > >  static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
-> > >  {
-> > >  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> > > -	struct acpi_scan_handler *handler = data;
-> > >  	struct acpi_device *adev;
-> > >  	acpi_status status;
-> > >  
-> > > @@ -500,7 +499,9 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
-> > >  		break;
-> > >  	case ACPI_NOTIFY_EJECT_REQUEST:
-> > >  		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
-> > > -		if (!handler->hotplug.enabled) {
-> > > +		if (!adev->handler)
-> > > +			goto err_out;
-> > > +		if (!adev->handler->hotplug.enabled) {
-> > >  			acpi_handle_err(handle, "Eject disabled\n");
-> > >  			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> > >  			goto err_out;
-> > 
-> > OK, I'll queue this up for the next pull request, but it actually isn't safe,
-> > because adev is not really guaranteed to exist here (it might have been deleted
-> > already when this function is running).
-> 
-> It should be safe since acpi_bus_get_device() fails in this function
-> when adev does not exist. 
+Add a helper to access hdev->hid_output_raw_report().
 
-Unfortunately, the object pointed to by adev may very well cease to exist after
-the acpi_bus_get_device() has returned and before the subsequent dereference of
-adev.
+To convert the drivers, use the following snippets:
 
-Rafael
+for i in drivers/hid/*.c
+do
+  sed -i.bak "s/[^ \t]*->hid_output_raw_report(/hid_output_raw_report(/g" $i
+done
+
+Then manually fix for checkpatch.pl
+
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/hid-input.c        |  2 +-
+ drivers/hid/hid-lg.c           |  6 ++++--
+ drivers/hid/hid-magicmouse.c   |  2 +-
+ drivers/hid/hid-sony.c         |  6 +++---
+ drivers/hid/hid-thingm.c       |  4 ++--
+ drivers/hid/hid-wacom.c        | 16 +++++++---------
+ drivers/hid/hid-wiimote-core.c |  2 +-
+ drivers/hid/hidraw.c           |  2 +-
+ include/linux/hid.h            | 16 ++++++++++++++++
+ 9 files changed, 36 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 6253e95..eb00a5b 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -1187,7 +1187,7 @@ static void hidinput_led_worker(struct work_struct *work)
+ 
+ 	hid_output_report(report, buf);
+ 	/* synchronous output report */
+-	hid->hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
++	hid_output_raw_report(hid, buf, len, HID_OUTPUT_REPORT);
+ 	kfree(buf);
+ }
+ 
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index 9fe9d4a..76ed7e5 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -692,7 +692,8 @@ static int lg_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	if (hdev->product == USB_DEVICE_ID_LOGITECH_WII_WHEEL) {
+ 		unsigned char buf[] = { 0x00, 0xAF,  0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+ 
+-		ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
++		ret = hid_output_raw_report(hdev, buf, sizeof(buf),
++					    HID_FEATURE_REPORT);
+ 
+ 		if (ret >= 0) {
+ 			/* insert a little delay of 10 jiffies ~ 40ms */
+@@ -704,7 +705,8 @@ static int lg_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 			buf[1] = 0xB2;
+ 			get_random_bytes(&buf[2], 2);
+ 
+-			ret = hdev->hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
++			ret = hid_output_raw_report(hdev, buf, sizeof(buf),
++						    HID_FEATURE_REPORT);
+ 		}
+ 	}
+ 
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 3b43d1c..cb5db3a 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -538,7 +538,7 @@ static int magicmouse_probe(struct hid_device *hdev,
+ 	 * but there seems to be no other way of switching the mode.
+ 	 * Thus the super-ugly hacky success check below.
+ 	 */
+-	ret = hdev->hid_output_raw_report(hdev, feature, sizeof(feature),
++	ret = hid_output_raw_report(hdev, feature, sizeof(feature),
+ 			HID_FEATURE_REPORT);
+ 	if (ret != -EIO && ret != sizeof(feature)) {
+ 		hid_err(hdev, "unable to request touch data (%d)\n", ret);
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index b51db79..d275c0d 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -824,7 +824,8 @@ static int sixaxis_set_operational_usb(struct hid_device *hdev)
+ static int sixaxis_set_operational_bt(struct hid_device *hdev)
+ {
+ 	unsigned char buf[] = { 0xf4,  0x42, 0x03, 0x00, 0x00 };
+-	return hdev->hid_output_raw_report(hdev, buf, sizeof(buf), HID_FEATURE_REPORT);
++	return hid_output_raw_report(hdev, buf, sizeof(buf),
++				     HID_FEATURE_REPORT);
+ }
+ 
+ static void buzz_set_leds(struct hid_device *hdev, const __u8 *leds)
+@@ -1046,8 +1047,7 @@ static void sixaxis_state_worker(struct work_struct *work)
+ 	buf[10] |= sc->led_state[2] << 3;
+ 	buf[10] |= sc->led_state[3] << 4;
+ 
+-	sc->hdev->hid_output_raw_report(sc->hdev, buf, sizeof(buf),
+-					HID_OUTPUT_REPORT);
++	hid_output_raw_report(sc->hdev, buf, sizeof(buf), HID_OUTPUT_REPORT);
+ }
+ 
+ static void dualshock4_state_worker(struct work_struct *work)
+diff --git a/drivers/hid/hid-thingm.c b/drivers/hid/hid-thingm.c
+index 99342cf..7dd3197 100644
+--- a/drivers/hid/hid-thingm.c
++++ b/drivers/hid/hid-thingm.c
+@@ -48,8 +48,8 @@ static int blink1_send_command(struct blink1_data *data,
+ 			buf[0], buf[1], buf[2], buf[3], buf[4],
+ 			buf[5], buf[6], buf[7], buf[8]);
+ 
+-	ret = data->hdev->hid_output_raw_report(data->hdev, buf,
+-			BLINK1_CMD_SIZE, HID_FEATURE_REPORT);
++	ret = hid_output_raw_report(data->hdev, buf, BLINK1_CMD_SIZE,
++				    HID_FEATURE_REPORT);
+ 
+ 	return ret < 0 ? ret : 0;
+ }
+diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+index 60c75dc..c720db9 100644
+--- a/drivers/hid/hid-wacom.c
++++ b/drivers/hid/hid-wacom.c
+@@ -128,8 +128,7 @@ static void wacom_set_image(struct hid_device *hdev, const char *image,
+ 
+ 	rep_data[0] = WAC_CMD_ICON_START_STOP;
+ 	rep_data[1] = 0;
+-	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+-				HID_FEATURE_REPORT);
++	ret = hid_output_raw_report(hdev, rep_data, 2, HID_FEATURE_REPORT);
+ 	if (ret < 0)
+ 		goto err;
+ 
+@@ -143,15 +142,14 @@ static void wacom_set_image(struct hid_device *hdev, const char *image,
+ 			rep_data[j + 3] = p[(i << 6) + j];
+ 
+ 		rep_data[2] = i;
+-		ret = hdev->hid_output_raw_report(hdev, rep_data, 67,
++		ret = hid_output_raw_report(hdev, rep_data, 67,
+ 					HID_FEATURE_REPORT);
+ 	}
+ 
+ 	rep_data[0] = WAC_CMD_ICON_START_STOP;
+ 	rep_data[1] = 0;
+ 
+-	ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
+-				HID_FEATURE_REPORT);
++	ret = hid_output_raw_report(hdev, rep_data, 2, HID_FEATURE_REPORT);
+ 
+ err:
+ 	return;
+@@ -183,7 +181,7 @@ static void wacom_leds_set_brightness(struct led_classdev *led_dev,
+ 		buf[3] = value;
+ 		/* use fixed brightness for OLEDs */
+ 		buf[4] = 0x08;
+-		hdev->hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
++		hid_output_raw_report(hdev, buf, 9, HID_FEATURE_REPORT);
+ 		kfree(buf);
+ 	}
+ 
+@@ -339,7 +337,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
+ 		rep_data[0] = 0x03 ; rep_data[1] = 0x00;
+ 		limit = 3;
+ 		do {
+-			ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
++			ret = hid_output_raw_report(hdev, rep_data, 2,
+ 					HID_FEATURE_REPORT);
+ 		} while (ret < 0 && limit-- > 0);
+ 
+@@ -352,7 +350,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
+ 			rep_data[1] = 0x00;
+ 			limit = 3;
+ 			do {
+-				ret = hdev->hid_output_raw_report(hdev,
++				ret = hid_output_raw_report(hdev,
+ 					rep_data, 2, HID_FEATURE_REPORT);
+ 			} while (ret < 0 && limit-- > 0);
+ 
+@@ -378,7 +376,7 @@ static void wacom_set_features(struct hid_device *hdev, u8 speed)
+ 		rep_data[0] = 0x03;
+ 		rep_data[1] = wdata->features;
+ 
+-		ret = hdev->hid_output_raw_report(hdev, rep_data, 2,
++		ret = hid_output_raw_report(hdev, rep_data, 2,
+ 					HID_FEATURE_REPORT);
+ 		if (ret >= 0)
+ 			wdata->high_speed = speed;
+diff --git a/drivers/hid/hid-wiimote-core.c b/drivers/hid/hid-wiimote-core.c
+index abb20db..d7dc6c5b 100644
+--- a/drivers/hid/hid-wiimote-core.c
++++ b/drivers/hid/hid-wiimote-core.c
+@@ -35,7 +35,7 @@ static int wiimote_hid_send(struct hid_device *hdev, __u8 *buffer,
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-	ret = hdev->hid_output_raw_report(hdev, buf, count, HID_OUTPUT_REPORT);
++	ret = hid_output_raw_report(hdev, buf, count, HID_OUTPUT_REPORT);
+ 
+ 	kfree(buf);
+ 	return ret;
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index 4b2dc95..f8708c9 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -153,7 +153,7 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer,
+ 		goto out_free;
+ 	}
+ 
+-	ret = dev->hid_output_raw_report(dev, buf, count, report_type);
++	ret = hid_output_raw_report(dev, buf, count, report_type);
+ out_free:
+ 	kfree(buf);
+ out:
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index c56681a..a837ede 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -1012,6 +1012,22 @@ static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
+ }
+ 
+ /**
++ * hid_output_raw_report - send an output or a feature report to the device
++ *
++ * @hdev: hid device
++ * @buf: raw data to transfer
++ * @len: length of buf
++ * @report_type: HID_FEATURE_REPORT or HID_OUTPUT_REPORT
++ *
++ * @return: count of data transfered, negative if error
++ */
++static inline int hid_output_raw_report(struct hid_device *hdev, __u8 *buf,
++					size_t len, unsigned char report_type)
++{
++	return hdev->hid_output_raw_report(hdev, buf, len, report_type);
++}
++
++/**
+  * hid_hw_idle - send idle request to device
+  *
+  * @hdev: hid device
+-- 
+1.8.3.1
 
