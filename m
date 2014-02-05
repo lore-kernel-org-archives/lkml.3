@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaBEUE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:04:27 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:47980 "EHLO
+	id S1754208AbaBEUEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:04:37 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47984 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaBEUEW (ORCPT
+	with ESMTP id S1751860AbaBEUEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:04:22 -0500
+	Wed, 5 Feb 2014 15:04:32 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+CC: Paolo Bonzini <pbonzini@redhat.com>, <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <JBottomley@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 033/213] netfilter: nf_ct_ipv4: packets with wrong ihl are invalid
-Date: Wed, 5 Feb 2014 14:59:48 -0500
-Message-ID: <1391630568-49251-34-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 010/213] block: add and use scsi_blk_cmd_ioctl
+Date: Wed, 5 Feb 2014 14:59:25 -0500
+Message-ID: <1391630568-49251-11-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,54 +34,162 @@ From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 07153c6ec074257ade76a461429b567cff2b3a1e upstream.
+commit 577ebb374c78314ac4617242f509e2f5e7156649 upstream.
 
-It was reported that the Linux kernel sometimes logs:
+Introduce a wrapper around scsi_cmd_ioctl that takes a block device.
 
-klogd: [2629147.402413] kernel BUG at net / netfilter /
-nf_conntrack_proto_tcp.c: 447!
-klogd: [1072212.887368] kernel BUG at net / netfilter /
-nf_conntrack_proto_tcp.c: 392
+The function will then be enhanced to detect partition block devices
+and, in that case, subject the ioctls to whitelisting.
 
-ipv4_get_l4proto() in nf_conntrack_l3proto_ipv4.c and tcp_error() in
-nf_conntrack_proto_tcp.c should catch malformed packets, so the errors
-at the indicated lines - TCP options parsing - should not happen.
-However, tcp_error() relies on the "dataoff" offset to the TCP header,
-calculated by ipv4_get_l4proto().  But ipv4_get_l4proto() does not check
-bogus ihl values in IPv4 packets, which then can slip through tcp_error()
-and get caught at the TCP options parsing routines.
-
-The patch fixes ipv4_get_l4proto() by invalidating packets with bogus
-ihl value.
-
-The patch closes netfilter bugzilla id 771.
-
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: James Bottomley <JBottomley@parallels.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ block/scsi_ioctl.c             | 7 +++++++
+ drivers/block/cciss.c          | 6 +++---
+ drivers/block/ub.c             | 3 +--
+ drivers/block/virtio_blk.c     | 4 ++--
+ drivers/cdrom/cdrom.c          | 3 +--
+ drivers/ide/ide-floppy_ioctl.c | 3 +--
+ drivers/scsi/sd.c              | 2 +-
+ include/linux/blkdev.h         | 2 ++
+ 8 files changed, 18 insertions(+), 12 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-index 2bb1f87051c4..a0af7a2d6117 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-@@ -84,6 +84,14 @@ static int ipv4_get_l4proto(const struct sk_buff *skb, unsigned int nhoff,
- 	*dataoff = nhoff + (iph->ihl << 2);
- 	*protonum = iph->protocol;
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 4f4230b79bb6..57ac93754841 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -691,6 +691,13 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
+ }
+ EXPORT_SYMBOL(scsi_cmd_ioctl);
  
-+	/* Check bogus IP headers */
-+	if (*dataoff > skb->len) {
-+		pr_debug("nf_conntrack_ipv4: bogus IPv4 packet: "
-+			 "nhoff %u, ihl %u, skblen %u\n",
-+			 nhoff, iph->ihl << 2, skb->len);
-+		return -NF_ACCEPT;
-+	}
++int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
++		       unsigned int cmd, void __user *arg)
++{
++	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
++}
++EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
 +
- 	return NF_ACCEPT;
+ static int __init blk_scsi_ioctl_init(void)
+ {
+ 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index eb5ff0531cfb..54bad7584ea4 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1652,7 +1652,7 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 			return status;
+ 		}
+ 
+-	/* scsi_cmd_ioctl handles these, below, though some are not */
++	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
+ 	/* very meaningful for cciss.  SG_IO is the main one people want. */
+ 
+ 	case SG_GET_VERSION_NUM:
+@@ -1663,9 +1663,9 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 	case SG_EMULATED_HOST:
+ 	case SG_IO:
+ 	case SCSI_IOCTL_SEND_COMMAND:
+-		return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
++		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 
+-	/* scsi_cmd_ioctl would normally handle these, below, but */
++	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
+ 	/* they aren't a good fit for cciss, as CD-ROMs are */
+ 	/* not supported, and we don't have any bus/target/lun */
+ 	/* which we present to the kernel. */
+diff --git a/drivers/block/ub.c b/drivers/block/ub.c
+index 0536b5b29adc..1c1533a59c4d 100644
+--- a/drivers/block/ub.c
++++ b/drivers/block/ub.c
+@@ -1727,10 +1727,9 @@ static int ub_bd_release(struct gendisk *disk, fmode_t mode)
+ static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
+     unsigned int cmd, unsigned long arg)
+ {
+-	struct gendisk *disk = bdev->bd_disk;
+ 	void __user *usermem = (void __user *) arg;
+ 
+-	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, usermem);
++	return scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
  }
  
+ /*
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 2138a7ae050c..4abfa80fdcd6 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -201,8 +201,8 @@ static int virtblk_ioctl(struct block_device *bdev, fmode_t mode,
+ 	if (!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_SCSI))
+ 		return -ENOTTY;
+ 
+-	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd,
+-			      (void __user *)data);
++	return scsi_cmd_blk_ioctl(bdev, mode, cmd,
++				  (void __user *)data);
+ }
+ 
+ /* We provide getgeo only to please some old bootloader/partitioning tools */
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index e3749d0ba68b..5e7c72d3fe39 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2684,12 +2684,11 @@ int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
+ {
+ 	void __user *argp = (void __user *)arg;
+ 	int ret;
+-	struct gendisk *disk = bdev->bd_disk;
+ 
+ 	/*
+ 	 * Try the generic SCSI command ioctl's first.
+ 	 */
+-	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
++	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 	if (ret != -ENOTTY)
+ 		return ret;
+ 
+diff --git a/drivers/ide/ide-floppy_ioctl.c b/drivers/ide/ide-floppy_ioctl.c
+index 9c2288234dea..05f024caf4c9 100644
+--- a/drivers/ide/ide-floppy_ioctl.c
++++ b/drivers/ide/ide-floppy_ioctl.c
+@@ -287,8 +287,7 @@ int ide_floppy_ioctl(ide_drive_t *drive, struct block_device *bdev,
+ 	 * and CDROM_SEND_PACKET (legacy) ioctls
+ 	 */
+ 	if (cmd != CDROM_SEND_PACKET && cmd != SCSI_IOCTL_SEND_COMMAND)
+-		err = scsi_cmd_ioctl(bdev->bd_disk->queue, bdev->bd_disk,
+-				mode, cmd, argp);
++		err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
+ 
+ 	if (err == -ENOTTY)
+ 		err = generic_ide_ioctl(drive, bdev, cmd, arg);
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 18e6c59ed12d..654e2674e7c3 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -907,7 +907,7 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
+ 		case SCSI_IOCTL_GET_BUS_NUMBER:
+ 			return scsi_ioctl(sdp, cmd, p);
+ 		default:
+-			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
++			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
+ 			if (error != -ENOTTY)
+ 				return error;
+ 	}
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index cda62da68108..ba55e497f7dc 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -793,6 +793,8 @@ extern void blk_plug_device(struct request_queue *);
+ extern void blk_plug_device_unlocked(struct request_queue *);
+ extern int blk_remove_plug(struct request_queue *);
+ extern void blk_recount_segments(struct request_queue *, struct bio *);
++extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
++			      unsigned int, void __user *);
+ extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+ 			  unsigned int, void __user *);
+ extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,
 -- 
 1.8.5.2
 
