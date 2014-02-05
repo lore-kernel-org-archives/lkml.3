@@ -1,179 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaBEFrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:47:41 -0500
-Received: from fallback.hitachi.co.jp ([133.145.228.50]:53399 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaBEFrk (ORCPT
+	id S932089AbaBEFvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:51:42 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:40727 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaBEFvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:47:40 -0500
-From: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-To: eiichi.tsukata.xh@hitachi.com
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [REVIEW PATCH] scsi: Add 'retry_timeout' to avoid infinite command retry
-Date: Wed,  5 Feb 2014 14:47:34 +0900
-Message-Id: <1391579254-26204-2-git-send-email-eiichi.tsukata.xh@hitachi.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1391579254-26204-1-git-send-email-eiichi.tsukata.xh@hitachi.com>
-References: <1391579254-26204-1-git-send-email-eiichi.tsukata.xh@hitachi.com>
+	Wed, 5 Feb 2014 00:51:41 -0500
+Date: Wed, 5 Feb 2014 06:51:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Richard Weinberger <richard@nod.at>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH] x86: Disable CONFIG_X86_DECODER_SELFTEST in
+ allmod/allyesconfigs
+Message-ID: <20140205055137.GB30094@gmail.com>
+References: <1391452183-2160-1-git-send-email-bp@alien8.de>
+ <alpine.DEB.2.02.1402031358390.9768@chino.kir.corp.google.com>
+ <CA+55aFzwB0-fcqa_RaNDE1jjS+awM=j3BGroA5C3wRnK_G7UHg@mail.gmail.com>
+ <20140203145718.5bc9ba1619aff8ea0754b0ab@linux-foundation.org>
+ <alpine.DEB.2.02.1402031532480.7643@chino.kir.corp.google.com>
+ <20140204090809.GA19156@gmail.com>
+ <CA+55aFzXvPseHVZOk82hTpFrQYRnHnq-5TBz5Jw__wuktUgi2w@mail.gmail.com>
+ <87fvny238i.fsf@tassilo.jf.intel.com>
+ <CA+55aFzDp70dv=eCwuOr=gAPVBKaDVUyvFbqedrRJXhUDeHnfQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzDp70dv=eCwuOr=gAPVBKaDVUyvFbqedrRJXhUDeHnfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, scsi error handling in scsi_decide_disposition() tries to
-unconditionally requeue scsi command when device keeps some error state.
-This is because retryable errors are thought to be temporary and the scsi
-device will soon recover from those errors. Normally, such retry policy is
-appropriate because the device will soon recover from temporary error state.
 
-But there is no guarantee that device is able to recover from error state
-immediately. Some hardware error may prevent device from recovering.
-Therefore hardware error can results in infinite command retry loop.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-This patchs adds 'retry_timeout' sysfs attribute which limits the retry time
-of each scsi command. Once scsi command retry time is longer than this timeout,
-the command is treated as failure. 'retry_timeout' is set to '0' by default
-which means no timeout set.
+> > BTW you probably also want to do the same for the x86 instruction 
+> > decoder test. It seems to be the biggest compile time waster in 
+> > allyesconfig and I usually disable it too.
+> 
+> Agreed, that should be disabled too by default. Although in that 
+> case I think the COMPILE_TEST combination makes more sense, since 
+> it's a coverage issue.
 
-Signed-off-by: Eiichi Tsukata <eiichi.tsukata.xh@hitachi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/scsi/scsi_lib.c    | 22 +++++++++++++++++++++-
- drivers/scsi/scsi_scan.c   |  1 +
- drivers/scsi/scsi_sysfs.c  | 32 ++++++++++++++++++++++++++++++++
- include/scsi/scsi.h        |  1 +
- include/scsi/scsi_device.h |  1 +
- 5 files changed, 56 insertions(+), 1 deletion(-)
+I'd say randconfig will cover it often enough, and the failure is also 
+borderline build coverage related: you cannot really make the decoder 
+test fail via source level changes, only with changes in the build 
+environment, so I agree with Andi that we can disable this one too - 
+via the patch below.
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 7bd7f0d..a9db69e 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1492,6 +1492,23 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
- 	blk_complete_request(req);
- }
- 
-+/*
-+ * Check if scsi command excessed retry timeout
-+ */
-+static int scsi_retry_timed_out(struct scsi_cmnd *cmd)
-+{
-+	unsigned int retry_timeout;
-+
-+	retry_timeout = cmd->device->retry_timeout;
-+	if (retry_timeout &&
-+	    time_before(cmd->jiffies_at_alloc + retry_timeout, jiffies)) {
-+		scmd_printk(KERN_INFO, cmd, "retry timeout\n");
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
- static void scsi_softirq_done(struct request *rq)
- {
- 	struct scsi_cmnd *cmd = rq->special;
-@@ -1512,7 +1529,10 @@ static void scsi_softirq_done(struct request *rq)
- 			    wait_for/HZ);
- 		disposition = SUCCESS;
- 	}
--			
-+
-+	if (scsi_retry_timed_out(cmd))
-+		disposition = FAILED;
-+
- 	scsi_log_completion(cmd, disposition);
- 
- 	switch (disposition) {
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 307a811..4ab044a 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -925,6 +925,7 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
- 		sdev->no_dif = 1;
- 
- 	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
-+	sdev->retry_timeout = SCSI_DEFAULT_RETRY_TIMEOUT;
- 
- 	if (*bflags & BLIST_SKIP_VPD_PAGES)
- 		sdev->skip_vpd_pages = 1;
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 8ff62c2..eaa2118 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -627,6 +627,37 @@ sdev_store_eh_timeout(struct device *dev, struct device_attribute *attr,
- static DEVICE_ATTR(eh_timeout, S_IRUGO | S_IWUSR, sdev_show_eh_timeout, sdev_store_eh_timeout);
- 
- static ssize_t
-+sdev_show_retry_timeout(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct scsi_device *sdev;
-+	sdev = to_scsi_device(dev);
-+	return snprintf(buf, 20, "%u\n", sdev->retry_timeout / HZ);
-+}
-+
-+static ssize_t
-+sdev_store_retry_timeout(struct device *dev, struct device_attribute *attr,
-+			 const char *buf, size_t count)
-+{
-+	struct scsi_device *sdev;
-+	unsigned int retry_timeout;
-+	int err;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EACCES;
-+
-+	sdev = to_scsi_device(dev);
-+	err = kstrtouint(buf, 10, &retry_timeout);
-+	if (err)
-+		return err;
-+	sdev->retry_timeout = retry_timeout * HZ;
-+
-+	return count;
-+}
-+static DEVICE_ATTR(retry_timeout, S_IRUGO | S_IWUSR,
-+		   sdev_show_retry_timeout, sdev_store_retry_timeout);
-+
-+static ssize_t
- store_rescan_field (struct device *dev, struct device_attribute *attr,
- 		    const char *buf, size_t count)
- {
-@@ -797,6 +828,7 @@ static struct attribute *scsi_sdev_attrs[] = {
- 	&dev_attr_state.attr,
- 	&dev_attr_timeout.attr,
- 	&dev_attr_eh_timeout.attr,
-+	&dev_attr_retry_timeout.attr,
- 	&dev_attr_iocounterbits.attr,
- 	&dev_attr_iorequest_cnt.attr,
- 	&dev_attr_iodone_cnt.attr,
-diff --git a/include/scsi/scsi.h b/include/scsi/scsi.h
-index 66d42ed..545408d 100644
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -16,6 +16,7 @@ struct scsi_cmnd;
- 
- enum scsi_timeouts {
- 	SCSI_DEFAULT_EH_TIMEOUT		= 10 * HZ,
-+	SCSI_DEFAULT_RETRY_TIMEOUT	= 0,	/* disabled by default */
- };
- 
- /*
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index d65fbec..04fc5ee 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -121,6 +121,7 @@ struct scsi_device {
- 				 * pass settings from slave_alloc to scsi
- 				 * core. */
- 	unsigned int eh_timeout; /* Error handling timeout */
-+	unsigned int retry_timeout;	/* Command retry timeout */
- 	unsigned writeable:1;
- 	unsigned removable:1;
- 	unsigned changed:1;	/* Data invalid due to media change */
--- 
-1.8.3.1
+Thanks,
 
+	Ingo
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 0f3621e..f0fca39 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -184,6 +184,11 @@ config HAVE_MMIOTRACE_SUPPORT
+ config X86_DECODER_SELFTEST
+ 	bool "x86 instruction decoder selftest"
+ 	depends on DEBUG_KERNEL && KPROBES
++	#
++	# It can take some time to validate the image,
++	# make sure {allyes|allmod}config doesn't enable it:
++	#
++	depends on !COMPILE_TEST
+ 	---help---
+ 	 Perform x86 instruction decoder selftests at build time.
+ 	 This option is useful for checking the sanity of x86 instruction
