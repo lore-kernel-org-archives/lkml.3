@@ -1,115 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654AbaBEUp3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:45:29 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48299 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaBEUGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:21 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mel Gorman <mgorman@suse.de>, <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 111/213] x86/mm: Check if PUD is large when validating a kernel address
-Date: Wed, 5 Feb 2014 15:01:06 -0500
-Message-ID: <1391630568-49251-112-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+	id S932702AbaBEUqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:46:19 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:60691 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932601AbaBEUqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 15:46:14 -0500
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 15:46:03 EST
+Date: Wed, 5 Feb 2014 22:36:21 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [v2.6.34-stable 032/213] ipvs: fix info leak in
+ getsockopt(IP_VS_SO_GET_TIMEOUT)
+In-Reply-To: <1391630568-49251-33-git-send-email-paul.gortmaker@windriver.com>
+Message-ID: <alpine.LFD.2.11.1402052234230.1496@ja.home.ssi.bg>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com> <1391630568-49251-33-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mgorman@suse.de>
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+	Hello,
 
-commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
+On Wed, 5 Feb 2014, Paul Gortmaker wrote:
 
-A user reported the following oops when a backup process reads
-/proc/kcore:
+> From: Mathias Krause <minipli@googlemail.com>
+> 
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
+> 
+> commit 2d8a041b7bfe1097af21441cb77d6af95f4f4680 upstream.
+> 
+> If at least one of CONFIG_IP_VS_PROTO_TCP or CONFIG_IP_VS_PROTO_UDP is
+> not set, __ip_vs_get_timeouts() does not fully initialize the structure
+> that gets copied to userland and that for leaks up to 12 bytes of kernel
+> stack. Add an explicit memset(0) before passing the structure to
+> __ip_vs_get_timeouts() to avoid the info leak.
 
- BUG: unable to handle kernel paging request at ffffbb00ff33b000
- IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
- [...]
+	I guess, this patch is not needed after commit
+"ipvs: initialize returned data in do_ip_vs_get_ctl" because
+the memset is already moved into __ip_vs_get_timeouts().
 
- Call Trace:
-  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
-  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
-  [<ffffffff81151687>] vfs_read+0xc7/0x130
-  [<ffffffff811517f3>] sys_read+0x53/0xa0
-  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
+> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+> Cc: Wensong Zhang <wensong@linux-vs.org>
+> Cc: Simon Horman <horms@verge.net.au>
+> Cc: Julian Anastasov <ja@ssi.bg>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  net/netfilter/ipvs/ip_vs_ctl.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+> index 36dc1d88c2fa..bd9d805a85a6 100644
+> --- a/net/netfilter/ipvs/ip_vs_ctl.c
+> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
+> @@ -2469,6 +2469,7 @@ do_ip_vs_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
+>  	{
+>  		struct ip_vs_timeout_user t;
+>  
+> +		memset(&t, 0, sizeof(t));
+>  		__ip_vs_get_timeouts(&t);
+>  		if (copy_to_user(user, &t, sizeof(t)) != 0)
+>  			ret = -EFAULT;
+> -- 
+> 1.8.5.2
 
-Investigation determined that the bug triggered when reading
-system RAM at the 4G mark. On this system, that was the first
-address using 1G pages for the virt->phys direct mapping so the
-PUD is pointing to a physical address, not a PMD page.
+Regards
 
-The problem is that the page table walker in kern_addr_valid() is
-not checking pud_large() and treats the physical address as if
-it was a PMD.  If it happens to look like pmd_none then it'll
-silently fail, probably returning zeros instead of real data. If
-the data happens to look like a present PMD though, it will be
-walked resulting in the oops above.
-
-This patch adds the necessary pud_large() check.
-
-Unfortunately the problem was not readily reproducible and now
-they are running the backup program without accessing
-/proc/kcore so the patch has not been validated but I think it
-makes sense.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.coM>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org
-Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/x86/include/asm/pgtable.h | 5 +++++
- arch/x86/mm/init_64.c          | 3 +++
- 2 files changed, 8 insertions(+)
-
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a34c785c5a63..321d24d6a924 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -132,6 +132,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
- 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
- }
- 
-+static inline unsigned long pud_pfn(pud_t pud)
-+{
-+	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
-+}
-+
- #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
- 
- static inline int pmd_large(pmd_t pte)
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index ee41bba315d1..3cd243b8b01d 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -864,6 +864,9 @@ int kern_addr_valid(unsigned long addr)
- 	if (pud_none(*pud))
- 		return 0;
- 
-+	if (pud_large(*pud))
-+		return pfn_valid(pud_pfn(*pud));
-+
- 	pmd = pmd_offset(pud, addr);
- 	if (pmd_none(*pmd))
- 		return 0;
--- 
-1.8.5.2
-
+--
+Julian Anastasov <ja@ssi.bg>
