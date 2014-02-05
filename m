@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaBEUND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:13:03 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55683 "EHLO
+	id S1755601AbaBEUMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:12:54 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55685 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247AbaBEUIR (ORCPT
+	with ESMTP id S1755377AbaBEUIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:08:17 -0500
+	Wed, 5 Feb 2014 15:08:18 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+CC: Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 201/213] futex: Fix bug in WARN_ON for NULL q.pi_state
-Date: Wed, 5 Feb 2014 15:02:36 -0500
-Message-ID: <1391630568-49251-202-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 205/213] libsas: continue revalidation
+Date: Wed, 5 Feb 2014 15:02:40 -0500
+Message-ID: <1391630568-49251-206-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,34 +32,47 @@ From: Darren Hart <dvhart@linux.intel.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
+commit 26f2f199ff150d8876b2641c41e60d1c92d2fb81 upstream.
 
-The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
-the address (&q.pi_state) of the pointer instead of the value
-(q.pi_state) of the pointer. Correct it accordingly.
+Continue running revalidation until no more broadcast devices are
+discovered.  Fixes cases where re-discovery completes too early in a
+domain with multiple expanders with pending re-discovery events.
+Servicing BCNs can get backed up behind error recovery.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/futex.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/libsas/sas_expander.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 4a8f72850152..d4e7f0ea1f94 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2321,7 +2321,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
- 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
- 		 * the pi_state.
- 		 */
--		WARN_ON(!&q.pi_state);
-+		WARN_ON(!q.pi_state);
- 		pi_mutex = &q.pi_state->pi_mutex;
- 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index 4ee42bb48dcd..cb4964b54191 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -1947,9 +1947,7 @@ int sas_ex_revalidate_domain(struct domain_device *port_dev)
+ 	struct domain_device *dev = NULL;
+ 
+ 	res = sas_find_bcast_dev(port_dev, &dev);
+-	if (res)
+-		goto out;
+-	if (dev) {
++	while (res == 0 && dev) {
+ 		struct expander_device *ex = &dev->ex_dev;
+ 		int i = 0, phy_id;
+ 
+@@ -1961,8 +1959,10 @@ int sas_ex_revalidate_domain(struct domain_device *port_dev)
+ 			res = sas_rediscover(dev, phy_id);
+ 			i = phy_id + 1;
+ 		} while (i < ex->num_phys);
++
++		dev = NULL;
++		res = sas_find_bcast_dev(port_dev, &dev);
+ 	}
+-out:
+ 	return res;
+ }
+ 
 -- 
 1.8.5.2
 
