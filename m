@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaBEUGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:06:23 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55013 "EHLO
+	id S1755858AbaBEUob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:44:31 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55069 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507AbaBEUGH (ORCPT
+	with ESMTP id S1754885AbaBEUGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:07 -0500
+	Wed, 5 Feb 2014 15:06:23 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Andy Honig <ahonig@google.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 100/213] mm: fix vma_resv_map() NULL pointer
-Date: Wed, 5 Feb 2014 15:00:55 -0500
-Message-ID: <1391630568-49251-101-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 116/213] KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+Date: Wed, 5 Feb 2014 15:01:11 -0500
+Message-ID: <1391630568-49251-117-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -28,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Andy Honig <ahonig@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -36,68 +31,44 @@ From: Dave Hansen <dave@linux.vnet.ibm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4523e1458566a0e8ecfaff90f380dd23acc44d27 upstream.
+commit a2c118bfab8bc6b8bb213abfc35201e441693d55 upstream.
 
-hugetlb_reserve_pages() can be used for either normal file-backed
-hugetlbfs mappings, or MAP_HUGETLB.  In the MAP_HUGETLB, semi-anonymous
-mode, there is not a VMA around.  The new call to resv_map_put() assumed
-that there was, and resulted in a NULL pointer dereference:
+If the guest specifies a IOAPIC_REG_SELECT with an invalid value and follows
+that with a read of the IOAPIC_REG_WINDOW KVM does not properly validate
+that request.  ioapic_read_indirect contains an
+ASSERT(redir_index < IOAPIC_NUM_PINS), but the ASSERT has no effect in
+non-debug builds.  In recent kernels this allows a guest to cause a kernel
+oops by reading invalid memory.  In older kernels (pre-3.3) this allows a
+guest to read from large ranges of host memory.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-  IP: vma_resv_map+0x9/0x30
-  PGD 141453067 PUD 1421e1067 PMD 0
-  Oops: 0000 [#1] PREEMPT SMP
-  ...
-  Pid: 14006, comm: trinity-child6 Not tainted 3.4.0+ #36
-  RIP: vma_resv_map+0x9/0x30
-  ...
-  Process trinity-child6 (pid: 14006, threadinfo ffff8801414e0000, task ffff8801414f26b0)
-  Call Trace:
-    resv_map_put+0xe/0x40
-    hugetlb_reserve_pages+0xa6/0x1d0
-    hugetlb_file_setup+0x102/0x2c0
-    newseg+0x115/0x360
-    ipcget+0x1ce/0x310
-    sys_shmget+0x5a/0x60
-    system_call_fastpath+0x16/0x1b
+Tested: tested against apic unit tests.
 
-This was reported by Dave Jones, but was reproducible with the
-libhugetlbfs test cases, so shame on me for not running them in the
-first place.
-
-With this, the oops is gone, and the output of libhugetlbfs's
-run_tests.py is identical to plain 3.4 again.
-
-[ Marked for stable, since this was introduced by commit c50ac050811d
-  ("hugetlb: fix resv_map leak in error path") which was also marked for
-  stable ]
-
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/hugetlb.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ virt/kvm/ioapic.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index f7b80540ba95..c80dd852f3a0 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2789,7 +2789,8 @@ int hugetlb_reserve_pages(struct inode *inode,
- 		region_add(&inode->i_mapping->private_list, from, to);
- 	return 0;
- out_err:
--	resv_map_put(vma);
-+	if (vma)
-+		resv_map_put(vma);
- 	return ret;
- }
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 3500dee9cf2b..57afcdaa2863 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -72,9 +72,12 @@ static unsigned long ioapic_read_indirect(struct kvm_ioapic *ioapic,
+ 			u32 redir_index = (ioapic->ioregsel - 0x10) >> 1;
+ 			u64 redir_content;
  
+-			ASSERT(redir_index < IOAPIC_NUM_PINS);
++			if (redir_index < IOAPIC_NUM_PINS)
++				redir_content =
++					ioapic->redirtbl[redir_index].bits;
++			else
++				redir_content = ~0ULL;
+ 
+-			redir_content = ioapic->redirtbl[redir_index].bits;
+ 			result = (ioapic->ioregsel & 0x1) ?
+ 			    (redir_content >> 32) & 0xffffffff :
+ 			    redir_content & 0xffffffff;
 -- 
 1.8.5.2
 
