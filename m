@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaBEGoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 01:44:08 -0500
-Received: from relay.parallels.com ([195.214.232.42]:51842 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041AbaBEGoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 01:44:04 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <rientjes@google.com>
-CC: <akpm@linux-foundation.org>, <penberg@kernel.org>, <cl@linux.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] slub: fix false-positive lockdep warning in free_partial()
-Date: Wed, 5 Feb 2014 10:44:01 +0400
-Message-ID: <1391582641-12904-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <52F1DB81.30805@parallels.com>
-References: <52F1DB81.30805@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.216]
+	id S1752026AbaBEGvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 01:51:33 -0500
+Received: from smtp5.epfl.ch ([128.178.224.8]:60623 "EHLO smtp5.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750720AbaBEGvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 01:51:31 -0500
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Florian Vaussard <florian.vaussard@epfl.ch>
+Subject: [PATCH] pinctrl: do not init debugfs entries for unimplemented functionalities
+Date: Wed,  5 Feb 2014 07:51:22 +0100
+Message-Id: <1391583082-314-1-git-send-email-florian.vaussard@epfl.ch>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
-remove_partial() to be called with n->list_lock held, but free_partial()
-called from kmem_cache_close() on cache destruction does not follow this
-rule, leading to a warning:
+Commit c420619 "pinctrl: pinconf: remove checks on ops->pin_config_get"
+removed the check on (ops != NULL) when performing pinconf_pins_show() or
+pinconf_groups_show(). As these entries are always enabled, even if
+pinconf is not supported, reading will result in an oops due to NULL
+ops.
 
-  WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
-  Modules linked in:
-  CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
-  Hardware name:
-   0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
-   0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
-   ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
-  Call Trace:
-   [<ffffffff816d9583>] dump_stack+0x51/0x6e
-   [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
-   [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
-   [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
-   [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
-   [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
-   [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
-   [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
-   [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
-   [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
-   [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-   [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+Instead of checking for ops, remove the corresponding debugfs entries if
+pinconf and/or pinmux are not implemented.
 
-Although this cannot actually result in a race, because on cache
-destruction there should not be any concurrent frees or allocations from
-the cache, let's add spin_lock/unlock to free_partial() just to keep
-lockdep happy.
+Tested on OMAP3 (pinctrl-single).
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
 ---
- v2: add a comment explaining why we need to take the lock
+ drivers/pinctrl/core.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
- mm/slub.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 0eeea85034c8..24bf05e962ff 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3191,6 +3191,11 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
- {
- 	struct page *page, *h;
- 
-+	/*
-+	 * the lock is for lockdep's sake, not for any actual
-+	 * race protection
-+	 */
-+	spin_lock_irq(&n->list_lock);
- 	list_for_each_entry_safe(page, h, &n->partial, lru) {
- 		if (!page->inuse) {
- 			remove_partial(n, page);
-@@ -3200,6 +3205,7 @@ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
- 			"Objects remaining in %s on kmem_cache_close()");
- 		}
- 	}
-+	spin_unlock_irq(&n->list_lock);
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 5ee61a4..3f64c01 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1642,8 +1642,10 @@ static void pinctrl_init_device_debugfs(struct pinctrl_dev *pctldev)
+ 			    device_root, pctldev, &pinctrl_groups_ops);
+ 	debugfs_create_file("gpio-ranges", S_IFREG | S_IRUGO,
+ 			    device_root, pctldev, &pinctrl_gpioranges_ops);
+-	pinmux_init_device_debugfs(device_root, pctldev);
+-	pinconf_init_device_debugfs(device_root, pctldev);
++	if (pctldev->desc->pmxops)
++		pinmux_init_device_debugfs(device_root, pctldev);
++	if (pctldev->desc->confops)
++		pinconf_init_device_debugfs(device_root, pctldev);
  }
  
- /*
+ static void pinctrl_remove_device_debugfs(struct pinctrl_dev *pctldev)
 -- 
-1.7.10.4
+1.8.5.3
 
