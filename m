@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaBEHic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 02:38:32 -0500
-Received: from michel.telenet-ops.be ([195.130.137.88]:44307 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaBEHia (ORCPT
+	id S1751693AbaBEHuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 02:50:16 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:52854 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750936AbaBEHuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 02:38:30 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jiri@resnulli.us>,
-        Cong Wang <cwang@twopensource.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] ipv4: Fix runtime WARNING in rtmsg_ifa()
-Date: Wed,  5 Feb 2014 08:38:25 +0100
-Message-Id: <1391585905-24851-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 5 Feb 2014 02:50:14 -0500
+Message-ID: <52F1ED33.9010109@vmware.com>
+Date: Wed, 05 Feb 2014 08:50:11 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: vmwgfx: Fix unitialized stack read in vmw_setup_otable_base
+References: <20140131022725.GB11601@redhat.com>
+In-Reply-To: <20140131022725.GB11601@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On m68k/ARAnyM:
+On 01/31/2014 03:27 AM, Dave Jones wrote:
+> One of the error paths in vmw_setup_otable_base causes us to return with
+> 'ret' having never been set to anything causing us to return whatever was
+> on the stack.
+>
+> Found with Coverity
+>
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+>
+> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
+> index 4910e7b81811..d4a5a19cb8c3 100644
+> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
+> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_mob.c
+> @@ -134,6 +134,7 @@ static int vmw_setup_otable_base(struct vmw_private *dev_priv,
+>  	cmd = vmw_fifo_reserve(dev_priv, sizeof(*cmd));
+>  	if (unlikely(cmd == NULL)) {
+>  		DRM_ERROR("Failed reserving FIFO space for OTable setup.\n");
+> +		ret = -ENOMEM;
+>  		goto out_no_fifo;
+>  	}
+>  
 
-WARNING: CPU: 0 PID: 407 at net/ipv4/devinet.c:1599 0x316a99()
-Modules linked in:
-CPU: 0 PID: 407 Comm: ifconfig Not tainted
-3.13.0-atari-09263-g0c71d68014d1 #1378
-Stack from 10c4fdf0:
-        10c4fdf0 002ffabb 000243e8 00000000 008ced6c 00024416 00316a99 0000063f
-        00316a99 00000009 00000000 002501b4 00316a99 0000063f c0a86117 00000080
-        c0a86117 00ad0c90 00250a5a 00000014 00ad0c90 00000000 00000000 00000001
-        00b02dd0 00356594 00000000 00356594 c0a86117 eff6c9e4 008ced6c 00000002
-        008ced60 0024f9b4 00250b52 00ad0c90 00000000 00000000 00252390 00ad0c90
-        eff6c9e4 0000004f 00000000 00000000 eff6c9e4 8000e25c eff6c9e4 80001020
-Call Trace: [<000243e8>] warn_slowpath_common+0x52/0x6c
- [<00024416>] warn_slowpath_null+0x14/0x1a
- [<002501b4>] rtmsg_ifa+0xdc/0xf0
- [<00250a5a>] __inet_insert_ifa+0xd6/0x1c2
- [<0024f9b4>] inet_abc_len+0x0/0x42
- [<00250b52>] inet_insert_ifa+0xc/0x12
- [<00252390>] devinet_ioctl+0x2ae/0x5d6
+Thanks,
+Will queue on vmwgfx-fixes for -rc2.
 
-Adding some debugging code reveals that net_fill_ifaddr() fails in
-
-    put_cacheinfo(skb, ifa->ifa_cstamp, ifa->ifa_tstamp,
-                              preferred, valid))
-
-nla_put complains:
-
-    lib/nlattr.c:454: skb_tailroom(skb) = 12, nla_total_size(attrlen) = 20
-
-Apparently commit 5c766d642bcaffd0c2a5b354db2068515b3846cf ("ipv4:
-introduce address lifetime") forgot to take into account the addition of
-struct ifa_cacheinfo in inet_nlmsg_size(). Hence add it, like is already
-done for ipv6.
-
-Suggested-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- net/ipv4/devinet.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index ac2dff3c2c1c..bdbf68bb2e2d 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1443,7 +1443,8 @@ static size_t inet_nlmsg_size(void)
- 	       + nla_total_size(4) /* IFA_LOCAL */
- 	       + nla_total_size(4) /* IFA_BROADCAST */
- 	       + nla_total_size(IFNAMSIZ) /* IFA_LABEL */
--	       + nla_total_size(4);  /* IFA_FLAGS */
-+	       + nla_total_size(4)  /* IFA_FLAGS */
-+	       + nla_total_size(sizeof(struct ifa_cacheinfo)); /* IFA_CACHEINFO */
- }
- 
- static inline u32 cstamp_delta(unsigned long cstamp)
--- 
-1.7.9.5
-
+/Thomas
