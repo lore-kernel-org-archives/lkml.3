@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768AbaBEAlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:41:22 -0500
-Received: from ozlabs.org ([203.10.76.45]:56218 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344AbaBEAlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:41:20 -0500
-Date: Wed, 5 Feb 2014 11:41:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Feb 4
-Message-Id: <20140205114113.6be2122ab17b5a1a106d89bf@canb.auug.org.au>
-In-Reply-To: <20140204160704.0cf4cb0ccf45f413056e7f34@canb.auug.org.au>
-References: <20140204160704.0cf4cb0ccf45f413056e7f34@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Feb_2014_11_41_13_+1100_WC4PX4cwBq.fK_HP"
+	id S1754792AbaBEAnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:43:15 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:54729 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628AbaBEAnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 19:43:13 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-1c-52f18920a858
+Message-id: <52F18920.1070400@samsung.com>
+Date: Wed, 05 Feb 2014 09:43:12 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 06/18] extcon: max14577: Change extcon name instead of
+ static name according to device type
+References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
+ <1390911522-28209-7-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1390911522-28209-7-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsWyRsSkSFeh82OQwf+l/BZTHz5hs3j9wtDi
+	bNMbdov7X48yWny70sFksenxNVaLy7vmsFmsPXKX3eJ24wo2i9PdrA5cHjtn3WX32LSqk83j
+	zrU9bB7zTgZ6bF5S79G3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZy7YtYyzYwFKx9fRNlgbG
+	K8xdjJwcEgImEhsnnWKCsMUkLtxbz9bFyMUhJLCUUeLI+5OMMEV//70BKxISWMQoce5TNUTR
+	K0aJl7tOs4MkeAW0JM42HQabyiKgKvH4/zmwOBtQfP+LG2wgtqhAmMTK6VdYIOoFJX5Mvgdm
+	iwgYShzcvR1sAbPAfSaJVUd0QGxhgUKJd+e2s0Isa2WUWHDgJdhQTgEPiQfb9rNDNOhI7G+d
+	xgZhy0tsXvOWGaRBQuAlu8TZ+U1MEBcJSHybfAhoGwdQQlZi0wGo9yUlDq64wTKBUWwWkptm
+	IRk7C8nYBYzMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECY/T0v2cTdzDeP2B9iDEZaOVE
+	ZinR5HxgjOeVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClISCA9sSQ1OzW1ILUovqg0J7X4ECMT
+	B6dUA6PHrbTTDVnqv+4X6BX1lhQXcxnweckkJPp+eXd9wfEHk10+PMo51ztt5+4V91aYmBb7
+	W8hEqBxwnVPq41V0/N+Lr/tstwdNWNGo5nTaOEFjl5C8v2Wqwbqp9Svm/C1auuLuCymmLFne
+	gMynW//fnlxwtSpnw22v49LHZ8V4yrvs2+bwLVzbo0KJpTgj0VCLuag4EQDkLeJN5wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAV2Fzo9BBpdXsFtMffiEzeL1C0OL
+	s01v2C3ufz3KaPHtSgeTxabH11gtLu+aw2ax9shddovbjSvYLE53szpweeycdZfdY9OqTjaP
+	O9f2sHnMOxnosXlJvUffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
+	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHaekUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
+	yAANJKxhzFi2bRljwQaWiq2nb7I0MF5h7mLk5JAQMJH4++8NE4QtJnHh3no2EFtIYBGjxLlP
+	1V2MXED2K0aJl7tOs4MkeAW0JM42HQZrZhFQlXj8/xxYnA0ovv/FDbBmUYEwiZXTr7BA1AtK
+	/Jh8D8wWETCUOLh7O9gyZoH7TBKrjuiA2MIChRLvzm1nhVjWyiix4MBLsKGcAh4SD7btZ4do
+	0JHY3zqNDcKWl9i85i3zBEaBWUh2zEJSNgtJ2QJG5lWMoqkFyQXFSem5RnrFibnFpXnpesn5
+	uZsYwQngmfQOxlUNFocYBTgYlXh4DYQ/BgmxJpYVV+YeYpTgYFYS4V3bBhTiTUmsrEotyo8v
+	Ks1JLT7EmAwMgonMUqLJ+cDklFcSb2hsYmZkaWRuaGFkbE6asJI478FW60AhgfTEktTs1NSC
+	1CKYLUwcnFINjEGpXDO5TO+9+zrb3tHN2XhlVWeA6+l8OY3U/knVAmsXLXSJ53tjYmmwbLtW
+	6fKlOz2U36YZ7lVZqPeJefnHDMVE7vqTJdNddHzuqyUdF3wvcvyUNFvFjuTD344eX7icxzHJ
+	RN3oiF/SrsXR5oF357pGaLhzBhfcLkifqHXb9/ChBdcaXZcbKbEUZyQaajEXFScCAJXJMHpE	AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Feb_2014_11_41_13_+1100_WC4PX4cwBq.fK_HP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/28/2014 09:18 PM, Krzysztof Kozlowski wrote:
+> From: Chanwoo Choi <cw00.choi@samsung.com>
+> 
+> This patch use device name to make sysfs path according to device type:
+> 
+> max14577-muic
+> - /sys/class/extcon/max14577-muic/
+> max77836-muic
+> - /sys/class/extcon/max77836-muic/
+> 
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> ---
 
-Hi all,
+Applied.
 
-On Tue, 4 Feb 2014 16:07:04 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> This tree fails (more than usual) the powerpc allyesconfig build.
->=20
-> Changes since 20140203:
+Thanks,
+Chanwoo Choi
 
-I forgot to mention the addition of the file-private-locks tree.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__5_Feb_2014_11_41_13_+1100_WC4PX4cwBq.fK_HP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS8YitAAoJEMDTa8Ir7ZwVHY0P/2H+qrdPzJcTdx+dSrtMNDzy
-/7L5/jQxZZff1ETv6Jgt0yhEc5aLi2BRDW9ugqPvyAaH10iKD3rAUy37Sms4dRWj
-IZ5n5rDQOnQ0Oku6k0OCoumQXTl1tecXQUi/g4KvxUC4ydmPqYZJD4YiSc0V/zAi
-iAD5rUkrCFiPzjD2hbVd2rhX9q0L9tWMcWHnrM7MnNTdcwwW08dhOqFjd8Y7yn0z
-HP7tTue9yAlCYUR2/Dvi7Vz/3SZuLal+6D6laTeusFbuPjzKwr0Yr0Rt7V/eyOaB
-ftytevZ7bC4RhO9SOHQGqzc7lkK36MWACKoRiLoLL2aL8EmASaYGN1N2TXcymfQp
-QRXpA9FoR0IWhlxZI7IMP4OI+IAUOgm8KnWhkFO+IhSm+QO4TDG3REAslpRQ8bKw
-5ClBUBGzcrp6mO/8xzEiLFmqjB5OOXsoTHQluorqdJ4yI+W6xar/pnP0cHDN7kWy
-6Ui/O9jGMZUidrseJWDORVn9GAOlewlxpmjbQrQ8l/63jsUaFyy5f54+XBG80OVz
-gxJJ3d8e572Gcu+h2Qxy62UQ9cAOmYyweoWYP8gG2k1k5FV7NxNHNd/UUWvluFoT
-vnTMcUaIfLcErec7X/SEibKSlC4H/wMFuUKaVjfXSS3fetjxxRhvxtU4giyiNh1W
-G+DlXO6tQ0g5PU1LkaVI
-=s2E6
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Feb_2014_11_41_13_+1100_WC4PX4cwBq.fK_HP--
