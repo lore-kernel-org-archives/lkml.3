@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaBEOcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:32:14 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:40127 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaBEOcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:32:11 -0500
+	id S1752297AbaBEOeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:34:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064AbaBEOeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 09:34:10 -0500
+Date: Wed, 5 Feb 2014 15:33:29 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 1/3] perf tools: Put proper period for for samples
+ without PERIOD sample_type
+Message-ID: <20140205143329.GB2373@krava.brq.redhat.com>
+References: <1391427883-13443-1-git-send-email-jolsa@redhat.com>
+ <87vbwu1h8d.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <1391529538-21685-12-git-send-email-ulf.hansson@linaro.org>
-References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
-	<1391529538-21685-12-git-send-email-ulf.hansson@linaro.org>
-Date: Wed, 5 Feb 2014 15:32:10 +0100
-Message-ID: <CACRpkdawmeE3+UAddXhn0OcwgKQhBYXyGYmZa115b7poiEtRZA@mail.gmail.com>
-Subject: Re: [PATCH 11/17] i2c: nomadik: Convert to devm functions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Wolfram Sang <wsa@the-dreams.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Chris Ball <chris@printf.net>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        linux-spi@vger.kernel.org,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vbwu1h8d.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 4:58 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+On Wed, Feb 05, 2014 at 10:27:30AM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> On Mon,  3 Feb 2014 12:44:41 +0100, Jiri Olsa wrote:
+> > We use PERF_SAMPLE_PERIOD sample type only for frequency
+> > setup -F (default) option. The -c does not need store period,
+> > because it's always the same.
+> >
+> > In -c case the report code uses '1' as  period. Fixing
+> > it to perf_event_attr::sample_period.
+> 
+> All 3 patches look good.  But I found something strange.  When we
+> setup/config evsel attrs following code is used:
+> 
+>  util/evsel.c::perf_evsel__config()
+> 
+> 	/*
+> 	 * We default some events to a 1 default interval. But keep
+> 	 * it a weak assumption overridable by the user.
+> 	 */
+> 	if (!attr->sample_period || (opts->user_freq != UINT_MAX &&
+> 				     opts->user_interval != ULLONG_MAX)) {
+> 		if (opts->freq) {
+> 			perf_evsel__set_sample_bit(evsel, PERIOD);
+> 			attr->freq		= 1;
+> 			attr->sample_freq	= opts->freq;
+> 		} else {
+> 			attr->sample_period = opts->default_interval;
+> 		}
+> 	}
 
-> Use devm_* functions to simplify code and error handling.
->
-> Cc: Alessandro Rubini <rubini@unipv.it>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Wolfram Sang <wsa@the-dreams.de>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+yes, I think thats right.. we should use || instead of &&
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+It will allow to change period for event types with predefined
+attr->sample_period like tracepoints.
 
-However make sure this (and the rest) applies on top of this patch:
-http://marc.info/?l=linux-i2c&m=139142325809973&w=2
+However, I tried with tracepoints and even with this fix
+and following command line:
 
-Because I expect that to be applied first.
+  # perf record -e syscalls:sys_enter_read -c 2 ls
 
-Yours,
-Linus Walleij
+you'll still get samples with period 1. The reason is in
+kernel code:
+
+static void perf_swevent_event(struct perf_event *event, u64 nr,
+                               struct perf_sample_data *data,
+                               struct pt_regs *regs)
+{
+...
+        if ((event->attr.sample_type & PERF_SAMPLE_PERIOD) && !event->attr.freq) {
+                data->period = nr;
+                return perf_swevent_overflow(event, 1, data, regs);
+
+bacause above condition is true for tracepoints.
+
+It looks like a bug, but I'm not sure how handy it'd be
+set period other than 1 for tracepoints thought.. ;)
+
+Maybe it's not that big issue in comparison of screwing
+up other software events processing.
+
+I haven't checked other software events.
+
+jirka
