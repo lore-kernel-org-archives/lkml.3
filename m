@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545AbaBEU1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:27:39 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48447 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132AbaBEUHI (ORCPT
+	id S932565AbaBEU1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:27:46 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50664 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905AbaBEU1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:08 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Colin Ian King <colin.king@canonical.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 152/213] USB: echi-dbgp: increase the controller wait time to come out of halt.
-Date: Wed, 5 Feb 2014 15:01:47 -0500
-Message-ID: <1391630568-49251-153-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 5 Feb 2014 15:27:40 -0500
+Message-ID: <52F29EB8.5040906@wwwdotorg.org>
+Date: Wed, 05 Feb 2014 13:27:36 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <skeggsb@gmail.com>
+CC: Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Eric Brower <ebrower@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Terje Bergstrom <tbergstrom@nvidia.com>, Ken Adams <KAdams@nvidia.com>
+Subject: Re: [RFC 10/16] drm/nouveau/timer: skip calibration on GK20A
+References: <1391224618-3794-1-git-send-email-acourbot@nvidia.com>	<1391224618-3794-11-git-send-email-acourbot@nvidia.com> <CACAvsv4T=TRb05OtkxG=t1+Ou9=Of9c-ALWkHJjKYpNi2aGs5Q@mail.gmail.com> <52F0A72B.8030900@nvidia.com>
+In-Reply-To: <52F0A72B.8030900@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On 02/04/2014 01:39 AM, Alexandre Courbot wrote:
+> On 02/04/2014 12:55 PM, Ben Skeggs wrote:
+>> On Sat, Feb 1, 2014 at 1:16 PM, Alexandre Courbot
+>> <acourbot@nvidia.com> wrote:
+>>> GK20A's timer is directly attached to the system timer and cannot be
+>>> calibrated. Skip the calibration phase on that chip since the
+>>> corresponding registers do not exist.
+>> Just a curiosity:  What timer resolution does the HW initialise at?
+> 
+> On T124 the timer input is the oscillator clock, which depending on the
+> device can run between 12 and 48Mhz (IIUC).
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
-
-commit f96a4216e85050c0a9d41a41ecb0ae9d8e39b509 upstream.
-
-The default 10 microsecond delay for the controller to come out of
-halt in dbgp_ehci_startup is too short, so increase it to 1 millisecond.
-
-This is based on emperical testing on various USB debug ports on
-modern machines such as a Lenovo X220i and an Ivybridge development
-platform that needed to wait ~450-950 microseconds.
-
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/usb/early/ehci-dbgp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/early/ehci-dbgp.c b/drivers/usb/early/ehci-dbgp.c
-index 6e98a3697844..e4c7f53dc56b 100644
---- a/drivers/usb/early/ehci-dbgp.c
-+++ b/drivers/usb/early/ehci-dbgp.c
-@@ -437,7 +437,7 @@ static int dbgp_ehci_startup(void)
- 	writel(FLAG_CF, &ehci_regs->configured_flag);
- 
- 	/* Wait until the controller is no longer halted */
--	loop = 10;
-+	loop = 1000;
- 	do {
- 		status = readl(&ehci_regs->status);
- 		if (!(status & STS_HALT))
--- 
-1.8.5.2
-
+On the one Tegra124 board we support upstream, the crystal is 12MHz. I
+believe this is a typical/common value; almost all the Tegra boards we
+support upstream run at this rate.
