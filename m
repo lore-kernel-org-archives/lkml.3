@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaBEQ5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:57:07 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:33317 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753091AbaBEQ5G (ORCPT
+	id S1753236AbaBEQ5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:57:34 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:47217 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819AbaBEQ5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:57:06 -0500
-Date: Wed, 5 Feb 2014 11:57:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        John Kacur <jkacur@redhat.com>, Ulrich Obergfell <uobergfe@redhat.com>,
-        stable-rt@vger.kernel.org
-Subject: Re: [PATCH RT] rt: Make cpu_chill() use hrtimer instead of msleep()
-Message-ID: <20140205115700.3107d0e2@gandalf.local.home>
-In-Reply-To: <20140205115125.3cc950ce@gandalf.local.home>
-References: <20140205115125.3cc950ce@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 5 Feb 2014 11:57:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <1388728091-18564-6-git-send-email-zheng.z.yan@intel.com>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+	<1388728091-18564-6-git-send-email-zheng.z.yan@intel.com>
+Date: Wed, 5 Feb 2014 17:57:31 +0100
+Message-ID: <CABPqkBSuMcrYB9mw_gSVKBgKsv4C8ZrRqg+wDHf4cT-r2YFODQ@mail.gmail.com>
+Subject: Re: [PATCH 05/14] perf, core: allow pmu specific data for perf task context
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014 11:51:25 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> Later patches will use pmu specific data to save LBR stack.
+>
+I think the changelog could be more descriptive here.
+Explain what you add.
 
-> 
-> Ulrich Obergfell pointed out that cpu_chill() calls msleep() which is woken
-> up by the ksoftirqd running the TIMER softirq. But as the cpu_chill() is
-> called from softirq context, it may block the ksoftirqd() from running, in
-> which case, it may never wake up the msleep() causing the deadlock.
-> 
-> I checked the vmcore, and irq/74-qla2xxx is stuck in the msleep() call,
-> running on CPU 8. The one ksoftirqd that is stuck, happens to be the one that
-> runs on CPU 8, and it is blocked on a lock held by irq/74-qla2xxx. As that
-> ksoftirqd is the one that will wake up irq/74-qla2xxx, and it happens to be
-> blocked on a lock that irq/74-qla2xxx holds, we have our deadlock.
-> 
-> The solution is not to convert the cpu_chill() back to a cpu_relax() as that
-> will re-create a possible live lock that the cpu_chill() fixed earlier, and may
-> also leave this bug open on other softirqs. The fix is to remove the
-> dependency on ksoftirqd from cpu_chill(). That is, instead of calling
-> msleep() that requires ksoftirqd to wake it up, use the
-> hrtimer_nanosleep() code that does the wakeup from hard irq context.
-> 
-> Found-by: Ulrich Obergfell <uobergfe@redhat.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-
-I should have added:
-
-Cc: stable-rt@vger.kernel.org
-
--- Steve
+Reviewed-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  include/linux/perf_event.h |  5 +++++
+>  kernel/events/core.c       | 19 ++++++++++++++++++-
+>  2 files changed, 23 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 96cb88b..147f9d3 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -252,6 +252,10 @@ struct pmu {
+>          */
+>         void (*sched_task)              (struct perf_event_context *ctx,
+>                                          bool sched_in);
+> +       /*
+> +        * PMU specific data size
+> +        */
+> +       size_t                          task_ctx_size;
+>  };
+>
+>  /**
+> @@ -496,6 +500,7 @@ struct perf_event_context {
+>         int                             pin_count;
+>         int                             nr_cgroups;      /* cgroup evts */
+>         int                             nr_branch_stack; /* branch_stack evt */
+> +       void                            *task_ctx_data; /* pmu specific data */
+>         struct rcu_head                 rcu_head;
+>  };
+>
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index aba4d6d..b6650ab 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -883,6 +883,15 @@ static void get_ctx(struct perf_event_context *ctx)
+>         WARN_ON(!atomic_inc_not_zero(&ctx->refcount));
+>  }
+>
+> +static void free_ctx(struct rcu_head *head)
+> +{
+> +       struct perf_event_context *ctx;
+> +
+> +       ctx = container_of(head, struct perf_event_context, rcu_head);
+> +       kfree(ctx->task_ctx_data);
+> +       kfree(ctx);
+> +}
+> +
+>  static void put_ctx(struct perf_event_context *ctx)
+>  {
+>         if (atomic_dec_and_test(&ctx->refcount)) {
+> @@ -890,7 +899,7 @@ static void put_ctx(struct perf_event_context *ctx)
+>                         put_ctx(ctx->parent_ctx);
+>                 if (ctx->task)
+>                         put_task_struct(ctx->task);
+> -               kfree_rcu(ctx, rcu_head);
+> +               call_rcu(&ctx->rcu_head, free_ctx);
+>         }
+>  }
+>
+> @@ -3020,6 +3029,14 @@ alloc_perf_context(struct pmu *pmu, struct task_struct *task)
+>         if (!ctx)
+>                 return NULL;
+>
+> +       if (task && pmu->task_ctx_size > 0) {
+> +               ctx->task_ctx_data = kzalloc(pmu->task_ctx_size, GFP_KERNEL);
+> +               if (!ctx->task_ctx_data) {
+> +                       kfree(ctx);
+> +                       return NULL;
+> +               }
+> +       }
+> +
+>         __perf_event_init_context(ctx);
+>         if (task) {
+>                 ctx->task = task;
+> --
+> 1.8.4.2
+>
