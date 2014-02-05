@@ -1,248 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaBEK3P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 05:29:15 -0500
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:56322 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751368AbaBEK3N (ORCPT
+	id S1751818AbaBEKfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 05:35:16 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:33712 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751388AbaBEKfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 05:29:13 -0500
-Message-ID: <52F2122A.9080603@st.com>
-Date: Wed, 5 Feb 2014 11:27:54 +0100
-From: Patrice Chotard <patrice.chotard@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 05:35:14 -0500
+Date: Wed, 5 Feb 2014 11:32:18 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 8/8] ARM: dts: sun7i: Add ethernet alias for GMAC
+Message-ID: <20140205103218.GB3192@lukather>
+References: <1391398346-5094-1-git-send-email-wens@csie.org>
+ <1391398346-5094-9-git-send-email-wens@csie.org>
+ <20140203193802.GE25625@lukather>
+ <CAGb2v659T_QTLChB0NRS0seQvwDBCmTAH6UBEghZng9Ac6uL4g@mail.gmail.com>
 MIME-Version: 1.0
-To: srinivas kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
-Cc: <maxime.coquelin@st.com>, <alexandre.torgue@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH 3/4] ARM: dts: Add support of STid127 Soc.
-References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <1391093744-19905-4-git-send-email-patrice.chotard@st.com> <52EB9C03.70009@st.com>
-In-Reply-To: <52EB9C03.70009@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.18]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v659T_QTLChB0NRS0seQvwDBCmTAH6UBEghZng9Ac6uL4g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srinivas
 
-Thanks for reviewing, a V2 serie will be pushed with all required fixes.
+--+g7M9IMkV8truYOl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Patrice
+On Wed, Feb 05, 2014 at 12:43:18PM +0800, Chen-Yu Tsai wrote:
+> On Tue, Feb 4, 2014 at 3:38 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Mon, Feb 03, 2014 at 11:32:26AM +0800, Chen-Yu Tsai wrote:
+> >> U-Boot will insert MAC address into the device tree image.
+> >> It looks up ethernet[0-5] aliases to find the ethernet nodes.
+> >> Alias GMAC as ethernet0, as it is the only ethernet controller used.
+> >>
+> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> ---
+> >>  arch/arm/boot/dts/sun7i-a20.dtsi | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7=
+i-a20.dtsi
+> >> index 65fb8d0..c48fb11 100644
+> >> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> >> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> >> @@ -17,7 +17,7 @@
+> >>       interrupt-parent =3D <&gic>;
+> >>
+> >>       aliases {
+> >> -             ethernet0 =3D &emac;
+> >> +             ethernet0 =3D &gmac;
+> >>       };
+> >
+> > I'm not very fond of this patch.
+> >
+> > People might rely on the fact that ethernet0 is actually the emac, and
+> > are expecting u-boot to fill the ethaddr variable to the emac, and not
+> > the gmac.
+> >
+> > Since u-boot is totally able to deal with several ethernet addresses,
+> > please add it as ethernet1.
+>=20
+> Actually I think we should override this in the board dts.
+> The boards we currently support can only use emac or gmac,
+> and in our u-boot tree, they have been converted to using
+> gmac. If any future boards support both emac and gmac, we
+> can address the ordering then. And the ordering should
+> match u-boot.
+>=20
+> What do you think?
 
-On 01/31/2014 01:50 PM, srinivas kandagatla wrote:
-> Hi Patrice,
->
-> On 30/01/14 14:55, Patrice CHOTARD wrote:
->> From: Alexandre TORGUE <alexandre.torgue@st.com>
->>
->> The STid127 integrates all harware components to function as a cable modem
-> s/harware/hardware/
->
-> s/STid127/STiD127
->
-> Please fix other instances too.
->
->> or, in combination with a back end device, as a Gateway set top boxe.
-> s/boxe/box/
->> Supported devices:
->> 	-UART0
->> 	-UART2
->>
->> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
->> ---
->>   arch/arm/boot/dts/stid127-clock.dtsi   |   31 ++++
->>   arch/arm/boot/dts/stid127-pinctrl.dtsi |  245 ++++++++++++++++++++++++++++++++
->>   arch/arm/boot/dts/stid127.dtsi         |  130 +++++++++++++++++
->>   3 files changed, 406 insertions(+)
->>   create mode 100644 arch/arm/boot/dts/stid127-clock.dtsi
->>   create mode 100644 arch/arm/boot/dts/stid127-pinctrl.dtsi
->>   create mode 100644 arch/arm/boot/dts/stid127.dtsi
->>
->> diff --git a/arch/arm/boot/dts/stid127-clock.dtsi b/arch/arm/boot/dts/stid127-clock.dtsi
->> new file mode 100644
->> index 0000000..c6cafa9
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/stid127-clock.dtsi
->> @@ -0,0 +1,31 @@
->> +/*
->> + * Copyright (C) 2013 STMicroelectronics (R&D) Limited
-> 2014
->
->> + * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> + *	      Alexandre Torgue <alexandre.torgue@st.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +/ {Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->> +	clocks {
->> +		/*
->> +		 * ARM Peripheral clock for timers
->> +		 */
->> +		arm_periph_clk: arm_periph_clk {
->> +			#clock-cells = <0>;
->> +			compatible = "fixed-clock";
->> +			clock-frequency = <100000000>;
->> +		};
->> +		/*
->> +		 * Bootloader initialized system infrastructure clock for
->> +		 * serial devices.
->> +		 */
->> +		CLK_IC_LP_HD: clockgenA0@29 {
->> +			#clock-cells = <0>;
->> +			compatible = "fixed-clock";
->> +			clock-frequency = <100000000>;
->> +			clock-output-names = "CLK_IC_LP_HD";
->> +		};
->> +	};
->> +};
->> diff --git a/arch/arm/boot/dts/stid127-pinctrl.dtsi b/arch/arm/boot/dts/stid127-pinctrl.dtsi
->> new file mode 100644
->> index 0000000..3fa66f3
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/stid127-pinctrl.dtsi
->> @@ -0,0 +1,245 @@
->> +/*
->> + * Copyright (C) 2012 STMicroelectronics Limited.
-> 2014
->
->> + * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> + *	      Alexandre Torgue <alexandre.torgue@st.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * publishhed by the Free Software Foundation.
-> s/publishhed/published/
->
->> + */
->> +#include "st-pincfg.h"
->> +/ {
->> +	aliases {
->> +		gpio0	= &PIO0;
->> +		gpio1	= &PIO1;
->> +		gpio2	= &PIO2;
->> +		gpio3	= &PIO3;
->> +		gpio4	= &PIO4;
->> +		gpio5	= &PIO5;
->> +		gpio6	= &PIO6;
->> +		gpio7	= &PIO7;
->> +		gpio8	= &PIO8;
->> +		gpio9	= &PIO9;
->> +		gpio10	= &PIO10;
->> +		gpio11	= &PIO11;
->> +		gpio12	= &PIO12;
->> +		gpio13	= &PIO13;
->> +		gpio14	= &PIO14;
->> +		gpio15	= &PIO15;
->> +		gpio16	= &PIO16;
->> +		gpio17	= &PIO17;
->> +		gpio18	= &PIO18;
->> +		gpio19	= &PIO19;
->> +		gpio20	= &PIO20;
->> +		gpio21	= &PIO21;
->> +		gpio22	= &PIO22;
->> +
->> +	};
->> +
->> +	soc {
->> +		pin-controller-pwest {
->> +			#address-cells	= <1>;
->> +			#size-cells	= <1>;
->> +			compatible	= "st,stid127-pwest-pinctrl";
->> +			st,syscfg	= <&syscfg_pwest>;
->> +			ranges		= <0 0xfebe0000 0x8000>;
-> Can you add interrupt controller support to the pin controller.
->
-> Patches are in : https://lkml.org/lkml/2014/1/16/342
-> All these patches are due to be in v3.15.
->
->> +
->> +			PIO0: gpio@febe0000 {
->> +				gpio-controller;
->> +				#gpio-cells = <1>;
->> +				reg = <0 0x100>;
->> +				interrupts =  <0 149 0>;
->> +				st,bank-name  = "PIO0";
->> +			};
->> +						rx	= <&PIO3 0 ALT2	IN>;
->> +					};
->> +				};
->> +			};
->> +
->> +		};
-> unnecessary empty line  here.
->
->> diff --git a/arch/arm/boot/dts/stid127.dtsi b/arch/arm/boot/dts/stid127.dtsi
->> new file mode 100644
->> index 0000000..a6f0b8fe
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/stid127.dtsi
->> @@ -0,0 +1,130 @@
->> +/*
->> + * Copyright (C) 2013 STMicroelectronics Limited.
-> 2014
->> + * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
->> + *	      Alexandre Torgue <alexandre.torgue@st.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * publishhed by the Free Software Foundation.
-> s/publishhed/published/
->
->> + */
->> +#include "stid127-pinctrl.dtsi"
->> +#include "stid127-clock.dtsi"
->> +/ {
->> +	#address-cells = <1>;
->> +	#size-cells = <1>;
->> +
->> +	cpus {
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +
->> +		cpu@0 {
->> +			device_type = "cpu";
->> +			compatible = "arm,cortex-a9";
->> +			reg = <0>;
->> +		};
->> +		cpu@1 {
->> +			device_type = "cpu";
->> +			compatible = "arm,cortex-a9";
->> +			reg = <1>;
->> +		};
->> +	};
->> +
->> +	intc: interrupt-controller@fffe1000 {
->> +		compatible = "arm,cortex-a9-gic";
->> +		#interrupt-cells = <3>;
->> +		interrupt-controller;
->> +		reg = <0xfffe1000 0x1000>,
->> +		      <0xfffe0100 0x100>;
->> +	};
->> +
->> +	scu@fffe0000 {
->> +		compatible = "arm,cortex-a9-scu";
->> +		reg = <0xfffe0000 0x1000>;
->> +	};
->> +
->> +	timer@fffe0200 {
->> +			interrupt-parent = <&intc>;
->> +			compatible = "arm,cortex-a9-global-timer";
->> +			reg = <0xfffe0200 0x100>;
->> +			interrupts = <1 11 0x04>;
->> +			clocks = <&arm_periph_clk>;
-> Fix the tab spacing here.
->
-> Thanks,
-> srini
+That what u-boot does is not a good argument (especially when it's not
+even mainline u-boot we're talking about). Otherwise, I can just cook
+up a bootloader of my own, do crazy stuff in it, and use that as an
+argument to get crazy things in the kernel.
 
+And you can set eth1addr just fine in u-boot.
+
+But thinking a bit more about your patch, I guess that this patch
+makes some kind of sense anyway..
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--+g7M9IMkV8truYOl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8hMyAAoJEBx+YmzsjxAg4LgP/jvwMnQXfRYx/L6y8+EiFNXL
+5V+xhq0FJfhaUGBiyB1MjOU3fgiSMN3x0o9/iZtthY0TY10mXqfv5C8RQAEnFioW
+i6JfzL6BEEc4ygfrPnuAmVG1BY7b723adWh+c8A3mYCI0CJXt96+4ZiciH7VnPkq
+lRuYEjA7ElEFyJiujmXxwRKFyNyyuDVfwkLuYG+RsOdugC+Cpsf1cI6C6oIlusQo
+4D8F/h8RlMgN4U7plGyCoiJrnwtuHB3dspqm0NfTTZMuB8lu2EtkNHyFwDNwdjp3
+GOgw3P5yHVSowKyiOdrql8SvekS8Aov/RU+GKhkRMX/LroWiOu9daJjF/7W5Jd+E
+y7K+7ZX7sm1GLnlzq48QzuQMA0p5V4TEmJWSWkp0Z9aleVS9ehSMSeOTN67OrimA
+Mq6XYfRKLx32DQQjRqGpiIothp6+MBR3rRYlhHj15++YgUOPx93imx5nbHNB+Bsy
+ygRz+egVhWArqy5Y+0H0qn+gbcKj6nRhUYrG3CnNA9QgxE85LFkx04P5OJDdAcRX
+z4Wit+Pt19b8kVczqq1kUFFWUbj/DqoTzLGocTA3opHzev3GROBxYxk5WskyrYBL
+WcxBGFL2NjpZFtW4emKH//7XIlke+PQlflmrZDAIxov3YSvqGmgyxiNyhjdIvk70
+LQw5uoKUW6H3jjsiIJ3M
+=Tt+P
+-----END PGP SIGNATURE-----
+
+--+g7M9IMkV8truYOl--
