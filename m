@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105AbaBEU6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:58:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:32511 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754338AbaBEU6n (ORCPT
+	id S1756057AbaBEU6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:58:16 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54697 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409AbaBEUFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:58:43 -0500
-Date: Wed, 5 Feb 2014 15:58:40 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
-        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl
-Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
- free_partial()
-Message-ID: <20140205155840.43d6b4ad@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com>
-References: <52F1F25F.20402@parallels.com>
-	<1391588133-15469-1-git-send-email-vdavydov@parallels.com>
-	<20140205195837.GA6857@home.goodmis.org>
-	<alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 5 Feb 2014 15:05:24 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: "J. Bruce Fields" <bfields@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 075/213] nfsd4: fix oops on unusual readlike compound
+Date: Wed, 5 Feb 2014 15:00:30 -0500
+Message-ID: <1391630568-49251-76-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014 12:32:43 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-> On Wed, 5 Feb 2014, Steven Rostedt wrote:
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-> There's an extremely small overhead of taking this lock, the cache has 
-> been destroyed and is the process of being torn down, there will be 
-> absolutely no contention on n->list_lock.
+commit d5f50b0c290431c65377c4afa1c764e2c3fe5305 upstream.
 
-But why add it if it isn't necessary? You're even disabling interrupts,
-which means that you add to the response latency. That is, this change
-does affect other aspects of the kernel!
+If the argument and reply together exceed the maximum payload size, then
+a reply with a read-like operation can overlow the rq_pages array.
 
--- Steve
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ fs/nfsd/nfs4xdr.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 28d586a5e77e..3800e7680037 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2607,11 +2607,16 @@ nfsd4_encode_read(struct nfsd4_compoundres *resp, __be32 nfserr,
+ 	len = maxcount;
+ 	v = 0;
+ 	while (len > 0) {
+-		pn = resp->rqstp->rq_resused++;
++		pn = resp->rqstp->rq_resused;
++		if (!resp->rqstp->rq_respages[pn]) { /* ran out of pages */
++			maxcount -= len;
++			break;
++		}
+ 		resp->rqstp->rq_vec[v].iov_base =
+ 			page_address(resp->rqstp->rq_respages[pn]);
+ 		resp->rqstp->rq_vec[v].iov_len =
+ 			len < PAGE_SIZE ? len : PAGE_SIZE;
++		resp->rqstp->rq_resused++;
+ 		v++;
+ 		len -= PAGE_SIZE;
+ 	}
+@@ -2659,6 +2664,8 @@ nfsd4_encode_readlink(struct nfsd4_compoundres *resp, __be32 nfserr, struct nfsd
+ 		return nfserr;
+ 	if (resp->xbuf->page_len)
+ 		return nfserr_resource;
++	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
++		return nfserr_resource;
+ 
+ 	page = page_address(resp->rqstp->rq_respages[resp->rqstp->rq_resused++]);
+ 
+@@ -2708,6 +2715,8 @@ nfsd4_encode_readdir(struct nfsd4_compoundres *resp, __be32 nfserr, struct nfsd4
+ 		return nfserr;
+ 	if (resp->xbuf->page_len)
+ 		return nfserr_resource;
++	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
++		return nfserr_resource;
+ 
+ 	RESERVE_SPACE(8);  /* verifier */
+ 	savep = p;
+-- 
+1.8.5.2
+
