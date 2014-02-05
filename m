@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaBEQj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 11:39:58 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:38226 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaBEQj5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 11:39:57 -0500
-From: "Pearson, Greg" <greg.pearson@hp.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] vmcore: prevent PT_NOTE p_memsz overflow during
- header update
-Thread-Topic: [PATCH v3] vmcore: prevent PT_NOTE p_memsz overflow during
- header update
-Thread-Index: AQHPInepF7jjpBi8m0+cOpOVT5HFEpqm3KAA
-Date: Wed, 5 Feb 2014 16:39:05 +0000
-Message-ID: <52F26928.4050101@hp.com>
-References: <1391556352-15881-1-git-send-email-greg.pearson@hp.com>
- <20140205133912.GC6042@redhat.com>
-In-Reply-To: <20140205133912.GC6042@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
- Thunderbird/17.0.5
-x-originating-ip: [16.216.198.110]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <2CE267EB076B324390E2D20704813C38@Compaq.com>
-Content-Transfer-Encoding: 7BIT
+	id S1753134AbaBEQkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 11:40:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753044AbaBEQkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 11:40:31 -0500
+Date: Wed, 5 Feb 2014 11:40:25 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, apic: clean up handling of boot_cpu_physical_apicid
+ in boot process
+Message-ID: <20140205164025.GG6042@redhat.com>
+References: <52D7A8F0.70807@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D7A8F0.70807@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 06:39 AM, Vivek Goyal wrote:
-> On Tue, Feb 04, 2014 at 04:25:52PM -0700, Greg Pearson wrote:
->
-> [..]
->> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
->> index 2ca7ba0..88d4585 100644
->> --- a/fs/proc/vmcore.c
->> +++ b/fs/proc/vmcore.c
->> @@ -468,17 +468,24 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
->>   			return rc;
->>   		}
->>   		nhdr_ptr = notes_section;
->> -		while (real_sz < max_sz) {
->> -			if (nhdr_ptr->n_namesz == 0)
->> -				break;
->> +		while (nhdr_ptr->n_namesz != 0) {
->>   			sz = sizeof(Elf64_Nhdr) +
->>   				((nhdr_ptr->n_namesz + 3) & ~3) +
->>   				((nhdr_ptr->n_descsz + 3) & ~3);
->> +			if ((real_sz + sz) > max_sz) {
->> +				pr_warn("Warning: Exceeded p_memsz, dropping PT_NOTE entry n_namesz=0x%x, n_descsz=0x%x\n",
->> +					nhdr_ptr->n_namesz, nhdr_ptr->n_descsz);
-> You will need line break in pr_warn(). Too long a line. Limit it 80
-> columns per line.
+On Thu, Jan 16, 2014 at 06:40:00PM +0900, HATAYAMA Daisuke wrote:
 
-The checkpatch.pl script issues a warning when you break quoted strings, 
-I have no personal preference. Just let me know if you want me to ignore 
-the checkpatch warning and conform to the 80 column per line limit.
+[..]
+> diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+> index 3142a94..724853f 100644
+> --- a/arch/x86/include/asm/mpspec.h
+> +++ b/arch/x86/include/asm/mpspec.h
+> @@ -47,6 +47,7 @@ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
+>  extern DECLARE_BITMAP(mp_bus_not_pci, MAX_MP_BUSSES);
+>  
+>  extern unsigned int boot_cpu_physical_apicid;
+> +extern unsigned int bios_bsp_physical_apicid;
 
-Also, I'm still debugging the reason why the corrupt entries show up, 
-I'll continue to work on that.
+I think put some comments here to explain clearly what is
+boot_cpu_physical_apicid and what is bios_bsp_physical_apicid and what's
+the difference. So that anybody making use of these variables or changing
+code understands the difference better.
 
 Thanks
-
---
-Greg
-
-
->
->> +				break;
->> +			}
->>   			real_sz += sz;
->>   			nhdr_ptr = (Elf64_Nhdr*)((char*)nhdr_ptr + sz);
->>   		}
->>   		kfree(notes_section);
->>   		phdr_ptr->p_memsz = real_sz;
->> +		if (real_sz == 0) {
->> +			pr_warn("Warning: Zero PT_NOTE entries found\n");
->> +			return -EINVAL;
-> Given the fact that this is the first time I have heard about a PT_NOTE
-> being corrup, I will be fine with this patch too. If one encounters
-> an empty PT_NOTE, error out and don't create vmcore.
->
-> So please repost this patch with line lenght fixed.
->
-> Thanks
-> Vivek
+Vivek
