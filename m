@@ -1,393 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453AbaBEIVU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:21:20 -0500
-Received: from www84.your-server.de ([213.133.104.84]:36028 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084AbaBEITf (ORCPT
+	id S1754327AbaBEIWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:22:49 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:33199 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158AbaBEIWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:19:35 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v12 8/9] Add 32 bit VDSO time support for 32 bit kernel
-Date: Wed,  5 Feb 2014 09:20:03 +0100
-Message-Id: <1391588404-28147-9-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1391588404-28147-1-git-send-email-stefani@seibold.net>
-References: <1391588404-28147-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 5 Feb 2014 03:22:48 -0500
+Date: Wed, 5 Feb 2014 00:22:46 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
+ free_partial()
+In-Reply-To: <1391588133-15469-1-git-send-email-vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.02.1402050022030.7839@chino.kir.corp.google.com>
+References: <52F1F25F.20402@parallels.com> <1391588133-15469-1-git-send-email-vdavydov@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Wed, 5 Feb 2014, Vladimir Davydov wrote:
 
-This patch add the time support for 32 bit a VDSO to a 32 bit kernel.
+> Commit c65c1877bd68 ("slub: use lockdep_assert_held") requires
+> remove_partial() to be called with n->list_lock held, but free_partial()
+> called from kmem_cache_close() on cache destruction does not follow this
+> rule, leading to a warning:
+> 
+>   WARNING: CPU: 0 PID: 2787 at mm/slub.c:1536 __kmem_cache_shutdown+0x1b2/0x1f0()
+>   Modules linked in:
+>   CPU: 0 PID: 2787 Comm: modprobe Tainted: G        W    3.14.0-rc1-mm1+ #1
+>   Hardware name:
+>    0000000000000600 ffff88003ae1dde8 ffffffff816d9583 0000000000000600
+>    0000000000000000 ffff88003ae1de28 ffffffff8107c107 0000000000000000
+>    ffff880037ab2b00 ffff88007c240d30 ffffea0001ee5280 ffffea0001ee52a0
+>   Call Trace:
+>    [<ffffffff816d9583>] dump_stack+0x51/0x6e
+>    [<ffffffff8107c107>] warn_slowpath_common+0x87/0xb0
+>    [<ffffffff8107c145>] warn_slowpath_null+0x15/0x20
+>    [<ffffffff811c7fe2>] __kmem_cache_shutdown+0x1b2/0x1f0
+>    [<ffffffff811908d3>] kmem_cache_destroy+0x43/0xf0
+>    [<ffffffffa013a123>] xfs_destroy_zones+0x103/0x110 [xfs]
+>    [<ffffffffa0192b54>] exit_xfs_fs+0x38/0x4e4 [xfs]
+>    [<ffffffff811036fa>] SyS_delete_module+0x19a/0x1f0
+>    [<ffffffff816dfcd8>] ? retint_swapgs+0x13/0x1b
+>    [<ffffffff810d2125>] ? trace_hardirqs_on_caller+0x105/0x1d0
+>    [<ffffffff81359efe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>    [<ffffffff816e8539>] system_call_fastpath+0x16/0x1b
+> 
+> Although this cannot actually result in a race, because on cache
+> destruction there should not be any concurrent frees or allocations from
+> the cache, let's add spin_lock/unlock to free_partial() just to keep
+> lockdep happy.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-For 32 bit programs running on a 32 bit kernel, the same mechanism is
-used as for 64 bit programs running on a 64 bit kernel.
+Acked-by: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/include/asm/vdso.h           |  3 ++
- arch/x86/include/asm/vdso32.h         | 11 +++++++
- arch/x86/vdso/Makefile                |  7 +++++
- arch/x86/vdso/vclock_gettime.c        | 54 ++++++++++++++++++++++++++++++++--
- arch/x86/vdso/vdso-layout.lds.S       | 22 ++++++++++++++
- arch/x86/vdso/vdso32-setup.c          | 55 +++++++++++++++++++++++++++++++----
- arch/x86/vdso/vdso32/vclock_gettime.c | 16 ++++++++++
- arch/x86/vdso/vdso32/vdso32.lds.S     |  9 ++++++
- 8 files changed, 169 insertions(+), 8 deletions(-)
- create mode 100644 arch/x86/include/asm/vdso32.h
- create mode 100644 arch/x86/vdso/vdso32/vclock_gettime.c
-
-diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index fddb53d..fe3cef9 100644
---- a/arch/x86/include/asm/vdso.h
-+++ b/arch/x86/include/asm/vdso.h
-@@ -2,6 +2,9 @@
- #define _ASM_X86_VDSO_H
- 
- #if defined CONFIG_X86_32 || defined CONFIG_COMPAT
-+
-+#include <asm/vdso32.h>
-+
- extern const char VDSO32_PRELINK[];
- 
- /*
-diff --git a/arch/x86/include/asm/vdso32.h b/arch/x86/include/asm/vdso32.h
-new file mode 100644
-index 0000000..7efb701
---- /dev/null
-+++ b/arch/x86/include/asm/vdso32.h
-@@ -0,0 +1,11 @@
-+#ifndef _ASM_X86_VDSO32_H
-+#define _ASM_X86_VDSO32_H
-+
-+#define VDSO_BASE_PAGE	0
-+#define VDSO_VVAR_PAGE	1
-+#define VDSO_HPET_PAGE	2
-+#define VDSO_PAGES	3
-+#define VDSO_PREV_PAGES	2
-+#define VDSO_OFFSET(x)	((x) * PAGE_SIZE)
-+
-+#endif
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index fd14be1..1ff5b0a 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -145,8 +145,15 @@ KBUILD_AFLAGS_32 := $(filter-out -m64,$(KBUILD_AFLAGS))
- $(vdso32-images:%=$(obj)/%.dbg): KBUILD_AFLAGS = $(KBUILD_AFLAGS_32)
- $(vdso32-images:%=$(obj)/%.dbg): asflags-$(CONFIG_X86_64) += -m32
- 
-+KBUILD_CFLAGS_32 := $(filter-out -m64,$(KBUILD_CFLAGS))
-+KBUILD_CFLAGS_32 := $(filter-out -mcmodel=kernel,$(KBUILD_CFLAGS_32))
-+KBUILD_CFLAGS_32 := $(filter-out -fno-pic,$(KBUILD_CFLAGS_32))
-+KBUILD_CFLAGS_32 += -m32 -msoft-float -mregparm=3 -freg-struct-return -fpic
-+$(vdso32-images:%=$(obj)/%.dbg): KBUILD_CFLAGS = $(KBUILD_CFLAGS_32)
-+
- $(vdso32-images:%=$(obj)/%.dbg): $(obj)/vdso32-%.so.dbg: FORCE \
- 				 $(obj)/vdso32/vdso32.lds \
-+				 $(obj)/vdso32/vclock_gettime.o \
- 				 $(obj)/vdso32/note.o \
- 				 $(obj)/vdso32/%.o
- 	$(call if_changed,vdso)
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 74e5c8e..469e57b 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -4,6 +4,9 @@
-  *
-  * Fast user context implementation of clock_gettime, gettimeofday, and time.
-  *
-+ * 32 Bit compat layer by Stefani Seibold <stefani@seibold.net>
-+ *  sponsored by Rohde & Schwarz GmbH & Co. KG Munich/Germany
-+ *
-  * The code should have no internal unresolved relocations.
-  * Check with readelf after changing.
-  */
-@@ -26,6 +29,8 @@
- 
- #define gtod (&VVAR(vsyscall_gtod_data))
- 
-+#ifndef BUILD_VDSO32
-+
- static notrace cycle_t vread_hpet(void)
- {
- 	return readl((const void __iomem *)fix_to_virt(VSYSCALL_HPET) + HPET_COUNTER);
-@@ -47,6 +52,49 @@ notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
- 	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
- 	return ret;
- }
-+#else
-+
-+u8 hpet_page
-+	__attribute__((visibility("hidden")));
-+
-+#ifdef CONFIG_HPET_TIMER
-+static notrace cycle_t vread_hpet(void)
-+{
-+	return readl(&hpet_page + HPET_COUNTER);
-+}
-+#endif
-+
-+notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-+{
-+	long ret;
-+
-+	asm(
-+		"push %%ebx \n"
-+		"mov %2,%%ebx \n"
-+		"call VDSO32_vsyscall \n"
-+		"pop %%ebx \n"
-+		: "=a" (ret)
-+		: "0" (__NR_clock_gettime), "d" (clock), "c" (ts)
-+		: "memory");
-+	return ret;
-+}
-+
-+notrace static long vdso_fallback_gtod(struct timeval *tv,
-+		struct timezone *tz)
-+{
-+	long ret;
-+
-+	asm(
-+		"push %%ebx \n"
-+		"mov %2,%%ebx \n"
-+		"call VDSO32_vsyscall \n"
-+		"pop %%ebx \n"
-+		: "=a" (ret)
-+		: "0" (__NR_gettimeofday), "d" (tv), "c" (tz)
-+		: "memory");
-+	return ret;
-+}
-+#endif
- 
- #ifdef CONFIG_PARAVIRT_CLOCK
- 
-@@ -152,12 +200,14 @@ notrace static cycle_t vread_tsc(void)
- 
- notrace static inline u64 vgetsns(int *mode)
- {
--	long v;
-+	u64 v;
- 	cycles_t cycles;
- 	if (gtod->clock.vclock_mode == VCLOCK_TSC)
- 		cycles = vread_tsc();
-+#ifdef CONFIG_HPET_TIMER
- 	else if (gtod->clock.vclock_mode == VCLOCK_HPET)
- 		cycles = vread_hpet();
-+#endif
- #ifdef CONFIG_PARAVIRT_CLOCK
- 	else if (gtod->clock.vclock_mode == VCLOCK_PVCLOCK)
- 		cycles = vread_pvclock(mode);
-@@ -284,7 +334,7 @@ int gettimeofday(struct timeval *, struct timezone *)
-  */
- notrace time_t __vdso_time(time_t *t)
- {
--	/* This is atomic on x86_64 so we don't need any locks. */
-+	/* This is atomic on x86 so we don't need any locks. */
- 	time_t result = ACCESS_ONCE(gtod->wall_time_sec);
- 
- 	if (t)
-diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
-index 634a2cf..1261437 100644
---- a/arch/x86/vdso/vdso-layout.lds.S
-+++ b/arch/x86/vdso/vdso-layout.lds.S
-@@ -6,6 +6,24 @@
- 
- SECTIONS
- {
-+#ifdef BUILD_VDSO32
-+#include <asm/vdso32.h>
-+
-+	.hpet_sect : {
-+		hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
-+	} :text :hpet_sect
-+
-+	.vvar_sect : {
-+		vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
-+
-+	/* Place all vvars at the offsets in asm/vvar.h. */
-+#define EMIT_VVAR(name, offset) vvar_ ## name = vvar + offset;
-+#define __VVAR_KERNEL_LDS
-+#include <asm/vvar.h>
-+#undef __VVAR_KERNEL_LDS
-+#undef EMIT_VVAR
-+	} :text :vvar_sect
-+#endif
- 	. = VDSO_PRELINK + SIZEOF_HEADERS;
- 
- 	.hash		: { *(.hash) }			:text
-@@ -61,4 +79,8 @@ PHDRS
- 	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
- 	note		PT_NOTE		FLAGS(4);		/* PF_R */
- 	eh_frame_hdr	PT_GNU_EH_FRAME;
-+#ifdef BUILD_VDSO32
-+	vvar_sect	PT_NULL		FLAGS(4);		/* PF_R */
-+	hpet_sect	PT_NULL		FLAGS(4);		/* PF_R */
-+#endif
- }
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index d6bfb87..65ccebc 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -25,6 +25,7 @@
- #include <asm/tlbflush.h>
- #include <asm/vdso.h>
- #include <asm/proto.h>
-+#include <asm/fixmap.h>
- 
- enum {
- 	VDSO_DISABLED = 0,
-@@ -193,7 +194,7 @@ static __init void relocate_vdso(Elf32_Ehdr *ehdr)
- 	}
- }
- 
--static struct page *vdso32_pages[1];
-+static struct page *vdso32_pages[VDSO_PAGES];
- 
- #ifdef CONFIG_X86_64
- 
-@@ -310,6 +311,11 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 	unsigned long addr;
- 	int ret = 0;
- 	bool compat;
-+	struct vm_area_struct *vma;
-+	extern char __vvar_page;
-+#ifdef CONFIG_HPET_TIMER
-+	extern unsigned long hpet_address;
-+#endif
- 
- #ifdef CONFIG_X86_X32_ABI
- 	if (test_thread_flag(TIF_X32))
-@@ -330,11 +336,13 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 	if (compat)
- 		addr = VDSO_HIGH_BASE;
- 	else {
--		addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
-+		addr = get_unmapped_area(NULL, 0, VDSO_OFFSET(VDSO_PAGES), 0, 0);
- 		if (IS_ERR_VALUE(addr)) {
- 			ret = addr;
- 			goto up_fail;
- 		}
-+
-+		addr += VDSO_OFFSET(VDSO_PREV_PAGES);
- 	}
- 
- 	current->mm->context.vdso = (void *)addr;
-@@ -343,13 +351,48 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 		/*
- 		 * MAYWRITE to allow gdb to COW and set breakpoints
- 		 */
--		ret = install_special_mapping(mm, addr, PAGE_SIZE,
--					      VM_READ|VM_EXEC|
--					      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
--					      vdso32_pages);
-+		ret = install_special_mapping(mm,
-+				addr,
-+				VDSO_OFFSET(VDSO_PAGES - VDSO_PREV_PAGES),
-+				VM_READ|VM_EXEC|
-+				VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
-+				vdso32_pages);
-+
-+		if (ret)
-+			goto up_fail;
-+
-+		vma = _install_special_mapping(mm,
-+				addr -  VDSO_OFFSET(VDSO_PREV_PAGES),
-+				VDSO_OFFSET(VDSO_PREV_PAGES),
-+				VM_READ,
-+				NULL);
-+
-+		if (IS_ERR(vma)) {
-+			ret = PTR_ERR(vma);
-+			goto up_fail;
-+		}
-+
-+		ret = remap_pfn_range(vma,
-+			addr - VDSO_OFFSET(VDSO_VVAR_PAGE),
-+			__pa_symbol(&__vvar_page) >> PAGE_SHIFT,
-+			PAGE_SIZE,
-+			PAGE_READONLY);
- 
- 		if (ret)
- 			goto up_fail;
-+
-+#ifdef CONFIG_HPET_TIMER
-+		if (hpet_address) {
-+			ret = io_remap_pfn_range(vma,
-+				addr - VDSO_OFFSET(VDSO_HPET_PAGE),
-+				hpet_address >> PAGE_SHIFT,
-+				PAGE_SIZE,
-+				pgprot_noncached(PAGE_READONLY));
-+
-+			if (ret)
-+				goto up_fail;
-+		}
-+#endif
- 	}
- 
- 	current_thread_info()->sysenter_return =
-diff --git a/arch/x86/vdso/vdso32/vclock_gettime.c b/arch/x86/vdso/vdso32/vclock_gettime.c
-new file mode 100644
-index 0000000..fab4ec6
---- /dev/null
-+++ b/arch/x86/vdso/vdso32/vclock_gettime.c
-@@ -0,0 +1,16 @@
-+#define BUILD_VDSO32
-+
-+#ifdef CONFIG_X86_64
-+
-+#define _ASM_X86_PAGE_H
-+
-+#define __pa(x)                0
-+#define __va(x)                0
-+
-+#undef CONFIG_ILLEGAL_POINTER_VALUE
-+#define CONFIG_ILLEGAL_POINTER_VALUE   0
-+
-+#endif
-+
-+#include "../vclock_gettime.c"
-+
-diff --git a/arch/x86/vdso/vdso32/vdso32.lds.S b/arch/x86/vdso/vdso32/vdso32.lds.S
-index 976124b..bc8bf6d 100644
---- a/arch/x86/vdso/vdso32/vdso32.lds.S
-+++ b/arch/x86/vdso/vdso32/vdso32.lds.S
-@@ -8,6 +8,9 @@
-  * values visible using the asm-x86/vdso.h macros from the kernel proper.
-  */
- 
-+#include <asm/page.h>
-+
-+#define BUILD_VDSO32
- #define VDSO_PRELINK 0
- #include "../vdso-layout.lds.S"
- 
-@@ -24,6 +27,9 @@ VERSION
- 		__kernel_vsyscall;
- 		__kernel_sigreturn;
- 		__kernel_rt_sigreturn;
-+		__vdso_clock_gettime;
-+		__vdso_gettimeofday;
-+		__vdso_time;
- 	local: *;
- 	};
- }
-@@ -35,3 +41,6 @@ VDSO32_PRELINK		= VDSO_PRELINK;
- VDSO32_vsyscall		= __kernel_vsyscall;
- VDSO32_sigreturn	= __kernel_sigreturn;
- VDSO32_rt_sigreturn	= __kernel_rt_sigreturn;
-+VDSO32_clock_gettime	= clock_gettime;
-+VDSO32_gettimeofday	= gettimeofday;
-+VDSO32_time		= time;
--- 
-1.8.5.3
-
+And thanks for trying the irq-free variant!
