@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaBEOMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:12:05 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58254 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaBEOMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:12:01 -0500
-Message-ID: <52F24683.9060200@ti.com>
-Date: Wed, 5 Feb 2014 19:41:15 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1751744AbaBEOOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:14:22 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36314 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaBEOOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 09:14:20 -0500
+Date: Wed, 5 Feb 2014 14:13:58 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>, Wolfram Sang <wsa@the-dreams.de>,
+        Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        linux-spi@vger.kernel.org,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Message-ID: <20140205141358.GJ22609@sirena.org.uk>
+References: <1391529538-21685-1-git-send-email-ulf.hansson@linaro.org>
+ <1391529538-21685-6-git-send-email-ulf.hansson@linaro.org>
+ <8738jyu1h9.fsf@paris.lan>
+ <CACRpkdZt5+t7b0_a__2kJP4V9PS2cyXmguWrST+fzbKCnosi7g@mail.gmail.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
-        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
-        <mark.rutland@arm.com>, <robherring2@gmail.com>,
-        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
-        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar
- IP
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <1386066445-28245-3-git-send-email-r.sricharan@ti.com> <52D7B2CA.8080902@ti.com> <52EF7D85.5070705@ti.com> <alpine.DEB.2.02.1402041713470.24986@ionos.tec.linutronix.de> <52F23887.9060209@ti.com>
-In-Reply-To: <52F23887.9060209@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NN0dgmCSDRRJ0kp/"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZt5+t7b0_a__2kJP4V9PS2cyXmguWrST+fzbKCnosi7g@mail.gmail.com>
+X-Cookie: PARDON me, am I speaking ENGLISH?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 05/17] mmc: mmci: Put the device into low power state at
+ system suspend
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
 
-On Wednesday 05 February 2014 06:41 PM, Sricharan R wrote:
-> On Tuesday 04 February 2014 09:44 PM, Thomas Gleixner wrote:
->> On Mon, 3 Feb 2014, Sricharan R wrote:
->>>> I already have your reviewed-by tag for the first patch in this series.
->>>>
->>>> Kevin was pointing out that irqchip maintainer tag is needed for this patch as well
->>>> to be merged. We are planning to take this series through arm-soc tree.
->>>>
->>>> Can i please have your tag for this patch as well ?
->>
->> Acked-by-me
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> Thanks Thomas.
-> 
-> Kevin,
->     I will re-send a branch based on rc1 for this.
-> 
+--NN0dgmCSDRRJ0kp/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I have pushed a branch based on mainline,
-   git://github.com/Sricharanti/sricharan.git
-   branch: crossbar_3.14_rc1
+On Wed, Feb 05, 2014 at 01:49:49PM +0100, Linus Walleij wrote:
+> On Tue, Feb 4, 2014 at 8:22 PM, Kevin Hilman <khilman@linaro.org> wrote:
 
-Regards,
- Sricharan
+> > I'm trying to thing of a good reason to not make PM_SLEEP depend on
+> > PM_RUNTIME for platforms like this.
 
+> Isn't the typical Android platform using PM_SLEEP without using
+> PM_RUNTIME?
+
+No, not at all.  Android does make aggressive use of sleep but it's also
+highly desirable to use runtime PM - for example you don't want to have
+to power up the entire SoC simply because the system is getting a new
+e-mail pushed to it or location updates, most of the hardware is doing
+nothing.
+
+--NN0dgmCSDRRJ0kp/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8kciAAoJELSic+t+oim9RHMP/1sOol6uyBPyCeoYAIDa1zv3
+JmyludROrGMYmnRCYTAIu9P656WfkYpjqrXJW2dQms76B9XCgkCoLedvbai3acz5
+CFTUVv3IPjSARmO6J73+9K6Ivpy2vraQCrfA3bkVyzKApdtl5SWidjRMH6ISKpS+
+m9hDTzc2ND0OJuLt/xkSc2khGsKIcFrNkjHAvfePRzzwOaCXXC1RRcU4CpYHSG7g
+olGw5HX+u5fWbq8o8TNKGtKlAVLR24KVafwjBXw3/RCSKAGAy1kgYsXLCiAkrnQ5
+nnTcUD4Xyw+jT1roIPONZr9cKjpMka8aG6k7pJO3ti5oztzV1mO6MTpAApm2Ww8W
+91D5GJJNrNROnHhJlt8etNPrT0Xr52oUX+Dy03pNqYEoY5y4yhUOFM1QOIc7/l0C
+KBvVFZ2L5asB7AqXvz0qCvvlZgorjwPTqWhvOfSZYGWcI/WyIh5HvxZ5aESjttBM
+GFLOmLt37snOuzyZYtDwCh+LxFmzfdMNega2lNL20AXjLZah+/nXGUTQ/LFFxoH2
+HsCHOnyh0ELcEc+Xk4nTCY9X72k0hoZdlwMrhAFuZ/NhXR8YQs010Vsd0+loIH7e
++ekxhy8RJYpr8QFRFPrJYWR/68wlRSInxWMHXlDu4Dkc24qa3Zkv3sATzzSQJpfI
+8YT+IczGa9wjteaJOVBG
+=8X+O
+-----END PGP SIGNATURE-----
+
+--NN0dgmCSDRRJ0kp/--
