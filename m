@@ -1,138 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483AbaBEIVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:21:21 -0500
-Received: from www84.your-server.de ([213.133.104.84]:36026 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbaBEITf (ORCPT
+	id S932513AbaBEIVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:21:38 -0500
+Received: from sabertooth02.qualcomm.com ([65.197.215.38]:14409 "EHLO
+	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbaBEIVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:19:35 -0500
-From: stefani@seibold.net
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v12 0/9] Add 32 bit VDSO time function support
-Date: Wed,  5 Feb 2014 09:19:55 +0100
-Message-Id: <1391588404-28147-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.5.3
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 5 Feb 2014 03:21:35 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,7339"; a="59034197"
+X-IronPort-AV: E=McAfee;i="5400,1158,7339"; a="613394851"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: <linux-pci@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <ath10k@lists.infradead.org>
+Subject: Re: [PATCH 1/3] ath10k: Get rid of superfluous call to pci_disable_msi()
+References: <cover.1389904166.git.agordeev@redhat.com>
+	<ad5cc6d6bdf4c8f5ce4681ec27674d07fbda089e.1389904167.git.agordeev@redhat.com>
+	<20140130134819.GA31909@dhcp-26-207.brq.redhat.com>
+	<87y51qohjn.fsf@kamboji.qca.qualcomm.com>
+	<20140204190935.GA1430@dhcp-26-207.brq.redhat.com>
+Date: Wed, 5 Feb 2014 10:21:28 +0200
+In-Reply-To: <20140204190935.GA1430@dhcp-26-207.brq.redhat.com> (Alexander
+	Gordeev's message of "Tue, 4 Feb 2014 20:09:36 +0100")
+Message-ID: <8761oum0l3.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+Alexander Gordeev <agordeev@redhat.com> writes:
 
-This patch add the functions vdso_gettimeofday(), vdso_clock_gettime()
-and vdso_time() to the 32 bit VDSO.
+> On Tue, Feb 04, 2014 at 08:32:12PM +0200, Kalle Valo wrote:
+>> Alexander Gordeev <agordeev@redhat.com> writes:
+>> 
+>> I don't understand how this is superfluous. When I read the
+>> documentation for pci_enable_msi_block() it states that if it can't
+>> allocate all requests, it will return the number requests it could
+>> allocate. And in that case we want to fall back other modes.
+>> 
+>> Am I missing something?
+>
+> Yep. The documentation states 'could have been allocated', not 'could
+> allocate'. IOW, MSIs are *not* enabled if a positive value returned.
+> The code I changed tries to disable MSIs in such case, although it is
+> not necessary, nor required. Just superfluous.
 
-The reason to do this was to get a fast reliable time stamp. Many developers
-uses TSC to get a fast time stamp, without knowing the pitfalls. VDSO
-time functions a fast and a reliable way, because the kernel knows the
-best time source and the P- and C-state of the CPU.
+Ah, thanks for explaining that. I added this to the commit log (I hate
+empty commit logs anyway):
 
-The helper library to use the VDSO functions can be download at
-http://http://seibold.net/vdso.c
-The libary is very small, only 228 lines of code. Compile it with
-gcc -Wall -O3 -fpic vdso.c -lrt -shared -o libvdso.so
-and use it with LD_PRELOAD=<path>/libvdso.so
+    ath10k: Get rid of superfluous call to pci_disable_msi()
+    
+    The documentation states that pci_enable_msi_block() returns the number of
+    requests 'could have been allocated', not 'could allocate'. IOW, MSIs are *not*
+    enabled if a positive value returned.
+    
+    kvalo: add commit log based on Alexander's email
+    
+    Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+    Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
 
-This kind of helper must be integrated into glibc, for x86 64 bit and
-PowerPC it is already there.
+Is it ok for me to take these patches to my ath.git tree or would you
+prefer to route them some other way?
 
-Some linux 32 bit kernel benchmark results (all measurements are in nano
-seconds):
-
-Intel(R) Celeron(TM) CPU 400MHz
-
-Average time kernel call:
- gettimeofday(): 1039
- clock_gettime(): 1578
- time(): 526
-Average time VDSO call:
- gettimeofday(): 378
- clock_gettime(): 303
- time(): 60
-
-Celeron(R) Dual-Core CPU T3100 1.90GHz
-
-Average time kernel call:
- gettimeofday(): 209
- clock_gettime(): 406
- time(): 135
-Average time VDSO call:
- gettimeofday(): 51
- clock_gettime(): 43
- time(): 10
-
-So you can see a performance increase between 4 and 13, depending on the
-CPU and the function.
-
-The address layout of the VDSO has changed, because there is no fixed
-address space available on a x86 32 bit kernel, despite the name. Because
-someone decided to add an offset to the __FIXADDR_TOP for virtualization.
-
-Also the IA32 Emulation uses the whole 4 GB address space, so there is no
-fixed address available.
-
-This was the reason not depend on this kind of address and change the layout
-of the VDSO. The VDSO for a 32 bit application has now three pages:
-
-^ Higher Address
-|
-+----------------------------------------+
-+ VDSO page (includes code) ro+x         +
-+----------------------------------------+
-+ VVAR page (export kernel variables) ro +
-+----------------------------------------+
-+ HPET page (mapped registers) ro 
-+----------------------------------------+
-|
-^ Lower Address
-
-The VDSO page for a 32 bit resided still on 0xffffe000, the the VVAR and
-HPET page are mapped before.
-
-In the non compat mode the VMA of the VDSO is now 3 pages for a 32 bit kernel.
-So this decrease the available logical address room by 2 pages.
-
-The patch is against kernel 3.14 (e7651b819e90da924991d727d3c007200a18670d)
-
-Changelog:
-25.11.2012 - first release and proof of concept for linux 3.4
-11.12.2012 - Port to linux 3.7 and code cleanup
-12.12.2012 - fixes suggested by Andy Lutomirski
-           - fixes suggested by John Stultz
-           - use call VDSO32_vsyscall instead of int 80
-           - code cleanup
-17.12.2012 - support for IA32_EMULATION, this includes
-             - code cleanup
-             - include cleanup to fix compile warnings and errors
-             - move out seqcount from seqlock, enable use in VDSO
-             - map FIXMAP and HPET into the 32 bit address space
-18.12.2012 - split into separate patches
-30.01.2014 - revamp the code
-             - code clean up
-             - VDSO layout changed
-             - no fixed addresses
-             - port to 3.14
-01.02.2014 - code cleanup
-02.02.2014 - code cleanup
-             - split into more patches
-             - use HPET_COUNTER instead of hard coded value
-             - fix changelog to the right year ;-)
-02.02.2014 - reverse the mapping, this make the new VDSO 32 bit support
-             full compatible.
-03.02.2014 - code cleanup
-             - fix comment
-             - fix ABI break in vdso32.lds.S
-04.02.2014 - revamp IA32 emulation support
-             - introduce VVAR macro
-             - rearranged vsyscall_gtod_data struture for IA32 emulation support
-	     - code cleanup
-05.02.2014 - revamp IA32 emulation support
-             - replace seqcount_t by an unsigned, to make the vsyscall_gtod_data
-               structure independed of kernel config and functions.
+-- 
+Kalle Valo
