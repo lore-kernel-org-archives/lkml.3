@@ -1,75 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaBETJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 14:09:27 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56029 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaBETJY (ORCPT
+	id S1751526AbaBETPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 14:15:52 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41831 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaBETPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 14:09:24 -0500
-Date: Wed, 5 Feb 2014 11:09:24 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.14-rc1
-Message-ID: <20140205190924.GA24360@roeck-us.net>
-References: <1391504269-6957-1-git-send-email-geert@linux-m68k.org>
+	Wed, 5 Feb 2014 14:15:50 -0500
+Message-ID: <52F28DE2.1040207@wwwdotorg.org>
+Date: Wed, 05 Feb 2014 12:15:46 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391504269-6957-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Danny Huang <dahuang@nvidia.com>,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 3/6] misc: fuse: Add efuse driver for Tegra
+References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com> <1390952176-30402-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1390952176-30402-4-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 09:57:49AM +0100, Geert Uytterhoeven wrote:
-> Below is the list of build error/warning regressions/improvements in
-> v3.14-rc1[1] compared to v3.13[2].
-> 
-[ ... ]
-> *** ERRORS ***
-> 
-> 9 regressions:
->   + /scratch/kisskb/src/arch/powerpc/kernel/exceptions-64s.S: Error: attempt to move .org backwards:  => 1312
->   + /scratch/kisskb/src/drivers/gpio/gpio-xtensa.c: error: implicit declaration of function 'RSR_CPENABLE' [-Werror=implicit-function-declaration]:  => 48:2
->   + /scratch/kisskb/src/drivers/gpio/gpio-xtensa.c: error: implicit declaration of function 'WSR_CPENABLE' [-Werror=implicit-function-declaration]:  => 49:2
->   + /scratch/kisskb/src/drivers/staging/android/ion/ion_dummy_driver.c: error: implicit declaration of function 'virt_to_phys' [-Werror=implicit-function-declaration]:  => 81:7
->   + /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: error: 'ffsusb_func' undeclared (first use in this function):  => 2688:1
->   + /scratch/kisskb/src/include/linux/omap-dma.h: error: expected identifier before numeric constant: 171:8 => 168:6, 171:8
->   + error: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!:  => N/A
+On 01/28/2014 04:36 PM, Peter De Schrijver wrote:
+> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-[ affects sparc64:allmodconfig ]
+I assume most of this code is simply cut/paste from the existing code in
+arch/arm/mach-tegra/? If so, "git format-patch -C" would have been
+useful to highlight what changed when duplicating the files.
 
->   + error: No rule to make target include/config/auto.conf:  => N/A
->   + error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+bc8:  => (.text+0x9c2)
-> 
+> diff --git a/Documentation/ABI/testing/sysfs-driver-tegra-fuse b/Documentation/ABI/testing/sysfs-driver-tegra-fuse
+> +What:		/sys/devices/*/<our-device>/fuse
+> +Date:		December 2013
+> +Contact:	Peter De Schrijver <pdeschrijver@nvidia.com>
+> +Description:	read-only access to the efuses on Tegra20, Tegra30, Tegra114
+> +		and Tegra124 SoC's from NVIDIA. The efuses contain write once
+> +		data programmed at the factory.
+> +Users:		any user space application which wants to read the efuses on
+> +		Tegra SoC's
 
-Also:
+Surely this file should describe the format of the file, since that's
+part of the ABI too, right?
 
-All c6x builds:
+> diff --git a/drivers/misc/fuse/tegra/fuse-tegra20.c b/drivers/misc/fuse/tegra/fuse-tegra20.c
 
-arch/c6x/include/asm/cache.h:63:20: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'c6x_cache_init' extern void __init c6x_cache_init(void);
+> +static int tegra20_fuse_probe(struct platform_device *pdev)
+...
+> +	sku_info.revision = tegra_revision;
+> +	tegra20_init_speedo_data(&sku_info, &pdev->dev);
+...
+> +}
+> +
+> +static struct platform_driver tegra20_fuse_driver = {
+> +	.probe = tegra20_fuse_probe,
+> +	.driver = {
+> +		.name = "tegra20_fuse",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = tegra20_fuse_of_match,
+> +	}
+> +};
+> +
+> +static int __init tegra20_fuse_init(void)
+> +{
+> +	return platform_driver_register(&tegra20_fuse_driver);
+> +}
+> +postcore_initcall(tegra20_fuse_init);
 
----
+That call to tegra20_init_speedo_data() now happens much later in boot.
+Are you sure there's nothing that relies on data it sets up between when
+tegra_fuse_init() is called (which is where it happens before this
+series), and the somewhat arbitrary later time when this driver probes?
 
-mips:nlm_xlp_defconfig:
+> diff --git a/drivers/misc/fuse/tegra/fuse-tegra30.c b/drivers/misc/fuse/tegra/fuse-tegra30.c
 
-ERROR: "crc32c" [fs/btrfs/btrfs.ko] undefined!
+> +postcore_initcall(tegra30_fuse_init);
+> +
 
----
+There's a blank line at the end of the file. I thought checkpatch warned
+about this? But actually it doesn't seem to at least in -f mode.
 
-powerpc:allmodconfig:
---------------
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+> diff --git a/drivers/misc/fuse/tegra/fuse.h b/drivers/misc/fuse/tegra/fuse.h
 
----
+> +struct tegra_sku_info {
+> +	int sku_id;
+> +	int cpu_process_id;
+> +	int cpu_speedo_id;
+> +	int cpu_speedo_value;
+> +	int cpu_iddq_value;
+> +	int core_process_id;
+> +	int soc_speedo_id;
+> +	int gpu_speedo_id;
+> +	int gpu_process_id;
+> +	int gpu_speedo_value;
+> +	enum tegra_revision revision;
+> +};
 
-In addition to this, my sparc64 qemu test freezes, and my microblaze qemu test
-crashes.
+The only use of this appears to be to pass to tegra_fuse_create_sysfs()
+which prints out the fields. Will there be more users in the future?
+Otherwise, I'd be tempted to just print it out outside/before-calling
+tegra_fuse_create_sysfs().
 
-Details at http://server.roeck-us.net:8010/builders.
+That said, I wonder if these values could/should be exposed in the sysfs
+file to make it easier to interpret the fuses?
 
-Guenter
+> diff --git a/drivers/misc/fuse/tegra/tegra114_speedo.c b/drivers/misc/fuse/tegra/tegra114_speedo.c
 
+It might be nice to make these filenames consistent with the others,
+e.g. fuse-speedo-tegraNNN.c/speedo-tegraNNN.c, or wrap them into
+fuse-tegraNNN.c?
+
+> diff --git a/drivers/misc/fuse/tegra/tegra30_speedo.c b/drivers/misc/fuse/tegra/tegra30_speedo.c
+
+> +#define FUSE_SPEEDO_CALIB_0	0x14
+> +#define FUSE_PACKAGE_INFO	0XFC
+> +#define FUSE_TEST_PROG_VER	0X28
+
+In arch/arm/mach-tegra/tegra30_speedo.c, those values are different:
+
+#define FUSE_SPEEDO_CALIB_0	0x114
+#define FUSE_PACKAGE_INFO	0X1FC
+#define FUSE_TEST_PROG_VER	0X128
+
+Was this change intentional? Perhaps it should be in a separate patch to
+highlight the change, if it's an intentional bug-fix?
