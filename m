@@ -1,471 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaBEFIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:08:21 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42072 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaBEFIU (ORCPT
+	id S1751503AbaBEFJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:09:29 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60754 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750906AbaBEFJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:08:20 -0500
-Message-ID: <52F1C747.5030004@gmail.com>
-Date: Wed, 05 Feb 2014 13:08:23 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 5 Feb 2014 00:09:28 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX183rW7BwDwTJf0ecKPH4AZNXO/PN2sm7P4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 9887551DD2B
+Date: Wed, 5 Feb 2014 00:09:16 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH] clk: respect the clock dependencies in of_clk_init
+Message-ID: <20140205050916.GO8533@titan.lakedaemon.net>
+References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] kernel/kprobes.c: move kretprobe implementation to CONFIG_KRETPROBES
- area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com> <52F1AB18.5040208@gmail.com> <52F1B1CE.2040204@gmail.com> <52F1C579.1080907@hitachi.com>
-In-Reply-To: <52F1C579.1080907@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 01:00 PM, Masami Hiramatsu wrote:
-> (2014/02/05 12:36), Chen Gang wrote:
->> > When CONFIG_KRETPROBES disabled, kretprobe implementation are useless,
->> > so need move them to CONFIG_KPROBES area.
->> > 
->> >  - move all kretprobe* to CONFIG_KPROBES area and dummy outside.
->> >  - define kretprobe_flush_task() to let kprobe_flush_task() call.
->> >  - define init_kretprobes() to let init_kprobes() call.
->> > 
->> > 
-> Looks good to me ;)
+Mike,
+
+On Tue, Feb 04, 2014 at 11:59:26PM +0100, Gregory CLEMENT wrote:
+> Until now the clock providers were initialized in the order found in
+> the device tree. This led to have the dependencies between the clocks
+> not respected: children clocks could be initialized before their
+> parent clocks.
 > 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Instead of forcing each platform to manage its own initialization order,
+> this patch adds this work inside the framework itself.
 > 
-
-Thank you very much !!
-
-:-)
-
-
->> > Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> > ---
->> >  kernel/kprobes.c | 323 +++++++++++++++++++++++++++++++------------------------
->> >  1 file changed, 181 insertions(+), 142 deletions(-)
->> > 
->> > diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->> > index ceeadfc..0619536 100644
->> > --- a/kernel/kprobes.c
->> > +++ b/kernel/kprobes.c
->> > @@ -69,7 +69,6 @@
->> >  
->> >  static int kprobes_initialized;
->> >  static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
->> > -static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
->> >  
->> >  /* NOTE: change this value only with kprobe_mutex held */
->> >  static bool kprobes_all_disarmed;
->> > @@ -77,14 +76,6 @@ static bool kprobes_all_disarmed;
->> >  /* This protects kprobe_table and optimizing_list */
->> >  static DEFINE_MUTEX(kprobe_mutex);
->> >  static DEFINE_PER_CPU(struct kprobe *, kprobe_instance) = NULL;
->> > -static struct {
->> > -	raw_spinlock_t lock ____cacheline_aligned_in_smp;
->> > -} kretprobe_table_locks[KPROBE_TABLE_SIZE];
->> > -
->> > -static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
->> > -{
->> > -	return &(kretprobe_table_locks[hash].lock);
->> > -}
->> >  
->> >  /*
->> >   * Normally, functions that we'd want to prohibit kprobes in, are marked
->> > @@ -1079,125 +1070,6 @@ void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
->> >  	return;
->> >  }
->> >  
->> > -void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
->> > -				struct hlist_head *head)
->> > -{
->> > -	struct kretprobe *rp = ri->rp;
->> > -
->> > -	/* remove rp inst off the rprobe_inst_table */
->> > -	hlist_del(&ri->hlist);
->> > -	INIT_HLIST_NODE(&ri->hlist);
->> > -	if (likely(rp)) {
->> > -		raw_spin_lock(&rp->lock);
->> > -		hlist_add_head(&ri->hlist, &rp->free_instances);
->> > -		raw_spin_unlock(&rp->lock);
->> > -	} else
->> > -		/* Unregistering */
->> > -		hlist_add_head(&ri->hlist, head);
->> > -}
->> > -
->> > -void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
->> > -			 struct hlist_head **head, unsigned long *flags)
->> > -__acquires(hlist_lock)
->> > -{
->> > -	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
->> > -	raw_spinlock_t *hlist_lock;
->> > -
->> > -	*head = &kretprobe_inst_table[hash];
->> > -	hlist_lock = kretprobe_table_lock_ptr(hash);
->> > -	raw_spin_lock_irqsave(hlist_lock, *flags);
->> > -}
->> > -
->> > -static void __kprobes kretprobe_table_lock(unsigned long hash,
->> > -	unsigned long *flags)
->> > -__acquires(hlist_lock)
->> > -{
->> > -	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
->> > -	raw_spin_lock_irqsave(hlist_lock, *flags);
->> > -}
->> > -
->> > -void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
->> > -	unsigned long *flags)
->> > -__releases(hlist_lock)
->> > -{
->> > -	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
->> > -	raw_spinlock_t *hlist_lock;
->> > -
->> > -	hlist_lock = kretprobe_table_lock_ptr(hash);
->> > -	raw_spin_unlock_irqrestore(hlist_lock, *flags);
->> > -}
->> > -
->> > -static void __kprobes kretprobe_table_unlock(unsigned long hash,
->> > -       unsigned long *flags)
->> > -__releases(hlist_lock)
->> > -{
->> > -	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
->> > -	raw_spin_unlock_irqrestore(hlist_lock, *flags);
->> > -}
->> > -
->> > -/*
->> > - * This function is called from finish_task_switch when task tk becomes dead,
->> > - * so that we can recycle any function-return probe instances associated
->> > - * with this task. These left over instances represent probed functions
->> > - * that have been called but will never return.
->> > - */
->> > -void __kprobes kprobe_flush_task(struct task_struct *tk)
->> > -{
->> > -	struct kretprobe_instance *ri;
->> > -	struct hlist_head *head, empty_rp;
->> > -	struct hlist_node *tmp;
->> > -	unsigned long hash, flags = 0;
->> > -
->> > -	if (unlikely(!kprobes_initialized))
->> > -		/* Early boot.  kretprobe_table_locks not yet initialized. */
->> > -		return;
->> > -
->> > -	INIT_HLIST_HEAD(&empty_rp);
->> > -	hash = hash_ptr(tk, KPROBE_HASH_BITS);
->> > -	head = &kretprobe_inst_table[hash];
->> > -	kretprobe_table_lock(hash, &flags);
->> > -	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
->> > -		if (ri->task == tk)
->> > -			recycle_rp_inst(ri, &empty_rp);
->> > -	}
->> > -	kretprobe_table_unlock(hash, &flags);
->> > -	hlist_for_each_entry_safe(ri, tmp, &empty_rp, hlist) {
->> > -		hlist_del(&ri->hlist);
->> > -		kfree(ri);
->> > -	}
->> > -}
->> > -
->> > -static inline void free_rp_inst(struct kretprobe *rp)
->> > -{
->> > -	struct kretprobe_instance *ri;
->> > -	struct hlist_node *next;
->> > -
->> > -	hlist_for_each_entry_safe(ri, next, &rp->free_instances, hlist) {
->> > -		hlist_del(&ri->hlist);
->> > -		kfree(ri);
->> > -	}
->> > -}
->> > -
->> > -static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
->> > -{
->> > -	unsigned long flags, hash;
->> > -	struct kretprobe_instance *ri;
->> > -	struct hlist_node *next;
->> > -	struct hlist_head *head;
->> > -
->> > -	/* No race here */
->> > -	for (hash = 0; hash < KPROBE_TABLE_SIZE; hash++) {
->> > -		kretprobe_table_lock(hash, &flags);
->> > -		head = &kretprobe_inst_table[hash];
->> > -		hlist_for_each_entry_safe(ri, next, head, hlist) {
->> > -			if (ri->rp == rp)
->> > -				ri->rp = NULL;
->> > -		}
->> > -		kretprobe_table_unlock(hash, &flags);
->> > -	}
->> > -	free_rp_inst(rp);
->> > -}
->> > -
->> >  /*
->> >  * Add the new probe to ap->list. Fail if this is the
->> >  * second jprobe at the address - two jprobes can't coexist
->> > @@ -1764,6 +1636,55 @@ void __kprobes unregister_jprobes(struct jprobe **jps, int num)
->> >  EXPORT_SYMBOL_GPL(unregister_jprobes);
->> >  
->> >  #ifdef CONFIG_KRETPROBES
->> > +static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
->> > +static struct {
->> > +	raw_spinlock_t lock ____cacheline_aligned_in_smp;
->> > +} kretprobe_table_locks[KPROBE_TABLE_SIZE];
->> > +
->> > +static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
->> > +{
->> > +	return &(kretprobe_table_locks[hash].lock);
->> > +}
->> > +
->> > +void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
->> > +			 struct hlist_head **head, unsigned long *flags)
->> > +__acquires(hlist_lock)
->> > +{
->> > +	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
->> > +	raw_spinlock_t *hlist_lock;
->> > +
->> > +	*head = &kretprobe_inst_table[hash];
->> > +	hlist_lock = kretprobe_table_lock_ptr(hash);
->> > +	raw_spin_lock_irqsave(hlist_lock, *flags);
->> > +}
->> > +
->> > +void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
->> > +	unsigned long *flags)
->> > +__releases(hlist_lock)
->> > +{
->> > +	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
->> > +	raw_spinlock_t *hlist_lock;
->> > +
->> > +	hlist_lock = kretprobe_table_lock_ptr(hash);
->> > +	raw_spin_unlock_irqrestore(hlist_lock, *flags);
->> > +}
->> > +
->> > +static void __kprobes kretprobe_table_lock(unsigned long hash,
->> > +	unsigned long *flags)
->> > +__acquires(hlist_lock)
->> > +{
->> > +	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
->> > +	raw_spin_lock_irqsave(hlist_lock, *flags);
->> > +}
->> > +
->> > +static void __kprobes kretprobe_table_unlock(unsigned long hash,
->> > +	unsigned long *flags)
->> > +__releases(hlist_lock)
->> > +{
->> > +	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
->> > +	raw_spin_unlock_irqrestore(hlist_lock, *flags);
->> > +}
->> > +
->> >  /*
->> >   * This kprobe pre_handler is registered with every kretprobe. When probe
->> >   * hits it will set up the return probe.
->> > @@ -1808,6 +1729,17 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->> >  	return 0;
->> >  }
->> >  
->> > +static inline void free_rp_inst(struct kretprobe *rp)
->> > +{
->> > +	struct kretprobe_instance *ri;
->> > +	struct hlist_node *next;
->> > +
->> > +	hlist_for_each_entry_safe(ri, next, &rp->free_instances, hlist) {
->> > +		hlist_del(&ri->hlist);
->> > +		kfree(ri);
->> > +	}
->> > +}
->> > +
->> >  int __kprobes register_kretprobe(struct kretprobe *rp)
->> >  {
->> >  	int ret = 0;
->> > @@ -1885,6 +1817,26 @@ void __kprobes unregister_kretprobe(struct kretprobe *rp)
->> >  }
->> >  EXPORT_SYMBOL_GPL(unregister_kretprobe);
->> >  
->> > +static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
->> > +{
->> > +	unsigned long flags, hash;
->> > +	struct kretprobe_instance *ri;
->> > +	struct hlist_node *next;
->> > +	struct hlist_head *head;
->> > +
->> > +	/* No race here */
->> > +	for (hash = 0; hash < KPROBE_TABLE_SIZE; hash++) {
->> > +		kretprobe_table_lock(hash, &flags);
->> > +		head = &kretprobe_inst_table[hash];
->> > +		hlist_for_each_entry_safe(ri, next, head, hlist) {
->> > +			if (ri->rp == rp)
->> > +				ri->rp = NULL;
->> > +		}
->> > +		kretprobe_table_unlock(hash, &flags);
->> > +	}
->> > +	free_rp_inst(rp);
->> > +}
->> > +
->> >  void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
->> >  {
->> >  	int i;
->> > @@ -1907,7 +1859,78 @@ void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
->> >  }
->> >  EXPORT_SYMBOL_GPL(unregister_kretprobes);
->> >  
->> > +void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
->> > +				struct hlist_head *head)
->> > +{
->> > +	struct kretprobe *rp = ri->rp;
->> > +
->> > +	/* remove rp inst off the rprobe_inst_table */
->> > +	hlist_del(&ri->hlist);
->> > +	INIT_HLIST_NODE(&ri->hlist);
->> > +	if (likely(rp)) {
->> > +		raw_spin_lock(&rp->lock);
->> > +		hlist_add_head(&ri->hlist, &rp->free_instances);
->> > +		raw_spin_unlock(&rp->lock);
->> > +	} else
->> > +		/* Unregistering */
->> > +		hlist_add_head(&ri->hlist, head);
->> > +}
->> > +
->> > +static void __kprobes kretprobe_flush_task(struct task_struct *tk)
->> > +{
->> > +	struct kretprobe_instance *ri;
->> > +	struct hlist_head *head, empty_rp;
->> > +	struct hlist_node *tmp;
->> > +	unsigned long hash, flags = 0;
->> > +
->> > +	if (unlikely(!kprobes_initialized))
->> > +		/* Early boot.  kretprobe_table_locks not yet initialized. */
->> > +		return;
->> > +
->> > +	INIT_HLIST_HEAD(&empty_rp);
->> > +	hash = hash_ptr(tk, KPROBE_HASH_BITS);
->> > +	head = &kretprobe_inst_table[hash];
->> > +	kretprobe_table_lock(hash, &flags);
->> > +	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
->> > +		if (ri->task == tk)
->> > +			recycle_rp_inst(ri, &empty_rp);
->> > +	}
->> > +	kretprobe_table_unlock(hash, &flags);
->> > +	hlist_for_each_entry_safe(ri, tmp, &empty_rp, hlist) {
->> > +		hlist_del(&ri->hlist);
->> > +		kfree(ri);
->> > +	}
->> > +}
->> > +
->> > +static void __init init_kretprobes(void)
->> > +{
->> > +	int i;
->> > +
->> > +	/* FIXME allocate the probe table, currently defined statically */
->> > +	/* initialize all list heads */
->> > +	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
->> > +		INIT_HLIST_HEAD(&kretprobe_inst_table[i]);
->> > +		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
->> > +	}
->> > +
->> > +	if (kretprobe_blacklist_size) {
->> > +		/* lookup the function address from its name */
->> > +		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
->> > +			kprobe_lookup_name(kretprobe_blacklist[i].name,
->> > +					   kretprobe_blacklist[i].addr);
->> > +			if (!kretprobe_blacklist[i].addr)
->> > +				printk(KERN_WARNING
->> > +					"kretprobe: lookup failed: %s\n",
->> > +					kretprobe_blacklist[i].name);
->> > +		}
->> > +	}
->> > +}
->> > +
->> >  #else /* CONFIG_KRETPROBES */
->> > +
->> > +#define kretprobe_flush_task(p)			do {} while (0)
->> > +#define init_kretprobes()			do {} while (0)
->> > +
->> >  int __kprobes register_kretprobe(struct kretprobe *rp)
->> >  {
->> >  	return -ENOSYS;
->> > @@ -1936,8 +1959,35 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->> >  	return 0;
->> >  }
->> >  
->> > +void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
->> > +				struct hlist_head *head)
->> > +{
->> > +}
->> > +
->> > +void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
->> > +			 struct hlist_head **head, unsigned long *flags)
->> > +__acquires(hlist_lock)
->> > +{
->> > +}
->> > +
->> > +void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
->> > +	unsigned long *flags)
->> > +__releases(hlist_lock)
->> > +{
->> > +}
->> >  #endif /* CONFIG_KRETPROBES */
->> >  
->> > +/*
->> > + * This function is called from finish_task_switch when task tk becomes dead,
->> > + * so that we can recycle any function-return probe instances associated
->> > + * with this task. These left over instances represent probed functions
->> > + * that have been called but will never return.
->> > + */
->> > +void __kprobes kprobe_flush_task(struct task_struct *tk)
->> > +{
->> > +	kretprobe_flush_task(tk);
->> > +}
->> > +
->> >  /* Set the kprobe gone and remove its instruction buffer. */
->> >  static void __kprobes kill_kprobe(struct kprobe *p)
->> >  {
->> > @@ -2073,11 +2123,8 @@ static int __init init_kprobes(void)
->> >  
->> >  	/* FIXME allocate the probe table, currently defined statically */
->> >  	/* initialize all list heads */
->> > -	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
->> > +	for (i = 0; i < KPROBE_TABLE_SIZE; i++)
->> >  		INIT_HLIST_HEAD(&kprobe_table[i]);
->> > -		INIT_HLIST_HEAD(&kretprobe_inst_table[i]);
->> > -		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
->> > -	}
->> >  
->> >  	/*
->> >  	 * Lookup and populate the kprobe_blacklist.
->> > @@ -2101,16 +2148,8 @@ static int __init init_kprobes(void)
->> >  			kb->range = size;
->> >  	}
->> >  
->> > -	if (kretprobe_blacklist_size) {
->> > -		/* lookup the function address from its name */
->> > -		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
->> > -			kprobe_lookup_name(kretprobe_blacklist[i].name,
->> > -					   kretprobe_blacklist[i].addr);
->> > -			if (!kretprobe_blacklist[i].addr)
->> > -				printk("kretprobe: lookup failed: %s\n",
->> > -				       kretprobe_blacklist[i].name);
->> > -		}
->> > -	}
->> > +	/* Initialize kretprobes */
->> > +	init_kretprobes();
->> >  
->> >  #if defined(CONFIG_OPTPROBES)
->> >  #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
->> > 
+> Using the data of the device tree the of_clk_init function now delayed
+> the initialization of a clock provider if its parent provider was not
+> ready yet.
 > 
-> -- Masami HIRAMATSU IT Management Research Dept. Linux Technology Center
-> Hitachi, Ltd., Yokohama Research Laboratory E-mail:
-> masami.hiramatsu.pt@hitachi.com
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+> Mike,
 > 
+> this patch could solve the issues we get on severals mvebu platform
+> since 3.14-rc1. This is an alternate solution of the patch set sent by
+> Sebastian. However as it modifies the clock framework itself, it is
+> more sensible.
+> 
+> I find this solution more elegant than changing the order of the
+> initialization of the clock at the platform level. However as it
+> should be tested on more platforms that only the mvebu ones, it would
+> take some time, and I don't want to still have "broken" platform
+> during more release candidate. So at the end this patch should be part
+> of the 3.15 kernel.
 
+If we can get a response from Mike, I'd prefer to go with this approach
+and let it bake in -next for a while.  Hopefully, we could get it in
+before -rc4...
 
--- 
-Chen Gang
+thx,
 
-Open, share and attitude like air, water and life which God blessed
+Jason.
+
+>  drivers/clk/clk.c | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 91 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 5517944495d8..beb0f8b0c2a0 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2526,24 +2526,112 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
+>  }
+>  EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
+>  
+> +struct clock_provider {
+> +	of_clk_init_cb_t clk_init_cb;
+> +	struct device_node *np;
+> +	struct list_head node;
+> +};
+> +
+> +static LIST_HEAD(clk_provider_list);
+> +
+> +/*
+> + * This function looks for a parent clock. If there is one, then it
+> + * checks that the provider for this parent clock was initialized, in
+> + * this case the parent clock will be ready.
+> + */
+> +static int parent_ready(struct device_node *np)
+> +{
+> +	struct of_phandle_args clkspec;
+> +	struct of_clk_provider *provider;
+> +
+> +	/*
+> +	 * If there is no clock parent, no need to wait for them, then
+> +	 * we can consider their absence as being ready
+> +	 */
+> +	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
+> +					&clkspec))
+> +		return 1;
+> +
+> +	/* Check if we have such a provider in our array */
+> +	list_for_each_entry(provider, &of_clk_providers, link) {
+> +		if (provider->node == clkspec.np)
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  /**
+>   * of_clk_init() - Scan and init clock providers from the DT
+>   * @matches: array of compatible values and init functions for providers.
+>   *
+> - * This function scans the device tree for matching clock providers and
+> - * calls their initialization functions
+> + * This function scans the device tree for matching clock providers
+> + * and calls their initialization functions. It also do it by trying
+> + * to follow the dependencies.
+>   */
+>  void __init of_clk_init(const struct of_device_id *matches)
+>  {
+>  	const struct of_device_id *match;
+>  	struct device_node *np;
+> +	struct clock_provider *clk_provider, *next;
+> +	bool is_init_done;
+>  
+>  	if (!matches)
+>  		matches = &__clk_of_table;
+>  
+>  	for_each_matching_node_and_match(np, matches, &match) {
+>  		of_clk_init_cb_t clk_init_cb = match->data;
+> -		clk_init_cb(np);
+> +
+> +
+> +		if (parent_ready(np)) {
+> +			/*
+> +			 * The parent clock is ready or there is no
+> +			 * clock parent at all, in this case the
+> +			 * provider can be initialize immediately.
+> +			 */
+> +			clk_init_cb(np);
+> +		} else {
+> +			/*
+> +			 * The parent clock is not ready, this
+> +			 * provider is moved to a list to be
+> +			 * initialized later
+> +			 */
+> +			struct clock_provider *parent = kzalloc(sizeof(struct clock_provider),
+> +							GFP_KERNEL);
+> +
+> +			parent->clk_init_cb = match->data;
+> +			parent->np = np;
+> +			list_add(&parent->node, &clk_provider_list);
+> +		}
+> +	}
+> +
+> +	while (!list_empty(&clk_provider_list)) {
+> +		is_init_done = false;
+> +		list_for_each_entry_safe(clk_provider, next,
+> +					&clk_provider_list, node) {
+> +			if (parent_ready(clk_provider->np)) {
+> +				clk_provider->clk_init_cb(clk_provider->np);
+> +				list_del(&clk_provider->node);
+> +				kfree(clk_provider);
+> +				is_init_done = true;
+> +			}
+> +		}
+> +
+> +		if (!is_init_done) {
+> +			/*
+> +			 * We didn't managed to initialize any of the
+> +			 * remaining providers during the last loop,
+> +			 * so now we initialize all the remaining ones
+> +			 * unconditionally in case the clock parent
+> +			 * was not mandatory
+> +			 */
+> +			list_for_each_entry_safe(clk_provider, next,
+> +						&clk_provider_list, node) {
+> +				clk_provider->clk_init_cb(clk_provider->np);
+> +				list_del(&clk_provider->node);
+> +				kfree(clk_provider);
+> +			}
+> +		}
+>  	}
+>  }
+>  #endif
+> -- 
+> 1.8.1.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
