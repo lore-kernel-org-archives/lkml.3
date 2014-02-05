@@ -1,133 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaBEVSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:18:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54138 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbaBEUDZ (ORCPT
+	id S1754431AbaBEVT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:19:58 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39092 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752560AbaBEVTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:25 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 007/213] KVM: unmap pages from the iommu when slots are removed
-Date: Wed, 5 Feb 2014 14:59:22 -0500
-Message-ID: <1391630568-49251-8-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 5 Feb 2014 16:19:54 -0500
+Date: Wed, 5 Feb 2014 16:19:52 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
+        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
+ free_partial()
+Message-ID: <20140205161952.781e3a0e@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com>
+References: <52F1F25F.20402@parallels.com>
+	<1391588133-15469-1-git-send-email-vdavydov@parallels.com>
+	<20140205195837.GA6857@home.goodmis.org>
+	<alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com>
+	<20140205155840.43d6b4ad@gandalf.local.home>
+	<alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Williamson <alex.williamson@redhat.com>
+On Wed, 5 Feb 2014 13:07:05 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> The functions that manipulate the partial lists was modified by 
+> c65c1877bd68 ("slub: use lockdep_assert_held") which replaced commentary 
+> with runtime checking on debug kernels with lockdep enabled.  I'm not sure 
+> adding more code to do the remove_partial() and __remove_partial() variant 
+> is the right solution to just bypass the check; if anything, I think we 
+> should accept the fact that the comment should have been "requires 
+> n->list_lock if the slab cache can be accessed by other cpus" that makes 
+> it clear we don't need it for init and destroy paths.
 
-commit 32f6daad4651a748a58a3ab6da0611862175722f upstream.
+Then add the comment that clears this up. But lets not add spinlocks
+just to quiet something if they truly are not needed.
 
-We've been adding new mappings, but not destroying old mappings.
-This can lead to a page leak as pages are pinned using
-get_user_pages, but only unpinned with put_page if they still
-exist in the memslots list on vm shutdown.  A memslot that is
-destroyed while an iommu domain is enabled for the guest will
-therefore result in an elevated page reference count that is
-never cleared.
+We use "__" variants all the time. That's really not extra code.
 
-Additionally, without this fix, the iommu is only programmed
-with the first translation for a gpa.  This can result in
-peer-to-peer errors if a mapping is destroyed and replaced by a
-new mapping at the same gpa as the iommu will still be pointing
-to the original, pinned memory address.
+Heck, if you want, call it remove_freed_partial() that shows that this
+version skips the check because it is freed.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-[PG: minor tweak since 2.6.34 doesnt have kvm_for_each_memslot]
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- include/linux/kvm_host.h | 6 ++++++
- virt/kvm/iommu.c         | 8 ++++++--
- virt/kvm/kvm_main.c      | 5 +++--
- 3 files changed, 15 insertions(+), 4 deletions(-)
+And if you don't want to have remove_freed_partial() being called by
+remove_partial() than still keep the "__" variant, add a
+"__always_inline" to it, and then do:
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 94cb72cfc2c3..5072583996f9 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -454,6 +454,7 @@ void kvm_free_irq_source_id(struct kvm *kvm, int irq_source_id);
- 
- #ifdef CONFIG_IOMMU_API
- int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot);
-+void kvm_iommu_unmap_pages(struct kvm *kvm, struct kvm_memory_slot *slot);
- int kvm_iommu_map_guest(struct kvm *kvm);
- int kvm_iommu_unmap_guest(struct kvm *kvm);
- int kvm_assign_device(struct kvm *kvm,
-@@ -468,6 +469,11 @@ static inline int kvm_iommu_map_pages(struct kvm *kvm,
- 	return 0;
- }
- 
-+static inline void kvm_iommu_unmap_pages(struct kvm *kvm,
-+					 struct kvm_memory_slot *slot)
-+{
-+}
-+
- static inline int kvm_iommu_map_guest(struct kvm *kvm)
- {
- 	return -ENODEV;
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 80fd3ad3b2de..ac765f648218 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -212,6 +212,11 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
- 	iommu_unmap_range(domain, gfn_to_gpa(base_gfn), PAGE_SIZE * npages);
- }
- 
-+void kvm_iommu_unmap_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
-+{
-+	kvm_iommu_put_pages(kvm, slot->base_gfn, slot->npages);
-+}
-+
- static int kvm_iommu_unmap_memslots(struct kvm *kvm)
- {
- 	int i;
-@@ -220,8 +225,7 @@ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
- 	slots = rcu_dereference(kvm->memslots);
- 
- 	for (i = 0; i < slots->nmemslots; i++) {
--		kvm_iommu_put_pages(kvm, slots->memslots[i].base_gfn,
--				    slots->memslots[i].npages);
-+		kvm_iommu_unmap_pages(kvm, &slots->memslots[i]);
- 	}
- 
- 	return 0;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index b624139aea6e..3d2974fab62e 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -697,12 +697,13 @@ skip_lpage:
- 		goto out_free;
- 
- #ifdef CONFIG_DMAR
--	/* map the pages in iommu page table */
-+	/* map/unmap the pages in iommu page table */
- 	if (npages) {
- 		r = kvm_iommu_map_pages(kvm, &new);
- 		if (r)
- 			goto out_free;
--	}
-+	} else
-+		kvm_iommu_unmap_pages(kvm, &old);
- #endif
- 
- 	r = -ENOMEM;
--- 
-1.8.5.2
+static __always_inline
+__remove_partial(struct kmem_cache_node *n, struct page *page)
+{
+        list_del(&page->lru);
+        n->nr_partial--;
+}
+
+static inline remove_partial(struct kmem_cache_node *n,
+                             struct page *page)
+{
+        lockdep_assert_held(&n->list_lock);
+        __remove_partial(n, page);
+}
+
+
+static inline remove_freed_partial(struct kmem_cache_node *n,
+                             struct page *page)
+{
+        __remove_partial(n, page);
+}
+
+The naming like this documents itself.
+
+-- Steve
 
