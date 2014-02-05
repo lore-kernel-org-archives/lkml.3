@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933263AbaBEUoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:44:08 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:50921 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378AbaBEUoC (ORCPT
+	id S1753873AbaBEUGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:06:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55013 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaBEUGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:44:02 -0500
-X-IronPort-AV: E=Sophos;i="4.95,788,1384300800"; 
-   d="scan'208";a="98398059"
-Message-ID: <52F2A282.5040502@citrix.com>
-Date: Wed, 5 Feb 2014 20:43:46 +0000
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 15:06:07 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 100/213] mm: fix vma_resv_map() NULL pointer
+Date: Wed, 5 Feb 2014 15:00:55 -0500
+Message-ID: <1391630568-49251-101-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Zoltan Kiss <zoltan.kiss@citrix.com>, Michael Chan <mchan@broadcom.com>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        "Peter P Waskiewicz Jr" <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Subject: Re: igb and bnx2: "NETDEV WATCHDOG: transmit queue timed out" when
- skb has huge linear buffer
-References: <52EAA31B.1090606@schaman.hu>	 <1391114048.4804.2.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>	 <52EBA51E.808@citrix.com> <1391543271.4804.44.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <52F29DDC.7010908@citrix.com>
-In-Reply-To: <52F29DDC.7010908@citrix.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.68.19.43]
-X-DLP: MIA2
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 20:23, Zoltan Kiss wrote:
-> On 04/02/14 19:47, Michael Chan wrote:
->> On Fri, 2014-01-31 at 14:29 +0100, Zoltan Kiss wrote:
->>> [ 5417.275472] WARNING: at net/sched/sch_generic.c:255
->>> dev_watchdog+0x156/0x1f0()
->>> [ 5417.275474] NETDEV WATCHDOG: eth1 (bnx2): transmit queue 2 timed out
->>
->> The dump shows an internal IRQ pending on MSIX vector 2 which matches
->> the the queue number that is timing out.  I don't know what happened to
->> the MSIX and why the driver is not seeing it.  Do you see an IRQ error
->> message from the kernel a few seconds before the tx timeout message?
->
-> I haven't seen any IRQ related error message. Note, this is on Xen
-> 4.3.1. Now I have new results with a reworked version of the patch,
-> unfortunately it still has this issue. Here is a bnx2 dump, lspci
-> output and some Xen debug output (MSI and interrupt bindings, I have
-> more if needed).
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-You need debug-keys 'Q' as well to map between the PCI devices and Xen IRQs
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-~Andrew
+commit 4523e1458566a0e8ecfaff90f380dd23acc44d27 upstream.
+
+hugetlb_reserve_pages() can be used for either normal file-backed
+hugetlbfs mappings, or MAP_HUGETLB.  In the MAP_HUGETLB, semi-anonymous
+mode, there is not a VMA around.  The new call to resv_map_put() assumed
+that there was, and resulted in a NULL pointer dereference:
+
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+  IP: vma_resv_map+0x9/0x30
+  PGD 141453067 PUD 1421e1067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP
+  ...
+  Pid: 14006, comm: trinity-child6 Not tainted 3.4.0+ #36
+  RIP: vma_resv_map+0x9/0x30
+  ...
+  Process trinity-child6 (pid: 14006, threadinfo ffff8801414e0000, task ffff8801414f26b0)
+  Call Trace:
+    resv_map_put+0xe/0x40
+    hugetlb_reserve_pages+0xa6/0x1d0
+    hugetlb_file_setup+0x102/0x2c0
+    newseg+0x115/0x360
+    ipcget+0x1ce/0x310
+    sys_shmget+0x5a/0x60
+    system_call_fastpath+0x16/0x1b
+
+This was reported by Dave Jones, but was reproducible with the
+libhugetlbfs test cases, so shame on me for not running them in the
+first place.
+
+With this, the oops is gone, and the output of libhugetlbfs's
+run_tests.py is identical to plain 3.4 again.
+
+[ Marked for stable, since this was introduced by commit c50ac050811d
+  ("hugetlb: fix resv_map leak in error path") which was also marked for
+  stable ]
+
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ mm/hugetlb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index f7b80540ba95..c80dd852f3a0 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2789,7 +2789,8 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 		region_add(&inode->i_mapping->private_list, from, to);
+ 	return 0;
+ out_err:
+-	resv_map_put(vma);
++	if (vma)
++		resv_map_put(vma);
+ 	return ret;
+ }
+ 
+-- 
+1.8.5.2
+
