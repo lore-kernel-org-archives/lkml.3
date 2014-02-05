@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488AbaBEANr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:13:47 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51124 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932164AbaBEANp (ORCPT
+	id S933509AbaBEAOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:14:12 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:63424 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164AbaBEAOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:13:45 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH v7 2/3] trivial: PM / Hibernate: clean up checkpatch in hibernate.c
-Date: Wed, 05 Feb 2014 01:28:13 +0100
-Message-ID: <2342041.V7doIJk0XQ@vostro.rjw.lan>
-User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <20140205000642.6803.8182@capellas-linux>
-References: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org> <1593382.PUxxx0NMeh@vostro.rjw.lan> <20140205000642.6803.8182@capellas-linux>
+	Tue, 4 Feb 2014 19:14:09 -0500
+Date: Tue, 4 Feb 2014 16:14:07 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Holger Kiehl <Holger.Kiehl@dwd.de>, Christoph Lameter <cl@linux.com>,
+        Rafael Aquini <aquini@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, page_alloc: make first_page visible before
+ PageTail
+In-Reply-To: <20140204160641.8f5d369eeb2d0318618d6d5f@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1402041613450.14962@chino.kir.corp.google.com>
+References: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de> <20140203122052.GC2495@dhcp22.suse.cz> <alpine.LRH.2.02.1402031426510.13382@diagnostix.dwd.de> <20140203162036.GJ2495@dhcp22.suse.cz> <52EFC93D.3030106@suse.cz>
+ <alpine.DEB.2.02.1402031602060.10778@chino.kir.corp.google.com> <alpine.LRH.2.02.1402040713220.13901@diagnostix.dwd.de> <alpine.DEB.2.02.1402041557380.10140@chino.kir.corp.google.com> <20140204160641.8f5d369eeb2d0318618d6d5f@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 04, 2014 04:06:42 PM Sebastian Capella wrote:
-> Quoting Rafael J. Wysocki (2014-02-04 16:03:29)
-> > On Tuesday, February 04, 2014 03:22:22 PM Sebastian Capella wrote:
-> > > Quoting Sebastian Capella (2014-02-04 14:37:33)
-> > > > Quoting Rafael J. Wysocki (2014-02-04 13:36:29)
-> > > > > >  static int __init resumedelay_setup(char *str)
-> > > > > >  {
-> > > > > > -     resume_delay = simple_strtoul(str, NULL, 0);
-> > > > > > +     int ret = kstrtoint(str, 0, &resume_delay);
-> > > > > > +     /* mask must_check warn; on failure, leaves resume_delay unchanged */
-> > > > > > +     (void)ret;
-> > > 
-> > > One unintended consequence of this change is that it'll now accept a
-> > > negative integer parameter.
+On Tue, 4 Feb 2014, Andrew Morton wrote:
+
+> > Commit bf6bddf1924e ("mm: introduce compaction and migration for ballooned 
+> > pages") introduces page_count(page) into memory compaction which 
+> > dereferences page->first_page if PageTail(page).
 > > 
-> > Well, what about using kstrtouint(), then?
-> I was thinking of doing something like:
+> > Introduce a store memory barrier to ensure page->first_page is properly 
+> > initialized so that code that does page_count(page) on pages off the lru 
+> > always have a valid p->first_page.
 > 
-> 	int delay, res;
-> 	res = kstrtoint(str, 0, &delay);
-> 	if (!res && delay >= 0)
-> 		resume_delay = delay;
-> 	return 1;
+> Could we have a code comment please?  Even checkpatch knows this rule!
+> 
 
-It uses simple_strtoul() for a reason.  You can change the type of resume_delay
-to match, but the basic question is:
+Ok.
 
-Why exactly do you want to change that thing?
+> > Reported-by: Holger Kiehl <Holger.Kiehl@dwd.de>
+> 
+> What did Holger report?
+> 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+A once-in-five-years NULL pointer dereference on the aforementioned 
+page_count(page).
