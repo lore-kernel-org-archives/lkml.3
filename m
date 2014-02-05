@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaBEFaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:30:55 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:62771 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaBEFax (ORCPT
+	id S1751439AbaBEFiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:38:11 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:18601 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaBEFiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:30:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140205051730.GA3911@beef>
-References: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
-	<20140205044335.GA2172@beef>
-	<CAKzfze-mHkxmnb06jDuD=-Zg3SmhRoZo6-P0D9dReA-gDwbTnw@mail.gmail.com>
-	<20140205051730.GA3911@beef>
-Date: Tue, 4 Feb 2014 21:30:52 -0800
-Message-ID: <CAKzfze9=_u0CsvZ2=Mr_iaL=BxD1WOqmFPq0z3dO8jNGGk-pCA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] iio:as3935: Add DT binding docs for AS3935 driver
-From: Matt Ranostay <mranostay@gmail.com>
-To: Matt Porter <mporter@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Feb 2014 00:38:07 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-e1-52f1ce3d0726
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 1/2] f2fs: fix to truncate dentry pages in the error case
+Date: Wed, 05 Feb 2014 14:36:34 +0900
+Message-id: <1391578595-854-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zY13bcx+DDO6utrS4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6NnzVy2gk8sFdMn
+	3WZsYGxl6WLk5JAQMJHYsnQFO4QtJnHh3nq2LkYuDiGBZYwS0/4vZIMpurbkBCtEYhGjRN/e
+	OewQThOTRNfTp8xdjBwcbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAaoQFPCUmzakF
+	qWERUJXoOnONFcTmFXCV6Nn+H+oibYltzyeC9UoI3GeTOLL1CztEg4DEt8mHwOZICMhKbDrA
+	DFEvKXFwxQ2WCYyCCxgZVjGKphYkFxQnpReZ6hUn5haX5qXrJefnbmKEhODEHYz3D1gfYkwG
+	GjeRWUo0OR8Ywnkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhPLEnNTk0tSC2KLyrNSS0+
+	xMjEwSnVwDhZ4/fuCie5C8e2PYhUaDxqkND25Iv/YhstLc+92z4d/Ope9rEw/9zLtGmtPRY7
+	83JNp+7Zq9Dk53hmh8LGWV6Xl4kylL1+K7Lv1Zq+yNcmP5h26593mnPwalhg8engvQyzJ/Ly
+	Pnry4cGn3YabmsqSbOPW/U1g8m8WjloZntz01eH6xlshrpuUWIozEg21mIuKEwFnDhGrVwIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAV3bcx+DDFp/mVpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5jRs2YuW8Enlorpk24zNjC2snQxcnJICJhIXFtyghXCFpO4cG89WxcjF4eQ
+	wCJGib69c9ghnCYmia6nT5m7GDk42AS0JTbvNwBpEBFgllgw9TwjSA2zwARGif+L3rOA1AgL
+	eEpMmlMLUsMioCrRdeYa2AJeAVeJnu3/oRZrS2x7PpFxAiP3AkaGVYyiqQXJBcVJ6bmGesWJ
+	ucWleel6yfm5mxjBAf5MagfjygaLQ4wCHIxKPLwGwh+DhFgTy4orcw8xSnAwK4nwJnYDhXhT
+	EiurUovy44tKc1KLDzEmA22fyCwlmpwPjL68knhDYxMzI0sjMwsjE3Nz0oSVxHkPtFoHCgmk
+	J5akZqemFqQWwWxh4uCUamCczr5L+094K+OsgMLYaY5rF2mafMg9U7Ki2VXDn9/DZ8fedX+6
+	vnht3f9Dyk7L0ysmWbVSLOKOS8zHBwWNP4NKbRzXVOwLePPp4m/j6Csy58oPhUw0Z0zyfDyX
+	o3R5wJtQz+3bl9960qDx/9ix//8+3n0imSh4O1Kh6XCRZH2/+DctR0uxDUxKLMUZiYZazEXF
+	iQABjoCdtAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 4, 2014 at 9:17 PM, Matt Porter <mporter@linaro.org> wrote:
-> On Tue, Feb 04, 2014 at 08:52:26PM -0800, Matt Ranostay Matt Ranostay wrote:
->> On Tue, Feb 4, 2014 at 8:43 PM, Matt Porter <mporter@linaro.org> wrote:
->> > On Tue, Feb 04, 2014 at 07:14:55PM -0800, Matt Ranostay Matt Ranostay wrote:
->> >> Document compatible string, required and optional DT properties for
->> >> AS3935 chipset driver.
->> >>
->> >> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
->> >> ---
->> >>  .../devicetree/bindings/iio/proximity/as3935.txt   | 25 ++++++++++++++++++++++
->> >>  1 file changed, 25 insertions(+)
->> >>  create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
->> >>
->> >> diff --git a/Documentation/devicetree/bindings/iio/proximity/as3935.txt b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
->> >> new file mode 100644
->> >> index 0000000..7e117cd
->> >> --- /dev/null
->> >> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
->> >> @@ -0,0 +1,25 @@
->> >> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
->> >> +
->> >> +Required properties:
->> >> +     - compatible: must be "ams,as3935"
->> >
->> > Change this to "amstaos,as3935"
->> >
->> > amstaos (AMS bought Taos) is already a registered vendor prefix in
->> > vendor-prefixes.txt
->> >
->> >> +     - reg: SPI chip select number for the device
->> >> +     - spi-cpha: SPI Mode 1
->> >
->> > When using generic binding properties, please reference the binding
->> > being used. Like:
->> >
->> >         - spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
->> >           slave node bindings.
->> >
->> Noted.
->>
->> >> +     - interrupt-parent : should be the phandle for the interrupt controller
->> >> +     - interrupts : interrupt mapping for GPIO IRQ
->> >
->> >         Refer to interrupt-controller/interrupts.txt for generic
->> >         interrupt client node bindings.
->> >
->> Noted.
->>
->> >> +
->> >> +Optional properties:
->> >> +     - ams,tune-cap: Calibration tuning capacitor stepping value 0 - 15.
->> >> +       Range of 0 to 120 pF, 8pF steps. This will require using the
->> >> +       calibration data from the manufacturer.
->> >> +
->> >> +
->> >> +Example:
->> >> +
->> >> +as3935@0 {
->> >> +     compatible = "ams,as3935";
->> >> +     reg = <0>;
->> >> +     spi-cpha;
->> >> +     interrupt-parent = <&gpio1>;
->> >> +     interrupts = <16 1>;
->> >> +     ams,tune-cap = /bits/ 8 <10>;
->> >
->> > What is this? Why not just ams,tune-cap = <10>; ?
->> >
->> > It's a value between 0-15, right?
->>
->> Correct but it is using of_property_read_u8() so that requires the
->> /bits/ statement.
->> Should this just be a u32 value?
->
-> Do you really need a u8? If not just read_u32() into an int and keep
-> this syntax simple.
+When a new directory is allocated, if an error is occurred, we should truncate
+preallocated dentry pages too.
 
-Just me different it seems :P.  Will fix in next version waiting for
-Peter's and Jonathan's input on the rest of the code first.
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/dir.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
->
-> -Matt
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index bfcb4ae..daea906c 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -372,6 +372,8 @@ static struct page *init_inode_metadata(struct inode *inode,
+ 
+ put_error:
+ 	f2fs_put_page(page, 1);
++	if (S_ISDIR(inode->i_mode))
++		truncate_blocks(inode, 0);
+ error:
+ 	remove_inode_page(inode);
+ 	return ERR_PTR(err);
+-- 
+1.8.4.474.g128a96c
+
