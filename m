@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810AbaBEVgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:36:24 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50957 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776AbaBEVgR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:36:17 -0500
-Date: Wed, 5 Feb 2014 13:35:39 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
-        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl
-Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
- free_partial()
-In-Reply-To: <20140205163138.51eb8b31@gandalf.local.home>
-Message-ID: <alpine.DEB.2.02.1402051333380.16853@chino.kir.corp.google.com>
-References: <52F1F25F.20402@parallels.com> <1391588133-15469-1-git-send-email-vdavydov@parallels.com> <20140205195837.GA6857@home.goodmis.org> <alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com> <20140205155840.43d6b4ad@gandalf.local.home>
- <alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com> <20140205161952.781e3a0e@gandalf.local.home> <alpine.DEB.2.02.1402051324370.14325@chino.kir.corp.google.com> <20140205163138.51eb8b31@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755888AbaBEVgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:36:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754459AbaBEVdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 16:33:36 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/9] HID: add inliners for ll_driver transport-layer callbacks
+Date: Wed,  5 Feb 2014 16:33:16 -0500
+Message-Id: <1391636004-29354-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Steven Rostedt wrote:
+Those callbacks are not mandatory, so it's better to add inliners
+to use them safely.
 
-> > Looks like you've got something prepared already!  Mind sending it to 
-> > Pekka as a patch based on linux-next?
-> 
-> Sure, and there's another lockdep splat that I'm working on too.
-> 
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ include/linux/hid.h | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
-If it's coming from slub, make sure you've applied 
-http://marc.info/?l=linux-kernel&m=139147105027693 first which fixes yet 
-another slub lockdep issue related to the lockdep assertion.  It's not in 
-linux-next yet because it went through -mm instead of Pekka's tree.
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 003cc8e..dddcad0 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -680,6 +680,8 @@ struct hid_driver {
+  *	   shouldn't allocate anything to not leak memory
+  * @request: send report request to device (e.g. feature report)
+  * @wait: wait for buffered io to complete (send/recv reports)
++ * @raw_request: send raw report request to device (e.g. feature report)
++ * @output_report: send output report to device
+  * @idle: send idle request to device
+  */
+ struct hid_ll_driver {
+@@ -974,6 +976,49 @@ static inline void hid_hw_request(struct hid_device *hdev,
+ }
+ 
+ /**
++ * hid_hw_raw_request - send report request to device
++ *
++ * @hdev: hid device
++ * @reportnum: report ID
++ * @buf: in/out data to transfer
++ * @len: length of buf
++ * @rtype: HID report type
++ * @reqtype: HID_REQ_GET_REPORT or HID_REQ_SET_REPORT
++ *
++ * @return: count of data transfered, negative if error
++ *
++ * Same behavior as hid_hw_request, but with raw buffers instead.
++ */
++static inline int hid_hw_raw_request(struct hid_device *hdev,
++				  unsigned char reportnum, __u8 *buf,
++				  size_t len, unsigned char rtype, int reqtype)
++{
++	if (hdev->ll_driver->raw_request)
++		return hdev->ll_driver->raw_request(hdev, reportnum, buf, len,
++						    rtype, reqtype);
++
++	return -ENOSYS;
++}
++
++/**
++ * hid_hw_output_report - send output report to device
++ *
++ * @hdev: hid device
++ * @buf: raw data to transfer
++ * @len: length of buf
++ *
++ * @return: count of data transfered, negative if error
++ */
++static inline int hid_hw_output_report(struct hid_device *hdev, __u8 *buf,
++					size_t len)
++{
++	if (hdev->ll_driver->output_report)
++		return hdev->ll_driver->output_report(hdev, buf, len);
++
++	return -ENOSYS;
++}
++
++/**
+  * hid_hw_idle - send idle request to device
+  *
+  * @hdev: hid device
+-- 
+1.8.3.1
 
-> But first, I need to shovel my driveway yet again (We got something
-> like 18 inches of snow in the last 24 hours).
-> 
-
-Fun!  It's 33 F here today but nobody cares because we have a Super Bowl 
-parade in town!
