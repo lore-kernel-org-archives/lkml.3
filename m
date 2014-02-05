@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494AbaBEUfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:35:07 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55199 "EHLO
+	id S932974AbaBEUfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:35:55 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55191 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754999AbaBEUGv (ORCPT
+	with ESMTP id S1752262AbaBEUGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:51 -0500
+	Wed, 5 Feb 2014 15:06:49 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mathias Krause <minipli@googlemail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 132/213] Bluetooth: L2CAP - Fix info leak via getsockname()
-Date: Wed, 5 Feb 2014 15:01:27 -0500
-Message-ID: <1391630568-49251-133-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 138/213] xhci: Reset reserved command ring TRBs on cleanup.
+Date: Wed, 5 Feb 2014 15:01:33 -0500
+Message-ID: <1391630568-49251-139-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -35,36 +31,37 @@ From: Mathias Krause <minipli@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 792039c73cf176c8e39a6e8beef2c94ff46522ed upstream.
+commit 33b2831ac870d50cc8e01c317b07fb1e69c13fe1 upstream.
 
-The L2CAP code fails to initialize the l2_bdaddr_type member of struct
-sockaddr_l2 and the padding byte added for alignment. It that for leaks
-two bytes kernel stack via the getsockname() syscall. Add an explicit
-memset(0) before filling the structure to avoid the info leak.
+When the xHCI driver needs to clean up memory (perhaps due to a failed
+register restore on resume from S3 or resume from S4), it needs to reset
+the number of reserved TRBs on the command ring to zero.  Otherwise,
+several resume cycles (about 30) with a UAS device attached will
+continually increment the number of reserved TRBs, until all command
+submissions fail because there isn't enough room on the command ring.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[PG: net/bluetooth/l2cap_sock.c --> net/bluetooth/l2cap.c in .34]
+This patch should be backported to kernels as old as 2.6.32,
+that contain the commit 913a8a344ffcaf0b4a586d6662a2c66a7106557d
+"USB: xhci: Change how xHCI commands are handled."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/bluetooth/l2cap.c | 1 +
+ drivers/usb/host/xhci-mem.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index 0b6cf87d5eb0..64ccd83d52a2 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -1191,6 +1191,7 @@ static int l2cap_sock_getname(struct socket *sock, struct sockaddr *addr, int *l
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 31cf540480fe..cb743a6bcfe4 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1048,6 +1048,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	xhci_dbg(xhci, "Freed event ring\n");
  
- 	BT_DBG("sock %p, sk %p", sock, sk);
- 
-+	memset(la, 0, sizeof(struct sockaddr_l2));
- 	addr->sa_family = AF_BLUETOOTH;
- 	*len = sizeof(struct sockaddr_l2);
- 
+ 	xhci_write_64(xhci, 0, &xhci->op_regs->cmd_ring);
++	xhci->cmd_ring_reserved_trbs = 0;
+ 	if (xhci->cmd_ring)
+ 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	xhci->cmd_ring = NULL;
 -- 
 1.8.5.2
 
