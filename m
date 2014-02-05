@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaBEWTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:19:04 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43668 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154AbaBEWS4 (ORCPT
+	id S1756202AbaBEWTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:19:15 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45248 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307AbaBEWTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:18:56 -0500
+	Wed, 5 Feb 2014 17:19:08 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 49/51] mm, zswap: Fix CPU hotplug callback registration
+Subject: [PATCH 50/51] net/core/flow.c: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-mm@kvack.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Li RongQing <roy.qing.li@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, netdev@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:43:37 +0530
-Message-ID: <20140205221336.19080.49754.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 06 Feb 2014 03:43:46 +0530
+Message-ID: <20140205221345.19080.20784.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -26,7 +30,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-4790-0000-0000-00000C92CDB7
+x-cbid: 14020522-5564-0000-0000-00000BE034B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -62,40 +66,52 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the zswap code by using this latter form of callback registration.
+Fix the code in net/core/flow.c by using this latter form of callback
+registration.
 
-Cc: linux-mm@kvack.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Li RongQing <roy.qing.li@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: netdev@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- mm/zswap.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/core/flow.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index e55bab9..681fa3f 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -387,18 +387,18 @@ static int zswap_cpu_init(void)
- {
- 	unsigned long cpu;
+diff --git a/net/core/flow.c b/net/core/flow.c
+index dfa602c..0f2c995 100644
+--- a/net/core/flow.c
++++ b/net/core/flow.c
+@@ -456,6 +456,8 @@ static int __init flow_cache_init(struct flow_cache *fc)
+ 	if (!fc->percpu)
+ 		return -ENOMEM;
  
--	get_online_cpus();
 +	cpu_maps_update_begin();
- 	for_each_online_cpu(cpu)
- 		if (__zswap_cpu_notifier(CPU_UP_PREPARE, cpu) != NOTIFY_OK)
- 			goto cleanup;
--	register_cpu_notifier(&zswap_cpu_notifier_block);
--	put_online_cpus();
-+	__register_cpu_notifier(&zswap_cpu_notifier_block);
++
+ 	for_each_online_cpu(i) {
+ 		if (flow_cache_cpu_prepare(fc, i))
+ 			goto err;
+@@ -463,7 +465,9 @@ static int __init flow_cache_init(struct flow_cache *fc)
+ 	fc->hotcpu_notifier = (struct notifier_block){
+ 		.notifier_call = flow_cache_cpu,
+ 	};
+-	register_hotcpu_notifier(&fc->hotcpu_notifier);
++	__register_hotcpu_notifier(&fc->hotcpu_notifier);
++
 +	cpu_maps_update_done();
- 	return 0;
  
- cleanup:
- 	for_each_online_cpu(cpu)
- 		__zswap_cpu_notifier(CPU_UP_CANCELED, cpu);
--	put_online_cpus();
+ 	setup_timer(&fc->rnd_timer, flow_cache_new_hashrnd,
+ 		    (unsigned long) fc);
+@@ -479,6 +483,8 @@ err:
+ 		fcp->hash_table = NULL;
+ 	}
+ 
 +	cpu_maps_update_done();
- 	return -ENOMEM;
- }
++
+ 	free_percpu(fc->percpu);
+ 	fc->percpu = NULL;
  
 
