@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaBEOFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:05:13 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:50004 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaBEOFI (ORCPT
+	id S1751542AbaBEOIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:08:11 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:36363 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaBEOIJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:05:08 -0500
+	Wed, 5 Feb 2014 09:08:09 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <52F2424A.609@hurleysoftware.com>
-References: <1391595106-86957-1-git-send-email-hare@suse.de>
-	<CANq1E4QM-SwAhBmgGgmKjAHaKW-QZ7GPBkKyrv_=ek1CFmRWEw@mail.gmail.com>
-	<52F2424A.609@hurleysoftware.com>
-Date: Wed, 5 Feb 2014 15:05:07 +0100
-Message-ID: <CANq1E4Q6A1p4HXvx=ynRhAs+mmedz4tn+dQ9et_jb6SdPAgdsA@mail.gmail.com>
-Subject: Re: [systemd-devel] [PATCH] tty: Set correct tty name in 'active'
- sysfs attribute
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Hannes Reinecke <hare@suse.de>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Kay Sievers <kay@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "Sebastian Hesselbarth" <sebastian.hesselbarth@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Cc: "Jason Cooper" <jason@lakedaemon.net>, "Andrew Lunn" <andrew@lunn.ch>,
+        "Gregory Clement" <gregory.clement@free-electrons.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Message-ID: <20140205140802.9977.19747@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Date: Wed, 05 Feb 2014 06:08:02 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Quoting Sebastian Hesselbarth (2014-01-25 10:19:06)
+> This patch set fixes clk init order that went upside-down with
+> v3.14. I haven't really investigated what caused this, but I assume
+> it is related with DT node reordering by addresses.
+> 
+> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+> registered before core clocks driver. Unfortunately, we cannot
+> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+> init order for our drivers is always core clocks before clock gating,
+> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+> init function that will register core clocks before clock gating
+> driver.
+> 
+> This patch is based on pre-v3.14-rc1 mainline and should go in as
+> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+> I suggest Jason picks it up as a topic branch.
 
-On Wed, Feb 5, 2014 at 2:53 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> On 02/05/2014 07:53 AM, David Herrmann wrote:
->>
->> Hi
->>
->> On Wed, Feb 5, 2014 at 11:11 AM, Hannes Reinecke <hare@suse.de> wrote:
->>>
->>> The 'active' sysfs attribute should refer to the currently
->>> active tty devices the console is running on, not the currently
->>> active console.
->>> The console structure doesn't refer to any device in sysfs,
->>> only the tty the console is running on has.
->>> So we need to print out the tty names in 'active', not
->>> the console names.
->>>
->>> Cc: Lennart Poettering <lennart@poettering.net>
->>> Cc: Kay Sievers <kay@vrfy.org>
->>> Signed-off-by: Werner Fink <werner@suse.de>
->>> Signed-off-by: Hannes Reinecke <hare@suse.de>
->>> ---
->>>   drivers/tty/tty_io.c | 14 ++++++++++++--
->>>   1 file changed, 12 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
->>> index c74a00a..17db8ca 100644
->>> --- a/drivers/tty/tty_io.c
->>> +++ b/drivers/tty/tty_io.c
->>> @@ -3545,9 +3545,19 @@ static ssize_t show_cons_active(struct device
->>> *dev,
->>>                  if (i >= ARRAY_SIZE(cs))
->>>                          break;
->>>          }
->>> -       while (i--)
->>> +       while (i--) {
->>> +               const struct tty_driver *driver;
->>> +               const char *name = cs[i]->name;
->>> +               int index = cs[i]->index;
->>> +
->>> +               driver = cs[i]->device(cs[i], &index);
->>> +               if (driver) {
->>> +                       index += driver->name_base;
->>> +                       name = driver->name;
->>> +               }
->>>                  count += sprintf(buf + count, "%s%d%c",
->>> -                                cs[i]->name, cs[i]->index, i ? '
->>> ':'\n');
->>> +                                name, index, i ? ' ':'\n');
->>> +       }
->>
->>
->> Nice catch and indeed, systemd already relies on these names to be
->> identical to their char-dev name. Fortunately, VTs and most serial
->> devices register the console with the same name as the TTY, so we're
->> fine.
->
->
-> What device did this trip over?
+Sebastian,
 
-I haven't seen one so far, but to me it's a coincident, not something
-we should rely on.
+These patches look OK to me. I'd rather take Gregory Clement's "respect
+the clock dependencies in of_clk_init" patch towards 3.15, so this fix
+will still be necessary for the current -rc's.
 
-> Also, this file is not private to systemd. Maybe these changes should
-> be forked into a different sysfs attribute, "active_devices"?
+Jason, will you be sending a PR?
 
-What's the use-case to return the name of the console-driver? There is
-no way for user-space to read active console-drivers anywhere so I
-think returning the TTY makes more sense. We already have working
-user-space that can spawn gettys on active consoles via this file. I
-am open to change this to "active_devices" as the existing interface
-was clearly not designed to return the device-names.
+Thanks,
+Mike
 
-However, given the fact that both matched so far, I think changing the
-existing interface to the only user I am aware of is better than
-adding a new interface just to keep this unused attribute. But
-obviously it's the maintainer's/your decision and you might know
-user-space which requires the console-names instead of the tty-names.
-So please let us know which way to go as we would like to see a
-reliable way to match active consoles to TTY devices for automated
-getty-startup.
-
-Thanks
-David
+> 
+> The patches have been boot tested on Dove and compile-tested only
+> for Kirkwood, Armada 370 and XP.
+> 
+> Sebastian Hesselbarth (4):
+>   clk: mvebu: armada-370: maintain clock init order
+>   clk: mvebu: armada-xp: maintain clock init order
+>   clk: mvebu: dove: maintain clock init order
+>   clk: mvebu: kirkwood: maintain clock init order
+> 
+>  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+>  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+>  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+>  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+>  4 files changed, 44 insertions(+), 50 deletions(-)
+> 
+> ---
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> -- 
+> 1.8.5.2
+> 
