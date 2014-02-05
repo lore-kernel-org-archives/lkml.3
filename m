@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456AbaBEVBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:01:17 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48106 "EHLO
+	id S1754432AbaBEUFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:05:15 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48058 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449AbaBEUFS (ORCPT
+	with ESMTP id S1754340AbaBEUFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:18 -0500
+	Wed, 5 Feb 2014 15:05:03 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Mathias Krause <minipli@googlemail.com>,
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 068/213] xfrm_user: fix info leak in copy_to_user_state()
-Date: Wed, 5 Feb 2014 15:00:23 -0500
-Message-ID: <1391630568-49251-69-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 055/213] netlink: fix races after skb queueing
+Date: Wed, 5 Feb 2014 15:00:10 -0500
+Message-ID: <1391630568-49251-56-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,33 +32,80 @@ From: Mathias Krause <minipli@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f778a636713a435d3a922c60b1622a91136560c1 upstream.
+commit 4a7e7c2ad540e54c75489a70137bf0ec15d3a127 upstream.
 
-The memory reserved to dump the xfrm state includes the padding bytes of
-struct xfrm_usersa_info added by the compiler for alignment (7 for
-amd64, 3 for i386). Add an explicit memset(0) before filling the buffer
-to avoid the info leak.
+As soon as an skb is queued into socket receive_queue, another thread
+can consume it, so we are not allowed to reference skb anymore, or risk
+use after free.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/xfrm/xfrm_user.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/netlink/af_netlink.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index 6106b72826d3..a0039040aba6 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -598,6 +598,7 @@ out:
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index ba9f6129ff32..1c889685d575 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -830,12 +830,19 @@ int netlink_attachskb(struct sock *sk, struct sk_buff *skb,
+ 	return 0;
+ }
  
- static void copy_to_user_state(struct xfrm_state *x, struct xfrm_usersa_info *p)
+-int netlink_sendskb(struct sock *sk, struct sk_buff *skb)
++static int __netlink_sendskb(struct sock *sk, struct sk_buff *skb)
  {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->id, &x->id, sizeof(p->id));
- 	memcpy(&p->sel, &x->sel, sizeof(p->sel));
- 	memcpy(&p->lft, &x->lft, sizeof(p->lft));
+ 	int len = skb->len;
+ 
+ 	skb_queue_tail(&sk->sk_receive_queue, skb);
+ 	sk->sk_data_ready(sk, len);
++	return len;
++}
++
++int netlink_sendskb(struct sock *sk, struct sk_buff *skb)
++{
++	int len = __netlink_sendskb(sk, skb);
++
+ 	sock_put(sk);
+ 	return len;
+ }
+@@ -960,8 +967,7 @@ static inline int netlink_broadcast_deliver(struct sock *sk,
+ 	if (atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf &&
+ 	    !test_bit(0, &nlk->state)) {
+ 		skb_set_owner_r(skb, sk);
+-		skb_queue_tail(&sk->sk_receive_queue, skb);
+-		sk->sk_data_ready(sk, skb->len);
++		__netlink_sendskb(sk, skb);
+ 		return atomic_read(&sk->sk_rmem_alloc) > (sk->sk_rcvbuf >> 1);
+ 	}
+ 	return -1;
+@@ -1685,10 +1691,8 @@ static int netlink_dump(struct sock *sk)
+ 
+ 		if (sk_filter(sk, skb))
+ 			kfree_skb(skb);
+-		else {
+-			skb_queue_tail(&sk->sk_receive_queue, skb);
+-			sk->sk_data_ready(sk, skb->len);
+-		}
++		else
++			__netlink_sendskb(sk, skb);
+ 		return 0;
+ 	}
+ 
+@@ -1700,10 +1704,8 @@ static int netlink_dump(struct sock *sk)
+ 
+ 	if (sk_filter(sk, skb))
+ 		kfree_skb(skb);
+-	else {
+-		skb_queue_tail(&sk->sk_receive_queue, skb);
+-		sk->sk_data_ready(sk, skb->len);
+-	}
++	else
++		__netlink_sendskb(sk, skb);
+ 
+ 	if (cb->done)
+ 		cb->done(cb);
 -- 
 1.8.5.2
 
