@@ -1,19 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaBEUMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:12:32 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48651 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379AbaBEUIT (ORCPT
+	id S932425AbaBEUIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:08:16 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55532 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384AbaBEUHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:08:19 -0500
+	Wed, 5 Feb 2014 15:07:46 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Tyler Hicks <tyhicks@canonical.com>,
+CC: Eric Wong <normalperson@yhbt.net>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>, <netdev@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 208/213] eCryptfs: Properly check for O_RDONLY flag before doing privileged open
-Date: Wed, 5 Feb 2014 15:02:43 -0500
-Message-ID: <1391630568-49251-209-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 157/213] epoll: prevent missed events on EPOLL_CTL_MOD
+Date: Wed, 5 Feb 2014 15:01:52 -0500
+Message-ID: <1391630568-49251-158-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +34,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Eric Wong <normalperson@yhbt.net>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,42 +42,80 @@ From: Tyler Hicks <tyhicks@canonical.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 9fe79d7600497ed8a95c3981cbe5b73ab98222f0 upstream.
+commit 128dd1759d96ad36c379240f8b9463e8acfd37a1 upstream.
 
-If the first attempt at opening the lower file read/write fails,
-eCryptfs will retry using a privileged kthread. However, the privileged
-retry should not happen if the lower file's inode is read-only because a
-read/write open will still be unsuccessful.
+EPOLL_CTL_MOD sets the interest mask before calling f_op->poll() to
+ensure events are not missed.  Since the modifications to the interest
+mask are not protected by the same lock as ep_poll_callback, we need to
+ensure the change is visible to other CPUs calling ep_poll_callback.
 
-The check for determining if the open should be retried was intended to
-be based on the access mode of the lower file's open flags being
-O_RDONLY, but the check was incorrectly performed. This would cause the
-open to be retried by the privileged kthread, resulting in a second
-failed open of the lower file. This patch corrects the check to
-determine if the open request should be handled by the privileged
-kthread.
+We also need to ensure f_op->poll() has an up-to-date view of past
+events which occured before we modified the interest mask.  So this
+barrier also pairs with the barrier in wq_has_sleeper().
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
+This should guarantee either ep_poll_callback or f_op->poll() (or both)
+will notice the readiness of a recently-ready/modified item.
+
+This issue was encountered by Andreas Voellmy and Junchang(Jason) Wang in:
+http://thread.gmane.org/gmane.linux.kernel/1408782/
+
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
+Tested-by: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
+Cc: netdev@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ecryptfs/kthread.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/eventpoll.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ecryptfs/kthread.c b/fs/ecryptfs/kthread.c
-index d8c3a373aafa..920d5d9a0cdb 100644
---- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -149,7 +149,7 @@ int ecryptfs_privileged_open(struct file **lower_file,
- 	(*lower_file) = dentry_open(lower_dentry, lower_mnt, flags, cred);
- 	if (!IS_ERR(*lower_file))
- 		goto out;
--	if (flags & O_RDONLY) {
-+	if ((flags & O_ACCMODE) == O_RDONLY) {
- 		rc = PTR_ERR((*lower_file));
- 		goto out;
- 	}
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 34ca5ca9c3e8..f8a6c0876a7a 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1033,10 +1033,30 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+ 	 * otherwise we might miss an event that happens between the
+ 	 * f_op->poll() call and the new event set registering.
+ 	 */
+-	epi->event.events = event->events;
++	epi->event.events = event->events; /* need barrier below */
+ 	epi->event.data = event->data; /* protected by mtx */
+ 
+ 	/*
++	 * The following barrier has two effects:
++	 *
++	 * 1) Flush epi changes above to other CPUs.  This ensures
++	 *    we do not miss events from ep_poll_callback if an
++	 *    event occurs immediately after we call f_op->poll().
++	 *    We need this because we did not take ep->lock while
++	 *    changing epi above (but ep_poll_callback does take
++	 *    ep->lock).
++	 *
++	 * 2) We also need to ensure we do not miss _past_ events
++	 *    when calling f_op->poll().  This barrier also
++	 *    pairs with the barrier in wq_has_sleeper (see
++	 *    comments for wq_has_sleeper).
++	 *
++	 * This barrier will now guarantee ep_poll_callback or f_op->poll
++	 * (or both) will notice the readiness of an item.
++	 */
++	smp_mb();
++
++	/*
+ 	 * Get current event bits. We can safely use the file* here because
+ 	 * its usage count has been increased by the caller of this function.
+ 	 */
 -- 
 1.8.5.2
 
