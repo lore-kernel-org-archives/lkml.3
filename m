@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaBEIjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:39:17 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:45113 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaBEIjP (ORCPT
+	id S1751440AbaBEIlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:41:14 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47821 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaBEIlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:39:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdVrkPybrONnw5fZaMZ-vuaq_arrBMZvnRYZ9EnvE8Y4cA@mail.gmail.com>
-References: <20140205065243.29445.76593.sendpatchset@w520>
-	<20140205065254.29445.77939.sendpatchset@w520>
-	<CAMuHMdVrkPybrONnw5fZaMZ-vuaq_arrBMZvnRYZ9EnvE8Y4cA@mail.gmail.com>
-Date: Wed, 5 Feb 2014 17:39:13 +0900
-Message-ID: <CANqRtoTLdBVj9EF2nsZm2QXc-gCGigB8vfsVJGCjS1Ger0zFTg@mail.gmail.com>
-Subject: Re: [PATCH 01/04] PCI: rcar: Register each instance independently
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-pci@vger.kernel.org, Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Valentine <valentine.barshak@cogentembedded.com>,
-        Simon Horman <horms@verge.net.au>, Bjorn Helgaas <bhelgaas@google.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Feb 2014 03:41:11 -0500
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: nicolas.ferre@atmel.com, mturquette@linaro.org
+Cc: b.brezillon@overkiz.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jason@lakedaemon.net,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: [PATCH v2 4/4] clk: at91: optimization of the determine_rate callback
+Date: Wed,  5 Feb 2014 09:37:38 +0100
+Message-Id: <1391589458-28018-5-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391589458-28018-1-git-send-email-jjhiblot@traphandler.com>
+References: <1391589458-28018-1-git-send-email-jjhiblot@traphandler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 5, 2014 at 5:02 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Wed, Feb 5, 2014 at 7:52 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> +static int rcar_pci_probe(struct platform_device *pdev)
->>  {
->>         struct resource *cfg_res, *mem_res;
->>         struct rcar_pci_priv *priv;
->>         void __iomem *reg;
->> +       struct hw_pci hw;
->>
->>         cfg_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>         reg = devm_ioremap_resource(&pdev->dev, cfg_res);
->> @@ -308,31 +271,26 @@ static int __init rcar_pci_probe(struct
->>         priv->reg = reg;
->>         priv->dev = &pdev->dev;
->>
->> -       return rcar_pci_add_controller(priv);
->> +       memset(&hw, 0, sizeof(hw));
->> +       hw.nr_controllers = 1;
->> +       hw.private_data = (void **)&priv;
->
-> This raised a red flag: taking the address of a variable on the stack.
-> I know it's correct, as hw.private_data is an array of pointers copied
-> by pci_common_init_dev() below.
-> But perhaps it's a good idea to turn priv into an array with one element,
-> to make this clearer, and avoid the ugly cast?
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+---
+ drivers/clk/at91/clk-programmable.c | 38 ++++++++-----------------------------
+ 1 file changed, 8 insertions(+), 30 deletions(-)
 
-I simply followed the same style as pci-tegra.c, but I agree that it
-can be made prettier. Also, there may be some better way how to
-register independent instances, not sure.
+diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
+index 7bcc725..62e2509 100644
+--- a/drivers/clk/at91/clk-programmable.c
++++ b/drivers/clk/at91/clk-programmable.c
+@@ -139,43 +139,21 @@ static int clk_programmable_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	struct clk_programmable *prog = to_clk_programmable(hw);
+ 	struct at91_pmc *pmc = prog->pmc;
+ 	const struct clk_programmable_layout *layout = prog->layout;
+-	unsigned long best_rate = parent_rate;
+-	unsigned long best_diff;
+-	unsigned long new_diff;
+-	unsigned long cur_rate;
++	unsigned long div = parent_rate / rate;
+ 	int shift = 0;
+ 	u32 tmp = pmc_read(pmc, AT91_PMC_PCKR(prog->id)) &
+ 		  ~(PROG_PRES_MASK << layout->pres_shift);
+ 
+-	if (rate > parent_rate)
+-		return parent_rate;
+-	else
+-		best_diff = parent_rate - rate;
++	if (!div)
++		return -EINVAL;
+ 
+-	if (!best_diff) {
+-		pmc_write(pmc, AT91_PMC_PCKR(prog->id), tmp | shift);
+-		return 0;
+-	}
+-
+-	for (shift = 1; shift < PROG_PRES_MASK; shift++) {
+-		cur_rate = parent_rate >> shift;
+-
+-		if (cur_rate > rate)
+-			new_diff = cur_rate - rate;
+-		else
+-			new_diff = rate - cur_rate;
+-
+-		if (!new_diff)
+-			break;
++	shift = fls(div) - 1;
+ 
+-		if (new_diff < best_diff) {
+-			best_diff = new_diff;
+-			best_rate = cur_rate;
+-		}
++	if (div != (1<<shift))
++		return -EINVAL;
+ 
+-		if (rate > cur_rate)
+-			break;
+-	}
++	if (shift >= PROG_PRES_MASK)
++		return -EINVAL;
+ 
+ 	pmc_write(pmc, AT91_PMC_PCKR(prog->id),
+ 		  tmp | (shift << layout->pres_shift));
+-- 
+1.8.5.2
 
-Thanks,
-
-/ magnus
