@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaBEJIl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:08:41 -0500
-Received: from sauhun.de ([89.238.76.85]:45706 "EHLO pokefinder.org"
+	id S1751620AbaBEJLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:11:10 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:41767 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968AbaBEJIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:08:38 -0500
-Date: Wed, 5 Feb 2014 10:08:18 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Matt Porter <mporter@linaro.org>
-Cc: Tim Kryger <tim.kryger@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] i2c: bcm-kona: register with subsys_initcall
-Message-ID: <20140205090818.GA2614@katana>
-References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
- <1391516352-32359-2-git-send-email-mporter@linaro.org>
+	id S1751118AbaBEJLH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 04:11:07 -0500
+Date: Wed, 5 Feb 2014 10:11:34 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, Dave Airlie <airlied@gmail.com>,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 4/5] ASoC: tda998x: adjust the audio hw parameters
+ from EDID
+Message-ID: <20140205101134.4591e5c3@armhf>
+In-Reply-To: <20140204180625.GM22609@sirena.org.uk>
+References: <cover.1391274627.git.moinejf@free.fr>
+	<1b15025671d9099863a3091346536e45891e4a26.1391274628.git.moinejf@free.fr>
+	<20140204180625.GM22609@sirena.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nFreZHaLTZJo0R7j"
-Content-Disposition: inline
-In-Reply-To: <1391516352-32359-2-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 4 Feb 2014 18:06:25 +0000
+Mark Brown <broonie@kernel.org> wrote:
 
---nFreZHaLTZJo0R7j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Jan 27, 2014 at 09:48:54AM +0100, Jean-Francois Moine wrote:
+> 
+> > +		/* change the snd_soc_pcm_stream values of the driver */
+> > +		stream->rates = rate_mask;
+> > +		stream->channels_max = max_channels;
+> > +		stream->formats = formats;
+> 
+> > +	/* copy the DAI driver to a writable area */
+> > +	dai_drv = devm_kzalloc(&pdev->dev, sizeof(tda998x_dai), GFP_KERNEL);
+> > +	if (!dai_drv)
+> > +		return -ENOMEM;
+> > +	memcpy(dai_drv, tda998x_dai, sizeof(tda998x_dai));
+> > +
+> 
+> The code should be doing this by setting constraints based on the
+> current setup rather than by editing the data structure - the expecation
+> is very much that the data won't change so this prevents surprises with
+> future work on the core.
 
-On Tue, Feb 04, 2014 at 07:19:07AM -0500, Matt Porter wrote:
+As it is done in the soc core, in soc_pcm_open(), the runtime hw_params
+are initialized after the call to the CODEC startup, and the next CODEC
+event is hw_params() when the user has already chosen all the parameters.
 
-> Voltage regulators are needed very early due to deferred probe
-> being incompatible with built-in USB gadget drivers.
+So, in the CODEC, I don't see how I could update the parameters
+dictated by the EDID otherwise in changing the DAI driver parameters.
 
-What does it need to fix those instead?
-
-
---nFreZHaLTZJo0R7j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS8f+CAAoJEBQN5MwUoCm2jrMP/iAt/1pOvXO6wzRAhEAkgd7+
-9CYqnCEJNQputd/wgGOcpXOrOEZBu4eNApKmBu7FErq6Ilrlj5bn/Ughu6/qRS20
-+LwvjYd0GGNpos4JOQ9aJCefMPinj6M3Yghw9rfD67a8f0qTdVjamwehk8mjDwkK
-KOiz2f0ipcL3emm32JBZDkrIG/mFj8FId0VHNS51HJP5bWyf9VITwJygy3mlH8jP
-QKQMfRtr19bVpzyKgcpxm6cT1G8skjSJY+ZJBA/FNK+LSMeQIrrwJD5JI8tviB9R
-lI+w0H9RDel15yv+uDcAcNY8AJ36rAbKTPw9VObB6CRbz3qLhPg99SA3YF2h2+3F
-/FESjXlmaZHBdTQ9iIdaIk65a0qrLIJ2HHje3hvNoKp54yjcDVugdBHfuRq/a8pU
-cH9qRauX5mHOon4oTI7q/8e4TR8LgxTeHZ2hoDfFyy8EqvHpBdlTgnR1Qt8kJku8
-7LqDbAIJrMEYmgbZmJKHopNUOEu7oUxt4XYnTxyIarxbIkGzt1fMwg+/dJSnF1uw
-CLSfwdF7Zxrh9Ms/AyBR/og3uggVKARAMIxEpj2qMTJqotaRIqIxR/WFwoA8WR9+
-+4TJC5moZH6dZFNR62Cv8b7oV3QoSzFDgkv007btur25MFMZ7oh56689KHUMXrq+
-SPVMSgHQnnB8hx8bkAxY
-=uyoI
------END PGP SIGNATURE-----
-
---nFreZHaLTZJo0R7j--
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
