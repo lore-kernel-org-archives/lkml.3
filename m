@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaBELzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 06:55:50 -0500
-Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:37995 "EHLO
-	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751377AbaBELzs (ORCPT
+	id S1752217AbaBEMGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 07:06:07 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:59970 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750723AbaBEMGF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 06:55:48 -0500
-Message-ID: <52F22508.7080706@st.com>
-Date: Wed, 5 Feb 2014 11:48:24 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 07:06:05 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        arm@kernel.org, Rob Herring <robherring2@gmail.com>,
+        devicetree@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>
+Subject: Re: [PATCH v7 2/7] dt-bindings: sram: describe option to reserve parts of the memory
+Date: Wed, 05 Feb 2014 13:05:14 +0100
+Message-ID: <1816961.2dvm7Iumeh@phil>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140205111247.476B7C40A89@trevor.secretlab.ca>
+References: <4970034.fqvMoHdOyd@phil> <1782709.QdZpsrsctf@phil> <20140205111247.476B7C40A89@trevor.secretlab.ca>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, <kernel@stlinux.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        <linux-kernel@vger.kernel.org>, Stuart Menefy <stuart.menefy@st.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, <maxime.coquelin@st.com>,
-        <alexandre.torgue@st.com>
-Subject: Re: [PATCH 1/4] ARM: STi: add stid127 soc support
-References: <1391093744-19905-1-git-send-email-patrice.chotard@st.com> <201401301939.08302.arnd@arndb.de> <52EB96BB.6070800@st.com> <201401312115.33731.arnd@arndb.de>
-In-Reply-To: <201401312115.33731.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-On 31/01/14 20:15, Arnd Bergmann wrote:
-> On Friday 31 January 2014, srinivas kandagatla wrote:
+Am Mittwoch, 5. Februar 2014, 11:12:47 schrieb Grant Likely:
+> On Mon, 20 Jan 2014 16:42:58 +0100, Heiko Stübner <heiko@sntech.de> wrote:
+> > Some SoCs need parts of their sram for special purposes. So while being
+> > part of the peripheral, it should not be part of the genpool controlling
+> > the sram.
+> > 
+> > Therefore add an option mmio-sram-reserved to keep arbitrary portions of
+> > the sram from general usage.
+> > 
+> > Suggested-by: Rob Herring <robherring2@gmail.com>
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+> > Acked-by: Rob Herring <robh@kernel.org>
+> > ---
+> > 
+> >  Documentation/devicetree/bindings/misc/sram.txt |    8 ++++++++
+> >  1 file changed, 8 insertions(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/misc/sram.txt
+> > b/Documentation/devicetree/bindings/misc/sram.txt index 4d0a00e..09ee7a3
+> > 100644
+> > --- a/Documentation/devicetree/bindings/misc/sram.txt
+> > +++ b/Documentation/devicetree/bindings/misc/sram.txt
+> > 
+> > @@ -8,9 +8,17 @@ Required properties:
+> >  - reg : SRAM iomem address range
+> > 
+> > +Optional properties:
+> > +
+> > +- mmio-sram-reserved: ordered list of reserved chunks inside the sram
+> > that
+> > +  should not be used by the operating system.
+> > +  Format is <base size>, <base size>, ...; with base being relative to
+> > the
+> > +  reg property base.
+> > +
 > 
->>> Sorry if I missed the initial review, but can you explain
->>> why this is needed to start with?
->>
->> On ST SoCs the default value for L2 AUX_CTRL register is 0x0, so we  set
->> the way-size explicit here.
+> We've now got a draft binding for reserved memory. Can you use the format
+> here? Basically each reserved region is a sub node with either a reg
+> property or a size property.
 > 
-> Unfortunately, we keep going back and forth on the L2 cache controller
-> setup between "it should work automatically" and "we don't want to
-> have configuration data in DT", where my personal opinion is that
-> the first one is more important here.
-> 
-> Now, there are a couple of properties that are defined in
-> Documentation/devicetree/bindings/arm/l2cc.txt to let some of the
-> things get set up automatically already. Can you check which bits
-> are missing there, if any? Are they better described as "configuration"
-> or "hardware" settings?
+> This is specifically for sram, so I won't make a big deal about it, but
+> it would be good to have some commonality.
 
-Currently l2cc bindings has few optional properties like.
+I guess you're talking about "[PATCH v2 0/5] reserved-memory regions/CMA in 
+devicetree, again", right?
 
-- arm,data-latency
-- arm,tag-latency
-- arm,dirty-latency
-- arm,filter-ranges
-- interrupts :
-- cache-id-part:
-- wt-override:
+In general I'm all for commonality :-). So I guess you mean it to look 
+something like the following:
 
-These does not include properties to set "way-size", "associativity",
-"enabling prefetching", "Prefetch drop enable", "prefetch offset",
-"Double linefill" and few more in prefect control register and
-aux-control register.
+	sram: sram@10080000 {
+		compatible = "rockchip,rk3066-sram", "mmio-sram";
+		reg = <0x10080000 0x8000>;
 
-This is not just a issue with STi SOCs, having a quick look, I can see
-that few more SOCs have similar requirements to set these properties.
+		reserved-memory {
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-We could do two things to get l2 setup automatically on STi SOCS.
+			smp@200 {
+				/* hmm, relative or absolute, aka 0x200 or 0x10080200? */
+				reg = <0x200 0x50>;
+			};
+		};
+	};
 
-1> Either define these properties case-by-case basic, which might be
-useful for other SOCs too.
-
-2> Or Add new compatible string for STi SoCs so that they can
-automatically setup these values in cache-l2x0.c
-
-Am Ok with either approaches.
+As it looks like only a slight modification of my "parsing" code this should be 
+doable. Do you suggest more changes to the example above?
 
 
-Thanks,
-srini
+Heiko
 
-
-> 
-> 	Arnd
-> 
-> 
 
