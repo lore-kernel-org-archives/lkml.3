@@ -1,256 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326AbaBEF1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:27:07 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:35748 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaBEF1F (ORCPT
+	id S1751539AbaBEFaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:30:55 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:62771 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaBEFax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:27:05 -0500
-Message-ID: <52F1CBAB.2070106@gmail.com>
-Date: Wed, 05 Feb 2014 13:27:07 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 5 Feb 2014 00:30:53 -0500
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] include/linux/kprobes.h: move all functions to their matched
- area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com> <52F1AB18.5040208@gmail.com> <52F1B1CE.2040204@gmail.com> <52F1C579.1080907@hitachi.com>
-In-Reply-To: <52F1C579.1080907@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140205051730.GA3911@beef>
+References: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
+	<20140205044335.GA2172@beef>
+	<CAKzfze-mHkxmnb06jDuD=-Zg3SmhRoZo6-P0D9dReA-gDwbTnw@mail.gmail.com>
+	<20140205051730.GA3911@beef>
+Date: Tue, 4 Feb 2014 21:30:52 -0800
+Message-ID: <CAKzfze9=_u0CsvZ2=Mr_iaL=BxD1WOqmFPq0z3dO8jNGGk-pCA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] iio:as3935: Add DT binding docs for AS3935 driver
+From: Matt Ranostay <mranostay@gmail.com>
+To: Matt Porter <mporter@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For dummy functions, it is not a good idea to still use the input
-parameters (not a good idea to assume they are still effect).
+On Tue, Feb 4, 2014 at 9:17 PM, Matt Porter <mporter@linaro.org> wrote:
+> On Tue, Feb 04, 2014 at 08:52:26PM -0800, Matt Ranostay Matt Ranostay wrote:
+>> On Tue, Feb 4, 2014 at 8:43 PM, Matt Porter <mporter@linaro.org> wrote:
+>> > On Tue, Feb 04, 2014 at 07:14:55PM -0800, Matt Ranostay Matt Ranostay wrote:
+>> >> Document compatible string, required and optional DT properties for
+>> >> AS3935 chipset driver.
+>> >>
+>> >> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+>> >> ---
+>> >>  .../devicetree/bindings/iio/proximity/as3935.txt   | 25 ++++++++++++++++++++++
+>> >>  1 file changed, 25 insertions(+)
+>> >>  create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>> >>
+>> >> diff --git a/Documentation/devicetree/bindings/iio/proximity/as3935.txt b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>> >> new file mode 100644
+>> >> index 0000000..7e117cd
+>> >> --- /dev/null
+>> >> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>> >> @@ -0,0 +1,25 @@
+>> >> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
+>> >> +
+>> >> +Required properties:
+>> >> +     - compatible: must be "ams,as3935"
+>> >
+>> > Change this to "amstaos,as3935"
+>> >
+>> > amstaos (AMS bought Taos) is already a registered vendor prefix in
+>> > vendor-prefixes.txt
+>> >
+>> >> +     - reg: SPI chip select number for the device
+>> >> +     - spi-cpha: SPI Mode 1
+>> >
+>> > When using generic binding properties, please reference the binding
+>> > being used. Like:
+>> >
+>> >         - spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
+>> >           slave node bindings.
+>> >
+>> Noted.
+>>
+>> >> +     - interrupt-parent : should be the phandle for the interrupt controller
+>> >> +     - interrupts : interrupt mapping for GPIO IRQ
+>> >
+>> >         Refer to interrupt-controller/interrupts.txt for generic
+>> >         interrupt client node bindings.
+>> >
+>> Noted.
+>>
+>> >> +
+>> >> +Optional properties:
+>> >> +     - ams,tune-cap: Calibration tuning capacitor stepping value 0 - 15.
+>> >> +       Range of 0 to 120 pF, 8pF steps. This will require using the
+>> >> +       calibration data from the manufacturer.
+>> >> +
+>> >> +
+>> >> +Example:
+>> >> +
+>> >> +as3935@0 {
+>> >> +     compatible = "ams,as3935";
+>> >> +     reg = <0>;
+>> >> +     spi-cpha;
+>> >> +     interrupt-parent = <&gpio1>;
+>> >> +     interrupts = <16 1>;
+>> >> +     ams,tune-cap = /bits/ 8 <10>;
+>> >
+>> > What is this? Why not just ams,tune-cap = <10>; ?
+>> >
+>> > It's a value between 0-15, right?
+>>
+>> Correct but it is using of_property_read_u8() so that requires the
+>> /bits/ statement.
+>> Should this just be a u32 value?
+>
+> Do you really need a u8? If not just read_u32() into an int and keep
+> this syntax simple.
 
- - let kprobe* static inline functions in CONFIG_KPROBES, dummy outside.
+Just me different it seems :P.  Will fix in next version waiting for
+Peter's and Jonathan's input on the rest of the code first.
 
- - let (en/dis)able_jprobe() in CONFIG_KPROBES, dummy outside.
-
- - for kretprobe:
-
-   - let kretprobe_assert() only in CONFIG_KRETPROBES (internal use).
-
-   - remove kretprobe_inst_table_head() (cannot grep it in kernel wide).
-
-   - for (en/dis)able_kretprobe():
-
-       if CONFIG_KRETPROBES enabled, they use (en/dis)able_kprobe().
-       else if CONFIG_KPROBES enabled, return -EINVAL (not registered).
-       else, return -ENOSYS, just like (en/dis)able_kprobe() have done.
-
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- include/linux/kprobes.h | 136 ++++++++++++++++++++++++++++++++----------------
- 1 file changed, 92 insertions(+), 44 deletions(-)
-
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index 925eaf2..860313d 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -129,30 +129,6 @@ struct kprobe {
- 				   */
- #define KPROBE_FLAG_FTRACE	8 /* probe is using ftrace */
- 
--/* Has this kprobe gone ? */
--static inline int kprobe_gone(struct kprobe *p)
--{
--	return p->flags & KPROBE_FLAG_GONE;
--}
--
--/* Is this kprobe disabled ? */
--static inline int kprobe_disabled(struct kprobe *p)
--{
--	return p->flags & (KPROBE_FLAG_DISABLED | KPROBE_FLAG_GONE);
--}
--
--/* Is this kprobe really running optimized path ? */
--static inline int kprobe_optimized(struct kprobe *p)
--{
--	return p->flags & KPROBE_FLAG_OPTIMIZED;
--}
--
--/* Is this kprobe uses ftrace ? */
--static inline int kprobe_ftrace(struct kprobe *p)
--{
--	return p->flags & KPROBE_FLAG_FTRACE;
--}
--
- /*
-  * Special probe type that uses setjmp-longjmp type tricks to resume
-  * execution at a specified entry with a matching prototype corresponding
-@@ -223,7 +199,42 @@ static inline int kprobes_built_in(void)
- 	return 1;
- }
- 
-+/* Has this kprobe gone ? */
-+static inline int kprobe_gone(struct kprobe *p)
-+{
-+	return p->flags & KPROBE_FLAG_GONE;
-+}
-+
-+/* Is this kprobe disabled ? */
-+static inline int kprobe_disabled(struct kprobe *p)
-+{
-+	return p->flags & (KPROBE_FLAG_DISABLED | KPROBE_FLAG_GONE);
-+}
-+
-+/* Is this kprobe really running optimized path ? */
-+static inline int kprobe_optimized(struct kprobe *p)
-+{
-+	return p->flags & KPROBE_FLAG_OPTIMIZED;
-+}
-+
-+/* Is this kprobe uses ftrace ? */
-+static inline int kprobe_ftrace(struct kprobe *p)
-+{
-+	return p->flags & KPROBE_FLAG_FTRACE;
-+}
-+
- #ifdef CONFIG_KRETPROBES
-+static inline void kretprobe_assert(struct kretprobe_instance *ri,
-+	unsigned long orig_ret_address, unsigned long trampoline_address)
-+{
-+	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
-+		printk(KERN_ERR
-+			"kretprobe BUG!: Processing kretprobe %p @ %p\n",
-+			ri->rp, ri->rp->kp.addr);
-+		BUG();
-+	}
-+}
-+
- extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
- 				   struct pt_regs *regs);
- extern int arch_trampoline_kprobe(struct kprobe *p);
-@@ -240,16 +251,6 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
- 
- extern struct kretprobe_blackpoint kretprobe_blacklist[];
- 
--static inline void kretprobe_assert(struct kretprobe_instance *ri,
--	unsigned long orig_ret_address, unsigned long trampoline_address)
--{
--	if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
--		printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
--				ri->rp, ri->rp->kp.addr);
--		BUG();
--	}
--}
--
- #ifdef CONFIG_KPROBES_SANITY_TEST
- extern int init_test_probes(void);
- #else
-@@ -340,7 +341,6 @@ struct kprobe *get_kprobe(void *addr);
- void kretprobe_hash_lock(struct task_struct *tsk,
- 			 struct hlist_head **head, unsigned long *flags);
- void kretprobe_hash_unlock(struct task_struct *tsk, unsigned long *flags);
--struct hlist_head * kretprobe_inst_table_head(struct task_struct *tsk);
- 
- /* kprobe_running() will just return the current_kprobe on this CPU */
- static inline struct kprobe *kprobe_running(void)
-@@ -384,12 +384,60 @@ int enable_kprobe(struct kprobe *kp);
- 
- void dump_kprobe(struct kprobe *kp);
- 
-+static inline int disable_jprobe(struct jprobe *jp)
-+{
-+	return disable_kprobe(&jp->kp);
-+}
-+
-+static inline int enable_jprobe(struct jprobe *jp)
-+{
-+	return enable_kprobe(&jp->kp);
-+}
-+
-+#ifdef CONFIG_KRETPROBES
-+static inline int disable_kretprobe(struct kretprobe *rp)
-+{
-+	return disable_kprobe(&rp->kp);
-+}
-+
-+static inline int enable_kretprobe(struct kretprobe *rp)
-+{
-+	return enable_kprobe(&rp->kp);
-+}
-+
-+#else /* CONFIG_KRETPROBES */
-+static inline int disable_kretprobe(struct kretprobe *rp)
-+{
-+	return -EINVAL;
-+}
-+static inline int enable_kretprobe(struct kretprobe *rp)
-+{
-+	return -EINVAL;
-+}
-+#endif /* CONFIG_KRETPROBES */
-+
- #else /* !CONFIG_KPROBES: */
- 
- static inline int kprobes_built_in(void)
- {
- 	return 0;
- }
-+static inline int kprobe_gone(struct kprobe *p)
-+{
-+	return 1;
-+}
-+static inline int kprobe_disabled(struct kprobe *p)
-+{
-+	return 1;
-+}
-+static inline int kprobe_optimized(struct kprobe *p)
-+{
-+	return 0;
-+}
-+static inline int kprobe_ftrace(struct kprobe *p)
-+{
-+	return 0;
-+}
- static inline int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- {
- 	return 0;
-@@ -458,22 +506,22 @@ static inline int enable_kprobe(struct kprobe *kp)
- {
- 	return -ENOSYS;
- }
--#endif /* CONFIG_KPROBES */
--static inline int disable_kretprobe(struct kretprobe *rp)
-+static inline int disable_jprobe(struct jprobe *jp)
- {
--	return disable_kprobe(&rp->kp);
-+	return -ENOSYS;
- }
--static inline int enable_kretprobe(struct kretprobe *rp)
-+static inline int enable_jprobe(struct jprobe *jp)
- {
--	return enable_kprobe(&rp->kp);
-+	return -ENOSYS;
- }
--static inline int disable_jprobe(struct jprobe *jp)
-+static inline int disable_kretprobe(struct kretprobe *rp)
- {
--	return disable_kprobe(&jp->kp);
-+	return -ENOSYS;
- }
--static inline int enable_jprobe(struct jprobe *jp)
-+static inline int enable_kretprobe(struct kretprobe *rp)
- {
--	return enable_kprobe(&jp->kp);
-+	return -ENOSYS;
- }
-+#endif /* CONFIG_KPROBES */
- 
- #endif /* _LINUX_KPROBES_H */
--- 
-1.7.11.7
+>
+> -Matt
