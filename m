@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaBENFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:05:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbaBENFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:05:40 -0500
-Date: Wed, 5 Feb 2014 14:07:07 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Keith Busch <keith.busch@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvme@lists.infradead.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v3 6/9] nvme: Use pci_enable_msi_range() and
- pci_enable_msix_range()
-Message-ID: <20140205130707.GB27820@dhcp-26-207.brq.redhat.com>
-References: <cover.1389904166.git.agordeev@redhat.com>
- <1c441f670f33375b6c41e074baf6e84e6c7bb0c2.1389904166.git.agordeev@redhat.com>
- <CAErSpo4g_xm4vZWZDgyjtJu+z5ARSerQLrtJ6W_peXv4bKwcgg@mail.gmail.com>
- <alpine.LRH.2.03.1401171419370.25844@AMR>
- <20140120083835.GA19068@dhcp-26-207.brq.redhat.com>
- <20140120084046.GB19068@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140120084046.GB19068@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751458AbaBENKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:10:08 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:34388 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750775AbaBENKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:10:05 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>
+Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 2/5] ARM: sun6i: dt: Add PLL6 and SPI module clocks
+Date: Wed,  5 Feb 2014 14:05:04 +0100
+Message-Id: <1391605507-30981-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1391605507-30981-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1391605507-30981-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 20, 2014 at 09:40:46AM +0100, Alexander Gordeev wrote:
-> As result deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range() and pci_enable_msix_range()
-> interfaces.
+The module clocks in the A31 are still compatible with the A10 one. Add the SPI
+module clocks and the PLL6 in the device tree to allow their use by the SPI
+controllers.
 
-Hi Keith,
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/sun6i-a31.dtsi | 46 ++++++++++++++++++++++++++++++++--------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
 
-What about letting this change only for now and considering
-the series "NVMe: Cleanup device initialization" afterwards?
-
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index 092bf97..93d7bb6 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -83,16 +83,12 @@
+ 			clocks = <&osc24M>;
+ 		};
+ 
+-		/*
+-		 * This is a dummy clock, to be used as placeholder on
+-		 * other mux clocks when a specific parent clock is not
+-		 * yet implemented. It should be dropped when the driver
+-		 * is complete.
+-		 */
+-		pll6: pll6 {
++		pll6: clk@01c20028 {
+ 			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <0>;
++			compatible = "allwinner,sun6i-a31-pll6-clk";
++			reg = <0x01c20028 0x4>;
++			clocks = <&osc24M>;
++			clock-output-names = "pll6";
+ 		};
+ 
+ 		cpu: cpu@01c20050 {
+@@ -192,6 +188,38 @@
+ 					"apb2_uart1", "apb2_uart2", "apb2_uart3",
+ 					"apb2_uart4", "apb2_uart5";
+ 		};
++
++		spi0_clk: clk@01c200a0 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-mod0-clk";
++			reg = <0x01c200a0 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "spi0";
++		};
++
++		spi1_clk: clk@01c200a4 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-mod0-clk";
++			reg = <0x01c200a4 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "spi1";
++		};
++
++		spi2_clk: clk@01c200a8 {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-mod0-clk";
++			reg = <0x01c200a8 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "spi2";
++		};
++
++		spi3_clk: clk@01c200ac {
++			#clock-cells = <0>;
++			compatible = "allwinner,sun4i-mod0-clk";
++			reg = <0x01c200ac 0x4>;
++			clocks = <&osc24M>, <&pll6>;
++			clock-output-names = "spi3";
++		};
+ 	};
+ 
+ 	soc@01c00000 {
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.8.4.2
+
