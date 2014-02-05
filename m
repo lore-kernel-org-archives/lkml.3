@@ -1,571 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaBEDPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 22:15:22 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:46333 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaBEDO6 (ORCPT
+	id S1754602AbaBEDPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 22:15:39 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:14808 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754207AbaBEDPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 22:14:58 -0500
-From: Matt Ranostay <mranostay@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: matt.porter@linaro.org, pantelis.antoniou@gmail.com,
-        Matt Ranostay <mranostay@gmail.com>
-Subject: [PATCH v4 2/2] iio: Add AS3935 lightning sensor support
-Date: Tue,  4 Feb 2014 19:14:56 -0800
-Message-Id: <1391570096-2932-2-git-send-email-mranostay@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
-References: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
+	Tue, 4 Feb 2014 22:15:33 -0500
+X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz9371Ic3f2I542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchz1de098h8275dh1de097h186068hz2fh109h2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h2461h2487h24d7h2516h9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(6009001)(13464003)(51704005)(501624003)(377454003)(189002)(199002)(164054003)(87936001)(53806001)(74316001)(76482001)(85306002)(80976001)(54356001)(66066001)(65816001)(51856001)(76576001)(56776001)(54316002)(74502001)(74662001)(47446002)(74706001)(76796001)(31966008)(19580405001)(83322001)(76786001)(33646001)(92566001)(79102001)(2656002)(19580395003)(74876001)(46102001)(15975445006)(94946001)(93136001)(80022001)(94316002)(81342001)(81686001)(81542001)(90146001)(85852003)(59766001)(63696002)(77982001)(83072002)(74366001)(69226001)(86362001)(56816005)(93516002)(47736001)(49866001)(2201001)(4396001)(87266001)(50986001)(47976001)(81816001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB527;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.13;FPR:FCBDCB8E.B1F290D1.7BE47333.8E8DA61.202EE;InfoNoRecordsMX:1;A:1;LANG:en;
+From: Rajat Jain <rajatjain@juniper.net>
+To: Rajat Jain <rajatxjain@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>
+CC: Guenter Roeck <groeck@juniper.net>
+Subject: RE: [PATCH v4 0/8] Allow Link state changes for Hot-Plug
+Thread-Topic: [PATCH v4 0/8] Allow Link state changes for Hot-Plug
+Thread-Index: AQHPIhnuAog6p1MDKkK0k4ut2ogHHJql/GCQ
+Date: Wed, 5 Feb 2014 03:15:19 +0000
+Message-ID: <4f93bb24b6214bfb9dbcc91b682184eb@DM2PR05MB671.namprd05.prod.outlook.com>
+References: <52F1A1B6.2090709@gmail.com>
+In-Reply-To: <52F1A1B6.2090709@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [66.129.239.13]
+x-forefront-prvs: 01136D2D90
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: juniper.net
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s153FjeQ026728
 
-AS3935 chipset can detect lightning strikes and reports those back as
-events and the estimated distance to the storm.
+Hello list,
 
-Signed-off-by: Matt Ranostay <mranostay@gmail.com>
----
- .../ABI/testing/sysfs-bus-iio-proximity-as3935     |  18 +
- drivers/iio/Kconfig                                |   1 +
- drivers/iio/Makefile                               |   1 +
- drivers/iio/proximity/Kconfig                      |  19 +
- drivers/iio/proximity/Makefile                     |   6 +
- drivers/iio/proximity/as3935.c                     | 437 +++++++++++++++++++++
- 6 files changed, 482 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
- create mode 100644 drivers/iio/proximity/Kconfig
- create mode 100644 drivers/iio/proximity/Makefile
- create mode 100644 drivers/iio/proximity/as3935.c
+My apologies for I forgot to attach the version history information of each individual patch.
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935 b/Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
-new file mode 100644
-index 0000000..f6d9e6f
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-bus-iio-proximity-as3935
-@@ -0,0 +1,18 @@
-+What		/sys/bus/iio/devices/iio:deviceX/in_proximity_raw
-+Date:		January 2014
-+KernelVersion:	3.15
-+Contact:	Matt Ranostay <mranostay@gmail.com>
-+Description:
-+		Get the current distance in kilometers of storm
-+		1    = storm overhead
-+		1-40 = distance in kilometers
-+		63   = out of range
-+
-+What		/sys/bus/iio/devices/iio:deviceX/gain_boost
-+Date:		January 2014
-+KernelVersion:	3.15
-+Contact:	Matt Ranostay <mranostay@gmail.com>
-+Description:
-+		Show or set the gain boost of the amp, from 0-31 range.
-+		18 = indoors (default)
-+		14 = outdoors
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index 5dd0e12..743485e 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -74,6 +74,7 @@ if IIO_TRIGGER
-    source "drivers/iio/trigger/Kconfig"
- endif #IIO_TRIGGER
- source "drivers/iio/pressure/Kconfig"
-+source "drivers/iio/proximity/Kconfig"
- source "drivers/iio/temperature/Kconfig"
- 
- endif # IIO
-diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-index 887d390..698afc2 100644
---- a/drivers/iio/Makefile
-+++ b/drivers/iio/Makefile
-@@ -24,5 +24,6 @@ obj-y += light/
- obj-y += magnetometer/
- obj-y += orientation/
- obj-y += pressure/
-+obj-y += proximity/
- obj-y += temperature/
- obj-y += trigger/
-diff --git a/drivers/iio/proximity/Kconfig b/drivers/iio/proximity/Kconfig
-new file mode 100644
-index 0000000..0c8cdf5
---- /dev/null
-+++ b/drivers/iio/proximity/Kconfig
-@@ -0,0 +1,19 @@
-+#
-+# Proximity sensors
-+#
-+
-+menu "Lightning sensors"
-+
-+config AS3935
-+	tristate "AS3935 Franklin lightning sensor"
-+	select IIO_BUFFER
-+	select IIO_TRIGGERED_BUFFER
-+	depends on SPI
-+	help
-+	  Say Y here to build SPI interface support for the Austrian
-+	  Microsystems AS3935 lightning detection sensor.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called as3935
-+
-+endmenu
-diff --git a/drivers/iio/proximity/Makefile b/drivers/iio/proximity/Makefile
-new file mode 100644
-index 0000000..743adee
---- /dev/null
-+++ b/drivers/iio/proximity/Makefile
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for IIO proximity sensors
-+#
-+
-+# When adding new entries keep the list in alphabetical order
-+obj-$(CONFIG_AS3935)		+= as3935.o
-diff --git a/drivers/iio/proximity/as3935.c b/drivers/iio/proximity/as3935.c
-new file mode 100644
-index 0000000..da4f5f6
---- /dev/null
-+++ b/drivers/iio/proximity/as3935.c
-@@ -0,0 +1,437 @@
-+/*
-+ * as3935.c - Support for AS3935 Franklin lightning sensor
-+ *
-+ * Copyright (C) 2014 Matt Ranostay <mranostay@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/delay.h>
-+#include <linux/workqueue.h>
-+#include <linux/mutex.h>
-+#include <linux/err.h>
-+#include <linux/irq.h>
-+#include <linux/gpio.h>
-+#include <linux/spi/spi.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/iio/trigger.h>
-+#include <linux/iio/trigger_consumer.h>
-+#include <linux/iio/buffer.h>
-+#include <linux/iio/triggered_buffer.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/of_gpio.h>
-+
-+
-+#define AS3935_AFE_GAIN		0x00
-+#define AS3935_AFE_MASK		0x3F
-+#define AS3935_AFE_GAIN_MAX	0x1F
-+#define AS3935_AFE_PWR_BIT	BIT(0)
-+
-+#define AS3935_INT		0x03
-+#define AS3935_INT_MASK		0x07
-+#define AS3935_EVENT_INT	BIT(3)
-+#define AS3935_NOISE_INT	BIT(1)
-+
-+#define AS3935_DATA		0x07
-+#define AS3935_DATA_MASK	0x3F
-+
-+#define AS3935_TUNE_CAP		0x08
-+#define AS3935_CALIBRATE	0x3D
-+
-+#define AS3935_WRITE_DATA	BIT(15)
-+#define AS3935_READ_DATA	BIT(14)
-+#define AS3935_ADDRESS(x)	(x<<8)
-+
-+struct as3935_state {
-+	struct spi_device *spi;
-+	struct iio_trigger *trig;
-+	struct mutex lock;
-+	struct delayed_work work;
-+
-+	u8 tune_cap;
-+};
-+
-+static const struct iio_chan_spec as3935_channels[] = {
-+	{
-+		.type           = IIO_PROXIMITY,
-+		.info_mask_separate =
-+			BIT(IIO_CHAN_INFO_RAW),
-+		.scan_index     = 0,
-+		.scan_type = {
-+			.sign           = 'u',
-+			.realbits       = 6,
-+			.storagebits    = 8,
-+		},
-+	},
-+	IIO_CHAN_SOFT_TIMESTAMP(1),
-+};
-+
-+static int as3935_read(struct as3935_state *st, unsigned int reg, int *val)
-+{
-+	u8 tx, rx;
-+	int ret;
-+
-+	struct spi_transfer xfers[] = {
-+		{
-+			.tx_buf = &tx,
-+			.bits_per_word = 8,
-+			.len = 1,
-+		}, {
-+			.rx_buf = &rx,
-+			.bits_per_word = 8,
-+			.len = 1,
-+		},
-+	};
-+	tx = (AS3935_READ_DATA | AS3935_ADDRESS(reg)) >> 8;
-+
-+	ret = spi_sync_transfer(st->spi, xfers, ARRAY_SIZE(xfers));
-+	*val = rx;
-+
-+	return ret;
-+};
-+
-+static int as3935_write(struct as3935_state *st,
-+				unsigned int reg,
-+				unsigned int val)
-+{
-+	u8 buf[2];
-+
-+	buf[0] = (AS3935_WRITE_DATA | AS3935_ADDRESS(reg)) >> 8;
-+	buf[1] = val;
-+
-+	return spi_write(st->spi, (u8 *) &buf, 2);
-+};
-+
-+static ssize_t as3935_gain_boost_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct as3935_state *st = iio_priv(dev_to_iio_dev(dev));
-+	int val, ret;
-+
-+	ret = as3935_read(st, AS3935_AFE_GAIN, &val);
-+	if (ret)
-+		return ret;
-+	val = (val & AS3935_AFE_MASK) >> 1;
-+
-+	return sprintf(buf, "%d\n", val);
-+};
-+
-+static ssize_t as3935_gain_boost_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t len)
-+{
-+	struct as3935_state *st = iio_priv(dev_to_iio_dev(dev));
-+	unsigned long val;
-+	int ret;
-+
-+	ret = kstrtoul((const char *) buf, 10, &val);
-+	if (ret)
-+		return -EINVAL;
-+
-+	if (val > AS3935_AFE_GAIN_MAX)
-+		return -EINVAL;
-+
-+	as3935_write(st, AS3935_AFE_GAIN, val << 1);
-+
-+	return len;
-+};
-+
-+static IIO_DEVICE_ATTR(gain_boost, S_IRUGO | S_IWUSR,
-+	as3935_gain_boost_show, as3935_gain_boost_store, 0);
-+
-+
-+static struct attribute *as3935_attributes[] = {
-+	&iio_dev_attr_gain_boost.dev_attr.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group as3935_attribute_group = {
-+	.attrs = as3935_attributes,
-+};
-+
-+static int as3935_read_raw(struct iio_dev *indio_dev,
-+			   struct iio_chan_spec const *chan,
-+			   int *val,
-+			   int *val2,
-+			   long m)
-+{
-+	struct as3935_state *st = iio_priv(indio_dev);
-+	int ret;
-+
-+	if (m != IIO_CHAN_INFO_RAW)
-+		return -EINVAL;
-+
-+	*val2 = 0;
-+	ret = as3935_read(st, AS3935_DATA, val);
-+	if (ret)
-+		return ret;
-+	return IIO_VAL_INT;
-+}
-+
-+static const struct iio_info as3935_info = {
-+	.driver_module = THIS_MODULE,
-+	.attrs = &as3935_attribute_group,
-+	.read_raw = &as3935_read_raw,
-+};
-+
-+static const struct iio_buffer_setup_ops iio_triggered_buffer_setup_ops = {
-+	.postenable = &iio_triggered_buffer_postenable,
-+	.predisable = &iio_triggered_buffer_predisable,
-+};
-+
-+static irqreturn_t as3935_trigger_handler(int irq, void *private)
-+{
-+	struct iio_poll_func *pf = private;
-+	struct iio_dev *indio_dev = pf->indio_dev;
-+	struct as3935_state *st = iio_priv(indio_dev);
-+	int val, ret;
-+
-+	ret = as3935_read(st, AS3935_DATA, &val);
-+	if (ret)
-+		goto err_read;
-+	val &= AS3935_DATA_MASK;
-+	iio_push_to_buffers_with_timestamp(indio_dev, &val, iio_get_time_ns());
-+err_read:
-+	iio_trigger_notify_done(indio_dev->trig);
-+
-+	return IRQ_HANDLED;
-+};
-+
-+static const struct iio_trigger_ops iio_interrupt_trigger_ops = {
-+	.owner = THIS_MODULE,
-+};
-+
-+static void as3935_event_work(struct work_struct *work)
-+{
-+	struct as3935_state *st;
-+	struct spi_device *spi;
-+	int val;
-+
-+	st = container_of(work, struct as3935_state, work.work);
-+	spi = st->spi;
-+
-+	as3935_read(st, AS3935_INT, &val);
-+	val &= AS3935_INT_MASK;
-+
-+	switch (val) {
-+	case AS3935_EVENT_INT:
-+		iio_trigger_poll(st->trig, 0);
-+		break;
-+	case AS3935_NOISE_INT:
-+		dev_warn(&spi->dev, "noise level is too high");
-+		break;
-+	}
-+};
-+
-+static irqreturn_t as3935_interrupt_handler(int irq, void *private)
-+{
-+	struct iio_dev *indio_dev = private;
-+	struct as3935_state *st = iio_priv(indio_dev);
-+
-+	cancel_delayed_work(&st->work);
-+	schedule_delayed_work(&st->work, jiffies_to_msecs(3));
-+	return IRQ_HANDLED;
-+}
-+
-+static void calibrate_as3935(struct as3935_state *st)
-+{
-+	mutex_lock(&st->lock);
-+
-+	/* mask disturber interrupt bit */
-+	as3935_write(st, AS3935_INT, 1 << 5);
-+
-+	as3935_write(st, AS3935_CALIBRATE, 0x96);
-+	as3935_write(st, AS3935_TUNE_CAP, 1 << 5 | st->tune_cap);
-+
-+	mdelay(2);
-+	as3935_write(st, AS3935_TUNE_CAP, st->tune_cap);
-+
-+	mutex_unlock(&st->lock);
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int as3935_suspend(struct spi_device *spi, pm_message_t msg)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+	struct as3935_state *st = iio_priv(indio_dev);
-+	int val, ret;
-+
-+	mutex_lock(&st->lock);
-+	ret = as3935_read(st, AS3935_AFE_GAIN, &val);
-+	if (ret)
-+		return ret;
-+	val |= AS3935_AFE_PWR_BIT;
-+
-+	ret = as3935_write(st, AS3935_AFE_GAIN, val);
-+	mutex_unlock(&st->lock);
-+	return ret;
-+}
-+
-+static int as3935_resume(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+	struct as3935_state *st = iio_priv(indio_dev);
-+	int val, ret;
-+
-+	mutex_lock(&st->lock);
-+	ret = as3935_read(st, AS3935_AFE_GAIN, &val);
-+	if (ret)
-+		return ret;
-+	val &= ~AS3935_AFE_PWR_BIT;
-+	ret = as3935_write(st, AS3935_AFE_GAIN, val);
-+	mutex_unlock(&st->lock);
-+	return ret;
-+}
-+#else
-+#define as3935_suspend	NULL
-+#define as3935_resume	NULL
-+#endif
-+
-+static int as3935_probe(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev;
-+	struct iio_trigger *trig;
-+	struct as3935_state *st;
-+	struct device_node *np = spi->dev.of_node;
-+	int ret;
-+
-+	/* Be sure lightning event interrupt */
-+	if (!spi->irq) {
-+		dev_err(&spi->dev, "unable to get event interrupt\n");
-+		return -EINVAL;
-+	}
-+
-+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(st));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	st = iio_priv(indio_dev);
-+	st->spi = spi;
-+	st->tune_cap = 0;
-+
-+	spi_set_drvdata(spi, indio_dev);
-+	mutex_init(&st->lock);
-+	INIT_DELAYED_WORK(&st->work, as3935_event_work);
-+
-+	ret = of_property_read_u8(np, "ams,tune-cap", &st->tune_cap);
-+	if (ret) {
-+		st->tune_cap = 0;
-+		dev_warn(&spi->dev,
-+			"no tune-cap set, defaulting to %d", st->tune_cap);
-+	}
-+
-+	if (st->tune_cap > 15) {
-+		dev_err(&spi->dev,
-+			"wrong tune-cap setting of %d\n", st->tune_cap);
-+		return -EINVAL;
-+	}
-+
-+	indio_dev->dev.parent = &spi->dev;
-+	indio_dev->name = spi_get_device_id(spi)->name;
-+	indio_dev->channels = as3935_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(as3935_channels);
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->info = &as3935_info;
-+
-+	trig = devm_iio_trigger_alloc(&spi->dev, "%s-dev%d",
-+				      indio_dev->name, indio_dev->id);
-+
-+	if (!trig)
-+		return -ENOMEM;
-+
-+	st->trig = trig;
-+	trig->dev.parent = indio_dev->dev.parent;
-+	iio_trigger_set_drvdata(trig, indio_dev);
-+	trig->ops = &iio_interrupt_trigger_ops;
-+
-+	ret = iio_trigger_register(trig);
-+	if (ret) {
-+		dev_err(&spi->dev, "failed to register trigger\n");
-+		return ret;
-+	}
-+
-+	ret = iio_triggered_buffer_setup(indio_dev, NULL,
-+					&as3935_trigger_handler,
-+					&iio_triggered_buffer_setup_ops);
-+
-+	if (ret) {
-+		dev_err(&spi->dev, "cannot setup iio trigger\n");
-+		goto unregister_trigger;
-+	}
-+
-+	calibrate_as3935(st);
-+
-+	ret = devm_request_irq(&spi->dev, spi->irq,
-+				&as3935_interrupt_handler,
-+				IRQF_TRIGGER_RISING,
-+				dev_name(&spi->dev),
-+				indio_dev);
-+
-+	if (ret) {
-+		dev_err(&spi->dev, "unable to request irq\n");
-+		goto unregister_trigger;
-+	}
-+
-+	ret = iio_device_register(indio_dev);
-+	if (ret < 0) {
-+		dev_err(&spi->dev, "unable to register device\n");
-+		goto unregister_trigger;
-+	}
-+	return 0;
-+
-+unregister_trigger:
-+	iio_trigger_unregister(st->trig);
-+	iio_triggered_buffer_cleanup(indio_dev);
-+
-+	return ret;
-+};
-+
-+static int as3935_remove(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+	struct as3935_state *st = iio_priv(indio_dev);
-+
-+	iio_trigger_unregister(st->trig);
-+	iio_triggered_buffer_cleanup(indio_dev);
-+	iio_device_unregister(indio_dev);
-+
-+	return 0;
-+};
-+
-+static const struct spi_device_id as3935_id[] = {
-+	{"as3935", 0},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(spi, as3935_id);
-+
-+static struct spi_driver as3935_driver = {
-+	.driver = {
-+		.name	= "as3935",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= as3935_probe,
-+	.remove		= as3935_remove,
-+	.id_table	= as3935_id,
-+	.suspend	= as3935_suspend,
-+	.resume		= as3935_resume,
-+};
-+module_spi_driver(as3935_driver);
-+
-+MODULE_AUTHOR("Matt Ranostay <mranostay@gmail.com>");
-+MODULE_DESCRIPTION("AS3935 lightning sensor");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("spi:as3935");
--- 
-1.8.3.2
+Essentially the v4 is exactly same as v3, except that it is rebased on top of 3.14-rc1.
 
+Thanks,
+
+Rajat
+
+> -----Original Message-----
+> From: Rajat Jain [mailto:rajatxjain@gmail.com]
+> Sent: Tuesday, February 04, 2014 6:28 PM
+> To: Bjorn Helgaas; Rafael J. Wysocki; Kenji Kaneshige; Alex Williamson;
+> Yijing Wang; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Yinghai Lu
+> Cc: Guenter Roeck; Rajat Jain; Rajat Jain
+> Subject: [PATCH v4 0/8] Allow Link state changes for Hot-Plug
+> 
+> Hello,
+> 
+> This patch set enables the use of PCI Express link up and link down
+> events for Hotplug or Unplug. This is the pretty much the same patchset
+> as v3, only resending after rebasing on top of 3.14-rc1.
+> 
+> (As a side effect, this patch also fixes the bug
+> https://bugzilla.kernel.org/show_bug.cgi?id=65521 )
+> 
+> I'd appreciate if you could please review and provide me with any
+> comments.
+> 
+> Thanks,
+> 
+> Rajat
+> 
+> Rajat Jain (8):
+>   pciehp: Make check_link_active() non-static
+>   pciehp: Use link change notifications for hot-plug and removal
+>   pciehp: Enable link state change notifications
+>   pciehp: Don't disable the link permanently, during removal
+>   pciehp: Don't check for adapter or latch status while disabling
+>   pciehp: Disabling the link notification across slot reset
+>   pciehp: Ensure very fast hotplug events are also processed.
+>   pciehp: Introduce hotplug_lock to serialize HP events
+> 
+>  drivers/pci/hotplug/pciehp.h      |    5 ++
+>  drivers/pci/hotplug/pciehp_core.c |    7 +-
+>  drivers/pci/hotplug/pciehp_ctrl.c |  149
+> ++++++++++++++++++++++++++++++-------
+>  drivers/pci/hotplug/pciehp_hpc.c  |   74 +++++++++---------
+>  4 files changed, 169 insertions(+), 66 deletions(-)
+> 
+> --
+> 1.7.9.5
+> 
+> 
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
