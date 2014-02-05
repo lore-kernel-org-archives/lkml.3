@@ -1,84 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaBEKP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 05:15:27 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:58094 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaBEKPX (ORCPT
+	id S1751768AbaBEKW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 05:22:27 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:34320 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaBEKWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 05:15:23 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 4/5] ARM: init: add support for reserved memory defined by device tree
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh+dt@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Nishanth Peethambaran <nishanth.p@gmail.com>,
-        Marc <marc.ceeeee@gmail.com>, Josh Cartwright <joshc@codeaurora.org>
-In-Reply-To: <1391515773-6112-5-git-send-email-m.szyprowski@samsung.com>
-References: <1391515773-6112-1-git-send-email-m.szyprowski@samsung.com> < 1391515773-6112-5-git-send-email-m.szyprowski@samsung.com>
-Date: Wed, 05 Feb 2014 10:15:10 +0000
-Message-Id: <20140205101510.59A95C40A89@trevor.secretlab.ca>
+	Wed, 5 Feb 2014 05:22:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <634e62ea-d33f-42f3-8500-6331d4de495d@email.android.com>
+References: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
+	<20140205044335.GA2172@beef>
+	<634e62ea-d33f-42f3-8500-6331d4de495d@email.android.com>
+Date: Wed, 5 Feb 2014 02:22:24 -0800
+Message-ID: <CAKzfze8d7uzwmTByJD-jmZszeD7fr=1k0y0jdCLU92wNOD=NMg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] iio:as3935: Add DT binding docs for AS3935 driver
+From: Matt Ranostay <mranostay@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Matt Porter <mporter@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Feb 2014 13:09:32 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> Enable reserved memory initialization from device tree.
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Laura Abbott <lauraa@codeaurora.org>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  arch/arm/mm/init.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 804d61566a53..ebafdb479410 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -17,6 +17,7 @@
->  #include <linux/nodemask.h>
->  #include <linux/initrd.h>
->  #include <linux/of_fdt.h>
-> +#include <linux/of_reserved_mem.h>
->  #include <linux/highmem.h>
->  #include <linux/gfp.h>
->  #include <linux/memblock.h>
-> @@ -323,6 +324,8 @@ void __init arm_memblock_init(struct meminfo *mi,
->  	if (mdesc->reserve)
->  		mdesc->reserve();
->  
-> +	early_init_dt_scan_reserved_mem();
-> +
+On Tue, Feb 4, 2014 at 11:24 PM, Jonathan Cameron <jic23@kernel.org> wrote:
+>
+>
+> On February 5, 2014 4:43:35 AM GMT+00:00, Matt Porter <mporter@linaro.org> wrote:
+>>On Tue, Feb 04, 2014 at 07:14:55PM -0800, Matt Ranostay Matt Ranostay
+>>wrote:
+>>> Document compatible string, required and optional DT properties for
+>>> AS3935 chipset driver.
+>>>
+>>> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+>>> ---
+>>>  .../devicetree/bindings/iio/proximity/as3935.txt   | 25
+>>++++++++++++++++++++++
+>>>  1 file changed, 25 insertions(+)
+>>>  create mode 100644
+>>Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>>>
+>>> diff --git
+>>a/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>>b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>>> new file mode 100644
+>>> index 0000000..7e117cd
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
+>>> @@ -0,0 +1,25 @@
+>>> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
+>>> +
+>>> +Required properties:
+>>> +    - compatible: must be "ams,as3935"
+>>
+>>Change this to "amstaos,as3935"
+>>
+>>amstaos (AMS bought Taos) is already a registered vendor prefix in
+>>vendor-prefixes.txt
+>
+> It is but has a rather separate presence and is not where people expect to find non light
+>  sensor stuff from ams. I personally would go for a new vendor prefix and stick with ams.
+>
 
-The new binding is being made fundamental. If the reserved-memory node
-is present, then it needs to be honored, even if the kernel doesn't know
-how to use the regions. Therefore, This needs to be unconditional for
-all architectures. The hook should be called in early_init_dt_scan()
-(drivers/of/fdt.c) immediately after the early_init_dt_scan_memory()
-hook.
+So should I add to vendor-prefixes.txt as well? or not?
 
->  	/*
->  	 * reserve memory for DMA contigouos allocations,
->  	 * must come from DMA area inside low memory
-> -- 
-> 1.7.9.5
-> 
+>>
+>>> +    - reg: SPI chip select number for the device
+>>> +    - spi-cpha: SPI Mode 1
+>>
+>>When using generic binding properties, please reference the binding
+>>being used. Like:
+>>
+>>       - spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
+>>         slave node bindings.
+>>
+>>> +    - interrupt-parent : should be the phandle for the interrupt
+>>controller
+>>> +    - interrupts : interrupt mapping for GPIO IRQ
+>>
+>>       Refer to interrupt-controller/interrupts.txt for generic
+>>       interrupt client node bindings.
+>>
+>>> +
+>>> +Optional properties:
+>>> +    - ams,tune-cap: Calibration tuning capacitor stepping value 0 - 15.
+>>> +      Range of 0 to 120 pF, 8pF steps. This will require using the
+>>> +      calibration data from the manufacturer.
+>>> +
+>>> +
+>>> +Example:
+>>> +
+>>> +as3935@0 {
+>>> +    compatible = "ams,as3935";
+>>> +    reg = <0>;
+>>> +    spi-cpha;
+>>> +    interrupt-parent = <&gpio1>;
+>>> +    interrupts = <16 1>;
+>>> +    ams,tune-cap = /bits/ 8 <10>;
+>>
+>>What is this? Why not just ams,tune-cap = <10>; ?
+>>
+>>It's a value between 0-15, right?
+>>
+>>-Matt
+>>--
+>>To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>>the body of a message to majordomo@vger.kernel.org
+>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
