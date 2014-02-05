@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559AbaBEI5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:57:34 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:47203 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaBEI5c (ORCPT
+	id S1751457AbaBEJA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:00:29 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:53903 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaBEJA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:57:32 -0500
+	Wed, 5 Feb 2014 04:00:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <000401cf222f$43263b20$c972b160$%han@samsung.com>
-References: <1391518634-6472-1-git-send-email-linus.walleij@linaro.org>
-	<000401cf222f$43263b20$c972b160$%han@samsung.com>
-Date: Wed, 5 Feb 2014 09:57:32 +0100
-Message-ID: <CACRpkdbB8LFM0Vu8VRo4niqxwxUdS-c5gmmWaxbUTbnLCLZbMA@mail.gmail.com>
-Subject: Re: [PATCH] backlight: add PWM dependencies
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+In-Reply-To: <52F1F74C.2090106@codethink.co.uk>
+References: <20140205065243.29445.76593.sendpatchset@w520>
+	<52F1F74C.2090106@codethink.co.uk>
+Date: Wed, 5 Feb 2014 18:00:26 +0900
+Message-ID: <CANqRtoRMAjBEXjBzivPxqMu8KhFsOkp0wb6jBbuZQx=B-qYuUA@mail.gmail.com>
+Subject: Re: [PATCH 00/04] PCI: rcar: Driver model and physical address space update
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-pci@vger.kernel.org, SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Bjorn Helgaas <bhelgaas@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 5, 2014 at 6:01 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Tuesday, February 04, 2014 9:57 PM, Linus Walleij wrote:
+Hi Ben,
+
+On Wed, Feb 5, 2014 at 5:33 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> On 05/02/14 06:52, Magnus Damm wrote:
 >>
->> In some compilations the LM3630A and LP855X backlight drivers
->> fail like this:
+>> PCI: rcar: Driver model and physical address space update
 >>
->> drivers/built-in.o: In function `lm3630a_pwm_ctrl':
->> drivers/video/backlight/lm3630a_bl.c:168: undefined reference to `pwm_config'
->> drivers/video/backlight/lm3630a_bl.c:172: undefined reference to `pwm_disable'
->> drivers/video/backlight/lm3630a_bl.c:170: undefined reference to `pwm_enable'
->> drivers/built-in.o: In function `lp855x_pwm_ctrl':
->> drivers/video/backlight/lp855x_bl.c:249: undefined reference to `pwm_config'
->> drivers/video/backlight/lp855x_bl.c:253: undefined reference to `pwm_disable'
->> drivers/video/backlight/lp855x_bl.c:251: undefined reference to `pwm_enable'
+>> [PATCH 01/04] PCI: rcar: Register each instance independently
+>> [PATCH 02/04] PCI: rcar: Break out window size handling
+>> [PATCH 03/04] PCI: rcar: Add DMABOUNCE support
+>> [PATCH 04/04] PCI: rcar: Enable BOUNCE in case of HIGHMEM
 >>
->> This is because both drivers depend on the PWM framework, so
->> add this dependency to their Kconfig entries.
+>> These patches update the pci-rcar-gen2.c driver in various ways
+>> including cleanups for driver model interface (1/4), readability
+>> update (2/4) and also bounce buffer support (3/4, 4/4). Basically
+>> the first two are just cleanups and the rest are fixes.
+>>
+>> As it is today without these patches the system memory start address
+>> is hard coded at 0x4000000 and the window is fixed at 1GiB. So we
+>> have board specific code hidden in the driver which is good to avoid.
+>>
+>> With these hard coded board specific constants there are some error cases
+>> that are not handled, in particular the issue that only maximum 1GiB of
+>> physical address space can be used for bus mastering with a single window.
+>> The common case of using ARM CONFIG_VMSPLIT_3G results in no visible
+>> issues
+>> as long as CONFIG_BOUNCE is used, but other CONFIG_VMSPLIT settings will
+>> break due to the hard coded 1GiB window not being enough. It has been
+>> verified that reducing the window size to 256MB makes the driver behave
+>> the same with VMSPLIT_3G as 1GiB window size and other VMSPLIT settings.
+>>
+>> To handle the maximum 1GiB physical address space limitation two types
+>> of bounce buffers are added. The ARM specific DMABOUNCE code is in 3/4
+>> hooked up to a chunk of local memory that is also handed of as coherent
+>> memory to the pci devices hanging off the PCI bridge. The driver makes
+>> sure to set the window so the local memory is always included. When the
+>> PCI devices are operating and in case memory is used outside the window
+>> then the DMABOUNCE buffers kicks in. This makes the driver support all
+>> kinds of VMSPLIT settings and window sizes. The BOUNCE code in 4/4 is
+>> selected to make sure bounce buffers are used for HIGHMEM.
+>>
+>> With these patches this driver can be used with or without CMA and
+>> with or without DMA zone. Basically the system wide memory setup is
+>> left to the user. If a DMA zone is used then the PCI window will
+>> be setup to cover that. Same thing with CMA.
+>>
+>> Tested with USB storage using LPAE and various VMSPLIT settings together
+>> with renesas git tag renesas-devel-v3.14-rc1-20140204 from kernel.org
 >
-> However, even though, when CONFIG_PWM is not enabled, the problem
-> should not happen. pwm_config(),pwm_disable(), and pwm_enable()
-> are already defined for CONFIG_PWM=n case as below.
+>
+> Ok, is it possible to build a set with my of updates ready for next
+> merge window? I can update the set based on this if you like and try
+> and make the necessary changes to deal with the modifications from this
+> series.
 
-So you may think but it does happen :-)
+I think we should try to pick out the stuff that is ready to be merged
+first. I think these patches may require a bit of time before people
+start looking at them. I don't mind resending in the future.
 
-I reproduced this with the defconfig for ARM pxa255-idp and enabling
-all boards for that platform, then enabling all available backlight drivers
-as compiled-in objects (y).
+To be honest, I have not been paying too much attention to other
+patches including yours - been focused trying to get the memory
+management part right.. So I'd like to focus on correctness over DT
+for now if possible. Of course we it all.
 
-> ./include/linux/pwm.h
-> #if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
->         .....
-> #else
+Would it be possible for you to provide a list of pci-rcar-gen2.c
+patches that you posted? Or perhaps you can resend your series and
+include acks that you received?
 
-Hm PXA that I am using defines CONFIG_HAVE_PWM, but doesn't
-provide the required signatures (pwm_config/pwm_disable/pwm_enable).
+Thanks,
 
-One of two things is wrong:
-
-- Either the PXA platform is breaking the CONFIG_HAVE_PWM
-  contract by not providing pwm_config/pwm_disable/pwm_enable
-  functions. Then HAVE_PWM should be removed from the PXA
-  Kconfig selects.
-
-Or:
-
-- There is no such contract that these functions must exist if
-  CONFIG_HAVE_PWM is defined, and the
-  #if IS_ENABLED(CONFIG_HAVE_PWM)
-  should be removed from <linux/pwm.h>
-
-Does anyone know which one it is?
-
-PWM subsystem maintainer? :-)
-
-Yours,
-Linus Walleij
+/ magnus
