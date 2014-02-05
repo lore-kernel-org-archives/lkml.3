@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaBEUJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:09:53 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55770 "EHLO
+	id S1755555AbaBEUKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:10:47 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55715 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755461AbaBEUIx (ORCPT
+	with ESMTP id S1755428AbaBEUId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:08:53 -0500
+	Wed, 5 Feb 2014 15:08:33 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Jarosch <thomas.jarosch@intra2net.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Willy Tarreau <w@1wt.eu>,
+CC: Pavel Shilovsky <piastry@etersoft.ru>, Miklos Szeredi <mszeredi@suse.cz>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 211/213] PCI: Add quirk for still enabled interrupts on Intel Sandy Bridge GPUs
-Date: Wed, 5 Feb 2014 15:02:46 -0500
-Message-ID: <1391630568-49251-212-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 209/213] fuse: fix stat call on 32 bit platforms
+Date: Wed, 5 Feb 2014 15:02:44 -0500
+Message-ID: <1391630568-49251-210-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,89 +31,101 @@ From: Thomas Jarosch <thomas.jarosch@intra2net.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit cdb1f35dc7de42802527140a3613871c394548e1 upstream.
+commit 45c72cd73c788dd18c8113d4a404d6b4a01decf1 upstream.
 
-commit f67fd55fa96f7d7295b43ffbc4a97d8f55e473aa upstream.
+Now we store attr->ino at inode->i_ino, return attr->ino at the
+first time and then return inode->i_ino if the attribute timeout
+isn't expired. That's wrong on 32 bit platforms because attr->ino
+is 64 bit and inode->i_ino is 32 bit in this case.
 
-Some BIOS implementations leave the Intel GPU interrupts enabled,
-even though no one is handling them (f.e. i915 driver is never loaded).
-Additionally the interrupt destination is not set up properly
-and the interrupt ends up -somewhere-.
+Fix this by saving 64 bit ino in fuse_inode structure and returning
+it every time we call getattr. Also squash attr->ino into inode->i_ino
+explicitly.
 
-These spurious interrupts are "sticky" and the kernel disables
-the (shared) interrupt line after 100.000+ generated interrupts.
-
-Fix it by disabling the still enabled interrupts.
-This resolves crashes often seen on monitor unplug.
-
-Tested on the following boards:
-- Intel DH61CR: Affected
-- Intel DH67BL: Affected
-- Intel S1200KP server board: Affected
-- Asus P8H61-M LE: Affected, but system does not crash.
-  Probably the IRQ ends up somewhere unnoticed.
-
-According to reports on the net, the Intel DH61WW board is also affected.
-
-Many thanks to Jesse Barnes from Intel for helping
-with the register configuration and to Intel in general
-for providing public hardware documentation.
-
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Tested-by: Charlie Suffin <charlie.suffin@stratus.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/pci/quirks.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ fs/fuse/dir.c    |  1 +
+ fs/fuse/fuse_i.h |  3 +++
+ fs/fuse/inode.c  | 17 ++++++++++++++++-
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 6938fdc41e79..052af89854c1 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2692,6 +2692,40 @@ static void __devinit fixup_ti816x_class(struct pci_dev* dev)
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 4787ae6c5c1c..b359543c68e5 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -855,6 +855,7 @@ int fuse_update_attributes(struct inode *inode, struct kstat *stat,
+ 		if (stat) {
+ 			generic_fillattr(inode, stat);
+ 			stat->mode = fi->orig_i_mode;
++			stat->ino = fi->orig_ino;
+ 		}
+ 	}
+ 
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index e6d614d10467..829aceeb77ad 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -76,6 +76,9 @@ struct fuse_inode {
+ 	    preserve the original mode */
+ 	mode_t orig_i_mode;
+ 
++	/** 64 bit inode number */
++	u64 orig_ino;
++
+ 	/** Version of last attribute change */
+ 	u64 attr_version;
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index ec14d19ce501..675aa27d393d 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -86,6 +86,7 @@ static struct inode *fuse_alloc_inode(struct super_block *sb)
+ 	fi->nlookup = 0;
+ 	fi->attr_version = 0;
+ 	fi->writectr = 0;
++	fi->orig_ino = 0;
+ 	INIT_LIST_HEAD(&fi->write_files);
+ 	INIT_LIST_HEAD(&fi->queued_writes);
+ 	INIT_LIST_HEAD(&fi->writepages);
+@@ -140,6 +141,18 @@ static int fuse_remount_fs(struct super_block *sb, int *flags, char *data)
+ 	return 0;
  }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
  
 +/*
-+ * Some BIOS implementations leave the Intel GPU interrupts enabled,
-+ * even though no one is handling them (f.e. i915 driver is never loaded).
-+ * Additionally the interrupt destination is not set up properly
-+ * and the interrupt ends up -somewhere-.
-+ *
-+ * These spurious interrupts are "sticky" and the kernel disables
-+ * the (shared) interrupt line after 100.000+ generated interrupts.
-+ *
-+ * Fix it by disabling the still enabled interrupts.
-+ * This resolves crashes often seen on monitor unplug.
++ * ino_t is 32-bits on 32-bit arch. We have to squash the 64-bit value down
++ * so that it will fit.
 + */
-+#define I915_DEIER_REG 0x4400c
-+static void __devinit disable_igfx_irq(struct pci_dev *dev)
++static ino_t fuse_squash_ino(u64 ino64)
 +{
-+	void __iomem *regs = pci_iomap(dev, 0, 0);
-+	if (regs == NULL) {
-+		dev_warn(&dev->dev, "igfx quirk: Can't iomap PCI device\n");
-+		return;
-+	}
-+
-+	/* Check if any interrupt line is still enabled */
-+	if (readl(regs + I915_DEIER_REG) != 0) {
-+		dev_warn(&dev->dev, "BIOS left Intel GPU interrupts enabled; "
-+			"disabling\n");
-+
-+		writel(0, regs + I915_DEIER_REG);
-+	}
-+
-+	pci_iounmap(dev, regs);
++	ino_t ino = (ino_t) ino64;
++	if (sizeof(ino_t) < sizeof(u64))
++		ino ^= ino64 >> (sizeof(u64) - sizeof(ino_t)) * 8;
++	return ino;
 +}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
 +
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
+ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+ 				   u64 attr_valid)
  {
+@@ -149,7 +162,7 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+ 	fi->attr_version = ++fc->attr_version;
+ 	fi->i_time = attr_valid;
+ 
+-	inode->i_ino     = attr->ino;
++	inode->i_ino     = fuse_squash_ino(attr->ino);
+ 	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
+ 	inode->i_nlink   = attr->nlink;
+ 	inode->i_uid     = attr->uid;
+@@ -175,6 +188,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
+ 	fi->orig_i_mode = inode->i_mode;
+ 	if (!(fc->flags & FUSE_DEFAULT_PERMISSIONS))
+ 		inode->i_mode &= ~S_ISVTX;
++
++	fi->orig_ino = attr->ino;
+ }
+ 
+ void fuse_change_attributes(struct inode *inode, struct fuse_attr *attr,
 -- 
 1.8.5.2
 
