@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaBEPad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:30:33 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:45793 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752727AbaBEPaa (ORCPT
+	id S1752371AbaBEPgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:36:06 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:58828 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaBEPgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:30:30 -0500
-Date: Wed, 5 Feb 2014 10:30:29 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Matt Porter <mporter@linaro.org>
-cc: Wolfram Sang <wsa@the-dreams.de>, Tim Kryger <tim.kryger@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/6] i2c: bcm-kona: register with subsys_initcall
-In-Reply-To: <20140205151826.GC22153@beef>
-Message-ID: <Pine.LNX.4.44L0.1402051028350.1312-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 5 Feb 2014 10:36:04 -0500
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Cc: broonie@kernel.org, lgirdwood@gmail.com, badarkhe.manish@gmail.com
+Subject: [PATCH] regulator: tps6507x: Use "IS_ENABLED" for DT code.
+Date: Wed,  5 Feb 2014 21:05:51 +0530
+Message-Id: <1391614551-20385-1-git-send-email-badarkhe.manish@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Matt Porter wrote:
+Instead of "#ifdef CONFIG_OF" use "IS_ENABLED(CONFIG_OF)"
+option for DT code to avoid if-deffery in code.
+Also, modify code as per coding style.
 
-> On Wed, Feb 05, 2014 at 10:08:18AM +0100, Wolfram Sang wrote:
-> > On Tue, Feb 04, 2014 at 07:19:07AM -0500, Matt Porter wrote:
-> > 
-> > > Voltage regulators are needed very early due to deferred probe
-> > > being incompatible with built-in USB gadget drivers.
-> > 
-> > What does it need to fix those instead?
-> 
-> [added Alan/Felipe for more insight]
-> 
-> Discussion on that topic came about from this submission:
-> http://www.spinics.net/lists/linux-usb/msg94217.html
-> 
-> End of it is:
-> http://www.spinics.net/lists/linux-usb/msg94731.html
-> 
-> We can either add to the many drivers that already do subsys_initcall()
-> for similar reasons...or I can drop this from the series and add gadget
-> probe ordering to my TODO list.
-> 
-> In short, it can't be a late_initcall() hack like the original post and
-> really could be solved by converting to a real bus (and letting
-> deferred probe do its job)..but Alan voiced concerns about that.
+Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
+---
+:100644 100644 162a0fa... 97868b7... M	drivers/regulator/tps6507x-regulator.c
+ drivers/regulator/tps6507x-regulator.c |   18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
-Don't worry too much about what I said.  If adding a "gadget" bus will 
-solve the problem in an appropriate way, and if nobody else objects 
-(particularly Felipe, who is on vacation now), then go for it.
-
-Alan Stern
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index 162a0fa..97868b7 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -367,6 +367,7 @@ static struct of_regulator_match tps6507x_matches[] = {
+ 	{ .name = "LDO1"},
+ 	{ .name = "LDO2"},
+ };
++#endif
+ 
+ static struct tps6507x_board *tps6507x_parse_dt_reg_data(
+ 		struct platform_device *pdev,
+@@ -424,15 +425,7 @@ static struct tps6507x_board *tps6507x_parse_dt_reg_data(
+ 
+ 	return tps_board;
+ }
+-#else
+-static inline struct tps6507x_board *tps6507x_parse_dt_reg_data(
+-			struct platform_device *pdev,
+-			struct of_regulator_match **tps6507x_reg_matches)
+-{
+-	*tps6507x_reg_matches = NULL;
+-	return NULL;
+-}
+-#endif
++
+ static int tps6507x_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
+@@ -453,9 +446,10 @@ static int tps6507x_pmic_probe(struct platform_device *pdev)
+ 	 */
+ 
+ 	tps_board = dev_get_platdata(tps6507x_dev->dev);
+-	if (!tps_board && tps6507x_dev->dev->of_node)
++	if (IS_ENABLED(CONFIG_OF) && !tps_board &&
++		tps6507x_dev->dev->of_node)
+ 		tps_board = tps6507x_parse_dt_reg_data(pdev,
+-						&tps6507x_reg_matches);
++				&tps6507x_reg_matches);
+ 	if (!tps_board)
+ 		return -EINVAL;
+ 
+@@ -481,7 +475,7 @@ static int tps6507x_pmic_probe(struct platform_device *pdev)
+ 		tps->info[i] = info;
+ 		if (init_data->driver_data) {
+ 			struct tps6507x_reg_platform_data *data =
+-							init_data->driver_data;
++					init_data->driver_data;
+ 			tps->info[i]->defdcdc_default = data->defdcdc_default;
+ 		}
+ 
+-- 
+1.7.10.4
 
