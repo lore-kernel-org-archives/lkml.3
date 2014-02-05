@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaBEUZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:25:58 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48487 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165AbaBEUHW (ORCPT
+	id S932477AbaBEU0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:26:43 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55361 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932324AbaBEUHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:22 -0500
+	Wed, 5 Feb 2014 15:07:20 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>,
+CC: Anurup m <anurup.m@huawei.com>, shyju pv <shyju.pv@huawei.com>,
+        Sanil kumar <sanil.kumar@huawei.com>, Nataraj m <nataraj.m@huawei.com>,
+        Li Zefan <lizefan@huawei.com>, David Howells <dhowells@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 158/213] fs/compat_ioctl.c: VIDEO_SET_SPU_PALETTE missing error check
-Date: Wed, 5 Feb 2014 15:01:53 -0500
-Message-ID: <1391630568-49251-159-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 159/213] fs/fscache/stats.c: fix memory leak
+Date: Wed, 5 Feb 2014 15:01:54 -0500
+Message-ID: <1391630568-49251-160-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
+From: Anurup m <anurup.m@huawei.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -35,38 +35,41 @@ From: Kees Cook <keescook@chromium.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 12176503366885edd542389eed3aaf94be163fdb upstream.
+commit ec686c9239b4d472052a271c505d04dae84214cc upstream.
 
-The compat ioctl for VIDEO_SET_SPU_PALETTE was missing an error check
-while converting ioctl arguments.  This could lead to leaking kernel
-stack contents into userspace.
+There is a kernel memory leak observed when the proc file
+/proc/fs/fscache/stats is read.
 
-Patch extracted from existing fix in grsecurity.
+The reason is that in fscache_stats_open, single_open is called and the
+respective release function is not called during release.  Hence fix
+with correct release function - single_release().
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=57101
+
+Signed-off-by: Anurup m <anurup.m@huawei.com>
+Cc: shyju pv <shyju.pv@huawei.com>
+Cc: Sanil kumar <sanil.kumar@huawei.com>
+Cc: Nataraj m <nataraj.m@huawei.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: David Howells <dhowells@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/compat_ioctl.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/fscache/stats.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 641640dc7ae5..7a00d9b155bf 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -227,6 +227,8 @@ static int do_video_set_spu_palette(unsigned int fd, unsigned int cmd,
- 
- 	err  = get_user(palp, &up->palette);
- 	err |= get_user(length, &up->length);
-+	if (err)
-+		return -EFAULT;
- 
- 	up_native = compat_alloc_user_space(sizeof(struct video_spu_palette));
- 	err  = put_user(compat_ptr(palp), &up_native->palette);
+diff --git a/fs/fscache/stats.c b/fs/fscache/stats.c
+index 4765190d537f..73c0bd7f7424 100644
+--- a/fs/fscache/stats.c
++++ b/fs/fscache/stats.c
+@@ -276,5 +276,5 @@ const struct file_operations fscache_stats_fops = {
+ 	.open		= fscache_stats_open,
+ 	.read		= seq_read,
+ 	.llseek		= seq_lseek,
+-	.release	= seq_release,
++	.release        = single_release,
+ };
 -- 
 1.8.5.2
 
