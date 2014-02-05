@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657AbaBEUNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:13:06 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48645 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182AbaBEUIR (ORCPT
+	id S1755642AbaBEUND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:13:03 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55683 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247AbaBEUIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 15:08:17 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Bart Van Assche <bvanassche@acm.org>,
-        James Bottomley <JBottomley@Parallels.com>,
+CC: Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 204/213] Avoid dangling pointer in scsi_requeue_command()
-Date: Wed, 5 Feb 2014 15:02:39 -0500
-Message-ID: <1391630568-49251-205-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 201/213] futex: Fix bug in WARN_ON for NULL q.pi_state
+Date: Wed, 5 Feb 2014 15:02:36 -0500
+Message-ID: <1391630568-49251-202-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Darren Hart <dvhart@linux.intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,55 +32,34 @@ From: Bart Van Assche <bvanassche@acm.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 940f5d47e2f2e1fa00443921a0abf4822335b54d upstream.
+commit f27071cb7fe3e1d37a9dbe6c0dfc5395cd40fa43 upstream.
 
-When we call scsi_unprep_request() the command associated with the request
-gets destroyed and therefore drops its reference on the device.  If this was
-the only reference, the device may get released and we end up with a NULL
-pointer deref when we call blk_requeue_request.
+The WARN_ON in futex_wait_requeue_pi() for a NULL q.pi_state was testing
+the address (&q.pi_state) of the pointer instead of the value
+(q.pi_state) of the pointer. Correct it accordingly.
 
-Reported-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-[jejb: enhance commend and add commit log for stable]
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/1c85d97f6e5f79ec389a4ead3e367363c74bd09a.1342809673.git.dvhart@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/scsi_lib.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/futex.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 6712297407bb..a7e6572940ef 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -484,15 +484,26 @@ static void scsi_run_queue(struct request_queue *q)
-  */
- static void scsi_requeue_command(struct request_queue *q, struct scsi_cmnd *cmd)
- {
-+	struct scsi_device *sdev = cmd->device;
- 	struct request *req = cmd->request;
- 	unsigned long flags;
- 
-+	/*
-+	 * We need to hold a reference on the device to avoid the queue being
-+	 * killed after the unlock and before scsi_run_queue is invoked which
-+	 * may happen because scsi_unprep_request() puts the command which
-+	 * releases its reference on the device.
-+	 */
-+	get_device(&sdev->sdev_gendev);
-+
- 	spin_lock_irqsave(q->queue_lock, flags);
- 	scsi_unprep_request(req);
- 	blk_requeue_request(q, req);
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- 
- 	scsi_run_queue(q);
-+
-+	put_device(&sdev->sdev_gendev);
- }
- 
- void scsi_next_command(struct scsi_cmnd *cmd)
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 4a8f72850152..d4e7f0ea1f94 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2321,7 +2321,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 		 * signal.  futex_unlock_pi() will not destroy the lock_ptr nor
+ 		 * the pi_state.
+ 		 */
+-		WARN_ON(!&q.pi_state);
++		WARN_ON(!q.pi_state);
+ 		pi_mutex = &q.pi_state->pi_mutex;
+ 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
+ 		debug_rt_mutex_free_waiter(&rt_waiter);
 -- 
 1.8.5.2
 
