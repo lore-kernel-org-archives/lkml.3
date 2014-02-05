@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaBEJSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:18:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaBEJSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:18:43 -0500
-Date: Wed, 5 Feb 2014 10:17:42 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Zoran Markovic <zoran.markovic@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC PATCH] net: wireless: move regulatory timeout work to power
- efficient workqueue
-Message-ID: <20140205091742.GA1978@redhat.com>
-References: <1391123310-6425-1-git-send-email-zoran.markovic@linaro.org>
- <1391160084.4141.1.camel@jlt4.sipsolutions.net>
- <20140131093531.GA25559@mtj.dyndns.org>
+	id S1751787AbaBEJTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:19:24 -0500
+Received: from smtp-out-092.synserver.de ([212.40.185.92]:1089 "EHLO
+	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751367AbaBEJTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 04:19:21 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13615
+Message-ID: <52F2021A.9020804@metafoo.de>
+Date: Wed, 05 Feb 2014 10:19:22 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140131093531.GA25559@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH v3 4/5] ASoC: tda998x: adjust the audio hw
+ parameters from EDID
+References: <cover.1391274627.git.moinejf@free.fr> <1b15025671d9099863a3091346536e45891e4a26.1391274628.git.moinejf@free.fr> <20140204180625.GM22609@sirena.org.uk> <20140205101134.4591e5c3@armhf>
+In-Reply-To: <20140205101134.4591e5c3@armhf>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 02/05/2014 10:11 AM, Jean-Francois Moine wrote:
+> On Tue, 4 Feb 2014 18:06:25 +0000
+> Mark Brown <broonie@kernel.org> wrote:
+>
+>> On Mon, Jan 27, 2014 at 09:48:54AM +0100, Jean-Francois Moine wrote:
+>>
+>>> +		/* change the snd_soc_pcm_stream values of the driver */
+>>> +		stream->rates = rate_mask;
+>>> +		stream->channels_max = max_channels;
+>>> +		stream->formats = formats;
+>>
+>>> +	/* copy the DAI driver to a writable area */
+>>> +	dai_drv = devm_kzalloc(&pdev->dev, sizeof(tda998x_dai), GFP_KERNEL);
+>>> +	if (!dai_drv)
+>>> +		return -ENOMEM;
+>>> +	memcpy(dai_drv, tda998x_dai, sizeof(tda998x_dai));
+>>> +
+>>
+>> The code should be doing this by setting constraints based on the
+>> current setup rather than by editing the data structure - the expecation
+>> is very much that the data won't change so this prevents surprises with
+>> future work on the core.
+>
+> As it is done in the soc core, in soc_pcm_open(), the runtime hw_params
+> are initialized after the call to the CODEC startup, and the next CODEC
+> event is hw_params() when the user has already chosen all the parameters.
+>
+> So, in the CODEC, I don't see how I could update the parameters
+> dictated by the EDID otherwise in changing the DAI driver parameters.
+>
 
-On Fri, Jan 31, 2014 at 04:35:31AM -0500, Tejun Heo wrote:
-> On Fri, Jan 31, 2014 at 10:21:24AM +0100, Johannes Berg wrote:
-> > I'm not sure if this is part of a larger patchset actually adding that
-> > "system_power_efficient_wq", but maybe it'd be better to expose a
-> > function as an API rather than the wq struct?
-> > 
-> > Something like
-> > 
-> > scheduled_delayed_work_pwr_efficient(...)?
-> 
-> While there are some benefits to using dedicated functions for
-> specific workqueues, I don't think it brings enough benefits to
-> justify adding dedicated API and am unlikely to add new ones.
+The startup function is the right place. But instead of modifying the DAI 
+use snd_pcm_hw_constraint_mask64(), snd_pcm_hw_constraint_list(), etc. to 
+setup the additional constraints that come from the EDID.
 
-What are selection criteria when choosing between system_wq or
-system_power_efficient_wq on drivers ? IOW if I would be writing
-a new driver which workqueue should I use and when ?
+Bonus points for making this a generic helper function that takes a runtime 
+and a EDID and then applies the EDID constraints on the runtime.
 
-I think that should be driver independent, at least for most of drivers.
-If system have to run in low power mode, system_power_efficient_wq
-should be chosen automatically by schedule_work(), otherwise when high
-performance is more important schedule_work() should use system_wq.
-
-Stanislaw
+- Lars
