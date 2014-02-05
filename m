@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaBEKw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 05:52:29 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:52071 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaBEKw1 (ORCPT
+	id S1752279AbaBEKxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 05:53:05 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49345 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751469AbaBEKxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 05:52:27 -0500
+	Wed, 5 Feb 2014 05:53:03 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH v7 2/3] trivial: PM / Hibernate: clean up checkpatch in hibernate.c
+Date: Wed, 05 Feb 2014 12:07:33 +0100
+Message-ID: <4268996.47Qr0HBDfp@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20140205002413.7648.33035@capellas-linux>
+References: <1391546631-7715-1-git-send-email-sebastian.capella@linaro.org> <2342041.V7doIJk0XQ@vostro.rjw.lan> <20140205002413.7648.33035@capellas-linux>
 MIME-Version: 1.0
-Reply-To: andrea.merello@gmail.com
-In-Reply-To: <52F17257.8020303@lwfinger.net>
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail>
- <20140202160512.GA4946@redhat.com> <201402021807.37772.s.L-H@gmx.de>
- <52EFCC66.9020304@lwfinger.net> <20140203201228.GE26722@mwanda>
- <CA+55aFyHZfw9rtZQJ9i2p7MQAVX4iM0QCdzRZzaivD2nRDHeLQ@mail.gmail.com>
- <CAN8YU5PJWqnaBN_oaZ-yZjV-s9oCkKPa4ebk-kNbhPSgpd3_wQ@mail.gmail.com>
- <20140204092836.GG26776@mwanda> <CAN8YU5PfJ2ijHzghJ-FJPYJeFwTfoGN-qpJ5R5ctYp3R1p13hA@mail.gmail.com>
- <52F12A10.3020600@lwfinger.net> <CAN8YU5PzKE-6Y_651hSwwx1p2i682qi3TYibL5Bu0rBFOJv4cw@mail.gmail.com>
- <52F17257.8020303@lwfinger.net>
-From: Andrea Merello <andrea.merello@gmail.com>
-Date: Wed, 5 Feb 2014 11:52:06 +0100
-Message-ID: <CAN8YU5NBSMVJTs=Y8YS7iLv-a8bwhD00OfY42zq6t=8HmZF0hw@mail.gmail.com>
-Subject: Re: rtl8821ae.
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Somehow I missed this patch. Do you know if John Linville picked it up?
->
+On Tuesday, February 04, 2014 04:24:13 PM Sebastian Capella wrote:
+> Quoting Rafael J. Wysocki (2014-02-04 16:28:13)
+> > On Tuesday, February 04, 2014 04:06:42 PM Sebastian Capella wrote:
+> > > Quoting Rafael J. Wysocki (2014-02-04 16:03:29)
+> > > > On Tuesday, February 04, 2014 03:22:22 PM Sebastian Capella wrote:
+> > > > > Quoting Sebastian Capella (2014-02-04 14:37:33)
+> > > > > > Quoting Rafael J. Wysocki (2014-02-04 13:36:29)
+> > > > > > > >  static int __init resumedelay_setup(char *str)
+> > > > > > > >  {
+> > > > > > > > -     resume_delay = simple_strtoul(str, NULL, 0);
+> > > > > > > > +     int ret = kstrtoint(str, 0, &resume_delay);
+> > > > > > > > +     /* mask must_check warn; on failure, leaves resume_delay unchanged */
+> > > > > > > > +     (void)ret;
+> > > > > 
+> > > > > One unintended consequence of this change is that it'll now accept a
+> > > > > negative integer parameter.
+> > > > 
+> > > > Well, what about using kstrtouint(), then?
+> > > I was thinking of doing something like:
+> > > 
+> > >       int delay, res;
+> > >       res = kstrtoint(str, 0, &delay);
+> > >       if (!res && delay >= 0)
+> > >               resume_delay = delay;
+> > >       return 1;
+> > 
+> > It uses simple_strtoul() for a reason.  You can change the type of resume_delay
+> > to match, but the basic question is:
+> > 
+> > Why exactly do you want to change that thing?
+> 
+> This entire patch is a result of a single checkpatch warning from a printk
+> that I indented.
+> 
+> I was hoping to be helpful by removing all of the warnings from this
+> file, since I was going to have a separate cleanup patch for the printk.
+> 
+> I can see this is not a good direction.
+> 
+> Would it be better also to leave the file's printks as they were and drop
+> the cleanup patch completely?
 
-AFAIK no..
+Well, I had considered changing them to pr_something, but decided that it
+wasn't worth the effort.  Quite frankly, I'd leave the code as is. :-)
 
-> I'm not sure if the ANAPARAM3 register could handle a 16-bit write on an
-> RTL8187B. To be cautious, I wrote and have tested the attached patch using a
-> union. The patch includes a fix for an undefined symbol
-> (RTL818X_TX_CONF_HW_SEQNUM). With this patch my RTL8187SE and RTL8187B
-> devices both work.
+Thanks!
 
-Excellent, thank you !
-
-
-> Larry
->
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
