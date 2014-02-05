@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaBEUTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:19:06 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48568 "EHLO
+	id S1755889AbaBEUTD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:19:03 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48569 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393AbaBEUHq (ORCPT
+	with ESMTP id S932396AbaBEUHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:46 -0500
+	Wed, 5 Feb 2014 15:07:47 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Chris Mason <chris.mason@fusionio.com>,
+CC: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 185/213] Btrfs: call the ordered free operation without any locks held
-Date: Wed, 5 Feb 2014 15:02:20 -0500
-Message-ID: <1391630568-49251-186-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 183/213] ext4: fix error handling on inode bitmap corruption
+Date: Wed, 5 Feb 2014 15:02:18 -0500
+Message-ID: <1391630568-49251-184-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Mason <chris.mason@fusionio.com>
+From: Jan Kara <jack@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,45 +31,40 @@ From: Chris Mason <chris.mason@fusionio.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e9fbcb42201c862fd6ab45c48ead4f47bb2dea9d upstream.
+commit acd6ad83517639e8f09a8c5525b1dccd81cd2a10 upstream.
 
-Each ordered operation has a free callback, and this was called with the
-worker spinlock held.  Josef made the free callback also call iput,
-which we can't do with the spinlock.
+When insert_inode_locked() fails in ext4_new_inode() it most likely means inode
+bitmap got corrupted and we allocated again inode which is already in use. Also
+doing unlock_new_inode() during error recovery is wrong since the inode does
+not have I_NEW set. Fix the problem by jumping to fail: (instead of fail_drop:)
+which declares filesystem error and does not call unlock_new_inode().
 
-This drops the spinlock for the free operation and grabs it again before
-moving through the rest of the list.  We'll circle back around to this
-and find a cleaner way that doesn't bounce the lock around so much.
-
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/btrfs/async-thread.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/ext4/ialloc.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
-index 462859a30141..474d1b82e38c 100644
---- a/fs/btrfs/async-thread.c
-+++ b/fs/btrfs/async-thread.c
-@@ -212,10 +212,17 @@ static noinline int run_ordered_completions(struct btrfs_workers *workers,
- 
- 		work->ordered_func(work);
- 
--		/* now take the lock again and call the freeing code */
-+		/* now take the lock again and drop our item from the list */
- 		spin_lock(&workers->order_lock);
- 		list_del(&work->order_list);
-+		spin_unlock(&workers->order_lock);
-+
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 7f6b5826d5a6..4783c5a4adac 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -1009,8 +1009,12 @@ got:
+ 	if (IS_DIRSYNC(inode))
+ 		ext4_handle_sync(handle);
+ 	if (insert_inode_locked(inode) < 0) {
+-		err = -EINVAL;
+-		goto fail_drop;
 +		/*
-+		 * we don't want to call the ordered free functions
-+		 * with the lock held though
++		 * Likely a bitmap corruption causing inode to be allocated
++		 * twice.
 +		 */
- 		work->ordered_free(work);
-+		spin_lock(&workers->order_lock);
++		err = -EIO;
++		goto fail;
  	}
- 
- 	spin_unlock(&workers->order_lock);
+ 	spin_lock(&sbi->s_next_gen_lock);
+ 	inode->i_generation = sbi->s_next_generation++;
 -- 
 1.8.5.2
 
