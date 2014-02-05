@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048AbaBEUja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:39:30 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55149 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178AbaBEUGl (ORCPT
+	id S933066AbaBEUjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:39:54 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48360 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754994AbaBEUGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:41 -0500
+	Wed, 5 Feb 2014 15:06:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
+CC: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 122/213] fix Null pointer dereference on disk error
-Date: Wed, 5 Feb 2014 15:01:17 -0500
-Message-ID: <1391630568-49251-123-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 117/213] MCE: Fix vm86 handling for 32bit mce handler
+Date: Wed, 5 Feb 2014 15:01:12 -0500
+Message-ID: <1391630568-49251-118-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaotian Feng <xtfeng@gmail.com>
+From: Andi Kleen <andi@firstfloor.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,56 +33,69 @@ From: Xiaotian Feng <xtfeng@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
+commit a129a7c84582629741e5fa6f40026efcd7a65bd4 upstream.
 
-Following oops were observed when disk error happened:
+When running on 32bit the mce handler could misinterpret
+vm86 mode as ring 0. This can affect whether it does recovery
+or not; it was possible to panic when recovery was actually
+possible.
 
-[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
-[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
-[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
-[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
-[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
-[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
-[ 4291.783408] Oops: 0000 [#1] SMP
-[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
-[ 4291.934235] CPU 9
-[ 4291.958301] Pid: 27942, comm: hwinfo ......
+Fix this by always forcing vm86 to look like ring 3.
 
-ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
+[ Backport to 3.0 notes:
+Things changed there slightly:
+   - move mce_get_rip() up. It fills up m->cs and m->ip values which
+     are evaluated in mce_severity(). Therefore move it up right before
+     the mce_severity call. This seem to be another bug in 3.0?
+   - Place the backport (fix m->cs in V86 case) to where m->cs gets
+     filled which is mce_get_rip() in 3.0
+]
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Reviewed-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[PG: commit 8ef8fa7479fff9313387b873413f5ae233a2bd04 in v3.0.44]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/ata/libata-scsi.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 0dfa46877e39..191b375df95e 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -339,7 +339,8 @@ ata_scsi_activity_show(struct device *dev, struct device_attribute *attr,
- 	struct ata_port *ap = ata_shost_to_port(sdev->host);
- 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 8a6f0afa767e..84b313c1297e 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -453,6 +453,13 @@ static inline void mce_get_rip(struct mce *m, struct pt_regs *regs)
+ 	if (regs && (m->mcgstatus & (MCG_STATUS_RIPV|MCG_STATUS_EIPV))) {
+ 		m->ip = regs->ip;
+ 		m->cs = regs->cs;
++		/*
++		 * When in VM86 mode make the cs look like ring 3
++		 * always. This is a lie, but it's better than passing
++		 * the additional vm86 bit around everywhere.
++		 */
++		if (v8086_mode(regs))
++			m->cs |= 3;
+ 	} else {
+ 		m->ip = 0;
+ 		m->cs = 0;
+@@ -990,6 +997,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		 */
+ 		add_taint(TAINT_MACHINE_CHECK);
  
--	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
-+	if (atadev && ap->ops->sw_activity_show &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
- 		return ap->ops->sw_activity_show(atadev, buf);
- 	return -EINVAL;
- }
-@@ -354,7 +355,8 @@ ata_scsi_activity_store(struct device *dev, struct device_attribute *attr,
- 	enum sw_activity val;
- 	int rc;
++		mce_get_rip(&m, regs);
+ 		severity = mce_severity(&m, tolerant, NULL);
  
--	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
-+	if (atadev && ap->ops->sw_activity_store &&
-+	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
- 		val = simple_strtoul(buf, NULL, 0);
- 		switch (val) {
- 		case OFF: case BLINK_ON: case BLINK_OFF:
+ 		/*
+@@ -1028,7 +1036,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		if (severity == MCE_AO_SEVERITY && mce_usable_address(&m))
+ 			mce_ring_add(m.addr >> PAGE_SHIFT);
+ 
+-		mce_get_rip(&m, regs);
+ 		mce_log(&m);
+ 
+ 		if (severity > worst) {
 -- 
 1.8.5.2
 
