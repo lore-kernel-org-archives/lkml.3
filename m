@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaBEJx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:53:26 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54097 "EHLO
+	id S1751988AbaBEJxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:53:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54096 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751701AbaBEJxW (ORCPT
+	by vger.kernel.org with ESMTP id S1751437AbaBEJxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 04:53:22 -0500
-Message-ID: <1391593996.3003.49.camel@deadeye.wl.decadent.org.uk>
+Message-ID: <1391593985.3003.48.camel@deadeye.wl.decadent.org.uk>
 Subject: Re: perf trace: Initial beautifier for ioctl's 'cmd' arg
 From: Ben Hutchings <ben@decadent.org.uk>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Feb 2014 09:53:16 +0000
+Date: Wed, 05 Feb 2014 09:53:05 +0000
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Mrn91yOR4uvzT4AHn4qi"
+	protocol="application/pgp-signature"; boundary="=-glzWdRYALBnOLVfmqYYX"
 X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 192.168.4.239
@@ -26,7 +26,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Mrn91yOR4uvzT4AHn4qi
+--=-glzWdRYALBnOLVfmqYYX
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -45,26 +45,26 @@ Ben.
 Ben Hutchings
 Once a job is fouled up, anything done to improve it makes it worse.
 
---=-Mrn91yOR4uvzT4AHn4qi
+--=-glzWdRYALBnOLVfmqYYX
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIVAwUAUvIKDOe/yOyVhhEJAQoBBg/9E3vYS2KmvzsPMR6/wlz0BwxvelB6U7gR
-hotU3bAwyjiYvMPAk7Vd5qyeXUxD2AiwE73EObTEQasvuJpg0fwhP7UqmATyc5uY
-+HHdf82AQzw9Hh34IaeMmw0bSYiuKIz+pmn28LakLdskP0mBmDiwimvW0xHuI5Y9
-LSOXdeRjvM1w9VSqr6HoxPJMINGSrXma5SrRyVCZ9tDpo+z1jrX8Zl4jannQxeBa
-lWemVQrZE50MiS7BSAF84Vac+ykZM03wUm8LkZGfaA4CSAzcZuxf8aeVAJh2uj8k
-ODiPep6ax4SjrfXqMtjJaeSbQj/djUlWx4nFzQQBVjl74ASP/ahYVBHDtIsWCaeF
-AtiriLH2Wkf/YjdYv2nfDjY5BCbnFq6bo1rj4C82MFt1TMZE8u4TFomUI/0D+m9D
-dh1vnS3BIc00ELYSdfh8CbL4nOyOCVtOyeP8f+6QtTYTXKsA6OjHpOp5LJ9eqBVh
-mUB8qVcWUkdJrFqfpDJQtijkIBVyl2yOCY0WryxiUC3UNDZhEvJTc91UYTVzGi9G
-EMWvOHCY8XE36Gmbb1Y+DngLeOpdEnXOVVkfvPdx9d+EIrYMPwfeMInAG5NFFUfq
-hP+2zkpULhJpBlUlYdLKKQQGGM2DGe8mj52/J9nafp9EWPHD9lnKopA5orDZQRPC
-V2a8W9y4VtQ=
-=exrx
+iQIVAwUAUvIKAee/yOyVhhEJAQqd9hAAhiQyQx1aM91r8b70ZqBnTn0x1/Mk7NpJ
+r/jtPK4lHeeJPq3DYuQtgk56tcNsfwXRCLEGPE07SKgrMj60vWyDWwc2ZGBharFB
+OamojAQV0Vg41HoKwJDt8SYWrz0HAGJlFmOazw9lxE2PkiuwRXIEDF2bL3z7/EKp
+JTkcW0xTSfBDk4EIowARZzUOWP6TTXQHf6IPwjNpc/VjOxfH5x3bZ4PqpWMeA6UY
+3EJgO6QZ2X9KzDpEiN+aBEbAGe9gSAPKRzE8X9cmbLh8vPrrelXuV+ljETdUF5gu
+bCREVbGRFiDZbk3VhH9pMjJhtPr9YbpniGlcL2747oqu9azawtYguFaQAq0qx/E2
+5vmGt7/j7meMhIY+nW25dxcjunoWwnuu/fiHV+Al3WYni9Jeu7Wj/dk3bFghocUU
+6HLRyuv8fsgeL49Oajr8aUmCAE4BmJSIecqeyvR3tVQASdMRCE5CXA8cPqSSON5t
+zG6URswwpf4DUo5jlemrWYuHwd4VPw9dMOE8ycIWIIO0ev3mcKA4A2FMAeEMOw1r
+jqkhtYb4dvLw3JVp7+eDJ4YVYemgvskqr1yKuYbpuVVHMbsR9FChUOeZO9vkjfO5
+6K+8DftpWStILSlKCpg/U6tRGypL6W7vVwbzDxRL29D7UtBjuOphXJrrfvdXvSSe
+09N4DNd5an0=
+=XfOs
 -----END PGP SIGNATURE-----
 
---=-Mrn91yOR4uvzT4AHn4qi--
+--=-glzWdRYALBnOLVfmqYYX--
