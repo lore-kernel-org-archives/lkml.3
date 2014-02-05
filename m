@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114AbaBEWOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:14:40 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54322 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaBEWOe (ORCPT
+	id S932162AbaBEWOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:14:51 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55515 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261AbaBEWOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:14:34 -0500
+	Wed, 5 Feb 2014 17:14:47 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 25/51] x86, pci, amd-bus: Fix CPU hotplug callback registration
+Subject: [PATCH 26/51] x86, oprofile,
+ nmi: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-pci@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:39:12 +0530
-Message-ID: <20140205220912.19080.11413.stgit@srivatsabhat.in.ibm.com>
+        Robert Richter <rric@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Thu, 06 Feb 2014 03:39:22 +0530
+Message-ID: <20140205220921.19080.94715.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -29,7 +28,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-8878-0000-0000-00000ABF35BA
+x-cbid: 14020522-1618-0000-0000-000005629553
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,38 +64,66 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the amd-bus code in x86 by using this latter form of callback
-registration.
+Fix the oprofile code in x86 by using this latter form of callback
+registration. But retain the calls to get/put_online_cpus(), since they
+also protect the variables 'nmi_enabled' and 'ctr_running'. By nesting
+get/put_online_cpus() *inside* cpu_maps_update_begin/done(), we avoid
+the ABBA deadlock possibility mentioned above.
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Robert Richter <rric@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
-Cc: linux-pci@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/pci/amd_bus.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/oprofile/nmi_int.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index a48be98..7cd5d84 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -380,10 +380,13 @@ static int __init pci_io_ecs_init(void)
- 	if (early_pci_allowed())
- 		pci_enable_pci_io_ecs();
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 6890d84..85e5f6e 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -494,14 +494,19 @@ static int nmi_setup(void)
+ 	if (err)
+ 		goto fail;
  
--	register_cpu_notifier(&amd_cpu_notifier);
 +	cpu_maps_update_begin();
- 	for_each_online_cpu(cpu)
- 		amd_cpu_notify(&amd_cpu_notifier, (unsigned long)CPU_ONLINE,
- 			       (void *)(long)cpu);
-+	__register_cpu_notifier(&amd_cpu_notifier);
++
++	/* Use get/put_online_cpus() to protect 'nmi_enabled' */
+ 	get_online_cpus();
+-	register_cpu_notifier(&oprofile_cpu_nb);
+ 	nmi_enabled = 1;
+ 	/* make nmi_enabled visible to the nmi handler: */
+ 	smp_mb();
+ 	on_each_cpu(nmi_cpu_setup, NULL, 1);
++	__register_cpu_notifier(&oprofile_cpu_nb);
+ 	put_online_cpus();
+ 
 +	cpu_maps_update_done();
 +
- 	pci_probe |= PCI_HAS_IO_ECS;
- 
  	return 0;
+ fail:
+ 	free_msrs();
+@@ -512,12 +517,18 @@ static void nmi_shutdown(void)
+ {
+ 	struct op_msrs *msrs;
+ 
++	cpu_maps_update_begin();
++
++	/* Use get/put_online_cpus() to protect 'nmi_enabled' & 'ctr_running' */
+ 	get_online_cpus();
+-	unregister_cpu_notifier(&oprofile_cpu_nb);
+ 	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
+ 	nmi_enabled = 0;
+ 	ctr_running = 0;
++	__unregister_cpu_notifier(&oprofile_cpu_nb);
+ 	put_online_cpus();
++
++	cpu_maps_update_done();
++
+ 	/* make variables visible to the nmi handler: */
+ 	smp_mb();
+ 	unregister_nmi_handler(NMI_LOCAL, "oprofile");
 
