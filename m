@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221AbaBEUnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:43:15 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:48079 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326AbaBEUnL convert rfc822-to-8bit (ORCPT
+	id S933251AbaBEUnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:43:40 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48312 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaBEUGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:43:11 -0500
+	Wed, 5 Feb 2014 15:06:25 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Andy Lutomirski <luto@amacapital.net>, Hugh Dickins <hugh@veritas.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        Badari Pulavarty <pbadari@us.ibm.com>, Nick Piggin <npiggin@suse.de>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 105/213] mm: Hold a file reference in madvise_remove
+Date: Wed, 5 Feb 2014 15:01:00 -0500
+Message-ID: <1391630568-49251-106-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <20140205171729.GA17974@earth.universe>
-References: <1391603582-11371-1-git-send-email-sre@debian.org>
- <CAHYPw2Ep9VP6Tem979ewcztdxkHkG8eR_U31U=f5ibsVa5AS4Q@mail.gmail.com>
- <20140205163117.GA15996@earth.universe> <CAHYPw2HX478ZZPfDTKCKSGhVdFc1-G5DszUR4vG+WRgZx=8+dQ@mail.gmail.com>
- <20140205171729.GA17974@earth.universe>
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Wed, 5 Feb 2014 21:42:30 +0100
-Message-ID: <CAHYPw2FRbcR_anv9f2igcFV6XnCfpjJMHaeZmcNs8KpXuG96cQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: OMAP2+: Add support for thumb mode on DT booted N900
-To: Sebastian Reichel <sre@debian.org>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, freemangordon@abv.bg
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-05 Sebastian Reichel <sre@debian.org>:
-> Hi,
->
-> On Wed, Feb 05, 2014 at 05:38:54PM +0100, Pali Rohár wrote:
->> > I assumed, that the workaround is not needed for this device type.
->>
->> That rx51 secure call must not be called on non secure devices (e.g.
->> qemu), because it cause kernel crash. So I thought that kernel should
->> write something like secure call is disabled on that device types.
->> Kernel code for errata 430973 will update ibe bit for non secure
->> devices.
->
-> Do you see any advantage in having that message?
->
+From: Andy Lutomirski <luto@amacapital.net>
 
-Consistency. Print message 1) only if secure rx51 smc instruction is
-called or 2) print message always (also if smc is not called). With
-that patch message is printed (enabled/disabled) only if device is
-rx51 and device type is HS.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-For information it is also good to know that in qemu that special
-secure smc instruction was not called.
+commit 9ab4233dd08036fe34a89c7dc6f47a8bf2eb29eb upstream.
 
+Otherwise the code races with munmap (causing a use-after-free
+of the vma) or with close (causing a use-after-free of the struct
+file).
+
+The bug was introduced by commit 90ed52ebe481 ("[PATCH] holepunch: fix
+mmap_sem i_mutex deadlock")
+
+[bwh: Backported to 3.2:
+ - Adjust context
+ - madvise_remove() calls vmtruncate_range(), not do_fallocate()]
+[luto: Backported to 3.0: Adjust context]
+
+Cc: Hugh Dickins <hugh@veritas.com>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Badari Pulavarty <pbadari@us.ibm.com>
+Cc: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[PG: commit e12fcd38abe8a869cbabd77724008f1cf812a3e7 in v3.0.37]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ mm/madvise.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 319528b8db74..83aa92aad8bc 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -13,6 +13,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/sched.h>
+ #include <linux/ksm.h>
++#include <linux/file.h>
+ 
+ /*
+  * Any behaviour which results in changes to the vma->vm_flags needs to
+@@ -191,14 +192,16 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 	struct address_space *mapping;
+ 	loff_t offset, endoff;
+ 	int error;
++	struct file *f;
+ 
+ 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
+ 
+ 	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
+ 		return -EINVAL;
+ 
+-	if (!vma->vm_file || !vma->vm_file->f_mapping
+-		|| !vma->vm_file->f_mapping->host) {
++	f = vma->vm_file;
++
++	if (!f || !f->f_mapping || !f->f_mapping->host) {
+ 			return -EINVAL;
+ 	}
+ 
+@@ -212,9 +215,16 @@ static long madvise_remove(struct vm_area_struct *vma,
+ 	endoff = (loff_t)(end - vma->vm_start - 1)
+ 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+ 
+-	/* vmtruncate_range needs to take i_mutex and i_alloc_sem */
++	/*
++	 * vmtruncate_range may need to take i_mutex and i_alloc_sem.
++	 * We need to explicitly grab a reference because the vma (and
++	 * hence the vma's reference to the file) can go away as soon as
++	 * we drop mmap_sem.
++	 */
++	get_file(f);
+ 	up_read(&current->mm->mmap_sem);
+ 	error = vmtruncate_range(mapping->host, offset, endoff);
++	fput(f);
+ 	down_read(&current->mm->mmap_sem);
+ 	return error;
+ }
 -- 
-Pali Rohár
-pali.rohar@gmail.com
+1.8.5.2
+
