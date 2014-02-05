@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaBEPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:52:09 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:62764 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaBEPwI (ORCPT
+	id S1752533AbaBEP4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:56:43 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:54228 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaBEP4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:52:08 -0500
-Message-ID: <52F25E22.6010801@monstr.eu>
-Date: Wed, 05 Feb 2014 16:52:02 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Felipe Pena <felipensp@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: zynq: Move of_clk_init from clock driver
-References: <572af6e4eaaaa1c74ea62364f8fa7ac5834cc754.1391612175.git.michal.simek@xilinx.com> <4e03e3ec-2fc7-40fc-a2cc-4a6c64379559@CO1EHSMHS025.ehs.local>
-In-Reply-To: <4e03e3ec-2fc7-40fc-a2cc-4a6c64379559@CO1EHSMHS025.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="1nr78CVnopbWfF5wwFx4q2RPlpjx7NuTc"
+	Wed, 5 Feb 2014 10:56:42 -0500
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>, <prabhakar.csengg@gmail.com>,
+        Martin Bugge <martin.bugge@cisco.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marcus Folkesson <marcus.folkesson@gmail.com>
+Subject: [PATCH] media: i2c: Kconfig: create dependency to MEDIA_CONTROLLER for adv7*
+Date: Wed,  5 Feb 2014 16:56:13 +0100
+Message-Id: <1391615773-26467-1-git-send-email-marcus.folkesson@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---1nr78CVnopbWfF5wwFx4q2RPlpjx7NuTc
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+These chips makes use of the media_entity in the v4l2_subdev struct
+and is therefor dependent of the  MEDIA_CONTROLLER config.
 
-On 02/05/2014 04:41 PM, S=C3=B6ren Brinkmann wrote:
-> On Wed, Feb 05, 2014 at 03:56:37PM +0100, Michal Simek wrote:
->> Move of_clk_init() from clock driver to enable
->> options not to use zynq clock driver.
->> Use for example fixed clock setting.
-> What is the use-case? Zynq w/o this driver makes no sense, IMHO. And
-> even if you wanna fake clocks, why would this driver prevent it? Just
-> replace all the input clocks with different ones and don't care about
-> what this driver does?
+Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+---
+ drivers/media/i2c/Kconfig |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-One case is supervisor for example.
+diff --git a/drivers/media/i2c/Kconfig b/drivers/media/i2c/Kconfig
+index d18be19..1771b77 100644
+--- a/drivers/media/i2c/Kconfig
++++ b/drivers/media/i2c/Kconfig
+@@ -196,7 +196,7 @@ config VIDEO_ADV7183
+ 
+ config VIDEO_ADV7604
+ 	tristate "Analog Devices ADV7604 decoder"
+-	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
++	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API && MEDIA_CONTROLLER
+ 	---help---
+ 	  Support for the Analog Devices ADV7604 video decoder.
+ 
+@@ -208,7 +208,7 @@ config VIDEO_ADV7604
+ 
+ config VIDEO_ADV7842
+ 	tristate "Analog Devices ADV7842 decoder"
+-	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
++	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API && MEDIA_CONTROLLER
+ 	---help---
+ 	  Support for the Analog Devices ADV7842 video decoder.
+ 
+@@ -431,7 +431,7 @@ config VIDEO_ADV7393
+ 
+ config VIDEO_ADV7511
+ 	tristate "Analog Devices ADV7511 encoder"
+-	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API
++	depends on VIDEO_V4L2 && I2C && VIDEO_V4L2_SUBDEV_API && MEDIA_CONTROLLER
+ 	---help---
+ 	  Support for the Analog Devices ADV7511 video encoder.
+ 
+-- 
+1.7.10.4
 
->=20
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->> Based on http://www.spinics.net/lists/arm-kernel/msg298287.html
->> series
->>
->> ---
->>  arch/arm/mach-zynq/common.c | 1 +
->>  drivers/clk/zynq/clkc.c     | 2 --
->>  2 files changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c=
-
->> index 93ea19b..8df35f3 100644
->> --- a/arch/arm/mach-zynq/common.c
->> +++ b/arch/arm/mach-zynq/common.c
->> @@ -68,6 +68,7 @@ static void __init zynq_timer_init(void)
->>  	zynq_early_slcr_init();
->>
->>  	zynq_clock_init();
->> +	of_clk_init(NULL);
-> Now you have two clock init functions...
-
-If I have two clock init functions now, what I had before?
-You were calling of_clk_init from zynq_clock_init.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---1nr78CVnopbWfF5wwFx4q2RPlpjx7NuTc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlLyXiIACgkQykllyylKDCFPTgCfRm01UGvdQIGcS4jmnhoNBwqi
-80cAniFxHKaG/UJWBvVmdJtxmFv303PK
-=NmH0
------END PGP SIGNATURE-----
-
---1nr78CVnopbWfF5wwFx4q2RPlpjx7NuTc--
