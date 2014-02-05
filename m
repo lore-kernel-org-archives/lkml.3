@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752AbaBEVP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:15:59 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54215 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaBEUDm (ORCPT
+	id S1756762AbaBEVQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:16:10 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47903 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860AbaBEUDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:42 -0500
+	Wed, 5 Feb 2014 15:03:41 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 021/213] HID: LG: validate HID output report details
-Date: Wed, 5 Feb 2014 14:59:36 -0500
-Message-ID: <1391630568-49251-22-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 020/213] HID: zeroplus: validate output report details
+Date: Wed, 5 Feb 2014 14:59:35 -0500
+Message-ID: <1391630568-49251-21-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -31,154 +31,58 @@ From: Kees Cook <keescook@chromium.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0fb6bd06e06792469acc15bbe427361b56ada528 upstream.
+commit 78214e81a1bf43740ce89bb5efda78eac2f8ef83 upstream.
 
-A HID device could send a malicious output report that would cause the
-lg, lg3, and lg4 HID drivers to write beyond the output report allocation
-during an event, causing a heap overflow:
+The zeroplus HID driver was not checking the size of allocated values
+in fields it used. A HID device could send a malicious output report
+that would cause the driver to write beyond the output report allocation
+during initialization, causing a heap overflow:
 
-[  325.245240] usb 1-1: New USB device found, idVendor=046d, idProduct=c287
+[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
 ...
-[  414.518960] BUG kmalloc-4096 (Not tainted): Redzone overwritten
+[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
 
-Additionally, while lg2 did correctly validate the report details, it was
-cleaned up and shortened.
-
-CVE-2013-2893
+CVE-2013-2889
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[PG: drop hid-lg4ff.c chunk; file not present in 2.6.34 baseline.]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/hid/hid-lg2ff.c | 19 +++----------------
- drivers/hid/hid-lg3ff.c | 29 ++++++-----------------------
- drivers/hid/hid-lgff.c  | 17 ++---------------
- 3 files changed, 11 insertions(+), 54 deletions(-)
+ drivers/hid/hid-zpff.c | 18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/hid/hid-lg2ff.c b/drivers/hid/hid-lg2ff.c
-index d888f1e6794f..2b8109d7fc6a 100644
---- a/drivers/hid/hid-lg2ff.c
-+++ b/drivers/hid/hid-lg2ff.c
-@@ -66,26 +66,13 @@ int lg2ff_init(struct hid_device *hid)
+diff --git a/drivers/hid/hid-zpff.c b/drivers/hid/hid-zpff.c
+index b7acceabba80..a24f9fb43c34 100644
+--- a/drivers/hid/hid-zpff.c
++++ b/drivers/hid/hid-zpff.c
+@@ -69,21 +69,13 @@ static int zpff_init(struct hid_device *hid)
  	struct hid_report *report;
  	struct hid_input *hidinput = list_entry(hid->inputs.next,
  						struct hid_input, list);
 -	struct list_head *report_list =
 -			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
  	struct input_dev *dev = hidinput->input;
- 	int error;
+-	int error;
++	int i, error;
  
 -	if (list_empty(report_list)) {
 -		dev_err(&hid->dev, "no output report found\n");
-+	/* Check that the report looks ok */
-+	report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7);
-+	if (!report)
- 		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 1) {
--		dev_err(&hid->dev, "output report is empty\n");
 -		return -ENODEV;
 -	}
--	if (report->field[0]->report_count < 7) {
--		dev_err(&hid->dev, "not enough values in the field\n");
+-
+-	report = list_entry(report_list->next, struct hid_report, list);
+-
+-	if (report->maxfield < 4) {
+-		dev_err(&hid->dev, "not enough fields in report\n");
 -		return -ENODEV;
--	}
++	for (i = 0; i < 4; i++) {
++		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
++		if (!report)
++			return -ENODEV;
+ 	}
  
- 	lg2ff = kmalloc(sizeof(struct lg2ff_device), GFP_KERNEL);
- 	if (!lg2ff)
-diff --git a/drivers/hid/hid-lg3ff.c b/drivers/hid/hid-lg3ff.c
-index 4002832ee4af..b998b1675f62 100644
---- a/drivers/hid/hid-lg3ff.c
-+++ b/drivers/hid/hid-lg3ff.c
-@@ -68,10 +68,11 @@ static int hid_lg3ff_play(struct input_dev *dev, void *data,
- 	int x, y;
- 
- /*
-- * Maxusage should always be 63 (maximum fields)
-- * likely a better way to ensure this data is clean
-+ * Available values in the field should always be 63, but we only use up to
-+ * 35. Instead, clear the entire area, however big it is.
-  */
--	memset(report->field[0]->value, 0, sizeof(__s32)*report->field[0]->maxusage);
-+	memset(report->field[0]->value, 0,
-+	       sizeof(__s32) * report->field[0]->report_count);
- 
- 	switch (effect->type) {
- 	case FF_CONSTANT:
-@@ -131,32 +132,14 @@ static const signed short ff3_joystick_ac[] = {
- int lg3ff_init(struct hid_device *hid)
- {
- 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
--	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	struct hid_report *report;
--	struct hid_field *field;
- 	const signed short *ff_bits = ff3_joystick_ac;
- 	int error;
- 	int i;
- 
--	/* Find the report to use */
--	if (list_empty(report_list)) {
--		err_hid("No output report found");
--		return -1;
--	}
--
- 	/* Check that the report looks ok */
--	report = list_entry(report_list->next, struct hid_report, list);
--	if (!report) {
--		err_hid("NULL output report");
--		return -1;
--	}
--
--	field = report->field[0];
--	if (!field) {
--		err_hid("NULL field");
--		return -1;
--	}
-+	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 35))
-+		return -ENODEV;
- 
- 	/* Assume single fixed device G940 */
- 	for (i = 0; ff_bits[i] >= 0; i++)
-diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
-index 61142b76a9b1..60978a33eeb6 100644
---- a/drivers/hid/hid-lgff.c
-+++ b/drivers/hid/hid-lgff.c
-@@ -136,27 +136,14 @@ static void hid_lgff_set_autocenter(struct input_dev *dev, u16 magnitude)
- int lgff_init(struct hid_device* hid)
- {
- 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
--	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	struct hid_report *report;
--	struct hid_field *field;
- 	const signed short *ff_bits = ff_joystick;
- 	int error;
- 	int i;
- 
--	/* Find the report to use */
--	if (list_empty(report_list)) {
--		err_hid("No output report found");
--		return -1;
--	}
--
- 	/* Check that the report looks ok */
--	report = list_entry(report_list->next, struct hid_report, list);
--	field = report->field[0];
--	if (!field) {
--		err_hid("NULL field");
--		return -1;
--	}
-+	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
-+		return -ENODEV;
- 
- 	for (i = 0; i < ARRAY_SIZE(devices); i++) {
- 		if (dev->id.vendor == devices[i].idVendor &&
+ 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
 -- 
 1.8.5.2
 
