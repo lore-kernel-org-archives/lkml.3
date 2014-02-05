@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaBEOjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:39:08 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:33139 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaBEOjF (ORCPT
+	id S1752573AbaBEOjw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:39:52 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:33636 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaBEOjv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:39:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1391608060-10760-3-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
-	<1391608060-10760-3-git-send-email-ivan.khoronzhuk@ti.com>
-Date: Wed, 5 Feb 2014 08:39:04 -0600
-Message-ID: <CAL_JsqKVc2fdg1Q+TH6ro9kpJmUYyHw8FCwhORfm2_oj6GYM2Q@mail.gmail.com>
-Subject: Re: [PATCH v5 2/3] clocksource: keystone: add bindings for keystone timer
-From: Rob Herring <robherring2@gmail.com>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Feb 2014 09:39:51 -0500
+From: Glyn Normington <gnormington@gopivotal.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
+Subject: Attaching a cgroup subsystem to multiple hierarchies
+Message-Id: <050BD595-BE55-401D-9B61-E877FB9F06A8@gopivotal.com>
+Date: Wed, 5 Feb 2014 14:39:52 +0000
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 5, 2014 at 7:47 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
-> This patch provides bindings for the 64-bit timer in the KeyStone
-> architecture devices. The timer can be configured as a general-purpose 64-bit
-> timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
-> timers, each half can operate in conjunction (chain mode) or independently
-> (unchained mode) of each other.
+Reading cgroups.txt and casting around the net leads me to believe that it is possible to attach a cgroup subsystem (e.g. memory) to multiple hierarchies, but this seems to result in “mirrored” hierarchies which are automatically kept in step with each other - essentially it looks like the same hierarchy at multiple file system paths.
 
-This is software configurable or h/w design time configurations?
+Take the following interaction for example:
 
-Rob
+\begin{verbatim}
+$ pwd   
+/home/vagrant
+$ mkdir mem1
+$ mkdir mem2
+$ sudo su
+# mount -t cgroup -o memory none /home/vagrant/mem1
+# mount -t cgroup -o memory none /home/vagrant/mem2
+# cd mem1
+# mkdir inst1  
+# ls inst1 
+cgroup.clone_children  memory.failcnt ...
+# ls ../mem2
+cgroup.clone_children  inst1 memory.limit_in_bytes ...
+# cd inst1
+# echo 1000000 > memory.limit_in_bytes 
+# cat memory.limit_in_bytes 
+1003520
+# cat ../../mem2/inst1/memory.limit_in_bytes 
+1003520
+# echo $$ > tasks
+# cat tasks
+1365
+1409
+# cat ../../mem2/inst1/tasks
+1365
+1411
 
->
-> It is global timer is a free running up-counter and can generate interrupt
-> when the counter reaches preset counter values.
->
-> Documentation:
-> http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
->
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
->  .../bindings/timer/ti,keystone-timer.txt           | 29 ++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
->
-> diff --git a/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
-> new file mode 100644
-> index 0000000..5fbe361
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/timer/ti,keystone-timer.txt
-> @@ -0,0 +1,29 @@
-> +* Device tree bindings for Texas instruments Keystone timer
-> +
-> +This document provides bindings for the 64-bit timer in the KeyStone
-> +architecture devices. The timer can be configured as a general-purpose 64-bit
-> +timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
-> +timers, each half can operate in conjunction (chain mode) or independently
-> +(unchained mode) of each other.
-> +
-> +It is global timer is a free running up-counter and can generate interrupt
-> +when the counter reaches preset counter values.
-> +
-> +Documentation:
-> +http://www.ti.com/lit/ug/sprugv5a/sprugv5a.pdf
-> +
-> +Required properties:
-> +
-> +- compatible : should be "ti,keystone-timer".
-> +- reg : specifies base physical address and count of the registers.
-> +- interrupts : interrupt generated by the timer.
-> +- clocks : the clock feeding the timer clock.
-> +
-> +Example:
-> +
-> +timer@22f0000 {
-> +       compatible = "ti,keystone-timer";
-> +       reg = <0x022f0000 0x80>;
-> +       interrupts = <GIC_SPI 110 IRQ_TYPE_EDGE_RISING>;
-> +       clocks = <&clktimer15>;
-> +};
-> --
-> 1.8.3.2
->
+Is this working as intended? Is there some other way to attach a subsystem to *distinct* hierarchies? Distinct hierarchies would allow distinct cgroups, distinct settings (e.g. memory.limit_in_bytes) and distinct partitions of the tasks in the system.
+
+Note: I don’t have a good use for this function - I’m simply trying to reverse engineer the semantics of cgroups to get a precise understanding.
+
+Glyn
