@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaBEXs0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 18:48:26 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60295 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751468AbaBEXsY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 18:48:24 -0500
-Date: Wed, 5 Feb 2014 23:48:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ARM: mm: Fix the memblock allocation for LPAE machines
-Message-ID: <20140205234815.GU26684@n2100.arm.linux.org.uk>
-References: <1391285687-20534-1-git-send-email-santosh.shilimkar@ti.com> <52F2CBC0.3030305@ti.com>
+	id S1753198AbaBEXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 18:53:09 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:36089 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952AbaBEXxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 18:53:07 -0500
+Date: Thu, 6 Feb 2014 00:53:04 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: [PATCH -v1.1] gitignore: Add all.config
+Message-ID: <20140205235304.GC6364@pd.tnic>
+References: <1386356626-7791-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52F2CBC0.3030305@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1386356626-7791-1-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 06:39:44PM -0500, Santosh Shilimkar wrote:
-> Russell,
-> 
-> On Saturday 01 February 2014 03:14 PM, Santosh Shilimkar wrote:
-> > Commit ad6492b8 added much needed memblock_virt_alloc_low() and further
-> > commit 07bacb3 {memblock, bootmem: restore goal for alloc_low} fixed the
-> > issue with low memory limit thansk to Yinghai. But even after all these fixes,
-> > there is still one case where the limit check done with ARCH_LOW_ADDRESS_LIMIT
-> > for low memory fails. Russell pointed out the issue with 32 bit LPAE machines
-> > in below thread.
-> > 	https://lkml.org/lkml/2014/1/28/364
-> > 
-> > Since on some LPAE machines where memory start address is beyond 4GB,
-> > the low memory marker in memblock will be set to default
-> > ARCH_LOW_ADDRESS_LIMIT which is wrong. We can fix this by letting
-> > architectures set the ARCH_LOW_ADDRESS_LIMIT using another export
-> > similar to memblock_set_current_limit() but am not sure whether
-> > its worth the trouble. Tell me if you think otherwise.
-> > 
-> > Rather am just trying to fix that one broken case using memblock_virt_alloc()
-> > in setup code since the memblock.current_limit is updated appropriately
-> > makes it work on all ARM 32 bit machines.
-> > 
-> > Cc: Yinghai Lu <yinghai@kernel.org>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Strashko, Grygorii <grygorii.strashko@ti.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > ---
-> Whats you say here ? We should get the fix for the
-> issue. If you are ok, I can drop the patch in patch system.
+From: Borislav Petkov <bp@suse.de>
 
-Is this still an issue, or has Tejun fixed it by some other means?  I've not
-noticed anything being broken at the moment.
+This is used by kbuild to load preset Kconfig options. We need to ignore
+it, otherwise git clean kills it.
 
-Can you confirm whether we still have an issue without this patch please?
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ .gitignore | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Thanks.
+diff --git a/.gitignore b/.gitignore
+index 7e9932e55475..42fa0d5626a9 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -92,3 +92,6 @@ extra_certificates
+ signing_key.priv
+ signing_key.x509
+ x509.genkey
++
++# Kconfig presets
++all.config
+-- 
+1.8.5.2.192.g7794a68
+
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
