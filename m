@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925AbaBEWQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:16:11 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:57715 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472AbaBEWQG (ORCPT
+	id S1755957AbaBEWQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:16:21 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:59619 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055AbaBEWQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:16:06 -0500
+	Wed, 5 Feb 2014 17:16:16 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 34/51] zsmalloc: Fix CPU hotplug callback registration
+Subject: [PATCH 35/51] acpi-cpufreq: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-mm@kvack.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:40:43 +0530
-Message-ID: <20140205221043.19080.20246.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 06 Feb 2014 03:40:53 +0530
+Message-ID: <20140205221052.19080.77507.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -27,7 +28,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-2000-0000-0000-00000F986AFA
+x-cbid: 14020522-2674-0000-0000-00000C94B10D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -63,55 +64,40 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the zsmalloc code by using this latter form of callback registration.
+Fix the acpi-cpufreq code by using this latter form of callback registration.
 
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: linux-mm@kvack.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- mm/zsmalloc.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/cpufreq/acpi-cpufreq.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index c03ca5e..6f7364c 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -814,21 +814,32 @@ static void zs_exit(void)
- {
- 	int cpu;
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 18448a7..e2eb471 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -907,15 +907,16 @@ static void __init acpi_cpufreq_boost_init(void)
  
-+	cpu_maps_update_begin();
+ 		acpi_cpufreq_driver.boost_supported = true;
+ 		acpi_cpufreq_driver.boost_enabled = boost_state(0);
+-		get_online_cpus();
 +
- 	for_each_online_cpu(cpu)
- 		zs_cpu_notifier(NULL, CPU_DEAD, (void *)(long)cpu);
--	unregister_cpu_notifier(&zs_cpu_nb);
-+	__unregister_cpu_notifier(&zs_cpu_nb);
-+
-+	cpu_maps_update_done();
++		cpu_maps_update_begin();
+ 
+ 		/* Force all MSRs to the same value */
+ 		boost_set_msrs(acpi_cpufreq_driver.boost_enabled,
+ 			       cpu_online_mask);
+ 
+-		register_cpu_notifier(&boost_nb);
++		__register_cpu_notifier(&boost_nb);
+ 
+-		put_online_cpus();
++		cpu_maps_update_done();
+ 	}
  }
  
- static int zs_init(void)
- {
- 	int cpu, ret;
- 
--	register_cpu_notifier(&zs_cpu_nb);
-+	cpu_maps_update_begin();
-+
-+	__register_cpu_notifier(&zs_cpu_nb);
- 	for_each_online_cpu(cpu) {
- 		ret = zs_cpu_notifier(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
--		if (notifier_to_errno(ret))
-+		if (notifier_to_errno(ret)) {
-+			cpu_maps_update_done();
- 			goto fail;
-+		}
- 	}
-+
-+	cpu_maps_update_done();
-+
- 	return 0;
- fail:
- 	zs_exit();
 
