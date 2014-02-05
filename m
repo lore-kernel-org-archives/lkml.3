@@ -1,98 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaBERna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:43:30 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57314 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752964AbaBERn3 (ORCPT
+	id S1753564AbaBERpS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:45:18 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:42677 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980AbaBERpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:43:29 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+jCRVtGuovP/IUt0welIXB3kO2VkUHhWM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B33E251E6D0
-Date: Wed, 5 Feb 2014 12:43:16 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
-Message-ID: <20140205174316.GV8533@titan.lakedaemon.net>
-References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140205140802.9977.19747@quantum>
+	Wed, 5 Feb 2014 12:45:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205140802.9977.19747@quantum>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1388728091-18564-10-git-send-email-zheng.z.yan@intel.com>
+References: <1388728091-18564-1-git-send-email-zheng.z.yan@intel.com>
+	<1388728091-18564-10-git-send-email-zheng.z.yan@intel.com>
+Date: Wed, 5 Feb 2014 18:45:15 +0100
+Message-ID: <CABPqkBRz0u1U9RDoS64S00D9B+Ruyw_xBnT5WukUhuuv2A7YWA@mail.gmail.com>
+Subject: Re: [PATCH 09/14] perf, x86: Save/resotre LBR stack during context switch
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 06:08:02AM -0800, Mike Turquette wrote:
-> Quoting Sebastian Hesselbarth (2014-01-25 10:19:06)
-> > This patch set fixes clk init order that went upside-down with
-> > v3.14. I haven't really investigated what caused this, but I assume
-> > it is related with DT node reordering by addresses.
-> > 
-> > Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
-> > registered before core clocks driver. Unfortunately, we cannot
-> > return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
-> > init order for our drivers is always core clocks before clock gating,
-> > we maintain init order ourselves by hooking CLK_OF_DECLARE to one
-> > init function that will register core clocks before clock gating
-> > driver.
-> > 
-> > This patch is based on pre-v3.14-rc1 mainline and should go in as
-> > fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
-> > I suggest Jason picks it up as a topic branch.
-> 
-> Sebastian,
-> 
-> These patches look OK to me. I'd rather take Gregory Clement's "respect
-> the clock dependencies in of_clk_init" patch towards 3.15, so this fix
-> will still be necessary for the current -rc's.
-> 
-> Jason, will you be sending a PR?
+On Fri, Jan 3, 2014 at 6:48 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> When the LBR call stack is enabled, it is necessary to save/restore
+> the LBR stack on context switch. The solution is saving/restoring
+> the LBR stack to/from task's perf event context.
+>
+> The LBR stack is saved/restored only when there are events that use
+> the LBR call stack. If no event uses LBR call stack, the LBR stack
+> is reset when task is scheduled in.
+>
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 80 ++++++++++++++++++++++++------
+>  1 file changed, 66 insertions(+), 14 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index 2137a9f..51e1842 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -187,18 +187,82 @@ void intel_pmu_lbr_reset(void)
+>                 intel_pmu_lbr_reset_64();
+>  }
+>
+> +/*
+> + * TOS = most recently recorded branch
+> + */
+> +static inline u64 intel_pmu_lbr_tos(void)
+> +{
+> +       u64 tos;
+> +       rdmsrl(x86_pmu.lbr_tos, tos);
+> +       return tos;
+> +}
+> +
+> +enum {
+> +       LBR_UNINIT,
+> +       LBR_NONE,
+> +       LBR_VALID,
+> +};
+> +
+I don't see where the x86_perf_task_context struct gets initialized with
+your task_ctx_data/task_ctx_size mechanism. You are relying on 0
+as a valid default value. But if later more fields are needed and they need
+non-zero init values, it will be easy to forget.....
 
-Ahh, just saw this now.  ignore my previous comments about using
-Gregory's series as the fix.
+So I think you need to provide a callback from alloc_perf_context().
+Should have mentioned that in Patch 05/14.
 
-Sure, I'll put this together for a pr to the clk tree.
+> +static void __intel_pmu_lbr_restore(struct x86_perf_task_context *task_ctx)
+> +{
+> +       int i;
+> +       unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
+> +       u64 tos = intel_pmu_lbr_tos();
+> +
+> +       for (i = 0; i < x86_pmu.lbr_nr; i++) {
+> +               lbr_idx = (tos - i) & mask;
+> +               wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
+> +               wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
+> +       }
+> +       task_ctx->lbr_stack_state = LBR_NONE;
+> +}
+> +
+> +static void __intel_pmu_lbr_save(struct x86_perf_task_context *task_ctx)
+> +{
+> +       int i;
+> +       unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
+> +       u64 tos = intel_pmu_lbr_tos();
+> +
+> +       for (i = 0; i < x86_pmu.lbr_nr; i++) {
+> +               lbr_idx = (tos - i) & mask;
+> +               rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
+> +               rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
+> +       }
+> +       task_ctx->lbr_stack_state = LBR_VALID;
+> +}
+> +
+> +
+>  void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+>  {
+> +       struct cpu_hw_events *cpuc;
+> +       struct x86_perf_task_context *task_ctx;
+> +
+>         if (!x86_pmu.lbr_nr)
+>                 return;
+>
+> +       cpuc = &__get_cpu_var(cpu_hw_events);
+> +       task_ctx = ctx ? ctx->task_ctx_data : NULL;
+> +
+> +
+>         /*
+>          * It is necessary to flush the stack on context switch. This happens
+>          * when the branch stack does not tag its entries with the pid of the
+>          * current task.
+>          */
+> -       if (sched_in)
+> -               intel_pmu_lbr_reset();
+> +       if (sched_in) {
+> +               if (!task_ctx ||
+> +                   !task_ctx->lbr_callstack_users ||
+> +                   task_ctx->lbr_stack_state != LBR_VALID)
+> +                       intel_pmu_lbr_reset();
+> +               else
+> +                       __intel_pmu_lbr_restore(task_ctx);
+> +       } else if (task_ctx) {
+> +               if (task_ctx->lbr_callstack_users &&
+> +                   task_ctx->lbr_stack_state != LBR_UNINIT)
+> +                       __intel_pmu_lbr_save(task_ctx);
+> +               else
+> +                       task_ctx->lbr_stack_state = LBR_NONE;
+> +       }
+>  }
+>
+There ought to be a better way of structuring this if/else. It is
+ugly.
 
-thx,
-
-Jason.
-
-> > The patches have been boot tested on Dove and compile-tested only
-> > for Kirkwood, Armada 370 and XP.
-> > 
-> > Sebastian Hesselbarth (4):
-> >   clk: mvebu: armada-370: maintain clock init order
-> >   clk: mvebu: armada-xp: maintain clock init order
-> >   clk: mvebu: dove: maintain clock init order
-> >   clk: mvebu: kirkwood: maintain clock init order
-> > 
-> >  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
-> >  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
-> >  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
-> >  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
-> >  4 files changed, 44 insertions(+), 50 deletions(-)
-> > 
-> > ---
-> > Cc: Mike Turquette <mturquette@linaro.org>
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> > Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > -- 
-> > 1.8.5.2
-> > 
+>  static inline bool branch_user_callstack(unsigned br_sel)
+> @@ -267,18 +331,6 @@ void intel_pmu_lbr_disable_all(void)
+>                 __intel_pmu_lbr_disable();
+>  }
+>
+> -/*
+> - * TOS = most recently recorded branch
+> - */
+> -static inline u64 intel_pmu_lbr_tos(void)
+> -{
+> -       u64 tos;
+> -
+> -       rdmsrl(x86_pmu.lbr_tos, tos);
+> -
+> -       return tos;
+> -}
+> -
+>  static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+>  {
+>         unsigned long mask = x86_pmu.lbr_nr - 1;
+> --
+> 1.8.4.2
+>
