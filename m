@@ -1,64 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaBEG5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 01:57:12 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:51950 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaBEG5K (ORCPT
+	id S1752363AbaBEHRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 02:17:01 -0500
+Received: from relay.parallels.com ([195.214.232.42]:57134 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaBEHRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 01:57:10 -0500
+	Wed, 5 Feb 2014 02:17:00 -0500
+Message-ID: <52F1E561.8020804@parallels.com>
+Date: Wed, 5 Feb 2014 11:16:49 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1391091027-31783-9-git-send-email-mathias.nyman@linux.intel.com>
-References: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
-	<1391091027-31783-9-git-send-email-mathias.nyman@linux.intel.com>
-Date: Tue, 4 Feb 2014 22:57:09 -0800
-Message-ID: <CAPcyv4gFtrDVTE6JCLFqG4SP2SQNALNwstaULcM67Zi5RrpJ5Q@mail.gmail.com>
-Subject: Re: [RFCv2 08/10] xhci: Add a global command queue
-From: Dan Williams <dan.j.williams@intel.com>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: USB list <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 2/3] mm: vmscan: get rid of DEFAULT_SEEKS and document
+ shrink_slab logic
+References: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com> <e204471853100447541ce36b198c0d45bf06379c.1389982079.git.vdavydov@parallels.com> <20140204135836.05c09c765073513e62edd174@linux-foundation.org>
+In-Reply-To: <20140204135836.05c09c765073513e62edd174@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.24.25.216]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 30, 2014 at 6:10 AM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
-> Create a list to store command structures, add a strucure to it every time
-> a command is submitted, and remove it from the list once we get a
-> command completion event matching the command.
+On 02/05/2014 01:58 AM, Andrew Morton wrote:
+> On Fri, 17 Jan 2014 23:25:30 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 >
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> ---
->  drivers/usb/host/xhci-mem.c  |  8 ++++++++
->  drivers/usb/host/xhci-ring.c | 13 ++++++++++++-
->  drivers/usb/host/xhci.h      |  1 +
->  3 files changed, 21 insertions(+), 1 deletion(-)
+>> Each shrinker must define the number of seeks it takes to recreate a
+>> shrinkable cache object. It is used to balance slab reclaim vs page
+>> reclaim: assuming it costs one seek to replace an LRU page, we age equal
+>> percentages of the LRU and ageable caches. So far, everything sounds
+>> clear, but the code implementing this behavior is rather confusing.
+>>
+>> First, there is the DEFAULT_SEEKS constant, which equals 2 for some
+>> reason:
+>>
+>>   #define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
+>>
+>> Most shrinkers define `seeks' to be equal to DEFAULT_SEEKS, some use
+>> DEFAULT_SEEKS*N, and there are a few that totally ignore it. What is
+>> peculiar, dcache and icache shrinkers have seeks=DEFAULT_SEEKS although
+>> recreating an inode typically requires one seek. Does this mean that we
+>> scan twice more inodes than we should?
+>>
+>> Actually, no. The point is that vmscan handles DEFAULT_SEEKS as if it
+>> were 1 (`delta' is the number of objects we are going to scan):
+>>
+>>   shrink_slab_node():
+>>     delta = (4 * nr_pages_scanned) / shrinker->seeks;
+>>     delta *= freeable;
+>>     do_div(delta, lru_pages + 1);
+>>
+>> i.e.
+>>
+>>             2 * nr_pages_scanned    DEFAULT_SEEKS
+>>     delta = -------------------- * --------------- * freeable;
+>>                  lru_pages         shrinker->seeks
+>>
+>> Here we double the number of pages scanned in order to take into account
+>> moves of on-LRU pages from the inactive list to the active list, which
+>> we do not count in nr_pages_scanned.
+>>
+>> That said, shrinker->seeks=DEFAULT_SEEKS*N is equivalent to N seeks, so
+>> why on the hell do we need it?
+>>
+>> IMO, the existence of the DEFAULT_SEEKS constant only causes confusion
+>> for both users of the shrinker interface and those trying to understand
+>> how slab shrinking works. The meaning of the `seeks' is perfectly
+>> explained by the comment to it and there is no need in any obscure
+>> constants for using it.
+>>
+>> That's why I'm sending this patch which completely removes DEFAULT_SEEKS
+>> and makes all shrinkers use N instead of N*DEFAULT_SEEKS, documenting
+>> the idea lying behind shrink_slab() in the meanwhile.
+>>
+>> Unfortunately, there are a few shrinkers that define seeks=1, which is
+>> impossible to transfer to the new interface intact, namely:
+>>
+>>   nfsd_reply_cache_shrinker
+>>   ttm_pool_manager::mm_shrink
+>>   ttm_pool_manager::mm_shrink
+>>   dm_bufio_client::shrinker
+>>
+>> It seems to me their authors were simply deceived by this mysterious
+>> DEFAULT_SEEKS constant, because I've found no documentation why these
+>> particular caches should be scanned more aggressively than the page and
+>> other slab caches. For them, this patch leaves seeks=1. Thus, it DOES
+>> introduce a functional change: the shrinkers enumerated above will be
+>> scanned twice less intensively than they are now. I do not think that
+>> this will cause any problems though.
+>>
+> um, yes.  DEFAULT_SEEKS is supposed to be "the number of seeks if you
+> don't know any better".  Using DEFAULT_SEEKS*n is just daft.
 >
-> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-> index 49b8bd0..7f8e4c3 100644
-> --- a/drivers/usb/host/xhci-mem.c
-> +++ b/drivers/usb/host/xhci-mem.c
-> @@ -1694,6 +1694,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
->  {
->         struct pci_dev  *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
->         struct xhci_cd  *cur_cd, *next_cd;
-> +       struct xhci_command *cur_cmd, *next_cmd;
->         int size;
->         int i, j, num_ports;
->
-> @@ -1722,6 +1723,12 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
->                 kfree(cur_cd);
->         }
->
-> +       list_for_each_entry_safe(cur_cmd, next_cmd,
-> +                       &xhci->cmd_list, cmd_list) {
-> +               list_del(&cur_cmd->cmd_list);
-> +               kfree(cur_cmd);
-> +       }
-> +
+> So why did I originally make DEFAULT_SEEKS=2?  Because I figured that to
+> recreate (say) an inode would require a seek to the inode data then a
+> seek back.  Is it legitimate to include the
+> seek-back-to-what-you-were-doing-before seek in the cost of an inode
+> reclaim?  I guess so...
 
-Aren't commands on the cmd_list currently being executed, or are there
-other guarantees that make sure all commands have terminated?
+Hmm, that explains this 2. Since we typically don't need to "seek back"
+when recreating a cache page, as they are usually read in bunches by
+readahead, the number of seeks to bring back a user page is 1, while the
+number of seeks to recreate an average inode is 2, right?
+
+Then to scan inodes and user pages so that they would generate
+approximately the same number of seeks, we should calculate the number
+of objects to scan as follows:
+
+nr_objects_to_scan = nr_pages_scanned / lru_pages *
+                                        nr_freeable_objects /
+shrinker->seeks
+
+where shrinker->seeks = DEFAULT_SEEKS = 2 for inodes. But currently we
+have four times that. I can explain why we should multiply this by 2 -
+we do not count pages moving from active to inactive lrus in
+nr_pages_scanned, and 2*nr_pages_scanned can be a good approximation for
+that - but I have no idea why we multiply it by 4...
+
+Thanks.
+
+>
+> If a filesystem were to require a seek to the superblock for every
+> inode read (ok, bad example) then the cost of reestablishing that inode
+> would be 3.
+>
+> All that being said, why did you go through and halve everything?  The
+> cost of reestablishing an ext2 inode should be "2 seeks", but the patch
+> makes it "1".
+>
+
