@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526AbaBEUov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:44:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55064 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaBEUGW (ORCPT
+	id S1755891AbaBEUot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:44:49 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48304 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881AbaBEUGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 15:06:22 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Samu Kallio <samu.kallio@aberdeencloud.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+CC: Andy Honig <ahonig@google.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 112/213] x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
-Date: Wed, 5 Feb 2014 15:01:07 -0500
-Message-ID: <1391630568-49251-113-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 115/213] KVM: x86: fix for buffer overflow in handling of MSR_KVM_SYSTEM_TIME (CVE-2013-1796)
+Date: Wed, 5 Feb 2014 15:01:10 -0500
+Message-ID: <1391630568-49251-116-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Samu Kallio <samu.kallio@aberdeencloud.com>
+From: Andy Honig <ahonig@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,88 +31,41 @@ From: Samu Kallio <samu.kallio@aberdeencloud.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1160c2779b826c6f5c08e5cc542de58fd1f667d5 upstream.
+commit c300aa64ddf57d9c5d9c898a64b36877345dd4a9 upstream.
 
-In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
-when lazy MMU updates are enabled, because set_pgd effects are being
-deferred.
+If the guest sets the GPA of the time_page so that the request to update the
+time straddles a page then KVM will write onto an incorrect page.  The
+write is done byusing kmap atomic to get a pointer to the page for the time
+structure and then performing a memcpy to that page starting at an offset
+that the guest controls.  Well behaved guests always provide a 32-byte aligned
+address, however a malicious guest could use this to corrupt host kernel
+memory.
 
-One instance of this problem is during process mm cleanup with memory
-cgroups enabled. The chain of events is as follows:
+Tested: Tested against kvmclock unit test.
 
-- zap_pte_range enables lazy MMU updates
-- zap_pte_range eventually calls mem_cgroup_charge_statistics,
-  which accesses the vmalloc'd mem_cgroup per-cpu stat area
-- vmalloc_fault is triggered which tries to sync the corresponding
-  PGD entry with set_pgd, but the update is deferred
-- vmalloc_fault oopses due to a mismatch in the PUD entries
-
-The OOPs usually looks as so:
-
-------------[ cut here ]------------
-kernel BUG at arch/x86/mm/fault.c:396!
-invalid opcode: 0000 [#1] SMP
-.. snip ..
-CPU 1
-Pid: 10866, comm: httpd Not tainted 3.6.10-4.fc18.x86_64 #1
-RIP: e030:[<ffffffff816271bf>]  [<ffffffff816271bf>] vmalloc_fault+0x11f/0x208
-.. snip ..
-Call Trace:
- [<ffffffff81627759>] do_page_fault+0x399/0x4b0
- [<ffffffff81004f4c>] ? xen_mc_extend_args+0xec/0x110
- [<ffffffff81624065>] page_fault+0x25/0x30
- [<ffffffff81184d03>] ? mem_cgroup_charge_statistics.isra.13+0x13/0x50
- [<ffffffff81186f78>] __mem_cgroup_uncharge_common+0xd8/0x350
- [<ffffffff8118aac7>] mem_cgroup_uncharge_page+0x57/0x60
- [<ffffffff8115fbc0>] page_remove_rmap+0xe0/0x150
- [<ffffffff8115311a>] ? vm_normal_page+0x1a/0x80
- [<ffffffff81153e61>] unmap_single_vma+0x531/0x870
- [<ffffffff81154962>] unmap_vmas+0x52/0xa0
- [<ffffffff81007442>] ? pte_mfn_to_pfn+0x72/0x100
- [<ffffffff8115c8f8>] exit_mmap+0x98/0x170
- [<ffffffff810050d9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
- [<ffffffff81059ce3>] mmput+0x83/0xf0
- [<ffffffff810624c4>] exit_mm+0x104/0x130
- [<ffffffff8106264a>] do_exit+0x15a/0x8c0
- [<ffffffff810630ff>] do_group_exit+0x3f/0xa0
- [<ffffffff81063177>] sys_exit_group+0x17/0x20
- [<ffffffff8162bae9>] system_call_fastpath+0x16/0x1b
-
-Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
-changes visible to the consistency checks.
-
-RedHat-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=914737
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Reported-and-Tested-by: Krishna Raman <kraman@redhat.com>
-Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-1-git-send-email-konrad.wilk@oracle.com
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/mm/fault.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 544ed251a40c..7c96106039a1 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -379,10 +379,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 	if (pgd_none(*pgd_ref))
- 		return -1;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c1e586d82c1d..65f9c0c45312 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1152,6 +1152,11 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		/* ...but clean it before doing the actual write */
+ 		vcpu->arch.time_offset = data & ~(PAGE_MASK | 1);
  
--	if (pgd_none(*pgd))
-+	if (pgd_none(*pgd)) {
- 		set_pgd(pgd, *pgd_ref);
--	else
-+		arch_flush_lazy_mmu_mode();
-+	} else {
- 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-+	}
++		/* Check that the address is 32-byte aligned. */
++		if (vcpu->arch.time_offset &
++				(sizeof(struct pvclock_vcpu_time_info) - 1))
++			break;
++
+ 		vcpu->arch.time_page =
+ 				gfn_to_page(vcpu->kvm, data >> PAGE_SHIFT);
  
- 	/*
- 	 * Below here mismatches are bugs because these lower tables
 -- 
 1.8.5.2
 
