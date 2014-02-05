@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaBEUO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:14:29 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39387 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755467AbaBEUO0 (ORCPT
+	id S1755711AbaBEUPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:15:01 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55618 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338AbaBEUIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:14:26 -0500
-Message-ID: <52F29B9D.2090804@wwwdotorg.org>
-Date: Wed, 05 Feb 2014 13:14:21 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 15:08:04 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 197/213] vfs: missed source of ->f_pos races
+Date: Wed, 5 Feb 2014 15:02:32 -0500
+Message-ID: <1391630568-49251-198-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: Andrew Chew <achew@nvidia.com>, daniel.lezcano@linaro.org,
-        tglx@linutronix.de, thierry.reding@gmail.com, rob@landley.net,
-        grant.likely@linaro.org, robh+dt@kernel.org, abrestic@chromium.org,
-        dgreid@chromium.org, katierh@chromium.org
-CC: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] watchdog: Add tegra watchdog
-References: <1391473055-3158-1-git-send-email-achew@nvidia.com> <1391473055-3158-4-git-send-email-achew@nvidia.com>
-In-Reply-To: <1391473055-3158-4-git-send-email-achew@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 05:17 PM, Andrew Chew wrote:
-> Add a driver for the hardware watchdogs in NVIDIA Tegra SoCs (tegra30 and
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-s/tegra30/Tegra30/
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-> later).  This driver will configure one watchdog timer that will reset the
-> system in the case of a watchdog timeout.
-> 
-> This driver binds to the nvidia,tegra30-timer device node and gets its
-> register base from there.
+commit 0e665d5d1125f9f4ccff56a75e814f10f88861a2 upstream.
 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+compat_sys_{read,write}v() need the same "pass a copy of file->f_pos" thing
+as sys_{read,write}{,v}().
 
-> +config TEGRA_WATCHDOG
-> +	tristate "Tegra watchdog"
-> +	depends on ARCH_TEGRA
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ fs/compat.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-|| COMPILE_TEST ?
+diff --git a/fs/compat.c b/fs/compat.c
+index 633e63c32aa7..388555d404bf 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1231,11 +1231,14 @@ compat_sys_readv(unsigned long fd, const struct compat_iovec __user *vec,
+ 	struct file *file;
+ 	int fput_needed;
+ 	ssize_t ret;
++	loff_t pos;
+ 
+ 	file = fget_light(fd, &fput_needed);
+ 	if (!file)
+ 		return -EBADF;
+-	ret = compat_readv(file, vec, vlen, &file->f_pos);
++	pos = file->f_pos;
++	ret = compat_readv(file, vec, vlen, &pos);
++	file->f_pos = pos;
+ 	fput_light(file, fput_needed);
+ 	return ret;
+ }
+@@ -1288,11 +1291,14 @@ compat_sys_writev(unsigned long fd, const struct compat_iovec __user *vec,
+ 	struct file *file;
+ 	int fput_needed;
+ 	ssize_t ret;
++	loff_t pos;
+ 
+ 	file = fget_light(fd, &fput_needed);
+ 	if (!file)
+ 		return -EBADF;
+-	ret = compat_writev(file, vec, vlen, &file->f_pos);
++	pos = file->f_pos;
++	ret = compat_writev(file, vec, vlen, &pos);
++	file->f_pos = pos;
+ 	fput_light(file, fput_needed);
+ 	return ret;
+ }
+-- 
+1.8.5.2
 
-> diff --git a/drivers/watchdog/tegra_wdt.c b/drivers/watchdog/tegra_wdt.c
-
-> +static int tegra_wdt_probe(struct platform_device *pdev)
-
-> +	/* This is the timer base. */
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-...
-> +	mem = devm_request_mem_region(&pdev->dev, res->start,
-> +				      resource_size(res),
-> +				      pdev->name);
-> +	if (!mem) {
-...
-> +	regs = devm_ioremap(&pdev->dev, mem->start,
-> +			    resource_size(mem));
-> +	if (!regs) {
-...
-
-I forget exactly which of those, but I think at least one/some of those
-don't need to be error-checked, since the later functions will detect an
-error input, and return an appropriate error code, so they can be
-chained together while only error-checking the final result.
-
-> +static int tegra_wdt_remove(struct platform_device *pdev)
-
-> +	platform_set_drvdata(pdev, NULL);
-
-There's no need to do that; the value of drvdata is irrelevant when the
-device isn't probed, so there's no need for it to be NULL.
-
-> +static struct platform_driver tegra_wdt_driver = {
-> +	.probe		= tegra_wdt_probe,
-> +	.remove		= tegra_wdt_remove,
-> +#ifdef CONFIG_PM
-> +	.suspend	= tegra_wdt_suspend,
-> +	.resume		= tegra_wdt_resume,
-> +#endif
-
-I think for suspend/resume, you'd usually set it up like:
-
-static const struct dev_pm_ops tegra20_i2s_pm_ops = {
-        SET_RUNTIME_PM_OPS(tegra20_i2s_runtime_suspend,
-                           tegra20_i2s_runtime_resume, NULL)
-};
-
-static struct platform_driver tegra20_i2s_driver = {
-        .driver = {
-...
-               .pm = &tegra20_i2s_pm_ops,
-        },
-...
-};
-
-> +	.driver		= {
-> +		.owner	= THIS_MODULE,
-> +		.name	= "tegra-wdt",
-> +		.of_match_table = tegra_wdt_of_match,
-> +	},
-> +};
-> +
-> +module_platform_driver(tegra_wdt_driver);
-
-No need for the blank line before module_platform_driver().
-
-> +MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-> +MODULE_ALIAS("platform:tegra-wdt");
-
-You don't need at least that second alias; everything binds to the
-MODULE_DEVICE_TABLE() now with DT.
