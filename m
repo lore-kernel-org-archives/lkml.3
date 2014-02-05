@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaBEUGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:06:31 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48327 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914AbaBEUG1 (ORCPT
+	id S1753300AbaBEUGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:06:53 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55166 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240AbaBEUGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:27 -0500
+	Wed, 5 Feb 2014 15:06:45 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+CC: Anderson Lizardo <anderson.lizardo@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 119/213] serial: 8250, increase PASS_LIMIT
-Date: Wed, 5 Feb 2014 15:01:14 -0500
-Message-ID: <1391630568-49251-120-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 128/213] Bluetooth: Fix incorrect strncpy() in hidp_setup_hid()
+Date: Wed, 5 Feb 2014 15:01:23 -0500
+Message-ID: <1391630568-49251-129-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
+From: Anderson Lizardo <anderson.lizardo@openbossa.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,37 +32,42 @@ From: Jiri Slaby <jirislaby@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e7328ae1848966181a7ac47e8ae6cddbd2cf55f3 upstream.
+commit 0a9ab9bdb3e891762553f667066190c1d22ad62b upstream.
 
-With virtual machines like qemu, it's pretty common to see "too much
-work for irq4" messages nowadays. This happens when a bunch of output
-is printed on the emulated serial console. This is caused by too low
-PASS_LIMIT. When ISR loops more than the limit, it spits the message.
+The length parameter should be sizeof(req->name) - 1 because there is no
+guarantee that string provided by userspace will contain the trailing
+'\0'.
 
-I've been using a kernel with doubled the limit and I couldn't see no
-problems. Maybe it's time to get rid of the message now?
+Can be easily reproduced by manually setting req->name to 128 non-zero
+bytes prior to ioctl(HIDPCONNADD) and checking the device name setup on
+input subsystem:
 
-Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-[PG: drivers/tty/serial/8250.c ---> drivers/serial/8250.c in 2.6.34]
+$ cat /sys/devices/pnp0/00\:04/tty/ttyS0/hci0/hci0\:1/input8/name
+AAAAAA[...]AAAAAAAAf0:af:f0:af:f0:af
+
+("f0:af:f0:af:f0:af" is the device bluetooth address, taken from "phys"
+field in struct hid_device due to overflow.)
+
+Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/serial/8250.c | 2 +-
+ net/bluetooth/hidp/core.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index c1d79a233476..848894773c64 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -82,7 +82,7 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
- #define DEBUG_INTR(fmt...)	do { } while (0)
- #endif
+diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+index 280529ad9274..a01808691565 100644
+--- a/net/bluetooth/hidp/core.c
++++ b/net/bluetooth/hidp/core.c
+@@ -790,7 +790,7 @@ static int hidp_setup_hid(struct hidp_session *session,
+ 	hid->version = req->version;
+ 	hid->country = req->country;
  
--#define PASS_LIMIT	256
-+#define PASS_LIMIT	512
- 
- #define BOTH_EMPTY 	(UART_LSR_TEMT | UART_LSR_THRE)
+-	strncpy(hid->name, req->name, 128);
++	strncpy(hid->name, req->name, sizeof(req->name) - 1);
+ 	strncpy(hid->phys, batostr(&src), 64);
+ 	strncpy(hid->uniq, batostr(&dst), 64);
  
 -- 
 1.8.5.2
