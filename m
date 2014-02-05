@@ -1,101 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbaBEVgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:36:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48813 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754422AbaBEVdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:33:37 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Frank Praznik <frank.praznik@oh.rr.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/9] HID: HIDp: remove hidp_hidinput_event
-Date: Wed,  5 Feb 2014 16:33:18 -0500
-Message-Id: <1391636004-29354-4-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1391636004-29354-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1755810AbaBEVgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:36:24 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50957 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755776AbaBEVgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 16:36:17 -0500
+Date: Wed, 5 Feb 2014 13:35:39 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
+        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
+ free_partial()
+In-Reply-To: <20140205163138.51eb8b31@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1402051333380.16853@chino.kir.corp.google.com>
+References: <52F1F25F.20402@parallels.com> <1391588133-15469-1-git-send-email-vdavydov@parallels.com> <20140205195837.GA6857@home.goodmis.org> <alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com> <20140205155840.43d6b4ad@gandalf.local.home>
+ <alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com> <20140205161952.781e3a0e@gandalf.local.home> <alpine.DEB.2.02.1402051324370.14325@chino.kir.corp.google.com> <20140205163138.51eb8b31@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hidp uses its own ->hidinput_input_event() instead of the generic binding
-in hid-input.
-Moving the handling of LEDs towards hidp_hidinput_event() allows two things:
-- remove hidinput_input_event definitively from struct hid_device
-- hidraw user space programs can also set the LEDs
+On Wed, 5 Feb 2014, Steven Rostedt wrote:
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- net/bluetooth/hidp/core.c | 46 ----------------------------------------------
- 1 file changed, 46 deletions(-)
+> > Looks like you've got something prepared already!  Mind sending it to 
+> > Pekka as a patch based on linux-next?
+> 
+> Sure, and there's another lockdep splat that I'm working on too.
+> 
 
-diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-index b062cee..469e61b 100644
---- a/net/bluetooth/hidp/core.c
-+++ b/net/bluetooth/hidp/core.c
-@@ -223,51 +223,6 @@ static void hidp_input_report(struct hidp_session *session, struct sk_buff *skb)
- 	input_sync(dev);
- }
- 
--static int hidp_send_report(struct hidp_session *session, struct hid_report *report)
--{
--	unsigned char hdr;
--	u8 *buf;
--	int rsize, ret;
--
--	buf = hid_alloc_report_buf(report, GFP_ATOMIC);
--	if (!buf)
--		return -EIO;
--
--	hid_output_report(report, buf);
--	hdr = HIDP_TRANS_DATA | HIDP_DATA_RTYPE_OUPUT;
--
--	rsize = ((report->size - 1) >> 3) + 1 + (report->id > 0);
--	ret = hidp_send_intr_message(session, hdr, buf, rsize);
--
--	kfree(buf);
--	return ret;
--}
--
--static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
--			       unsigned int code, int value)
--{
--	struct hid_device *hid = input_get_drvdata(dev);
--	struct hidp_session *session = hid->driver_data;
--	struct hid_field *field;
--	int offset;
--
--	BT_DBG("session %p type %d code %d value %d",
--	       session, type, code, value);
--
--	if (type != EV_LED)
--		return -1;
--
--	offset = hidinput_find_field(hid, type, code, &field);
--	if (offset == -1) {
--		hid_warn(dev, "event field not found\n");
--		return -1;
--	}
--
--	hid_set_field(field, offset, value);
--
--	return hidp_send_report(session, field->report);
--}
--
- static int hidp_get_raw_report(struct hid_device *hid,
- 		unsigned char report_number,
- 		unsigned char *data, size_t count,
-@@ -817,7 +772,6 @@ static struct hid_ll_driver hidp_hid_driver = {
- 	.close = hidp_close,
- 	.raw_request = hidp_raw_request,
- 	.output_report = hidp_output_report,
--	.hidinput_input_event = hidp_hidinput_event,
- };
- 
- /* This function sets up the hid device. It does not add it
--- 
-1.8.3.1
+If it's coming from slub, make sure you've applied 
+http://marc.info/?l=linux-kernel&m=139147105027693 first which fixes yet 
+another slub lockdep issue related to the lockdep assertion.  It's not in 
+linux-next yet because it went through -mm instead of Pekka's tree.
 
+> But first, I need to shovel my driveway yet again (We got something
+> like 18 inches of snow in the last 24 hours).
+> 
+
+Fun!  It's 33 F here today but nobody cares because we have a Super Bowl 
+parade in town!
