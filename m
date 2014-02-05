@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaBENxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:53:22 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34798 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751480AbaBENxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:53:21 -0500
-Message-ID: <52F2424A.609@hurleysoftware.com>
-Date: Wed, 05 Feb 2014 08:53:14 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752249AbaBENxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:53:44 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:34543 "EHLO kolab.o2s.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751785AbaBENxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:53:43 -0500
+Subject: [PATCH v3 0/7] ARM: sunxi: Add driver for SD/MMC hosts found on
+ allwinner sunxi SOCs
+To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
+Date: Wed, 05 Feb 2014 14:53:31 +0100
+Message-ID: <20140205134741.3027.50207.stgit@dizzy-6.o2s.ch>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>, Hannes Reinecke <hare@suse.de>
-CC: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Kay Sievers <kay@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [systemd-devel] [PATCH] tty: Set correct tty name in 'active'
- sysfs attribute
-References: <1391595106-86957-1-git-send-email-hare@suse.de> <CANq1E4QM-SwAhBmgGgmKjAHaKW-QZ7GPBkKyrv_=ek1CFmRWEw@mail.gmail.com>
-In-Reply-To: <CANq1E4QM-SwAhBmgGgmKjAHaKW-QZ7GPBkKyrv_=ek1CFmRWEw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 07:53 AM, David Herrmann wrote:
-> Hi
->
-> On Wed, Feb 5, 2014 at 11:11 AM, Hannes Reinecke <hare@suse.de> wrote:
->> The 'active' sysfs attribute should refer to the currently
->> active tty devices the console is running on, not the currently
->> active console.
->> The console structure doesn't refer to any device in sysfs,
->> only the tty the console is running on has.
->> So we need to print out the tty names in 'active', not
->> the console names.
->>
->> Cc: Lennart Poettering <lennart@poettering.net>
->> Cc: Kay Sievers <kay@vrfy.org>
->> Signed-off-by: Werner Fink <werner@suse.de>
->> Signed-off-by: Hannes Reinecke <hare@suse.de>
->> ---
->>   drivers/tty/tty_io.c | 14 ++++++++++++--
->>   1 file changed, 12 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
->> index c74a00a..17db8ca 100644
->> --- a/drivers/tty/tty_io.c
->> +++ b/drivers/tty/tty_io.c
->> @@ -3545,9 +3545,19 @@ static ssize_t show_cons_active(struct device *dev,
->>                  if (i >= ARRAY_SIZE(cs))
->>                          break;
->>          }
->> -       while (i--)
->> +       while (i--) {
->> +               const struct tty_driver *driver;
->> +               const char *name = cs[i]->name;
->> +               int index = cs[i]->index;
->> +
->> +               driver = cs[i]->device(cs[i], &index);
->> +               if (driver) {
->> +                       index += driver->name_base;
->> +                       name = driver->name;
->> +               }
->>                  count += sprintf(buf + count, "%s%d%c",
->> -                                cs[i]->name, cs[i]->index, i ? ' ':'\n');
->> +                                name, index, i ? ' ':'\n');
->> +       }
->
-> Nice catch and indeed, systemd already relies on these names to be
-> identical to their char-dev name. Fortunately, VTs and most serial
-> devices register the console with the same name as the TTY, so we're
-> fine.
+Hello
+The following patchset adds support for the SD/MMC host found in the Allwinner SoCs.
+It contains all the necessary modifications for clock environment and also the device
+tree script modification which add it to all the boards using it.
+The clock environment function needed for phase offset configuration has
+been proposed and implemented by Emilio.
+A lot of work and cleanup has been done by Hans de Goede. Special thanks to him!
+This patchset is the third attempt to send this driver upstream.
+It addresses special remarks about coding style and API usage and incorporates proposed
+corrections into the previous commits.
+It also includes the patch of Emilios, I forgot to include last time.
 
-What device did this trip over?
+best regards
+David
 
-Also, this file is not private to systemd. Maybe these changes should
-be forked into a different sysfs attribute, "active_devices"?
+---
 
-Regards,
-Peter Hurley
+David Lanzendörfer (4):
+      ARM: sunxi: Add driver for SD/MMC hosts found on Allwinner sunxi SoCs
+      ARM: dts: sun7i: Add support for mmc
+      ARM: dts: sun4i: Add support for mmc
+      ARM: dts: sun5i: Add support for mmc
+
+Emilio López (2):
+      clk: sunxi: factors: automatic reparenting support
+      clk: sunxi: Implement MMC phase control
+
+Hans de Goede (1):
+      ARM: sunxi: clk: export clk_sunxi_mmc_phase_control
+
+
+ arch/arm/boot/dts/sun4i-a10-a1000.dts            |    8 
+ arch/arm/boot/dts/sun4i-a10-cubieboard.dts       |    8 
+ arch/arm/boot/dts/sun4i-a10.dtsi                 |   54 +
+ arch/arm/boot/dts/sun5i-a10s-olinuxino-micro.dts |   30 +
+ arch/arm/boot/dts/sun5i-a10s.dtsi                |   44 +
+ arch/arm/boot/dts/sun5i-a13-olinuxino-micro.dts  |   15 
+ arch/arm/boot/dts/sun5i-a13-olinuxino.dts        |   15 
+ arch/arm/boot/dts/sun5i-a13.dtsi                 |   37 +
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts      |    8 
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts       |    8 
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts  |   23 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                 |   61 ++
+ drivers/clk/sunxi/clk-factors.c                  |   36 +
+ drivers/clk/sunxi/clk-sunxi.c                    |   35 +
+ drivers/mmc/host/Kconfig                         |    7 
+ drivers/mmc/host/Makefile                        |    2 
+ drivers/mmc/host/sunxi-mci.c                     |  859 ++++++++++++++++++++++
+ drivers/mmc/host/sunxi-mci.h                     |  239 ++++++
+ include/linux/clk/sunxi.h                        |   22 +
+ 19 files changed, 1511 insertions(+)
+ create mode 100644 drivers/mmc/host/sunxi-mci.c
+ create mode 100644 drivers/mmc/host/sunxi-mci.h
+ create mode 100644 include/linux/clk/sunxi.h
+
+-- 
+Signature
