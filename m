@@ -1,144 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044AbaBESNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:13:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38405 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaBESN2 (ORCPT
+	id S1753397AbaBESS3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:18:29 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36395 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431AbaBESS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:13:28 -0500
-Message-ID: <52F27F1C.10601@oracle.com>
-Date: Wed, 05 Feb 2014 13:12:44 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 13:18:27 -0500
+Date: Wed, 5 Feb 2014 18:18:17 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20140205181817.GG32298@sirena.org.uk>
+References: <1391493268-3242-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <20140204110531.GR22609@sirena.org.uk>
+ <CAJAp7OjCnJ=P9Gi20=D9gybREiSaqd1CaQ0K=9fGbCzU1gTFLw@mail.gmail.com>
+ <20140204181831.GP22609@sirena.org.uk>
+ <CAJAp7Ohn3ch2nK_S8j9ieRBzNeyt6OJmumEhRXXykB9RgMJsQg@mail.gmail.com>
+ <20140204200018.GZ22609@sirena.org.uk>
+ <CAJAp7OjB-cJbLpdWo0RFJZefCKcCiKc8KgrjkBobJnddv4MSWA@mail.gmail.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in do_huge_pmd_wp_page
-References: <51559150.3040407@oracle.com> <20130410080202.GB21292@blaptop> <5166CEDD.9050301@oracle.com> <20130411151323.89D40E0085@blue.fi.intel.com> <5166D355.2060103@oracle.com> <20130424154607.60e9b9895539eb5668d2f505@linux-foundation.org> <5179CF8F.7000702@oracle.com> <20130426020101.GA21162@redhat.com> <52F05827.1040401@oracle.com> <alpine.LSU.2.11.1402031949450.29601@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1402031949450.29601@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8S1fMsFYqgBC+BN/"
+Content-Disposition: inline
+In-Reply-To: <CAJAp7OjB-cJbLpdWo0RFJZefCKcCiKc8KgrjkBobJnddv4MSWA@mail.gmail.com>
+X-Cookie: Take it easy, we're in a hurry.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Make regulator object reflect
+ configured voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2014 10:59 PM, Hugh Dickins wrote:
-> On Mon, 3 Feb 2014, Sasha Levin wrote:
->> On 04/25/2013 10:01 PM, Dave Jones wrote:
->>> On Thu, Apr 25, 2013 at 08:51:27PM -0400, Sasha Levin wrote:
->>>    > On 04/24/2013 06:46 PM, Andrew Morton wrote:
->>>    > > Guys, did this get fixed?
->>>    >
->>>    > I've stopped seeing that during fuzzing, so I guess that it got fixed
->>> somehow...
->>>
->>> We've had reports of users hitting this in 3.8
->>>
->>> eg:
->>> https://bugzilla.redhat.com/show_bug.cgi?id=947985
->>> https://bugzilla.redhat.com/show_bug.cgi?id=956730
->>>
->>> I'm sure there are other reports of it too.
->>>
->>> Would be good if we can figure out what fixed it (if it is actually fixed)
->>> for backporting to stable
->>
->> It's been a while (7 months?), but this one is back...
->>
->> Just hit it again with today's -next:
->>
->> [  762.701278] BUG: unable to handle kernel paging request at
->> ffff88009eae6000
->> [  762.702462] IP: [<ffffffff81ae8455>] copy_page_rep+0x5/0x10
->> [  762.703369] PGD 84bb067 PUD 22fa81067 PMD 22f98b067 PTE 800000009eae6060
->> [  762.704411] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> [  762.705873] Dumping ftrace buffer:
->> [  762.707606]    (ftrace buffer empty)
->> [  762.708311] Modules linked in:
->> [  762.708762] CPU: 16 PID: 17920 Comm: trinity-c16 Tainted: G        W
->> 3.13.0-next-2
->> 0140203-sasha-00007-gf4985e2 #23
->> [  762.710135] task: ffff8801ac358000 ti: ffff880199234000 task.ti:
->> ffff880199234000
->> [  762.710135] RIP: 0010:[<ffffffff81ae8455>]  [<ffffffff81ae8455>]
->> copy_page_rep+0x5/0x
->> 10
->> [  762.710135] RSP: 0018:ffff880199235c90  EFLAGS: 00010286
->> [  762.710135] RAX: 0000000080000002 RBX: 00000000056db980 RCX:
->> 0000000000000200
->> [  762.710135] RDX: ffff8801ac358000 RSI: ffff88009eae6000 RDI:
->> ffff88015b6e6000
->> [  762.710135] RBP: ffff880199235cd8 R08: 0000000000000000 R09:
->> 0000000000000000
->> [  762.710135] R10: 0000000000000001 R11: 0000000000000000 R12:
->> 00000000027ab980
->> [  762.710135] R13: 0000000000000200 R14: 00000000000000e6 R15:
->> ffff880000000000
->> [  762.710135] FS:  00007fb0804e1700(0000) GS:ffff88003da00000(0000)
->> knlGS:0000000000000
->> 000
->> [  762.710135] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [  762.710135] CR2: ffff88009eae6000 CR3: 0000000199225000 CR4:
->> 00000000000006e0
->> [  762.710135] Stack:
->> [  762.710135]  ffffffff81298995 ffff8801a841ae00 ffff88003d084520
->> ffff880199227090
->> [  762.710135]  800000009ea008e5 ffff8801a841ae00 ffffea00027a8000
->> ffff880199227090
->> [  762.710135]  ffffea00056d8000 ffff880199235d58 ffffffff812d7260
->> ffff880199235cf8
->> [  762.710135] Call Trace:
->> [  762.710135]  [<ffffffff81298995>] ? copy_user_huge_page+0x1a5/0x210
->> [  762.710135]  [<ffffffff812d7260>] do_huge_pmd_wp_page+0x3d0/0x650
->> [  762.710135]  [<ffffffff811a308e>] ? put_lock_stats+0xe/0x30
->> [  762.710135]  [<ffffffff8129b511>] __handle_mm_fault+0x2b1/0x3d0
->> [  762.710135]  [<ffffffff8129b763>] handle_mm_fault+0x133/0x1c0
->> [  762.710135]  [<ffffffff8129bcf8>] __get_user_pages+0x438/0x630
->> [  762.710135]  [<ffffffff811a308e>] ? put_lock_stats+0xe/0x30
->> [  762.710135]  [<ffffffff8129cfc4>] __mlock_vma_pages_range+0xd4/0xe0
->> [  762.710135]  [<ffffffff8129d0e0>] __mm_populate+0x110/0x190
->> [  762.710135]  [<ffffffff8129dcd0>] SyS_mlockall+0x160/0x1b0
->> [  762.710135]  [<ffffffff84450650>] tracesys+0xdd/0xe2
->> [  762.710135] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08
->> 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30 c0 c3 b9 00 02 00 00 <f3>
->> 48 a5 c3 0f 1f 80 00
->> 00 00 00 eb ee 66 66 66 90 66 66 66 90
->> [  762.710135] RIP  [<ffffffff81ae8455>] copy_page_rep+0x5/0x10
->> [  762.710135]  RSP <ffff880199235c90>
->> [  762.710135] CR2: ffff88009eae6000
->
-> Here's what I suggested about that one in eecc1e426d68
-> "thp: fix copy_page_rep GPF by testing is_huge_zero_pmd once only":
-> Note: this is not the same issue as trinity's DEBUG_PAGEALLOC BUG
-> in copy_page_rep with RSI: ffff88009c422000, reported by Sasha Levin
-> in https://lkml.org/lkml/2013/3/29/103.  I believe that one is due
-> to the source page being split, and a tail page freed, while copy
-> is in progress; and not a problem without DEBUG_PAGEALLOC, since
-> the pmd_same check will prevent a miscopy from being made visible.
->
-> It could be fixed by additional locking, or by taking an additional
-> reference on every tail page, in the DEBUG_PAGEALLOC case (we wouldn't
-> want to add to the overhead in the normal case).  I didn't feel very
-> motivated to uglify the code in that way just for DEBUG_PAGEALLOC and
-> trinity: if it only comes up once in seven months, I'm inclined to
-> live with it myself, but you may have a different perspective.
 
-Either something changed in the kernel or in trinity, but I'm now hitting it 3-4 times a day.
+--8S1fMsFYqgBC+BN/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I've been trying to look at the code to understand the issue you've described, but I can't pinpoint 
-the exact location where that happen.
+On Wed, Feb 05, 2014 at 10:00:15AM -0800, Bjorn Andersson wrote:
+> On Tue, Feb 4, 2014 at 12:00 PM, Mark Brown <broonie@kernel.org> wrote:
 
-Could you please point me to the relevant code sections?
+> > So we should be changing the code to allow a set_voltage() that sets the
+> > voltage to the existing voltage regardless of constraints allowing a
+> > change then - that's what the underlying issue is.  Your change wouldn't
+> > cover the case where the hardware defualt is being used for example.
 
+> Makes sense, but the only thing we could check for would be if min_uV
+> == max_uV == current-voltage. That would work out fine for this use
+> case, but do you think it would be good enough?
 
-Thanks,
-Sasha
+It should be fine to check for min_uV <= current-voltage <= max_uV
+instead if CHANGE_VOLTAGE isn't available, so long as the existing
+setting is in the range it's fine.
 
+> The best thing I've come up with then is to add the following check in
+> regulator_set_voltage().
+
+> if (min_uV == max_uV && _regulator_get_voltage(rdev) == min_uV)
+>     goto out;
+
+> Would this be acceptable? It's achieving the same thing as my patch,
+> is more robust and covers the case of setting the voltage to the hw
+> default value.
+
+That sort of thing yes, just short circuit out the main logic in this
+case.
+
+--8S1fMsFYqgBC+BN/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS8oBmAAoJELSic+t+oim95VEP/RuLY4SSxHRs3qZJOmBPXaeA
+k0q8XRkmVV4Iq27mCCrvq3/Qrl5fD9KWpEcmBN+86o5fLkkSk4Kt4y91gE0UDFrz
+RPyoEWh00AZiRVvvwN18lFoG4UY1/ZKWImSr91X/KNKsOFt8YsTXp1AroVkDAogS
+nHXEyGH760oV5d5wnqW+qDCfzX2CEFLLIhysx9aCYiZLX3TH5OYw4PYwRnQuaoV2
+p3iEl7joNvV2t3mMRMds6gX90BByskh/yAS1YTUB5nqseu1kOGQWT41hpHlH+mVG
+pAqZkd3BShNe97UkA56xtjpBpF2gTevLgWfv6Q4fmgRhyA+rkLRRHHkQm+u87glq
+ebxjFutLj6sehVSIme1C6Aspxb7zFeJB+2MqVOeup+g8U9skD2L7qjCBXNVMb5xQ
++516TbsAK/ZH3f6xJtS7Qu+qFcend7edMa7I+ROr9+N72sdOQayYYxKy25jAhWkJ
+newSq2Gog1jq5ROtis7Vw0aIm2xMjTtRnGIsLJtofRp5xJxd62gh1yJ/d6LWBUrr
+VrTtp0YX4iooWckgMmZkeCWDdQl3bm9gaYHqbEiGBZ8bb4BqlY51J7qrpaqJtyS9
+RzsEO+3vVLB37Yt7mZqQGSDL4iYxW4Ct+B1dk9mefNtdXs5tPjcl6RBKes/lkKL/
+EFudpLklPD+ulQpzlT2s
+=NzqC
+-----END PGP SIGNATURE-----
+
+--8S1fMsFYqgBC+BN/--
