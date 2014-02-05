@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaBEALP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:11:15 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:50042 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648AbaBEAJO (ORCPT
+	id S933456AbaBEANY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:13:24 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47582 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164AbaBEANX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:09:14 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Hackmann <ghackmann@google.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 1/7] staging: sw_sync: Add stubs for kernels without CONFIG_SW_SYNC
-Date: Tue,  4 Feb 2014 16:08:34 -0800
-Message-Id: <1391558920-31590-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
-References: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
+	Tue, 4 Feb 2014 19:13:23 -0500
+Date: Tue, 4 Feb 2014 16:13:20 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, hugetlb: mark some bootstrap functions as __init
+Message-ID: <alpine.DEB.2.02.1402041612120.14962@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Hackmann <ghackmann@google.com>
+Both prep_compound_huge_page() and prep_compound_gigantic_page() are only
+called at bootstrap and can be marked as __init.
 
-Add stubs for kernels without CONFIG_SW_SYNC
+The __SetPageTail(page) in prep_compound_gigantic_page() happening before
+page->first_page is initialized is not concerning since this is
+bootstrap.
 
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Greg Hackmann <ghackmann@google.com>
-[jstultz: resolved minor conflict, tweaked commit message]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- drivers/staging/android/sw_sync.h | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ mm/hugetlb.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/android/sw_sync.h b/drivers/staging/android/sw_sync.h
-index 585040b..5aaf71d 100644
---- a/drivers/staging/android/sw_sync.h
-+++ b/drivers/staging/android/sw_sync.h
-@@ -35,10 +35,27 @@ struct sw_sync_pt {
- 	u32			value;
- };
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -653,7 +653,8 @@ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+ 	put_page(page); /* free it into the hugepage allocator */
+ }
  
-+#if IS_ENABLED(CONFIG_SW_SYNC)
- struct sw_sync_timeline *sw_sync_timeline_create(const char *name);
- void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc);
+-static void prep_compound_gigantic_page(struct page *page, unsigned long order)
++static void __init prep_compound_gigantic_page(struct page *page,
++					       unsigned long order)
+ {
+ 	int i;
+ 	int nr_pages = 1 << order;
+@@ -1294,7 +1295,7 @@ found:
+ 	return 1;
+ }
  
- struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj, u32 value);
-+#else
-+static inline struct sw_sync_timeline *sw_sync_timeline_create(const char *name)
-+{
-+	return NULL;
-+}
-+
-+static inline void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc)
-+{
-+}
-+
-+static inline struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj,
-+		u32 value)
-+{
-+	return NULL;
-+}
-+#endif /* IS_ENABLED(CONFIG_SW_SYNC) */
- 
- #endif /* __KERNEL __ */
- 
--- 
-1.8.3.2
-
+-static void prep_compound_huge_page(struct page *page, int order)
++static void __init prep_compound_huge_page(struct page *page, int order)
+ {
+ 	if (unlikely(order > (MAX_ORDER - 1)))
+ 		prep_compound_gigantic_page(page, order);
