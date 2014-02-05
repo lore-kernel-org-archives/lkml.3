@@ -1,134 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaBEJZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:25:45 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:63856 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751903AbaBEJZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:25:39 -0500
-Message-ID: <52F20387.3090709@monstr.eu>
-Date: Wed, 05 Feb 2014 10:25:27 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751969AbaBEJ1C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:27:02 -0500
+Received: from hofr.at ([212.69.189.236]:35308 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346AbaBEJ07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 04:26:59 -0500
+Date: Wed, 5 Feb 2014 10:26:57 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.12.9-rt13
+Message-ID: <20140205092657.GA21590@opentech.at>
+References: <20140203194841.GA17108@linutronix.de>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-doc@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 09/10] watchdog: xilinx: Add missing binding
-References: <ed4cb31c9a549343e6b492cf62fc962d39034bd0.1391177880.git.michal.simek@xilinx.com> <3121595.GbLMuGPlvA@wuerfel> <4c4539fe-e810-4c0a-9a01-c1e4c67ea661@AM1EHSMHS007.ehs.local> <201402042027.15898.arnd@arndb.de>
-In-Reply-To: <201402042027.15898.arnd@arndb.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="9CvXGtd7m7EJr2XSCF9fHIMotVRmFlMFF"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140203194841.GA17108@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---9CvXGtd7m7EJr2XSCF9fHIMotVRmFlMFF
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, 03 Feb 2014, Sebastian Andrzej Siewior wrote:
 
-On 02/04/2014 08:27 PM, Arnd Bergmann wrote:
-> On Monday 03 February 2014, Michal Simek wrote:
->> On 02/03/2014 04:32 PM, Arnd Bergmann wrote:
->>> On Monday 03 February 2014 16:13:47 Michal Simek wrote:
->>>> Intention wasn't to fix binding but document current one
->>>> which is in mainline for a long time.
->>>
->>> Ok, I see.
->>>
->>>> Apart of this - yes, wdt-enable-once is nowayout and wdt-interval sh=
-ould be timeout
->>>> is seconds, and clock-frequency should go out and use CCF for gettin=
-g clock.
->>>
->>> Could we make a common binding then, and document that the xilinx
->>> watchdog can optionally provide either one?
->>
->> Do you mean to have 2 DT bindings?
->>
->> This binding is used from 2011-07.
->> It means it was generated for all hw designs at least from this time.
->> I would say from DT usage on Microblaze because it is not special case=
+> Dear RT folks!
+> 
+> I'm pleased to announce the v3.12.9-rt13 patch set.
+> 
+> Changes since v3.12.9-rt12
+...
+> - drop a migrate_disable() call in local_lock(). Clean up / optimization
+>   by Nicholas Mc Guire.
 
->> in our dt generator.
->=20
-> I certainly wasn't suggesting to break the binding, quite the contrary.=
+Sorry - this one causes a build failure with PREEMPT_RT_BASE=y and 
+PREEMPT_RT_FULL not set.
 
-> What I tried to say is that the properties look like they should be
-> useful for different kinds of watchdogs, not just xilinx, so it would
-> be good to have a common definition using generic strings.
->=20
-> The xilinx driver would definitely have to keep supporting the traditio=
-nal
-> property names, but it could also support the generic names in the
-> future.
+The patch below fixes this build failure for 3.12.9-rt13.
 
-No problem with to do in future.
-
->> xlnx,XXX are XXX parameters which you have to setup in tools
->> and get synthesized. This is valid for all xilinx IPs. We have full
->> IP description by generating xlnx,XXX parameters directly from tools
->> because we know all variants which can happen.
->>
->> Just back to your previous post:
->> "I'm not sure about the enable-once flag, which seems to just map to t=
-he
->> "nowayout" watchdog option that is not a hardware feature at all"
->> this is hw feature which you can select in tools because this is fpga.=
- :-)
->=20
-> Ah, so you mean the properties are not settings that the driver
-> programs into the hardware, but they are hardware properties that the
-> driver reports to user space?
-
-yes, they are hardware properties which you can choose based on your
-configuration. Every user just decides if this watchdog can be started ju=
-st
-once and how long it takes in synthesis time. There is no option to progr=
-am
-this by software.
-
-I am not quite sure what you mean by reports to user space.
-If you mean to get timeout through ioctl for example - then yes it is wor=
-king
-through standard watchdog ioctl interface and timeout is calculated
-from hardware setup.
-
-Thanks,
-Michal
+<snip>
+In file included from kernel/softirq.c:29:0:
+include/linux/locallock.h: In function '__local_lock':
+include/linux/locallock.h:42:3: error: implicit declaration of function 'spin_lock_local' [-Werror=implicit-function-declaration]
+include/linux/locallock.h: In function '__local_trylock':
+include/linux/locallock.h:55:2: error: implicit declaration of function 'spin_trylock_local' [-Werror=implicit-function-declaration]
+include/linux/locallock.h: In function '__local_unlock':
+include/linux/locallock.h:82:2: error: implicit declaration of function 'spin_unlock_local' [-Werror=implicit-function-declaration]
+<snip>
 
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+spin_*lock_local is defined in linux/spinlock_rt.h and conditioned on
+PREEMPT_RT_FULL, use-local-spin_locks-in-local_lock.patch. replaced the
+spin_*locks by spin_*lock_local in locallock.h which is conditioned on
+PREEMPT_RT_BASE only, so this results in implicit declarations.
 
+Not sure what the clean way of resolving this is - this patch proposes to
+move the spin_*_local into linux/locallock.h and map to spin_*lock for
+the "CONFIG_PREEMPT_RT_FULL not set" case.
 
+This was build tested with Preempt none,voluntary,low-lat,base,full and 
+otherweise got only limited testing.
 
---9CvXGtd7m7EJr2XSCF9fHIMotVRmFlMFF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+I'm also not sure if putting the rt specific locks into locallock.h in 
+this way is the proper way to deal with this #include dependency.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+---
+ include/linux/locallock.h   |   15 +++++++++++++++
+ include/linux/spinlock_rt.h |    4 ----
+ 2 files changed, 15 insertions(+), 4 deletions(-)
 
-iEYEARECAAYFAlLyA4gACgkQykllyylKDCEZoQCgi5g0gXSqx8GgQYPNhgWgtOD9
-UNwAn2SKlTzD/1cVVKg6yYjlPzzJMVjK
-=0iPJ
------END PGP SIGNATURE-----
+diff --git a/include/linux/locallock.h b/include/linux/locallock.h
+index 32c684b..49ee095 100644
+--- a/include/linux/locallock.h
++++ b/include/linux/locallock.h
+@@ -36,6 +36,21 @@ struct local_irq_lock {
+ 			spin_lock_init(&per_cpu(lvar, __cpu).lock);	\
+ 	} while (0)
+ 
++/* spin_lock|trylock|unlock_local flavour that does not migrate disable
++ * used for __local_lock|trylock|unlock where get_local_var/put_local_var
++ * already takes care of the migrate_disable/enable
++ * for CONFIG_PREEMPT_BASE map to the normal spin_* calls.
++ */
++#ifdef CONFIG_PREEMPT_RT_FULL
++# define spin_lock_local(lock)			rt_spin_lock(lock)
++# define spin_trylock_local(lock)		rt_spin_trylock(lock)
++# define spin_unlock_local(lock)		rt_spin_unlock(lock)
++#else
++# define spin_lock_local(lock)			spin_lock(lock)
++# define spin_trylock_local(lock)		spin_trylock(lock)
++# define spin_unlock_local(lock)		spin_unlock(lock)
++#endif
++
+ static inline void __local_lock(struct local_irq_lock *lv)
+ {
+ 	if (lv->owner != current) {
+diff --git a/include/linux/spinlock_rt.h b/include/linux/spinlock_rt.h
+index 4f91114..ac6f08b 100644
+--- a/include/linux/spinlock_rt.h
++++ b/include/linux/spinlock_rt.h
+@@ -36,10 +36,6 @@ extern int atomic_dec_and_spin_lock(atomic_t *atomic, spinlock_t *lock);
+ extern void __lockfunc __rt_spin_lock(struct rt_mutex *lock);
+ extern void __lockfunc __rt_spin_unlock(struct rt_mutex *lock);
+ 
+-#define spin_lock_local(lock)			rt_spin_lock(lock)
+-#define spin_trylock_local(lock)		rt_spin_trylock(lock)
+-#define spin_unlock_local(lock)			rt_spin_unlock(lock)
+-
+ #define spin_lock(lock)				\
+ 	do {					\
+ 		migrate_disable();		\
+-- 
+1.7.10.4
 
---9CvXGtd7m7EJr2XSCF9fHIMotVRmFlMFF--
