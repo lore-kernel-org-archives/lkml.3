@@ -1,270 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaBETs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 14:48:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54506 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830AbaBETsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 14:48:13 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <galak@kernel.crashing.org>
-CC: <devicetree@vger.kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <rob.herring@calxeda.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
-        <gregkh@linuxfoundation.org>, <dwmw2@infradead.org>, <nsekhar@ti.com>,
-        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH v4 2/2] memory: ti-aemif: add bindings for AEMIF driver
-Date: Wed, 5 Feb 2014 21:46:14 +0200
-Message-ID: <1391629574-18955-3-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1391629574-18955-1-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1391629574-18955-1-git-send-email-ivan.khoronzhuk@ti.com>
+	id S1752205AbaBETtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 14:49:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58044 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaBETtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 14:49:03 -0500
+Date: Wed, 5 Feb 2014 20:48:51 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vince@deater.net>
+Cc: junk@eslaf.co.uk, alan@lxorguk.ukuu.org.uk, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
+Message-ID: <20140205194851.GE5126@laptop.programming.kicks-ass.net>
+References: <20140205102718.GF3229@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy>
+ <20140205192012.GL2936@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140205192012.GL2936@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bindings for TI Async External Memory Interface (AEMIF) controller.
+On Wed, Feb 05, 2014 at 08:20:12PM +0100, Peter Zijlstra wrote:
+> On Wed, Feb 05, 2014 at 02:16:43PM -0500, Vince Weaver wrote:
+> > On Wed, 5 Feb 2014, Peter Zijlstra wrote:
+> > 
+> > > P6 class machines can die hard when PCE gets enabled due to CPU
+> > > errata. The safe way it so disable it by default and keep it disabled.
+> > > 
+> > > See errata 26:
+> > 
+> > so you take an errata applicable to a subset of Pentium Pro steppings and 
+> > apply it to the whole p6 line (which includes the whole way up to Pentium 
+> > III)?
+> > 
+> > Or am I missing something in the documentation you link to?
+> 
+> I forgot it went all the way to P-III, let me try and find the other
+> erratas.
 
-The Async External Memory Interface (EMIF16/AEMIF) controller is intended to
-provide a glue-less interface to a variety of asynchronous memory devices like
-ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
-can be accessed via 4 chip selects with 64M byte access per chip select.
+OK, Just checked the P-II errata and its not there anymore, so I suppose
+only Family 6 model 1 should have this quirk.
 
-We are not encoding CS number in reg property, it's memory partition number.
-The CS number is encoded for Davinci NAND node using standalone property
-"ti,davinci-chipselect" and we need to provide two memory ranges to it,
-as result we can't encode CS number in "reg" for AEMIF child devices
-(NAND/NOR/etc), as it will break bindings compatibility.
+Updated patch below.
 
-In this patch, NAND node is used just as an example of child node.
-
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- .../bindings/memory-controllers/ti-aemif.txt       | 210 +++++++++++++++++++++
- 1 file changed, 210 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+Subject: perf,x86,p6: Add userspace RDPMC quirk for PPro
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed Feb 5 11:17:46 CET 2014
 
-diff --git a/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
-new file mode 100644
-index 0000000..d1466dc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
-@@ -0,0 +1,210 @@
-+* Device tree bindings for Texas instruments AEMIF controller
-+
-+The Async External Memory Interface (EMIF16/AEMIF) controller is intended to
-+provide a glue-less interface to a variety of asynchronous memory devices like
-+ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
-+can be accessed at any given time via four chip selects with 64M byte access
-+per chip select. Synchronous memories such as DDR1 SD RAM, SDR SDRAM
-+and Mobile SDR are not supported.
-+
-+Documentation:
-+Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
-+OMAP-L138 (DA850) - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
-+Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
-+
-+Required properties:
-+
-+- compatible:		"ti,davinci-aemif"
-+			"ti,keystone-aemif"
-+			"ti,da850-aemif"
-+
-+- reg:			contains offset/length value for AEMIF control registers
-+			space.
-+
-+- #address-cells:	Must be 2. The partition number has to be encoded in the
-+			first address cell and it may accept values 0..N-1
-+			(N - total number of partitions). It's recommended to
-+			assign N-1 number for the control partition. The second
-+			cell is the offset into the partition.
-+
-+- #size-cells:		Must be set to 1.
-+
-+- ranges:		Contains memory regions. There are two types of
-+			ranges/partitions:
-+			- CS-specific partition/range. If continuous, must be
-+			set up to reflect the memory layout for 4 chipselects,
-+			if not then additional range/partition can be added and
-+			child device can select the proper one.
-+			- control partition which is common for all CS
-+			interfaces.
-+
-+- clocks:		the clock feeding the controller clock. Required only
-+			if clock tree data present in device tree.
-+			See clock-bindings.txt
-+
-+- clock-names:		clock name. It has to be "aemif". Required only if clock
-+			tree data present in device tree, in another case don't
-+			use it.
-+			See clock-bindings.txt
-+
-+- clock-ranges:		Empty property indicating that child nodes can inherit
-+			named clocks. Required only if clock tree data present
-+			in device tree.
-+			See clock-bindings.txt
-+
-+
-+Child chip-select (cs) nodes contain the memory devices nodes connected to
-+such as NOR (e.g. cfi-flash) and NAND (ti,davinci-nand, see davinci-nand.txt).
-+There might be board specific devices like FPGAs.
-+
-+Required child cs node properties:
-+
-+- #address-cells:	Must be 2.
-+
-+- #size-cells:		Must be 1.
-+
-+- ranges:		Empty property indicating that child nodes can inherit
-+			memory layout.
-+
-+- clock-ranges:		Empty property indicating that child nodes can inherit
-+			named clocks. Required only if clock tree data present
-+			in device tree.
-+
-+- ti,cs-chipselect:	number of chipselect. Indicates on the aemif driver
-+			which chipselect is used for accessing the memory. For
-+			compatibles "ti,davinci-aemif" and "ti,keystone-aemif"
-+			it can be in range [0-3]. For compatible
-+			"ti,da850-aemif" range is [2-5].
-+
-+Optional child cs node properties:
-+
-+- ti,bus-width:			width of the asynchronous device's data bus
-+				8 or 16 if not preset 8
-+
-+- ti,cs-ss:		enable/disable select strobe mode
-+				In select strobe mode chip select behaves as
-+				the strobe and is active only during the strobe
-+				period. If present then enable.
-+
-+- ti,cs-ew:		enable/disable extended wait mode
-+				if set, the controller monitors the EMIFWAIT pin
-+				mapped to that chip select to determine if the
-+				device wants to extend the strobe period. If
-+				present then enable.
-+
-+- ti,cs-ta:		minimum turn around time, ns
-+				Time between the end of one asynchronous memory
-+				access and the start of another asynchronous
-+				memory access. This delay is not incurred
-+				between a read followed by read or a write
-+				followed by a write to same chip select.
-+
-+- ti,cs-rsetup:		read setup width, ns
-+				Time between the beginning of a memory cycle
-+				and the activation of read strobe.
-+				Minimum value is 1 (0 treated as 1).
-+
-+- ti,cs-rstobe:		read strobe width, ns
-+				Time between the activation and deactivation of
-+				the read strobe.
-+				Minimum value is 1 (0 treated as 1).
-+
-+- ti,cs-rhold:		read hold width, ns
-+				Time between the deactivation of the read
-+				strobe and the end of the cycle (which may be
-+				either an address change or the deactivation of
-+				the chip select signal.
-+				Minimum value is 1 (0 treated as 1).
-+
-+- ti,cs-wsetup:		write setup width, ns
-+				Time between the beginning of a memory cycle
-+				and the activation of write strobe.
-+				Minimum value is 1 (0 treated as 1).
-+
-+- ti,cs-wstrobe:	write strobe width, ns
-+				Time between the activation and deactivation of
-+				the write strobe.
-+				Minimum value is 1 (0 treated as 1).
-+
-+- ti,cs-whold:		write hold width, ns
-+				Time between the deactivation of the write
-+				strobe and the end of the cycle (which may be
-+				either an address change or the deactivation of
-+				the chip select signal.
-+				Minimum value is 1 (0 treated as 1).
-+
-+If any of the above parameters are absent, current parameter value will be taken
-+from the corresponding HW reg.
-+
-+Example for aemif, davinci nand and nor flash chip select shown below.
-+
-+memory-controller@21000A00 {
-+	compatible = "ti,davinci-aemif";
-+	#address-cells = <2>;
-+	#size-cells = <1>;
-+	clocks = <&clkaemif 0>;
-+	clock-names = "aemif";
-+	clock-ranges;
-+	reg = <0x2100A00 0x00000100>;
-+	ranges = <0 0 0x70000000 0x10000000
-+		  1 0 0x21000A00 0x0000100>;
-+		  /*
-+		   * Partition0: CS-specific memory range which is
-+		   * implemented as continuous physical memory region
-+		   * Partition1: control memory range
-+		   */
-+
-+	nand:cs2 {
-+		#address-cells = <2>;
-+		#size-cells = <1>;
-+		clock-ranges;
-+		ranges;
-+
-+		ti,cs-chipselect = <2>;
-+		/* all timings in nanoseconds */
-+		ti,cs-ta = <0>;
-+		ti,cs-rhold = <7>;
-+		ti,cs-rstrobe = <42>;
-+		ti,cs-rsetup = <14>;
-+		ti,cs-whold = <7>;
-+		ti,cs-wstrobe = <42>;
-+		ti,cs-wsetup = <14>;
-+
-+		nand@0,0x8000000 {
-+			compatible = "ti,davinci-nand";
-+			reg = <0 0x8000000 0x4000000
-+			       1 0x0000000 0x0000100>;
-+			/*
-+			 * Partition0, offset 0x8000000, size 0x4000000
-+			 * Partition1, offset 0x0000000, size 0x0000100
-+			 */
-+
-+			.. see davinci-nand.txt
-+		};
-+	};
-+
-+	nor:cs0 {
-+		#address-cells = <2>;
-+		#size-cells = <1>;
-+		clock-ranges;
-+		ranges;
-+
-+		ti,cs-chipselect = <0>;
-+		/* all timings in nanoseconds */
-+		ti,cs-ta = <0>;
-+		ti,cs-rhold = <8>;
-+		ti,cs-rstrobe = <40>;
-+		ti,cs-rsetup = <14>;
-+		ti,cs-whold = <7>;
-+		ti,cs-wstrobe = <40>;
-+		ti,cs-wsetup = <14>;
-+		ti,cs-asize = <1>;
-+
-+		flash@0,0x0000000 {
-+			compatible = "cfi-flash";
-+			reg = <0 0x0000000 0x4000000>;
-+
-+			...
-+		};
-+	};
-+};
--- 
-1.8.3.2
+PPro machines can die hard when PCE gets enabled due to CPU errata. The
+safe way it so disable it by default and keep it disabled.
 
+See errata 26:
+
+http://download.intel.com/design/archives/processors/pro/docs/24268935.pdf
+
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Reported-by: Mark Davies <junk@eslaf.co.uk>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/n/tip-jnbn0qpt3t7ogk4c2q79yq90@git.kernel.org
+---
+ arch/x86/kernel/cpu/perf_event.c    |    6 +++++-
+ arch/x86/kernel/cpu/perf_event.h    |    1 +
+ arch/x86/kernel/cpu/perf_event_p6.c |   35 +++++++++++++++++++++++++----------
+ 3 files changed, 31 insertions(+), 11 deletions(-)
+
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1521,6 +1521,8 @@ static int __init init_hw_perf_events(vo
+ 
+ 	pr_cont("%s PMU driver.\n", x86_pmu.name);
+ 
++	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
++
+ 	for (quirk = x86_pmu.quirks; quirk; quirk = quirk->next)
+ 		quirk->func();
+ 
+@@ -1534,7 +1536,6 @@ static int __init init_hw_perf_events(vo
+ 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+ 				   0, x86_pmu.num_counters, 0, 0);
+ 
+-	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+ 
+ 	if (x86_pmu.event_attrs)
+@@ -1820,6 +1821,9 @@ static ssize_t set_attr_rdpmc(struct dev
+ 	if (ret)
+ 		return ret;
+ 
++	if (x86_pmu.attr_rdpmc_broken)
++		return -ENOTSUPP;
++
+ 	if (!!val != !!x86_pmu.attr_rdpmc) {
+ 		x86_pmu.attr_rdpmc = !!val;
+ 		smp_call_function(change_rdpmc, (void *)val, 1);
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -409,6 +409,7 @@ struct x86_pmu {
+ 	/*
+ 	 * sysfs attrs
+ 	 */
++	int		attr_rdpmc_broken;
+ 	int		attr_rdpmc;
+ 	struct attribute **format_attrs;
+ 	struct attribute **event_attrs;
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -231,20 +231,35 @@ static __initconst const struct x86_pmu
+ 
+ };
+ 
++static __init void p6_pmu_rdpmc_quirk(void)
++{
++	pr_warn("Userspace RDPMC support disabled due to CPU errata\n");
++	x86_pmu.attr_rdpmc_broken = 1;
++	x86_pmu.attr_rdpmc = 0;
++}
++
+ __init int p6_pmu_init(void)
+ {
+ 	switch (boot_cpu_data.x86_model) {
+-	case 1:
+-	case 3:  /* Pentium Pro */
+-	case 5:
+-	case 6:  /* Pentium II */
+-	case 7:
+-	case 8:
+-	case 11: /* Pentium III */
+-	case 9:
+-	case 13:
+-		/* Pentium M */
++	case  1: /* Pentium Pro */
++		x86_add_quirk(p6_pmu_rdpmc_quirk);
+ 		break;
++
++	case  3: /* Pentium II - Klamath */
++	case  5: /* Pentium II - Deschutes */
++	case  6: /* Pentium II - Mendocino */
++		break;
++
++	case  7: /* Pentium III - Katmai */
++	case  8: /* Pentium III - Coppermine */
++	case 10: /* Pentium III Xeon */
++	case 11: /* Pentium III - Tualatin */
++		break;
++
++	case  9: /* Pentium M - Banias */
++	case 13: /* Pentium M - Dothan */
++		break;
++
+ 	default:
+ 		pr_cont("unsupported p6 CPU model %d ",
+ 			boot_cpu_data.x86_model);
