@@ -1,508 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796AbaBECxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 21:53:53 -0500
-Received: from ozlabs.org ([203.10.76.45]:56750 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836AbaBECxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 21:53:48 -0500
-Date: Wed, 5 Feb 2014 13:53:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Feb 5
-Message-Id: <20140205135341.5cd01e17c92d00eb81fcf4d3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Feb_2014_13_53_41_+1100_CAlXfwU=_kHJgaNQ"
+	id S1752296AbaBEDIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 22:08:09 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:39183 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaBEDII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Feb 2014 22:08:08 -0500
+Message-ID: <52F1AB18.5040208@gmail.com>
+Date: Wed, 05 Feb 2014 11:08:08 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
+        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
+	<hskinnemoen@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
+ to CONFIG_KRETPROBES enabled area
+References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com>
+In-Reply-To: <52F19223.5010506@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Feb_2014_13_53_41_+1100_CAlXfwU=_kHJgaNQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/05/2014 09:21 AM, Masami Hiramatsu wrote:
+> (2014/02/05 9:18), Chen Gang wrote:
+>> On 02/04/2014 11:39 PM, Masami Hiramatsu wrote:
+>>> (2014/02/04 22:53), Chen Gang wrote:
+>>>> On 02/04/2014 09:29 PM, Masami Hiramatsu wrote:
+>>>>> (2014/02/04 21:07), Chen Gang wrote:
+>>>>>> On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
+>>>>>>> (2014/02/04 14:16), Chen Gang wrote:
+>>>>>>>> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
+>>>>>>>> are useless, so need move them to CONFIG_KPROBES enabled area.
+>>>>>>>>
+>>>>>>>> Now, *kretprobe* generic implementation are all implemented in 2 files:
+>>>>>>>>
+>>>>>>>>  - in "include/linux/kprobes.h":
+>>>>>>>>
+>>>>>>>>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
+>>>>>>>>      move some *kprobe() declarations which kretprobe*() call, to front.
+>>>>>>>>      not touch kretprobe_blacklist[] which is architecture's variable.
+>>>>>>>>
+>>>>>>>>  - in "kernel/kprobes.c":
+>>>>>>>>
+>>>>>>>>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
+>>>>>>>>      define kretprobe_flush_task() to let kprobe_flush_task() call.
+>>>>>>>>      define init_kretprobes() to let init_kprobes() call.
+>>>>>>>>
+>>>>>>>> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
+>>>>>>>> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
+>>>>>>>> bzImage and Modpost modules) under x86_64 defconfig.
+>>>>>>>
+>>>>>>> Thanks for the fix! and I have some comments below.
+>>>>>>>
+>>>>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>>>>> ---
+>>>>>>>>  include/linux/kprobes.h |  58 +++++----
+>>>>>>>>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
+>>>>>>>>  2 files changed, 222 insertions(+), 164 deletions(-)
+>>>>>>>>
+>>>>>>>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+>>>>>>>> index 925eaf2..c0d1212 100644
+>>>>>>>> --- a/include/linux/kprobes.h
+>>>>>>>> +++ b/include/linux/kprobes.h
+>>>>>>>> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
+>>>>>>>>   return 1;
+>>>>>>>>  }
+>>>>>>>>  
+>>>>>>>> +int disable_kprobe(struct kprobe *kp);
+>>>>>>>> +int enable_kprobe(struct kprobe *kp);
+>>>>>>>> +
+>>>>>>>> +void dump_kprobe(struct kprobe *kp);
+>>>>>>>> +
+>>>>>>>> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>>>>>>> +
+>>>>>>>>  #ifdef CONFIG_KRETPROBES
+>>>>>>>>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
+>>>>>>>>     struct pt_regs *regs);
+>>>>>>>>  extern int arch_trampoline_kprobe(struct kprobe *p);
+>>>>>>>> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>>>>>>>> + unsigned long orig_ret_address, unsigned long trampoline_address)
+>>>>>>>> +{
+>>>>>>>> + if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>>>>>>>> + printk(KERN_ERR
+>>>>>>>> + "kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>>>>>>>> + ri->rp, ri->rp->kp.addr);
+>>>>>>>> + BUG();
+>>>>>>>> + }
+>>>>>>>> +}
+>>>>>>>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>>>>>>> +{
+>>>>>>>> + return disable_kprobe(&rp->kp);
+>>>>>>>> +}
+>>>>>>>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>>>>>>> +{
+>>>>>>>> + return enable_kprobe(&rp->kp);
+>>>>>>>> +}
+>>>>>>>> +
+>>>>>>>>  #else /* CONFIG_KRETPROBES */
+>>>>>>>>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
+>>>>>>>>   struct pt_regs *regs)
+>>>>>>>> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
+>>>>>>>>  {
+>>>>>>>>   return 0;
+>>>>>>>>  }
+>>>>>>>> -#endif /* CONFIG_KRETPROBES */
+>>>>>>>> -
+>>>>>>>> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>>>>>>> -
+>>>>>>>>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>>>>>>>>   unsigned long orig_ret_address, unsigned long trampoline_address)
+>>>>>>>>  {
+>>>>>>>> - if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>>>>>>>> - printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>>>>>>>> - ri->rp, ri->rp->kp.addr);
+>>>>>>>> - BUG();
+>>>>>>>> - }
+>>>>>>>>  }
+>>>>>>>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>>>>>>> +{
+>>>>>>>> + return 0;
+>>>>>>>> +}
+>>>>>>>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>>>>>>> +{
+>>>>>>>> + return 0;
+>>>>>>>> +}
+>>>>>>>
+>>>>>>> No, these should returns -EINVAL or -ENOSYS, since these are user API.
+>>>>>>
+>>>>>> OK, thanks, it sounds reasonable to me.
+>>>>>>
+>>>>>>> Anyway, I don't think those inlined functions to be changed, because
+>>>>>>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
+>>>>>>> be ignored.
+>>>>>>>
+>>>>>>
+>>>>>> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
+>>>>>> disable_kretprobe(), and enable_kretprobe() are not ignored.
+>>>>>
+>>>>> Really? where are they called? I mean, those functions do not have
+>>>>> any instance unless your module uses it (but that is not what the kernel
+>>>>> itself should help).
+>>>>>
+>>>>
+>>>> If what you said correct (I guess so), for me, we still need let them in
+>>>> CONFIG_KRETPROBES area, and without any dummy outside, just like another
+>>>> *kprobe* static inline functions have done in "include/linux/kprobes.h".
+>>>
+>>> kretprobe_assert() is only for the internal check. So we don't need to care
+>>> about, and disable/enable_kretprobe() are anyway returns -EINVAL because
+>>> kretprobe can not be registered. And all of them are inlined functions.
+>>> In that case, we don't need to care about it.
+>>
+>> Hmm... it is related with code 'consistency':
+>>
+>>  - these static inline functions are kretprobe generic implementation,
+>>    and we are trying to let all kretprobe generic implementation within
+>>    CONFIG_KRETPROBES area.
+> 
+> No, actually, kretprobe is just built on the kprobe. enable/disable_kretprobe
+> just wrapped the kprobe methods. And kretprobe_assert() is just for kretprobe
+> internal use. that is not an API. Moving only the kretprobe_assert() into the
+> CONFIG_KRETPROBE area is not bad, but since it is just a static inline function,
+> if there is no caller, it just be ignored, no side effect.
+> 
 
-Hi all,
+OK, I can understand.
 
-This tree fails (more than usual) the powerpc allyesconfig build.
+And do you mean enable/disable_kretprobe() are API? if so, we have to
+implement them whether CONFIG_KRETPROBES enabled or disabled.
 
-Changes since 20140204:
+And when CONFIG_KRETPROBES=n, just like what you originally said: we
+need returns -EINVAL directly (either, I am not quite sure whether the
+input parameter will be NULL, in this case).
 
-Removed tree: init (submitted and done with)
+>>
+>>  - And original kprobe static inline functions have done like that,
+>>    in same header file, if no obvious reasons, we can try to follow.
+> 
+> It is no reasons to follow that too. Please keep your patch simple as much
+> as possible.
+> 
 
-Undropped tree: parisc-hd
+"keep our patch simple as much as posssible" sounds reasonable to me.
+After skip "include/linux/kprobe.h", our patch's subject (include
+comments) also need be changed (I will/should change it).
 
-The parisc-hd tree lost its conflicts and so is back.
+For me, "include/linux/kprobe.h" can also be improved, but it can be
+another patch for it (not only for kretprobe, but also for jpobe).
 
-The powerpc tree still had its build failure.
 
-Non-merge commits (relative to Linus' tree): 1420
- 755 files changed, 31699 insertions(+), 12009 deletions(-)
+>>> I just concerned that it is a waste of memory if there are useless kretprobe
+>>> related instances are built when CONFIG_KRETPROBES=n.
+>>>
+>>
+>> Yeah, that is also one of reason (3rd reason).
+>>
+>>
+>> And if necessary, please help check what we have done whether already
+>> "let all kretprobe generic implementation within CONFIG_KRETPROBES area"
+>> (exclude declaration, struct/union definition, and architecture
+>> implementation).
+> 
+> As I commented, your changes in kernel/kprobes.c are good to me except
+> two functions. That's all what we need to fix :)
+> 
 
-----------------------------------------------------------------------------
+I will send a patch for it (since subject changed, we need not mark
+"patch v2"), thanks.  :-)
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
+> Thank you!
+> 
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (minus CONFIG_PROFILE_ALL_BRANCHES - this fails its final
-link) and i386, sparc, sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
+Thanks.
+-- 
+Chen Gang
 
-Below is a summary of the state of the merge.
-
-I am currently merging 208 trees (counting Linus' and 28 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (878a876b2e10 Merge branch 'for-linus' of git://git.k=
-ernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging fixes/master (b0031f227e47 Merge tag 's2mps11-build' of git://git.k=
-ernel.org/pub/scm/linux/kernel/git/broonie/regulator)
-Merging kbuild-current/rc-fixes (19514fc665ff arm, kbuild: make "make insta=
-ll" not depend on vmlinux)
-Merging arc-current/for-curr (7e22e91102c6 Linux 3.13-rc8)
-Merging arm-current/fixes (d326b65c57d6 ARM: fix building with gcc 4.6.4)
-Merging m68k-current/for-linus (56931d73697c m68k/mac: Make SCC reset work =
-more reliably)
-Merging metag-fixes/fixes (3b2f64d00c46 Linux 3.11-rc2)
-Merging powerpc-merge/merge (b3084f4db3ae powerpc/thp: Fix crash on mremap)
-Merging sparc/master (9b0cd304f26b Merge branch 'drm-next' of git://people.=
-freedesktop.org/~airlied/linux)
-Merging net/master (b045d37bd68c ip_tunnel: fix panic in ip_tunnel_xmit())
-Merging ipsec/master (965cdea82569 dccp: catch failed request_module call i=
-n dccp_probe init)
-Merging sound-current/for-linus (4528eb19b00d ALSA: hda - Fix silent output=
- on Toshiba Satellite L40)
-Merging pci-current/for-linus (38dbfb59d117 Linus 3.14-rc1)
-Merging wireless/master (4cfe9a8d5829 ath9k: Fix TX power calculation)
-Merging driver-core.current/driver-core-linus (38dbfb59d117 Linus 3.14-rc1)
-Merging tty.current/tty-linus (38dbfb59d117 Linus 3.14-rc1)
-Merging usb.current/usb-linus (823d12c95c66 usb-storage: enable multi-LUN s=
-canning when needed)
-Merging staging.current/staging-linus (38dbfb59d117 Linus 3.14-rc1)
-Merging char-misc.current/char-misc-linus (38dbfb59d117 Linus 3.14-rc1)
-Merging input-current/for-linus (55df811f2066 Merge branch 'next' into for-=
-linus)
-Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
-tripe)
-Merging crypto-current/master (ee97dc7db4cb crypto: s390 - fix des and des3=
-_ede ctr concurrency issue)
-Merging ide/master (9b0cd304f26b Merge branch 'drm-next' of git://people.fr=
-eedesktop.org/~airlied/linux)
-Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
-Merging devicetree-current/devicetree/merge (6f041e99fc7b of: Fix NULL dere=
-ference in unflatten_and_copy())
-Merging rr-fixes/fixes (7122c3e9154b scripts/link-vmlinux.sh: only filter k=
-ernel symbols for arm)
-Merging mfd-fixes/master (73beb63d290f mfd: rtsx_pcr: Disable interrupts be=
-fore cancelling delayed works)
-Merging vfio-fixes/for-linus (239a87020b26 Merge branch 'for-joerg/arm-smmu=
-/fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into fo=
-r-linus)
-Merging drm-intel-fixes/for-linux-next-fixes (bdde5c6a258a drm/i915: demote=
- opregion excessive timeout WARN_ONCE to DRM_INFO_ONCE)
-Merging asm-generic/master (fb9de7ebc3a2 xtensa: Use generic asm/mmu.h for =
-nommu)
-Merging arc/for-next (36dd18037119 ARC: add uImage to .gitignore)
-Merging arm/for-next (58b9ef24dc72 Merge branch 'cubox-i-init' into for-nex=
-t)
-Merging arm-perf/for-next/perf (38dbfb59d117 Linus 3.14-rc1)
-Merging arm-soc/for-next (034b5c9ffc37 Merge branch 'fixes' into for-next)
-Merging bcm2835/for-next (413541dd66d5 Linux 3.13-rc5)
-Merging cortex-m/for-next (f41bfc9423aa Merge tag 'ext4_for_linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4)
-Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
-to ep93xx-for-next)
-Merging imx-mxs/for-next (059c95a47b13 Merge branch 'imx/dt' into for-next)
-Merging ixp4xx/next (19f949f52599 Linux 3.8)
-Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
- standard 'qcom' prefix)
-Merging mvebu/for-next (39efb8a90bac Merge branch 'mvebu/dt' into for-next)
-Merging renesas/next (85d8b6a1add4 Merge branches 'heads/cleanup-for-v3.15'=
-, 'heads/defconfig-for-v3.15', 'heads/soc-for-v3.15', 'heads/boards-for-v3.=
-15' and 'heads/dt-for-v3.15' into next)
-Merging samsung/for-next (8109c477487a Merge branch 'v3.14-next/dt-exynos-3=
-' into for-next)
-Merging tegra/for-next (95e770a5ad96 Merge branch for-3.14/defconfig into f=
-or-next)
-Merging arm64/for-next/core (38dbfb59d117 Linus 3.14-rc1)
-Merging blackfin/for-linus (58095fdaaf1c From: Eunbong Song <eunb.song@sams=
-ung.com>)
-Merging c6x/for-linux-next (546153d75a48 c6x: fix build failure caused by c=
-ache.h)
-Merging cris/for-next (cd065a010a97 CRISv10: Readd missing header)
-Merging hexagon/linux-next (44eb66c228fe Hexagon: update CR year for elf.h)
-Merging ia64/next (d52eefb47d4e ia64/xen: Remove Xen support for ia64)
-Merging m68k/for-next (56931d73697c m68k/mac: Make SCC reset work more reli=
-ably)
-Merging m68knommu/for-next (72a8ab3cb2a5 m68knommu: fix arg types for outs*=
- functions)
-Merging metag/for-next (e9a1d0165bbd metag/smp: Make boot_secondary() stati=
-c)
-Merging microblaze/next (2984128fc4f5 microblaze: Define readq and writeq I=
-O helper function)
-Merging mips/mips-for-linux-next (3c8364ab164b Merge branch '3.14-fixes' in=
-to mips-for-linux-next)
-Merging openrisc/for-upstream (548dafe880ad openrisc: Use get_signal() sign=
-al_setup_done())
-Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
-arameter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (38dbfb59d117 Linus 3.14-rc1)
-Merging powerpc/next (f878f84373ae powerpc: Wire up sched_setattr and sched=
-_getattr syscalls)
-Merging mpc5xxx/next (bc7505942233 powerpc/512x: dts: add MPC5125 clock spe=
-cs)
-Merging galak/next (9e2ecdbba3b0 powerpc/fsl-booke: add the reg prop for pc=
-i bridge device node for T4/B4)
-Merging s390/features (78191cf710b7 s390/uaccess: introduce 'uaccesspt' ker=
-nel parameter)
-Merging sparc-next/master (049ffa8ab33a Merge branch 'drm-next' of git://pe=
-ople.freedesktop.org/~airlied/linux)
-Merging tile/master (5e01dc7b26d9 Linux 3.12)
-Merging uml/next (989e59fa41c5 um: Include generic barrier.h)
-CONFLICT (content): Merge conflict in arch/um/include/asm/Kbuild
-Merging unicore32/unicore32 (c284464658ac arch/unicore32: remove CONFIG_EXP=
-ERIMENTAL)
-Merging xtensa/for_next (c0e50d41126e xtensa: fix fast_syscall_spill_regist=
-ers)
-Merging btrfs/next (cf93da7bcf45 Btrfs: fix spin_unlock in check_ref_cleanu=
-p)
-Merging ceph/master (125d725c9235 ceph: cast PAGE_SIZE to size_t in ceph_sy=
-nc_write())
-Merging cifs/for-next (04a50c7a79ab [CIFS] retrieving CIFS ACLs when mounte=
-d with SMB2 fails  dropping session)
-Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (9e78d14a9f64 Use %pd in eCryptFS)
-Merging ext3/for_next (4ea7772f828a udf: Fix lockdep warning from udf_symli=
-nk())
-Merging ext4/dev (d7092ae2973f ext4: delete "set but not used" variables)
-Merging f2fs/dev (3705b4a59d4c f2fs: clean up with a macro)
-Merging fscache/fscache (7c604e5d6e56 FS-Cache: Fix handling of an attempt =
-to store a page that is now beyond EOF)
-Merging fuse/for-next (b2ec2778df9d fuse: Turn writeback cache on)
-Merging gfs2/master (885bceca7ff1 GFS2: Plug on AIL flush)
-Merging jfs/jfs-next (0439e091e3b1 jfs: fix xattr value size overflow in __=
-jfs_setxattr)
-Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
-segment found)
-Merging nfs/linux-next (878a876b2e10 Merge branch 'for-linus' of git://git.=
-kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging nfsd/nfsd-next (ed47b062ce95 nfsd: consider CLAIM_FH when handing o=
-ut delegation)
-Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
-Merging squashfs/master (6d565409503f Squashfs: fix failure to unlock pages=
- on decompress error)
-Merging v9fs/for-next (38dbfb59d117 Linus 3.14-rc1)
-Merging ubifs/linux-next (5547fec74a56 UBI: fix some use after free bugs)
-Merging xfs/for-next (7c71ee78031c xfs: allow logical-sector sized O_DIRECT)
-Merging file-private-locks/linux-next (1ed1950c412f locks: add new fcntl cm=
-d values for handling file private locks)
-Merging vfs/for-next (527d1511310a Merge branch 'next' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging pci/next (17f2d86f5d53 Merge branch 'pci/numa-cleanup' into next)
-Merging hid/for-next (68b70eb777d9 Merge branch 'for-3.15/sony' into for-ne=
-xt)
-Merging i2c/i2c/for-next (9b0cd304f26b Merge branch 'drm-next' of git://peo=
-ple.freedesktop.org/~airlied/linux)
-Merging jdelvare-hwmon/master (4fada9bfd39d hwmon: (lm80) Convert to use de=
-vm_hwmon_device_register_with_groups)
-Merging hwmon-staging/hwmon-next (d303b1b5fbb6 hwmon: (k10temp) Add support=
- for Kaveri CPUs)
-Merging v4l-dvb/master (b215621049bd Merge branch 'v4l_for_linus' into to_n=
-ext)
-Merging kbuild/for-next (853e265ed4aa Merge branch 'kbuild/kbuild' into kbu=
-ild/for-next)
-Merging kconfig/for-next (95edca5c523c localmodconfig: Add config depends b=
-y default settings)
-Merging libata/for-next (efb9e0f4f437 ata: enable quirk from jmicron JMB350=
- for JMB394)
-Merging pm/linux-next (3e0cb2ff5e3b Merge branch 'acpi-pci-hotplug-next' in=
-to linux-next)
-Merging idle/next (3b4d5c7fec0a tools/power turbostat: introduce -s to dump=
- counters)
-Merging apm/for-next (158204397034 apm-emulation: add hibernation APM event=
-s to support suspend2disk)
-Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
-et to the debug tools' makefiles)
-Merging thermal/next (262afa97587b Merge branches 'soc-eduardo', 'soc', 'mi=
-sc' and 'int3404-thermal' of .git into next)
-CONFLICT (content): Merge conflict in drivers/thermal/Kconfig
-Merging ieee1394/for-next (fcd46b34425d firewire: Enable remote DMA above 4=
- GB)
-Merging dlm/next (ece35848c184 dlm: set zero linger time on sctp socket)
-Merging swiotlb/linux-next (0cb637bff80d swiotlb: Don't DoS us with 'swiotl=
-b buffer is full' (v2))
-Merging slave-dma/next (38dbfb59d117 Linus 3.14-rc1)
-Merging dmaengine/next (77873803363c net_dma: mark broken)
-Merging net-next/master (77d143de7581 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/rw/uml)
-Merging ipsec-next/master (abfce3ef58b6 sctp: remove the unnecessary assign=
-ment)
-Merging wireless-next/master (38dbfb59d117 Linus 3.14-rc1)
-Merging bluetooth/master (e3719086ff57 Bluetooth: Use connection parameters=
- if any)
-Merging infiniband/for-next (fb1b5034e498 Merge branch 'ip-roce' into for-n=
-ext)
-Merging mtd/master (0e47c969c65e Merge tag 'for-linus-20140127' of git://gi=
-t.infradead.org/linux-mtd)
-Merging l2-mtd/master (0ff76a920e35 mtd: gpmi: add sanity check when mappin=
-g DMA for read_buf/write_buf)
-Merging crypto/master (79ba451d66ca crypto: aesni - fix build on x86 (32bit=
-))
-Merging drm/drm-next (ef64cf9d0604 Merge branch 'drm-nouveau-next' of git:/=
-/anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next)
-Merging drm-intel/for-linux-next (a57c774ab2b8 drm/i915: Reorganize display=
- pipe register accesses)
-Merging drm-tegra/drm/for-next (13411ddd3190 drm/tegra: Obtain head number =
-from DT)
-Merging sound/for-next (3e887f379d8a ALSA: hda - Add mute LED support to Le=
-novo Ideapad)
-Merging sound-asoc/for-next (84b62810a18f Merge remote-tracking branches 'a=
-soc/topic/simple', 'asoc/topic/tlv320aic32x4' and 'asoc/topic/wm8962' into =
-asoc-next)
-Merging modules/modules-next (22e669568d51 module: Add missing newline in p=
-rintk call.)
-Merging virtio/virtio-next (05c54de8c88c drivers: virtio: Mark function vir=
-tballoon_migratepage() as static in virtio_balloon.c)
-Merging input/next (50fe03da82b4 Input: uinput - add UI_GET_SYSNAME ioctl t=
-o retrieve the sysfs path)
-Merging input-mt/for-next (5e01dc7b26d9 Linux 3.12)
-Merging cgroup/for-next (0a6be6555302 nfs: include xattr.h from fs/nfs/nfs3=
-proc.c)
-Merging block/for-next (2a53fee6859b Merge branch 'for-3.14/core' into for-=
-next)
-Merging device-mapper/for-next (254068f1404c dm cache: do not add migration=
- to completed list before unhooking bio)
-Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
-recedence)
-Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
-, v3)
-Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
-ge)
-Merging mmc/mmc-next (38dbfb59d117 Linus 3.14-rc1)
-Merging kgdb/kgdb-next (6bedf31c25dd kdb: Remove unhandled ssb command)
-Merging slab/for-next (26e4f2057516 slub: Fix possible format string bug.)
-Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
-Merging md/for-next (7da9d450ab28 md/raid5: close recently introduced race =
-in stripe_head management.)
-Merging mfd/master (90b128ed1557 Merge tag 'mfd-lee-3.13-3' of git://git.li=
-naro.org/people/ljones/mfd)
-Merging mfd-lj/for-mfd-next (4d0621451ff2 mfd: wm5110: Make additional DSP =
-registers available to the user)
-Merging battery/master (ac323d8d8070 power: max17040: Fix NULL pointer dere=
-ference when there is no platform_data)
-Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
-Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
- in set_par)
-Merging omap_dss2/for-next (cb1fbad7ec25 Merge branches '3.14/fbdev', '3.14=
-/dss-misc' and '3.14/dss-fclk' into for-next)
-Merging regulator/for-next (f8331d726b31 Merge remote-tracking branches 're=
-gulator/topic/gpio', 'regulator/topic/max14577' and 'regulator/topic/ti-abb=
-' into regulator-next)
-Merging security/next (923b49ff69fc Merge branch 'master' of git://git.infr=
-adead.org/users/pcmoore/selinux into next)
-Merging selinux/next (41be702a542a Merge tag 'v3.13' into next)
-Merging lblnet/master (07bc9dc1b01b Merge branch 'merge' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging watchdog/master (135d65c3b5d3 watchdog: dw_wdt: Add dependency on H=
-AS_IOMEM)
-Merging dwmw2-iommu/master (e5d0c874391a Merge tag 'iommu-updates-v3.12' of=
- git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu)
-Merging iommu/next (dd1a175695ed Merge branches 'arm/smmu', 'core', 'x86/vt=
--d', 'arm/shmobile', 'x86/amd', 'ppc/pamu', 'iommu/fixes' and 'arm/msm' int=
-o next)
-Merging vfio/next (3be3a074cf5b vfio-pci: Don't use device_lock around AER =
-interrupt setup)
-Merging osd/linux-next (19350e7627a6 exofs: Print less in r4w)
-Merging jc_docs/docs-next (5c050fb96380 docs: update the development proces=
-s document)
-Merging trivial/for-next (8cc7212a0361 idr: remove unused prototype of idr_=
-free())
-Merging audit/master (f3411cb2b2e3 audit: whitespace fix in kernel-paramete=
-rs.txt)
-Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
-alls)
-Merging devicetree/devicetree/next (c151036ce417 of: Increase MAX_PHANDLE_A=
-RGS)
-Merging dt-rh/for-next (e48ca29d30a1 dt-bindings: add rockchip vendor prefi=
-x)
-Merging spi/for-next (a2d8f7a29e65 Merge remote-tracking branches 'spi/topi=
-c/samsung', 'spi/topic/sc18is602', 'spi/topic/sirf', 'spi/topic/tegra114' a=
-nd 'spi/topic/xfer' into spi-next)
-Merging tip/auto-latest (96c7b29d3cf6 Merge branch 'x86/x32')
-Merging clockevents/clockevents/next (00e2bcd6d35f clocksource: Timer-sun5i=
-: Switch to sched_clock_register())
-Merging edac/linux_next (3e45588825c1 cell_edac: fix missing of_node_put)
-Merging edac-amd/for-next (881f0fcef999 EDAC: Don't try to cancel workqueue=
- when it's never setup)
-Merging ftrace/for-next (3132e107d608 tracing: Check if tracing is enabled =
-in trace_puts())
-Merging rcu/rcu/next (98cbc61863d3 Merge commit '0d3c55bc9fd58393bd3bd99749=
-91ec1f815e1326' into HEAD)
-Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
-singlestep exceptions)
-Merging kvm/linux-next (b73117c49364 Merge branch 'kvm-ppc-next' of git://g=
-ithub.com/agraf/linux-2.6 into kvm-queue)
-Merging kvm-arm/kvm-arm-next (b73117c49364 Merge branch 'kvm-ppc-next' of g=
-it://github.com/agraf/linux-2.6 into kvm-queue)
-Merging kvm-ppc/kvm-ppc-next (4068890931f6 KVM: PPC: Book3S PR: Cope with d=
-oorbell interrupts)
-Merging oprofile/for-next (6ce4eac1f600 Linux 3.13-rc1)
-Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
-k)
-Merging xen-tip/linux-next (afca50132cfa xen/pvh: set CR4 flags for APs)
-Merging percpu/for-next (d5f2deed588b Merge branch 'for-3.14' into for-next)
-Merging workqueues/for-next (9af16df84f0c Merge branch 'for-3.14' into for-=
-next)
-Merging drivers-x86/linux-next (b4b0b4a9e039 ipc: add intel-mid's pci id ma=
-cros)
-Merging chrome-platform/for-next (2b8454a75b90 platform/chrome: unregister =
-platform driver/device when module exit)
-Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
-may go away)
-Merging regmap/for-next (f37d0b3b106a Merge remote-tracking branch 'regmap/=
-topic/irq' into regmap-next)
-Merging hsi/for-next (43139a61fc68 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (3cb6f44aedf5 leds: s3c24xx: Remove hardware.h inclus=
-ion)
-Merging driver-core/driver-core-next (38dbfb59d117 Linus 3.14-rc1)
-Merging tty/tty-next (38dbfb59d117 Linus 3.14-rc1)
-Merging usb/usb-next (38dbfb59d117 Linus 3.14-rc1)
-Merging usb-gadget/next (836a2164491b usb: phy: keystone: remove redundant =
-return value check of platform_get_resource())
-Merging staging/staging-next (38dbfb59d117 Linus 3.14-rc1)
-Merging char-misc/char-misc-next (38dbfb59d117 Linus 3.14-rc1)
-Merging scsi/for-next (3ce438df1068 [SCSI] hpsa: allow SCSI mid layer to ha=
-ndle unit attention)
-Merging target-updates/for-next (5259a06ef970 target: Fix percpu_ref_put ra=
-ce in transport_lun_remove_cmd)
-Merging target-merge/for-next-merge (374b105797c3 Linux 3.13-rc3)
-Merging writeback/writeback-for-next (f9b0e058cbd0 writeback: Fix data corr=
-uption on NFS)
-Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
-ries)
-Merging pinctrl/for-next (7b320cb1ed2d pinctrl: protect pinctrl_list add)
-Merging vhost/linux-next (d3d665a654a3 vhost-scsi: whitespace tweak)
-Merging remoteproc/for-next (b9777859ec01 remoteproc: fix kconfig dependenc=
-ies for VIRTIO)
-Merging rpmsg/for-next (397944df3290 rpmsg: fix kconfig dependencies for VI=
-RTIO)
-Merging gpio/for-next (cffcc92e9669 gpio: xtensa: fix build when XCHAL_HAVE=
-_CP is 0)
-Merging dma-mapping/dma-mapping-next (5e01dc7b26d9 Linux 3.12)
-Merging pwm/for-next (6691a19966f0 pwm: tiecap: Remove duplicate put_sync c=
-all)
-Merging dma-buf/for-next (f546ca46faa1 dma-buf: update debugfs output)
-Merging userns/for-next (f58437f1f916 MIPS: VPE: Remove vpe_getuid and vpe_=
-getgid)
-Merging ktest/for-next (961d9caceea2 ktest: Add BISECT_TRIES to bisect test)
-Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (fd3fdaf09f26 clk: sort Makefile)
-Merging random/dev (a9f069e38cc3 random: use the architectural HWRNG for th=
-e SHA's IV in extract_buf())
-Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
- speedup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484863e0 ARM64: mm: THP sup=
-port.)
-Merging aio/master (8e321fefb0e6 aio/migratepages: make aio migrate pages s=
-ane)
-Merging akpm-current/current (0fc6f4e2e3d5 splice: fix unexpected size trun=
-cation)
-CONFLICT (content): Merge conflict in mm/slab_common.c
-CONFLICT (content): Merge conflict in mm/rmap.c
-CONFLICT (content): Merge conflict in mm/page_alloc.c
-CONFLICT (content): Merge conflict in mm/oom_kill.c
-CONFLICT (content): Merge conflict in mm/nobootmem.c
-CONFLICT (content): Merge conflict in mm/mm_init.c
-CONFLICT (content): Merge conflict in mm/mempolicy.c
-CONFLICT (content): Merge conflict in mm/memcontrol.c
-CONFLICT (content): Merge conflict in mm/memblock.c
-CONFLICT (content): Merge conflict in lib/vsprintf.c
-CONFLICT (content): Merge conflict in lib/swiotlb.c
-CONFLICT (content): Merge conflict in lib/percpu_counter.c
-CONFLICT (content): Merge conflict in lib/dma-debug.c
-CONFLICT (content): Merge conflict in ipc/util.c
-CONFLICT (content): Merge conflict in ipc/compat_mq.c
-CONFLICT (content): Merge conflict in include/linux/vm_event_item.h
-CONFLICT (content): Merge conflict in include/linux/posix_acl.h
-CONFLICT (content): Merge conflict in include/linux/fsnotify_backend.h
-CONFLICT (content): Merge conflict in include/linux/bootmem.h
-CONFLICT (content): Merge conflict in fs/posix_acl.c
-CONFLICT (content): Merge conflict in fs/notify/notification.c
-CONFLICT (content): Merge conflict in fs/notify/inotify/inotify_fsnotify.c
-CONFLICT (content): Merge conflict in fs/notify/fanotify/fanotify_user.c
-CONFLICT (add/add): Merge conflict in fs/notify/fanotify/fanotify.h
-CONFLICT (content): Merge conflict in fs/notify/fanotify/fanotify.c
-CONFLICT (content): Merge conflict in fs/afs/proc.c
-CONFLICT (content): Merge conflict in arch/x86/mm/srat.c
-CONFLICT (content): Merge conflict in arch/arm/kernel/setup.c
-CONFLICT (content): Merge conflict in Documentation/sysctl/kernel.txt
-CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/ven=
-dor-prefixes.txt
-Applying: nobootmem: fix mismerge
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: drivers/w1/w1_int.c: call put_device if device_register fails
-Applying: arm: move arm_dma_limit to setup_dma_zone
-Applying: mm: add strictlimit knob
-Merging akpm/master (3bb8eba3994d mm: add strictlimit knob)
-
---Signature=_Wed__5_Feb_2014_13_53_41_+1100_CAlXfwU=_kHJgaNQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS8ae5AAoJEMDTa8Ir7ZwVXJwP/2WoLwIn2sIdeNzDvW6BjtNN
-88z5QJ0v64bzEXqSE0e8wlVWeEyGinDhlGMkGF+kdRpJ0w0Bq5zkE4lSJnZVI86V
-Wgx26AlTNLaHdAXWvkQzKzwmZ/ch/s+sgY3cviurDxrhy2gMS2r2F38PAjyn9ozW
-xx0TNd7uRROpJ6qCU+nTvJhnMOVTeGSU6Vkri6qeHgOHTRBiJTRFY0qVqJZzqLhN
-6wlvCYITUTM7EAcUOa35indukKDCWRMBG3HBy3hW8V9n4T24tiJo6mnobGCxltOI
-5JSr+g4/ioKgP0g1+omXRnd+nLoGAZC8SF49pvSYOXEgCLXwlhulorysiCqHFJzV
-TRIxslrFHBVZ1hV1zRIIeJAylKxK1pwhuNM7/wfnTV6JiuNW6Km6po5dsV+E30Gb
-TjaQ/MAEz4epPmc0fUCWW0Wkv9Ug4HDGWvZaMd2rZ8eyRMt8aEC9QFF1Xjt1BVlD
-0ZNn0JDtfU9nRiFYPpNylzUfS2pFTmkECQyx4bxK49KE0VKCP2JpSV7p2AAJKhe/
-nmwNDyXb/v+sSivA1z2KFItzj996aY7Ai6fTfbpScvMv4/kBGBWe9mcNycc+cYCZ
-yAh0ONQGNzUZWcD9DtIIqeRx/wS1LN1KUDddAji6k50R0Jm705h0nUUG9LGhZohb
-m2Hb9+fgV7h/3fVenlAu
-=ojOI
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Feb_2014_13_53_41_+1100_CAlXfwU=_kHJgaNQ--
+Open, share and attitude like air, water and life which God blessed
