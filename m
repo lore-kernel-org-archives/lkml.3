@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaBERyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:54:55 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.148]:31111 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753163AbaBERyx (ORCPT
+	id S1753512AbaBESAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:00:19 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:46842 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961AbaBESAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:54:53 -0500
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 12:54:52 EST
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-14.tower-178.messagelabs.com!1391622513!25786800!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <6a398d176b0b2bf8792d27bd5e2995fd96afb32d.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Wed, 5 Feb 2014 17:48:32 +0000
-Subject: [PATCH 1/8] ASoC: da9055: Fix device registration of PMIC and CODEC devices
-To: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Guenter Roeck <linux@roeck-us.net>
+	Wed, 5 Feb 2014 13:00:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140204200018.GZ22609@sirena.org.uk>
+References: <1391493268-3242-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<20140204110531.GR22609@sirena.org.uk>
+	<CAJAp7OjCnJ=P9Gi20=D9gybREiSaqd1CaQ0K=9fGbCzU1gTFLw@mail.gmail.com>
+	<20140204181831.GP22609@sirena.org.uk>
+	<CAJAp7Ohn3ch2nK_S8j9ieRBzNeyt6OJmumEhRXXykB9RgMJsQg@mail.gmail.com>
+	<20140204200018.GZ22609@sirena.org.uk>
+Date: Wed, 5 Feb 2014 10:00:15 -0800
+Message-ID: <CAJAp7OjB-cJbLpdWo0RFJZefCKcCiKc8KgrjkBobJnddv4MSWA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: core: Make regulator object reflect configured voltage
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the I2C device Ids conflict for the MFD and CODEC so
-cannot be both instantiated on one platform. This patch updates
-the Ids and names to make them unique from each other.
+On Tue, Feb 4, 2014 at 12:00 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Feb 04, 2014 at 11:09:03AM -0800, Bjorn Andersson wrote:
+>
+>> I have a regulator that's being configured from DT as:
+>> regulator-min-microvolt = <2950000>;
+>> regulator-max-microvolt = <2950000>;
+>
+>> In the consumer I do regulator_set_voltage(2.95V).
+>
+>> As min == max the voltage is applied by the regulator framework on registration
+>> of the regulator; and the regulator_set_voltage() fails as
+>> REGULATOR_CHANGE_VOLTAGE is not set for this regulator.
+>
+> So we should be changing the code to allow a set_voltage() that sets the
+> voltage to the existing voltage regardless of constraints allowing a
+> change then - that's what the underlying issue is.  Your change wouldn't
+> cover the case where the hardware defualt is being used for example.
 
-It should be noted that the I2C addresses for both PMIC and CODEC
-are modifiable so instantiation of the two are kept as separate
-devices, rather than instantiating the CODEC from the MFD code.
+Makes sense, but the only thing we could check for would be if min_uV
+== max_uV == current-voltage. That would work out fine for this use
+case, but do you think it would be good enough?
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
----
- drivers/mfd/da9055-i2c.c  |   12 ++++++++++--
- sound/soc/codecs/da9055.c |   11 +++++++++--
- 2 files changed, 19 insertions(+), 4 deletions(-)
+The best thing I've come up with then is to add the following check in
+regulator_set_voltage().
 
-diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
-index 13af7e5..8103e43 100644
---- a/drivers/mfd/da9055-i2c.c
-+++ b/drivers/mfd/da9055-i2c.c
-@@ -53,17 +53,25 @@ static int da9055_i2c_remove(struct i2c_client *i2c)
- 	return 0;
- }
+if (min_uV == max_uV && _regulator_get_voltage(rdev) == min_uV)
+    goto out;
 
-+/*
-+ * DO NOT change the device Ids. The naming is intentionally specific as both
-+ * the PMIC and CODEC parts of this chip are instantiated separately as I2C
-+ * devices (both have configurable I2C addresses, and are to all intents and
-+ * purposes separate). As a result there are specific DA9055 ids for PMIC
-+ * and CODEC, which must be different to operate together.
-+ */
- static struct i2c_device_id da9055_i2c_id[] = {
--	{"da9055", 0},
-+	{"da9055-pmic", 0},
- 	{ }
- };
-+MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+Would this be acceptable? It's achieving the same thing as my patch,
+is more robust and covers the case of setting the voltage to the hw
+default value.
 
- static struct i2c_driver da9055_i2c_driver = {
- 	.probe = da9055_i2c_probe,
- 	.remove = da9055_i2c_remove,
- 	.id_table = da9055_i2c_id,
- 	.driver = {
--		.name = "da9055",
-+		.name = "da9055-pmic",
- 		.owner = THIS_MODULE,
- 	},
- };
-diff --git a/sound/soc/codecs/da9055.c b/sound/soc/codecs/da9055.c
-index 52b79a4..4228126 100644
---- a/sound/soc/codecs/da9055.c
-+++ b/sound/soc/codecs/da9055.c
-@@ -1523,8 +1523,15 @@ static int da9055_remove(struct i2c_client *client)
- 	return 0;
- }
-
-+/*
-+ * DO NOT change the device Ids. The naming is intentionally specific as both
-+ * the CODEC and PMIC parts of this chip are instantiated separately as I2C
-+ * devices (both have configurable I2C addresses, and are to all intents and
-+ * purposes separate). As a result there are specific DA9055 Ids for CODEC
-+ * and PMIC, which must be different to operate together.
-+ */
- static const struct i2c_device_id da9055_i2c_id[] = {
--	{ "da9055", 0 },
-+	{ "da9055-codec", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
-@@ -1532,7 +1539,7 @@ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
- /* I2C codec control layer */
- static struct i2c_driver da9055_i2c_driver = {
- 	.driver = {
--		.name = "da9055",
-+		.name = "da9055-codec",
- 		.owner = THIS_MODULE,
- 	},
- 	.probe		= da9055_i2c_probe,
---
-1.7.0.4
-
+Regards,
+Bjorn
