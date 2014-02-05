@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaBEW0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:26:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35323 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756066AbaBEW0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:26:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,789,1384329600"; 
-   d="scan'208";a="450399739"
-Date: Wed, 5 Feb 2014 14:23:52 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFCv2 08/10] xhci: Add a global command queue
-Message-ID: <20140205222352.GA14117@xanatos>
-References: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>
- <1391091027-31783-9-git-send-email-mathias.nyman@linux.intel.com>
- <CAPcyv4gFtrDVTE6JCLFqG4SP2SQNALNwstaULcM67Zi5RrpJ5Q@mail.gmail.com>
+	id S1756148AbaBEW01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:26:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38794 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066AbaBEW0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 17:26:22 -0500
+Date: Wed, 5 Feb 2014 14:27:29 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.13 000/140] 3.13.2-stable review
+Message-ID: <20140205222729.GB22532@kroah.com>
+References: <20140204211036.967663852@linuxfoundation.org>
+ <52F2A1DE.4060009@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPcyv4gFtrDVTE6JCLFqG4SP2SQNALNwstaULcM67Zi5RrpJ5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52F2A1DE.4060009@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 10:57:09PM -0800, Dan Williams wrote:
-> On Thu, Jan 30, 2014 at 6:10 AM, Mathias Nyman <mathias.nyman@linux.intel.com> wrote:
-> > @@ -1722,6 +1723,12 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
-> >                 kfree(cur_cd);
-> >         }
+On Wed, Feb 05, 2014 at 01:41:02PM -0700, Shuah Khan wrote:
+> On 02/04/2014 02:09 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.13.2 release.
+> >There are 140 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
 > >
-> > +       list_for_each_entry_safe(cur_cmd, next_cmd,
-> > +                       &xhci->cmd_list, cmd_list) {
-> > +               list_del(&cur_cmd->cmd_list);
-> > +               kfree(cur_cmd);
-> > +       }
-> > +
+> >Responses should be made by Thu Feb  6 21:10:18 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.2-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> >
 > 
-> Aren't commands on the cmd_list currently being executed, or are there
-> other guarantees that make sure all commands have terminated?
+> Patch applied cleanly. boot tests passed on all test systems. No dmesg
+> regressions: emerg, crit, alert, err are clean. No regressions in warn.
 
-By the time we get to xhci_mem_cleanup, we've done our best effort to
-halt the xHCI host controller.  That could timeout, I suppose, but I'm
-not sure what we're expected to do in that case.  If the host won't
-halt, I'm not sure it will be able to, say, respond to the request to
-cancel the current command.
+Thanks for testing all of these and letting me know.
 
-Sarah Sharp
+> Minor Note: git apply --index complained about extra white space at the end
+> of patch file. patch -p1 worked just fine.
+
+That came from an upstream patch, I didn't "clean" it up any.
+
+thanks,
+
+greg k-h
