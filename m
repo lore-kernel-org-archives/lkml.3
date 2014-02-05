@@ -1,287 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaBEVpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:45:04 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:3786 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaBEVo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:44:59 -0500
-Message-ID: <52F2B0C2.8040408@hp.com>
-Date: Wed, 05 Feb 2014 16:44:34 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1754291AbaBEVpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:45:35 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:50336 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753750AbaBEVpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 16:45:32 -0500
+Date: Wed, 5 Feb 2014 15:45:36 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Russ Anderson <rja@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [BUG] Linux 3.14 fails to boot with new EFI changes
+Message-ID: <20140205214536.GT3034@sgi.com>
+References: <20140128110552.GA815@pd.tnic>
+ <20140128200754.GZ18196@sgi.com>
+ <20140128225905.GN815@pd.tnic>
+ <20140128234036.GB18196@sgi.com>
+ <20140129141822.GC24887@pd.tnic>
+ <20140130221950.GJ3105@sgi.com>
+ <52EAD0F2.7090101@zytor.com>
+ <20140131100722.GA21873@pd.tnic>
+ <20140131140220.GC22498@sgi.com>
+ <20140131142318.GC21873@pd.tnic>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jason Low <jason.low2@hp.com>, mingo@redhat.com,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC][PATCH v2 5/5] mutex: Give spinners a chance to spin_on_owner
- if need_resched() triggered while queued
-References: <1390936396-3962-1-git-send-email-jason.low2@hp.com> <1390936396-3962-6-git-send-email-jason.low2@hp.com> <20140128210753.GJ11314@laptop.programming.kicks-ass.net> <1390949495.2807.52.camel@j-VirtualBox> <20140129115142.GE9636@twins.programming.kicks-ass.net>
-In-Reply-To: <20140129115142.GE9636@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140131142318.GC21873@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2014 06:51 AM, Peter Zijlstra wrote:
-> On Tue, Jan 28, 2014 at 02:51:35PM -0800, Jason Low wrote:
->>> But urgh, nasty problem. Lemme ponder this a bit.
-> OK, please have a very careful look at the below. It survived a boot
-> with udev -- which usually stresses mutex contention enough to explode
-> (in fact it did a few time when I got the contention/cancel path wrong),
-> however I have not ran anything else on it.
->
-> The below is an MCS variant that allows relatively cheap unqueueing. But
-> its somewhat tricky and I might have gotten a case wrong, esp. the
-> double concurrent cancel case got my head hurting (I didn't attempt a
-> tripple unqueue).
->
-> Applies to tip/master but does generate a few (harmless) compile
-> warnings because I didn't fully clean up the mcs_spinlock vs m_spinlock
-> thing.
->
-> Also, there's a comment in the slowpath that bears consideration.
->
->
+On Fri, Jan 31, 2014 at 03:23:18PM +0100, Borislav Petkov wrote:
+> And now my question:
+> 
+> How can I reliably find out which region contains that
+> uv_systab.function call?
+> 
+> I need it so that I can map it in the EFI page table and you can
+> continue to call that function and you can get back to your reliable way
+> to boot.
 
-I have an alternative way of breaking out of the MCS lock waiting queue 
-when need_resched() is set. I overload the locked flag to indicate a 
-skipped node if negative. I run the patch through the AIM7 high-systime 
-workload on a 4-socket server and it seemed to run fine.
+While working on an answer to this question, I ran across another issue
+on some newer hardware, that looks like it's definitely related to this
+problem, and might be the root cause.
 
-Please check the following POC patch to see if you have any comment.
-diff --git a/include/linux/mcs_spinlock.h b/include/linux/mcs_spinlock.h
-index e9a4d74..84a0b32 100644
---- a/include/linux/mcs_spinlock.h
-+++ b/include/linux/mcs_spinlock.h
-@@ -14,17 +14,45 @@
+When booting on a UV2 we die in efi_enter_virtual_mode:
 
-  struct mcs_spinlock {
-      struct mcs_spinlock *next;
--    int locked; /* 1 if lock acquired */
-+    int locked; /* 1 if lock acquired, -1 if skipping node */
-  };
+BUG: unable to handle kernel paging request at 0000008f7e848020
+IP: [<000000007dadb6a9>] 0x7dadb6a8
+PGD 0
+Oops: 0000 [#1] SMP
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.11.0-medusa-00038-gd2f7cbe #821
+Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
+task: ffffffff817ae400 ti: ffffffff8179e000 task.ti: ffffffff8179e000
+RIP: 0010:[<000000007dadb6a9>]  [<000000007dadb6a9>] 0x7dadb6a8
+RSP: 0000:ffffffff8179fd90  EFLAGS: 00010202
+RAX: 000000007d9b8e01 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 000000007db074f8 RSI: 000000007d9b8e18 RDI: 0000008f7e848000
+RBP: 000000007db074f8 R08: 0000000000000001 R09: 0000008f7e848000
+R10: 0000000000000030 R11: ffff880ffffda000 R12: 8000000000000000
+R13: 000077ff80000000 R14: ffff888f7e848000 R15: 000000000009b000
+FS:  0000000000000000(0000) GS:ffff880fffc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000008f7e848020 CR3: 000000000009b000 CR4: 00000000000406b0
+Stack:
+ fffffffef6000000 0000000000000000 0000000000000000 80000000000001e3
+ 0000000000000030 000000007dadd540 0000000000001f20 0000000060000202
+ 000000007d9b8da0 000000007daf8c6b ffffffff810fd2bc 00000000000000d0
+Call Trace:
+ [<ffffffff810fd2bc>] ? cache_grow+0x1e5/0x236
+ [<ffffffff8103adac>] ? efi_call4+0x6c/0xf0
+ [<ffffffff8186452f>] ? efi_enter_virtual_mode+0x1ac/0x328
+ [<ffffffff8184de98>] ? start_kernel+0x35b/0x3ed
+ [<ffffffff8184d950>] ? repair_env_string+0x60/0x60
+ [<ffffffff8184d479>] ? x86_64_start_reservations+0x2e/0x30
+ [<ffffffff8184d5a3>] ? x86_64_start_kernel+0x128/0x12f
+Code:  Bad RIP value.
+RIP  [<000000007dadb6a9>] 0x7dadb6a8
+ RSP <ffffffff8179fd90>
+CR2: 0000008f7e848020
 
-+/*
-+ * The node skipping feature requires the MCS node to be persistent,
-+ * i.e. not allocated on stack. In addition, the MCS node cannot be
-+ * reused until after the locked flag is cleared. The mcs_skip_node()
-+ * macro must be defined before including this header file.
-+ */
-+#ifdef mcs_skip_node
-+#undef arch_mcs_spin_lock_contended
-+#undef arch_mcs_spin_unlock_contended
-+
-+#define    arch_mcs_spin_lock_contended(n)                    \
-+do {                                    \
-+    while (!smp_load_acquire(&(n)->locked)) {            \
-+        if (mcs_skip_node(n)) {                    \
-+            if (cmpxchg(&(n)->locked, 0, -1) == 0)        \
-+                return;                    \
-+        }                            \
-+        arch_mutex_cpu_relax();                    \
-+    };                                \
-+} while (0)
-+
-+#define    arch_mcs_spin_unlock_contended(n)                \
-+    if (cmpxchg(&(n)->locked, 0, 1) == 0)                \
-+        return
-+
-+#define mcs_set_locked(n, v)    (n)->locked = (v)
-+#else    /* mcs_skip_node */
-+
-  #ifndef arch_mcs_spin_lock_contended
-  /*
-   * Using smp_load_acquire() provides a memory barrier that ensures
-   * subsequent operations happen after the lock is acquired.
-   */
--#define arch_mcs_spin_lock_contended(l)                    \
-+#define arch_mcs_spin_lock_contended(n)                    \
-  do {                                    \
--    while (!(smp_load_acquire(l)))                    \
-+    while (!(smp_load_acquire(&(n)->locked)))            \
-          arch_mutex_cpu_relax();                    \
-  } while (0)
-  #endif
-@@ -35,9 +63,12 @@ do {                                \
-   * operations in the critical section has been completed before
-   * unlocking.
-   */
--#define arch_mcs_spin_unlock_contended(l)                \
--    smp_store_release((l), 1)
-+#define arch_mcs_spin_unlock_contended(n)                \
-+    smp_store_release(&(n)->locked, 1)
-+
-+#define mcs_set_locked(n, v)
-  #endif
-+#endif    /* mcs_skip_node */
+Let me know what other information you need and I'll get it to you ASAP.
 
-  /*
-   * Note: the smp_load_acquire/smp_store_release pair is not
-@@ -77,12 +108,13 @@ void mcs_spin_lock(struct mcs_spinlock **lock, 
-struct mcs_spinlock *node)
-           * value won't be used. If a debug mode is needed to
-           * audit lock status, then set node->locked value here.
-           */
-+        mcs_set_locked(node, 1);
-          return;
-      }
-      ACCESS_ONCE(prev->next) = node;
+Thanks!
 
-      /* Wait until the lock holder passes the lock down. */
--    arch_mcs_spin_lock_contended(&node->locked);
-+    arch_mcs_spin_lock_contended(node);
-  }
-
-  /*
-@@ -94,19 +126,35 @@ void mcs_spin_unlock(struct mcs_spinlock **lock, 
-struct mcs_spinlock *node)
-  {
-      struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-
-+#ifdef mcs_skip_node
-+check_next_node:
-+#endif
-      if (likely(!next)) {
-          /*
-           * Release the lock by setting it to NULL
-           */
--        if (likely(cmpxchg(lock, node, NULL) == node))
-+        if (likely(cmpxchg(lock, node, NULL) == node)) {
-+            mcs_set_locked(node, 0);
-              return;
-+        }
-          /* Wait until the next pointer is set */
-          while (!(next = ACCESS_ONCE(node->next)))
-              arch_mutex_cpu_relax();
-      }
-+    /* Clear the lock flag to indicate the node can be used again. */
-+    mcs_set_locked(node, 0);
-
-      /* Pass lock to next waiter. */
--    arch_mcs_spin_unlock_contended(&next->locked);
-+    arch_mcs_spin_unlock_contended(next);
-+
-+#ifdef mcs_skip_node
-+    /*
-+     * The next node should be skipped
-+     */
-+    node = next;
-+    next = ACCESS_ONCE(node->next);
-+    goto check_next_node;
-+#endif
-  }
-
-  #endif /* __LINUX_MCS_SPINLOCK_H */
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 45fe1b5..6351eca 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -25,6 +25,10 @@
-  #include <linux/spinlock.h>
-  #include <linux/interrupt.h>
-  #include <linux/debug_locks.h>
-+/*
-+ * Allowed an MCS node to be skipped if need_resched() is true.
-+ */
-+#define mcs_skip_node(n)    need_resched()
-  #include <linux/mcs_spinlock.h>
-
-  /*
-@@ -45,6 +49,13 @@
-   */
-  #define    MUTEX_SHOW_NO_WAITER(mutex)    
-(atomic_read(&(mutex)->count) >= 0)
-
-+/*
-+ * Using a single mcs node per CPU is safe because mutex_lock() should 
-not be
-+ * called from interrupt context and we have preemption disabled over 
-the mcs
-+ * lock usage.
-+ */
-+static DEFINE_PER_CPU(struct mcs_spinlock, m_node);
-+
-  void
-  __mutex_init(struct mutex *lock, const char *name, struct 
-lock_class_key *key)
-  {
-@@ -166,6 +177,9 @@ static inline int mutex_can_spin_on_owner(struct 
-mutex *lock)
-      struct task_struct *owner;
-      int retval = 1;
-
-+    if (need_resched())
-+        return 0;
-+
-      rcu_read_lock();
-      owner = ACCESS_ONCE(lock->owner);
-      if (owner)
-@@ -370,6 +384,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned int subclass,
-      struct mutex_waiter waiter;
-      unsigned long flags;
-      int ret;
-+    struct mcs_spinlock  *node;
-
-      preempt_disable();
-      mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
-@@ -400,9 +415,13 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned int subclass,
-      if (!mutex_can_spin_on_owner(lock))
-          goto slowpath;
-
-+    node = this_cpu_ptr(&m_node);
-+    if (node->locked < 0)
-+        /* MCS node not available yet */
-+        goto slowpath;
-+
-      for (;;) {
-          struct task_struct *owner;
--        struct mcs_spinlock  node;
-
-          if (use_ww_ctx && ww_ctx->acquired > 0) {
-              struct ww_mutex *ww;
-@@ -424,10 +443,15 @@ __mutex_lock_common(struct mutex *lock, long 
-state, unsigned int subclass,
-           * If there's an owner, wait for it to either
-           * release the lock or go to sleep.
-           */
--        mcs_spin_lock(&lock->mcs_lock, &node);
-+        mcs_spin_lock(&lock->mcs_lock, node);
-+        if (node->locked < 0)
-+            /*
-+             * need_resched() true, no unlock needed
-+             */
-+            goto slowpath;
-          owner = ACCESS_ONCE(lock->owner);
-          if (owner && !mutex_spin_on_owner(lock, owner)) {
--            mcs_spin_unlock(&lock->mcs_lock, &node);
-+            mcs_spin_unlock(&lock->mcs_lock, node);
-              goto slowpath;
-          }
-
-@@ -442,11 +466,11 @@ __mutex_lock_common(struct mutex *lock, long 
-state, unsigned int subclass,
-              }
-
-              mutex_set_owner(lock);
--            mcs_spin_unlock(&lock->mcs_lock, &node);
-+            mcs_spin_unlock(&lock->mcs_lock, node);
-              preempt_enable();
-              return 0;
-          }
--        mcs_spin_unlock(&lock->mcs_lock, &node);
-+        mcs_spin_unlock(&lock->mcs_lock, node);
-
-          /*
-           * When there's no owner, we might have preempted between the
-
-
-
+- Alex
