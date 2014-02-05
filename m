@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaBEJLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:11:10 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:41767 "EHLO smtp4-g21.free.fr"
+	id S1751420AbaBEJOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:14:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27331 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118AbaBEJLH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:11:07 -0500
-Date: Wed, 5 Feb 2014 10:11:34 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org, Dave Airlie <airlied@gmail.com>,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 4/5] ASoC: tda998x: adjust the audio hw parameters
- from EDID
-Message-ID: <20140205101134.4591e5c3@armhf>
-In-Reply-To: <20140204180625.GM22609@sirena.org.uk>
-References: <cover.1391274627.git.moinejf@free.fr>
-	<1b15025671d9099863a3091346536e45891e4a26.1391274628.git.moinejf@free.fr>
-	<20140204180625.GM22609@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	id S1751017AbaBEJOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 04:14:48 -0500
+Date: Wed, 5 Feb 2014 10:14:28 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 04/22] perf tools: Add --list report option
+Message-ID: <20140205091428.GC1201@krava.brq.redhat.com>
+References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
+ <1391377150-23920-5-git-send-email-jolsa@redhat.com>
+ <87iosu1g5v.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87iosu1g5v.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Feb 2014 18:06:25 +0000
-Mark Brown <broonie@kernel.org> wrote:
-
-> On Mon, Jan 27, 2014 at 09:48:54AM +0100, Jean-Francois Moine wrote:
+On Wed, Feb 05, 2014 at 10:50:36AM +0900, Namhyung Kim wrote:
+> On Sun,  2 Feb 2014 22:38:52 +0100, Jiri Olsa wrote:
+> > Adding --list report option to display entries sequentialy:
+> >
+> >   $ perf report --list --stdio
+> >   ...
+> >        0.00%       13151.543527 +000000.000000       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+> >        0.00%       13151.543530 +000000.000003       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+> >        0.00%       13151.543532 +000000.000005       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+> >        0.00%       13151.543534 +000000.000007       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+> >        0.05%       13151.543536 +000000.000009       ls  [kernel.kallsyms]  [k] native_write_msr_safe
+> >        0.92%       13151.543538 +000000.000011       ls  [kernel.kallsyms]  [k] perf_event_comm
+> >       14.52%       13151.543560 +000000.000033       ls  [kernel.kallsyms]  [k] uprobe_mmap
+> >       30.10%       13151.543878 +000000.000351       ls  ld-2.17.so         [.] _dl_setup_hash
+> >       29.30%       13151.544531 +000000.001004       ls  ls                 [.] gobble_file.constprop.49
+> >       25.09%       13151.545613 +000000.002086       ls  [kernel.kallsyms]  [k] _cond_resched
 > 
-> > +		/* change the snd_soc_pcm_stream values of the driver */
-> > +		stream->rates = rate_mask;
-> > +		stream->channels_max = max_channels;
-> > +		stream->formats = formats;
-> 
-> > +	/* copy the DAI driver to a writable area */
-> > +	dai_drv = devm_kzalloc(&pdev->dev, sizeof(tda998x_dai), GFP_KERNEL);
-> > +	if (!dai_drv)
-> > +		return -ENOMEM;
-> > +	memcpy(dai_drv, tda998x_dai, sizeof(tda998x_dai));
-> > +
-> 
-> The code should be doing this by setting constraints based on the
-> current setup rather than by editing the data structure - the expecation
-> is very much that the data won't change so this prevents surprises with
-> future work on the core.
+> Hmm.. it seems what this --list option does is very similar to
+> what "perf script -f time,comm,dso,sym,ip" tries to do, no?
 
-As it is done in the soc core, in soc_pcm_open(), the runtime hw_params
-are initialized after the call to the CODEC startup, and the next CODEC
-event is hw_params() when the user has already chosen all the parameters.
+correct.. it's just byproduct which I need for lock browser
+I'm working on.. but this basic output seemed usefull and
+actually missing from report portfolio ;-)
 
-So, in the CODEC, I don't see how I could update the parameters
-dictated by the EDID otherwise in changing the DAI driver parameters.
+but as I said, it's a byproduct and I can leave it for
+the lock change patchset
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+thanks,
+jirka
