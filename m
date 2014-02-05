@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaBESxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:53:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51744 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaBESx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:53:27 -0500
-Message-ID: <52F28875.9000200@ti.com>
-Date: Wed, 5 Feb 2014 20:52:37 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752622AbaBES4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:56:45 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:41761 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaBES4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 13:56:43 -0500
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v5 2/3] clocksource: keystone: add bindings for keystone
- timer
-References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>	<1391608060-10760-3-git-send-email-ivan.khoronzhuk@ti.com>	<CAL_JsqKVc2fdg1Q+TH6ro9kpJmUYyHw8FCwhORfm2_oj6GYM2Q@mail.gmail.com>	<52F26444.5090707@ti.com> <CAL_JsqL6YDcZJa5xziR7dP-bEt1CO4BtL1vsO8Qm+hFwgCiQ1w@mail.gmail.com>
-In-Reply-To: <CAL_JsqL6YDcZJa5xziR7dP-bEt1CO4BtL1vsO8Qm+hFwgCiQ1w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACRpkda=h=0bpMfHeq-zJs5nZ+740rz9jZChCk0OAHm=Jmw5AQ@mail.gmail.com>
+References: <1391463780-19840-1-git-send-email-markus.mayer@linaro.org>
+	<CACRpkda=h=0bpMfHeq-zJs5nZ+740rz9jZChCk0OAHm=Jmw5AQ@mail.gmail.com>
+Date: Wed, 5 Feb 2014 10:56:42 -0800
+Message-ID: <CAPdLdqmb7_e04w-Mw8NiqjyYVaaPyd79Hn8HsWWQx0mEFKS8AQ@mail.gmail.com>
+Subject: Re: [PATCH] gpio: bcm281xx: Update MODULE_AUTHOR
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Linux GPIO List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 02/05/2014 07:41 PM, Rob Herring wrote:
-> On Wed, Feb 5, 2014 at 10:18 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
->> On 02/05/2014 04:39 PM, Rob Herring wrote:
->>> On Wed, Feb 5, 2014 at 7:47 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> wrote:
->>>> This patch provides bindings for the 64-bit timer in the KeyStone
->>>> architecture devices. The timer can be configured as a general-purpose
->>>> 64-bit
->>>> timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
->>>> timers, each half can operate in conjunction (chain mode) or
->>>> independently
->>>> (unchained mode) of each other.
->>> This is software configurable or h/w design time configurations?
->>>
->>> Rob
->>>
->> This is h/w design time configurations
-> Then it seems like the binding should provide for describing those
-> differences either with a property or different compatible strings.
+On 5 February 2014 02:03, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Feb 3, 2014 at 10:43 PM, Markus Mayer <markus.mayer@linaro.org> wrote:
 >
-> Rob
-Oh..sorry, seems I didn't catch, this is configurable by software.
-These configurations are like modes in which timer can work
-and they are not different hardware IPs. It depends on driver in
-which mode it should work.
+>> Add Broadcom's upstreaming mailing list address to MODULE_AUTHOR.
+>>
+>> Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+>
+> Hm OK not that this is used very much, and nothing to argue about
+> so patch applied.
+
+Thanks. I am hopefully done the trivial changes to this driver now.
+
+> However we do not really recognize corporate bodies as maintainers,
+> only physical people whose GPG keys we can sign ... but I
+> guess you wanted to convey that the driver is the work of several
+> individuals inside BRCM and thus authors, while you take care
+> of the maintenance.
+
+That's exactly right.
+
+> A patch to MAINTAINERS adding this to Christians entry for
+> the SoCs or as a standalone entry with Markus as maintainer
+> would be more important and usefule than this though, so I'm
+> throwing out that challenge!
+
+I'll talk to Christian about this and see what we can come up with.
+
+Regards,
+-Markus
 
 -- 
-Regards,
-Ivan Khoronzhuk
-
+Markus Mayer
+Broadcom Landing Team
