@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaBEUtv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:49:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55018 "EHLO
+	id S1755487AbaBEUuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:50:15 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55015 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809AbaBEUGI (ORCPT
+	with ESMTP id S1754808AbaBEUGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:08 -0500
+	Wed, 5 Feb 2014 15:06:07 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Hin-Tak Leung <htl10@users.sourceforge.net>,
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 079/213] hfsplus: fix potential overflow in hfsplus_file_truncate()
-Date: Wed, 5 Feb 2014 15:00:34 -0500
-Message-ID: <1391630568-49251-80-git-send-email-paul.gortmaker@windriver.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [v2.6.34-stable 104/213] mm: mmu_notifier: fix freed page still mapped in secondary MMU
+Date: Wed, 5 Feb 2014 15:00:59 -0500
+Message-ID: <1391630568-49251-105-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -28,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -36,34 +35,134 @@ From: Vyacheslav Dubeyko <slava@dubeyko.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 12f267a20aecf8b84a2a9069b9011f1661c779b4 upstream.
+commit 3ad3d901bbcfb15a5e4690e55350db0899095a68 upstream.
 
-Change a u32 to loff_t hfsplus_file_truncate().
+mmu_notifier_release() is called when the process is exiting.  It will
+delete all the mmu notifiers.  But at this time the page belonging to the
+process is still present in page tables and is present on the LRU list, so
+this race will happen:
 
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Hin-Tak Leung <htl10@users.sourceforge.net>
+      CPU 0                 CPU 1
+mmu_notifier_release:    try_to_unmap:
+   hlist_del_init_rcu(&mn->hlist);
+                            ptep_clear_flush_notify:
+                                  mmu nofifler not found
+                            free page  !!!!!!
+                            /*
+                             * At the point, the page has been
+                             * freed, but it is still mapped in
+                             * the secondary MMU.
+                             */
+
+  mn->ops->release(mn, mm);
+
+Then the box is not stable and sometimes we can get this bug:
+
+[  738.075923] BUG: Bad page state in process migrate-perf  pfn:03bec
+[  738.075931] page:ffffea00000efb00 count:0 mapcount:0 mapping:          (null) index:0x8076
+[  738.075936] page flags: 0x20000000000014(referenced|dirty)
+
+The same issue is present in mmu_notifier_unregister().
+
+We can call ->release before deleting the notifier to ensure the page has
+been unmapped from the secondary MMU before it is freed.
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/hfsplus/extents.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/mmu_notifier.c | 45 +++++++++++++++++++++++----------------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
 
-diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
-index 0022eec63cda..b3d234e5b498 100644
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -447,7 +447,7 @@ void hfsplus_file_truncate(struct inode *inode)
- 		struct address_space *mapping = inode->i_mapping;
- 		struct page *page;
- 		void *fsdata;
--		u32 size = inode->i_size;
-+		loff_t size = inode->i_size;
- 		int res;
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 438951d366f2..0b54146f986e 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -33,6 +33,24 @@
+ void __mmu_notifier_release(struct mm_struct *mm)
+ {
+ 	struct mmu_notifier *mn;
++	struct hlist_node *n;
++
++	/*
++	 * RCU here will block mmu_notifier_unregister until
++	 * ->release returns.
++	 */
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
++		/*
++		 * if ->release runs before mmu_notifier_unregister it
++		 * must be handled as it's the only way for the driver
++		 * to flush all existing sptes and stop the driver
++		 * from establishing any more sptes before all the
++		 * pages in the mm are freed.
++		 */
++		if (mn->ops->release)
++			mn->ops->release(mn, mm);
++	rcu_read_unlock();
  
- 		res = pagecache_write_begin(NULL, mapping, size, 0,
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+@@ -46,23 +64,6 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 		 * mmu_notifier_unregister to return.
+ 		 */
+ 		hlist_del_init_rcu(&mn->hlist);
+-		/*
+-		 * RCU here will block mmu_notifier_unregister until
+-		 * ->release returns.
+-		 */
+-		rcu_read_lock();
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-		/*
+-		 * if ->release runs before mmu_notifier_unregister it
+-		 * must be handled as it's the only way for the driver
+-		 * to flush all existing sptes and stop the driver
+-		 * from establishing any more sptes before all the
+-		 * pages in the mm are freed.
+-		 */
+-		if (mn->ops->release)
+-			mn->ops->release(mn, mm);
+-		rcu_read_unlock();
+-		spin_lock(&mm->mmu_notifier_mm->lock);
+ 	}
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
+ 
+@@ -264,16 +265,13 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ {
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+ 
+-	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	if (!hlist_unhashed(&mn->hlist)) {
+-		hlist_del_rcu(&mn->hlist);
+-
+ 		/*
+ 		 * RCU here will force exit_mmap to wait ->release to finish
+ 		 * before freeing the pages.
+ 		 */
+ 		rcu_read_lock();
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
++
+ 		/*
+ 		 * exit_mmap will block in mmu_notifier_release to
+ 		 * guarantee ->release is called before freeing the
+@@ -282,8 +280,11 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
+ 		rcu_read_unlock();
+-	} else
++
++		spin_lock(&mm->mmu_notifier_mm->lock);
++		hlist_del_rcu(&mn->hlist);
+ 		spin_unlock(&mm->mmu_notifier_mm->lock);
++	}
+ 
+ 	/*
+ 	 * Wait any running method to finish, of course including
 -- 
 1.8.5.2
 
