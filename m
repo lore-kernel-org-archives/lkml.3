@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaBEEno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 23:43:44 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:37697 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668AbaBEEnk (ORCPT
+	id S932115AbaBEEnm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 23:43:42 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:53324 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626AbaBEEnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 23:43:40 -0500
-Date: Tue, 4 Feb 2014 23:43:35 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Matt Ranostay <mranostay@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        devicetree@vger.kernel.org, pantelis.antoniou@gmail.com
-Subject: Re: [PATCH v4 1/2] iio:as3935: Add DT binding docs for AS3935 driver
-Message-ID: <20140205044335.GA2172@beef>
-References: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
+	Tue, 4 Feb 2014 23:43:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391570096-2932-1-git-send-email-mranostay@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140203193802.GE25625@lukather>
+References: <1391398346-5094-1-git-send-email-wens@csie.org>
+ <1391398346-5094-9-git-send-email-wens@csie.org> <20140203193802.GE25625@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Wed, 5 Feb 2014 12:43:18 +0800
+X-Google-Sender-Auth: L80pqrpkQ2TzZUv6CBiG8alPNeI
+Message-ID: <CAGb2v659T_QTLChB0NRS0seQvwDBCmTAH6UBEghZng9Ac6uL4g@mail.gmail.com>
+Subject: Re: [PATCH v3 8/8] ARM: dts: sun7i: Add ethernet alias for GMAC
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 04, 2014 at 07:14:55PM -0800, Matt Ranostay Matt Ranostay wrote:
-> Document compatible string, required and optional DT properties for
-> AS3935 chipset driver.
-> 
-> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
-> ---
->  .../devicetree/bindings/iio/proximity/as3935.txt   | 25 ++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/proximity/as3935.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/iio/proximity/as3935.txt b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
-> new file mode 100644
-> index 0000000..7e117cd
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/proximity/as3935.txt
-> @@ -0,0 +1,25 @@
-> +Austrian Microsystems AS3935 Franklin lightning sensor device driver
-> +
-> +Required properties:
-> +	- compatible: must be "ams,as3935"
+On Tue, Feb 4, 2014 at 3:38 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Mon, Feb 03, 2014 at 11:32:26AM +0800, Chen-Yu Tsai wrote:
+>> U-Boot will insert MAC address into the device tree image.
+>> It looks up ethernet[0-5] aliases to find the ethernet nodes.
+>> Alias GMAC as ethernet0, as it is the only ethernet controller used.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> ---
+>>  arch/arm/boot/dts/sun7i-a20.dtsi | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+>> index 65fb8d0..c48fb11 100644
+>> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+>> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+>> @@ -17,7 +17,7 @@
+>>       interrupt-parent = <&gic>;
+>>
+>>       aliases {
+>> -             ethernet0 = &emac;
+>> +             ethernet0 = &gmac;
+>>       };
+>
+> I'm not very fond of this patch.
+>
+> People might rely on the fact that ethernet0 is actually the emac, and
+> are expecting u-boot to fill the ethaddr variable to the emac, and not
+> the gmac.
+>
+> Since u-boot is totally able to deal with several ethernet addresses,
+> please add it as ethernet1.
 
-Change this to "amstaos,as3935"
+Actually I think we should override this in the board dts.
+The boards we currently support can only use emac or gmac,
+and in our u-boot tree, they have been converted to using
+gmac. If any future boards support both emac and gmac, we
+can address the ordering then. And the ordering should
+match u-boot.
 
-amstaos (AMS bought Taos) is already a registered vendor prefix in
-vendor-prefixes.txt
+What do you think?
 
-> +	- reg: SPI chip select number for the device
-> +	- spi-cpha: SPI Mode 1
 
-When using generic binding properties, please reference the binding
-being used. Like:
-
-	- spi-cpha: SPI Mode 1. Refer to spi/spi-bus.txt for generic SPI
-	  slave node bindings.
-
-> +  	- interrupt-parent : should be the phandle for the interrupt controller
-> +	- interrupts : interrupt mapping for GPIO IRQ
-
-	Refer to interrupt-controller/interrupts.txt for generic
-	interrupt client node bindings.
-
-> +
-> +Optional properties:
-> +	- ams,tune-cap: Calibration tuning capacitor stepping value 0 - 15.
-> +	  Range of 0 to 120 pF, 8pF steps. This will require using the
-> +	  calibration data from the manufacturer.
-> +
-> +
-> +Example:
-> +
-> +as3935@0 {
-> +	compatible = "ams,as3935";
-> +	reg = <0>;
-> +	spi-cpha;
-> +	interrupt-parent = <&gpio1>;
-> +	interrupts = <16 1>;
-> +	ams,tune-cap = /bits/ 8 <10>;
-
-What is this? Why not just ams,tune-cap = <10>; ?
-
-It's a value between 0-15, right?
-
--Matt
+Cheers
+ChenYu
