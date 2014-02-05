@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaBEUJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:09:18 -0500
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:36991 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514AbaBEUJM (ORCPT
+	id S1754794AbaBEUJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:09:53 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55770 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755461AbaBEUIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:09:12 -0500
+	Wed, 5 Feb 2014 15:08:53 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Willy Tarreau <w@1wt.eu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 211/213] PCI: Add quirk for still enabled interrupts on Intel Sandy Bridge GPUs
+Date: Wed, 5 Feb 2014 15:02:46 -0500
+Message-ID: <1391630568-49251-212-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <20140205195236.GM11667@thunk.org>
-References: <201402050915.34607.gheskett@wdtv.com> <201402051324.59495.gheskett@wdtv.com>
- <20140205195236.GM11667@thunk.org>
-From: Roger Heflin <rogerheflin@gmail.com>
-Date: Wed, 5 Feb 2014 14:08:50 -0600
-Message-ID: <CAAMCDecOdOMRpx6-EHOjKfGO_PQHD83APOzLOwHGxHO40CL_fQ@mail.gmail.com>
-Subject: Re: possible viri in tarballs?
-To: "Theodore Ts'o" <tytso@mit.edu>, Gene Heskett <gheskett@wdtv.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gene,
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-How big is the file you have?      Here is what I have, and this is
-from several different kernels.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
- wc gadget_multi.txt
- 150  830 5482 gadget_multi.tx
+commit cdb1f35dc7de42802527140a3613871c394548e1 upstream.
 
-cksum gadget_multi.txt
-3973522114 5482 gadget_multi.txt
+commit f67fd55fa96f7d7295b43ffbc4a97d8f55e473aa upstream.
 
-ls -l gadget_multi.txt
--rw-rw-r-- 1 root root 5482 Dec 20 09:51 gadget_multi.txt
+Some BIOS implementations leave the Intel GPU interrupts enabled,
+even though no one is handling them (f.e. i915 driver is never loaded).
+Additionally the interrupt destination is not set up properly
+and the interrupt ends up -somewhere-.
 
-If you size/cksum is different something modified your file
+These spurious interrupts are "sticky" and the kernel disables
+the (shared) interrupt line after 100.000+ generated interrupts.
 
+Fix it by disabling the still enabled interrupts.
+This resolves crashes often seen on monitor unplug.
 
-On Wed, Feb 5, 2014 at 1:52 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Feb 05, 2014 at 01:24:59PM -0500, Gene Heskett wrote:
->> >/home/gene/src/linux-3.2.40/Documentation/usb/gadget_multi.txt:
->> >MBL_400944.UNOFFICIAL FOUND
->>
->> You will see more history.
->>
->> So that file needs sanitized.  I was under the impression that a file with
->> the .txt extension was supposed to be pure ascii text, but its loaded to
->> the gills with some sort of markup crap.  And I have at least 20 copies of
->> it.
->
-> Huh?   There are lines with
->
-> * Overview
->
-> ...
->
-> ** Linux host drivers
->
-> ...
->
-> in that file, sure.  But I'd hardly call that "loaded to the gills
-> with markup crap".
->
-> If the file was had any amount of XML or XHTML2, that would be markup
-> crap.  But some Twiki style ascii markup is hardly a problem -- it
-> looks just fine when viewed in a text reader.
->
->                                  - Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Tested on the following boards:
+- Intel DH61CR: Affected
+- Intel DH67BL: Affected
+- Intel S1200KP server board: Affected
+- Asus P8H61-M LE: Affected, but system does not crash.
+  Probably the IRQ ends up somewhere unnoticed.
+
+According to reports on the net, the Intel DH61WW board is also affected.
+
+Many thanks to Jesse Barnes from Intel for helping
+with the register configuration and to Intel in general
+for providing public hardware documentation.
+
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Tested-by: Charlie Suffin <charlie.suffin@stratus.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/pci/quirks.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 6938fdc41e79..052af89854c1 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2692,6 +2692,40 @@ static void __devinit fixup_ti816x_class(struct pci_dev* dev)
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
+ 
++/*
++ * Some BIOS implementations leave the Intel GPU interrupts enabled,
++ * even though no one is handling them (f.e. i915 driver is never loaded).
++ * Additionally the interrupt destination is not set up properly
++ * and the interrupt ends up -somewhere-.
++ *
++ * These spurious interrupts are "sticky" and the kernel disables
++ * the (shared) interrupt line after 100.000+ generated interrupts.
++ *
++ * Fix it by disabling the still enabled interrupts.
++ * This resolves crashes often seen on monitor unplug.
++ */
++#define I915_DEIER_REG 0x4400c
++static void __devinit disable_igfx_irq(struct pci_dev *dev)
++{
++	void __iomem *regs = pci_iomap(dev, 0, 0);
++	if (regs == NULL) {
++		dev_warn(&dev->dev, "igfx quirk: Can't iomap PCI device\n");
++		return;
++	}
++
++	/* Check if any interrupt line is still enabled */
++	if (readl(regs + I915_DEIER_REG) != 0) {
++		dev_warn(&dev->dev, "BIOS left Intel GPU interrupts enabled; "
++			"disabling\n");
++
++		writel(0, regs + I915_DEIER_REG);
++	}
++
++	pci_iounmap(dev, regs);
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
+-- 
+1.8.5.2
+
