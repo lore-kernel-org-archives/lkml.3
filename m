@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaBERfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:35:33 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:35636 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011AbaBERfc (ORCPT
+	id S1753491AbaBERgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:36:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35963 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaBERgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:35:32 -0500
+	Wed, 5 Feb 2014 12:36:09 -0500
+Date: Wed, 5 Feb 2014 09:37:17 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 000/140] 3.13.2-stable review
+Message-ID: <20140205173717.GB10652@kroah.com>
+References: <20140204211036.967663852@linuxfoundation.org>
+ <52F1DD0B.4070100@roeck-us.net>
 MIME-Version: 1.0
-Date: Wed, 5 Feb 2014 11:35:31 -0600
-Message-ID: <CAFZT-jKRnH_2RQVhcY5wkJf_P1T+uMOueGst6-MypEC27FJZEQ@mail.gmail.com>
-Subject: mutex_unlock is missed in function (drm_crtc_init) in file (linux-3.13/drivers/gpu/drm/drm_crtc.c)
-From: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52F1DD0B.4070100@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bug Report Filed: https://bugzilla.kernel.org/show_bug.cgi?id=70081
-Linux Version [3.13]
-Configuration: Default configuration for x86
+On Tue, Feb 04, 2014 at 10:41:15PM -0800, Guenter Roeck wrote:
+> On 02/04/2014 01:09 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.13.2 release.
+> >There are 140 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Thu Feb  6 21:10:18 UTC 2014.
+> >Anything received after that time might be too late.
+> >
+> 
+> Version tested: v3.13.1-139
+> 
+> Build results:
+>     total: 126 pass: 122 skipped: 4 fail: 0
+> 
+> qemu tests all passed.
+> 
+> Results are as expected.
+> 
+> Details are available at http://server.roeck-us.net:8010/builders.
 
-In function (drm_crtc_init) in file (linux-3.13/drivers/gpu/drm/drm_crtc.c):
+Very nice to see all 4 -rc releases passed this, thanks for letting me
+know.
 
-The structure (crtc->mutex) gets successfully locked at line (636) by
-(drm_modeset_lock_all(dev)), but it is not unlocked before line (637)
-where the structure is reinitialized. After line (637) the
-re-initialized structure gets locked at (638) and unlocked at line
-(650) by (drm_modeset_unlock_all(dev)).
-
-A possible solution is to call (drm_modeset_unlock_all(dev)) before
-the re-initialization line (637).
-
-
-Thanks,
-Ahmed
+greg k-h
