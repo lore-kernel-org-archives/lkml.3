@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562AbaBEUFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:05:34 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48136 "EHLO
+	id S1755622AbaBEU4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:56:46 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48154 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517AbaBEUF1 (ORCPT
+	with ESMTP id S1754565AbaBEUFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:27 -0500
+	Wed, 5 Feb 2014 15:05:35 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+CC: Neil Horman <nhorman@tuxdriver.com>, David Miller <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 078/213] kernel panic when mount NFSv4
-Date: Wed, 5 Feb 2014 15:00:33 -0500
-Message-ID: <1391630568-49251-79-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 064/213] drop_monitor: fix sleeping in invalid context warning
+Date: Wed, 5 Feb 2014 15:00:19 -0500
+Message-ID: <1391630568-49251-65-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,142 +31,113 @@ From: Trond Myklebust <Trond.Myklebust@netapp.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit beb0f0a9fba1fa98b378329a9a5b0a73f25097ae upstream.
+commit cde2e9a651b76d8db36ae94cd0febc82b637e5dd upstream.
 
-On Tue, 2010-12-14 at 16:58 +0800, Mi Jinlong wrote:
-> Hi,
->
-> When testing NFSv4 at RHEL6 with kernel 2.6.32, I got a kernel panic
-> at NFS client's __rpc_create_common function.
->
-> The panic place is:
->   rpc_mkpipe
->     __rpc_lookup_create()          <=== find pipefile *idmap*
->     __rpc_mkpipe()                 <=== pipefile is *idmap*
->       __rpc_create_common()
->        ******  BUG_ON(!d_unhashed(dentry)); ******    *panic*
->
-> It means that the dentry's d_flags have be set DCACHE_UNHASHED,
-> but it should not be set here.
->
-> Is someone known this bug? or give me some idea?
->
-> A reproduce program is append, but it can't reproduce the bug every time.
-> the export is: "/nfsroot       *(rw,no_root_squash,fsid=0,insecure)"
->
-> And the panic message is append.
->
-> ============================================================================
-> #!/bin/sh
->
-> LOOPTOTAL=768
-> LOOPCOUNT=0
-> ret=0
->
-> while [ $LOOPCOUNT -ne $LOOPTOTAL ]
-> do
-> 	((LOOPCOUNT += 1))
-> 	service nfs restart
-> 	/usr/sbin/rpc.idmapd
-> 	mount -t nfs4 127.0.0.1:/ /mnt|| return 1;
-> 	ls -l /var/lib/nfs/rpc_pipefs/nfs/*/
-> 	umount /mnt
-> 	echo $LOOPCOUNT
-> done
->
-> ===============================================================================
-> Code: af 60 01 00 00 89 fa 89 f0 e8 64 cf 89 f0 e8 5c 7c 64 cf 31 c0 8b 5c 24 10 8b
-> 74 24 14 8b 7c 24 18 8b 6c 24 1c 83 c4 20 c3 <0f> 0b eb fc 8b 46 28 c7 44 24 08 20
-> de ee f0 c7 44 24 04 56 ea
-> EIP:[<f0ee92ea>] __rpc_create_common+0x8a/0xc0 [sunrpc] SS:ESP 0068:eccb5d28
-> ---[ end trace 8f5606cd08928ed2]---
-> Kernel panic - not syncing: Fatal exception
-> Pid:7131, comm: mount.nfs4 Tainted: G     D   -------------------2.6.32 #1
-> Call Trace:
->  [<c080ad18>] ? panic+0x42/0xed
->  [<c080e42c>] ? oops_end+0xbc/0xd0
->  [<c040b090>] ? do_invalid_op+0x0/0x90
->  [<c040b10f>] ? do_invalid_op+0x7f/0x90
->  [<f0ee92ea>] ? __rpc_create_common+0x8a/0xc0[sunrpc]
->  [<f0edc433>] ? rpc_free_task+0x33/0x70[sunrpc]
->  [<f0ed6508>] ? prc_call_sync+0x48/0x60[sunrpc]
->  [<f0ed656e>] ? rpc_ping+0x4e/0x60[sunrpc]
->  [<f0ed6eaf>] ? rpc_create+0x38f/0x4f0[sunrpc]
->  [<c080d80b>] ? error_code+0x73/0x78
->  [<f0ee92ea>] ? __rpc_create_common+0x8a/0xc0[sunrpc]
->  [<c0532bda>] ? d_lookup+0x2a/0x40
->  [<f0ee94b1>] ? rpc_mkpipe+0x111/0x1b0[sunrpc]
->  [<f10a59f4>] ? nfs_create_rpc_client+0xb4/0xf0[nfs]
->  [<f10d6c6d>] ? nfs_fscache_get_client_cookie+0x1d/0x50[nfs]
->  [<f10d3fcb>] ? nfs_idmap_new+0x7b/0x140[nfs]
->  [<c05e76aa>] ? strlcpy+0x3a/0x60
->  [<f10a60ca>] ? nfs4_set_client+0xea/0x2b0[nfs]
->  [<f10a6d0c>] ? nfs4_create_server+0xac/0x1b0[nfs]
->  [<c04f1400>] ? krealloc+0x40/0x50
->  [<f10b0e8b>] ? nfs4_remote_get_sb+0x6b/0x250[nfs]
->  [<c04f14ec>] ? kstrdup+0x3c/0x60
->  [<c0520739>] ? vfs_kern_mount+0x69/0x170
->  [<f10b1a3c>] ? nfs_do_root_mount+0x6c/0xa0[nfs]
->  [<f10b1b47>] ? nfs4_try_mount+0x37/0xa0[nfs]
->  [<f10afe6d>] ? nfs4_validate_text_mount_data+-x7d/0xf0[nfs]
->  [<f10b1c42>] ? nfs4_get_sb+0x92/0x2f0
->  [<c0520739>] ? vfs_kern_mount+0x69/0x170
->  [<c05366d2>] ? get_fs_type+0x32/0xb0
->  [<c052089f>] ? do_kern_mount+0x3f/0xe0
->  [<c053954f>] ? do_mount+0x2ef/0x740
->  [<c0537740>] ? copy_mount_options+0xb0/0x120
->  [<c0539a0e>] ? sys_mount+0x6e/0xa0
+Eric Dumazet pointed out this warning in the drop_monitor protocol to me:
 
-Hi,
+[   38.352571] BUG: sleeping function called from invalid context at kernel/mutex.c:85
+[   38.352576] in_atomic(): 1, irqs_disabled(): 0, pid: 4415, name: dropwatch
+[   38.352580] Pid: 4415, comm: dropwatch Not tainted 3.4.0-rc2+ #71
+[   38.352582] Call Trace:
+[   38.352592]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
+[   38.352599]  [<ffffffff81063f2a>] __might_sleep+0xca/0xf0
+[   38.352606]  [<ffffffff81655b16>] mutex_lock+0x26/0x50
+[   38.352610]  [<ffffffff8153aaf0>] ? trace_napi_poll_hit+0xd0/0xd0
+[   38.352616]  [<ffffffff810b72d9>] tracepoint_probe_register+0x29/0x90
+[   38.352621]  [<ffffffff8153a585>] set_all_monitor_traces+0x105/0x170
+[   38.352625]  [<ffffffff8153a8ca>] net_dm_cmd_trace+0x2a/0x40
+[   38.352630]  [<ffffffff8154a81a>] genl_rcv_msg+0x21a/0x2b0
+[   38.352636]  [<ffffffff810f8029>] ? zone_statistics+0x99/0xc0
+[   38.352640]  [<ffffffff8154a600>] ? genl_rcv+0x30/0x30
+[   38.352645]  [<ffffffff8154a059>] netlink_rcv_skb+0xa9/0xd0
+[   38.352649]  [<ffffffff8154a5f0>] genl_rcv+0x20/0x30
+[   38.352653]  [<ffffffff81549a7e>] netlink_unicast+0x1ae/0x1f0
+[   38.352658]  [<ffffffff81549d76>] netlink_sendmsg+0x2b6/0x310
+[   38.352663]  [<ffffffff8150824f>] sock_sendmsg+0x10f/0x130
+[   38.352668]  [<ffffffff8150abe0>] ? move_addr_to_kernel+0x60/0xb0
+[   38.352673]  [<ffffffff81515f04>] ? verify_iovec+0x64/0xe0
+[   38.352677]  [<ffffffff81509c46>] __sys_sendmsg+0x386/0x390
+[   38.352682]  [<ffffffff810ffaf9>] ? handle_mm_fault+0x139/0x210
+[   38.352687]  [<ffffffff8165b5bc>] ? do_page_fault+0x1ec/0x4f0
+[   38.352693]  [<ffffffff8106ba4d>] ? set_next_entity+0x9d/0xb0
+[   38.352699]  [<ffffffff81310b49>] ? tty_ldisc_deref+0x9/0x10
+[   38.352703]  [<ffffffff8106d363>] ? pick_next_task_fair+0x63/0x140
+[   38.352708]  [<ffffffff8150b8d4>] sys_sendmsg+0x44/0x80
+[   38.352713]  [<ffffffff8165f8e2>] system_call_fastpath+0x16/0x1b
 
-Does the following patch fix the problem?
+It stems from holding a spinlock (trace_state_lock) while attempting to register
+or unregister tracepoint hooks, making in_atomic() true in this context, leading
+to the warning when the tracepoint calls might_sleep() while its taking a mutex.
+Since we only use the trace_state_lock to prevent trace protocol state races, as
+well as hardware stat list updates on an rcu write side, we can just convert the
+spinlock to a mutex to avoid this problem.
 
-Cheers
-  Trond
-
---------------------------
-SUNRPC: Fix a BUG in __rpc_create_common
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-Mi Jinlong reports:
-
-When testing NFSv4 at RHEL6 with kernel 2.6.32, I got a kernel panic
-at NFS client's __rpc_create_common function.
-
-The panic place is:
-  rpc_mkpipe
-      __rpc_lookup_create()          <=== find pipefile *idmap*
-      __rpc_mkpipe()                 <=== pipefile is *idmap*
-        __rpc_create_common()
-         ******  BUG_ON(!d_unhashed(dentry)); ****** *panic*
-
-The test is wrong: we can find ourselves with a hashed negative dentry here
-if the idmapper tried to look up the file before we got round to creating
-it.
-
-Just replace the BUG_ON() with a d_drop(dentry).
-
-Reported-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/rpc_pipe.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/drop_monitor.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index dbf50f9f7ed2..f4da18e14c0b 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -459,7 +459,7 @@ static int __rpc_create_common(struct inode *dir, struct dentry *dentry,
- {
- 	struct inode *inode;
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index cf208d8042b1..e596db9fefd0 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -42,7 +42,7 @@ static void send_dm_alert(struct work_struct *unused);
+  * netlink alerts
+  */
+ static int trace_state = TRACE_OFF;
+-static DEFINE_SPINLOCK(trace_state_lock);
++static DEFINE_MUTEX(trace_state_mutex);
  
--	BUG_ON(!d_unhashed(dentry));
-+	d_drop(dentry);
- 	inode = rpc_get_inode(dir->i_sb, mode);
- 	if (!inode)
- 		goto out_err;
+ struct per_cpu_dm_data {
+ 	struct work_struct dm_alert_work;
+@@ -221,7 +221,7 @@ static int set_all_monitor_traces(int state)
+ 	struct dm_hw_stat_delta *new_stat = NULL;
+ 	struct dm_hw_stat_delta *temp;
+ 
+-	spin_lock(&trace_state_lock);
++	mutex_lock(&trace_state_mutex);
+ 
+ 	switch (state) {
+ 	case TRACE_ON:
+@@ -252,7 +252,7 @@ static int set_all_monitor_traces(int state)
+ 	if (!rc)
+ 		trace_state = state;
+ 
+-	spin_unlock(&trace_state_lock);
++	mutex_unlock(&trace_state_mutex);
+ 
+ 	if (rc)
+ 		return -EINPROGRESS;
+@@ -297,12 +297,12 @@ static int dropmon_net_event(struct notifier_block *ev_block,
+ 
+ 		new_stat->dev = dev;
+ 		new_stat->last_rx = jiffies;
+-		spin_lock(&trace_state_lock);
++		mutex_lock(&trace_state_mutex);
+ 		list_add_rcu(&new_stat->list, &hw_stats_list);
+-		spin_unlock(&trace_state_lock);
++		mutex_unlock(&trace_state_mutex);
+ 		break;
+ 	case NETDEV_UNREGISTER:
+-		spin_lock(&trace_state_lock);
++		mutex_lock(&trace_state_mutex);
+ 		list_for_each_entry_safe(new_stat, tmp, &hw_stats_list, list) {
+ 			if (new_stat->dev == dev) {
+ 				new_stat->dev = NULL;
+@@ -313,7 +313,7 @@ static int dropmon_net_event(struct notifier_block *ev_block,
+ 				}
+ 			}
+ 		}
+-		spin_unlock(&trace_state_lock);
++		mutex_unlock(&trace_state_mutex);
+ 		break;
+ 	}
+ out:
 -- 
 1.8.5.2
 
