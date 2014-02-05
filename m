@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaBEUIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:08:22 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48593 "EHLO
+	id S1755441AbaBEUIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:08:34 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48635 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaBEUH4 (ORCPT
+	with ESMTP id S932406AbaBEUIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:56 -0500
+	Wed, 5 Feb 2014 15:08:14 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andi Kleen <ak@linux.intel.com>, David Howells <dhowells@redhat.com>,
+CC: Greg Pearson <greg.pearson@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 191/213] Fix install_process_keyring error handling
-Date: Wed, 5 Feb 2014 15:02:26 -0500
-Message-ID: <1391630568-49251-192-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 199/213] pcdp: use early_ioremap/early_iounmap to access pcdp table
+Date: Wed, 5 Feb 2014 15:02:34 -0500
+Message-ID: <1391630568-49251-200-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Greg Pearson <greg.pearson@hp.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,32 +33,70 @@ From: Andi Kleen <ak@linux.intel.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 27d6379894be4a81984da4d48002196a83939ca9 upstream.
+commit 6c4088ac3a4d82779903433bcd5f048c58fb1aca upstream.
 
-Fix an incorrect error check that returns 1 for error instead of the
-expected error code.
+efi_setup_pcdp_console() is called during boot to parse the HCDP/PCDP
+EFI system table and setup an early console for printk output.  The
+routine uses ioremap/iounmap to setup access to the HCDP/PCDP table
+information.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+The call to ioremap is happening early in the boot process which leads
+to a panic on x86_64 systems:
+
+    panic+0x01ca
+    do_exit+0x043c
+    oops_end+0x00a7
+    no_context+0x0119
+    __bad_area_nosemaphore+0x0138
+    bad_area_nosemaphore+0x000e
+    do_page_fault+0x0321
+    page_fault+0x0020
+    reserve_memtype+0x02a1
+    __ioremap_caller+0x0123
+    ioremap_nocache+0x0012
+    efi_setup_pcdp_console+0x002b
+    setup_arch+0x03a9
+    start_kernel+0x00d4
+    x86_64_start_reservations+0x012c
+    x86_64_start_kernel+0x00fe
+
+This replaces the calls to ioremap/iounmap in efi_setup_pcdp_console()
+with calls to early_ioremap/early_iounmap which can be called during
+early boot.
+
+This patch was tested on an x86_64 prototype system which uses the
+HCDP/PCDP table for early console setup.
+
+Signed-off-by: Greg Pearson <greg.pearson@hp.com>
+Acked-by: Khalid Aziz <khalid.aziz@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- security/keys/process_keys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firmware/pcdp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 71c10cec3c18..058d4fdf5de1 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -207,7 +207,7 @@ static int install_process_keyring(void)
- 	ret = install_process_keyring_to_cred(new);
- 	if (ret < 0) {
- 		abort_creds(new);
--		return ret != -EEXIST ?: 0;
-+		return ret != -EEXIST ? ret : 0;
+diff --git a/drivers/firmware/pcdp.c b/drivers/firmware/pcdp.c
+index 51e0e2d8fac6..a330492e06f9 100644
+--- a/drivers/firmware/pcdp.c
++++ b/drivers/firmware/pcdp.c
+@@ -95,7 +95,7 @@ efi_setup_pcdp_console(char *cmdline)
+ 	if (efi.hcdp == EFI_INVALID_TABLE_ADDR)
+ 		return -ENODEV;
+ 
+-	pcdp = ioremap(efi.hcdp, 4096);
++	pcdp = early_ioremap(efi.hcdp, 4096);
+ 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
+ 
+ 	if (strstr(cmdline, "console=hcdp")) {
+@@ -131,6 +131,6 @@ efi_setup_pcdp_console(char *cmdline)
  	}
  
- 	return commit_creds(new);
+ out:
+-	iounmap(pcdp);
++	early_iounmap(pcdp, 4096);
+ 	return rc;
+ }
 -- 
 1.8.5.2
 
