@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaBEPSf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:18:35 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:58171 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811AbaBEPSc (ORCPT
+	id S1752453AbaBEP2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:28:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38051 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaBEP2D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:18:32 -0500
-Date: Wed, 5 Feb 2014 10:18:26 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Tim Kryger <tim.kryger@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux I2C List <linux-i2c@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/6] i2c: bcm-kona: register with subsys_initcall
-Message-ID: <20140205151826.GC22153@beef>
-References: <1391516352-32359-1-git-send-email-mporter@linaro.org>
- <1391516352-32359-2-git-send-email-mporter@linaro.org>
- <20140205090818.GA2614@katana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205090818.GA2614@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Feb 2014 10:28:03 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH v2 0/5] Split mach-msm into legacy and mach-qcom (multiplatform)
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <20140205004732.GB12815@codeaurora.org>
+Date: Wed, 5 Feb 2014 09:27:57 -0600
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <86DB2204-BB01-4B64-AF0C-5A0045DA8ABD@codeaurora.org>
+References: <1391553532-27001-1-git-send-email-galak@codeaurora.org> <20140205004732.GB12815@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 10:08:18AM +0100, Wolfram Sang wrote:
-> On Tue, Feb 04, 2014 at 07:19:07AM -0500, Matt Porter wrote:
+
+On Feb 4, 2014, at 6:47 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+
+> On 02/04, Kumar Gala wrote:
+>> This is the splits the Qualcomm MSM platform into legacy support that we will
+>> not try and convert to multiplatform and multiplatform support.
+>> 
+>> - k
+>> 
+>> Changes from v1:
+>> * Added patch to remove hotplug.c
+>> * Added patch to rename msm_ to qcom_
+>> * Changes the Kconfig to drop CPU_V7
+>> * used wfi() in cpu_die function
+>> * Added git tree to MAINTAINERS file
 > 
-> > Voltage regulators are needed very early due to deferred probe
-> > being incompatible with built-in USB gadget drivers.
-> 
-> What does it need to fix those instead?
+> What's the plan for this series combined with my SMP series? It
+> looks like this isn't based on those patches, so we'll have some
+> conflicts with the msm to qcom rename but it should be fairly
+> minor.
 
-[added Alan/Felipe for more insight]
+I’ve rebased the smp patch series on top of this set, so will post the new version short (hopefully once we close on these).
 
-Discussion on that topic came about from this submission:
-http://www.spinics.net/lists/linux-usb/msg94217.html
+- k
 
-End of it is:
-http://www.spinics.net/lists/linux-usb/msg94731.html
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
-We can either add to the many drivers that already do subsys_initcall()
-for similar reasons...or I can drop this from the series and add gadget
-probe ordering to my TODO list.
-
-In short, it can't be a late_initcall() hack like the original post and
-really could be solved by converting to a real bus (and letting
-deferred probe do its job)..but Alan voiced concerns about that.
-
--Matt
