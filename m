@@ -1,130 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268AbaBENKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:10:07 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34376 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750757AbaBENKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:10:05 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>
-Cc: linux-sunxi@googlegroups.com, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 1/5] clk: sunxi: Add support for PLL6 on the A31
-Date: Wed,  5 Feb 2014 14:05:03 +0100
-Message-Id: <1391605507-30981-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1391605507-30981-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1391605507-30981-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1752091AbaBENMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:12:53 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55983 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263AbaBENMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:12:51 -0500
+Message-ID: <52F23887.9060209@ti.com>
+Date: Wed, 5 Feb 2014 18:41:35 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH V5 2/4] DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar
+ IP
+References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <1386066445-28245-3-git-send-email-r.sricharan@ti.com> <52D7B2CA.8080902@ti.com> <52EF7D85.5070705@ti.com> <alpine.DEB.2.02.1402041713470.24986@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1402041713470.24986@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 has a slightly different PLL6 clock. Add support for this new clock in
-our driver.
+On Tuesday 04 February 2014 09:44 PM, Thomas Gleixner wrote:
+> On Mon, 3 Feb 2014, Sricharan R wrote:
+>>> I already have your reviewed-by tag for the first patch in this series.
+>>>
+>>> Kevin was pointing out that irqchip maintainer tag is needed for this patch as well
+>>> to be merged. We are planning to take this series through arm-soc tree.
+>>>
+>>> Can i please have your tag for this patch as well ?
+> 
+> Acked-by-me
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- Documentation/devicetree/bindings/clock/sunxi.txt |  1 +
- drivers/clk/sunxi/clk-sunxi.c                     | 45 +++++++++++++++++++++++
- 2 files changed, 46 insertions(+)
+Thanks Thomas.
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-index c2cb762..954845c 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -11,6 +11,7 @@ Required properties:
- 	"allwinner,sun6i-a31-pll1-clk" - for the main PLL clock on A31
- 	"allwinner,sun4i-pll5-clk" - for the PLL5 clock
- 	"allwinner,sun4i-pll6-clk" - for the PLL6 clock
-+	"allwinner,sun6i-a31-pll6-clk" - for the PLL6 clock on A31
- 	"allwinner,sun4i-cpu-clk" - for the CPU multiplexer clock
- 	"allwinner,sun4i-axi-clk" - for the AXI clock
- 	"allwinner,sun4i-axi-gates-clk" - for the AXI gates
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index abb6c5a..0c05c2d 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -249,7 +249,38 @@ static void sun4i_get_pll5_factors(u32 *freq, u32 parent_rate,
- 	*n = DIV_ROUND_UP(div, (*k+1));
- }
- 
-+/**
-+ * sun6i_a31_get_pll6_factors() - calculates n, k factors for A31 PLL6
-+ * PLL6 rate is calculated as follows
-+ * rate = parent_rate * n * (k + 1) / 2
-+ * parent_rate is always 24Mhz
-+ */
-+
-+static void sun6i_a31_get_pll6_factors(u32 *freq, u32 parent_rate,
-+				       u8 *n, u8 *k, u8 *m, u8 *p)
-+{
-+	u8 div;
-+
-+	/*
-+	 * We always have 24MHz / 2, so we can just say that our
-+	 * parent clock is 12MHz.
-+	 */
-+	parent_rate = parent_rate / 2;
-+
-+	/* Normalize value to a parent_rate multiple (24M / 2) */
-+	div = *freq / parent_rate;
-+	*freq = parent_rate * div;
-+
-+	/* we were called to round the frequency, we can now return */
-+	if (n == NULL)
-+		return;
-+
-+	*k = div / 32;
-+	if (*k > 3)
-+		*k = 3;
- 
-+	*n = DIV_ROUND_UP(div, (*k+1));
-+}
- 
- /**
-  * sun4i_get_apb1_factors() - calculates m, p factors for APB1
-@@ -416,6 +447,13 @@ static struct clk_factors_config sun4i_pll5_config = {
- 	.kwidth = 2,
- };
- 
-+static struct clk_factors_config sun6i_a31_pll6_config = {
-+	.nshift	= 8,
-+	.nwidth = 5,
-+	.kshift = 4,
-+	.kwidth = 2,
-+};
-+
- static struct clk_factors_config sun4i_apb1_config = {
- 	.mshift = 0,
- 	.mwidth = 5,
-@@ -457,6 +495,12 @@ static const struct factors_data sun4i_pll5_data __initconst = {
- 	.getter = sun4i_get_pll5_factors,
- };
- 
-+static const struct factors_data sun6i_a31_pll6_data __initconst = {
-+	.enable = 31,
-+	.table = &sun6i_a31_pll6_config,
-+	.getter = sun6i_a31_get_pll6_factors,
-+};
-+
- static const struct factors_data sun4i_apb1_data __initconst = {
- 	.table = &sun4i_apb1_config,
- 	.getter = sun4i_get_apb1_factors,
-@@ -972,6 +1016,7 @@ free_clkdata:
- static const struct of_device_id clk_factors_match[] __initconst = {
- 	{.compatible = "allwinner,sun4i-pll1-clk", .data = &sun4i_pll1_data,},
- 	{.compatible = "allwinner,sun6i-a31-pll1-clk", .data = &sun6i_a31_pll1_data,},
-+	{.compatible = "allwinner,sun6i-a31-pll6-clk", .data = &sun6i_a31_pll6_data,},
- 	{.compatible = "allwinner,sun4i-apb1-clk", .data = &sun4i_apb1_data,},
- 	{.compatible = "allwinner,sun4i-mod0-clk", .data = &sun4i_mod0_data,},
- 	{.compatible = "allwinner,sun7i-a20-out-clk", .data = &sun7i_a20_out_data,},
--- 
-1.8.4.2
+Kevin,
+    I will re-send a branch based on rc1 for this.
 
+Regards,
+ Sricharan
