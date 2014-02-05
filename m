@@ -1,193 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbaBEP5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:57:16 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:15056 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672AbaBEP5J (ORCPT
+	id S1752917AbaBEP7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:59:13 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:48901 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504AbaBEP7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:57:09 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-c5-52f25f52d319
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, kishon@ti.com,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
-        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
-        matt.porter@linaro.org, tjakobi@math.uni-bielefeld.de
-References: <1391016574-25237-9-git-send-email-k.debski@samsung.com>
- <Pine.LNX.4.44L0.1401291530001.23560-100000@netrider.rowland.org>
-In-reply-to: <Pine.LNX.4.44L0.1401291530001.23560-100000@netrider.rowland.org>
-Subject: RE: [PATCH v6 8/8] usb: ehci-exynos: Change to use phy provided by the
- generic phy framework
-Date: Wed, 05 Feb 2014 16:57:04 +0100
-Message-id: <054301cf228a$eb58a480$c209ed80$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8dM56xZaXgN3DfSu+Eq23cmWVUzQFSPwIw
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t/xq7pB8Z+CDB7c1rRYsvsGq8X8I+dY
-	LfrfLGS1aLtykN3i8sJLrBYXnvawWZxtegPk7prDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
-	pmnsFue3dDJZHH7Tzmox4fcFNov1M16zWLSt/sBq0XH2ILuDsMflvl4mj52z7rJ73Lm2h83j
-	3zF2j9l3fzB69G1Zxehx/MZ2Jo/Pm+QCOKK4bFJSczLLUov07RK4MmZdeslScFO1YsHZqywN
-	jEtkuxg5OSQETCQWNq5ihrDFJC7cW8/WxcjFISSwlFFi1d5T7BBOA5PEjU/rgBwODjYBTYlV
-	9zxAGkQEdCTe7LoAVsMs0M0i8WrmIWaIhg5Gic3vrrGCVHEK+ElsOb2AEcQWFkiXuH/0BNg6
-	FgFVibt3Z4LFeQUcJI4/mwplC0r8mHyPBcRmFtCSWL/zOBOELS+xec1bZpAjJATUJR791YU4
-	wkji7c4l7BAlIhJ3G56zTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKppckFxUnpuYZ6xYm5xaV5
-	6XrJ+bmbGCEx/GUH4+JjVocYBTgYlXh4O0Q/BgmxJpYVV+YeYpTgYFYS4W2N/RQkxJuSWFmV
-	WpQfX1Sak1p8iJGJg1OqgTFQ8Oay1Q8vzXxQI2j1TjSfT/FZ081H6+tjG4/v9c/xNndcvGb5
-	x3ZDNtfjt9bM33Nh1ZWgL/pFD9Qu+kex9Jtns2w8ambjpWe6p2lZ7+WH8eIeqwLf/Lt66/M3
-	PbENuRPXh6jF5PhsfGz95tayRNmUO38cXRPSufkXBEt3qWmuyBLg2WCptViJpTgj0VCLuag4
-	EQDKzkYxvwIAAA==
+	Wed, 5 Feb 2014 10:59:11 -0500
+Message-ID: <1391615569.5612.15.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI hotplug: Fix panic on eject to ejected device
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Feb 2014 08:52:49 -0700
+In-Reply-To: <3540455.FvCglr7S6V@vostro.rjw.lan>
+References: <1391561308-18893-1-git-send-email-toshi.kani@hp.com>
+	 <3540455.FvCglr7S6V@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-Thank you for your review.
-
-> From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> Sent: Wednesday, January 29, 2014 9:43 PM
-> 
-> On Wed, 29 Jan 2014, Kamil Debski wrote:
-> 
-> > Change the phy provider used from the old one using the USB phy
-> > framework to a new one using the Generic phy framework.
-> >
-> > Signed-off-by: Kamil Debski <k.debski@samsung.com>
+On Wed, 2014-02-05 at 11:05 +0000, Rafael J. Wysocki wrote:
+> On Tuesday, February 04, 2014 05:48:28 PM Toshi Kani wrote:
+> > When an eject request is sent to an ejected ACPI device, the following
+> > panic occurs:
+> > 
+> >  ACPI: \_SB_.SCK3.CPU3: ACPI_NOTIFY_EJECT_REQUEST event
+> >  BUG: unable to handle kernel NULL pointer dereference at 0000000000000070
+> >  IP: [<ffffffff813a7cfe>] acpi_device_hotplug+0x10b/0x33b
+> > 	:
+> >  Call Trace:
+> >  [<ffffffff813a24da>] acpi_hotplug_work_fn+0x1c/0x27
+> >  [<ffffffff8109cbe5>] process_one_work+0x175/0x430
+> >  [<ffffffff8109d7db>] worker_thread+0x11b/0x3a0
+> > 
+> > This is becase device->handler is NULL in acpi_device_hotplug().
+> > This case was used to fail in acpi_hotplug_notify_cb() as the target
+> > had no acpi_deivce.  However, acpi_device now exists after ejection.
+> > 
+> > Added a check to verify if acpi_device->handler is valid for an
+> > eject request in acpi_hotplug_notify_cb().  Note that handler passed
+> > from an argument is still valid while acpi_device->handler is NULL.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 > > ---
-> >  .../devicetree/bindings/usb/exynos-usb.txt         |   13 +++
-> >  drivers/usb/host/ehci-exynos.c                     |   97
-> +++++++++++++-------
-> >  2 files changed, 76 insertions(+), 34 deletions(-)
-> >
-> > diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> > b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> > index d967ba1..25e199a 100644
-> > --- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> > +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-> > @@ -12,6 +12,10 @@ Required properties:
-> >   - interrupts: interrupt number to the cpu.
-> >   - clocks: from common clock binding: handle to usb clock.
-> >   - clock-names: from common clock binding: Shall be "usbhost".
-> > +  - port: if in the SoC there are EHCI phys, they should be listed
-> here.
-> > +One phy per port. Each port should have its reg entry with a
-> > +consecutive number. Also it should contain phys and phy-names
-> entries
-> > +specifying the phy used by the port.
+> >  drivers/acpi/scan.c |    5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 7384158..5cf6adf 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -484,7 +484,6 @@ static void acpi_device_hotplug(void *data, u32 src)
+> >  static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+> >  {
+> >  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> > -	struct acpi_scan_handler *handler = data;
+> >  	struct acpi_device *adev;
+> >  	acpi_status status;
+> >  
+> > @@ -500,7 +499,9 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+> >  		break;
+> >  	case ACPI_NOTIFY_EJECT_REQUEST:
+> >  		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
+> > -		if (!handler->hotplug.enabled) {
+> > +		if (!adev->handler)
+> > +			goto err_out;
+> > +		if (!adev->handler->hotplug.enabled) {
+> >  			acpi_handle_err(handle, "Eject disabled\n");
+> >  			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> >  			goto err_out;
 > 
-> What is the reg entry number used for?  As far as I can see, it isn't
-> used for anything.  In which case, why have it at all?
+> OK, I'll queue this up for the next pull request, but it actually isn't safe,
+> because adev is not really guaranteed to exist here (it might have been deleted
+> already when this function is running).
 
-Tomasz Figa already commented this. I agree with him, that this should
-be better described in the documentation.
+It should be safe since acpi_bus_get_device() fails in this function
+when adev does not exist. 
 
-> 
-> > @@ -42,10 +42,10 @@
-> >  static const char hcd_name[] = "ehci-exynos";  static struct
-> > hc_driver __read_mostly exynos_ehci_hc_driver;
-> >
-> > +#define PHY_NUMBER 3
-> >  struct exynos_ehci_hcd {
-> >  	struct clk *clk;
-> > -	struct usb_phy *phy;
-> > -	struct usb_otg *otg;
-> 
-> You have removed all the OTG stuff from the driver.  This wasn't
-> mentioned in the patch description, and it has no connection with the
-> PHY work.
 
-Maybe I'll explain more about what are we trying to achieve. The goal
-is to replace the old phy driver with the new one. In the old driver it was
-difficult to add support to new SoC. It also had issues with having device
-and
-host working together.
+> The series of 24 patches I've sent recently addresses this problem, but they
+> are 3.15 material, so we need a stop-gap for 3.14.
 
-You're right that until the old phy driver is removed support for the it
-should
-remain. To be able to remove the old driver both new USB2 and new USB3 phy
-drivers
-have to be ready. The USB3 driver is written by Vivek Gautam and as I see
-it, he
-is also close to completion.
-
-Regarding the otg part. The old phy driver is the only provider of the otg
-structure. It sets the host field of the structure. It is then used by
-samsung_usb2phy_init (drivers/usb/phy/phy-samsung-usb2.c) to check which
-driver is requesting the phy (is it host or device). In the new driver this
-is determined by the entry in device tree. So no need to check the otg
-struct
-and strstr (!) to check if dev_name is ehci, ohci or other, like the old
-driver.
-
-> > +	struct phy *phy[PHY_NUMBER];
-> >  };
-> >
-> >  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd
-> > *)(hcd_to_ehci(hcd)->priv) @@ -69,13 +69,43 @@ static void
-> exynos_setup_vbus_gpio(struct platform_device *pdev)
-> >  		dev_err(dev, "can't request ehci vbus gpio %d", gpio);  }
-> >
-> > +static int exynos_phys_on(struct phy *p[]) {
-> > +	int i;
-> > +	int ret = 0;
-> > +
-> > +	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
-> > +		if (p[i])
-> > +			ret = phy_power_on(p[i]);
-> > +	if (ret)
-> > +		for (i--; i > 0; i--)
-> > +			if (p[i])
-> > +				phy_power_off(p[i]);
-> 
-> This loop runs while i > 0.  Therefore you will never turn off the
-> power to p[0].
-
-Ups, my bad. Thank you for spotting this.
-
-> 
-> > @@ -102,14 +132,26 @@ static int exynos_ehci_probe(struct
-> platform_device *pdev)
-> >  					"samsung,exynos5440-ehci"))
-> >  		goto skip_phy;
-> >
-> > -	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-> > -	if (IS_ERR(phy)) {
-> > -		usb_put_hcd(hcd);
-> 
-> You omitted this line from the new error returns below.
-
-I see.
-
-> 
-> > -		dev_warn(&pdev->dev, "no platform data or transceiver
-> defined\n");
-> > -		return -EPROBE_DEFER;
-> > -	} else {
-> > -		exynos_ehci->phy = phy;
-> > -		exynos_ehci->otg = phy->otg;
-> > +	for_each_available_child_of_node(pdev->dev.of_node, child) {
-> > +		err = of_property_read_u32(child, "reg", &phy_number);
-> > +		if (err) {
-> > +			dev_err(&pdev->dev, "Failed to parse device
-tree\n");
-> > +			of_node_put(child);
-> > +			return err;
-> 
-> Here, for example.  Wouldn't it be better to goto fail_clk?
-
-Right, I will fix this. Thank you.
-
-Best wishes,
--- 
-Kamil Debski
-Samsung R&D Institute Poland
+Great!  Thanks,
+-Toshi
 
