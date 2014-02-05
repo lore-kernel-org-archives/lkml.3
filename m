@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaBEUAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:00:45 -0500
-Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:44733 "EHLO
-	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752182AbaBEUAm (ORCPT
+	id S1752556AbaBEUCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:02:06 -0500
+Received: from host171.canaca.com ([67.55.55.225]:36481 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaBEUCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:00:42 -0500
-Date: Wed, 5 Feb 2014 15:04:03 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: junk@eslaf.co.uk, alan@lxorguk.ukuu.org.uk, Ingo Molnar <mingo@kernel.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
-In-Reply-To: <20140205195506.GN2936@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1402051501240.17670@pianoman.cluster.toy>
-References: <20140205102718.GF3229@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy> <20140205192012.GL2936@laptop.programming.kicks-ass.net> <alpine.DEB.2.02.1402051427210.16596@pianoman.cluster.toy>
- <alpine.DEB.2.02.1402051435540.16859@pianoman.cluster.toy> <20140205195506.GN2936@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020202.52F2986A.009A,ss=1,re=0.000,fgs=0
+	Wed, 5 Feb 2014 15:02:04 -0500
+X-Greylist: delayed 1654 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 15:02:04 EST
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        simon@mungewell.org
+Subject: [PATCH] HID: hid-sony Report actual brightness value when reading LED
+Date: Wed,  5 Feb 2014 12:34:18 -0700
+Message-Id: <1391628858-2916-1-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.8.1.2
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Peter Zijlstra wrote:
+The Dualshock4 controller contains a RGB LED, which is enabled via
+the '/sys/class/leds' interface. At present the driver only returns
+whether each of the RGB LEDs is lit (ie not off), but no indication
+of it's brightness.
 
-> On Wed, Feb 05, 2014 at 02:37:29PM -0500, Vince Weaver wrote:
-> > On Wed, 5 Feb 2014, Vince Weaver wrote:
-> > 
-> > > Has someone actually hit this bug?  People used PAPI/perfctr on these 
-> > > machines for years, and it uses rdpmc by default so I would think it would 
-> > > show up if it were an issue.  I should check the perfctr code to see if it 
-> > > had some sort of check.
-> > 
-> > I can verify the perfctr code does have a case for PPRO errata 26, but it 
-> > only disables things on pentium pros with stepping less than 9.
-> 
-> The doc said 0xB1, right? Should we keep it at that? Its not like
-> there's a lot of PPro machines left out there, so better safe than
-> sorry.
+This patch fixes the reading of the current brightnes so that it
+returns the value (rather than just off=0, on=LED_FULL).
 
-mfg steping "sB1" which means processor stepping 9.  See page 15 of the 
-document linked in the original patch.
+Tested on the DS4 and SixAxis (for compatibility).
 
-I used to have a Pentium Pro that was apparently affected by this erratum
-but not any more.  The oldest machine I test perf stuff on is a 
-Pentium II.
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/hid-sony.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Vince
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index 1235405..f9a7610 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -790,7 +790,6 @@ static enum led_brightness sony_led_get_brightness(struct led_classdev *led)
+ 	struct sony_sc *drv_data;
+ 
+ 	int n;
+-	int on = 0;
+ 
+ 	drv_data = hid_get_drvdata(hdev);
+ 	if (!drv_data) {
+@@ -799,13 +798,11 @@ static enum led_brightness sony_led_get_brightness(struct led_classdev *led)
+ 	}
+ 
+ 	for (n = 0; n < drv_data->led_count; n++) {
+-		if (led == drv_data->leds[n]) {
+-			on = !!(drv_data->led_state[n]);
+-			break;
+-		}
++		if (led == drv_data->leds[n])
++			return drv_data->led_state[n];
+ 	}
+ 
+-	return on ? LED_FULL : LED_OFF;
++	return LED_OFF;
+ }
+ 
+ static void sony_leds_remove(struct hid_device *hdev)
+-- 
+1.8.1.2
+
