@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496AbaBEVRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:17:48 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:47857 "EHLO
+	id S1753208AbaBEUDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:03:25 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47839 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296AbaBEUD0 (ORCPT
+	with ESMTP id S1752765AbaBEUDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:26 -0500
+	Wed, 5 Feb 2014 15:03:19 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+CC: Romain Francoise <romain@orebokech.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 008/213] KVM: lock slots_lock around device assignment
-Date: Wed, 5 Feb 2014 14:59:23 -0500
-Message-ID: <1391630568-49251-9-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 001/213] x86, random: make ARCH_RANDOM prompt if EMBEDDED, not EXPERT
+Date: Wed, 5 Feb 2014 14:59:16 -0500
+Message-ID: <1391630568-49251-2-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Romain Francoise <romain@orebokech.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,70 +31,30 @@ From: Alex Williamson <alex.williamson@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 21a1416a1c945c5aeaeaf791b63c64926018eb77 upstream.
+Before v2.6.38 CONFIG_EXPERT was known as CONFIG_EMBEDDED but the
+Kconfig entry was not changed to match when upstream commit
+628c6246d47b85f5357298601df2444d7f4dd3fd ("x86, random: Architectural
+inlines to get random integers with RDRAND") was backported.
 
-As pointed out by Jason Baron, when assigning a device to a guest
-we first set the iommu domain pointer, which enables mapping
-and unmapping of memory slots to the iommu.  This leaves a window
-where this path is enabled, but we haven't synchronized the iommu
-mappings to the existing memory slots.  Thus a slot being removed
-at that point could send us down unexpected code paths removing
-non-existent pinnings and iommu mappings.  Take the slots_lock
-around creating the iommu domain and initial mappings as well as
-around iommu teardown to avoid this race.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-[PG: drop goto for EPERM check, 2.6.34 doesn't have that code]
+Signed-off-by: Romain Francoise <romain@orebokech.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- virt/kvm/iommu.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ arch/x86/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index ac765f648218..8c510edca9c9 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -174,18 +174,20 @@ int kvm_iommu_map_guest(struct kvm *kvm)
- 		return -ENODEV;
- 	}
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0a813f82eb9b..b87027b463a3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1462,7 +1462,7 @@ config ARCH_USES_PG_UNCACHED
  
-+	mutex_lock(&kvm->slots_lock);
-+
- 	kvm->arch.iommu_domain = iommu_domain_alloc();
--	if (!kvm->arch.iommu_domain)
--		return -ENOMEM;
-+	if (!kvm->arch.iommu_domain) {
-+		r = -ENOMEM;
-+		goto out_unlock;
-+	}
- 
- 	r = kvm_iommu_map_memslots(kvm);
- 	if (r)
--		goto out_unmap;
--
--	return 0;
-+		kvm_iommu_unmap_memslots(kvm);
- 
--out_unmap:
--	kvm_iommu_unmap_memslots(kvm);
-+out_unlock:
-+	mutex_unlock(&kvm->slots_lock);
- 	return r;
- }
- 
-@@ -239,7 +241,11 @@ int kvm_iommu_unmap_guest(struct kvm *kvm)
- 	if (!domain)
- 		return 0;
- 
-+	mutex_lock(&kvm->slots_lock);
- 	kvm_iommu_unmap_memslots(kvm);
-+	kvm->arch.iommu_domain = NULL;
-+	mutex_unlock(&kvm->slots_lock);
-+
- 	iommu_domain_free(domain);
- 	return 0;
- }
+ config ARCH_RANDOM
+ 	def_bool y
+-	prompt "x86 architectural random number generator" if EXPERT
++	prompt "x86 architectural random number generator" if EMBEDDED
+ 	---help---
+ 	  Enable the x86 architectural RDRAND instruction
+ 	  (Intel Bull Mountain technology) to generate random numbers.
 -- 
 1.8.5.2
 
