@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaBEACi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:02:38 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37723 "EHLO
+	id S1755284AbaBEACl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:02:41 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37736 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784AbaBEACg (ORCPT
+	with ESMTP id S1753784AbaBEACi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:02:36 -0500
+	Tue, 4 Feb 2014 19:02:38 -0500
 From: Laura Abbott <lauraa@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
 Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
         Leif Lindholm <leif.lindholm@linaro.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>,
@@ -19,62 +18,55 @@ Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
         Will Deacon <will.deacon@arm.com>,
         Nicolas Pitre <nicolas.pitre@linaro.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCHv2 0/2] Remove ARM meminfo
-Date: Tue,  4 Feb 2014 16:02:29 -0800
-Message-Id: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
+Subject: [PATCHv2 1/2] mm/memblock: add memblock_get_current_limit
+Date: Tue,  4 Feb 2014 16:02:30 -0800
+Message-Id: <1391558551-31395-2-git-send-email-lauraa@codeaurora.org>
 X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
+References: <1391558551-31395-1-git-send-email-lauraa@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Appart from setting the limit of memblock, it's also useful to be able
+to get the limit to avoid recalculating it every time. Add the function
+to do so.
 
-This is v2 of the patch to get rid of meminfo. This should cover all the
-bases. Testing would be appreciated.
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |    5 +++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-Thanks,
-Laura
-
-Laura Abbott (2):
-  mm/memblock: add memblock_get_current_limit
-  arm: Get rid of meminfo
-
- arch/arm/include/asm/mach/arch.h         |    4 +-
- arch/arm/include/asm/memblock.h          |    3 +-
- arch/arm/include/asm/setup.h             |   23 ------
- arch/arm/kernel/atags_parse.c            |    5 +-
- arch/arm/kernel/setup.c                  |   30 ++------
- arch/arm/mach-clps711x/board-clep7312.c  |    7 +-
- arch/arm/mach-clps711x/board-edb7211.c   |   10 +--
- arch/arm/mach-clps711x/board-p720t.c     |    2 +-
- arch/arm/mach-footbridge/cats-hw.c       |    2 +-
- arch/arm/mach-footbridge/netwinder-hw.c  |    2 +-
- arch/arm/mach-msm/board-halibut.c        |    6 --
- arch/arm/mach-msm/board-mahimahi.c       |   13 +---
- arch/arm/mach-msm/board-msm7x30.c        |    3 +-
- arch/arm/mach-msm/board-sapphire.c       |   13 ++--
- arch/arm/mach-msm/board-trout.c          |    8 +--
- arch/arm/mach-orion5x/common.c           |    3 +-
- arch/arm/mach-orion5x/common.h           |    3 +-
- arch/arm/mach-pxa/cm-x300.c              |    3 +-
- arch/arm/mach-pxa/corgi.c                |   10 +--
- arch/arm/mach-pxa/eseries.c              |    9 +--
- arch/arm/mach-pxa/poodle.c               |    8 +--
- arch/arm/mach-pxa/spitz.c                |    9 +--
- arch/arm/mach-pxa/tosa.c                 |    8 +--
- arch/arm/mach-realview/core.c            |   11 +--
- arch/arm/mach-realview/core.h            |    3 +-
- arch/arm/mach-realview/realview_pb1176.c |    8 +--
- arch/arm/mach-realview/realview_pbx.c    |   17 ++---
- arch/arm/mach-s3c24xx/mach-smdk2413.c    |    8 +--
- arch/arm/mach-s3c24xx/mach-vstms.c       |    8 +--
- arch/arm/mach-sa1100/assabet.c           |    2 +-
- arch/arm/mm/init.c                       |   61 ++++++----------
- arch/arm/mm/mmu.c                        |  115 +++++++++---------------------
- include/linux/memblock.h                 |    2 +
- mm/memblock.c                            |    5 ++
- 34 files changed, 140 insertions(+), 284 deletions(-)
-
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 1ef6636..8a20a51 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -252,6 +252,8 @@ static inline void memblock_dump_all(void)
+ void memblock_set_current_limit(phys_addr_t limit);
+ 
+ 
++phys_addr_t memblock_get_current_limit(void);
++
+ /*
+  * pfn conversion functions
+  *
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 87d21a6..3820e29 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -1404,6 +1404,11 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ 	memblock.current_limit = limit;
+ }
+ 
++phys_addr_t __init_memblock memblock_get_current_limit(void)
++{
++	return memblock.current_limit;
++}
++
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+ {
+ 	unsigned long long base, size;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
