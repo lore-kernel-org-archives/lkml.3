@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491AbaBEWO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:14:28 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39281 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaBEWOY (ORCPT
+	id S932114AbaBEWOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:14:40 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54322 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261AbaBEWOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:14:24 -0500
+	Wed, 5 Feb 2014 17:14:34 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 24/51] x86, hpet: Fix CPU hotplug callback registration
+Subject: [PATCH 25/51] x86, pci, amd-bus: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:39:00 +0530
-Message-ID: <20140205220859.19080.7550.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 06 Feb 2014 03:39:12 +0530
+Message-ID: <20140205220912.19080.11413.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -27,7 +29,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-5140-0000-0000-000004839F20
+x-cbid: 14020522-8878-0000-0000-00000ABF35BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -63,36 +65,38 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the hpet code in x86 by using this latter form of callback registration.
+Fix the amd-bus code in x86 by using this latter form of callback
+registration.
 
+Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
+Cc: linux-pci@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kernel/hpet.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/pci/amd_bus.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index da85a8e..199aaae 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -943,12 +943,14 @@ static __init int hpet_late_init(void)
- 	if (boot_cpu_has(X86_FEATURE_ARAT))
- 		return 0;
+diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+index a48be98..7cd5d84 100644
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -380,10 +380,13 @@ static int __init pci_io_ecs_init(void)
+ 	if (early_pci_allowed())
+ 		pci_enable_pci_io_ecs();
  
+-	register_cpu_notifier(&amd_cpu_notifier);
 +	cpu_maps_update_begin();
- 	for_each_online_cpu(cpu) {
- 		hpet_cpuhp_notify(NULL, CPU_ONLINE, (void *)(long)cpu);
- 	}
- 
- 	/* This notifier should be called after workqueue is ready */
--	hotcpu_notifier(hpet_cpuhp_notify, -20);
-+	__hotcpu_notifier(hpet_cpuhp_notify, -20);
+ 	for_each_online_cpu(cpu)
+ 		amd_cpu_notify(&amd_cpu_notifier, (unsigned long)CPU_ONLINE,
+ 			       (void *)(long)cpu);
++	__register_cpu_notifier(&amd_cpu_notifier);
 +	cpu_maps_update_done();
++
+ 	pci_probe |= PCI_HAS_IO_ECS;
  
  	return 0;
- }
 
