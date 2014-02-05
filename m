@@ -1,101 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaBENbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:31:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799AbaBENbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:31:40 -0500
-Date: Wed, 5 Feb 2014 08:31:32 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Pearson, Greg" <greg.pearson@hp.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "d.hatayama@jp.fujitsu.com" <d.hatayama@jp.fujitsu.com>,
-        "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] vmcore: prevent PT_NOTE p_memsz overflow during
- header update
-Message-ID: <20140205133132.GB6042@redhat.com>
-References: <1391458718-11994-1-git-send-email-greg.pearson@hp.com>
- <20140203213813.GH10795@redhat.com>
- <52F01EF5.506@hp.com>
+	id S1751667AbaBENeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:34:50 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:63632 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaBENes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:34:48 -0500
+Message-ID: <52F23DF4.7010901@gmail.com>
+Date: Wed, 05 Feb 2014 14:34:44 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52F01EF5.506@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Likely <grant.likely@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, Pekon Gupta <pekon@ti.com>
+Subject: Re: [RFC PATCH v2 03/14] of: mtd: add documentation for nand-ecc-level
+ property
+References: <1391006064-28890-1-git-send-email-b.brezillon.dev@gmail.com> < 1391006064-28890-4-git-send-email-b.brezillon.dev@gmail.com> < 20140129175331.GA27143@localhost> <20140205111500.B19FDC40A89@trevor.secretlab.ca>
+In-Reply-To: <20140205111500.B19FDC40A89@trevor.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 03, 2014 at 10:57:58PM +0000, Pearson, Greg wrote:
-> On 02/03/2014 02:38 PM, Vivek Goyal wrote:
-> > On Mon, Feb 03, 2014 at 01:18:38PM -0700, Greg Pearson wrote:
-> >
-> > [..]
-> >> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> >> index 2ca7ba0..051c803 100644
-> >> --- a/fs/proc/vmcore.c
-> >> +++ b/fs/proc/vmcore.c
-> >> @@ -468,12 +468,14 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
-> >>   			return rc;
-> >>   		}
-> >>   		nhdr_ptr = notes_section;
-> >> -		while (real_sz < max_sz) {
-> >> -			if (nhdr_ptr->n_namesz == 0)
-> >> -				break;
-> >> +		while (nhdr_ptr->n_namesz != 0) {
-> >>   			sz = sizeof(Elf64_Nhdr) +
-> >>   				((nhdr_ptr->n_namesz + 3) & ~3) +
-> >>   				((nhdr_ptr->n_descsz + 3) & ~3);
-> >> +			if ((real_sz + sz) > max_sz) {
-> >> +				pr_warn("Warning: dropping PT_NOTE entry\n");
-> >> +				break;
-> >> +			}
-> > Hi Greg,
-> >
-> > Couple of minor nits.
-> >
-> > I think it is a good idea to give more data in warning which tells why
-> > are we dropping a note entry. May be something like.
-> >
-> > "Warning: Total note entry size exceeded PT_NOTE memsz. Dropping PT_NOTE entry, n_namesz=<> n_descsz=<>".
-> 
-> Sounds good I'll add more information to the pr_warn().
-> 
-> >
-> > Secondly, if there is only on note entry in a PT_NOTE header and we drop
-> > it, then that PT_NOTE header is empty and needs to be cleaned up.
-> >
-> > I think you will have to modify get_note_number_and_size_elf64() and
-> > other relevant functions which are not expecting ->p_memsz=0.
-> 
-> What about treating this as an error condition and adding a check to the 
-> update_note_header_size_elf32()/update_note_header_size_elf64() routines 
-> that would return a failure, something like the following at the end of 
-> the routine:
-> 
->      if (real_sz == 0)
->          return -EINVAL
-> 
-> I could also add a pr_warn() with a message indicating no PT_NOTE 
-> entries were found.
-> 
-> This seems like a lower risk change to handle the case I'm currently 
-> seeing as opposed to changing the code to handle a p_memsz==0.
-> 
-> Thoughts?
+On 05/02/2014 12:15, Grant Likely wrote:
+> On Wed, 29 Jan 2014 14:53:32 -0300, Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
+>> On Wed, Jan 29, 2014 at 03:34:13PM +0100, Boris BREZILLON wrote:
+>>> nand-ecc-level property statically defines NAND chip's ECC requirements.
+>>>
+>>> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+>>> ---
+>>>   Documentation/devicetree/bindings/mtd/nand.txt |    3 +++
+>>>   1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
+>>> index 03855c8..0c962296 100644
+>>> --- a/Documentation/devicetree/bindings/mtd/nand.txt
+>>> +++ b/Documentation/devicetree/bindings/mtd/nand.txt
+>>> @@ -3,5 +3,8 @@
+>>>   - nand-ecc-mode : String, operation mode of the NAND ecc mode.
+>>>     Supported values are: "none", "soft", "hw", "hw_syndrome", "hw_oob_first",
+>>>     "soft_bch".
+>>> +- nand-ecc-level : Two cells property defining the ECC level requirements.
+>>> +  The first cell represent the strength and the second cell the ECC block size.
+>>> +  E.g. : nand-ecc-level = <4 512>; /* 4 bits / 512 bytes */
+>>>   - nand-bus-width : 8 or 16 bus width if not present 8
+>>>   - nand-on-flash-bbt: boolean to enable on flash bbt option if not present false
+>> Hm.. when was this proposal agreed? It seems I've missed the
+>> discussion...
+>>
+>> FWIW, we've already proposed an equivalent one, but it received no
+>> feedback from the devicetree maintainers:
+> Sorry, binding review has become a huge undertaking.
+>
+>> http://comments.gmane.org/gmane.linux.drivers.devicetree/58764
+>>
+>> Maybe we can discuss about it now?
+>>
+>>    nand-ecc-strength : integer ECC required strength.
+>>    nand-ecc-size : integer step size associated to the ECC strength.
+> I'm okay with either, but the above binding is indeed more readable.
 
-If you retrun with -EINVAL, that means /proc/vmcore will not be
-created. This probably is too harsh an action. If a PT_NOTE is corrupt,
-we can just ignore it and continue with construction of /proc/vmcore. We
-will just loose cpu registers of one cpu. May be that cpu was idling
-and it did not matter for the purpose of crash analysis.
+That's fine by me, if everybody agrees, let's go for the
+nand-ecc-strength/nand-ecc-size couple then.
 
-IMO, we can just ignore empty PT_NOTE (real_sz), give a warning and move
-on.
+I'll rebase next version of my series on Ezequiel's patch providing
+these OF helpers.
 
-Thanks
-Vivek
+Best Regards,
+
+Boris
+
+>
+> g.
+
