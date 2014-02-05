@@ -1,255 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228AbaBEWTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:19:21 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43725 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307AbaBEWTR (ORCPT
+	id S1755344AbaBEWTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:19:44 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62319 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962AbaBEWTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:19:17 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 51/51] net/iucv/iucv.c: Fix CPU hotplug callback registration
-To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
-        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
-Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
-        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-s390@vger.kernel.org,
-        netdev@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:43:55 +0530
-Message-ID: <20140205221354.19080.25861.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
-References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Wed, 5 Feb 2014 17:19:35 -0500
+Date: Wed, 5 Feb 2014 14:19:32 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Vagin <avagin@parallels.com>, Kent Overstreet <kmo@daterainc.com>,
+        Jens Axboe <axboe@kernel.dk>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: Thread overran stack, or stack corrupted on 3.13.0
+In-Reply-To: <20140205221013.GA8794@paralelels.com>
+Message-ID: <alpine.DEB.2.02.1402051418140.18942@chino.kir.corp.google.com>
+References: <20140205151817.GA28502@paralelels.com> <alpine.DEB.2.02.1402051323100.14325@chino.kir.corp.google.com> <20140205221013.GA8794@paralelels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-4790-0000-0000-00000C92CDE1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subsystems that want to register CPU hotplug callbacks, as well as perform
-initialization for the CPUs that are already online, often do it as shown
-below:
+On Thu, 6 Feb 2014, Andrew Vagin wrote:
 
-	get_online_cpus();
+> [532284.563576] BUG: unable to handle kernel paging request at 0000000035c83420
+> [532284.564086] IP: [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+> [532284.564086] PGD 116369067 PUD 116368067 PMD 0
+> [532284.564086] Thread overran stack, or stack corrupted
+> [532284.564086] Oops: 0000 [#1] SMP
+> [532284.564086] Modules linked in: veth binfmt_misc ip6table_filter ip6_tables tun netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag bridge stp llc btrfs libcrc32c xor raid6_pq microcode i2c_piix4 joydev virtio_balloon virtio_net pcspkr i2c_core virtio_blk virtio_pci virtio_ring virtio floppy
+> [532284.564086] CPU: 2 PID: 2487 Comm: cat Not tainted 3.13.0 #160
+> [532284.564086] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+> [532284.564086] task: ffff8800cdb60000 ti: ffff8801167ee000 task.ti: ffff8801167ee000
+> [532284.564086] RIP: 0010:[<ffffffff810caf17>]  [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+> [532284.564086] RSP: 0018:ffff8801167ee638  EFLAGS: 00010002
+> [532284.564086] RAX: 000000000000e540 RBX: 000000000006086c RCX: 000000000000000f
+> [532284.564086] RDX: ffffffff81c4e960 RSI: ffffffff81c50640 RDI: 0000000000000046
+> [532284.564086] RBP: ffff8801167ee668 R08: 0000000000000003 R09: 0000000000000001
+> [532284.564086] R10: 0000000000000001 R11: 0000000000000004 R12: ffff8800cdb60000
+> [532284.564086] R13: 00000000167ee038 R14: ffff8800db3576d8 R15: 000080ee26ec7dcf
+> [532284.564086] FS:  00007fc30ecc7740(0000) GS:ffff88011b200000(0000) knlGS:0000000000000000
+> [532284.564086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [532284.564086] CR2: 0000000035c83420 CR3: 000000011f966000 CR4: 00000000000006e0
+> [532284.564086] Stack:
+> [532284.564086]  ffffffff810cae80 ffff880100000014 ffff8800db333480 000000000006086c
+> [532284.564086]  ffff8800cdb60068 ffff8800cdb60000 ffff8801167ee6a8 ffffffff810b948f
+> [532284.564086]  ffff8801167ee698 ffff8800cdb60068 ffff8800db333480 0000000000000001
+> [532284.564086] Call Trace:
+> [532284.564086]  [<ffffffff810cae80>] ? cpuacct_css_alloc+0xb0/0xb0
+> [532284.564086]  [<ffffffff810b948f>] update_curr+0x13f/0x220
+> [532284.564086]  [<ffffffff810bfeb4>] dequeue_entity+0x24/0x5b0
+> [532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+> [532284.564086]  [<ffffffff810c0489>] dequeue_task_fair+0x49/0x430
+> [532284.564086]  [<ffffffff810acbb3>] dequeue_task+0x73/0x90
+> [532284.564086]  [<ffffffff810acbf3>] deactivate_task+0x23/0x30
+> [532284.564086]  [<ffffffff81745b11>] __schedule+0x501/0x960
+> [532284.564086]  [<ffffffff817460b9>] schedule+0x29/0x70
+> [532284.564086]  [<ffffffff81744eac>] schedule_timeout+0x14c/0x2a0
+> [532284.564086]  [<ffffffff810835f0>] ? del_timer+0x70/0x70
+> [532284.564086]  [<ffffffff8174b7d0>] ? _raw_spin_unlock_irqrestore+0x40/0x80
+> [532284.564086]  [<ffffffff8174547f>] io_schedule_timeout+0x9f/0x100
+> [532284.564086]  [<ffffffff810d16dd>] ? trace_hardirqs_on+0xd/0x10
+> [532284.564086]  [<ffffffff81182b22>] mempool_alloc+0x152/0x180
+> [532284.564086]  [<ffffffff810c56e0>] ? bit_waitqueue+0xd0/0xd0
+> [532284.564086]  [<ffffffff810558c7>] ? kvm_clock_read+0x27/0x40
+> [532284.564086]  [<ffffffff8123c89b>] bio_alloc_bioset+0x10b/0x1e0
+> [532284.564086]  [<ffffffff811c2f00>] ? end_swap_bio_read+0xc0/0xc0
+> [532284.564086]  [<ffffffff811c2f00>] ? end_swap_bio_read+0xc0/0xc0
+> [532284.564086]  [<ffffffff811c2810>] get_swap_bio+0x30/0x90
+> [532284.564086]  [<ffffffff811c2f00>] ? end_swap_bio_read+0xc0/0xc0
+> [532284.564086]  [<ffffffff811c2aa0>] __swap_writepage+0x150/0x230
+> [532284.564086]  [<ffffffff8174b83b>] ? _raw_spin_unlock+0x2b/0x40
+> [532284.564086]  [<ffffffff811c43b3>] ? page_swapcount+0x53/0x70
+> [532284.564086]  [<ffffffff811c2bc3>] swap_writepage+0x43/0x90
+> [532284.564086]  [<ffffffff81194faf>] shrink_page_list+0x6cf/0xaa0
+> [532284.564086]  [<ffffffff81196022>] shrink_inactive_list+0x1c2/0x5b0
+> [532284.564086]  [<ffffffff810d1c59>] ? __lock_acquire+0x249/0x1800
+> [532284.564086]  [<ffffffff81196a75>] shrink_lruvec+0x335/0x600
+> [532284.564086]  [<ffffffff811ecd45>] ? mem_cgroup_iter+0x1f5/0x510
+> [532284.564086]  [<ffffffff81196dd6>] shrink_zone+0x96/0x1d0
+> [532284.564086]  [<ffffffff81197853>] do_try_to_free_pages+0x103/0x600
+> [532284.564086]  [<ffffffff81184b2f>] ? zone_watermark_ok+0x1f/0x30
+> [532284.564086]  [<ffffffff8119811c>] try_to_free_pages+0xdc/0x230
+> [532284.564086]  [<ffffffff81187dfd>] ? drain_pages+0xad/0xe0
+> [532284.564086]  [<ffffffff8118ad94>] __alloc_pages_nodemask+0xa14/0xc90
+> [532284.564086]  [<ffffffff810b5d35>] ? sched_clock_local+0x25/0x90
+> [532284.564086]  [<ffffffff811d1f36>] alloc_pages_current+0x126/0x200
+> [532284.564086]  [<ffffffff811d97f5>] ? new_slab+0x2e5/0x390
+> [532284.564086]  [<ffffffff811d97dd>] ? new_slab+0x2cd/0x390
+> [532284.564086]  [<ffffffff811d97f5>] new_slab+0x2e5/0x390
+> [532284.564086]  [<ffffffff811dc553>] __slab_alloc+0x3f3/0x700
+> [532284.564086]  [<ffffffff811dd0ff>] ? kmem_cache_alloc+0x27f/0x2a0
+> [532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+> [532284.564086]  [<ffffffff811828c5>] ? mempool_alloc_slab+0x15/0x20
+> [532284.564086]  [<ffffffff811e98ae>] ? rcu_read_unlock+0x2e/0x70
+> [532284.564086]  [<ffffffff811f06e8>] ? __memcg_kmem_get_cache+0x58/0x2b0
+> [532284.564086]  [<ffffffff811dd0ff>] kmem_cache_alloc+0x27f/0x2a0
+> [532284.564086]  [<ffffffff811828c5>] ? mempool_alloc_slab+0x15/0x20
+> [532284.564086]  [<ffffffff811828c5>] mempool_alloc_slab+0x15/0x20
+> [532284.564086]  [<ffffffff81182a30>] mempool_alloc+0x60/0x180
+> [532284.564086]  [<ffffffff8123c89b>] bio_alloc_bioset+0x10b/0x1e0
+> [532284.564086]  [<ffffffff8124366b>] mpage_alloc+0x3b/0xa0
+> [532284.564086]  [<ffffffff81243b69>] do_mpage_readpage+0x329/0x650
+> [532284.564086]  [<ffffffff8117fa5f>] ? add_to_page_cache_locked+0x10f/0x200
+> [532284.564086]  [<ffffffff81243fe9>] mpage_readpages+0xe9/0x140
+> [532284.564086]  [<ffffffff81296f10>] ? ext4_get_block_write+0x20/0x20
+> [532284.564086]  [<ffffffff81296f10>] ? ext4_get_block_write+0x20/0x20
+> [532284.564086]  [<ffffffff81295877>] ext4_readpages+0x47/0x60
+> [532284.564086]  [<ffffffff8118e918>] __do_page_cache_readahead+0x2c8/0x370
+> [532284.564086]  [<ffffffff8118e76b>] ? __do_page_cache_readahead+0x11b/0x370
+> [532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+> [532284.564086]  [<ffffffff81180aa0>] ? find_get_pages_tag+0x330/0x330
+> [532284.564086]  [<ffffffff8118e9e1>] ra_submit+0x21/0x30
+> [532284.564086]  [<ffffffff811814e2>] filemap_fault+0x372/0x480
+> [532284.564086]  [<ffffffff811afdf2>] __do_fault+0x72/0x5c0
+> [532284.564086]  [<ffffffff811b06e6>] handle_mm_fault+0x3a6/0xf10
+> [532284.564086]  [<ffffffff8174fc2f>] ? __do_page_fault+0x14f/0x530
+> [532284.564086]  [<ffffffff8174fca1>] __do_page_fault+0x1c1/0x530
+> [532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+> [532284.564086]  [<ffffffff810b5d35>] ? sched_clock_local+0x25/0x90
+> [532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+> [532284.564086]  [<ffffffff810ccd4d>] ? trace_hardirqs_off+0xd/0x10
+> [532284.564086]  [<ffffffff810b5f1f>] ? local_clock+0x6f/0x80
+> [532284.564086]  [<ffffffff810d0c55>] ? lock_release_holdtime+0x35/0x1a0
+> [532284.564086]  [<ffffffff81393bbd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+> [532284.564086]  [<ffffffff817501ae>] do_page_fault+0xe/0x10
+> [532284.564086]  [<ffffffff8174c078>] page_fault+0x28/0x30
+> [532284.564086]  [<ffffffff81393e42>] ? __clear_user+0x42/0x70
+> [532284.564086]  [<ffffffff81393e21>] ? __clear_user+0x21/0x70
+> [532284.564086]  [<ffffffff81393ea8>] clear_user+0x38/0x40
+> [532284.564086]  [<ffffffff8125dbfd>] padzero+0x2d/0x40
+> [532284.564086]  [<ffffffff8125e7ea>] load_elf_binary+0x8ca/0x1d40
+> [532284.564086]  [<ffffffff810b5e58>] ? sched_clock_cpu+0xb8/0x110
+> [532284.564086]  [<ffffffff810d0c55>] ? lock_release_holdtime+0x35/0x1a0
+> [532284.564086]  [<ffffffff810558c7>] ? kvm_clock_read+0x27/0x40
+> [532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+> [532284.564086]  [<ffffffff810b5d35>] ? sched_clock_local+0x25/0x90
+> [532284.564086]  [<ffffffff81203fd3>] search_binary_handler+0xb3/0x1c0
+> [532284.564086]  [<ffffffff8109bdf0>] ? get_pid_task+0x120/0x120
+> [532284.564086]  [<ffffffff81205ecd>] do_execve_common+0x71d/0x990
+> [532284.564086]  [<ffffffff81205e14>] ? do_execve_common+0x664/0x990
+> [532284.564086]  [<ffffffff81206207>] do_execve+0x37/0x40
+> [532284.564086]  [<ffffffff8120624d>] SyS_execve+0x3d/0x60
+> [532284.564086]  [<ffffffff81755759>] stub_execve+0x69/0xa0
+> [532284.564086] Code: 00 00 e8 5d 03 02 00 85 c0 74 0d 80 3d e6 bc c2 00 00 0f 84 d4 00 00 00 49 8b 56 48 4d 63 ed 0f 1f 44 00 00 48 8b 82 b8 00 00 00 <4a> 03 04 ed 60 32 d1 81 48 01 18 48 8b 52 40 48 85 d2 75 e5 e8
+> [532284.564086] RIP  [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+> [532284.564086]  RSP <ffff8801167ee638>
+> [532284.564086] CR2: 0000000035c83420
+> 
+> 
 
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-	put_online_cpus();
-
-This is wrong, since it is prone to ABBA deadlocks involving the
-cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
-with CPU hotplug operations).
-
-Instead, the correct and race-free way of performing the callback
-registration is:
-
-	cpu_maps_update_begin();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	/* Note the use of the double underscored version of the API */
-	__register_cpu_notifier(&foobar_cpu_notifier);
-
-	cpu_maps_update_done();
-
-
-Fix the code in net/iucv/iucv.c by using this latter form of callback
-registration. Also, provide helper functions to perform the common memory
-allocations and frees, to condense repetitive code.
-
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-s390@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- net/iucv/iucv.c |  121 ++++++++++++++++++++++++++-----------------------------
- 1 file changed, 57 insertions(+), 64 deletions(-)
-
-diff --git a/net/iucv/iucv.c b/net/iucv/iucv.c
-index cd5b8ec..f92348b 100644
---- a/net/iucv/iucv.c
-+++ b/net/iucv/iucv.c
-@@ -621,6 +621,42 @@ static void iucv_disable(void)
- 	put_online_cpus();
- }
- 
-+static void free_iucv_data(int cpu)
-+{
-+	kfree(iucv_param_irq[cpu]);
-+	iucv_param_irq[cpu] = NULL;
-+	kfree(iucv_param[cpu]);
-+	iucv_param[cpu] = NULL;
-+	kfree(iucv_irq_data[cpu]);
-+	iucv_irq_data[cpu] = NULL;
-+}
-+
-+static int alloc_iucv_data(int cpu)
-+{
-+	/* Note: GFP_DMA used to get memory below 2G */
-+	iucv_irq_data[cpu] = kmalloc_node(sizeof(struct iucv_irq_data),
-+			     GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
-+	if (!iucv_irq_data[cpu])
-+		goto out_free;
-+
-+	/* Allocate parameter blocks. */
-+	iucv_param[cpu] = kmalloc_node(sizeof(union iucv_param),
-+			  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
-+	if (!iucv_param[cpu])
-+		goto out_free;
-+
-+	iucv_param_irq[cpu] = kmalloc_node(sizeof(union iucv_param),
-+			  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
-+	if (!iucv_param_irq[cpu])
-+		goto out_free;
-+
-+	return 0;
-+
-+out_free:
-+	free_iucv_data(cpu);
-+	return -ENOMEM;
-+}
-+
- static int iucv_cpu_notify(struct notifier_block *self,
- 				     unsigned long action, void *hcpu)
- {
-@@ -630,38 +666,14 @@ static int iucv_cpu_notify(struct notifier_block *self,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		iucv_irq_data[cpu] = kmalloc_node(sizeof(struct iucv_irq_data),
--					GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_irq_data[cpu])
--			return notifier_from_errno(-ENOMEM);
--
--		iucv_param[cpu] = kmalloc_node(sizeof(union iucv_param),
--				     GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param[cpu]) {
--			kfree(iucv_irq_data[cpu]);
--			iucv_irq_data[cpu] = NULL;
-+		if (alloc_iucv_data(cpu))
- 			return notifier_from_errno(-ENOMEM);
--		}
--		iucv_param_irq[cpu] = kmalloc_node(sizeof(union iucv_param),
--					GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param_irq[cpu]) {
--			kfree(iucv_param[cpu]);
--			iucv_param[cpu] = NULL;
--			kfree(iucv_irq_data[cpu]);
--			iucv_irq_data[cpu] = NULL;
--			return notifier_from_errno(-ENOMEM);
--		}
- 		break;
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
--		kfree(iucv_param_irq[cpu]);
--		iucv_param_irq[cpu] = NULL;
--		kfree(iucv_param[cpu]);
--		iucv_param[cpu] = NULL;
--		kfree(iucv_irq_data[cpu]);
--		iucv_irq_data[cpu] = NULL;
-+		free_iucv_data(cpu);
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
-@@ -2025,33 +2037,20 @@ static int __init iucv_init(void)
- 		goto out_int;
- 	}
- 
--	for_each_online_cpu(cpu) {
--		/* Note: GFP_DMA used to get memory below 2G */
--		iucv_irq_data[cpu] = kmalloc_node(sizeof(struct iucv_irq_data),
--				     GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_irq_data[cpu]) {
--			rc = -ENOMEM;
--			goto out_free;
--		}
-+	cpu_maps_update_begin();
- 
--		/* Allocate parameter blocks. */
--		iucv_param[cpu] = kmalloc_node(sizeof(union iucv_param),
--				  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param[cpu]) {
--			rc = -ENOMEM;
--			goto out_free;
--		}
--		iucv_param_irq[cpu] = kmalloc_node(sizeof(union iucv_param),
--				  GFP_KERNEL|GFP_DMA, cpu_to_node(cpu));
--		if (!iucv_param_irq[cpu]) {
-+	for_each_online_cpu(cpu) {
-+		if (alloc_iucv_data(cpu)) {
- 			rc = -ENOMEM;
- 			goto out_free;
- 		}
--
- 	}
--	rc = register_hotcpu_notifier(&iucv_cpu_notifier);
-+	rc = __register_hotcpu_notifier(&iucv_cpu_notifier);
- 	if (rc)
- 		goto out_free;
-+
-+	cpu_maps_update_done();
-+
- 	rc = register_reboot_notifier(&iucv_reboot_notifier);
- 	if (rc)
- 		goto out_cpu;
-@@ -2069,16 +2068,14 @@ static int __init iucv_init(void)
- out_reboot:
- 	unregister_reboot_notifier(&iucv_reboot_notifier);
- out_cpu:
--	unregister_hotcpu_notifier(&iucv_cpu_notifier);
-+	cpu_maps_update_begin();
-+	__unregister_hotcpu_notifier(&iucv_cpu_notifier);
- out_free:
--	for_each_possible_cpu(cpu) {
--		kfree(iucv_param_irq[cpu]);
--		iucv_param_irq[cpu] = NULL;
--		kfree(iucv_param[cpu]);
--		iucv_param[cpu] = NULL;
--		kfree(iucv_irq_data[cpu]);
--		iucv_irq_data[cpu] = NULL;
--	}
-+	for_each_possible_cpu(cpu)
-+		free_iucv_data(cpu);
-+
-+	cpu_maps_update_done();
-+
- 	root_device_unregister(iucv_root);
- out_int:
- 	unregister_external_interrupt(0x4000, iucv_external_interrupt);
-@@ -2105,15 +2102,11 @@ static void __exit iucv_exit(void)
- 		kfree(p);
- 	spin_unlock_irq(&iucv_queue_lock);
- 	unregister_reboot_notifier(&iucv_reboot_notifier);
--	unregister_hotcpu_notifier(&iucv_cpu_notifier);
--	for_each_possible_cpu(cpu) {
--		kfree(iucv_param_irq[cpu]);
--		iucv_param_irq[cpu] = NULL;
--		kfree(iucv_param[cpu]);
--		iucv_param[cpu] = NULL;
--		kfree(iucv_irq_data[cpu]);
--		iucv_irq_data[cpu] = NULL;
--	}
-+	cpu_maps_update_begin();
-+	__unregister_hotcpu_notifier(&iucv_cpu_notifier);
-+	for_each_possible_cpu(cpu)
-+		free_iucv_data(cpu);
-+	cpu_maps_update_done();
- 	root_device_unregister(iucv_root);
- 	bus_unregister(&iucv_bus);
- 	unregister_external_interrupt(0x4000, iucv_external_interrupt);
-
+Looks like bio_alloc_bioset() recursion.  Adding Kent Overstreet and Jens 
+for ideas.
