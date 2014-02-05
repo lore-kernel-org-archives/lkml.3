@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaBEPCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:02:07 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:55096 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaBEPCF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:02:05 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCH] zram: document failed_reads, failed_writes stats
-Date: Wed,  5 Feb 2014 17:58:35 +0300
-Message-Id: <1391612315-10738-1-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 1.9.rc2.211.gd198f5d
+	id S1752667AbaBEPCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:02:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9361 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539AbaBEPCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 10:02:18 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kirill Tkhai <tkhai@yandex.ru>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org
+Subject: [PATCH] Makefile, CONFIG_MODVERSIONS, ignore *.mod.c files
+Date: Wed,  5 Feb 2014 10:01:51 -0500
+Message-Id: <1391612511-9276-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document `failed_reads' and `failed_writes' device attributes.
-Remove info about `discard' - there is no such zram attr.
+CONFIG_MODVERSIONS=y results in a .mod.c for every compiled file in the kernel.
+Issuing a 'make cscope' on a compiled kernel tree results in the cscope files
+containing *.mod.c files.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+[prarit@prarit linux]# make cscope
+[prarit@prarit linux]# cat cscope.files | grep mod.c | wc -l
+4807
+
+These files are not useful for cscope and should be ignored.  For example,
+
+   #   line  filename / context / line
+   1    105  arch/x86/kvm/kvm-intel.mod.c <<GLOBAL>>
+             { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
+   2    508  drivers/block/mtip32xx/mtip32xx.h <<GLOBAL>>
+             int numa_node;
+   3     55  drivers/block/mtip32xx/mtip32xx.mod.c <<GLOBAL>>
+             { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
+   4     37  drivers/cpufreq/acpi-cpufreq.mod.c <<GLOBAL>>
+             { 0x618911fc, __VMLINUX_SYMBOL_STR(numa_node) },
+   <snip>
+
+Add *.mod.c to the RCS_FIND_IGNORE in the top-level Makefile and to the ignore
+list in scripts/tags.sh.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kbuild@vger.kernel.org
 ---
- Documentation/ABI/testing/sysfs-block-zram | 24 +++++++++++++++---------
- Documentation/blockdev/zram.txt            |  3 ++-
- 2 files changed, 17 insertions(+), 10 deletions(-)
+ Makefile        |    3 ++-
+ scripts/tags.sh |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-index 3f0b9ae..8aa0468 100644
---- a/Documentation/ABI/testing/sysfs-block-zram
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -43,6 +43,21 @@ Description:
- 		The invalid_io file is read-only and specifies the number of
- 		non-page-size-aligned I/O requests issued to this device.
+diff --git a/Makefile b/Makefile
+index 606ef7c..4e1b87a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -415,7 +415,8 @@ export MODVERDIR := $(if $(KBUILD_EXTMOD),$(firstword $(KBUILD_EXTMOD))/).tmp_ve
+ # Files to ignore in find ... statements
  
-+What:		/sys/block/zram<id>/failed_reads
-+Date:		February 2014
-+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-+Description:
-+		The failed_reads file is read-only and specifies the number of
-+		failed reads happened on this device.
-+
-+
-+What:		/sys/block/zram<id>/failed_writes
-+Date:		February 2014
-+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-+Description:
-+		The failed_writes file is read-only and specifies the number of
-+		failed writes happened on this device.
-+
- What:		/sys/block/zram<id>/notify_free
- Date:		August 2010
- Contact:	Nitin Gupta <ngupta@vflare.org>
-@@ -53,15 +68,6 @@ Description:
- 		is freed. This statistic is applicable only when this disk is
- 		being used as a swap disk.
+ RCS_FIND_IGNORE := \( -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS \
+-		   -o -name .pc -o -name .hg -o -name .git \) -prune -o
++		   -o -name .pc -o -name .hg -o -name .git -o -name *.mod.c\) \
++		   -prune -o
+ export RCS_TAR_IGNORE := --exclude SCCS --exclude BitKeeper --exclude .svn \
+ 			 --exclude CVS --exclude .pc --exclude .hg --exclude .git
  
--What:		/sys/block/zram<id>/discard
--Date:		August 2010
--Contact:	Nitin Gupta <ngupta@vflare.org>
--Description:
--		The discard file is read-only and specifies the number of
--		discard requests received by this device. These requests
--		provide information to block device regarding blocks which are
--		no longer used by filesystem.
--
- What:		/sys/block/zram<id>/zero_pages
- Date:		August 2010
- Contact:	Nitin Gupta <ngupta@vflare.org>
-diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-index 393541be..b31ac5e 100644
---- a/Documentation/blockdev/zram.txt
-+++ b/Documentation/blockdev/zram.txt
-@@ -51,9 +51,10 @@ size of the disk when not in use so a huge zram is wasteful.
- 		disksize
- 		num_reads
- 		num_writes
-+		failed_reads
-+		failed_writes
- 		invalid_io
- 		notify_free
--		discard
- 		zero_pages
- 		orig_data_size
- 		compr_data_size
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 58c4559..6229d6b 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -14,7 +14,7 @@ fi
+ # This is a duplicate of RCS_FIND_IGNORE without escaped '()'
+ ignore="( -name SCCS -o -name BitKeeper -o -name .svn -o \
+           -name CVS  -o -name .pc       -o -name .hg  -o \
+-          -name .git )                                   \
++          -name .git -o -name *.mod.c )                  \
+           -prune -o"
+ 
+ # Do not use full path if we do not use O=.. builds
 -- 
-1.9.rc2.211.gd198f5d
+1.7.9.3
 
