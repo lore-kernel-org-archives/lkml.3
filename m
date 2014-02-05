@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046AbaBEUY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:24:59 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48490 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174AbaBEUHX (ORCPT
+	id S1756060AbaBEUZB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:25:01 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55395 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173AbaBEUHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 15:07:23 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+CC: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 160/213] sysfs: sysfs_pathname/sysfs_add_one: Use strlcat() instead of strcat()
-Date: Wed, 5 Feb 2014 15:01:55 -0500
-Message-ID: <1391630568-49251-161-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 161/213] tmpfs: fix use-after-free of mempolicy object
+Date: Wed, 5 Feb 2014 15:01:56 -0500
+Message-ID: <1391630568-49251-162-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Greg Thelen <gthelen@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,67 +33,107 @@ From: Geert Uytterhoeven <geert@linux-m68k.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 66081a72517a131430dcf986775f3268aafcb546 upstream.
+commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
 
-The warning check for duplicate sysfs entries can cause a buffer overflow
-when printing the warning, as strcat() doesn't check buffer sizes.
-Use strlcat() instead.
+The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
+option is not specified in the remount request.  A new policy can be
+specified if mpol=M is given.
 
-Since strlcat() doesn't return a pointer to the passed buffer, unlike
-strcat(), I had to convert the nested concatenation in sysfs_add_one() to
-an admittedly more obscure comma operator construct, to avoid emitting code
-for the concatenation if CONFIG_BUG is disabled.
+Before this patch remounting an mpol bound tmpfs without specifying
+mpol= mount option in the remount request would set the filesystem's
+mempolicy object to a freed mempolicy object.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
+    # mkdir /tmp/x
+
+    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
+
+    # mount -o remount,size=200M nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
+        # note ? garbage in mpol=... output above
+
+    # dd if=/dev/zero of=/tmp/x/f count=1
+        # panic here
+
+Panic:
+    BUG: unable to handle kernel NULL pointer dereference at           (null)
+    IP: [<          (null)>]           (null)
+    [...]
+    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
+    Call Trace:
+      mpol_shared_policy_init+0xa5/0x160
+      shmem_get_inode+0x209/0x270
+      shmem_mknod+0x3e/0xf0
+      shmem_create+0x18/0x20
+      vfs_create+0xb5/0x130
+      do_last+0x9a1/0xea0
+      path_openat+0xb3/0x4d0
+      do_filp_open+0x42/0xa0
+      do_sys_open+0xfe/0x1e0
+      compat_sys_open+0x1b/0x20
+      cstar_dispatch+0x7/0x1f
+
+Non-debug kernels will not crash immediately because referencing the
+dangling mpol will not cause a fault.  Instead the filesystem will
+reference a freed mempolicy object, which will cause unpredictable
+behavior.
+
+The problem boils down to a dropped mpol reference below if
+shmem_parse_options() does not allocate a new mpol:
+
+    config = *sbinfo
+    shmem_parse_options(data, &config, true)
+    mpol_put(sbinfo->mpol)
+    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
+
+This patch avoids the crash by not releasing the mempolicy if
+shmem_parse_options() doesn't create a new mpol.
+
+How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
+not look back further.
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/sysfs/dir.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ mm/shmem.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 590717861c7a..37d7153d3f72 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -400,20 +400,18 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
- /**
-  *	sysfs_pathname - return full path to sysfs dirent
-  *	@sd: sysfs_dirent whose path we want
-- *	@path: caller allocated buffer
-+ *	@path: caller allocated buffer of size PATH_MAX
-  *
-  *	Gives the name "/" to the sysfs_root entry; any path returned
-  *	is relative to wherever sysfs is mounted.
-- *
-- *	XXX: does no error checking on @path size
-  */
- static char *sysfs_pathname(struct sysfs_dirent *sd, char *path)
- {
- 	if (sd->s_parent) {
- 		sysfs_pathname(sd->s_parent, path);
--		strcat(path, "/");
-+		strlcat(path, "/", PATH_MAX);
- 	}
--	strcat(path, sd->s_name);
-+	strlcat(path, sd->s_name, PATH_MAX);
- 	return path;
- }
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 0203cda3297a..f24ce93efc15 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2254,6 +2254,7 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ 	unsigned long inodes;
+ 	int error = -EINVAL;
  
-@@ -446,9 +444,11 @@ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
- 		char *path = kzalloc(PATH_MAX, GFP_KERNEL);
- 		WARN(1, KERN_WARNING
- 		     "sysfs: cannot create duplicate filename '%s'\n",
--		     (path == NULL) ? sd->s_name :
--		     strcat(strcat(sysfs_pathname(acxt->parent_sd, path), "/"),
--		            sd->s_name));
-+		     (path == NULL) ? sd->s_name
-+				    : (sysfs_pathname(acxt->parent_sd, path),
-+				       strlcat(path, "/", PATH_MAX),
-+				       strlcat(path, sd->s_name, PATH_MAX),
-+				       path));
- 		kfree(path);
- 	}
++	config.mpol = NULL;
+ 	if (shmem_parse_options(data, &config, true))
+ 		return error;
  
+@@ -2281,8 +2282,13 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ 	sbinfo->max_inodes  = config.max_inodes;
+ 	sbinfo->free_inodes = config.max_inodes - inodes;
+ 
+-	mpol_put(sbinfo->mpol);
+-	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
++	/*
++	 * Preserve previous mempolicy unless mpol remount option was specified.
++	 */
++	if (config.mpol) {
++		mpol_put(sbinfo->mpol);
++		sbinfo->mpol = config.mpol;	/* transfers initial ref */
++	}
+ out:
+ 	spin_unlock(&sbinfo->stat_lock);
+ 	return error;
 -- 
 1.8.5.2
 
