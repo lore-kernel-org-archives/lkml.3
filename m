@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaBERLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:11:50 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:37494 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285AbaBERFS (ORCPT
+	id S1753818AbaBERMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:12:13 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:49802 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086AbaBERFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:05:18 -0500
+	Wed, 5 Feb 2014 12:05:14 -0500
 From: Leif Lindholm <leif.lindholm@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-efi@vger.kernel.org
-Cc: patches@linaro.org, Roy Franz <roy.franz@linaro.org>,
+Cc: patches@linaro.org, Mark Salter <msalter@redhat.com>,
         Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH 05/22] Add shared printk wrapper for consistent prefixing
-Date: Wed,  5 Feb 2014 17:03:56 +0000
-Message-Id: <1391619853-10601-6-git-send-email-leif.lindholm@linaro.org>
+Subject: [PATCH 03/22] efi: add helper function to get UEFI params from FDT
+Date: Wed,  5 Feb 2014 17:03:54 +0000
+Message-Id: <1391619853-10601-4-git-send-email-leif.lindholm@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1391619853-10601-1-git-send-email-leif.lindholm@linaro.org>
 References: <1391619853-10601-1-git-send-email-leif.lindholm@linaro.org>
@@ -22,126 +22,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roy Franz <roy.franz@linaro.org>
+From: Mark Salter <msalter@redhat.com>
 
-Add a wrapper for printk to standardize the prefix for informational and
-error messages from the EFI stub.
+ARM and ARM64 architectures use the device tree to pass UEFI parameters
+from stub to kernel. These parameters are things known to the stub but
+not discoverable by the kernel after the stub calls ExitBootSerives().
+There is a helper function in:
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
+   drivers/firmware/efi/fdt.c
+
+which the stub uses to add the UEFI parameters to the device tree.
+This patch adds a complimentary helper function which UEFI runtime
+support may use to retrieve the parameters from the device tree.
+If an architecture wants to use this helper, it should select
+CONFIG_UEFI_PARAMS_FROM_FDT.
+
+Signed-off-by: Mark Salter <msalter@redhat.com>
 Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 ---
- drivers/firmware/efi/efi-stub-helper.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/firmware/efi/Kconfig |    7 ++++
+ drivers/firmware/efi/efi.c   |   79 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/efi.h          |    9 +++++
+ 3 files changed, 95 insertions(+)
 
-diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index b6bffbf..eb5d2eb 100644
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -45,6 +45,9 @@ static void efi_printk(efi_system_table_t *sys_table_arg, char *str)
- 	}
- }
+diff --git a/drivers/firmware/efi/Kconfig b/drivers/firmware/efi/Kconfig
+index 1e75f48..d3fe28d 100644
+--- a/drivers/firmware/efi/Kconfig
++++ b/drivers/firmware/efi/Kconfig
+@@ -47,6 +47,13 @@ config EFI_RUNTIME_MAP
  
-+#define pr_efi(sys_table, msg)     efi_printk(sys_table, "EFI stub: "msg)
-+#define pr_efi_err(sys_table, msg) efi_printk(sys_table, "EFI stub: ERROR: "msg)
+ 	  See also Documentation/ABI/testing/sysfs-firmware-efi-runtime-map.
+ 
++config UEFI_PARAMS_FROM_FDT
++	bool
++	help
++	  Select this config option from the architecture Kconfig if
++	  the EFI runtime support gets system table address, memory
++          map address, and other parameters from the device tree.
 +
+ endmenu
  
- static efi_status_t efi_get_memory_map(efi_system_table_t *sys_table_arg,
- 				       efi_memory_desc_t **map,
-@@ -324,7 +327,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 				nr_files * sizeof(*files),
- 				(void **)&files);
- 	if (status != EFI_SUCCESS) {
--		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
-+		pr_efi_err(sys_table_arg, "Failed to alloc mem for file handle list\n");
- 		goto fail;
- 	}
+ config UEFI_CPER
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index b25b36b..7f6e977 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -20,6 +20,8 @@
+ #include <linux/init.h>
+ #include <linux/device.h>
+ #include <linux/efi.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
+ #include <linux/io.h>
  
-@@ -376,13 +379,13 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 					image->device_handle, &fs_proto,
- 						(void **)&io);
- 			if (status != EFI_SUCCESS) {
--				efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
-+				pr_efi_err(sys_table_arg, "Failed to handle fs_proto\n");
- 				goto free_files;
- 			}
+ struct efi __read_mostly efi = {
+@@ -318,3 +320,80 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
  
- 			status = efi_call_phys2(io->open_volume, io, &fh);
- 			if (status != EFI_SUCCESS) {
--				efi_printk(sys_table_arg, "Failed to open volume\n");
-+				pr_efi_err(sys_table_arg, "Failed to open volume\n");
- 				goto free_files;
- 			}
- 		}
-@@ -390,7 +393,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 		status = efi_call_phys5(fh->open, fh, &h, filename_16,
- 					EFI_FILE_MODE_READ, (u64)0);
- 		if (status != EFI_SUCCESS) {
--			efi_printk(sys_table_arg, "Failed to open file: ");
-+			pr_efi_err(sys_table_arg, "Failed to open file: ");
- 			efi_char16_printk(sys_table_arg, filename_16);
- 			efi_printk(sys_table_arg, "\n");
- 			goto close_handles;
-@@ -402,7 +405,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 		status = efi_call_phys4(h->get_info, h, &info_guid,
- 					&info_sz, NULL);
- 		if (status != EFI_BUFFER_TOO_SMALL) {
--			efi_printk(sys_table_arg, "Failed to get file info size\n");
-+			pr_efi_err(sys_table_arg, "Failed to get file info size\n");
- 			goto close_handles;
- 		}
+ 	return 0;
+ }
++
++#ifdef CONFIG_UEFI_PARAMS_FROM_FDT
++
++#define UEFI_PARAM(name, prop, field)			   \
++	{						   \
++		{ name },				   \
++		{ prop },				   \
++		offsetof(struct efi_fdt_params, field),    \
++		FIELD_SIZEOF(struct efi_fdt_params, field) \
++	}
++
++static __initdata struct {
++	const char name[32];
++	const char propname[32];
++	int offset;
++	int size;
++} dt_params[] = {
++	UEFI_PARAM("System Table", "linux,uefi-system-table", system_table),
++	UEFI_PARAM("MemMap Address", "linux,uefi-mmap-start", mmap),
++	UEFI_PARAM("MemMap Size", "linux,uefi-mmap-size", mmap_size),
++	UEFI_PARAM("MemMap Desc. Size", "linux,uefi-mmap-desc-size", desc_size),
++	UEFI_PARAM("MemMap Desc. Version", "linux,uefi-mmap-desc-ver", desc_ver)
++};
++
++struct param_info {
++	int verbose;
++	void *params;
++};
++
++static int __init fdt_find_uefi_params(unsigned long node, const char *uname,
++				       int depth, void *data)
++{
++	struct param_info *info = data;
++	void *prop, *dest;
++	unsigned long len;
++	u64 val;
++	int i;
++
++	if (depth != 1 ||
++	    (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
++		return 0;
++
++	pr_info("Getting parameters from FDT:\n");
++
++	for (i = 0; i < ARRAY_SIZE(dt_params); i++) {
++		prop = of_get_flat_dt_prop(node, dt_params[i].propname, &len);
++		if (!prop) {
++			pr_err("Can't find %s in device tree!\n",
++			       dt_params[i].name);
++			return 0;
++		}
++		dest = info->params + dt_params[i].offset;
++
++		val = of_read_number(prop, len / sizeof(u32));
++
++		if (dt_params[i].size == sizeof(u32))
++			*(u32 *)dest = val;
++		else
++			*(u64 *)dest = val;
++
++		if (info->verbose)
++			pr_info("  %s: 0x%0*llx\n", dt_params[i].name,
++				dt_params[i].size * 2, val);
++	}
++	return 1;
++}
++
++int __init efi_get_fdt_params(struct efi_fdt_params *params, int verbose)
++{
++	struct param_info info;
++
++	info.verbose = verbose;
++	info.params = params;
++
++	return of_scan_flat_dt(fdt_find_uefi_params, &info);
++}
++#endif /* CONFIG_UEFI_PARAMS_FROM_FDT */
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index a3276da..d450673 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -483,6 +483,14 @@ struct efi_memory_map {
+ 	unsigned long desc_size;
+ };
  
-@@ -411,7 +414,7 @@ grow:
- 					EFI_LOADER_DATA, info_sz,
- 					(void **)&info);
- 		if (status != EFI_SUCCESS) {
--			efi_printk(sys_table_arg, "Failed to alloc mem for file info\n");
-+			pr_efi_err(sys_table_arg, "Failed to alloc mem for file info\n");
- 			goto close_handles;
- 		}
++struct efi_fdt_params {
++	u64 system_table;
++	u64 mmap;
++	u32 mmap_size;
++	u32 desc_size;
++	u32 desc_ver;
++};
++
+ typedef struct {
+ 	u32 revision;
+ 	void *parent_handle;
+@@ -620,6 +628,7 @@ extern void efi_initialize_iomem_resources(struct resource *code_resource,
+ extern void efi_get_time(struct timespec *now);
+ extern int efi_set_rtc_mmss(const struct timespec *now);
+ extern void efi_reserve_boot_services(void);
++extern int efi_get_fdt_params(struct efi_fdt_params *params, int verbose);
+ extern struct efi_memory_map memmap;
  
-@@ -427,7 +430,7 @@ grow:
- 		efi_call_phys1(sys_table_arg->boottime->free_pool, info);
- 
- 		if (status != EFI_SUCCESS) {
--			efi_printk(sys_table_arg, "Failed to get file info\n");
-+			pr_efi_err(sys_table_arg, "Failed to get file info\n");
- 			goto close_handles;
- 		}
- 
-@@ -446,13 +449,13 @@ grow:
- 		status = efi_high_alloc(sys_table_arg, file_size_total, 0x1000,
- 				    &file_addr, max_addr);
- 		if (status != EFI_SUCCESS) {
--			efi_printk(sys_table_arg, "Failed to alloc highmem for files\n");
-+			pr_efi_err(sys_table_arg, "Failed to alloc highmem for files\n");
- 			goto close_handles;
- 		}
- 
- 		/* We've run out of free low memory. */
- 		if (file_addr > max_addr) {
--			efi_printk(sys_table_arg, "We've run out of free low memory\n");
-+			pr_efi_err(sys_table_arg, "We've run out of free low memory\n");
- 			status = EFI_INVALID_PARAMETER;
- 			goto free_file_total;
- 		}
-@@ -473,7 +476,7 @@ grow:
- 							&chunksize,
- 							(void *)addr);
- 				if (status != EFI_SUCCESS) {
--					efi_printk(sys_table_arg, "Failed to read file\n");
-+					pr_efi_err(sys_table_arg, "Failed to read file\n");
- 					goto free_file_total;
- 				}
- 				addr += chunksize;
-@@ -558,7 +561,7 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
- 				       &new_addr);
- 	}
- 	if (status != EFI_SUCCESS) {
--		efi_printk(sys_table_arg, "ERROR: Failed to allocate usable memory for kernel.\n");
-+		pr_efi_err(sys_table_arg, "ERROR: Failed to allocate usable memory for kernel.\n");
- 		return status;
- 	}
- 
+ /* Iterate through an efi_memory_map */
 -- 
 1.7.10.4
 
