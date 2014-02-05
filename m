@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236AbaBEAJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:09:27 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:48895 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590AbaBEAJT (ORCPT
+	id S933365AbaBEAJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:09:40 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:61959 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933177AbaBEAJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:09:19 -0500
+	Tue, 4 Feb 2014 19:09:26 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
+Cc: Todd Poynor <toddpoynor@google.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 5/7] staging: ion: Fix overflow and list bugs in system heap
-Date: Tue,  4 Feb 2014 16:08:38 -0800
-Message-Id: <1391558920-31590-6-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 4/7] staging: ashmem: Avoid deadlock between read and mmap calls
+Date: Tue,  4 Feb 2014 16:08:37 -0800
+Message-Id: <1391558920-31590-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
 References: <1391558920-31590-1-git-send-email-john.stultz@linaro.org>
@@ -22,60 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+From: Todd Poynor <toddpoynor@google.com>
 
-Fix a few bugs in ion_system_heap:
+Avoid holding ashmem_mutex across code that can page fault.  Page faults
+grab the mmap_sem for the process, which are also held by mmap calls
+prior to calling ashmem_mmap, which locks ashmem_mutex.  The reversed
+order of locking between the two can deadlock.
 
-Initialize the list node in the info block.
-
-Don't store size_remaining in a signed long, allocating >2GB
-could overflow, resulting in a call to sg_alloc_table with
-nents=0 which panics.  alloc_largest_available will never
-return a block larger than size_remanining, so it can never
-go negative.
-
-Limit a single allocation to half of all memory.  Prevents a
-large allocation from taking down the whole system.
+The calls that can page fault are read() and the ASHMEM_SET_NAME and
+ASHMEM_GET_NAME ioctls.  Move the code that accesses userspace pages
+outside the ashmem_mutex.
 
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Cc: Colin Cross <ccross@android.com>
 Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: Minor commit subject tweak]
+Signed-off-by: Todd Poynor <toddpoynor@google.com>
+[jstultz: minor commit message tweaks]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/ion_system_heap.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/staging/android/ashmem.c | 45 +++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index 7f07291..9849f39 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -124,6 +124,7 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index 23948f1..713a972 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -295,21 +295,29 @@ static ssize_t ashmem_read(struct file *file, char __user *buf,
  
- 		info->page = page;
- 		info->order = orders[i];
-+		INIT_LIST_HEAD(&info->list);
- 		return info;
+ 	/* If size is not set, or set to 0, always return EOF. */
+ 	if (asma->size == 0)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (!asma->file) {
+ 		ret = -EBADF;
+-		goto out;
++		goto out_unlock;
  	}
- 	kfree(info);
-@@ -145,12 +146,15 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
- 	struct list_head pages;
- 	struct page_info *info, *tmp_info;
- 	int i = 0;
--	long size_remaining = PAGE_ALIGN(size);
-+	unsigned long size_remaining = PAGE_ALIGN(size);
- 	unsigned int max_order = orders[0];
  
- 	if (align > PAGE_SIZE)
- 		return -EINVAL;
+-	ret = asma->file->f_op->read(asma->file, buf, len, pos);
+-	if (ret < 0)
+-		goto out;
++	mutex_unlock(&ashmem_mutex);
  
-+	if (size / PAGE_SIZE > totalram_pages / 2)
-+		return -ENOMEM;
-+
- 	INIT_LIST_HEAD(&pages);
- 	while (size_remaining > 0) {
- 		info = alloc_largest_available(sys_heap, buffer, size_remaining,
+-	/** Update backing file pos, since f_ops->read() doesn't */
+-	asma->file->f_pos = *pos;
++	/*
++	 * asma and asma->file are used outside the lock here.  We assume
++	 * once asma->file is set it will never be changed, and will not
++	 * be destroyed until all references to the file are dropped and
++	 * ashmem_release is called.
++	 */
++	ret = asma->file->f_op->read(asma->file, buf, len, pos);
++	if (ret >= 0) {
++		/** Update backing file pos, since f_ops->read() doesn't */
++		asma->file->f_pos = *pos;
++	}
++	return ret;
+ 
+-out:
++out_unlock:
+ 	mutex_unlock(&ashmem_mutex);
+ 	return ret;
+ }
+@@ -498,6 +506,7 @@ out:
+ 
+ static int set_name(struct ashmem_area *asma, void __user *name)
+ {
++	int len;
+ 	int ret = 0;
+ 	char local_name[ASHMEM_NAME_LEN];
+ 
+@@ -510,21 +519,19 @@ static int set_name(struct ashmem_area *asma, void __user *name)
+ 	 * variable that does not need protection and later copy the local
+ 	 * variable to the structure member with lock held.
+ 	 */
+-	if (copy_from_user(local_name, name, ASHMEM_NAME_LEN))
+-		return -EFAULT;
+-
++	len = strncpy_from_user(local_name, name, ASHMEM_NAME_LEN);
++	if (len < 0)
++		return len;
++	if (len == ASHMEM_NAME_LEN)
++		local_name[ASHMEM_NAME_LEN - 1] = '\0';
+ 	mutex_lock(&ashmem_mutex);
+ 	/* cannot change an existing mapping's name */
+-	if (unlikely(asma->file)) {
++	if (unlikely(asma->file))
+ 		ret = -EINVAL;
+-		goto out;
+-	}
+-	memcpy(asma->name + ASHMEM_NAME_PREFIX_LEN,
+-		local_name, ASHMEM_NAME_LEN);
+-	asma->name[ASHMEM_FULL_NAME_LEN-1] = '\0';
+-out:
+-	mutex_unlock(&ashmem_mutex);
++	else
++		strcpy(asma->name + ASHMEM_NAME_PREFIX_LEN, local_name);
+ 
++	mutex_unlock(&ashmem_mutex);
+ 	return ret;
+ }
+ 
 -- 
 1.8.3.2
 
