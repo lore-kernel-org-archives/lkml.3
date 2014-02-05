@@ -1,68 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294AbaBEIYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 03:24:25 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:55906 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434AbaBEIYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 03:24:24 -0500
-Date: Wed, 5 Feb 2014 09:24:04 +0100
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [3.14-rc1] cirrus driver problem (qemu)
-Message-ID: <20140205082404.GC12991@kria>
-References: <20140203153413.GA12991@kria>
- <CAPM=9twWniCmKNb1vxjS_PbsTqimX6EWVusA_+GZ7H9fdhQj3A@mail.gmail.com>
- <20140204225340.GB12991@kria>
- <CAPM=9txmSVnCVDZ6ni8GfqGSQqJkyuVb3PLf4dtYB0b4FdpraQ@mail.gmail.com>
+	id S1751000AbaBEI3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 03:29:52 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:35009 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaBEI3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 03:29:51 -0500
+Message-ID: <52F1F67A.6070509@codethink.co.uk>
+Date: Wed, 05 Feb 2014 08:29:46 +0000
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPM=9txmSVnCVDZ6ni8GfqGSQqJkyuVb3PLf4dtYB0b4FdpraQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Magnus Damm <magnus.damm@gmail.com>
+CC: linux-pci@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, valentine.barshak@cogentembedded.com,
+        horms@verge.net.au, bhelgaas@google.com
+Subject: Re: [PATCH 01/04] PCI: rcar: Register each instance independently
+References: <20140205065243.29445.76593.sendpatchset@w520> <20140205065254.29445.77939.sendpatchset@w520>
+In-Reply-To: <20140205065254.29445.77939.sendpatchset@w520>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-05, 14:50:18 +1000, Dave Airlie wrote:
-> On Wed, Feb 5, 2014 at 8:53 AM, Sabrina Dubroca <sd@queasysnail.net> wrote:
-> > 2014-02-04, 13:20:54 +1000, Dave Airlie wrote:
-> >> On Tue, Feb 4, 2014 at 1:34 AM, Sabrina Dubroca <sd@queasysnail.net> wrote:
-> >> > When I boot 3.14-rc1 in qemu, I get the trace below. The console stops
-> >> > updating and I don't get a login prompt. I can login, but I can't see
-> >> > what I'm doing. I can login normally via SSH.
-> >> >
-> >> > If I revert the last commit in drivers/gpu/drm/cirrus:
-> >> >
-> >> > f4b4718b61d1d5a7442a4fd6863ea80c3a10e508 drm: ast,cirrus,mgag200: use drm_can_sleep
-> >> >
-> >> > the problem is solved.
-> >> >
-> >>
-> >> Hi does the attach patch fix it?
-> >>
-> >> Dave.
-> >
-> >
-> > Same problem. Didn't you reverse the logic on in_interrupt, compared
-> > to the old "if (!in_interrupt())" ? It looks like drm_can_sleep() is
-> > false when in_interrupt() is true.
-> >
-> > I modified your patch as below. Display doesn't freeze, but I still
-> > get the warning.
-> 
-> Oh wow I totally screwed up there, you are right, logic inversion.
-> 
-> Can you try the attached?
-> 
-> without the in_interrupt addition.
-> 
-> Dave.
+On 05/02/14 06:52, Magnus Damm wrote:
+> From: Magnus Damm <damm@opensource.se>
+>
+> Convert the code to allow per-device probe() like other device
+> drivers. This also delays driver registration due to change from
+> subsys_initcall() to regular module_platform_driver().
+>
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+> ---
+>
+>   drivers/pci/host/pci-rcar-gen2.c |   74 ++++++++------------------------------
+>   1 file changed, 16 insertions(+), 58 deletions(-)
+>
+> --- 0001/drivers/pci/host/pci-rcar-gen2.c
+> +++ work/drivers/pci/host/pci-rcar-gen2.c	2014-02-04 16:38:46.000000000 +0900
+> @@ -74,9 +74,6 @@
+>
+>   #define RCAR_PCI_UNIT_REV_REG		(RCAR_AHBPCI_PCICOM_OFFSET + 0x48)
+>
+> -/* Number of internal PCI controllers */
+> -#define RCAR_PCI_NR_CONTROLLERS		3
+> -
+>   struct rcar_pci_priv {
+>   	struct device *dev;
+>   	void __iomem *reg;
+> @@ -228,6 +225,8 @@ static int __init rcar_pci_setup(int nr,
+>   	pci_add_resource(&sys->resources, &priv->io_res);
+>   	pci_add_resource(&sys->resources, &priv->mem_res);
+>
+> +	/* Setup bus number based on platform device id */
+> +	sys->busnr = to_platform_device(priv->dev)->id;
+>   	return 1;
+>   }
+>
+> @@ -236,48 +235,12 @@ static struct pci_ops rcar_pci_ops = {
+>   	.write	= rcar_pci_write_config,
+>   };
+>
+> -static struct hw_pci rcar_hw_pci __initdata = {
+> -	.map_irq	= rcar_pci_map_irq,
+> -	.ops		= &rcar_pci_ops,
+> -	.setup		= rcar_pci_setup,
+> -};
+> -
+> -static int rcar_pci_count __initdata;
+> -
+> -static int __init rcar_pci_add_controller(struct rcar_pci_priv *priv)
+> -{
+> -	void **private_data;
+> -	int count;
+> -
+> -	if (rcar_hw_pci.nr_controllers < rcar_pci_count)
+> -		goto add_priv;
+> -
+> -	/* (Re)allocate private data pointer array if needed */
+> -	count = rcar_pci_count + RCAR_PCI_NR_CONTROLLERS;
+> -	private_data = kzalloc(count * sizeof(void *), GFP_KERNEL);
+> -	if (!private_data)
+> -		return -ENOMEM;
+> -
+> -	rcar_pci_count = count;
+> -	if (rcar_hw_pci.private_data) {
+> -		memcpy(private_data, rcar_hw_pci.private_data,
+> -		       rcar_hw_pci.nr_controllers * sizeof(void *));
+> -		kfree(rcar_hw_pci.private_data);
+> -	}
+> -
+> -	rcar_hw_pci.private_data = private_data;
+> -
+> -add_priv:
+> -	/* Add private data pointer to the array */
+> -	rcar_hw_pci.private_data[rcar_hw_pci.nr_controllers++] = priv;
+> -	return 0;
+> -}
+> -
+> -static int __init rcar_pci_probe(struct platform_device *pdev)
+> +static int rcar_pci_probe(struct platform_device *pdev)
+>   {
+>   	struct resource *cfg_res, *mem_res;
+>   	struct rcar_pci_priv *priv;
+>   	void __iomem *reg;
+> +	struct hw_pci hw;
+>
+>   	cfg_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>   	reg = devm_ioremap_resource(&pdev->dev, cfg_res);
+> @@ -308,31 +271,26 @@ static int __init rcar_pci_probe(struct
+>   	priv->reg = reg;
+>   	priv->dev = &pdev->dev;
+>
+> -	return rcar_pci_add_controller(priv);
+> +	memset(&hw, 0, sizeof(hw));
+> +	hw.nr_controllers = 1;
+> +	hw.private_data = (void **)&priv;
+> +	hw.map_irq = rcar_pci_map_irq;
+> +	hw.ops = &rcar_pci_ops;
+> +	hw.setup = rcar_pci_setup;
+> +	pci_common_init_dev(&pdev->dev, &hw);
+> +	return 0;
+>   }
 
-It works, thanks!
-No freeze, no warning.
+Do we really want to explicitly set the bus number here?
 
-Sabrina
+>
+>   static struct platform_driver rcar_pci_driver = {
+>   	.driver = {
+>   		.name = "pci-rcar-gen2",
+> +		.owner = THIS_MODULE,
+> +		.suppress_bind_attrs = true,
+>   	},
+> +	.probe = rcar_pci_probe,
+>   };
+
+
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
