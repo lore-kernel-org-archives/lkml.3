@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaBEVNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:13:32 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54255 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaBEUDu (ORCPT
+	id S1756704AbaBEVOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:14:09 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47933 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaBEUDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Feb 2014 15:03:50 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 029/213] atm: fix info leak in getsockopt(SO_ATMPVC)
-Date: Wed, 5 Feb 2014 14:59:44 -0500
-Message-ID: <1391630568-49251-30-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 022/213] rose: fix info leak via msg_name in rose_recvmsg()
+Date: Wed, 5 Feb 2014 14:59:37 -0500
+Message-ID: <1391630568-49251-23-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -32,31 +33,37 @@ From: Mathias Krause <minipli@googlemail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e862f1a9b7df4e8196ebec45ac62295138aa3fc2 upstream.
+commit 4a184233f21645cf0b719366210ed445d1024d72 upstream.
 
-The ATM code fails to initialize the two padding bytes of struct
-sockaddr_atmpvc inserted for alignment. Add an explicit memset(0)
-before filling the structure to avoid the info leak.
+The code in rose_recvmsg() does not initialize all of the members of
+struct sockaddr_rose/full_sockaddr_rose when filling the sockaddr info.
+Nor does it initialize the padding bytes of the structure inserted by
+the compiler for alignment. This will lead to leaking uninitialized
+kernel stack bytes in net/socket.c.
 
+Fix the issue by initializing the memory used for sockaddr info with
+memset(0).
+
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/atm/common.c | 1 +
+ net/rose/af_rose.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/atm/common.c b/net/atm/common.c
-index 97ed94aa0cbc..ec2cb8f3c8d9 100644
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -759,6 +759,7 @@ int vcc_getsockopt(struct socket *sock, int level, int optname,
+diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
+index 547e5cd6d375..11072546d7e9 100644
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -1277,6 +1277,7 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
  
- 		if (!vcc->dev || !test_bit(ATM_VF_ADDR, &vcc->flags))
- 			return -ENOTCONN;
-+		memset(&pvc, 0, sizeof(pvc));
- 		pvc.sap_family = AF_ATMPVC;
- 		pvc.sap_addr.itf = vcc->dev->number;
- 		pvc.sap_addr.vpi = vcc->vpi;
+ 	if (srose != NULL) {
++		memset(srose, 0, msg->msg_namelen);
+ 		srose->srose_family = AF_ROSE;
+ 		srose->srose_addr   = rose->dest_addr;
+ 		srose->srose_call   = rose->dest_call;
 -- 
 1.8.5.2
 
