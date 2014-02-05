@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaBEJQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 04:16:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11237 "EHLO mx1.redhat.com"
+	id S1751705AbaBEJSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 04:18:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15994 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbaBEJQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 04:16:17 -0500
-Date: Wed, 5 Feb 2014 10:15:57 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [RFC 00/22] perf tools: Display tracepoint enahncements
-Message-ID: <20140205091557.GD1201@krava.brq.redhat.com>
-References: <1391377150-23920-1-git-send-email-jolsa@redhat.com>
- <20140202214550.GA2694@krava.redhat.com>
- <87r47i1gmd.fsf@sejong.aot.lge.com>
+	id S1750750AbaBEJSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 04:18:43 -0500
+Date: Wed, 5 Feb 2014 10:17:42 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Zoran Markovic <zoran.markovic@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, Shaibal Dutta <shaibal.dutta@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH] net: wireless: move regulatory timeout work to power
+ efficient workqueue
+Message-ID: <20140205091742.GA1978@redhat.com>
+References: <1391123310-6425-1-git-send-email-zoran.markovic@linaro.org>
+ <1391160084.4141.1.camel@jlt4.sipsolutions.net>
+ <20140131093531.GA25559@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87r47i1gmd.fsf@sejong.aot.lge.com>
+In-Reply-To: <20140131093531.GA25559@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 10:40:42AM +0900, Namhyung Kim wrote:
-> On Sun, 2 Feb 2014 22:45:50 +0100, Jiri Olsa wrote:
-> > On Sun, Feb 02, 2014 at 10:38:48PM +0100, Jiri Olsa wrote:
-> >> hi,
-> >> sending out tracepoint (mostly) events display enahncements.
-> >
-> > forgot to mention.. the branch is in here:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> >   perf/core_tp
+Hi
+
+On Fri, Jan 31, 2014 at 04:35:31AM -0500, Tejun Heo wrote:
+> On Fri, Jan 31, 2014 at 10:21:24AM +0100, Johannes Berg wrote:
+> > I'm not sure if this is part of a larger patchset actually adding that
+> > "system_power_efficient_wq", but maybe it'd be better to expose a
+> > function as an API rather than the wq struct?
+> > 
+> > Something like
+> > 
+> > scheduled_delayed_work_pwr_efficient(...)?
 > 
-> It's segfaulted with --group --tui option since the hpp->ptr is not
-> setup to point an evsel.  Not sure whose problem.. ;-)
+> While there are some benefits to using dedicated functions for
+> specific workqueues, I don't think it brings enough benefits to
+> justify adding dedicated API and am unlikely to add new ones.
 
-will check ;-) thanks
+What are selection criteria when choosing between system_wq or
+system_power_efficient_wq on drivers ? IOW if I would be writing
+a new driver which workqueue should I use and when ?
 
-jirka
+I think that should be driver independent, at least for most of drivers.
+If system have to run in low power mode, system_power_efficient_wq
+should be chosen automatically by schedule_work(), otherwise when high
+performance is more important schedule_work() should use system_wq.
+
+Stanislaw
