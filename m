@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164AbaBEUGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:06:18 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48232 "EHLO
+	id S932517AbaBEUrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:47:53 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48279 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720AbaBEUF4 (ORCPT
+	with ESMTP id S932153AbaBEUGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:56 -0500
+	Wed, 5 Feb 2014 15:06:17 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Li Zhong <zhong@linux.vnet.ibm.com>,
+CC: Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Williams <dan.j.williams@gmail.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 095/213] Fix a dead loop in async_synchronize_full()
-Date: Wed, 5 Feb 2014 15:00:50 -0500
-Message-ID: <1391630568-49251-96-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 103/213] mm: fix invalidate_complete_page2() lock ordering
+Date: Wed, 5 Feb 2014 15:00:58 -0500
+Message-ID: <1391630568-49251-104-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -28,7 +27,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: Hugh Dickins <hughd@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -36,93 +35,63 @@ From: Li Zhong <zhong@linux.vnet.ibm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-[commit 45516ddc16abc923104d78bb3eb772ac0a09e33e in v3.0.44 - paulg ]
+commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
 
-[Fixed upstream by commits 2955b47d2c1983998a8c5915cb96884e67f7cb53 and
-a4683487f90bfe3049686fc5c566bdc1ad03ace6 from Dan Williams, but they are much
-more intrusive than this tiny fix, according to Andrew - gregkh]
+In fuzzing with trinity, lockdep protested "possible irq lock inversion
+dependency detected" when isolate_lru_page() reenabled interrupts while
+still holding the supposedly irq-safe tree_lock:
 
-This patch tries to fix a dead loop in  async_synchronize_full(), which
-could be seen when preemption is disabled on a single cpu machine.
+invalidate_inode_pages2
+  invalidate_complete_page2
+    spin_lock_irq(&mapping->tree_lock)
+    clear_page_mlock
+      isolate_lru_page
+        spin_unlock_irq(&zone->lru_lock)
 
-void async_synchronize_full(void)
-{
-        do {
-                async_synchronize_cookie(next_cookie);
-        } while (!list_empty(&async_running) || !
-list_empty(&async_pending));
-}
+isolate_lru_page() is correct to enable interrupts unconditionally:
+invalidate_complete_page2() is incorrect to call clear_page_mlock() while
+holding tree_lock, which is supposed to nest inside lru_lock.
 
-async_synchronize_cookie() calls async_synchronize_cookie_domain() with
-&async_running as the default domain to synchronize.
+Both truncate_complete_page() and invalidate_complete_page() call
+clear_page_mlock() before taking tree_lock to remove page from radix_tree.
+ I guess invalidate_complete_page2() preferred to test PageDirty (again)
+under tree_lock before committing to the munlock; but since the page has
+already been unmapped, its state is already somewhat inconsistent, and no
+worse if clear_page_mlock() moved up.
 
-However, there might be some works in the async_pending list from other
-domains. On a single cpu system, without preemption, there is no chance
-for the other works to finish, so async_synchronize_full() enters a dead
-loop.
-
-It seems async_synchronize_full() wants to synchronize all entries in
-all running lists(domains), so maybe we could just check the entry_count
-to know whether all works are finished.
-
-Currently, async_synchronize_cookie_domain() expects a non-NULL running
-list ( if NULL, there would be NULL pointer dereference ), so maybe a
-NULL pointer could be used as an indication for the functions to
-synchronize all works in all domains.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Christian Kujau <lists@nerdbynature.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Williams <dan.j.williams@gmail.com>
-Cc: Christian Kujau <lists@nerdbynature.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ying Han <yinghan@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/async.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ mm/truncate.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/async.c b/kernel/async.c
-index 15319d6c18fe..b640ffc3f5a1 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -94,6 +94,13 @@ static async_cookie_t  __lowest_in_progress(struct list_head *running)
- {
- 	struct async_entry *entry;
+diff --git a/mm/truncate.c b/mm/truncate.c
+index f42675a3615d..d0698a15c61f 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -381,11 +381,12 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+ 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
+ 		return 0;
  
-+	if (!running) { /* just check the entry count */
-+		if (atomic_read(&entry_count))
-+			return 0; /* smaller than any cookie */
-+		else
-+			return next_cookie;
-+	}
++	clear_page_mlock(page);
 +
- 	if (!list_empty(running)) {
- 		entry = list_first_entry(running,
- 			struct async_entry, list);
-@@ -249,9 +256,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
-  */
- void async_synchronize_full(void)
- {
--	do {
--		async_synchronize_cookie(next_cookie);
--	} while (!list_empty(&async_running) || !list_empty(&async_pending));
-+	async_synchronize_cookie_domain(next_cookie, NULL);
- }
- EXPORT_SYMBOL_GPL(async_synchronize_full);
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (PageDirty(page))
+ 		goto failed;
  
-@@ -271,7 +276,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
- /**
-  * async_synchronize_cookie_domain - synchronize asynchronous function calls within a certain domain with cookie checkpointing
-  * @cookie: async_cookie_t to use as checkpoint
-- * @running: running list to synchronize on
-+ * @running: running list to synchronize on, NULL indicates all lists
-  *
-  * This function waits until all asynchronous function calls for the
-  * synchronization domain specified by the running list @list submitted
+-	clear_page_mlock(page);
+ 	BUG_ON(page_has_private(page));
+ 	__remove_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
 -- 
 1.8.5.2
 
