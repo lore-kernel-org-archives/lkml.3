@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaBESS3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:18:29 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36395 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbaBESS1 (ORCPT
+	id S1753462AbaBESVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:21:24 -0500
+Received: from smtp-out-092.synserver.de ([212.40.185.92]:1027 "EHLO
+	smtp-out-089.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753410AbaBESVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:18:27 -0500
-Date: Wed, 5 Feb 2014 18:18:17 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20140205181817.GG32298@sirena.org.uk>
-References: <1391493268-3242-1-git-send-email-bjorn.andersson@sonymobile.com>
- <20140204110531.GR22609@sirena.org.uk>
- <CAJAp7OjCnJ=P9Gi20=D9gybREiSaqd1CaQ0K=9fGbCzU1gTFLw@mail.gmail.com>
- <20140204181831.GP22609@sirena.org.uk>
- <CAJAp7Ohn3ch2nK_S8j9ieRBzNeyt6OJmumEhRXXykB9RgMJsQg@mail.gmail.com>
- <20140204200018.GZ22609@sirena.org.uk>
- <CAJAp7OjB-cJbLpdWo0RFJZefCKcCiKc8KgrjkBobJnddv4MSWA@mail.gmail.com>
+	Wed, 5 Feb 2014 13:21:23 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12887
+Message-ID: <52F28123.1080102@metafoo.de>
+Date: Wed, 05 Feb 2014 19:21:23 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8S1fMsFYqgBC+BN/"
-Content-Disposition: inline
-In-Reply-To: <CAJAp7OjB-cJbLpdWo0RFJZefCKcCiKc8KgrjkBobJnddv4MSWA@mail.gmail.com>
-X-Cookie: Take it easy, we're in a hurry.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Make regulator object reflect
- configured voltage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH v3 4/5] ASoC: tda998x: adjust the audio hw
+ parameters from EDID
+References: <cover.1391274627.git.moinejf@free.fr> <1b15025671d9099863a3091346536e45891e4a26.1391274628.git.moinejf@free.fr> <20140204180625.GM22609@sirena.org.uk> <20140205101134.4591e5c3@armhf> <52F2021A.9020804@metafoo.de> <20140205190732.5617f200@armhf>
+In-Reply-To: <20140205190732.5617f200@armhf>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/05/2014 07:07 PM, Jean-Francois Moine wrote:
+> On Wed, 05 Feb 2014 10:19:22 +0100
+> Lars-Peter Clausen <lars@metafoo.de> wrote:
+>
+>>> So, in the CODEC, I don't see how I could update the parameters
+>>> dictated by the EDID otherwise in changing the DAI driver parameters.
+>>>
+>>
+>> The startup function is the right place. But instead of modifying the DAI
+>> use snd_pcm_hw_constraint_mask64(), snd_pcm_hw_constraint_list(), etc. to
+>> setup the additional constraints that come from the EDID.
+>
+> It is more complicated, but it works. Nevertheless, I have 2 problems:
+>
+> - snd_pcm_hw_constraint_list() keeps a pointer to the list, so, it
+>    cannot be in the stack. It fix this with static struct and rate array.
+>
 
---8S1fMsFYqgBC+BN/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right. If the struct is modified though it should be per device and not 
+global. I think the best way to implement this is to make the array static 
+and specify a mask for the constraint based on the EDID. E.g.
 
-On Wed, Feb 05, 2014 at 10:00:15AM -0800, Bjorn Andersson wrote:
-> On Tue, Feb 4, 2014 at 12:00 PM, Mark Brown <broonie@kernel.org> wrote:
+static unsigned int hdmi_rates[] = {
+	32000,
+	44100,
+	48000,
+	88200,
+	96000,
+	176400,
+	192000,
+};
 
-> > So we should be changing the code to allow a set_voltage() that sets the
-> > voltage to the existing voltage regardless of constraints allowing a
-> > change then - that's what the underlying issue is.  Your change wouldn't
-> > cover the case where the hardware defualt is being used for example.
+rate_mask = 0;
 
-> Makes sense, but the only thing we could check for would be if min_uV
-> == max_uV == current-voltage. That would work out fine for this use
-> case, but do you think it would be good enough?
+while (...) {
+	...
+	rate_mask |= 1 << sad[1];
+}
 
-It should be fine to check for min_uV <= current-voltage <= max_uV
-instead if CHANGE_VOLTAGE isn't available, so long as the existing
-setting is in the range it's fine.
+rate_constraints->list = hdmi_rates;
+rate_constraints->count = ARRAY_SIZE(hdmi_rates);
+rate_constraints->mask = rate_mask;
 
-> The best thing I've come up with then is to add the following check in
-> regulator_set_voltage().
+> - snd_pcm_hw_constraint_mask64() is not exported.
+>    Is there an other way to set constraints on the formats/sample widths?
 
-> if (min_uV == max_uV && _regulator_get_voltage(rdev) == min_uV)
->     goto out;
+I think that's a bug. Both snd_pcm_hw_constraint_mask() and 
+snd_pcm_hw_constraint_mask64() should be exported. Can you send a patch?
 
-> Would this be acceptable? It's achieving the same thing as my patch,
-> is more robust and covers the case of setting the voltage to the hw
-> default value.
+- Lars
 
-That sort of thing yes, just short circuit out the main logic in this
-case.
 
---8S1fMsFYqgBC+BN/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS8oBmAAoJELSic+t+oim95VEP/RuLY4SSxHRs3qZJOmBPXaeA
-k0q8XRkmVV4Iq27mCCrvq3/Qrl5fD9KWpEcmBN+86o5fLkkSk4Kt4y91gE0UDFrz
-RPyoEWh00AZiRVvvwN18lFoG4UY1/ZKWImSr91X/KNKsOFt8YsTXp1AroVkDAogS
-nHXEyGH760oV5d5wnqW+qDCfzX2CEFLLIhysx9aCYiZLX3TH5OYw4PYwRnQuaoV2
-p3iEl7joNvV2t3mMRMds6gX90BByskh/yAS1YTUB5nqseu1kOGQWT41hpHlH+mVG
-pAqZkd3BShNe97UkA56xtjpBpF2gTevLgWfv6Q4fmgRhyA+rkLRRHHkQm+u87glq
-ebxjFutLj6sehVSIme1C6Aspxb7zFeJB+2MqVOeup+g8U9skD2L7qjCBXNVMb5xQ
-+516TbsAK/ZH3f6xJtS7Qu+qFcend7edMa7I+ROr9+N72sdOQayYYxKy25jAhWkJ
-newSq2Gog1jq5ROtis7Vw0aIm2xMjTtRnGIsLJtofRp5xJxd62gh1yJ/d6LWBUrr
-VrTtp0YX4iooWckgMmZkeCWDdQl3bm9gaYHqbEiGBZ8bb4BqlY51J7qrpaqJtyS9
-RzsEO+3vVLB37Yt7mZqQGSDL4iYxW4Ct+B1dk9mefNtdXs5tPjcl6RBKes/lkKL/
-EFudpLklPD+ulQpzlT2s
-=NzqC
------END PGP SIGNATURE-----
-
---8S1fMsFYqgBC+BN/--
