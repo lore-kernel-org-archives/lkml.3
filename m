@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaBEWKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:10:06 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48757 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667AbaBEWKC (ORCPT
+	id S1754005AbaBEWKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:10:16 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49676 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957AbaBEWKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:10:02 -0500
+	Wed, 5 Feb 2014 17:10:09 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 00/51] CPU hotplug: Fix issues with callback registration
+Subject: [PATCH 01/51] CPU hotplug: Provide lockless versions of callback
+ registration functions
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Thu, 06 Feb 2014 03:34:36 +0530
-Message-ID: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>, Toshi Kani <toshi.kani@hp.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Thu, 06 Feb 2014 03:34:48 +0530
+Message-ID: <20140205220447.19080.9460.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-6102-0000-0000-000004E447AD
+x-cbid: 14020522-9574-0000-0000-00000BCF3507
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Many subsystems and drivers have the need to register CPU hotplug callbacks
-from their init routines and also perform initialization for the CPUs that are
-already online. But unfortunately there is no race-free way to achieve this
-today.
-
-For example, consider this piece of code:
+The following method of CPU hotplug callback registration is not safe
+due to the possibility of an ABBA deadlock involving the cpu_add_remove_lock
+and the cpu_hotplug.lock.
 
 	get_online_cpus();
 
@@ -45,8 +48,7 @@ For example, consider this piece of code:
 
 	put_online_cpus();
 
-This is not safe because there is a possibility of an ABBA deadlock involving
-the cpu_add_remove_lock and the cpu_hotplug.lock.
+The deadlock is shown below:
 
           CPU 0                                         CPU 1
           -----                                         -----
@@ -58,54 +60,30 @@ the cpu_add_remove_lock and the cpu_hotplug.lock.
                                               takes cpu_add_remove_lock
                                               [via cpu_maps_update_begin()]
 
+
    Try to acquire
    cpu_add_remove_lock
    [via register_cpu_notifier()]
+
 
                                               CPU online/offline operation
                                               tries to acquire cpu_hotplug.lock
                                               [via cpu_hotplug_begin()]
 
+
                             *** DEADLOCK! ***
 
+The problem here is that callback registration takes the locks in one order
+whereas the CPU hotplug operations take the same locks in the opposite order.
+To avoid this issue and to provide a race-free method to register CPU hotplug
+callbacks (along with initialization of already online CPUs), introduce new
+variants of the callback registration APIs that simply register the callbacks
+without holding the cpu_add_remove_lock during the registration. That way,
+we can avoid the ABBA scenario. However, we will need to hold the
+cpu_add_remove_lock throughout the entire critical section, to protect updates
+to the callback/notifier chain.
 
-Other combinations of callback registration also don't work correctly.
-Examples:
-
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-	get_online_cpus();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	put_online_cpus();
-
-This can lead to double initialization if a hotplug operation occurs after
-registering the notifier and before invoking get_online_cpus().
-
-On the other hand, the following piece of code can miss hotplug events
-altogether:
-
-	get_online_cpus();
-
-	for_each_online_cpu(cpu)
-		init_cpu(cpu);
-
-	put_online_cpus();
-              ^
-              |   Race window; Can miss hotplug events here
-              v
-	register_cpu_notifier(&foobar_cpu_notifier);
-
-
-To solve these issues and provide a race-free method to register CPU hotplug
-callbacks, this patchset introduces new variants of the callback registration
-APIs that don't hold the cpu_add_remove_lock, and exports the
-cpu_add_remove_lock via cpu_maps_update_begin/done() for use by various
-subsystems. With this in place, the following code snippet will register a
-hotplug callback as well as initialize already online CPUs without any race
-conditions.
+This can be achieved by writing the callback registration code as follows:
 
 	cpu_maps_update_begin();
 
@@ -117,133 +95,199 @@ conditions.
 
 	cpu_maps_update_done();
 
+Note that we can't use get_online_cpus() here instead of cpu_maps_update_begin()
+because the cpu_hotplug.lock is dropped during the invocation of CPU_POST_DEAD
+notifiers, and hence get_online_cpus() cannot provide the necessary
+synchronization to protect the callback/notifier chains against concurrent
+reads and writes. On the other hand, since the cpu_add_remove_lock protects
+the entire hotplug operation (including CPU_POST_DEAD), we can use
+cpu_maps_update_begin/done() to guarantee proper synchronization.
 
-This patchset introduces this infrastructure in patch 1, and performs
-tree-wide conversions (to use this model) in the remaining patches.
+Also, since cpu_maps_update_begin/done() is like a super-set of
+get/put_online_cpus(), the former naturally protects the critical sections
+from concurrent hotplug operations.
 
-This patchset has been hosted in the below git tree. It applies cleanly on
-v3.14-rc1.
+So, introduce the lockless variants of un/register_cpu_notifier() and also
+export the cpu_maps_update_begin/done() APIs for use by modules. This way,
+we provide a race-free way to register hotplug callbacks as well as perform
+initialization for the CPUs that are already online.
 
-git://github.com/srivatsabhat/linux.git cpuhp-registration-fixes-v1
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
+ include/linux/cpu.h |   36 ++++++++++++++++++++++++++++++++++++
+ kernel/cpu.c        |   20 ++++++++++++++++++--
+ 2 files changed, 54 insertions(+), 2 deletions(-)
 
-Oleg, I have incorporated your fix for raid5 in this patchset, and modified
-the patch a bit to handle the unregister_cpu_notifier() case as well. If you
-are fine with that patch (patch 45), can you kindly provide your Signed-off-by
-for that? Thank you!
-
-
- Oleg Nesterov (1):
-      md, raid5: Fix CPU hotplug callback registration
-
- Srivatsa S. Bhat (50):
-      CPU hotplug: Provide lockless versions of callback registration functions
-      Doc/cpu-hotplug: Specify race-free way to register CPU hotplug callbacks
-      CPU hotplug, perf: Fix CPU hotplug callback registration
-      ia64, salinfo: Fix hotplug callback registration
-      ia64, palinfo: Fix CPU hotplug callback registration
-      ia64, topology: Fix CPU hotplug callback registration
-      ia64, err-inject: Fix CPU hotplug callback registration
-      arm, hw-breakpoint: Fix CPU hotplug callback registration
-      arm, kvm: Fix CPU hotplug callback registration
-      s390, cacheinfo: Fix CPU hotplug callback registration
-      s390, smp: Fix CPU hotplug callback registration
-      sparc, sysfs: Fix CPU hotplug callback registration
-      powerpc, sysfs: Fix CPU hotplug callback registration
-      x86, msr: Fix CPU hotplug callback registration
-      x86, cpuid: Fix CPU hotplug callback registration
-      x86, vsyscall: Fix CPU hotplug callback registration
-      x86, intel, uncore: Fix CPU hotplug callback registration
-      x86, mce: Fix CPU hotplug callback registration
-      x86, therm_throt.c: Fix CPU hotplug callback registration
-      x86, amd, ibs: Fix CPU hotplug callback registration
-      x86, intel, cacheinfo: Fix CPU hotplug callback registration
-      x86, intel, rapl: Fix CPU hotplug callback registration
-      x86, amd, uncore: Fix CPU hotplug callback registration
-      x86, hpet: Fix CPU hotplug callback registration
-      x86, pci, amd-bus: Fix CPU hotplug callback registration
-      x86, oprofile, nmi: Fix CPU hotplug callback registration
-      x86, kvm: Fix CPU hotplug callback registration
-      arm64, hw_breakpoint.c: Fix CPU hotplug callback registration
-      arm64, debug-monitors: Fix CPU hotplug callback registration
-      powercap, intel-rapl: Fix CPU hotplug callback registration
-      scsi, bnx2i: Fix CPU hotplug callback registration
-      scsi, bnx2fc: Fix CPU hotplug callback registration
-      scsi, fcoe: Fix CPU hotplug callback registration
-      zsmalloc: Fix CPU hotplug callback registration
-      acpi-cpufreq: Fix CPU hotplug callback registration
-      drivers/base/topology.c: Fix CPU hotplug callback registration
-      clocksource, dummy-timer: Fix CPU hotplug callback registration
-      intel-idle: Fix CPU hotplug callback registration
-      oprofile, nmi-timer: Fix CPU hotplug callback registration
-      octeon, watchdog: Fix CPU hotplug callback registration
-      thermal, x86-pkg-temp: Fix CPU hotplug callback registration
-      hwmon, coretemp: Fix CPU hotplug callback registration
-      hwmon, via-cputemp: Fix CPU hotplug callback registration
-      xen, balloon: Fix CPU hotplug callback registration
-      trace, ring-buffer: Fix CPU hotplug callback registration
-      profile: Fix CPU hotplug callback registration
-      mm, vmstat: Fix CPU hotplug callback registration
-      mm, zswap: Fix CPU hotplug callback registration
-      net/core/flow.c: Fix CPU hotplug callback registration
-      net/iucv/iucv.c: Fix CPU hotplug callback registration
-
- Documentation/cpu-hotplug.txt                 |   45 +++++++++
- arch/arm/kernel/hw_breakpoint.c               |    8 +-
- arch/arm/kvm/arm.c                            |    7 +
- arch/arm64/kernel/debug-monitors.c            |    6 +
- arch/arm64/kernel/hw_breakpoint.c             |    7 +
- arch/ia64/kernel/err_inject.c                 |   15 +++
- arch/ia64/kernel/palinfo.c                    |    6 +
- arch/ia64/kernel/salinfo.c                    |    6 +
- arch/ia64/kernel/topology.c                   |    6 +
- arch/powerpc/kernel/sysfs.c                   |    8 +-
- arch/s390/kernel/cache.c                      |    5 +
- arch/s390/kernel/smp.c                        |   13 ++-
- arch/sparc/kernel/sysfs.c                     |    6 +
- arch/x86/kernel/cpu/intel_cacheinfo.c         |   13 ++-
- arch/x86/kernel/cpu/mcheck/mce.c              |    8 +-
- arch/x86/kernel/cpu/mcheck/therm_throt.c      |    5 +
- arch/x86/kernel/cpu/perf_event_amd_ibs.c      |    6 +
- arch/x86/kernel/cpu/perf_event_amd_uncore.c   |    7 +
- arch/x86/kernel/cpu/perf_event_intel_rapl.c   |    9 +-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    6 +
- arch/x86/kernel/cpuid.c                       |   15 ++-
- arch/x86/kernel/hpet.c                        |    4 +
- arch/x86/kernel/msr.c                         |   16 ++-
- arch/x86/kernel/vsyscall_64.c                 |    6 +
- arch/x86/kvm/x86.c                            |    7 +
- arch/x86/oprofile/nmi_int.c                   |   15 +++
- arch/x86/pci/amd_bus.c                        |    5 +
- drivers/base/topology.c                       |   12 ++
- drivers/clocksource/dummy_timer.c             |   11 ++
- drivers/cpufreq/acpi-cpufreq.c                |    7 +
- drivers/hwmon/coretemp.c                      |   14 +--
- drivers/hwmon/via-cputemp.c                   |   14 +--
- drivers/idle/intel_idle.c                     |   12 ++
- drivers/md/raid5.c                            |   90 +++++++++----------
- drivers/oprofile/nmi_timer_int.c              |   23 +++--
- drivers/powercap/intel_rapl.c                 |   10 ++
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c             |   12 ++
- drivers/scsi/bnx2i/bnx2i_init.c               |   12 ++
- drivers/scsi/fcoe/fcoe.c                      |   15 +++
- drivers/thermal/x86_pkg_temp_thermal.c        |   14 +--
- drivers/watchdog/octeon-wdt-main.c            |   11 ++
- drivers/xen/balloon.c                         |   35 +++++--
- include/linux/cpu.h                           |   36 +++++++
- include/linux/perf_event.h                    |   16 +++
- kernel/cpu.c                                  |   20 ++++
- kernel/profile.c                              |   20 +++-
- kernel/trace/ring_buffer.c                    |   19 ++--
- mm/vmstat.c                                   |    6 +
- mm/zsmalloc.c                                 |   17 +++-
- mm/zswap.c                                    |    8 +-
- net/core/flow.c                               |    8 +-
- net/iucv/iucv.c                               |  121 ++++++++++++-------------
- 52 files changed, 564 insertions(+), 259 deletions(-)
-
-
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 03e235ad..eb97e37 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -122,26 +122,46 @@ enum {
+ 		{ .notifier_call = fn, .priority = pri };	\
+ 	register_cpu_notifier(&fn##_nb);			\
+ }
++
++#define __cpu_notifier(fn, pri) {				\
++	static struct notifier_block fn##_nb =			\
++		{ .notifier_call = fn, .priority = pri };	\
++	__register_cpu_notifier(&fn##_nb);			\
++}
+ #else /* #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE) */
+ #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
++#define __cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ #endif /* #else #if defined(CONFIG_HOTPLUG_CPU) || !defined(MODULE) */
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern int register_cpu_notifier(struct notifier_block *nb);
++extern int __register_cpu_notifier(struct notifier_block *nb);
+ extern void unregister_cpu_notifier(struct notifier_block *nb);
++extern void __unregister_cpu_notifier(struct notifier_block *nb);
+ #else
+ 
+ #ifndef MODULE
+ extern int register_cpu_notifier(struct notifier_block *nb);
++extern int __register_cpu_notifier(struct notifier_block *nb);
+ #else
+ static inline int register_cpu_notifier(struct notifier_block *nb)
+ {
+ 	return 0;
+ }
++
++static inline int __register_cpu_notifier(struct notifier_block *nb)
++{
++	return 0;
++}
+ #endif
+ 
+ static inline void unregister_cpu_notifier(struct notifier_block *nb)
+ {
+ }
++
++static inline void __unregister_cpu_notifier(struct notifier_block *nb)
++{
++}
+ #endif
+ 
+ int cpu_up(unsigned int cpu);
+@@ -152,16 +172,26 @@ extern void cpu_maps_update_done(void);
+ #else	/* CONFIG_SMP */
+ 
+ #define cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
++#define __cpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ 
+ static inline int register_cpu_notifier(struct notifier_block *nb)
+ {
+ 	return 0;
+ }
+ 
++static inline int __register_cpu_notifier(struct notifier_block *nb)
++{
++	return 0;
++}
++
+ static inline void unregister_cpu_notifier(struct notifier_block *nb)
+ {
+ }
+ 
++static inline void __unregister_cpu_notifier(struct notifier_block *nb)
++{
++}
++
+ static inline void cpu_maps_update_begin(void)
+ {
+ }
+@@ -183,8 +213,11 @@ extern void put_online_cpus(void);
+ extern void cpu_hotplug_disable(void);
+ extern void cpu_hotplug_enable(void);
+ #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
++#define __hotcpu_notifier(fn, pri)	__cpu_notifier(fn, pri)
+ #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
++#define __register_hotcpu_notifier(nb)	__register_cpu_notifier(nb)
+ #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
++#define __unregister_hotcpu_notifier(nb)	__unregister_cpu_notifier(nb)
+ void clear_tasks_mm_cpumask(int cpu);
+ int cpu_down(unsigned int cpu);
+ 
+@@ -197,9 +230,12 @@ static inline void cpu_hotplug_done(void) {}
+ #define cpu_hotplug_disable()	do { } while (0)
+ #define cpu_hotplug_enable()	do { } while (0)
+ #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
++#define __hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
+ /* These aren't inline functions due to a GCC bug. */
+ #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
++#define __register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
+ #define unregister_hotcpu_notifier(nb)	({ (void)(nb); })
++#define __unregister_hotcpu_notifier(nb)	({ (void)(nb); })
+ #endif		/* CONFIG_HOTPLUG_CPU */
+ 
+ #ifdef CONFIG_PM_SLEEP_SMP
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index deff2e6..12a3a74 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -27,18 +27,22 @@
+ static DEFINE_MUTEX(cpu_add_remove_lock);
+ 
+ /*
+- * The following two API's must be used when attempting
+- * to serialize the updates to cpu_online_mask, cpu_present_mask.
++ * The following two API's must be used when attempting to serialize
++ * the updates to cpu_online_mask, cpu_present_mask. Also, they must
++ * be used to protect CPU hotplug callback (un)registration performed
++ * using __register_cpu_notifier() or __unregister_cpu_notifier().
+  */
+ void cpu_maps_update_begin(void)
+ {
+ 	mutex_lock(&cpu_add_remove_lock);
+ }
++EXPORT_SYMBOL(cpu_maps_update_begin);
+ 
+ void cpu_maps_update_done(void)
+ {
+ 	mutex_unlock(&cpu_add_remove_lock);
+ }
++EXPORT_SYMBOL(cpu_maps_update_done);
+ 
+ static RAW_NOTIFIER_HEAD(cpu_chain);
+ 
+@@ -166,6 +170,11 @@ int __ref register_cpu_notifier(struct notifier_block *nb)
+ 	return ret;
+ }
+ 
++int __ref __register_cpu_notifier(struct notifier_block *nb)
++{
++	return raw_notifier_chain_register(&cpu_chain, nb);
++}
++
+ static int __cpu_notify(unsigned long val, void *v, int nr_to_call,
+ 			int *nr_calls)
+ {
+@@ -189,6 +198,7 @@ static void cpu_notify_nofail(unsigned long val, void *v)
+ 	BUG_ON(cpu_notify(val, v));
+ }
+ EXPORT_SYMBOL(register_cpu_notifier);
++EXPORT_SYMBOL(__register_cpu_notifier);
+ 
+ void __ref unregister_cpu_notifier(struct notifier_block *nb)
+ {
+@@ -198,6 +208,12 @@ void __ref unregister_cpu_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_cpu_notifier);
+ 
++void __ref __unregister_cpu_notifier(struct notifier_block *nb)
++{
++	raw_notifier_chain_unregister(&cpu_chain, nb);
++}
++EXPORT_SYMBOL(__unregister_cpu_notifier);
++
+ /**
+  * clear_tasks_mm_cpumask - Safely clear tasks' mm_cpumask for a CPU
+  * @cpu: a CPU id
 
