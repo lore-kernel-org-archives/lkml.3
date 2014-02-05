@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaBESkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:40:03 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35668 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725AbaBESjl (ORCPT
+	id S1754040AbaBESlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:41:23 -0500
+Received: from smtprelay0028.hostedemail.com ([216.40.44.28]:39885 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753919AbaBESkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:39:41 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <glommer@gmail.com>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, Glauber Costa <glommer@openvz.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH -mm v15 10/13] fs: make shrinker memcg aware
-Date: Wed, 5 Feb 2014 22:39:26 +0400
-Message-ID: <b876ce42d48db8b68fc6b29dd4f1fddc4f5ac949.1391624021.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
-References: <cover.1391624021.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.229]
+	Wed, 5 Feb 2014 13:40:03 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1712:1714:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3866:3867:3868:4321:5007:6119:7652:7901:7903:10004:10400:10848:11232:11657:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: berry30_5771d53f87724
+X-Filterd-Recvd-Size: 1410
+Message-ID: <1391625600.30094.24.camel@joe-AO722>
+Subject: rfc: fs directories without MAINTAINER section entries
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Date: Wed, 05 Feb 2014 10:40:00 -0800
+In-Reply-To: <20140205175222.28d6788471b6551831440ed0@skynet.be>
+References: <20140205175222.28d6788471b6551831440ed0@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, to make any list_lru-based shrinker memcg aware we should only
-initialize its list_lru as memcg-enabled. Let's do it for the general FS
-shrinker (super_block::s_shrink) and mark it as memcg aware.
+On Wed, 2014-02-05 at 17:52 +0800, Fabian Frederick wrote:
+> Adding generic fsdevel section for ADFS.
+> I guess status can be considered 'orphan' like affs and befs.
 
-There are other FS-specific shrinkers that use list_lru for storing
-objects, such as XFS and GFS2 dquot cache shrinkers, but since they
-reclaim objects that may be shared among different cgroups, there is no
-point making them memcg aware.
+and cramfs and efs and hfs and hfsplus too.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/super.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Other fs/ directories without MAINTAINERS sections:
 
-diff --git a/fs/super.c b/fs/super.c
-index 33cbff3769e7..6a58a7196fb2 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -191,9 +191,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	INIT_LIST_HEAD(&s->s_inodes);
- 	INIT_WORK(&s->destroy, destroy_super_work_func);
- 
--	if (list_lru_init(&s->s_dentry_lru))
-+	if (list_lru_init_memcg(&s->s_dentry_lru))
- 		goto fail;
--	if (list_lru_init(&s->s_inode_lru))
-+	if (list_lru_init_memcg(&s->s_inode_lru))
- 		goto fail;
- 
- 	init_rwsem(&s->s_umount);
-@@ -230,7 +230,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
- 	s->s_shrink.scan_objects = super_cache_scan;
- 	s->s_shrink.count_objects = super_cache_count;
- 	s->s_shrink.batch = 1024;
--	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
-+	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
- 	return s;
- 
- fail:
--- 
-1.7.10.4
+fs/devpts
+fs/exportfs
+fs/isofs
+fs/kernfs
+fs/minix
+fs/nls
+fs/openpromfs
+fs/proc
+fs/qnx6
+fs/ramfs
+fs/romfs
+
+Anyone have clues what to do with these?
+
+Nothing?
+Add new sections for each of them as Orphan?
+Add new sections with Al as Maintained? </joke>
+
 
