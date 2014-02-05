@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaBETDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 14:03:40 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:57150 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaBETBw (ORCPT
+	id S1751462AbaBETJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 14:09:27 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:56029 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaBETJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 14:01:52 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: Linux IIO List <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3 1/6] iio: add support for pulse width capture devices
-Date: Wed,  5 Feb 2014 14:01:36 -0500
-Message-Id: <1391626901-31684-2-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1391626901-31684-1-git-send-email-mporter@linaro.org>
-References: <1391626901-31684-1-git-send-email-mporter@linaro.org>
+	Wed, 5 Feb 2014 14:09:24 -0500
+Date: Wed, 5 Feb 2014 11:09:24 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.14-rc1
+Message-ID: <20140205190924.GA24360@roeck-us.net>
+References: <1391504269-6957-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391504269-6957-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a channel type to support pulse width capture devices.
-These devices capture the timing of a PWM signal based on a
-configurable trigger
+On Tue, Feb 04, 2014 at 09:57:49AM +0100, Geert Uytterhoeven wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v3.14-rc1[1] compared to v3.13[2].
+> 
+[ ... ]
+> *** ERRORS ***
+> 
+> 9 regressions:
+>   + /scratch/kisskb/src/arch/powerpc/kernel/exceptions-64s.S: Error: attempt to move .org backwards:  => 1312
+>   + /scratch/kisskb/src/drivers/gpio/gpio-xtensa.c: error: implicit declaration of function 'RSR_CPENABLE' [-Werror=implicit-function-declaration]:  => 48:2
+>   + /scratch/kisskb/src/drivers/gpio/gpio-xtensa.c: error: implicit declaration of function 'WSR_CPENABLE' [-Werror=implicit-function-declaration]:  => 49:2
+>   + /scratch/kisskb/src/drivers/staging/android/ion/ion_dummy_driver.c: error: implicit declaration of function 'virt_to_phys' [-Werror=implicit-function-declaration]:  => 81:7
+>   + /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: error: 'ffsusb_func' undeclared (first use in this function):  => 2688:1
+>   + /scratch/kisskb/src/include/linux/omap-dma.h: error: expected identifier before numeric constant: 171:8 => 168:6, 171:8
+>   + error: "irq_to_desc" [drivers/gpio/gpio-mcp23s08.ko] undefined!:  => N/A
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
+[ affects sparc64:allmodconfig ]
+
+>   + error: No rule to make target include/config/auto.conf:  => N/A
+>   + error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+bc8:  => (.text+0x9c2)
+> 
+
+Also:
+
+All c6x builds:
+
+arch/c6x/include/asm/cache.h:63:20: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'c6x_cache_init' extern void __init c6x_cache_init(void);
+
 ---
- drivers/iio/industrialio-core.c | 1 +
- include/linux/iio/types.h       | 1 +
- 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index acc911a..6ea0cf8 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
- 	[IIO_CCT] = "cct",
- 	[IIO_PRESSURE] = "pressure",
- 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
-+	[IIO_PULSE] = "pulse",
- };
- 
- static const char * const iio_modifier_names[] = {
-diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-index 084d882..4fa8840 100644
---- a/include/linux/iio/types.h
-+++ b/include/linux/iio/types.h
-@@ -30,6 +30,7 @@ enum iio_chan_type {
- 	IIO_CCT,
- 	IIO_PRESSURE,
- 	IIO_HUMIDITYRELATIVE,
-+	IIO_PULSE,
- };
- 
- enum iio_modifier {
--- 
-1.8.4
+mips:nlm_xlp_defconfig:
+
+ERROR: "crc32c" [fs/btrfs/btrfs.ko] undefined!
+
+---
+
+powerpc:allmodconfig:
+--------------
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+
+---
+
+In addition to this, my sparc64 qemu test freezes, and my microblaze qemu test
+crashes.
+
+Details at http://server.roeck-us.net:8010/builders.
+
+Guenter
 
