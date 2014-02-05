@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370AbaBEEFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 23:05:11 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12349 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753937AbaBEEFJ (ORCPT
+	id S1754137AbaBEEQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 23:16:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51760 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484AbaBEEQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 23:05:09 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ZoKRipwiPbkE9Wg4uqcFCP0fAG80zYAo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 70AFE51DB61
-Date: Tue, 4 Feb 2014 23:05:02 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Cc: thomas.petazzoni@free-electrons.com, gregory.clement@free-electrons.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mvebu : pcie: dt: potential issue in range parsing
-Message-ID: <20140205040502.GM8533@titan.lakedaemon.net>
-References: <1389349431-7997-1-git-send-email-jjhiblot@traphandler.com>
+	Tue, 4 Feb 2014 23:16:38 -0500
+Date: Tue, 4 Feb 2014 20:16:00 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-b399fe355b30d0102e7690c99e6f764ddfd32ec3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jkosina@suse.cz, matz@suse.de, tglx@linutronix.de, bp@suse.de,
+        mhocko@suse.cz
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, matz@suse.de, tglx@linutronix.de, bp@suse.de,
+        mhocko@suse.cz
+In-Reply-To: <1391561711-3023-1-git-send-email-bp@alien8.de>
+References: <1391561711-3023-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/build] x86:
+  Disable generation of traditional x87 instructions
+Git-Commit-ID: b399fe355b30d0102e7690c99e6f764ddfd32ec3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1389349431-7997-1-git-send-email-jjhiblot@traphandler.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 04 Feb 2014 20:16:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Jacques,
+Commit-ID:  b399fe355b30d0102e7690c99e6f764ddfd32ec3
+Gitweb:     http://git.kernel.org/tip/b399fe355b30d0102e7690c99e6f764ddfd32ec3
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Wed, 5 Feb 2014 01:55:11 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 4 Feb 2014 20:00:35 -0800
 
-On Fri, Jan 10, 2014 at 11:23:51AM +0100, Jean-Jacques Hiblot wrote:
-> The second parameter of of_read_number is not the index, but a size.
-> As it happens, in this case it may work just fine because of the the conversion
-> to u32 and the favorable endianness on this architecture.
-> 
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->  drivers/pci/host/pci-mvebu.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+x86: Disable generation of traditional x87 instructions
 
-Sorry for the unusually long delay.  I was waiting for Thomas to get
-back from vacation since he is intimately familiar with this driver.
+We recently had the case where wrongly used floating-constant 'E' caused
+the generation of traditional x87 instructions in kernel code and
+wreaking all kinds of havoc.
 
-Thomas?
+Disable the generation of those too. This will save people a lot of time
+when trying to debug such issues by erroring out of the build instead of
+let them manifest themselves in very spectacular and happy-crappy ways
+at runtime.
 
-thx,
+We're using -mno-fp-ret-in-387 in addition to -mno-80387 (which is ==
+-msoft-float) because, as the gcc manpage says:
 
-Jason.
+  On machines where a function returns floating-point results in the
+  80387 register stack, some floating-point opcodes may be emitted even
+  if -msoft-float is used.
 
-> diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
-> index c269e43..877e8ce 100644
-> --- a/drivers/pci/host/pci-mvebu.c
-> +++ b/drivers/pci/host/pci-mvebu.c
-> @@ -768,7 +768,7 @@ static int mvebu_get_tgt_attr(struct device_node *np, int devfn,
->  
->  	for (i = 0; i < nranges; i++) {
->  		u32 flags = of_read_number(range, 1);
-> -		u32 slot = of_read_number(range, 2);
-> +		u32 slot = of_read_number(range + 1, 1);
->  		u64 cpuaddr = of_read_number(range + na, pna);
->  		unsigned long rtype;
->  
-> -- 
-> 1.8.5.2
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+so we want to turn off *all* non-integer instructions involving any
+architectural FPU state, unless it is absolutely necessary (and those
+cases need special handling anyway).
+
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Michael Matz <matz@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1391561711-3023-1-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index eeda43a..a414b14 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -82,8 +82,8 @@ else
+         KBUILD_AFLAGS += -m64
+         KBUILD_CFLAGS += -m64
+ 
+-        # Don't autogenerate MMX or SSE instructions
+-        KBUILD_CFLAGS += -mno-mmx -mno-sse
++        # Don't autogenerate traditional x87, MMX or SSE instructions
++        KBUILD_CFLAGS += -mno-mmx -mno-sse -mno-80387 -mno-fp-ret-in-387
+ 
+ 	# Use -mpreferred-stack-boundary=3 if supported.
+ 	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
