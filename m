@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaBEKsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 05:48:22 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:12258 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaBEKsU (ORCPT
+	id S1752232AbaBEKva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 05:51:30 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58428 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751549AbaBEKv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 05:48:20 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-17-52f216f29ee5
-Message-id: <1391597296.3726.13.camel@AMDC1943>
-Subject: Re: [PATCH 08/18] mfd: max14577: Rename state container to maxim_core
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mark Brown <broonie@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Date: Wed, 05 Feb 2014 11:48:16 +0100
-In-reply-to: <20140203094258.GI13529@lee--X1>
-References: <1390911522-28209-1-git-send-email-k.kozlowski@samsung.com>
- <1390911522-28209-9-git-send-email-k.kozlowski@samsung.com>
- <20140203094258.GI13529@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t/xa7qfxD4FGXT9FbGY+vAJm8X1L89Z
-	LSY9ec9sMXHlZGaLs01v2C3ufz3KaPHtSgeTxabH11gtLu+aw2ax9shddovbjSvYLE53szrw
-	eOycdZfdY/MKLY9NqzrZPO5c28PmMe9koMfmJfUefVtWMXp83iQXwBHFZZOSmpNZllqkb5fA
-	lbF18hymgktcFSuvzGFpYJzJ0cXIySEhYCKxf/txJghbTOLCvfVsXYxcHEICSxklHnXdZYdw
-	PjNKvJ88hQWkildAX+Ld1lusILawgJ/EyZetYN1sAsYSm5cvAesWEVjCKPHkzXpGkASzwB4m
-	idV75EFsFgFVick/9oEN4hTQlfj7bQPUuhWMEpsOL2eDaFCXmDRvETPETUoSu9s72SHi8hKb
-	17xlhrhCUOLH5HssExgFZiFpmYWkbBaSsgWMzKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcx
-	QmLm6w7GpcesDjEKcDAq8fAaCH8MEmJNLCuuzD3EKMHBrCTC2yjwKUiINyWxsiq1KD++qDQn
-	tfgQIxMHp1QDo+iT1qmTFizbKRjw8HL+TKWyKT6TQrrfRhp5H7zz0uV8nvGDb51Nvz9sjD4k
-	rM+fN8v4mE2s8rrb7+N+2cizzkmXXt/1xrX07aNAsa3SqVHGBzzaj4h5f/2znSX3yuczM1g0
-	xWYFv5u90fX+9gtcSwXWlYUe75y3S7Eh+P9C2c7697YXXu2eq67EUpyRaKjFXFScCAAWe8qj
-	dwIAAA==
+	Wed, 5 Feb 2014 05:51:28 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI hotplug: Fix panic on eject to ejected device
+Date: Wed, 05 Feb 2014 12:05:58 +0100
+Message-ID: <3540455.FvCglr7S6V@vostro.rjw.lan>
+User-Agent: KMail/4.11.4 (Linux/3.13.0+; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1391561308-18893-1-git-send-email-toshi.kani@hp.com>
+References: <1391561308-18893-1-git-send-email-toshi.kani@hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Cc: Chanwoo, Mark and Dmitry for ACK-s on their subsystems.
+On Tuesday, February 04, 2014 05:48:28 PM Toshi Kani wrote:
+> When an eject request is sent to an ejected ACPI device, the following
+> panic occurs:
+> 
+>  ACPI: \_SB_.SCK3.CPU3: ACPI_NOTIFY_EJECT_REQUEST event
+>  BUG: unable to handle kernel NULL pointer dereference at 0000000000000070
+>  IP: [<ffffffff813a7cfe>] acpi_device_hotplug+0x10b/0x33b
+> 	:
+>  Call Trace:
+>  [<ffffffff813a24da>] acpi_hotplug_work_fn+0x1c/0x27
+>  [<ffffffff8109cbe5>] process_one_work+0x175/0x430
+>  [<ffffffff8109d7db>] worker_thread+0x11b/0x3a0
+> 
+> This is becase device->handler is NULL in acpi_device_hotplug().
+> This case was used to fail in acpi_hotplug_notify_cb() as the target
+> had no acpi_deivce.  However, acpi_device now exists after ejection.
+> 
+> Added a check to verify if acpi_device->handler is valid for an
+> eject request in acpi_hotplug_notify_cb().  Note that handler passed
+> from an argument is still valid while acpi_device->handler is NULL.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+>  drivers/acpi/scan.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 7384158..5cf6adf 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -484,7 +484,6 @@ static void acpi_device_hotplug(void *data, u32 src)
+>  static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+>  {
+>  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> -	struct acpi_scan_handler *handler = data;
+>  	struct acpi_device *adev;
+>  	acpi_status status;
+>  
+> @@ -500,7 +499,9 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+>  		break;
+>  	case ACPI_NOTIFY_EJECT_REQUEST:
+>  		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
+> -		if (!handler->hotplug.enabled) {
+> +		if (!adev->handler)
+> +			goto err_out;
+> +		if (!adev->handler->hotplug.enabled) {
+>  			acpi_handle_err(handle, "Eject disabled\n");
+>  			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+>  			goto err_out;
 
-Krzysztof Kozlowski
+OK, I'll queue this up for the next pull request, but it actually isn't safe,
+because adev is not really guaranteed to exist here (it might have been deleted
+already when this function is running).
 
-On Mon, 2014-02-03 at 09:42 +0000, Lee Jones wrote:
-> > This patch continues the preparation for adding support for max77836
-> > device to existing max14577 driver.
-> > 
-> > The patch renames the struct "max14577" state container to "maxim_core".
-> > This is only a rename-like patch, new code is not added.
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> > Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> > ---
-> >  drivers/extcon/extcon-max14577.c     |   22 +++++------
-> >  drivers/mfd/max14577.c               |   68 +++++++++++++++++-----------------
-> >  drivers/power/max14577_charger.c     |   16 ++++----
-> >  drivers/regulator/max14577.c         |    6 +--
-> >  include/linux/mfd/max14577-private.h |    5 ++-
-> >  5 files changed, 60 insertions(+), 57 deletions(-)
-> 
-> Need some more maintainer Acks here.
-> 
-> > -struct max14577 {
-> > +/*
-> > + * State container for max14577-like drivers.
-> > + */
-> 
-> I don't think this comment is required.
-> 
-> Besides that, the code looks fine:
->   Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> > +struct maxim_core {
-> >  	struct device *dev;
-> >  	struct i2c_client *i2c; /* Slave addr = 0x4A */
-> >  
-> 
+The series of 24 patches I've sent recently addresses this problem, but they
+are 3.15 material, so we need a stop-gap for 3.14.
 
+Thanks!
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
