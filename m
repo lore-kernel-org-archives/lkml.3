@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaBERlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:41:40 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:45912 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaBERlf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:41:35 -0500
+	id S1753475AbaBERmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:42:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753018AbaBERmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 12:42:44 -0500
+Date: Wed, 5 Feb 2014 18:42:45 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Amerigo Wang <amwang@redhat.com>,
+        "Jonathan M. Foote" <jmfoote@cert.org>,
+        Roland McGrath <roland@hack.frob.com>, Pedro Alves <palves@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] fs: fix d_path() with zero-length input buffer
+Message-ID: <20140205174245.GA26039@redhat.com>
+References: <1391621647-7905-1-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <52F26444.5090707@ti.com>
-References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
-	<1391608060-10760-3-git-send-email-ivan.khoronzhuk@ti.com>
-	<CAL_JsqKVc2fdg1Q+TH6ro9kpJmUYyHw8FCwhORfm2_oj6GYM2Q@mail.gmail.com>
-	<52F26444.5090707@ti.com>
-Date: Wed, 5 Feb 2014 11:41:34 -0600
-Message-ID: <CAL_JsqL6YDcZJa5xziR7dP-bEt1CO4BtL1vsO8Qm+hFwgCiQ1w@mail.gmail.com>
-Subject: Re: [PATCH v5 2/3] clocksource: keystone: add bindings for keystone timer
-From: Rob Herring <robherring2@gmail.com>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Landley <rob@landley.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1391621647-7905-1-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 5, 2014 at 10:18 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+On 02/05, Denys Vlasenko wrote:
 >
-> On 02/05/2014 04:39 PM, Rob Herring wrote:
->>
->> On Wed, Feb 5, 2014 at 7:47 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->> wrote:
->>>
->>> This patch provides bindings for the 64-bit timer in the KeyStone
->>> architecture devices. The timer can be configured as a general-purpose
->>> 64-bit
->>> timer, dual general-purpose 32-bit timers. When configured as dual 32-bit
->>> timers, each half can operate in conjunction (chain mode) or
->>> independently
->>> (unchained mode) of each other.
->>
->> This is software configurable or h/w design time configurations?
->>
->> Rob
->>
+> In prepend_name(), *buflen < dlen + 1 comparison is buggy
+> because dlen has unsigned data type, and we can reach this location
+> with *buflen == -1.
+
+because, say, path_with_deleted() doesn't check the result of
+prepend(), and prepend() updates *buflen unconditionally. I am
+wondering if it should be changed too just for consistency.
+
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -2833,7 +2833,7 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+>  	u32 dlen = ACCESS_ONCE(name->len);
+>  	char *p;
 >
-> This is h/w design time configurations
+> -	if (*buflen < dlen + 1)
+> +	if (*buflen < (int)dlen + 1)
 
-Then it seems like the binding should provide for describing those
-differences either with a property or different compatible strings.
+perhaps it would be better to simply make dlen "int" ?
 
-Rob
+Oleg.
+
