@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaBEVT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:19:58 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39092 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752560AbaBEVTy (ORCPT
+	id S1754769AbaBEVYD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:24:03 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:33653 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207AbaBEVX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 16:19:54 -0500
-Date: Wed, 5 Feb 2014 16:19:52 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
-        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl
-Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
- free_partial()
-Message-ID: <20140205161952.781e3a0e@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com>
-References: <52F1F25F.20402@parallels.com>
-	<1391588133-15469-1-git-send-email-vdavydov@parallels.com>
-	<20140205195837.GA6857@home.goodmis.org>
-	<alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com>
-	<20140205155840.43d6b4ad@gandalf.local.home>
-	<alpine.DEB.2.02.1402051301460.14325@chino.kir.corp.google.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 5 Feb 2014 16:23:57 -0500
+Date: Wed, 5 Feb 2014 13:23:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Vagin <avagin@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: Thread overran stack, or stack corrupted on 3.13.0
+In-Reply-To: <20140205151817.GA28502@paralelels.com>
+Message-ID: <alpine.DEB.2.02.1402051323100.14325@chino.kir.corp.google.com>
+References: <20140205151817.GA28502@paralelels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014 13:07:05 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+On Wed, 5 Feb 2014, Andrew Vagin wrote:
 
-> The functions that manipulate the partial lists was modified by 
-> c65c1877bd68 ("slub: use lockdep_assert_held") which replaced commentary 
-> with runtime checking on debug kernels with lockdep enabled.  I'm not sure 
-> adding more code to do the remove_partial() and __remove_partial() variant 
-> is the right solution to just bypass the check; if anything, I think we 
-> should accept the fact that the comment should have been "requires 
-> n->list_lock if the slab cache can be accessed by other cpus" that makes 
-> it clear we don't need it for init and destroy paths.
+> [532284.563576] BUG: unable to handle kernel paging request at 0000000035c83420
+> [532284.564086] IP: [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+> [532284.564086] PGD 116369067 PUD 116368067 PMD 0
+> [532284.564086] Thread overran stack, or stack corrupted
+> [532284.564086] Oops: 0000 [#1] SMP
+> [532284.564086] Modules linked in: veth binfmt_misc ip6table_filter ip6_tables tun netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag bridge stp llc btrfs libcrc32c xor raid6_pq microcode i2c_piix4 joydev virtio_balloon virtio_net pcspkr i2c_core virtio_blk virtio_pci virtio_ring virtio floppy
+> [532284.564086] CPU: 2 PID: 2487 Comm: cat Not tainted 3.13.0 #160
+> [532284.564086] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+> [532284.564086] task: ffff8800cdb60000 ti: ffff8801167ee000 task.ti: ffff8801167ee000
+> [532284.564086] RIP: 0010:[<ffffffff810caf17>]  [<ffffffff810caf17>] cpuacct_charge+0x97/0x1e0
+> [532284.564086] RSP: 0018:ffff8801167ee638  EFLAGS: 00010002
+> [532284.564086] RAX: 000000000000e540 RBX: 000000000006086c RCX: 000000000000000f
+> [532284.564086] RDX: ffffffff81c4e960 RSI: ffffffff81c50640 RDI: 0000000000000046
+> [532284.564086] RBP: ffff8801167ee668 R08: 0000000000000003 R09: 0000000000000001
+> [532284.564086] R10: 0000000000000001 R11: 0000000000000004 R12: ffff8800cdb60000
+> [532284.564086] R13: 00000000167ee038 R14: ffff8800db3576d8 R15: 000080ee26ec7dcf
+> [532284.564086] FS:  00007fc30ecc7740(0000) GS:ffff88011b200000(0000) knlGS:0000000000000000
+> [532284.564086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [532284.564086] CR2: 0000000035c83420 CR3: 000000011f966000 CR4: 00000000000006e0
+> [532284.564086] Stack:
+> [532284.564086]  ffffffff810cae80 ffff880100000014 ffff8800db333480 000000000006086c
+> [532284.564086]  ffff8800cdb60068 ffff8800cdb60000 ffff8801167ee6a8 ffffffff810b948f
+> [532284.564086]  ffff8801167ee698 ffff8800cdb60068 ffff8800db333480 0000000000000001
+> [532284.564086] Call Trace:
+> [532284.564086]  [<ffffffff810cae80>] ? cpuacct_css_alloc+0xb0/0xb0
+> [532284.564086]  [<ffffffff810b948f>] update_curr+0x13f/0x220
+> [532284.564086]  [<ffffffff810bfeb4>] dequeue_entity+0x24/0x5b0
+> [532284.564086]  [<ffffffff8101ea59>] ? sched_clock+0x9/0x10
+> [532284.564086]  [<ffffffff810c0489>] dequeue_task_fair+0x49/0x430
+> [532284.564086]  [<ffffffff810acbb3>] dequeue_task+0x73/0x90
+> [532284.564086]  [<ffffffff810acbf3>] deactivate_task+0x23/0x30
+> [532284.564086]  [<ffffffff81745b11>] __schedule+0x501/0x960
+> [532284.564086]  [<ffffffff817460b9>] schedule+0x29/0x70
+> [532284.564086]  [<ffffffff81744eac>] schedule_timeout+0x14c/0x2a0
+> [532284.564086]  [<ffffffff810835f0>] ? del_timer+0x70/0x70
+> [532284.564086]  [<ffffffff8174b7d0>] ? _raw_spin_unlock_irqrestore+0x40/0x80
+> [532284.564086]  [<ffffffff8174547f>] io_schedule_timeout+0x9f/0x100
+> [532284.564086]  [<ffffffff810d16dd>] ? trace_hardirqs_on+0xd/0x10
+> [532284.564086]  [<ffffffff81182b22>] mempool_alloc+0x152/0x180
+> [532284.564086]  [<ffffffff810c56e0>] ? bit_waitqueue+0xd0/0xd0
+> [532284.564086]  [<ffffffff810558c7>] ? kvm_clock_read+0x27/0x40
 
-Then add the comment that clears this up. But lets not add spinlocks
-just to quiet something if they truly are not needed.
-
-We use "__" variants all the time. That's really not extra code.
-
-Heck, if you want, call it remove_freed_partial() that shows that this
-version skips the check because it is freed.
-
-And if you don't want to have remove_freed_partial() being called by
-remove_partial() than still keep the "__" variant, add a
-"__always_inline" to it, and then do:
-
-static __always_inline
-__remove_partial(struct kmem_cache_node *n, struct page *page)
-{
-        list_del(&page->lru);
-        n->nr_partial--;
-}
-
-static inline remove_partial(struct kmem_cache_node *n,
-                             struct page *page)
-{
-        lockdep_assert_held(&n->list_lock);
-        __remove_partial(n, page);
-}
-
-
-static inline remove_freed_partial(struct kmem_cache_node *n,
-                             struct page *page)
-{
-        __remove_partial(n, page);
-}
-
-The naming like this documents itself.
-
--- Steve
-
+You've clipped the most interesting part of the trace, we don't know what 
+was calling mempool_alloc() and must have used a ton of stack.
