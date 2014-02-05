@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaBETZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 14:25:39 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:54964 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaBETZi (ORCPT
+	id S1752079AbaBET0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 14:26:15 -0500
+Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:60451 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274AbaBET0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 14:25:38 -0500
-Date: Wed, 5 Feb 2014 11:25:35 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Fengguang Wu <fengguang.wu@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [slub] WARNING: CPU: 1 PID: 1 at mm/slub.c:992
- deactivate_slab()
-In-Reply-To: <20140205112449.GB18849@localhost>
-Message-ID: <alpine.DEB.2.02.1402051123520.5616@chino.kir.corp.google.com>
-References: <20140205072558.GC9379@localhost> <alpine.DEB.2.02.1402050009200.7839@chino.kir.corp.google.com> <20140205112449.GB18849@localhost>
+	Wed, 5 Feb 2014 14:26:11 -0500
+Date: Wed, 5 Feb 2014 14:29:36 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Peter Zijlstra <peterz@infradead.org>
+cc: junk@eslaf.co.uk, alan@lxorguk.ukuu.org.uk, Ingo Molnar <mingo@kernel.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf,x86,p6: Add userspace RDPMC quirk for P6
+In-Reply-To: <20140205192012.GL2936@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1402051427210.16596@pianoman.cluster.toy>
+References: <20140205102718.GF3229@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1402051415190.16225@pianoman.cluster.toy> <20140205192012.GL2936@laptop.programming.kicks-ass.net>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020202.52F29053.000F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Feb 2014, Fengguang Wu wrote:
+On Wed, 5 Feb 2014, Peter Zijlstra wrote:
 
-> > I think this is the inlined add_full() and should be fixed with 
-> > http://marc.info/?l=linux-kernel&m=139147105027693 that has been added to 
-> > the -mm tree and should now be in next.  Is this patch included for this 
-> > kernel?
+> On Wed, Feb 05, 2014 at 02:16:43PM -0500, Vince Weaver wrote:
+> > On Wed, 5 Feb 2014, Peter Zijlstra wrote:
+> > 
+> > > P6 class machines can die hard when PCE gets enabled due to CPU
+> > > errata. The safe way it so disable it by default and keep it disabled.
+> > > 
+> > > See errata 26:
+> > 
+> > so you take an errata applicable to a subset of Pentium Pro steppings and 
+> > apply it to the whole p6 line (which includes the whole way up to Pentium 
+> > III)?
+> > 
+> > Or am I missing something in the documentation you link to?
 > 
-> Hi David,
-> 
-> According to the bisect log, linux-next 20140204 is bad, but it does
-> not yet include your fix.
-> 
-> git bisect  bad 38dbfb59d1175ef458d006556061adeaa8751b72  # 23:16      0-      2  Linus 3.14-rc1
-> git bisect  bad cdd263faccc2184e685573968dae5dd34758e322  # 23:34      1-      3  Add linux-next specific files for 20140204
-> 
+> I forgot it went all the way to P-III, let me try and find the other
+> erratas.
 
-Ah, that's because the patch didn't go through Pekka's slab tree but went 
-into -mm instead so we have to wait for another -mm.  However, the traces 
-from linux-next-20140204 that you provided indicate it's the same problem 
-and should be fixed with that patch, so let's wait for another mmotm to be 
-released.
+from the document you linked it looks like it was fixed by the Pentium 
+Pro stepping sB1 (6.1.9).
+
+Has someone actually hit this bug?  People used PAPI/perfctr on these 
+machines for years, and it uses rdpmc by default so I would think it would 
+show up if it were an issue.  I should check the perfctr code to see if it 
+had some sort of check.
+
+Vince
