@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaBEUGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:06:44 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55118 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944AbaBEUGb (ORCPT
+	id S932186AbaBEUGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:06:42 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48348 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959AbaBEUGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:31 -0500
+	Wed, 5 Feb 2014 15:06:33 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eddie Wai <eddie.wai@broadcom.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+CC: David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <james.l.morris@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 124/213] bnx2i: Fixed NULL ptr deference for 1G bnx2 Linux iSCSI offload
-Date: Wed, 5 Feb 2014 15:01:19 -0500
-Message-ID: <1391630568-49251-125-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 125/213] keys: fix race with concurrent install_user_keyrings()
+Date: Wed, 5 Feb 2014 15:01:20 -0500
+Message-ID: <1391630568-49251-126-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eddie Wai <eddie.wai@broadcom.com>
+From: David Howells <dhowells@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,75 +33,72 @@ From: Eddie Wai <eddie.wai@broadcom.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d6532207116307eb7ecbfa7b9e02c53230096a50 upstream.
+commit 0da9dfdd2cd9889201bc6f6f43580c99165cd087 upstream.
 
-This patch fixes the following kernel panic invoked by uninitialized fields
-in the chip initialization for the 1G bnx2 iSCSI offload.
+This fixes CVE-2013-1792.
 
-One of the bits in the chip initialization is being used by the latest
-firmware to control overflow packets.  When this control bit gets enabled
-erroneously, it would ultimately result in a bad packet placement which would
-cause the bnx2 driver to dereference a NULL ptr in the placement handler.
+There is a race in install_user_keyrings() that can cause a NULL pointer
+dereference when called concurrently for the same user if the uid and
+uid-session keyrings are not yet created.  It might be possible for an
+unprivileged user to trigger this by calling keyctl() from userspace in
+parallel immediately after logging in.
 
-This can happen under certain stress I/O environment under the Linux
-iSCSI offload operation.
+Assume that we have two threads both executing lookup_user_key(), both
+looking for KEY_SPEC_USER_SESSION_KEYRING.
 
-This change only affects Broadcom's 5709 chipset.
+	THREAD A			THREAD B
+	===============================	===============================
+					==>call install_user_keyrings();
+	if (!cred->user->session_keyring)
+	==>call install_user_keyrings()
+					...
+					user->uid_keyring = uid_keyring;
+	if (user->uid_keyring)
+		return 0;
+	<==
+	key = cred->user->session_keyring [== NULL]
+					user->session_keyring = session_keyring;
+	atomic_inc(&key->usage); [oops]
 
-Unable to handle kernel NULL pointer dereference at 0000000000000008 RIP:
- [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
-Pid: 0, comm: swapper Tainted: G     ---- 2.6.18-333.el5debug #2
-RIP: 0010:[<ffffffff881f0e7d>]  [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
-RSP: 0018:ffff8101b575bd50  EFLAGS: 00010216
-RAX: 0000000000000005 RBX: ffff81007c5fb180 RCX: 0000000000000000
-RDX: 0000000000000ffc RSI: 00000000817e8000 RDI: 0000000000000220
-RBP: ffff81015bbd7ec0 R08: ffff8100817e9000 R09: 0000000000000000
-R10: ffff81007c5fb180 R11: 00000000000000c8 R12: 000000007a25a010
-R13: 0000000000000000 R14: 0000000000000005 R15: ffff810159f80558
-FS:  0000000000000000(0000) GS:ffff8101afebc240(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 0000000000201000 CR4: 00000000000006a0
-Process swapper (pid: 0, threadinfo ffff8101b5754000, task ffff8101afebd820)
-Stack:  000000000000000b ffff810159f80000 0000000000000040 ffff810159f80520
- ffff810159f80500 00cf00cf8008e84b ffffc200100939e0 ffff810009035b20
- 0000502900000000 000000be00000001 ffff8100817e7810 00d08101b575bea8
-Call Trace:
- <IRQ>  [<ffffffff8008e0d0>] show_schedstat+0x1c2/0x25b
- [<ffffffff881f1886>] :bnx2:bnx2_poll+0xf6/0x231
- [<ffffffff8000c9b9>] net_rx_action+0xac/0x1b1
- [<ffffffff800125a0>] __do_softirq+0x89/0x133
- [<ffffffff8005e30c>] call_softirq+0x1c/0x28
- [<ffffffff8006d5de>] do_softirq+0x2c/0x7d
- [<ffffffff8006d46e>] do_IRQ+0xee/0xf7
- [<ffffffff8005d625>] ret_from_intr+0x0/0xa
- <EOI>  [<ffffffff801a5780>] acpi_processor_idle_simple+0x1c5/0x341
- [<ffffffff801a573d>] acpi_processor_idle_simple+0x182/0x341
- [<ffffffff801a55bb>] acpi_processor_idle_simple+0x0/0x341
- [<ffffffff80049560>] cpu_idle+0x95/0xb8
- [<ffffffff80078b1c>] start_secondary+0x479/0x488
+At the point thread A dereferences cred->user->session_keyring, thread B
+hasn't updated user->session_keyring yet, but thread A assumes it is
+populated because install_user_keyrings() returned ok.
 
-Signed-off-by: Eddie Wai <eddie.wai@broadcom.com>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The race window is really small but can be exploited if, for example,
+thread B is interrupted or preempted after initializing uid_keyring, but
+before doing setting session_keyring.
+
+This couldn't be reproduced on a stock kernel.  However, after placing
+systemtap probe on 'user->session_keyring = session_keyring;' that
+introduced some delay, the kernel could be crashed reliably.
+
+Fix this by checking both pointers before deciding whether to return.
+Alternatively, the test could be done away with entirely as it is checked
+inside the mutex - but since the mutex is global, that may not be the best
+way.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/bnx2i/bnx2i_hwi.c | 3 +++
- 1 file changed, 3 insertions(+)
+ security/keys/process_keys.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
-index 18352ff82101..cb288b7542e4 100644
---- a/drivers/scsi/bnx2i/bnx2i_hwi.c
-+++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
-@@ -1184,6 +1184,9 @@ int bnx2i_send_fw_iscsi_init_msg(struct bnx2i_hba *hba)
- 	int rc = 0;
- 	u64 mask64;
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 20a38fed61b1..71c10cec3c18 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -55,7 +55,7 @@ int install_user_keyrings(void)
  
-+	memset(&iscsi_init, 0x00, sizeof(struct iscsi_kwqe_init1));
-+	memset(&iscsi_init2, 0x00, sizeof(struct iscsi_kwqe_init2));
-+
- 	bnx2i_adjust_qp_size(hba);
+ 	kenter("%p{%u}", user, user->uid);
  
- 	iscsi_init.flags =
+-	if (user->uid_keyring) {
++	if (user->uid_keyring && user->session_keyring) {
+ 		kleave(" = 0 [exist]");
+ 		return 0;
+ 	}
 -- 
 1.8.5.2
 
