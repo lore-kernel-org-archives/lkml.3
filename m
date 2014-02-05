@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaBEUuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:50:15 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55015 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808AbaBEUGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754799AbaBEUGH (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 5 Feb 2014 15:06:07 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54791 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaBEUFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 15:05:40 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [v2.6.34-stable 104/213] mm: mmu_notifier: fix freed page still mapped in secondary MMU
-Date: Wed, 5 Feb 2014 15:00:59 -0500
-Message-ID: <1391630568-49251-105-git-send-email-paul.gortmaker@windriver.com>
+CC: Oleg Nesterov <oleg@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 087/213] ptrace: ptrace_resume() shouldn't wake up !TASK_TRACED thread
+Date: Wed, 5 Feb 2014 15:00:42 -0500
+Message-ID: <1391630568-49251-88-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -35,134 +31,76 @@ From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3ad3d901bbcfb15a5e4690e55350db0899095a68 upstream.
+commit 0666fb51b1483f27506e212cc7f7b2645b5c7acc upstream.
 
-mmu_notifier_release() is called when the process is exiting.  It will
-delete all the mmu notifiers.  But at this time the page belonging to the
-process is still present in page tables and is present on the LRU list, so
-this race will happen:
+It is not clear why ptrace_resume() does wake_up_process(). Unless the
+caller is PTRACE_KILL the tracee should be TASK_TRACED so we can use
+wake_up_state(__TASK_TRACED). If sys_ptrace() races with SIGKILL we do
+not need the extra and potentionally spurious wakeup.
 
-      CPU 0                 CPU 1
-mmu_notifier_release:    try_to_unmap:
-   hlist_del_init_rcu(&mn->hlist);
-                            ptep_clear_flush_notify:
-                                  mmu nofifler not found
-                            free page  !!!!!!
-                            /*
-                             * At the point, the page has been
-                             * freed, but it is still mapped in
-                             * the secondary MMU.
-                             */
+If the caller is PTRACE_KILL, wake_up_process() is even more wrong.
+The tracee can sleep in any state in any place, and if we have a buggy
+code which doesn't handle a spurious wakeup correctly PTRACE_KILL can
+be used to exploit it. For example:
 
-  mn->ops->release(mn, mm);
+	int main(void)
+	{
+		int child, status;
 
-Then the box is not stable and sometimes we can get this bug:
+		child = fork();
+		if (!child) {
+			int ret;
 
-[  738.075923] BUG: Bad page state in process migrate-perf  pfn:03bec
-[  738.075931] page:ffffea00000efb00 count:0 mapcount:0 mapping:          (null) index:0x8076
-[  738.075936] page flags: 0x20000000000014(referenced|dirty)
+			assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
 
-The same issue is present in mmu_notifier_unregister().
+			ret = pause();
+			printf("pause: %d %m\n", ret);
 
-We can call ->release before deleting the notifier to ensure the page has
-been unmapped from the secondary MMU before it is freed.
+			return 0x23;
+		}
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+		sleep(1);
+		assert(ptrace(PTRACE_KILL, child, 0,0) == 0);
+
+		assert(child == wait(&status));
+		printf("wait: %x\n", status);
+
+		return 0;
+	}
+
+prints "pause: -1 Unknown error 514", -ERESTARTNOHAND leaks to the
+userland. In this case sys_pause() is buggy as well and should be
+fixed.
+
+I do not know what was the original rationality behind PTRACE_KILL.
+The man page is simply wrong and afaics it was always wrong. Imho
+it should be deprecated, or may be it should do send_sig(SIGKILL)
+as Denys suggests, but in any case I do not think that the current
+behaviour was intentional.
+
+Note: there is another problem, ptrace_resume() changes ->exit_code
+and this can race with SIGKILL too. Eventually we should change ptrace
+to not use ->exit_code.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/mmu_notifier.c | 45 +++++++++++++++++++++++----------------------
- 1 file changed, 23 insertions(+), 22 deletions(-)
+ kernel/ptrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
-index 438951d366f2..0b54146f986e 100644
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -33,6 +33,24 @@
- void __mmu_notifier_release(struct mm_struct *mm)
- {
- 	struct mmu_notifier *mn;
-+	struct hlist_node *n;
-+
-+	/*
-+	 * RCU here will block mmu_notifier_unregister until
-+	 * ->release returns.
-+	 */
-+	rcu_read_lock();
-+	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
-+		/*
-+		 * if ->release runs before mmu_notifier_unregister it
-+		 * must be handled as it's the only way for the driver
-+		 * to flush all existing sptes and stop the driver
-+		 * from establishing any more sptes before all the
-+		 * pages in the mm are freed.
-+		 */
-+		if (mn->ops->release)
-+			mn->ops->release(mn, mm);
-+	rcu_read_unlock();
- 
- 	spin_lock(&mm->mmu_notifier_mm->lock);
- 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
-@@ -46,23 +64,6 @@ void __mmu_notifier_release(struct mm_struct *mm)
- 		 * mmu_notifier_unregister to return.
- 		 */
- 		hlist_del_init_rcu(&mn->hlist);
--		/*
--		 * RCU here will block mmu_notifier_unregister until
--		 * ->release returns.
--		 */
--		rcu_read_lock();
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--		/*
--		 * if ->release runs before mmu_notifier_unregister it
--		 * must be handled as it's the only way for the driver
--		 * to flush all existing sptes and stop the driver
--		 * from establishing any more sptes before all the
--		 * pages in the mm are freed.
--		 */
--		if (mn->ops->release)
--			mn->ops->release(mn, mm);
--		rcu_read_unlock();
--		spin_lock(&mm->mmu_notifier_mm->lock);
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index b7b491e6c25b..9450ec22e5a6 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -507,7 +507,7 @@ static int ptrace_resume(struct task_struct *child, long request, long data)
  	}
- 	spin_unlock(&mm->mmu_notifier_mm->lock);
  
-@@ -264,16 +265,13 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
- {
- 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+ 	child->exit_code = data;
+-	wake_up_process(child);
++	wake_up_state(child, __TASK_TRACED);
  
--	spin_lock(&mm->mmu_notifier_mm->lock);
- 	if (!hlist_unhashed(&mn->hlist)) {
--		hlist_del_rcu(&mn->hlist);
--
- 		/*
- 		 * RCU here will force exit_mmap to wait ->release to finish
- 		 * before freeing the pages.
- 		 */
- 		rcu_read_lock();
--		spin_unlock(&mm->mmu_notifier_mm->lock);
-+
- 		/*
- 		 * exit_mmap will block in mmu_notifier_release to
- 		 * guarantee ->release is called before freeing the
-@@ -282,8 +280,11 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
- 		rcu_read_unlock();
--	} else
-+
-+		spin_lock(&mm->mmu_notifier_mm->lock);
-+		hlist_del_rcu(&mn->hlist);
- 		spin_unlock(&mm->mmu_notifier_mm->lock);
-+	}
- 
- 	/*
- 	 * Wait any running method to finish, of course including
+ 	return 0;
+ }
 -- 
 1.8.5.2
 
