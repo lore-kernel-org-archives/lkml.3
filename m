@@ -1,110 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037AbaBEU5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:57:31 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:55351 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192AbaBEU52 (ORCPT
+	id S1754540AbaBEUFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:05:32 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48135 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaBEUF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:57:28 -0500
-Date: Wed, 5 Feb 2014 12:56:40 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Rientjes <rientjes@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v2] mm, compaction: avoid isolating pinned pages
-In-Reply-To: <alpine.DEB.2.02.1402041842100.14045@chino.kir.corp.google.com>
-Message-ID: <alpine.LSU.2.11.1402051232530.3440@eggly.anvils>
-References: <alpine.DEB.2.02.1402012145510.2593@chino.kir.corp.google.com> <20140203095329.GH6732@suse.de> <alpine.DEB.2.02.1402030231590.31061@chino.kir.corp.google.com> <20140204000237.GA17331@lge.com> <alpine.DEB.2.02.1402031610090.10778@chino.kir.corp.google.com>
- <20140204015332.GA14779@lge.com> <alpine.DEB.2.02.1402031755440.26347@chino.kir.corp.google.com> <20140204021533.GA14924@lge.com> <alpine.DEB.2.02.1402031848290.15032@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1402041842100.14045@chino.kir.corp.google.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 5 Feb 2014 15:05:27 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Neil Horman <nhorman@tuxdriver.com>, David Miller <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 066/213] drop_monitor: prevent init path from scheduling on the wrong cpu
+Date: Wed, 5 Feb 2014 15:00:21 -0500
+Message-ID: <1391630568-49251-67-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Feb 2014, David Rientjes wrote:
+From: Neil Horman <nhorman@tuxdriver.com>
 
-> Page migration will fail for memory that is pinned in memory with, for
-> example, get_user_pages().  In this case, it is unnecessary to take
-> zone->lru_lock or isolating the page and passing it to page migration
-> which will ultimately fail.
-> 
-> This is a racy check, the page can still change from under us, but in
-> that case we'll just fail later when attempting to move the page.
-> 
-> This avoids very expensive memory compaction when faulting transparent
-> hugepages after pinning a lot of memory with a Mellanox driver.
-> 
-> On a 128GB machine and pinning ~120GB of memory, before this patch we
-> see the enormous disparity in the number of page migration failures
-> because of the pinning (from /proc/vmstat):
-> 
-> 	compact_pages_moved 8450
-> 	compact_pagemigrate_failed 15614415
-> 
-> 0.05% of pages isolated are successfully migrated and explicitly 
-> triggering memory compaction takes 102 seconds.  After the patch:
-> 
-> 	compact_pages_moved 9197
-> 	compact_pagemigrate_failed 7
-> 
-> 99.9% of pages isolated are now successfully migrated in this 
-> configuration and memory compaction takes less than one second.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  v2: address page count issue per Joonsoo
-> 
->  mm/compaction.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -578,6 +578,15 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			continue;
->  		}
->  
-> +		/*
-> +		 * Migration will fail if an anonymous page is pinned in memory,
-> +		 * so avoid taking lru_lock and isolating it unnecessarily in an
-> +		 * admittedly racy check.
-> +		 */
-> +		if (!page_mapping(page) &&
-> +		    page_count(page) > page_mapcount(page))
-> +			continue;
-> +
->  		/* Check if it is ok to still hold the lock */
->  		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-Much better, maybe good enough as an internal patch to fix a particular
-problem you're seeing; but not yet good enough to go upstream.
+commit 4fdcfa12843bca38d0c9deff70c8720e4e8f515f upstream.
 
-Anonymous pages are not the only pages which might be pinned,
-and your test doesn't mention PageAnon, so does not match your comment.
+I just noticed after some recent updates, that the init path for the drop
+monitor protocol has a minor error.  drop monitor maintains a per cpu structure,
+that gets initalized from a single cpu.  Normally this is fine, as the protocol
+isn't in use yet, but I recently made a change that causes a failed skb
+allocation to reschedule itself .  Given the current code, the implication is
+that this workqueue reschedule will take place on the wrong cpu.  If drop
+monitor is used early during the boot process, its possible that two cpus will
+access a single per-cpu structure in parallel, possibly leading to data
+corruption.
 
-I've remembered is_page_cache_freeable() in mm/vmscan.c, which gives
-more assurance that a page_count - page_has_private test is appropriate,
-whatever the filesystem and migrate method to be used.
+This patch fixes the situation, by storing the cpu number that a given instance
+of this per-cpu data should be accessed from.  In the case of a need for a
+reschedule, the cpu stored in the struct is assigned the rescheule, rather than
+the currently executing cpu
 
-So I think the test you're looking for is
+Tested successfully by myself.
 
-		pincount = page_count(page) - page_mapcount(page);
-		if (page_mapping(page))
-			pincount -= 1 + page_has_private(page);
-		if (pincount > 0)
-			continue;
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: David Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ net/core/drop_monitor.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-but please cross-check and test that out, it's easy to be off-by-one etc.
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index 0b8aba761930..58c57fcc67ad 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -49,6 +49,7 @@ struct per_cpu_dm_data {
+ 	struct sk_buff /* __rcu <-- only 2.6.37+ */ *skb;
+ 	atomic_t dm_hit_count;
+ 	struct timer_list send_timer;
++	int cpu;
+ };
+ 
+ struct dm_hw_stat_delta {
+@@ -73,7 +74,6 @@ static int dm_hit_limit = 64;
+ static int dm_delay = 1;
+ static unsigned long dm_hw_check_delta = 2*HZ;
+ static LIST_HEAD(hw_stats_list);
+-static int initialized = 0;
+ 
+ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
+ {
+@@ -96,8 +96,8 @@ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
+ 				  sizeof(struct net_dm_alert_msg));
+ 		msg = nla_data(nla);
+ 		memset(msg, 0, al);
+-	} else if (initialized)
+-		schedule_work_on(smp_processor_id(), &data->dm_alert_work);
++	} else
++		schedule_work_on(data->cpu, &data->dm_alert_work);
+ 
+ 	/*
+ 	 * Don't need to lock this, since we are guaranteed to only
+@@ -121,6 +121,8 @@ static void send_dm_alert(struct work_struct *unused)
+ 	struct sk_buff *skb;
+ 	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
+ 
++	WARN_ON_ONCE(data->cpu != smp_processor_id());
++
+ 	/*
+ 	 * Grab the skb we're about to send
+ 	 */
+@@ -414,14 +416,14 @@ static int __init init_net_drop_monitor(void)
+ 
+ 	for_each_present_cpu(cpu) {
+ 		data = &per_cpu(dm_cpu_data, cpu);
+-		reset_per_cpu_data(data);
++		data->cpu = cpu;
+ 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
+ 		init_timer(&data->send_timer);
+ 		data->send_timer.data = cpu;
+ 		data->send_timer.function = sched_send_work;
++		reset_per_cpu_data(data);
+ 	}
+ 
+-	initialized = 1;
+ 
+ 	goto out;
+ 
+-- 
+1.8.5.2
 
-For a moment I thought a PageWriteback test would be useful too,
-but no, that should already appear in the pincount.
-
-Hugh
