@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaBESmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:42:46 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39458 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582AbaBESml (ORCPT
+	id S1753815AbaBESjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:39:40 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35613 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725AbaBESjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:42:41 -0500
-Message-ID: <52F2861C.4010109@wwwdotorg.org>
-Date: Wed, 05 Feb 2014 11:42:36 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 13:39:36 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
+        <glommer@gmail.com>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>, Glauber Costa <glommer@openvz.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH -mm v15 01/13] memcg: make cache index determination more robust
+Date: Wed, 5 Feb 2014 22:39:17 +0400
+Message-ID: <d3586bb61ee9b830cf2c313765e5ffc80fd4384c.1391624021.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
+References: <cover.1391624021.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] ARM: tegra: Add efuse bindings
-References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com> <1390952176-30402-5-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1390952176-30402-5-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.229]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2014 04:36 PM, Peter De Schrijver wrote:
-> Add efuse bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
+From: Glauber Costa <glommer@openvz.org>
 
-> diff --git a/Documentation/devicetree/bindings/fuse/fuse-tegra.txt b/Documentation/devicetree/bindings/fuse/fuse-tegra.txt
+I caught myself doing something like the following outside memcg core:
 
-> +- clocks: Should contain a pointer to the fuse clock.
+	memcg_id = -1;
+	if (memcg && memcg_kmem_is_active(memcg))
+		memcg_id = memcg_cache_id(memcg);
 
-I would prefer to use clock-names, and to follow the same text as all
-the other Tegra bindings that are clock clients. In other words:
+to be able to handle all possible memcgs in a sane manner. In particular, the
+root cache will have kmemcg_id = -1 (just because we don't call memcg_kmem_init
+to the root cache since it is not limitable). We have always coped with that by
+making sure we sanitize which cache is passed to memcg_cache_id. Although this
+example is given for root, what we really need to know is whether or not a
+cache is kmem active.
 
-  - clocks: Must contain an entry for each entry in clock-names.
-    See ../clocks/clock-bindings.txt for details.
-  - clock-names: Must include the following entries:
-    - fuse
+But outside the memcg core testing for root, for instance, is not trivial since
+we don't export mem_cgroup_is_root. I ended up realizing that this tests really
+belong inside memcg_cache_id. This patch moves a similar but stronger test
+inside memcg_cache_id and make sure it always return a meaningful value.
 
-(this will allow easy future changes to the binding if required)
+Signed-off-by: Glauber Costa <glommer@openvz.org>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 53385cd4e6f0..75758fc5c50c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3110,7 +3110,9 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+  */
+ int memcg_cache_id(struct mem_cgroup *memcg)
+ {
+-	return memcg ? memcg->kmemcg_id : -1;
++	if (!memcg || !memcg_can_account_kmem(memcg))
++		return -1;
++	return memcg->kmemcg_id;
+ }
+ 
+ static size_t memcg_caches_array_size(int num_groups)
+-- 
+1.7.10.4
+
