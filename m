@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaBEWRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:17:50 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:60527 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaBEWRo (ORCPT
+	id S932339AbaBEWSC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:18:02 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58856 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933AbaBEWR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:17:44 -0500
+	Wed, 5 Feb 2014 17:17:58 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 43/51] hwmon,
- via-cputemp: Fix CPU hotplug callback registration
+Subject: [PATCH 44/51] xen, balloon: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:42:19 +0530
-Message-ID: <20140205221218.19080.8681.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 06 Feb 2014 03:42:32 +0530
+Message-ID: <20140205221231.19080.66618.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -28,7 +28,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-5490-0000-0000-000004E467B5
+x-cbid: 14020522-9264-0000-0000-0000056591DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -50,81 +50,97 @@ This is wrong, since it is prone to ABBA deadlocks involving the
 cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
 with CPU hotplug operations).
 
-Instead, the correct and race-free way of performing the callback
-registration is:
+Interestingly, the balloon code in xen can actually prevent double
+initialization and hence can use the following simplified form of callback
+registration:
 
-	cpu_maps_update_begin();
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	get_online_cpus();
 
 	for_each_online_cpu(cpu)
 		init_cpu(cpu);
 
-	/* Note the use of the double underscored version of the API */
-	__register_cpu_notifier(&foobar_cpu_notifier);
+	put_online_cpus();
 
-	cpu_maps_update_done();
+A hotplug operation that occurs between registering the notifier and calling
+get_online_cpus(), won't disrupt anything, because the code takes care to
+perform the memory allocations only once.
 
+So reorganize the balloon code in xen this way to fix the deadlock with
+callback registration.
 
-Fix the hwmon via-cputemp code by using this latter form of callback
-registration.
-
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: lm-sensors@lm-sensors.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: xen-devel@lists.xenproject.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- drivers/hwmon/via-cputemp.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/xen/balloon.c |   35 +++++++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
-index 38944e9..a5c9b2b 100644
---- a/drivers/hwmon/via-cputemp.c
-+++ b/drivers/hwmon/via-cputemp.c
-@@ -319,7 +319,7 @@ static int __init via_cputemp_init(void)
- 	if (err)
- 		goto exit;
- 
--	get_online_cpus();
-+	cpu_maps_update_begin();
- 	for_each_online_cpu(i) {
- 		struct cpuinfo_x86 *c = &cpu_data(i);
- 
-@@ -339,14 +339,14 @@ static int __init via_cputemp_init(void)
- 
- #ifndef CONFIG_HOTPLUG_CPU
- 	if (list_empty(&pdev_list)) {
--		put_online_cpus();
-+		cpu_maps_update_done();
- 		err = -ENODEV;
- 		goto exit_driver_unreg;
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index 37d06ea..afe1a3f 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -592,19 +592,29 @@ static void __init balloon_add_region(unsigned long start_pfn,
  	}
- #endif
- 
--	register_hotcpu_notifier(&via_cputemp_cpu_notifier);
--	put_online_cpus();
-+	__register_hotcpu_notifier(&via_cputemp_cpu_notifier);
-+	cpu_maps_update_done();
- 	return 0;
- 
- #ifndef CONFIG_HOTPLUG_CPU
-@@ -361,8 +361,8 @@ static void __exit via_cputemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
- 
--	get_online_cpus();
--	unregister_hotcpu_notifier(&via_cputemp_cpu_notifier);
-+	cpu_maps_update_begin();
-+	__unregister_hotcpu_notifier(&via_cputemp_cpu_notifier);
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
-@@ -370,7 +370,7 @@ static void __exit via_cputemp_exit(void)
- 		kfree(p);
- 	}
- 	mutex_unlock(&pdev_list_mutex);
--	put_online_cpus();
-+	cpu_maps_update_done();
- 	platform_driver_unregister(&via_cputemp_driver);
  }
  
++static int alloc_balloon_scratch_page(int cpu)
++{
++	if (per_cpu(balloon_scratch_page, cpu) != NULL)
++		return 0;
++
++	per_cpu(balloon_scratch_page, cpu) = alloc_page(GFP_KERNEL);
++	if (per_cpu(balloon_scratch_page, cpu) == NULL) {
++		pr_warn("Failed to allocate balloon_scratch_page for cpu %d\n", cpu);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++
+ static int balloon_cpu_notify(struct notifier_block *self,
+ 				    unsigned long action, void *hcpu)
+ {
+ 	int cpu = (long)hcpu;
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+-		if (per_cpu(balloon_scratch_page, cpu) != NULL)
+-			break;
+-		per_cpu(balloon_scratch_page, cpu) = alloc_page(GFP_KERNEL);
+-		if (per_cpu(balloon_scratch_page, cpu) == NULL) {
+-			pr_warn("Failed to allocate balloon_scratch_page for cpu %d\n", cpu);
++		if (alloc_balloon_scratch_page(cpu))
+ 			return NOTIFY_BAD;
+-		}
+ 		break;
+ 	default:
+ 		break;
+@@ -624,15 +634,16 @@ static int __init balloon_init(void)
+ 		return -ENODEV;
+ 
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+-		for_each_online_cpu(cpu)
+-		{
+-			per_cpu(balloon_scratch_page, cpu) = alloc_page(GFP_KERNEL);
+-			if (per_cpu(balloon_scratch_page, cpu) == NULL) {
+-				pr_warn("Failed to allocate balloon_scratch_page for cpu %d\n", cpu);
++		register_cpu_notifier(&balloon_cpu_notifier);
++
++		get_online_cpus();
++		for_each_online_cpu(cpu) {
++			if (alloc_balloon_scratch_page(cpu)) {
++				put_online_cpus();
+ 				return -ENOMEM;
+ 			}
+ 		}
+-		register_cpu_notifier(&balloon_cpu_notifier);
++		put_online_cpus();
+ 	}
+ 
+ 	pr_info("Initialising balloon driver\n");
 
