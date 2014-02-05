@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaBEUXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:23:24 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48523 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223AbaBEUHd (ORCPT
+	id S932434AbaBEUXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:23:54 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55434 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190AbaBEUH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:33 -0500
+	Wed, 5 Feb 2014 15:07:28 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Roberto Sassu <roberto.sassu@polito.it>,
-        Dustin Kirkland <kirkland@canonical.com>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+CC: Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 167/213] ecryptfs: call vfs_setxattr() in ecryptfs_setxattr()
-Date: Wed, 5 Feb 2014 15:02:02 -0500
-Message-ID: <1391630568-49251-168-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 166/213] jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
+Date: Wed, 5 Feb 2014 15:02:01 -0500
+Message-ID: <1391630568-49251-167-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roberto Sassu <roberto.sassu@polito.it>
+From: Eric Sandeen <sandeen@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,58 +31,45 @@ From: Roberto Sassu <roberto.sassu@polito.it>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 48b512e6857139393cdfce26348c362b87537018 upstream.
+commit 15291164b22a357cb211b618adfef4fa82fc0de3 upstream.
 
-Ecryptfs is a stackable filesystem which relies on lower filesystems the
-ability of setting/getting extended attributes.
+journal_unmap_buffer()'s zap_buffer: code clears a lot of buffer head
+state ala discard_buffer(), but does not touch _Delay or _Unwritten as
+discard_buffer() does.
 
-If there is a security module enabled on the system it updates the
-'security' field of inodes according to the owned extended attribute set
-with the function vfs_setxattr().  When this function is performed on a
-ecryptfs filesystem the 'security' field is not updated for the lower
-filesystem since the call security_inode_post_setxattr() is missing for
-the lower inode.
-Further, the call security_inode_setxattr() is missing for the lower inode,
-leading to policy violations in the security module because specific
-checks for this hook are not performed (i. e. filesystem
-'associate' permission on SELinux is not checked for the lower filesystem).
+This can be problematic in some areas of the ext4 code which assume
+that if they have found a buffer marked unwritten or delay, then it's
+a live one.  Perhaps those spots should check whether it is mapped
+as well, but if jbd2 is going to tear down a buffer, let's really
+tear it down completely.
 
-This patch replaces the call of the setxattr() method of the lower inode
-in the function ecryptfs_setxattr() with vfs_setxattr().
+Without this I get some fsx failures on sub-page-block filesystems
+up until v3.2, at which point 4e96b2dbbf1d7e81f22047a50f862555a6cb87cb
+and 189e868fa8fdca702eb9db9d8afc46b5cb9144c9 make the failures go
+away, because buried within that large change is some more flag
+clearing.  I still think it's worth doing in jbd2, since
+->invalidatepage leads here directly, and it's the right place
+to clear away these flags.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Cc: Dustin Kirkland <kirkland@canonical.com>
-Acked-by: James Morris <jmorris@namei.org>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ecryptfs/inode.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ fs/jbd2/transaction.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index b39e46f020a7..168706e90e3f 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -32,6 +32,7 @@
- #include <linux/crypto.h>
- #include <linux/fs_stack.h>
- #include <linux/slab.h>
-+#include <linux/xattr.h>
- #include <asm/unaligned.h>
- #include "ecryptfs_kernel.h"
- 
-@@ -1054,10 +1055,8 @@ ecryptfs_setxattr(struct dentry *dentry, const char *name, const void *value,
- 		rc = -EOPNOTSUPP;
- 		goto out;
- 	}
--	mutex_lock(&lower_dentry->d_inode->i_mutex);
--	rc = lower_dentry->d_inode->i_op->setxattr(lower_dentry, name, value,
--						   size, flags);
--	mutex_unlock(&lower_dentry->d_inode->i_mutex);
-+
-+	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
- out:
- 	return rc;
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index bfc70f57900f..ed89123a240f 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1836,6 +1836,8 @@ zap_buffer_unlocked:
+ 	clear_buffer_mapped(bh);
+ 	clear_buffer_req(bh);
+ 	clear_buffer_new(bh);
++	clear_buffer_delay(bh);
++	clear_buffer_unwritten(bh);
+ 	bh->b_bdev = NULL;
+ 	return may_free;
  }
 -- 
 1.8.5.2
