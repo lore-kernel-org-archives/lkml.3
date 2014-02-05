@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaBERzt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 12:55:49 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.120]:52152 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753666AbaBERzr (ORCPT
+	id S1753762AbaBER4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 12:56:25 -0500
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:15821 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753202AbaBER4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 12:55:47 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-16.tower-194.messagelabs.com!1391622518!8244963!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <17c7fc7fe1e2246e32891be55a0e900231272371.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1391614923.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Wed, 5 Feb 2014 17:48:36 +0000
-Subject: [PATCH 6/8] hwmon: da9055: Remove use of platform_get_irq_byname()
-To: Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Guenter Roeck <linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Feb 2014 12:56:20 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ag8TALd68lJbsmUx/2dsb2JhbABZKIJkgkN7E7wGAgKBDxd0glMTHCMYgQI3iAkBzyyOEWQdhCIBA4lHjmMBik+HUoM6L4Es
+Date: Wed, 5 Feb 2014 17:57:32 +0800
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, rdunlap@infradead.org, viro@zeniv.linux.org.uk,
+        dushistov@mail.ru, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 1/1] ufs: Add __init macro to init_inodecache
+Message-Id: <20140205175732.5ed98d96a96d544e5eac974d@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+init_inodecache is only called by __init init_ufs_fs.
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/hwmon/da9055-hwmon.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ fs/ufs/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/da9055-hwmon.c b/drivers/hwmon/da9055-hwmon.c
-index 029ecab..1867682 100644
---- a/drivers/hwmon/da9055-hwmon.c
-+++ b/drivers/hwmon/da9055-hwmon.c
-@@ -274,11 +274,8 @@ static int da9055_hwmon_probe(struct platform_device *pdev)
-
- 	platform_set_drvdata(pdev, hwmon);
-
--	hwmon_irq = platform_get_irq_byname(pdev, "HWMON");
--	if (hwmon_irq < 0)
--		return hwmon_irq;
--
--	hwmon_irq = regmap_irq_get_virq(hwmon->da9055->irq_data, hwmon_irq);
-+	hwmon_irq = regmap_irq_get_virq(hwmon->da9055->irq_data,
-+					DA9055_IRQ_HWMON);
- 	if (hwmon_irq < 0)
- 		return hwmon_irq;
-
---
-1.7.0.4
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index 329f2f5..5a7502e 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -1453,7 +1453,7 @@ static void init_once(void *foo)
+ 	inode_init_once(&ei->vfs_inode);
+ }
+ 
+-static int init_inodecache(void)
++static int __init init_inodecache(void)
+ {
+ 	ufs_inode_cachep = kmem_cache_create("ufs_inode_cache",
+ 					     sizeof(struct ufs_inode_info),
+-- 
+1.8.1.4
 
