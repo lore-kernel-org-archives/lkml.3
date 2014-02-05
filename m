@@ -1,449 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaBEDgo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 22:36:44 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:37353 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025AbaBEDgn (ORCPT
+	id S1754556AbaBEDhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 22:37:46 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:54792 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327AbaBEDho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 22:36:43 -0500
-Message-ID: <52F1B1CE.2040204@gmail.com>
-Date: Wed, 05 Feb 2014 11:36:46 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 4 Feb 2014 22:37:44 -0500
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
-	<hskinnemoen@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] kernel/kprobes.c: move kretprobe implementation to CONFIG_KRETPROBES
- area
-References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com> <52F1AB18.5040208@gmail.com>
-In-Reply-To: <52F1AB18.5040208@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140205011028.GM10323@ZenIV.linux.org.uk>
+References: <20140204120500.041b5175@gandalf.local.home>
+	<CA+55aFyObrVGXqncNboMzybeevPBOtAUcn-zur_B26VHJ1CEcg@mail.gmail.com>
+	<20140204182852.43ffa442@gandalf.local.home>
+	<20140204184208.6f4f22a8@gandalf.local.home>
+	<CA+55aFyTC1UGvRgH5vASh-C3M+GqHPMNGsUq3Q1MuynzkiSaEA@mail.gmail.com>
+	<20140205011028.GM10323@ZenIV.linux.org.uk>
+Date: Tue, 4 Feb 2014 19:37:43 -0800
+X-Google-Sender-Auth: Td88YJ7rbVdvAXpxBJahgJtgRWY
+Message-ID: <CA+55aFy23NFG6Vw_FRXSALcCeOXF=48iS4s2rDc_0dAONbOETw@mail.gmail.com>
+Subject: Re: [RFC][PATCH] exec: Fix use after free of tracepoint trace_sched_process_exec
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@parisplace.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, David Smith <dsmith@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Igor Zhbanov <i.zhbanov@samsung.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: multipart/mixed; boundary=089e013cbc92be608404f1a07a04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_KRETPROBES disabled, kretprobe implementation are useless,
-so need move them to CONFIG_KPROBES area.
+--089e013cbc92be608404f1a07a04
+Content-Type: text/plain; charset=UTF-8
 
- - move all kretprobe* to CONFIG_KPROBES area and dummy outside.
- - define kretprobe_flush_task() to let kprobe_flush_task() call.
- - define init_kretprobes() to let init_kprobes() call.
+On Tue, Feb 4, 2014 at 5:10 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Umm...  Interactions with aushit might be interesting.
 
+Freudian slip or intentional? :-)
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- kernel/kprobes.c | 323 +++++++++++++++++++++++++++++++------------------------
- 1 file changed, 181 insertions(+), 142 deletions(-)
+> It hooks into getname() and putname(); I'm not up to doing analysis
+> right now [...]
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index ceeadfc..0619536 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -69,7 +69,6 @@
- 
- static int kprobes_initialized;
- static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
--static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
- 
- /* NOTE: change this value only with kprobe_mutex held */
- static bool kprobes_all_disarmed;
-@@ -77,14 +76,6 @@ static bool kprobes_all_disarmed;
- /* This protects kprobe_table and optimizing_list */
- static DEFINE_MUTEX(kprobe_mutex);
- static DEFINE_PER_CPU(struct kprobe *, kprobe_instance) = NULL;
--static struct {
--	raw_spinlock_t lock ____cacheline_aligned_in_smp;
--} kretprobe_table_locks[KPROBE_TABLE_SIZE];
--
--static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
--{
--	return &(kretprobe_table_locks[hash].lock);
--}
- 
- /*
-  * Normally, functions that we'd want to prohibit kprobes in, are marked
-@@ -1079,125 +1070,6 @@ void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
- 	return;
- }
- 
--void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
--				struct hlist_head *head)
--{
--	struct kretprobe *rp = ri->rp;
--
--	/* remove rp inst off the rprobe_inst_table */
--	hlist_del(&ri->hlist);
--	INIT_HLIST_NODE(&ri->hlist);
--	if (likely(rp)) {
--		raw_spin_lock(&rp->lock);
--		hlist_add_head(&ri->hlist, &rp->free_instances);
--		raw_spin_unlock(&rp->lock);
--	} else
--		/* Unregistering */
--		hlist_add_head(&ri->hlist, head);
--}
--
--void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
--			 struct hlist_head **head, unsigned long *flags)
--__acquires(hlist_lock)
--{
--	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
--	raw_spinlock_t *hlist_lock;
--
--	*head = &kretprobe_inst_table[hash];
--	hlist_lock = kretprobe_table_lock_ptr(hash);
--	raw_spin_lock_irqsave(hlist_lock, *flags);
--}
--
--static void __kprobes kretprobe_table_lock(unsigned long hash,
--	unsigned long *flags)
--__acquires(hlist_lock)
--{
--	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
--	raw_spin_lock_irqsave(hlist_lock, *flags);
--}
--
--void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
--	unsigned long *flags)
--__releases(hlist_lock)
--{
--	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
--	raw_spinlock_t *hlist_lock;
--
--	hlist_lock = kretprobe_table_lock_ptr(hash);
--	raw_spin_unlock_irqrestore(hlist_lock, *flags);
--}
--
--static void __kprobes kretprobe_table_unlock(unsigned long hash,
--       unsigned long *flags)
--__releases(hlist_lock)
--{
--	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
--	raw_spin_unlock_irqrestore(hlist_lock, *flags);
--}
--
--/*
-- * This function is called from finish_task_switch when task tk becomes dead,
-- * so that we can recycle any function-return probe instances associated
-- * with this task. These left over instances represent probed functions
-- * that have been called but will never return.
-- */
--void __kprobes kprobe_flush_task(struct task_struct *tk)
--{
--	struct kretprobe_instance *ri;
--	struct hlist_head *head, empty_rp;
--	struct hlist_node *tmp;
--	unsigned long hash, flags = 0;
--
--	if (unlikely(!kprobes_initialized))
--		/* Early boot.  kretprobe_table_locks not yet initialized. */
--		return;
--
--	INIT_HLIST_HEAD(&empty_rp);
--	hash = hash_ptr(tk, KPROBE_HASH_BITS);
--	head = &kretprobe_inst_table[hash];
--	kretprobe_table_lock(hash, &flags);
--	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
--		if (ri->task == tk)
--			recycle_rp_inst(ri, &empty_rp);
--	}
--	kretprobe_table_unlock(hash, &flags);
--	hlist_for_each_entry_safe(ri, tmp, &empty_rp, hlist) {
--		hlist_del(&ri->hlist);
--		kfree(ri);
--	}
--}
--
--static inline void free_rp_inst(struct kretprobe *rp)
--{
--	struct kretprobe_instance *ri;
--	struct hlist_node *next;
--
--	hlist_for_each_entry_safe(ri, next, &rp->free_instances, hlist) {
--		hlist_del(&ri->hlist);
--		kfree(ri);
--	}
--}
--
--static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
--{
--	unsigned long flags, hash;
--	struct kretprobe_instance *ri;
--	struct hlist_node *next;
--	struct hlist_head *head;
--
--	/* No race here */
--	for (hash = 0; hash < KPROBE_TABLE_SIZE; hash++) {
--		kretprobe_table_lock(hash, &flags);
--		head = &kretprobe_inst_table[hash];
--		hlist_for_each_entry_safe(ri, next, head, hlist) {
--			if (ri->rp == rp)
--				ri->rp = NULL;
--		}
--		kretprobe_table_unlock(hash, &flags);
--	}
--	free_rp_inst(rp);
--}
--
- /*
- * Add the new probe to ap->list. Fail if this is the
- * second jprobe at the address - two jprobes can't coexist
-@@ -1764,6 +1636,55 @@ void __kprobes unregister_jprobes(struct jprobe **jps, int num)
- EXPORT_SYMBOL_GPL(unregister_jprobes);
- 
- #ifdef CONFIG_KRETPROBES
-+static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
-+static struct {
-+	raw_spinlock_t lock ____cacheline_aligned_in_smp;
-+} kretprobe_table_locks[KPROBE_TABLE_SIZE];
-+
-+static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
-+{
-+	return &(kretprobe_table_locks[hash].lock);
-+}
-+
-+void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
-+			 struct hlist_head **head, unsigned long *flags)
-+__acquires(hlist_lock)
-+{
-+	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
-+	raw_spinlock_t *hlist_lock;
-+
-+	*head = &kretprobe_inst_table[hash];
-+	hlist_lock = kretprobe_table_lock_ptr(hash);
-+	raw_spin_lock_irqsave(hlist_lock, *flags);
-+}
-+
-+void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
-+	unsigned long *flags)
-+__releases(hlist_lock)
-+{
-+	unsigned long hash = hash_ptr(tsk, KPROBE_HASH_BITS);
-+	raw_spinlock_t *hlist_lock;
-+
-+	hlist_lock = kretprobe_table_lock_ptr(hash);
-+	raw_spin_unlock_irqrestore(hlist_lock, *flags);
-+}
-+
-+static void __kprobes kretprobe_table_lock(unsigned long hash,
-+	unsigned long *flags)
-+__acquires(hlist_lock)
-+{
-+	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
-+	raw_spin_lock_irqsave(hlist_lock, *flags);
-+}
-+
-+static void __kprobes kretprobe_table_unlock(unsigned long hash,
-+	unsigned long *flags)
-+__releases(hlist_lock)
-+{
-+	raw_spinlock_t *hlist_lock = kretprobe_table_lock_ptr(hash);
-+	raw_spin_unlock_irqrestore(hlist_lock, *flags);
-+}
-+
- /*
-  * This kprobe pre_handler is registered with every kretprobe. When probe
-  * hits it will set up the return probe.
-@@ -1808,6 +1729,17 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 	return 0;
- }
- 
-+static inline void free_rp_inst(struct kretprobe *rp)
-+{
-+	struct kretprobe_instance *ri;
-+	struct hlist_node *next;
-+
-+	hlist_for_each_entry_safe(ri, next, &rp->free_instances, hlist) {
-+		hlist_del(&ri->hlist);
-+		kfree(ri);
-+	}
-+}
-+
- int __kprobes register_kretprobe(struct kretprobe *rp)
- {
- 	int ret = 0;
-@@ -1885,6 +1817,26 @@ void __kprobes unregister_kretprobe(struct kretprobe *rp)
- }
- EXPORT_SYMBOL_GPL(unregister_kretprobe);
- 
-+static void __kprobes cleanup_rp_inst(struct kretprobe *rp)
-+{
-+	unsigned long flags, hash;
-+	struct kretprobe_instance *ri;
-+	struct hlist_node *next;
-+	struct hlist_head *head;
-+
-+	/* No race here */
-+	for (hash = 0; hash < KPROBE_TABLE_SIZE; hash++) {
-+		kretprobe_table_lock(hash, &flags);
-+		head = &kretprobe_inst_table[hash];
-+		hlist_for_each_entry_safe(ri, next, head, hlist) {
-+			if (ri->rp == rp)
-+				ri->rp = NULL;
-+		}
-+		kretprobe_table_unlock(hash, &flags);
-+	}
-+	free_rp_inst(rp);
-+}
-+
- void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
- {
- 	int i;
-@@ -1907,7 +1859,78 @@ void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
- }
- EXPORT_SYMBOL_GPL(unregister_kretprobes);
- 
-+void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
-+				struct hlist_head *head)
-+{
-+	struct kretprobe *rp = ri->rp;
-+
-+	/* remove rp inst off the rprobe_inst_table */
-+	hlist_del(&ri->hlist);
-+	INIT_HLIST_NODE(&ri->hlist);
-+	if (likely(rp)) {
-+		raw_spin_lock(&rp->lock);
-+		hlist_add_head(&ri->hlist, &rp->free_instances);
-+		raw_spin_unlock(&rp->lock);
-+	} else
-+		/* Unregistering */
-+		hlist_add_head(&ri->hlist, head);
-+}
-+
-+static void __kprobes kretprobe_flush_task(struct task_struct *tk)
-+{
-+	struct kretprobe_instance *ri;
-+	struct hlist_head *head, empty_rp;
-+	struct hlist_node *tmp;
-+	unsigned long hash, flags = 0;
-+
-+	if (unlikely(!kprobes_initialized))
-+		/* Early boot.  kretprobe_table_locks not yet initialized. */
-+		return;
-+
-+	INIT_HLIST_HEAD(&empty_rp);
-+	hash = hash_ptr(tk, KPROBE_HASH_BITS);
-+	head = &kretprobe_inst_table[hash];
-+	kretprobe_table_lock(hash, &flags);
-+	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
-+		if (ri->task == tk)
-+			recycle_rp_inst(ri, &empty_rp);
-+	}
-+	kretprobe_table_unlock(hash, &flags);
-+	hlist_for_each_entry_safe(ri, tmp, &empty_rp, hlist) {
-+		hlist_del(&ri->hlist);
-+		kfree(ri);
-+	}
-+}
-+
-+static void __init init_kretprobes(void)
-+{
-+	int i;
-+
-+	/* FIXME allocate the probe table, currently defined statically */
-+	/* initialize all list heads */
-+	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
-+		INIT_HLIST_HEAD(&kretprobe_inst_table[i]);
-+		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
-+	}
-+
-+	if (kretprobe_blacklist_size) {
-+		/* lookup the function address from its name */
-+		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-+			kprobe_lookup_name(kretprobe_blacklist[i].name,
-+					   kretprobe_blacklist[i].addr);
-+			if (!kretprobe_blacklist[i].addr)
-+				printk(KERN_WARNING
-+					"kretprobe: lookup failed: %s\n",
-+					kretprobe_blacklist[i].name);
-+		}
-+	}
-+}
-+
- #else /* CONFIG_KRETPROBES */
-+
-+#define kretprobe_flush_task(p)			do {} while (0)
-+#define init_kretprobes()			do {} while (0)
-+
- int __kprobes register_kretprobe(struct kretprobe *rp)
- {
- 	return -ENOSYS;
-@@ -1936,8 +1959,35 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
- 	return 0;
- }
- 
-+void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
-+				struct hlist_head *head)
-+{
-+}
-+
-+void __kprobes kretprobe_hash_lock(struct task_struct *tsk,
-+			 struct hlist_head **head, unsigned long *flags)
-+__acquires(hlist_lock)
-+{
-+}
-+
-+void __kprobes kretprobe_hash_unlock(struct task_struct *tsk,
-+	unsigned long *flags)
-+__releases(hlist_lock)
-+{
-+}
- #endif /* CONFIG_KRETPROBES */
- 
-+/*
-+ * This function is called from finish_task_switch when task tk becomes dead,
-+ * so that we can recycle any function-return probe instances associated
-+ * with this task. These left over instances represent probed functions
-+ * that have been called but will never return.
-+ */
-+void __kprobes kprobe_flush_task(struct task_struct *tk)
-+{
-+	kretprobe_flush_task(tk);
-+}
-+
- /* Set the kprobe gone and remove its instruction buffer. */
- static void __kprobes kill_kprobe(struct kprobe *p)
- {
-@@ -2073,11 +2123,8 @@ static int __init init_kprobes(void)
- 
- 	/* FIXME allocate the probe table, currently defined statically */
- 	/* initialize all list heads */
--	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
-+	for (i = 0; i < KPROBE_TABLE_SIZE; i++)
- 		INIT_HLIST_HEAD(&kprobe_table[i]);
--		INIT_HLIST_HEAD(&kretprobe_inst_table[i]);
--		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
--	}
- 
- 	/*
- 	 * Lookup and populate the kprobe_blacklist.
-@@ -2101,16 +2148,8 @@ static int __init init_kprobes(void)
- 			kb->range = size;
- 	}
- 
--	if (kretprobe_blacklist_size) {
--		/* lookup the function address from its name */
--		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
--			kprobe_lookup_name(kretprobe_blacklist[i].name,
--					   kretprobe_blacklist[i].addr);
--			if (!kretprobe_blacklist[i].addr)
--				printk("kretprobe: lookup failed: %s\n",
--				       kretprobe_blacklist[i].name);
--		}
--	}
-+	/* Initialize kretprobes */
-+	init_kretprobes();
- 
- #if defined(CONFIG_OPTPROBES)
- #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
--- 
-1.7.11.7
+Right you are. I was actually aware of that, but grepping for things
+it all looked fine. But I got confused by all the insane audit
+wrappers, and you're right, it needs some massaging for audit
+handling.
+
+And that audit code really is aushit. I think I found a bug in it
+while just scanning it: if audit_alloc_name() fails, the filename will
+never be added to the audit lists, and name_count will never be
+incremented. But then when we call audit_putname it won't actually put
+the name, so it all just leaks - and if you have AUDIT_DEBUG enabled
+you'd eventually see an error.
+
+I wonder if we could get rid of some of that crap, and make the audit
+code use dentry_path() instead of trying to save off pathnames like
+that. But I don't know what the audit code actually *uses* the
+pathnames for, so what do I know.
+
+Eric? Can you please explain?
+
+Also, here's a slightly updated patch. The change is that:
+ - getname_kernel() will now clear 'filename->aname'
+ - cleared 'aname' for regular getname too before calling
+audit_getname(), so that if that one fails, it will be NULL.
+ - audit_putname() will consider a NULL aname to be the same as not
+being in audit context, and just do a final_putname() on it.
+
+That should fix the audit filename leak too, afaik.
+
+Eric, please take a look. As well as explain the audit name thing if possible.
+
+                Linus
+
+--089e013cbc92be608404f1a07a04
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hra1poga0
+
+IGFyY2gvcGFyaXNjL2hwdXgvZnMuYyAgICAgICAgICAgICB8ICAzICstCiBhcmNoL3RpbGUvbW0v
+ZWxmLmMgICAgICAgICAgICAgICAgfCAgMiArLQogZnMvYmluZm10X2VtODYuYyAgICAgICAgICAg
+ICAgICAgIHwgIDIgKy0KIGZzL2JpbmZtdF9mbGF0LmMgICAgICAgICAgICAgICAgICB8IDE1ICsr
+KysrKy0tLS0KIGZzL2V4ZWMuYyAgICAgICAgICAgICAgICAgICAgICAgICB8IDU4ICsrKysrKysr
+KysrKysrKysrKysrLS0tLS0tLS0tLS0tLS0tLS0tLQogZnMvbmFtZWkuYyAgICAgICAgICAgICAg
+ICAgICAgICAgIHwgMzAgKysrKysrKysrKysrKysrKysrKysKIGluY2x1ZGUvbGludXgvYmluZm10
+cy5oICAgICAgICAgICB8ICAzICstCiBpbmNsdWRlL2xpbnV4L2ZzLmggICAgICAgICAgICAgICAg
+fCAgMSArCiBpbmNsdWRlL2xpbnV4L3NjaGVkLmggICAgICAgICAgICAgfCAgMyArLQogaW5jbHVk
+ZS90cmFjZS9ldmVudHMvc2NoZWQuaCAgICAgIHwgIDQgKy0tCiBpbml0L21haW4uYyAgICAgICAg
+ICAgICAgICAgICAgICAgfCAgMiArLQoga2VybmVsL2F1ZGl0c2MuYyAgICAgICAgICAgICAgICAg
+IHwgIDIgKy0KIGtlcm5lbC9rbW9kLmMgICAgICAgICAgICAgICAgICAgICB8ICAyICstCiBzZWN1
+cml0eS9hcHBhcm1vci9kb21haW4uYyAgICAgICAgfCAgMiArLQogc2VjdXJpdHkvY29tbW9uY2Fw
+LmMgICAgICAgICAgICAgIHwgIDYgKystLQogc2VjdXJpdHkvaW50ZWdyaXR5L2ltYS9pbWFfbWFp
+bi5jIHwgIDQgKy0tCiBzZWN1cml0eS90b21veW8vZG9tYWluLmMgICAgICAgICAgfCAgMiArLQog
+c2VjdXJpdHkvdG9tb3lvL3RvbW95by5jICAgICAgICAgIHwgIDIgKy0KIDE4IGZpbGVzIGNoYW5n
+ZWQsIDkwIGluc2VydGlvbnMoKyksIDUzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gv
+cGFyaXNjL2hwdXgvZnMuYyBiL2FyY2gvcGFyaXNjL2hwdXgvZnMuYwppbmRleCA4OGQwOTYyZGU2
+NWEuLjIzZWJjZDY3OGRhMyAxMDA2NDQKLS0tIGEvYXJjaC9wYXJpc2MvaHB1eC9mcy5jCisrKyBi
+L2FyY2gvcGFyaXNjL2hwdXgvZnMuYwpAQCAtNDEsMTEgKzQxLDEwIEBAIGludCBocHV4X2V4ZWN2
+ZShzdHJ1Y3QgcHRfcmVncyAqcmVncykKIAlpZiAoSVNfRVJSKGZpbGVuYW1lKSkKIAkJZ290byBv
+dXQ7CiAKLQllcnJvciA9IGRvX2V4ZWN2ZShmaWxlbmFtZS0+bmFtZSwKKwllcnJvciA9IGRvX2V4
+ZWN2ZShmaWxlbmFtZSwKIAkJCSAgKGNvbnN0IGNoYXIgX191c2VyICpjb25zdCBfX3VzZXIgKikg
+cmVncy0+Z3JbMjVdLAogCQkJICAoY29uc3QgY2hhciBfX3VzZXIgKmNvbnN0IF9fdXNlciAqKSBy
+ZWdzLT5nclsyNF0pOwogCi0JcHV0bmFtZShmaWxlbmFtZSk7CiAKIG91dDoKIAlyZXR1cm4gZXJy
+b3I7CmRpZmYgLS1naXQgYS9hcmNoL3RpbGUvbW0vZWxmLmMgYi9hcmNoL3RpbGUvbW0vZWxmLmMK
+aW5kZXggMjNmMDQ0ZThhN2FiLi4zYWQ1NGE3YTkyN2MgMTAwNjQ0Ci0tLSBhL2FyY2gvdGlsZS9t
+bS9lbGYuYworKysgYi9hcmNoL3RpbGUvbW0vZWxmLmMKQEAgLTExNyw3ICsxMTcsNyBAQCBpbnQg
+YXJjaF9zZXR1cF9hZGRpdGlvbmFsX3BhZ2VzKHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0sCiAJ
+ICogd2hhdGV2ZXIgd2FzIHBhc3NlZCBhcyB0aGUgbGludXhfYmlucHJtIGZpbGVuYW1lLgogCSAq
+LwogCWlmICghbm90aWZ5X2V4ZWMobW0pKQotCQlzaW1fbm90aWZ5X2V4ZWMoYnBybS0+ZmlsZW5h
+bWUpOworCQlzaW1fbm90aWZ5X2V4ZWMoYnBybS0+ZmlsZW5hbWUtPm5hbWUpOwogCiAJcmV0dmFs
+ID0gc2V0dXBfdmRzb19wYWdlcygpOwogCmRpZmYgLS1naXQgYS9mcy9iaW5mbXRfZW04Ni5jIGIv
+ZnMvYmluZm10X2VtODYuYwppbmRleCBmMzdiMDhjZWExZjcuLjA3N2E3NmZiNjM0NyAxMDA2NDQK
+LS0tIGEvZnMvYmluZm10X2VtODYuYworKysgYi9mcy9iaW5mbXRfZW04Ni5jCkBAIC02Miw3ICs2
+Miw3IEBAIHN0YXRpYyBpbnQgbG9hZF9lbTg2KHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0pCiAJ
+ICogdXNlciBlbnZpcm9ubWVudCBhbmQgYXJndW1lbnRzIGFyZSBzdG9yZWQuCiAJICovCiAJcmVt
+b3ZlX2FyZ196ZXJvKGJwcm0pOwotCXJldHZhbCA9IGNvcHlfc3RyaW5nc19rZXJuZWwoMSwgJmJw
+cm0tPmZpbGVuYW1lLCBicHJtKTsKKwlyZXR2YWwgPSBjb3B5X3N0cmluZ3Nfa2VybmVsKDEsICZi
+cHJtLT5maWxlbmFtZS0+bmFtZSwgYnBybSk7CiAJaWYgKHJldHZhbCA8IDApIHJldHVybiByZXR2
+YWw7IAogCWJwcm0tPmFyZ2MrKzsKIAlpZiAoaV9hcmcpIHsKZGlmZiAtLWdpdCBhL2ZzL2JpbmZt
+dF9mbGF0LmMgYi9mcy9iaW5mbXRfZmxhdC5jCmluZGV4IGQ1MGJiZTU5ZGExZS4uZjEzNzdhNWQy
+NjBiIDEwMDY0NAotLS0gYS9mcy9iaW5mbXRfZmxhdC5jCisrKyBiL2ZzL2JpbmZtdF9mbGF0LmMK
+QEAgLTQ2OSw3ICs0NjksNyBAQCBzdGF0aWMgaW50IGxvYWRfZmxhdF9maWxlKHN0cnVjdCBsaW51
+eF9iaW5wcm0gKiBicHJtLAogCX0KIAogCWlmIChmbGFncyAmIEZMQVRfRkxBR19LVFJBQ0UpCi0J
+CXByaW50aygiQklORk1UX0ZMQVQ6IExvYWRpbmcgZmlsZTogJXNcbiIsIGJwcm0tPmZpbGVuYW1l
+KTsKKwkJcHJpbnRrKCJCSU5GTVRfRkxBVDogTG9hZGluZyBmaWxlOiAlc1xuIiwgYnBybS0+Zmls
+ZW5hbWUtPm5hbWUpOwogCiAJaWYgKHJldiAhPSBGTEFUX1ZFUlNJT04gJiYgcmV2ICE9IE9MRF9G
+TEFUX1ZFUlNJT04pIHsKIAkJcHJpbnRrKCJCSU5GTVRfRkxBVDogYmFkIGZsYXQgZmlsZSB2ZXJz
+aW9uIDB4JXggKHN1cHBvcnRlZCAiCkBAIC02ODYsNyArNjg2LDcgQEAgc3RhdGljIGludCBsb2Fk
+X2ZsYXRfZmlsZShzdHJ1Y3QgbGludXhfYmlucHJtICogYnBybSwKIAogCWlmIChmbGFncyAmIEZM
+QVRfRkxBR19LVFJBQ0UpCiAJCXByaW50aygiJXMgJXM6IFRFWFQ9JXgtJXggREFUQT0leC0leCBC
+U1M9JXgtJXhcbiIsCi0JCQlpZCA/ICJMaWIiIDogIkxvYWQiLCBicHJtLT5maWxlbmFtZSwKKwkJ
+CWlkID8gIkxpYiIgOiAiTG9hZCIsIGJwcm0tPmZpbGVuYW1lLT5uYW1lLAogCQkJKGludCkgc3Rh
+cnRfY29kZSwgKGludCkgZW5kX2NvZGUsCiAJCQkoaW50KSBkYXRhcG9zLAogCQkJKGludCkgKGRh
+dGFwb3MgKyBkYXRhX2xlbiksCkBAIC04MTgsMTEgKzgxOCwxNCBAQCBzdGF0aWMgaW50IGxvYWRf
+ZmxhdF9zaGFyZWRfbGlicmFyeShpbnQgaWQsIHN0cnVjdCBsaWJfaW5mbyAqbGlicykKIAlzcHJp
+bnRmKGJ1ZiwgIi9saWIvbGliJWQuc28iLCBpZCk7CiAKIAkvKiBPcGVuIHRoZSBmaWxlIHVwICov
+Ci0JYnBybS5maWxlbmFtZSA9IGJ1ZjsKLQlicHJtLmZpbGUgPSBvcGVuX2V4ZWMoYnBybS5maWxl
+bmFtZSk7CisJYnBybS5maWxlbmFtZSA9IGdldG5hbWVfa2VybmVsKGJ1Zik7CisJaWYgKElTX0VS
+UihicHJtLmZpbGVuYW1lKSkKKwkJcmV0dXJuIHJlczsKKworCWJwcm0uZmlsZSA9IG9wZW5fZXhl
+YyhidWYpOwogCXJlcyA9IFBUUl9FUlIoYnBybS5maWxlKTsKIAlpZiAoSVNfRVJSKGJwcm0uZmls
+ZSkpCi0JCXJldHVybiByZXM7CisJCWdvdG8gb3V0X3B1dG5hbWU7CiAKIAlicHJtLmNyZWQgPSBw
+cmVwYXJlX2V4ZWNfY3JlZHMoKTsKIAlyZXMgPSAtRU5PTUVNOwpAQCAtODQ1LDYgKzg0OCw4IEBA
+IHN0YXRpYyBpbnQgbG9hZF9mbGF0X3NoYXJlZF9saWJyYXJ5KGludCBpZCwgc3RydWN0IGxpYl9p
+bmZvICpsaWJzKQogb3V0OgogCWFsbG93X3dyaXRlX2FjY2VzcyhicHJtLmZpbGUpOwogCWZwdXQo
+YnBybS5maWxlKTsKK291dF9wdXRuYW1lOgorCXB1dG5hbWUoYnBybS5maWxlbmFtZSk7CiAKIAly
+ZXR1cm4ocmVzKTsKIH0KZGlmZiAtLWdpdCBhL2ZzL2V4ZWMuYyBiL2ZzL2V4ZWMuYwppbmRleCBl
+MTUyOWI0Yzc5YjEuLjUzOGJlNDEzYjI2YiAxMDA2NDQKLS0tIGEvZnMvZXhlYy5jCisrKyBiL2Zz
+L2V4ZWMuYwpAQCAtNzQ4LDExICs3NDgsMTAgQEAgRVhQT1JUX1NZTUJPTChzZXR1cF9hcmdfcGFn
+ZXMpOwogCiAjZW5kaWYgLyogQ09ORklHX01NVSAqLwogCi1zdHJ1Y3QgZmlsZSAqb3Blbl9leGVj
+KGNvbnN0IGNoYXIgKm5hbWUpCitzdGF0aWMgc3RydWN0IGZpbGUgKmRvX29wZW5fZXhlYyhzdHJ1
+Y3QgZmlsZW5hbWUgKm5hbWUpCiB7CiAJc3RydWN0IGZpbGUgKmZpbGU7CiAJaW50IGVycjsKLQlz
+dHJ1Y3QgZmlsZW5hbWUgdG1wID0geyAubmFtZSA9IG5hbWUgfTsKIAlzdGF0aWMgY29uc3Qgc3Ry
+dWN0IG9wZW5fZmxhZ3Mgb3Blbl9leGVjX2ZsYWdzID0gewogCQkub3Blbl9mbGFnID0gT19MQVJH
+RUZJTEUgfCBPX1JET05MWSB8IF9fRk1PREVfRVhFQywKIAkJLmFjY19tb2RlID0gTUFZX0VYRUMg
+fCBNQVlfT1BFTiwKQEAgLTc2MCw3ICs3NTksNyBAQCBzdHJ1Y3QgZmlsZSAqb3Blbl9leGVjKGNv
+bnN0IGNoYXIgKm5hbWUpCiAJCS5sb29rdXBfZmxhZ3MgPSBMT09LVVBfRk9MTE9XLAogCX07CiAK
+LQlmaWxlID0gZG9fZmlscF9vcGVuKEFUX0ZEQ1dELCAmdG1wLCAmb3Blbl9leGVjX2ZsYWdzKTsK
+KwlmaWxlID0gZG9fZmlscF9vcGVuKEFUX0ZEQ1dELCBuYW1lLCAmb3Blbl9leGVjX2ZsYWdzKTsK
+IAlpZiAoSVNfRVJSKGZpbGUpKQogCQlnb3RvIG91dDsKIApAQCAtNzg0LDYgKzc4MywxMiBAQCBl
+eGl0OgogCWZwdXQoZmlsZSk7CiAJcmV0dXJuIEVSUl9QVFIoZXJyKTsKIH0KKworc3RydWN0IGZp
+bGUgKm9wZW5fZXhlYyhjb25zdCBjaGFyICpuYW1lKQoreworCXN0cnVjdCBmaWxlbmFtZSB0bXAg
+PSB7IC5uYW1lID0gbmFtZSB9OworCXJldHVybiBkb19vcGVuX2V4ZWMoJnRtcCk7Cit9CiBFWFBP
+UlRfU1lNQk9MKG9wZW5fZXhlYyk7CiAKIGludCBrZXJuZWxfcmVhZChzdHJ1Y3QgZmlsZSAqZmls
+ZSwgbG9mZl90IG9mZnNldCwKQEAgLTEwNzQsNyArMTA3OSw3IEBAIGludCBmbHVzaF9vbGRfZXhl
+YyhzdHJ1Y3QgbGludXhfYmlucHJtICogYnBybSkKIAogCXNldF9tbV9leGVfZmlsZShicHJtLT5t
+bSwgYnBybS0+ZmlsZSk7CiAKLQlmaWxlbmFtZV90b190YXNrbmFtZShicHJtLT50Y29tbSwgYnBy
+bS0+ZmlsZW5hbWUsIHNpemVvZihicHJtLT50Y29tbSkpOworCWZpbGVuYW1lX3RvX3Rhc2tuYW1l
+KGJwcm0tPnRjb21tLCBicHJtLT5maWxlbmFtZS0+bmFtZSwgc2l6ZW9mKGJwcm0tPnRjb21tKSk7
+CiAJLyoKIAkgKiBSZWxlYXNlIGFsbCBvZiB0aGUgb2xkIG1tYXAgc3R1ZmYKIAkgKi8KQEAgLTEx
+NjIsNyArMTE2Nyw3IEBAIGludCBwcmVwYXJlX2Jwcm1fY3JlZHMoc3RydWN0IGxpbnV4X2JpbnBy
+bSAqYnBybSkKIAlyZXR1cm4gLUVOT01FTTsKIH0KIAotdm9pZCBmcmVlX2Jwcm0oc3RydWN0IGxp
+bnV4X2JpbnBybSAqYnBybSkKK3N0YXRpYyB2b2lkIGZyZWVfYnBybShzdHJ1Y3QgbGludXhfYmlu
+cHJtICpicHJtKQogewogCWZyZWVfYXJnX3BhZ2VzKGJwcm0pOwogCWlmIChicHJtLT5jcmVkKSB7
+CkBAIC0xMTc0LDE1ICsxMTc5LDE3IEBAIHZvaWQgZnJlZV9icHJtKHN0cnVjdCBsaW51eF9iaW5w
+cm0gKmJwcm0pCiAJCWZwdXQoYnBybS0+ZmlsZSk7CiAJfQogCS8qIElmIGEgYmluZm10IGNoYW5n
+ZWQgdGhlIGludGVycCwgZnJlZSBpdC4gKi8KLQlpZiAoYnBybS0+aW50ZXJwICE9IGJwcm0tPmZp
+bGVuYW1lKQorCWlmIChicHJtLT5pbnRlcnAgIT0gYnBybS0+ZmlsZW5hbWUtPm5hbWUpCiAJCWtm
+cmVlKGJwcm0tPmludGVycCk7CisJaWYgKGJwcm0tPmZpbGVuYW1lKQorCQlwdXRuYW1lKGJwcm0t
+PmZpbGVuYW1lKTsKIAlrZnJlZShicHJtKTsKIH0KIAogaW50IGJwcm1fY2hhbmdlX2ludGVycChj
+aGFyICppbnRlcnAsIHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0pCiB7CiAJLyogSWYgYSBiaW5m
+bXQgY2hhbmdlZCB0aGUgaW50ZXJwLCBmcmVlIGl0IGZpcnN0LiAqLwotCWlmIChicHJtLT5pbnRl
+cnAgIT0gYnBybS0+ZmlsZW5hbWUpCisJaWYgKGJwcm0tPmludGVycCAhPSBicHJtLT5maWxlbmFt
+ZS0+bmFtZSkKIAkJa2ZyZWUoYnBybS0+aW50ZXJwKTsKIAlicHJtLT5pbnRlcnAgPSBrc3RyZHVw
+KGludGVycCwgR0ZQX0tFUk5FTCk7CiAJaWYgKCFicHJtLT5pbnRlcnApCkBAIC0xNDMyLDcgKzE0
+MzksNyBAQCBzdGF0aWMgaW50IGV4ZWNfYmlucHJtKHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0p
+CiAvKgogICogc3lzX2V4ZWN2ZSgpIGV4ZWN1dGVzIGEgbmV3IHByb2dyYW0uCiAgKi8KLXN0YXRp
+YyBpbnQgZG9fZXhlY3ZlX2NvbW1vbihjb25zdCBjaGFyICpmaWxlbmFtZSwKK3N0YXRpYyBpbnQg
+ZG9fZXhlY3ZlX2NvbW1vbihzdHJ1Y3QgZmlsZW5hbWUgKmZpbGVuYW1lLAogCQkJCXN0cnVjdCB1
+c2VyX2FyZ19wdHIgYXJndiwKIAkJCQlzdHJ1Y3QgdXNlcl9hcmdfcHRyIGVudnApCiB7CkBAIC0x
+NDQxLDYgKzE0NDgsOSBAQCBzdGF0aWMgaW50IGRvX2V4ZWN2ZV9jb21tb24oY29uc3QgY2hhciAq
+ZmlsZW5hbWUsCiAJc3RydWN0IGZpbGVzX3N0cnVjdCAqZGlzcGxhY2VkOwogCWludCByZXR2YWw7
+CiAKKwlpZiAoSVNfRVJSKGZpbGVuYW1lKSkKKwkJcmV0dXJuIFBUUl9FUlIoZmlsZW5hbWUpOwor
+CiAJLyoKIAkgKiBXZSBtb3ZlIHRoZSBhY3R1YWwgZmFpbHVyZSBpbiBjYXNlIG9mIFJMSU1JVF9O
+UFJPQyBleGNlc3MgZnJvbQogCSAqIHNldCp1aWQoKSB0byBleGVjdmUoKSBiZWNhdXNlIHRvbyBt
+YW55IHBvb3JseSB3cml0dGVuIHByb2dyYW1zCkBAIC0xNDY2LDYgKzE0NzYsOSBAQCBzdGF0aWMg
+aW50IGRvX2V4ZWN2ZV9jb21tb24oY29uc3QgY2hhciAqZmlsZW5hbWUsCiAJaWYgKCFicHJtKQog
+CQlnb3RvIG91dF9maWxlczsKIAorCWJwcm0tPmZpbGVuYW1lID0gZmlsZW5hbWU7CisJYnBybS0+
+aW50ZXJwID0gZmlsZW5hbWUtPm5hbWU7CisKIAlyZXR2YWwgPSBwcmVwYXJlX2Jwcm1fY3JlZHMo
+YnBybSk7CiAJaWYgKHJldHZhbCkKIAkJZ290byBvdXRfZnJlZTsKQEAgLTE0NzMsNyArMTQ4Niw3
+IEBAIHN0YXRpYyBpbnQgZG9fZXhlY3ZlX2NvbW1vbihjb25zdCBjaGFyICpmaWxlbmFtZSwKIAlj
+aGVja191bnNhZmVfZXhlYyhicHJtKTsKIAljdXJyZW50LT5pbl9leGVjdmUgPSAxOwogCi0JZmls
+ZSA9IG9wZW5fZXhlYyhmaWxlbmFtZSk7CisJZmlsZSA9IGRvX29wZW5fZXhlYyhmaWxlbmFtZSk7
+CiAJcmV0dmFsID0gUFRSX0VSUihmaWxlKTsKIAlpZiAoSVNfRVJSKGZpbGUpKQogCQlnb3RvIG91
+dF91bm1hcms7CkBAIC0xNDgxLDggKzE0OTQsNiBAQCBzdGF0aWMgaW50IGRvX2V4ZWN2ZV9jb21t
+b24oY29uc3QgY2hhciAqZmlsZW5hbWUsCiAJc2NoZWRfZXhlYygpOwogCiAJYnBybS0+ZmlsZSA9
+IGZpbGU7Ci0JYnBybS0+ZmlsZW5hbWUgPSBmaWxlbmFtZTsKLQlicHJtLT5pbnRlcnAgPSBmaWxl
+bmFtZTsKIAogCXJldHZhbCA9IGJwcm1fbW1faW5pdChicHJtKTsKIAlpZiAocmV0dmFsKQpAQCAt
+MTUwMCw3ICsxNTExLDcgQEAgc3RhdGljIGludCBkb19leGVjdmVfY29tbW9uKGNvbnN0IGNoYXIg
+KmZpbGVuYW1lLAogCWlmIChyZXR2YWwgPCAwKQogCQlnb3RvIG91dDsKIAotCXJldHZhbCA9IGNv
+cHlfc3RyaW5nc19rZXJuZWwoMSwgJmJwcm0tPmZpbGVuYW1lLCBicHJtKTsKKwlyZXR2YWwgPSBj
+b3B5X3N0cmluZ3Nfa2VybmVsKDEsICZicHJtLT5maWxlbmFtZS0+bmFtZSwgYnBybSk7CiAJaWYg
+KHJldHZhbCA8IDApCiAJCWdvdG8gb3V0OwogCkBAIC0xNTM5LDE1ICsxNTUwLDE4IEBAIG91dF91
+bm1hcms6CiAKIG91dF9mcmVlOgogCWZyZWVfYnBybShicHJtKTsKKwlmaWxlbmFtZSA9IE5VTEw7
+CiAKIG91dF9maWxlczoKIAlpZiAoZGlzcGxhY2VkKQogCQlyZXNldF9maWxlc19zdHJ1Y3QoZGlz
+cGxhY2VkKTsKIG91dF9yZXQ6CisJaWYgKGZpbGVuYW1lKQorCQlwdXRuYW1lKGZpbGVuYW1lKTsK
+IAlyZXR1cm4gcmV0dmFsOwogfQogCi1pbnQgZG9fZXhlY3ZlKGNvbnN0IGNoYXIgKmZpbGVuYW1l
+LAoraW50IGRvX2V4ZWN2ZShzdHJ1Y3QgZmlsZW5hbWUgKmZpbGVuYW1lLAogCWNvbnN0IGNoYXIg
+X191c2VyICpjb25zdCBfX3VzZXIgKl9fYXJndiwKIAljb25zdCBjaGFyIF9fdXNlciAqY29uc3Qg
+X191c2VyICpfX2VudnApCiB7CkBAIC0xNTU3LDcgKzE1NzEsNyBAQCBpbnQgZG9fZXhlY3ZlKGNv
+bnN0IGNoYXIgKmZpbGVuYW1lLAogfQogCiAjaWZkZWYgQ09ORklHX0NPTVBBVAotc3RhdGljIGlu
+dCBjb21wYXRfZG9fZXhlY3ZlKGNvbnN0IGNoYXIgKmZpbGVuYW1lLAorc3RhdGljIGludCBjb21w
+YXRfZG9fZXhlY3ZlKHN0cnVjdCBmaWxlbmFtZSAqZmlsZW5hbWUsCiAJY29uc3QgY29tcGF0X3Vw
+dHJfdCBfX3VzZXIgKl9fYXJndiwKIAljb25zdCBjb21wYXRfdXB0cl90IF9fdXNlciAqX19lbnZw
+KQogewpAQCAtMTYwNywyNSArMTYyMSwxMyBAQCBTWVNDQUxMX0RFRklORTMoZXhlY3ZlLAogCQlj
+b25zdCBjaGFyIF9fdXNlciAqY29uc3QgX191c2VyICosIGFyZ3YsCiAJCWNvbnN0IGNoYXIgX191
+c2VyICpjb25zdCBfX3VzZXIgKiwgZW52cCkKIHsKLQlzdHJ1Y3QgZmlsZW5hbWUgKnBhdGggPSBn
+ZXRuYW1lKGZpbGVuYW1lKTsKLQlpbnQgZXJyb3IgPSBQVFJfRVJSKHBhdGgpOwotCWlmICghSVNf
+RVJSKHBhdGgpKSB7Ci0JCWVycm9yID0gZG9fZXhlY3ZlKHBhdGgtPm5hbWUsIGFyZ3YsIGVudnAp
+OwotCQlwdXRuYW1lKHBhdGgpOwotCX0KLQlyZXR1cm4gZXJyb3I7CisJcmV0dXJuIGRvX2V4ZWN2
+ZShnZXRuYW1lKGZpbGVuYW1lKSwgYXJndiwgZW52cCk7CiB9CiAjaWZkZWYgQ09ORklHX0NPTVBB
+VAogYXNtbGlua2FnZSBsb25nIGNvbXBhdF9zeXNfZXhlY3ZlKGNvbnN0IGNoYXIgX191c2VyICog
+ZmlsZW5hbWUsCiAJY29uc3QgY29tcGF0X3VwdHJfdCBfX3VzZXIgKiBhcmd2LAogCWNvbnN0IGNv
+bXBhdF91cHRyX3QgX191c2VyICogZW52cCkKIHsKLQlzdHJ1Y3QgZmlsZW5hbWUgKnBhdGggPSBn
+ZXRuYW1lKGZpbGVuYW1lKTsKLQlpbnQgZXJyb3IgPSBQVFJfRVJSKHBhdGgpOwotCWlmICghSVNf
+RVJSKHBhdGgpKSB7Ci0JCWVycm9yID0gY29tcGF0X2RvX2V4ZWN2ZShwYXRoLT5uYW1lLCBhcmd2
+LCBlbnZwKTsKLQkJcHV0bmFtZShwYXRoKTsKLQl9Ci0JcmV0dXJuIGVycm9yOworCXJldHVybiBj
+b21wYXRfZG9fZXhlY3ZlKGdldG5hbWUoZmlsZW5hbWUpLCBhcmd2LCBlbnZwKTsKIH0KICNlbmRp
+ZgpkaWZmIC0tZ2l0IGEvZnMvbmFtZWkuYyBiL2ZzL25hbWVpLmMKaW5kZXggZDU4MGRmMmU2ODA0
+Li4zODVmNzgxN2JmY2MgMTAwNjQ0Ci0tLSBhL2ZzL25hbWVpLmMKKysrIGIvZnMvbmFtZWkuYwpA
+QCAtMTk2LDYgKzE5Niw3IEBAIHJlY29weToKIAkJZ290byBlcnJvcjsKIAogCXJlc3VsdC0+dXB0
+ciA9IGZpbGVuYW1lOworCXJlc3VsdC0+YW5hbWUgPSBOVUxMOwogCWF1ZGl0X2dldG5hbWUocmVz
+dWx0KTsKIAlyZXR1cm4gcmVzdWx0OwogCkBAIC0yMTAsNiArMjExLDM1IEBAIGdldG5hbWUoY29u
+c3QgY2hhciBfX3VzZXIgKiBmaWxlbmFtZSkKIAlyZXR1cm4gZ2V0bmFtZV9mbGFncyhmaWxlbmFt
+ZSwgMCwgTlVMTCk7CiB9CiAKKy8qCisgKiBUaGUgImdldG5hbWVfa2VybmVsKCkiIGludGVyZmFj
+ZSBkb2Vzbid0IGRvIHBhdGhuYW1lcyBsb25nZXIKKyAqIHRoYW4gRU1CRURERURfTkFNRV9NQVgu
+IERlYWwgd2l0aCBpdCAtIHlvdSdyZSBhIGtlcm5lbCB1c2VyLgorICovCitzdHJ1Y3QgZmlsZW5h
+bWUgKgorZ2V0bmFtZV9rZXJuZWwoY29uc3QgY2hhciAqIGZpbGVuYW1lKQoreworCXN0cnVjdCBm
+aWxlbmFtZSAqcmVzdWx0OworCWNoYXIgKmtuYW1lOworCWludCBsZW47CisKKwlsZW4gPSBzdHJs
+ZW4oZmlsZW5hbWUpOworCWlmIChsZW4gPj0gRU1CRURERURfTkFNRV9NQVgpCisJCXJldHVybiBF
+UlJfUFRSKC1FTkFNRVRPT0xPTkcpOworCisJcmVzdWx0ID0gX19nZXRuYW1lKCk7CisJaWYgKHVu
+bGlrZWx5KCFyZXN1bHQpKQorCQlyZXR1cm4gRVJSX1BUUigtRU5PTUVNKTsKKworCWtuYW1lID0g
+KGNoYXIgKilyZXN1bHQgKyBzaXplb2YoKnJlc3VsdCk7CisJcmVzdWx0LT5uYW1lID0ga25hbWU7
+CisJcmVzdWx0LT51cHRyID0gTlVMTDsKKwlyZXN1bHQtPmFuYW1lID0gTlVMTDsKKwlyZXN1bHQt
+PnNlcGFyYXRlID0gZmFsc2U7CisKKwlzdHJsY3B5KGtuYW1lLCBmaWxlbmFtZSwgRU1CRURERURf
+TkFNRV9NQVgpOworCXJldHVybiByZXN1bHQ7Cit9CisKICNpZmRlZiBDT05GSUdfQVVESVRTWVND
+QUxMCiB2b2lkIHB1dG5hbWUoc3RydWN0IGZpbGVuYW1lICpuYW1lKQogewpkaWZmIC0tZ2l0IGEv
+aW5jbHVkZS9saW51eC9iaW5mbXRzLmggYi9pbmNsdWRlL2xpbnV4L2JpbmZtdHMuaAppbmRleCBm
+ZDhiZjMyMTllZjcuLjRjNGE4NWFjY2JiMSAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9iaW5m
+bXRzLmgKKysrIGIvaW5jbHVkZS9saW51eC9iaW5mbXRzLmgKQEAgLTM3LDcgKzM3LDcgQEAgc3Ry
+dWN0IGxpbnV4X2JpbnBybSB7CiAJaW50IHVuc2FmZTsJCS8qIGhvdyB1bnNhZmUgdGhpcyBleGVj
+IGlzIChtYXNrIG9mIExTTV9VTlNBRkVfKikgKi8KIAl1bnNpZ25lZCBpbnQgcGVyX2NsZWFyOwkv
+KiBiaXRzIHRvIGNsZWFyIGluIGN1cnJlbnQtPnBlcnNvbmFsaXR5ICovCiAJaW50IGFyZ2MsIGVu
+dmM7Ci0JY29uc3QgY2hhciAqIGZpbGVuYW1lOwkvKiBOYW1lIG9mIGJpbmFyeSBhcyBzZWVuIGJ5
+IHByb2NwcyAqLworCXN0cnVjdCBmaWxlbmFtZSAqZmlsZW5hbWU7CS8qIE5hbWUgb2YgYmluYXJ5
+IGFzIHNlZW4gYnkgcHJvY3BzICovCiAJY29uc3QgY2hhciAqIGludGVycDsJLyogTmFtZSBvZiB0
+aGUgYmluYXJ5IHJlYWxseSBleGVjdXRlZC4gTW9zdAogCQkJCSAgIG9mIHRoZSB0aW1lIHNhbWUg
+YXMgZmlsZW5hbWUsIGJ1dCBjb3VsZCBiZQogCQkJCSAgIGRpZmZlcmVudCBmb3IgYmluZm10X3tt
+aXNjLHNjcmlwdH0gKi8KQEAgLTExNSw3ICsxMTUsNiBAQCBleHRlcm4gaW50IGNvcHlfc3RyaW5n
+c19rZXJuZWwoaW50IGFyZ2MsIGNvbnN0IGNoYXIgKmNvbnN0ICphcmd2LAogZXh0ZXJuIGludCBw
+cmVwYXJlX2Jwcm1fY3JlZHMoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSk7CiBleHRlcm4gdm9p
+ZCBpbnN0YWxsX2V4ZWNfY3JlZHMoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSk7CiBleHRlcm4g
+dm9pZCBzZXRfYmluZm10KHN0cnVjdCBsaW51eF9iaW5mbXQgKm5ldyk7Ci1leHRlcm4gdm9pZCBm
+cmVlX2Jwcm0oc3RydWN0IGxpbnV4X2JpbnBybSAqKTsKIGV4dGVybiBzc2l6ZV90IHJlYWRfY29k
+ZShzdHJ1Y3QgZmlsZSAqLCB1bnNpZ25lZCBsb25nLCBsb2ZmX3QsIHNpemVfdCk7CiAKICNlbmRp
+ZiAvKiBfTElOVVhfQklORk1UU19IICovCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2ZzLmgg
+Yi9pbmNsdWRlL2xpbnV4L2ZzLmgKaW5kZXggMDlmNTUzYzU5ODEzLi5kNzk2NzhjMTg4YWQgMTAw
+NjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvZnMuaAorKysgYi9pbmNsdWRlL2xpbnV4L2ZzLmgKQEAg
+LTIwNzksNiArMjA3OSw3IEBAIGV4dGVybiBzdHJ1Y3QgZmlsZSAqIGRlbnRyeV9vcGVuKGNvbnN0
+IHN0cnVjdCBwYXRoICosIGludCwgY29uc3Qgc3RydWN0IGNyZWQgKik7CiBleHRlcm4gaW50IGZp
+bHBfY2xvc2Uoc3RydWN0IGZpbGUgKiwgZmxfb3duZXJfdCBpZCk7CiAKIGV4dGVybiBzdHJ1Y3Qg
+ZmlsZW5hbWUgKmdldG5hbWUoY29uc3QgY2hhciBfX3VzZXIgKik7CitleHRlcm4gc3RydWN0IGZp
+bGVuYW1lICpnZXRuYW1lX2tlcm5lbChjb25zdCBjaGFyICopOwogCiBlbnVtIHsKIAlGSUxFX0NS
+RUFURUQgPSAxLApkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9zY2hlZC5oIGIvaW5jbHVkZS9s
+aW51eC9zY2hlZC5oCmluZGV4IDY4YTBlODQ0NjNhMC4uYTc4MWRlYzFjZDBiIDEwMDY0NAotLS0g
+YS9pbmNsdWRlL2xpbnV4L3NjaGVkLmgKKysrIGIvaW5jbHVkZS9saW51eC9zY2hlZC5oCkBAIC0x
+MjgsNiArMTI4LDcgQEAgc3RydWN0IGJpb19saXN0Owogc3RydWN0IGZzX3N0cnVjdDsKIHN0cnVj
+dCBwZXJmX2V2ZW50X2NvbnRleHQ7CiBzdHJ1Y3QgYmxrX3BsdWc7CitzdHJ1Y3QgZmlsZW5hbWU7
+CiAKIC8qCiAgKiBMaXN0IG9mIGZsYWdzIHdlIHdhbnQgdG8gc2hhcmUgZm9yIGtlcm5lbCB0aHJl
+YWRzLApAQCAtMjMxMSw3ICsyMzEyLDcgQEAgZXh0ZXJuIHZvaWQgZG9fZ3JvdXBfZXhpdChpbnQp
+OwogZXh0ZXJuIGludCBhbGxvd19zaWduYWwoaW50KTsKIGV4dGVybiBpbnQgZGlzYWxsb3dfc2ln
+bmFsKGludCk7CiAKLWV4dGVybiBpbnQgZG9fZXhlY3ZlKGNvbnN0IGNoYXIgKiwKK2V4dGVybiBp
+bnQgZG9fZXhlY3ZlKHN0cnVjdCBmaWxlbmFtZSAqLAogCQkgICAgIGNvbnN0IGNoYXIgX191c2Vy
+ICogY29uc3QgX191c2VyICosCiAJCSAgICAgY29uc3QgY2hhciBfX3VzZXIgKiBjb25zdCBfX3Vz
+ZXIgKik7CiBleHRlcm4gbG9uZyBkb19mb3JrKHVuc2lnbmVkIGxvbmcsIHVuc2lnbmVkIGxvbmcs
+IHVuc2lnbmVkIGxvbmcsIGludCBfX3VzZXIgKiwgaW50IF9fdXNlciAqKTsKZGlmZiAtLWdpdCBh
+L2luY2x1ZGUvdHJhY2UvZXZlbnRzL3NjaGVkLmggYi9pbmNsdWRlL3RyYWNlL2V2ZW50cy9zY2hl
+ZC5oCmluZGV4IDY3ZTFiYmY4MzY5NS4uYzFlNjExZTI5Y2IzIDEwMDY0NAotLS0gYS9pbmNsdWRl
+L3RyYWNlL2V2ZW50cy9zY2hlZC5oCisrKyBiL2luY2x1ZGUvdHJhY2UvZXZlbnRzL3NjaGVkLmgK
+QEAgLTI4NywxMyArMjg3LDEzIEBAIFRSQUNFX0VWRU5UKHNjaGVkX3Byb2Nlc3NfZXhlYywKIAlU
+UF9BUkdTKHAsIG9sZF9waWQsIGJwcm0pLAogCiAJVFBfU1RSVUNUX19lbnRyeSgKLQkJX19zdHJp
+bmcoCWZpbGVuYW1lLAlicHJtLT5maWxlbmFtZQkpCisJCV9fc3RyaW5nKAlmaWxlbmFtZSwJYnBy
+bS0+ZmlsZW5hbWUtPm5hbWUJKQogCQlfX2ZpZWxkKAlwaWRfdCwJCXBpZAkJKQogCQlfX2ZpZWxk
+KAlwaWRfdCwJCW9sZF9waWQJCSkKIAkpLAogCiAJVFBfZmFzdF9hc3NpZ24oCi0JCV9fYXNzaWdu
+X3N0cihmaWxlbmFtZSwgYnBybS0+ZmlsZW5hbWUpOworCQlfX2Fzc2lnbl9zdHIoZmlsZW5hbWUs
+IGJwcm0tPmZpbGVuYW1lLT5uYW1lKTsKIAkJX19lbnRyeS0+cGlkCQk9IHAtPnBpZDsKIAkJX19l
+bnRyeS0+b2xkX3BpZAk9IG9sZF9waWQ7CiAJKSwKZGlmZiAtLWdpdCBhL2luaXQvbWFpbi5jIGIv
+aW5pdC9tYWluLmMKaW5kZXggMmZkOWNlZjcwZWU4Li5lYjAzMDkwY2RjZWQgMTAwNjQ0Ci0tLSBh
+L2luaXQvbWFpbi5jCisrKyBiL2luaXQvbWFpbi5jCkBAIC04MTIsNyArODEyLDcgQEAgdm9pZCBf
+X2luaXQgbG9hZF9kZWZhdWx0X21vZHVsZXModm9pZCkKIHN0YXRpYyBpbnQgcnVuX2luaXRfcHJv
+Y2Vzcyhjb25zdCBjaGFyICppbml0X2ZpbGVuYW1lKQogewogCWFyZ3ZfaW5pdFswXSA9IGluaXRf
+ZmlsZW5hbWU7Ci0JcmV0dXJuIGRvX2V4ZWN2ZShpbml0X2ZpbGVuYW1lLAorCXJldHVybiBkb19l
+eGVjdmUoZ2V0bmFtZV9rZXJuZWwoaW5pdF9maWxlbmFtZSksCiAJCShjb25zdCBjaGFyIF9fdXNl
+ciAqY29uc3QgX191c2VyICopYXJndl9pbml0LAogCQkoY29uc3QgY2hhciBfX3VzZXIgKmNvbnN0
+IF9fdXNlciAqKWVudnBfaW5pdCk7CiB9CmRpZmYgLS1naXQgYS9rZXJuZWwvYXVkaXRzYy5jIGIv
+a2VybmVsL2F1ZGl0c2MuYwppbmRleCAxMDE3NmNkNTk1NmEuLjdhZWYyZjRiNmM2NCAxMDA2NDQK
+LS0tIGEva2VybmVsL2F1ZGl0c2MuYworKysgYi9rZXJuZWwvYXVkaXRzYy5jCkBAIC0xNzE5LDcg
+KzE3MTksNyBAQCB2b2lkIGF1ZGl0X3B1dG5hbWUoc3RydWN0IGZpbGVuYW1lICpuYW1lKQogCXN0
+cnVjdCBhdWRpdF9jb250ZXh0ICpjb250ZXh0ID0gY3VycmVudC0+YXVkaXRfY29udGV4dDsKIAog
+CUJVR19PTighY29udGV4dCk7Ci0JaWYgKCFjb250ZXh0LT5pbl9zeXNjYWxsKSB7CisJaWYgKCFu
+YW1lLT5hbmFtZSB8fCAhY29udGV4dC0+aW5fc3lzY2FsbCkgewogI2lmIEFVRElUX0RFQlVHID09
+IDIKIAkJcHJpbnRrKEtFUk5fRVJSICIlczolZCg6JWQpOiBmaW5hbF9wdXRuYW1lKCVwKVxuIiwK
+IAkJICAgICAgIF9fRklMRV9fLCBfX0xJTkVfXywgY29udGV4dC0+c2VyaWFsLCBuYW1lKTsKZGlm
+ZiAtLWdpdCBhL2tlcm5lbC9rbW9kLmMgYi9rZXJuZWwva21vZC5jCmluZGV4IGIwODYwMDZjNTll
+Ny4uNmIzNzVhZjQ5NThkIDEwMDY0NAotLS0gYS9rZXJuZWwva21vZC5jCisrKyBiL2tlcm5lbC9r
+bW9kLmMKQEAgLTIzOSw3ICsyMzksNyBAQCBzdGF0aWMgaW50IF9fX19jYWxsX3VzZXJtb2RlaGVs
+cGVyKHZvaWQgKmRhdGEpCiAKIAljb21taXRfY3JlZHMobmV3KTsKIAotCXJldHZhbCA9IGRvX2V4
+ZWN2ZShzdWJfaW5mby0+cGF0aCwKKwlyZXR2YWwgPSBkb19leGVjdmUoZ2V0bmFtZV9rZXJuZWwo
+c3ViX2luZm8tPnBhdGgpLAogCQkJICAgKGNvbnN0IGNoYXIgX191c2VyICpjb25zdCBfX3VzZXIg
+KilzdWJfaW5mby0+YXJndiwKIAkJCSAgIChjb25zdCBjaGFyIF9fdXNlciAqY29uc3QgX191c2Vy
+ICopc3ViX2luZm8tPmVudnApOwogCWlmICghcmV0dmFsKQpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkv
+YXBwYXJtb3IvZG9tYWluLmMgYi9zZWN1cml0eS9hcHBhcm1vci9kb21haW4uYwppbmRleCA0NTI1
+NjdkM2EwOGUuLjAzNTgxNjZkMDY1MiAxMDA2NDQKLS0tIGEvc2VjdXJpdHkvYXBwYXJtb3IvZG9t
+YWluLmMKKysrIGIvc2VjdXJpdHkvYXBwYXJtb3IvZG9tYWluLmMKQEAgLTM3Miw3ICszNzIsNyBA
+QCBpbnQgYXBwYXJtb3JfYnBybV9zZXRfY3JlZHMoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSkK
+IAkJaWYgKHVuY29uZmluZWQocHJvZmlsZSkgfHwKIAkJICAgIChwcm9maWxlLT5mbGFncyAmIFBG
+TEFHX0lYX09OX05BTUVfRVJST1IpKQogCQkJZXJyb3IgPSAwOwotCQluYW1lID0gYnBybS0+Zmls
+ZW5hbWU7CisJCW5hbWUgPSBicHJtLT5maWxlbmFtZS0+bmFtZTsKIAkJZ290byBhdWRpdDsKIAl9
+CiAKZGlmZiAtLWdpdCBhL3NlY3VyaXR5L2NvbW1vbmNhcC5jIGIvc2VjdXJpdHkvY29tbW9uY2Fw
+LmMKaW5kZXggYjlkNjEzZTBlZjE0Li40M2IzOWU1MjA2OTcgMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5
+L2NvbW1vbmNhcC5jCisrKyBiL3NlY3VyaXR5L2NvbW1vbmNhcC5jCkBAIC00NDksNyArNDQ5LDcg
+QEAgc3RhdGljIGludCBnZXRfZmlsZV9jYXBzKHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0sIGJv
+b2wgKmVmZmVjdGl2ZSwgYm9vbCAqaGFzX2MKIAlpZiAocmMgPCAwKSB7CiAJCWlmIChyYyA9PSAt
+RUlOVkFMKQogCQkJcHJpbnRrKEtFUk5fTk9USUNFICIlczogZ2V0X3Zmc19jYXBzX2Zyb21fZGlz
+ayByZXR1cm5lZCAlZCBmb3IgJXNcbiIsCi0JCQkJX19mdW5jX18sIHJjLCBicHJtLT5maWxlbmFt
+ZSk7CisJCQkJX19mdW5jX18sIHJjLCBicHJtLT5maWxlbmFtZS0+bmFtZSk7CiAJCWVsc2UgaWYg
+KHJjID09IC1FTk9EQVRBKQogCQkJcmMgPSAwOwogCQlnb3RvIG91dDsKQEAgLTQ1OCw3ICs0NTgs
+NyBAQCBzdGF0aWMgaW50IGdldF9maWxlX2NhcHMoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSwg
+Ym9vbCAqZWZmZWN0aXZlLCBib29sICpoYXNfYwogCXJjID0gYnBybV9jYXBzX2Zyb21fdmZzX2Nh
+cHMoJnZjYXBzLCBicHJtLCBlZmZlY3RpdmUsIGhhc19jYXApOwogCWlmIChyYyA9PSAtRUlOVkFM
+KQogCQlwcmludGsoS0VSTl9OT1RJQ0UgIiVzOiBjYXBfZnJvbV9kaXNrIHJldHVybmVkICVkIGZv
+ciAlc1xuIiwKLQkJICAgICAgIF9fZnVuY19fLCByYywgYnBybS0+ZmlsZW5hbWUpOworCQkgICAg
+ICAgX19mdW5jX18sIHJjLCBicHJtLT5maWxlbmFtZS0+bmFtZSk7CiAKIG91dDoKIAlkcHV0KGRl
+bnRyeSk7CkBAIC00OTgsNyArNDk4LDcgQEAgaW50IGNhcF9icHJtX3NldF9jcmVkcyhzdHJ1Y3Qg
+bGludXhfYmlucHJtICpicHJtKQogCQkgKiBmb3IgYSByb290IHVzZXIganVzdCB0byBjYXVzZSBs
+ZWFzdCBzdXJwcmlzZSB0byBhbiBhZG1pbi4KIAkJICovCiAJCWlmIChoYXNfY2FwICYmICF1aWRf
+ZXEobmV3LT51aWQsIHJvb3RfdWlkKSAmJiB1aWRfZXEobmV3LT5ldWlkLCByb290X3VpZCkpIHsK
+LQkJCXdhcm5fc2V0dWlkX2FuZF9mY2Fwc19taXhlZChicHJtLT5maWxlbmFtZSk7CisJCQl3YXJu
+X3NldHVpZF9hbmRfZmNhcHNfbWl4ZWQoYnBybS0+ZmlsZW5hbWUtPm5hbWUpOwogCQkJZ290byBz
+a2lwOwogCQl9CiAJCS8qCmRpZmYgLS1naXQgYS9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9t
+YWluLmMgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMKaW5kZXggMTQ5ZWUxMTE5
+Zjg3Li4zMzBiNzA2YTU3MGUgMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5L2ludGVncml0eS9pbWEvaW1h
+X21haW4uYworKysgYi9zZWN1cml0eS9pbnRlZ3JpdHkvaW1hL2ltYV9tYWluLmMKQEAgLTI3OCw4
+ICsyNzgsOCBAQCBpbnQgaW1hX2ZpbGVfbW1hcChzdHJ1Y3QgZmlsZSAqZmlsZSwgdW5zaWduZWQg
+bG9uZyBwcm90KQogaW50IGltYV9icHJtX2NoZWNrKHN0cnVjdCBsaW51eF9iaW5wcm0gKmJwcm0p
+CiB7CiAJcmV0dXJuIHByb2Nlc3NfbWVhc3VyZW1lbnQoYnBybS0+ZmlsZSwKLQkJCQkgICAoc3Ry
+Y21wKGJwcm0tPmZpbGVuYW1lLCBicHJtLT5pbnRlcnApID09IDApID8KLQkJCQkgICBicHJtLT5m
+aWxlbmFtZSA6IGJwcm0tPmludGVycCwKKwkJCQkgICAoc3RyY21wKGJwcm0tPmZpbGVuYW1lLT5u
+YW1lLCBicHJtLT5pbnRlcnApID09IDApID8KKwkJCQkgICBicHJtLT5maWxlbmFtZS0+bmFtZSA6
+IGJwcm0tPmludGVycCwKIAkJCQkgICBNQVlfRVhFQywgQlBSTV9DSEVDSyk7CiB9CiAKZGlmZiAt
+LWdpdCBhL3NlY3VyaXR5L3RvbW95by9kb21haW4uYyBiL3NlY3VyaXR5L3RvbW95by9kb21haW4u
+YwppbmRleCAzODY1MTQ1NGVkMDguLmViMzIzMGNiZjE1OCAxMDA2NDQKLS0tIGEvc2VjdXJpdHkv
+dG9tb3lvL2RvbWFpbi5jCisrKyBiL3NlY3VyaXR5L3RvbW95by9kb21haW4uYwpAQCAtNjc3LDcg
+KzY3Nyw3IEBAIGludCB0b21veW9fZmluZF9uZXh0X2RvbWFpbihzdHJ1Y3QgbGludXhfYmlucHJt
+ICpicHJtKQogewogCXN0cnVjdCB0b21veW9fZG9tYWluX2luZm8gKm9sZF9kb21haW4gPSB0b21v
+eW9fZG9tYWluKCk7CiAJc3RydWN0IHRvbW95b19kb21haW5faW5mbyAqZG9tYWluID0gTlVMTDsK
+LQljb25zdCBjaGFyICpvcmlnaW5hbF9uYW1lID0gYnBybS0+ZmlsZW5hbWU7CisJY29uc3QgY2hh
+ciAqb3JpZ2luYWxfbmFtZSA9IGJwcm0tPmZpbGVuYW1lLT5uYW1lOwogCWludCByZXR2YWwgPSAt
+RU5PTUVNOwogCWJvb2wgcmVqZWN0X29uX3RyYW5zaXRpb25fZmFpbHVyZSA9IGZhbHNlOwogCWNv
+bnN0IHN0cnVjdCB0b21veW9fcGF0aF9pbmZvICpjYW5kaWRhdGU7CmRpZmYgLS1naXQgYS9zZWN1
+cml0eS90b21veW8vdG9tb3lvLmMgYi9zZWN1cml0eS90b21veW8vdG9tb3lvLmMKaW5kZXggZjBi
+NzU2ZTI3ZmVkLi45Njc1N2MzYjFiZDggMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5L3RvbW95by90b21v
+eW8uYworKysgYi9zZWN1cml0eS90b21veW8vdG9tb3lvLmMKQEAgLTkwLDcgKzkwLDcgQEAgc3Rh
+dGljIGludCB0b21veW9fYnBybV9zZXRfY3JlZHMoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSkK
+IAkgKiBmb3IgdGhlIGZpcnN0IHRpbWUuCiAJICovCiAJaWYgKCF0b21veW9fcG9saWN5X2xvYWRl
+ZCkKLQkJdG9tb3lvX2xvYWRfcG9saWN5KGJwcm0tPmZpbGVuYW1lKTsKKwkJdG9tb3lvX2xvYWRf
+cG9saWN5KGJwcm0tPmZpbGVuYW1lLT5uYW1lKTsKICNlbmRpZgogCS8qCiAJICogUmVsZWFzZSBy
+ZWZlcmVuY2UgdG8gInN0cnVjdCB0b21veW9fZG9tYWluX2luZm8iIHN0b3JlZCBpbnNpZGUK
+--089e013cbc92be608404f1a07a04--
