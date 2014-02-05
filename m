@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaBESme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:42:34 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35693 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826AbaBESjo (ORCPT
+	id S1753588AbaBESmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:42:46 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39458 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582AbaBESml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:39:44 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <dchinner@redhat.com>, <mhocko@suse.cz>, <hannes@cmpxchg.org>,
-        <glommer@gmail.com>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, Glauber Costa <glommer@openvz.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH -mm v15 11/13] memcg: flush memcg items upon memcg destruction
-Date: Wed, 5 Feb 2014 22:39:27 +0400
-Message-ID: <c7adb5da42c86aff94884521637409bbec3c19e5.1391624021.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1391624021.git.vdavydov@parallels.com>
-References: <cover.1391624021.git.vdavydov@parallels.com>
+	Wed, 5 Feb 2014 13:42:41 -0500
+Message-ID: <52F2861C.4010109@wwwdotorg.org>
+Date: Wed, 05 Feb 2014 11:42:36 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.229]
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] ARM: tegra: Add efuse bindings
+References: <1390952176-30402-1-git-send-email-pdeschrijver@nvidia.com> <1390952176-30402-5-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1390952176-30402-5-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+On 01/28/2014 04:36 PM, Peter De Schrijver wrote:
+> Add efuse bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-When a memcg is destroyed, it won't be imediately released until all
-objects are gone. This means that if a memcg is restarted with the very
-same workload - a very common case, the objects already cached won't be
-billed to the new memcg. This is mostly undesirable since a container
-can exploit this by restarting itself every time it reaches its limit,
-and then coming up again with a fresh new limit.
+> diff --git a/Documentation/devicetree/bindings/fuse/fuse-tegra.txt b/Documentation/devicetree/bindings/fuse/fuse-tegra.txt
 
-Since now we have targeted reclaim, I sustain that we should assume that
-a memcg that is destroyed should be flushed away. It makes perfect sense
-if we assume that a memcg that goes away most likely indicates an
-isolated workload that is terminated.
+> +- clocks: Should contain a pointer to the fuse clock.
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+I would prefer to use clock-names, and to follow the same text as all
+the other Tegra bindings that are clock clients. In other words:
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 27f6d795090a..aed1456015cf 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6155,12 +6155,40 @@ static void memcg_destroy_kmem(struct mem_cgroup *memcg)
- 	memcg_destroy_all_lrus(memcg);
- }
- 
-+static void memcg_drop_slab(struct mem_cgroup *memcg)
-+{
-+	struct shrink_control shrink = {
-+		.gfp_mask = GFP_KERNEL,
-+		.target_mem_cgroup = memcg,
-+	};
-+	unsigned long nr_objects;
-+
-+	nodes_setall(shrink.nodes_to_scan);
-+	do {
-+		nr_objects = shrink_slab(&shrink, 1000, 1000);
-+	} while (nr_objects > 10);
-+}
-+
- static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- {
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
- 
- 	/*
-+	 * When a memcg is destroyed, it won't be imediately released until all
-+	 * objects are gone. This means that if a memcg is restarted with the
-+	 * very same workload - a very common case, the objects already cached
-+	 * won't be billed to the new memcg. This is mostly undesirable since a
-+	 * container can exploit this by restarting itself every time it
-+	 * reaches its limit, and then coming up again with a fresh new limit.
-+	 *
-+	 * Therefore a memcg that is destroyed should be flushed away. It makes
-+	 * perfect sense if we assume that a memcg that goes away indicates an
-+	 * isolated workload that is terminated.
-+	 */
-+	memcg_drop_slab(memcg);
-+
-+	/*
- 	 * kmem charges can outlive the cgroup. In the case of slab
- 	 * pages, for instance, a page contain objects from various
- 	 * processes. As we prevent from taking a reference for every
--- 
-1.7.10.4
+  - clocks: Must contain an entry for each entry in clock-names.
+    See ../clocks/clock-bindings.txt for details.
+  - clock-names: Must include the following entries:
+    - fuse
 
+(this will allow easy future changes to the binding if required)
