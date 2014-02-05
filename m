@@ -1,205 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaBEFJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 00:09:29 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60754 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750906AbaBEFJ2 (ORCPT
+	id S1751434AbaBEFNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 00:13:19 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:51128 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaBEFNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 00:09:28 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX183rW7BwDwTJf0ecKPH4AZNXO/PN2sm7P4=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 9887551DD2B
-Date: Wed, 5 Feb 2014 00:09:16 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH] clk: respect the clock dependencies in of_clk_init
-Message-ID: <20140205050916.GO8533@titan.lakedaemon.net>
-References: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
+	Wed, 5 Feb 2014 00:13:18 -0500
+Message-ID: <52F1C871.1010003@gmail.com>
+Date: Wed, 05 Feb 2014 13:13:21 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1391554766-11285-1-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
+        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
+	<hskinnemoen@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
+ to CONFIG_KRETPROBES enabled area
+References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com> <52F18367.2060803@gmail.com> <52F19223.5010506@hitachi.com> <52F1AB18.5040208@gmail.com> <52F1C4C3.2070404@hitachi.com>
+In-Reply-To: <52F1C4C3.2070404@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+On 02/05/2014 12:57 PM, Masami Hiramatsu wrote:
+> (2014/02/05 12:08), Chen Gang wrote:
+>>>>>>>>> Anyway, I don't think those inlined functions to be changed, because
+>>>>>>>>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
+>>>>>>>>> be ignored.
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
+>>>>>>>> disable_kretprobe(), and enable_kretprobe() are not ignored.
+>>>>>>>
+>>>>>>> Really? where are they called? I mean, those functions do not have
+>>>>>>> any instance unless your module uses it (but that is not what the kernel
+>>>>>>> itself should help).
+>>>>>>>
+>>>>>>
+>>>>>> If what you said correct (I guess so), for me, we still need let them in
+>>>>>> CONFIG_KRETPROBES area, and without any dummy outside, just like another
+>>>>>> *kprobe* static inline functions have done in "include/linux/kprobes.h".
+>>>>>
+>>>>> kretprobe_assert() is only for the internal check. So we don't need to care
+>>>>> about, and disable/enable_kretprobe() are anyway returns -EINVAL because
+>>>>> kretprobe can not be registered. And all of them are inlined functions.
+>>>>> In that case, we don't need to care about it.
+>>>>
+>>>> Hmm... it is related with code 'consistency':
+>>>>
+>>>>  - these static inline functions are kretprobe generic implementation,
+>>>>    and we are trying to let all kretprobe generic implementation within
+>>>>    CONFIG_KRETPROBES area.
+>>>
+>>> No, actually, kretprobe is just built on the kprobe. enable/disable_kretprobe
+>>> just wrapped the kprobe methods. And kretprobe_assert() is just for kretprobe
+>>> internal use. that is not an API. Moving only the kretprobe_assert() into the
+>>> CONFIG_KRETPROBE area is not bad, but since it is just a static inline function,
+>>> if there is no caller, it just be ignored, no side effect.
+>>>
+>>
+>> OK, I can understand.
+>>
+>> And do you mean enable/disable_kretprobe() are API? if so, we have to
+>> implement them whether CONFIG_KRETPROBES enabled or disabled.
+>>
+>> And when CONFIG_KRETPROBES=n, just like what you originally said: we
+>> need returns -EINVAL directly (either, I am not quite sure whether the
+>> input parameter will be NULL, in this case).
+> 
+> Both are API, and when implementing it I had also considered that, but
+> I decided to stay it in inline-function wrapper. The reason why is,
+> that enable/disable_k*probe require the registered k*probes. If the
+> kernel hacker uses those functions, they must ensure registering his
+> k*probes, otherwise it does not work correctly. If the CONFIG_KRETPROBES=n,
+> register_kretprobe() always fails, this means that the code has
+> no chance to call those functions (it must be).
+>
 
-On Tue, Feb 04, 2014 at 11:59:26PM +0100, Gregory CLEMENT wrote:
-> Until now the clock providers were initialized in the order found in
-> the device tree. This led to have the dependencies between the clocks
-> not respected: children clocks could be initialized before their
-> parent clocks.
-> 
-> Instead of forcing each platform to manage its own initialization order,
-> this patch adds this work inside the framework itself.
-> 
-> Using the data of the device tree the of_clk_init function now delayed
-> the initialization of a clock provider if its parent provider was not
-> ready yet.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
-> Mike,
-> 
-> this patch could solve the issues we get on severals mvebu platform
-> since 3.14-rc1. This is an alternate solution of the patch set sent by
-> Sebastian. However as it modifies the clock framework itself, it is
-> more sensible.
-> 
-> I find this solution more elegant than changing the order of the
-> initialization of the clock at the platform level. However as it
-> should be tested on more platforms that only the mvebu ones, it would
-> take some time, and I don't want to still have "broken" platform
-> during more release candidate. So at the end this patch should be part
-> of the 3.15 kernel.
+OK, thank you for your explanations.
 
-If we can get a response from Mike, I'd prefer to go with this approach
-and let it bake in -next for a while.  Hopefully, we could get it in
-before -rc4...
 
-thx,
-
-Jason.
-
->  drivers/clk/clk.c | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 91 insertions(+), 3 deletions(-)
+>>>>  - And original kprobe static inline functions have done like that,
+>>>>    in same header file, if no obvious reasons, we can try to follow.
+>>>
+>>> It is no reasons to follow that too. Please keep your patch simple as much
+>>> as possible.
+>>>
+>>
+>> "keep our patch simple as much as posssible" sounds reasonable to me.
+>> After skip "include/linux/kprobe.h", our patch's subject (include
+>> comments) also need be changed (I will/should change it).
+>>
+>> For me, "include/linux/kprobe.h" can also be improved, but it can be
+>> another patch for it (not only for kretprobe, but also for jpobe).
 > 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 5517944495d8..beb0f8b0c2a0 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -2526,24 +2526,112 @@ const char *of_clk_get_parent_name(struct device_node *np, int index)
->  }
->  EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
->  
-> +struct clock_provider {
-> +	of_clk_init_cb_t clk_init_cb;
-> +	struct device_node *np;
-> +	struct list_head node;
-> +};
-> +
-> +static LIST_HEAD(clk_provider_list);
-> +
-> +/*
-> + * This function looks for a parent clock. If there is one, then it
-> + * checks that the provider for this parent clock was initialized, in
-> + * this case the parent clock will be ready.
-> + */
-> +static int parent_ready(struct device_node *np)
-> +{
-> +	struct of_phandle_args clkspec;
-> +	struct of_clk_provider *provider;
-> +
-> +	/*
-> +	 * If there is no clock parent, no need to wait for them, then
-> +	 * we can consider their absence as being ready
-> +	 */
-> +	if (of_parse_phandle_with_args(np, "clocks", "#clock-cells", 0,
-> +					&clkspec))
-> +		return 1;
-> +
-> +	/* Check if we have such a provider in our array */
-> +	list_for_each_entry(provider, &of_clk_providers, link) {
-> +		if (provider->node == clkspec.np)
-> +			return 1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  /**
->   * of_clk_init() - Scan and init clock providers from the DT
->   * @matches: array of compatible values and init functions for providers.
->   *
-> - * This function scans the device tree for matching clock providers and
-> - * calls their initialization functions
-> + * This function scans the device tree for matching clock providers
-> + * and calls their initialization functions. It also do it by trying
-> + * to follow the dependencies.
->   */
->  void __init of_clk_init(const struct of_device_id *matches)
->  {
->  	const struct of_device_id *match;
->  	struct device_node *np;
-> +	struct clock_provider *clk_provider, *next;
-> +	bool is_init_done;
->  
->  	if (!matches)
->  		matches = &__clk_of_table;
->  
->  	for_each_matching_node_and_match(np, matches, &match) {
->  		of_clk_init_cb_t clk_init_cb = match->data;
-> -		clk_init_cb(np);
-> +
-> +
-> +		if (parent_ready(np)) {
-> +			/*
-> +			 * The parent clock is ready or there is no
-> +			 * clock parent at all, in this case the
-> +			 * provider can be initialize immediately.
-> +			 */
-> +			clk_init_cb(np);
-> +		} else {
-> +			/*
-> +			 * The parent clock is not ready, this
-> +			 * provider is moved to a list to be
-> +			 * initialized later
-> +			 */
-> +			struct clock_provider *parent = kzalloc(sizeof(struct clock_provider),
-> +							GFP_KERNEL);
-> +
-> +			parent->clk_init_cb = match->data;
-> +			parent->np = np;
-> +			list_add(&parent->node, &clk_provider_list);
-> +		}
-> +	}
-> +
-> +	while (!list_empty(&clk_provider_list)) {
-> +		is_init_done = false;
-> +		list_for_each_entry_safe(clk_provider, next,
-> +					&clk_provider_list, node) {
-> +			if (parent_ready(clk_provider->np)) {
-> +				clk_provider->clk_init_cb(clk_provider->np);
-> +				list_del(&clk_provider->node);
-> +				kfree(clk_provider);
-> +				is_init_done = true;
-> +			}
-> +		}
-> +
-> +		if (!is_init_done) {
-> +			/*
-> +			 * We didn't managed to initialize any of the
-> +			 * remaining providers during the last loop,
-> +			 * so now we initialize all the remaining ones
-> +			 * unconditionally in case the clock parent
-> +			 * was not mandatory
-> +			 */
-> +			list_for_each_entry_safe(clk_provider, next,
-> +						&clk_provider_list, node) {
-> +				clk_provider->clk_init_cb(clk_provider->np);
-> +				list_del(&clk_provider->node);
-> +				kfree(clk_provider);
-> +			}
-> +		}
->  	}
->  }
->  #endif
-> -- 
-> 1.8.1.2
+> if that "improvement" means "simplify", it is acceptable. Now I don't like
+> ifdefs of CONFIG_KPROBES and dummy functions, since if CONFIG_KPROBES=n,
+> other kernel modules can also check the kconfig and decide what they do
+> (or don't).
+> Perhaps, what we've really needed is "just enough able to compile",
+> not the fully covered dummy APIs.
+> 
+
+Hmm... for me, I still try to send a patch for "include/linux/kprobe.h".
+
+For API (although it is kernel internal API), I have a hobby to try to
+let it 'beautiful' as much as possible.
+
+
+>>>>> I just concerned that it is a waste of memory if there are useless kretprobe
+>>>>> related instances are built when CONFIG_KRETPROBES=n.
+>>>>>
+>>>>
+>>>> Yeah, that is also one of reason (3rd reason).
+>>>>
+>>>>
+>>>> And if necessary, please help check what we have done whether already
+>>>> "let all kretprobe generic implementation within CONFIG_KRETPROBES area"
+>>>> (exclude declaration, struct/union definition, and architecture
+>>>> implementation).
+>>>
+>>> As I commented, your changes in kernel/kprobes.c are good to me except
+>>> two functions. That's all what we need to fix :)
+>>>
+>>
+>> I will send a patch for it (since subject changed, we need not mark
+>> "patch v2"), thanks.  :-)
+> 
+> OK, I'll review that.
+> 
+
+Thanks.
+
+> Thank you!
 > 
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share and attitude like air, water and life which God blessed
