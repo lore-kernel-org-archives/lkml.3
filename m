@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbaBEUTD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:19:03 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48569 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396AbaBEUHr (ORCPT
+	id S1755652AbaBEUS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:18:58 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55541 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932398AbaBEUHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:47 -0500
+	Wed, 5 Feb 2014 15:07:48 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+CC: Eric Sandeen <sandeen@redhat.com>, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 183/213] ext4: fix error handling on inode bitmap corruption
-Date: Wed, 5 Feb 2014 15:02:18 -0500
-Message-ID: <1391630568-49251-184-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 184/213] btrfs: use rcu_barrier() to wait for bdev puts at unmount
+Date: Wed, 5 Feb 2014 15:02:19 -0500
+Message-ID: <1391630568-49251-185-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Eric Sandeen <sandeen@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,40 +32,58 @@ From: Jan Kara <jack@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit acd6ad83517639e8f09a8c5525b1dccd81cd2a10 upstream.
+commit bc178622d40d87e75abc131007342429c9b03351 upstream.
 
-When insert_inode_locked() fails in ext4_new_inode() it most likely means inode
-bitmap got corrupted and we allocated again inode which is already in use. Also
-doing unlock_new_inode() during error recovery is wrong since the inode does
-not have I_NEW set. Fix the problem by jumping to fail: (instead of fail_drop:)
-which declares filesystem error and does not call unlock_new_inode().
+Doing this would reliably fail with -EBUSY for me:
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+# mount /dev/sdb2 /mnt/scratch; umount /mnt/scratch; mkfs.btrfs -f /dev/sdb2
+...
+unable to open /dev/sdb2: Device or resource busy
+
+because mkfs.btrfs tries to open the device O_EXCL, and somebody still has it.
+
+Using systemtap to track bdev gets & puts shows a kworker thread doing a
+blkdev put after mkfs attempts a get; this is left over from the unmount
+path:
+
+btrfs_close_devices
+	__btrfs_close_devices
+		call_rcu(&device->rcu, free_device);
+			free_device
+				INIT_WORK(&device->rcu_work, __free_device);
+				schedule_work(&device->rcu_work);
+
+so unmount might complete before __free_device fires & does its blkdev_put.
+
+Adding an rcu_barrier() to btrfs_close_devices() causes unmount to wait
+until all blkdev_put()s are done, and the device is truly free once
+unmount completes.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/ialloc.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/btrfs/volumes.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 7f6b5826d5a6..4783c5a4adac 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1009,8 +1009,12 @@ got:
- 	if (IS_DIRSYNC(inode))
- 		ext4_handle_sync(handle);
- 	if (insert_inode_locked(inode) < 0) {
--		err = -EINVAL;
--		goto fail_drop;
-+		/*
-+		 * Likely a bitmap corruption causing inode to be allocated
-+		 * twice.
-+		 */
-+		err = -EIO;
-+		goto fail;
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index c04ebb1e4c98..7f75546941ac 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -565,6 +565,12 @@ int btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
+ 		__btrfs_close_devices(fs_devices);
+ 		free_fs_devices(fs_devices);
  	}
- 	spin_lock(&sbi->s_next_gen_lock);
- 	inode->i_generation = sbi->s_next_generation++;
++	/*
++	 * Wait for rcu kworkers under __btrfs_close_devices
++	 * to finish all blkdev_puts so device is really
++	 * free when umount is done.
++	 */
++	rcu_barrier();
+ 	return ret;
+ }
+ 
 -- 
 1.8.5.2
 
