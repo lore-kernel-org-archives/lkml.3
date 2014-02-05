@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192AbaBEUlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:41:13 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:25915 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933176AbaBEUlI (ORCPT
+	id S1752133AbaBEUG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:06:27 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48263 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833AbaBEUGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:41:08 -0500
-X-AuditID: cbfec37b-b7f216d000006a8d-9f-52f2a1e25699
-Message-id: <52F2A1DE.4060009@samsung.com>
-Date: Wed, 05 Feb 2014 13:41:02 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.13 000/140] 3.13.2-stable review
-References: <20140204211036.967663852@linuxfoundation.org>
-In-reply-to: <20140204211036.967663852@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.4]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hP93HCz8FGcw9zWIxZ/0aNovmxevZ
-	LC7vmsNm8fWng8WCjY8YLR71vWV3YPPYOesuu8eJGb9ZPPbPXcPu8XmTXABLFJdNSmpOZllq
-	kb5dAlfG+oazzAVTOSo+L3jO3MC4n62LkZNDQsBEYuvRjawQtpjEhXvrgeJcHEICyxglVn0/
-	zQLh9DJJnLi2lgWkSkhgA6PErHOaIDavgJbEx09XmUFsFgFViYVHzoLZbALqEp9f72CHqJeT
-	aFqyGiwuKhAh8ersRBaIXkGJH5PvgdkiAsESa78uZARZxiywglHi+MuXYOcJC5hJzPzwhAli
-	kJXE7tsHwRo4BawltrTuYgSxmYFqHrWsY4aw5SU2r3nLDFGvLPHn8ikmiNcUJFbceMMygVFk
-	FpLds5C0z0LSvoCReRWjWGlxckFxUnpqhZFecWJucWleul5yfu4mRkjUVO9gvPvV5hCjAAej
-	Eg/vhzmfgoRYE8uKK3MPMUpwMCuJ8J6YDhTiTUmsrEotyo8vKs1JLT7EyMTBKdXAODlGJXXv
-	won9p/nXuAoEnmyzOzXtwLHXyxon+SYFdKtsWK9xKOWCySa+9z5zwqXPHWnbe+19G+Piefcn
-	rbB7fPZa8lS/K/cTN/9kXf3vmn3XzsWF7R94VnDUqdT5nzvauKNJjL0lYl7NtT8ir642LK8s
-	+regQf3XibyCX1IsHu85m7IcXE9uXqvEUpyRaKjFXFScCACoud6LeAIAAA==
+	Wed, 5 Feb 2014 15:06:10 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 080/213] clockevents: Don't allow dummy broadcast timers
+Date: Wed, 5 Feb 2014 15:00:35 -0500
+Message-ID: <1391630568-49251-81-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2014 02:09 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.13.2 release.
-> There are 140 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Feb  6 21:10:18 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.2-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+From: Mark Rutland <mark.rutland@arm.com>
 
-Patch applied cleanly. boot tests passed on all test systems. No dmesg 
-regressions: emerg, crit, alert, err are clean. No regressions in warn.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-Minor Note: git apply --index complained about extra white space at the 
-end of patch file. patch -p1 worked just fine.
+commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a upstream.
 
--- Shuah
+Currently tick_check_broadcast_device doesn't reject clock_event_devices
+with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
+hardware if they have a higher rating value. In this situation, the
+dummy timer is responsible for broadcasting to itself, and the core
+clockevents code may attempt to call non-existent callbacks for
+programming the dummy, eventually leading to a panic.
 
+This patch makes tick_check_broadcast_device always reject dummy timers,
+preventing this problem.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ kernel/time/tick-broadcast.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 521987f85874..ab16ee785b7f 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -67,7 +67,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
+-	if ((tick_broadcast_device.evtdev &&
++	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+1.8.5.2
+
