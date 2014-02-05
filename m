@@ -1,84 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaBEWCt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:02:49 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:44250 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787AbaBEWCr (ORCPT
+	id S1753934AbaBEWKG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:10:06 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48757 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbaBEWKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:02:47 -0500
-Message-ID: <52F2B504.5010403@linaro.org>
-Date: Wed, 05 Feb 2014 14:02:44 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 5 Feb 2014 17:10:02 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 00/51] CPU hotplug: Fix issues with callback registration
+To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
+Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
+        walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Thu, 06 Feb 2014 03:34:36 +0530
+Message-ID: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Alexey Perevalov <a.perevalov@samsung.com>
-CC: linux-kernel@vger.kernel.org, anton@enomsg.org, kyungmin.park@samsung.com,
-        akpm@linux-foundation.org, cw00.choi@samsung.com
-Subject: Re: [PATCH v2 0/3] Deferrable timers support for timerfd API
-References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com> <52DEC6A3.9020600@linaro.org> <52E606D8.6000401@samsung.com> <alpine.DEB.2.02.1402041419420.24986@ionos.tec.linutronix.de> <52F1DDA8.90605@samsung.com> <alpine.DEB.2.02.1402051229260.24986@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1402051229260.24986@ionos.tec.linutronix.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14020522-6102-0000-0000-000004E447AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2014 01:41 PM, Thomas Gleixner wrote:
-> On Wed, 5 Feb 2014, Alexey Perevalov wrote:
->> On 02/04/2014 08:10 PM, Thomas Gleixner wrote:
->>> On Mon, 27 Jan 2014, Alexey Perevalov wrote:
->>>> On 01/21/2014 11:12 PM, John Stultz wrote:
->>>>> Thomas: Any thought here? Should we be trying to unify the timerfd flags
->>>>> and the posix timer flags (specifically things like TIMER_CANCEL_ON_SET,
->>>>> which is currently timerfd-only)?  Should a deferrable flag be added to
->>>>> the hrtimer core or left to the timer wheel?
->>> The timer cancel on set was added only to timerfd because timerfd is a
->>> non posix interface and we are halfways free to add stuff to
->>> it. Adding extra flags to the real posix timer interfaces is a
->>> different story.
->> And what about "deferrable" possibility for hrtimers, do you consider it
->> reasonable?
-> In principle, I have no objections, but we need a proper technical
-> solution. Just adding a flag and keeping the timers in the same rbtree
-> like we do for the timer wheel timers is not going to happen.
->
-> The only feasible solution is to have separate clock ids,
-> e.g. CLOCK_*_DEFERRABLE, which would enable the deferrable
-> functionality for all user space interfaces. No need for magic flags
-> and complex search for non deferrable timers.
+Hi,
 
-So of course, I was actually arguing against having a new clockid (which
-was Alexey's first approach).
+Many subsystems and drivers have the need to register CPU hotplug callbacks
+from their init routines and also perform initialization for the CPUs that are
+already online. But unfortunately there is no race-free way to achieve this
+today.
 
-My reasoning was that the deferrablity isn't a clock domain, and is more
-of a modifier. Thus to keep the interfaces somewhat sane (and avoiding
-having to add N new clockids for each new modifier), we should utilize
-the flag arguments to timers. So instead of just having TIMER_ABSTIME,
-we could add TIMER_DEFER, etc, which we could utilize instead.
+For example, consider this piece of code:
 
-Internally we can still keep separate bases, much as your patch does, to
-keep the next-event searching overhead more limited.
+	get_online_cpus();
 
-I mainly wanted to get your thoughts on extending the flags, and doing
-so in a consistent manner between the timerfd and other timer interfaces.
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
 
-Of course, all this is after I added the _ALARM clockids... so you can
-decide if its hypocrisy or experience.
-(The "old wisdom comes from experience and experience comes from bad
-decisions" bit ;).
+	register_cpu_notifier(&foobar_cpu_notifier);
 
-thanks
--john
+	put_online_cpus();
+
+This is not safe because there is a possibility of an ABBA deadlock involving
+the cpu_add_remove_lock and the cpu_hotplug.lock.
+
+          CPU 0                                         CPU 1
+          -----                                         -----
+
+   Acquire cpu_hotplug.lock
+   [via get_online_cpus()]
+
+                                              CPU online/offline operation
+                                              takes cpu_add_remove_lock
+                                              [via cpu_maps_update_begin()]
+
+   Try to acquire
+   cpu_add_remove_lock
+   [via register_cpu_notifier()]
+
+                                              CPU online/offline operation
+                                              tries to acquire cpu_hotplug.lock
+                                              [via cpu_hotplug_begin()]
+
+                            *** DEADLOCK! ***
 
 
+Other combinations of callback registration also don't work correctly.
+Examples:
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	put_online_cpus();
+
+This can lead to double initialization if a hotplug operation occurs after
+registering the notifier and before invoking get_online_cpus().
+
+On the other hand, the following piece of code can miss hotplug events
+altogether:
+
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	put_online_cpus();
+              ^
+              |   Race window; Can miss hotplug events here
+              v
+	register_cpu_notifier(&foobar_cpu_notifier);
 
 
+To solve these issues and provide a race-free method to register CPU hotplug
+callbacks, this patchset introduces new variants of the callback registration
+APIs that don't hold the cpu_add_remove_lock, and exports the
+cpu_add_remove_lock via cpu_maps_update_begin/done() for use by various
+subsystems. With this in place, the following code snippet will register a
+hotplug callback as well as initialize already online CPUs without any race
+conditions.
+
+	cpu_maps_update_begin();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	/* This doesn't take the cpu_add_remove_lock */
+	__register_cpu_notifier(&foobar_cpu_notifier);
+
+	cpu_maps_update_done();
 
 
+This patchset introduces this infrastructure in patch 1, and performs
+tree-wide conversions (to use this model) in the remaining patches.
+
+This patchset has been hosted in the below git tree. It applies cleanly on
+v3.14-rc1.
+
+git://github.com/srivatsabhat/linux.git cpuhp-registration-fixes-v1
 
 
+Oleg, I have incorporated your fix for raid5 in this patchset, and modified
+the patch a bit to handle the unregister_cpu_notifier() case as well. If you
+are fine with that patch (patch 45), can you kindly provide your Signed-off-by
+for that? Thank you!
 
+
+ Oleg Nesterov (1):
+      md, raid5: Fix CPU hotplug callback registration
+
+ Srivatsa S. Bhat (50):
+      CPU hotplug: Provide lockless versions of callback registration functions
+      Doc/cpu-hotplug: Specify race-free way to register CPU hotplug callbacks
+      CPU hotplug, perf: Fix CPU hotplug callback registration
+      ia64, salinfo: Fix hotplug callback registration
+      ia64, palinfo: Fix CPU hotplug callback registration
+      ia64, topology: Fix CPU hotplug callback registration
+      ia64, err-inject: Fix CPU hotplug callback registration
+      arm, hw-breakpoint: Fix CPU hotplug callback registration
+      arm, kvm: Fix CPU hotplug callback registration
+      s390, cacheinfo: Fix CPU hotplug callback registration
+      s390, smp: Fix CPU hotplug callback registration
+      sparc, sysfs: Fix CPU hotplug callback registration
+      powerpc, sysfs: Fix CPU hotplug callback registration
+      x86, msr: Fix CPU hotplug callback registration
+      x86, cpuid: Fix CPU hotplug callback registration
+      x86, vsyscall: Fix CPU hotplug callback registration
+      x86, intel, uncore: Fix CPU hotplug callback registration
+      x86, mce: Fix CPU hotplug callback registration
+      x86, therm_throt.c: Fix CPU hotplug callback registration
+      x86, amd, ibs: Fix CPU hotplug callback registration
+      x86, intel, cacheinfo: Fix CPU hotplug callback registration
+      x86, intel, rapl: Fix CPU hotplug callback registration
+      x86, amd, uncore: Fix CPU hotplug callback registration
+      x86, hpet: Fix CPU hotplug callback registration
+      x86, pci, amd-bus: Fix CPU hotplug callback registration
+      x86, oprofile, nmi: Fix CPU hotplug callback registration
+      x86, kvm: Fix CPU hotplug callback registration
+      arm64, hw_breakpoint.c: Fix CPU hotplug callback registration
+      arm64, debug-monitors: Fix CPU hotplug callback registration
+      powercap, intel-rapl: Fix CPU hotplug callback registration
+      scsi, bnx2i: Fix CPU hotplug callback registration
+      scsi, bnx2fc: Fix CPU hotplug callback registration
+      scsi, fcoe: Fix CPU hotplug callback registration
+      zsmalloc: Fix CPU hotplug callback registration
+      acpi-cpufreq: Fix CPU hotplug callback registration
+      drivers/base/topology.c: Fix CPU hotplug callback registration
+      clocksource, dummy-timer: Fix CPU hotplug callback registration
+      intel-idle: Fix CPU hotplug callback registration
+      oprofile, nmi-timer: Fix CPU hotplug callback registration
+      octeon, watchdog: Fix CPU hotplug callback registration
+      thermal, x86-pkg-temp: Fix CPU hotplug callback registration
+      hwmon, coretemp: Fix CPU hotplug callback registration
+      hwmon, via-cputemp: Fix CPU hotplug callback registration
+      xen, balloon: Fix CPU hotplug callback registration
+      trace, ring-buffer: Fix CPU hotplug callback registration
+      profile: Fix CPU hotplug callback registration
+      mm, vmstat: Fix CPU hotplug callback registration
+      mm, zswap: Fix CPU hotplug callback registration
+      net/core/flow.c: Fix CPU hotplug callback registration
+      net/iucv/iucv.c: Fix CPU hotplug callback registration
+
+ Documentation/cpu-hotplug.txt                 |   45 +++++++++
+ arch/arm/kernel/hw_breakpoint.c               |    8 +-
+ arch/arm/kvm/arm.c                            |    7 +
+ arch/arm64/kernel/debug-monitors.c            |    6 +
+ arch/arm64/kernel/hw_breakpoint.c             |    7 +
+ arch/ia64/kernel/err_inject.c                 |   15 +++
+ arch/ia64/kernel/palinfo.c                    |    6 +
+ arch/ia64/kernel/salinfo.c                    |    6 +
+ arch/ia64/kernel/topology.c                   |    6 +
+ arch/powerpc/kernel/sysfs.c                   |    8 +-
+ arch/s390/kernel/cache.c                      |    5 +
+ arch/s390/kernel/smp.c                        |   13 ++-
+ arch/sparc/kernel/sysfs.c                     |    6 +
+ arch/x86/kernel/cpu/intel_cacheinfo.c         |   13 ++-
+ arch/x86/kernel/cpu/mcheck/mce.c              |    8 +-
+ arch/x86/kernel/cpu/mcheck/therm_throt.c      |    5 +
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c      |    6 +
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c   |    7 +
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c   |    9 +-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    6 +
+ arch/x86/kernel/cpuid.c                       |   15 ++-
+ arch/x86/kernel/hpet.c                        |    4 +
+ arch/x86/kernel/msr.c                         |   16 ++-
+ arch/x86/kernel/vsyscall_64.c                 |    6 +
+ arch/x86/kvm/x86.c                            |    7 +
+ arch/x86/oprofile/nmi_int.c                   |   15 +++
+ arch/x86/pci/amd_bus.c                        |    5 +
+ drivers/base/topology.c                       |   12 ++
+ drivers/clocksource/dummy_timer.c             |   11 ++
+ drivers/cpufreq/acpi-cpufreq.c                |    7 +
+ drivers/hwmon/coretemp.c                      |   14 +--
+ drivers/hwmon/via-cputemp.c                   |   14 +--
+ drivers/idle/intel_idle.c                     |   12 ++
+ drivers/md/raid5.c                            |   90 +++++++++----------
+ drivers/oprofile/nmi_timer_int.c              |   23 +++--
+ drivers/powercap/intel_rapl.c                 |   10 ++
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c             |   12 ++
+ drivers/scsi/bnx2i/bnx2i_init.c               |   12 ++
+ drivers/scsi/fcoe/fcoe.c                      |   15 +++
+ drivers/thermal/x86_pkg_temp_thermal.c        |   14 +--
+ drivers/watchdog/octeon-wdt-main.c            |   11 ++
+ drivers/xen/balloon.c                         |   35 +++++--
+ include/linux/cpu.h                           |   36 +++++++
+ include/linux/perf_event.h                    |   16 +++
+ kernel/cpu.c                                  |   20 ++++
+ kernel/profile.c                              |   20 +++-
+ kernel/trace/ring_buffer.c                    |   19 ++--
+ mm/vmstat.c                                   |    6 +
+ mm/zsmalloc.c                                 |   17 +++-
+ mm/zswap.c                                    |    8 +-
+ net/core/flow.c                               |    8 +-
+ net/iucv/iucv.c                               |  121 ++++++++++++-------------
+ 52 files changed, 564 insertions(+), 259 deletions(-)
+
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
