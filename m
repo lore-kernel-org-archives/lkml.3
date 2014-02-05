@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaBESZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 13:25:04 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:45090 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208AbaBESZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 13:25:01 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: possible viri in tarballs?
-Date: Wed, 5 Feb 2014 13:24:59 -0500
-References: <201402050915.34607.gheskett@wdtv.com>
-In-Reply-To: <201402050915.34607.gheskett@wdtv.com>
+	id S1753386AbaBESfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 13:35:14 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24605 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751771AbaBESfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 13:35:10 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Mcg7LtobndatzbaUH/3eNV4JgERVUHK8=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 2A28851E83E
+Date: Wed, 5 Feb 2014 13:34:57 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Mike Turquette <mturquette@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/4] clk: mvebu: fix clk init order
+Message-ID: <20140205183457.GW8533@titan.lakedaemon.net>
+References: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201402051324.59495.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1390673950-4521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 February 2014, Gene Heskett wrote:
->Greetings;
->
->I recently brought a daily system scan by clamscan back to life, and its
->emailing me this:
->
->/home/gene/src/linux-3.8.2/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->/home/gene/src/linux-3.12.6/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->/home/gene/src/linux-3.8.3/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->/home/gene/src/linux-3.12.9/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->/home/gene/src/linux-3.4.36/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->/home/gene/src/linux-3.0.69/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->/home/gene/src/linux-3.2.40/Documentation/usb/gadget_multi.txt:
->MBL_400944.UNOFFICIAL FOUND
->
->Repeat for several other kernel trees.
->FP or ??
->
->Cheers, Gene
+On Sat, Jan 25, 2014 at 07:19:06PM +0100, Sebastian Hesselbarth wrote:
+> This patch set fixes clk init order that went upside-down with
+> v3.14. I haven't really investigated what caused this, but I assume
+> it is related with DT node reordering by addresses.
+> 
+> Anyway, with v3.14 for MVEBU SoCs, the clock gating driver gets
+> registered before core clocks driver. Unfortunately, we cannot
+> return -EPROBE_DEFER in drivers initialized by clk_of_init. As the
+> init order for our drivers is always core clocks before clock gating,
+> we maintain init order ourselves by hooking CLK_OF_DECLARE to one
+> init function that will register core clocks before clock gating
+> driver.
+> 
+> This patch is based on pre-v3.14-rc1 mainline and should go in as
+> fixes for it. As we now send MVEBU clk pull-requests to Mike directly,
+> I suggest Jason picks it up as a topic branch.
+> 
+> The patches have been boot tested on Dove and compile-tested only
+> for Kirkwood, Armada 370 and XP.
+> 
+> Sebastian Hesselbarth (4):
+>   clk: mvebu: armada-370: maintain clock init order
+>   clk: mvebu: armada-xp: maintain clock init order
+>   clk: mvebu: dove: maintain clock init order
+>   clk: mvebu: kirkwood: maintain clock init order
+> 
+>  drivers/clk/mvebu/armada-370.c | 21 ++++++++++-----------
+>  drivers/clk/mvebu/armada-xp.c  | 20 +++++++++-----------
+>  drivers/clk/mvebu/dove.c       | 19 +++++++++----------
+>  drivers/clk/mvebu/kirkwood.c   | 34 ++++++++++++++++------------------
+>  4 files changed, 44 insertions(+), 50 deletions(-)
 
-Someone thought its an FP, so I took this to the clamav list and got some 
-links, it is a highest threat Password revealer first seen by 
+Whole series applied to mvebu/clk-fixes.
 
-<http://www.threatexpert.com/reports.aspx?find=PSWTool.Win32.PassViewer.av&x=11&y=9>
+thx,
 
-on 12/07/2011.
-
-Over on <http://www.malwarepatrol.net/cgi/search.pl?id=400944>
-
-You will see more history.
-
-So that file needs sanitized.  I was under the impression that a file with 
-the .txt extension was supposed to be pure ascii text, but its loaded to 
-the gills with some sort of markup crap.  And I have at least 20 copies of 
-it.
-
-Cheers, Gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-
-NOTICE: Will pay 100 USD for an HP-4815A defective but
-complete probe assembly.
-
+Jason.
