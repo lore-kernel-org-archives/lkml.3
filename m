@@ -1,233 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372AbaBEOuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 09:50:21 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:47009 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaBEOuT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 09:50:19 -0500
+	id S1752540AbaBEOvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 09:51:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:65297 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382AbaBEOvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 09:51:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,786,1384329600"; 
+   d="scan'208";a="478488246"
+Message-ID: <52F251FD.1080503@linux.intel.com>
+Date: Wed, 05 Feb 2014 17:00:13 +0200
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Reply-To: andrea.merello@gmail.com
-In-Reply-To: <20140205123446.GI26722@mwanda>
-References: <52ee2ee736e00_2c3211fc86c5851f@209.249.196.67.mail>
- <20140202160512.GA4946@redhat.com> <201402021807.37772.s.L-H@gmx.de>
- <52EFCC66.9020304@lwfinger.net> <20140203201228.GE26722@mwanda>
- <CA+55aFyHZfw9rtZQJ9i2p7MQAVX4iM0QCdzRZzaivD2nRDHeLQ@mail.gmail.com>
- <CAN8YU5PJWqnaBN_oaZ-yZjV-s9oCkKPa4ebk-kNbhPSgpd3_wQ@mail.gmail.com>
- <20140204092836.GG26776@mwanda> <CAN8YU5PfJ2ijHzghJ-FJPYJeFwTfoGN-qpJ5R5ctYp3R1p13hA@mail.gmail.com>
- <20140205123446.GI26722@mwanda>
-From: Andrea Merello <andrea.merello@gmail.com>
-Date: Wed, 5 Feb 2014 15:49:58 +0100
-Message-ID: <CAN8YU5NuFZfK4gGAsx34ZruBVx6U_cMGSogiTdWWv8LfpsFb=w@mail.gmail.com>
-Subject: Re: rtl8821ae.
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>, Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Williams <dan.j.williams@intel.com>
+CC: USB list <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFCv2 01/10] xhci: Use command structures when calling xhci_configure_endpoint
+References: <1391091027-31783-1-git-send-email-mathias.nyman@linux.intel.com>	<1391091027-31783-2-git-send-email-mathias.nyman@linux.intel.com> <CAPcyv4gqcf2b8Yv-rqg0OiEeOeN4P4g-um+oYzMDXW6Y7N8qeQ@mail.gmail.com>
+In-Reply-To: <CAPcyv4gqcf2b8Yv-rqg0OiEeOeN4P4g-um+oYzMDXW6Y7N8qeQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Looks good.  It would be best to submit the bugfixes first like where
-> you add error checking for pci_map_single().
-
-Yes, this is exactly what I started to do this morning :)
-I'm preparing a patchseries where I extracting fixes or improvements
-unrelated to rtl8187se, including pci_map_single fixes
-
-> You add too many blank lines btw, you should never have two
-> consecutive blank lines.  Don't add a blank line in the middle of the
-> declaration block or before a close curly brace '}' line.
-
-OK
-
-> After that
-> maybe the patch to change "if (priv->r8185)" to
-> "if (priv->chip_family == RTL818X_CHIP_FAMILY_RTL8185)". Then the patch
-> to add rtl8225se support.
-
-Yes, this is also my plan :)
-
-> Some minor things below.
-
-Ok, I have reviewed all your advices.
-I agree with them.
-I also commended the ones where you asked something about.
-
-> regards,
-> dan carpenter
-
-Thank you a lot for your review!
-
-Andrea
-
->> +#include "rtl8225se.h"
->> +
+On 02/05/2014 04:21 AM, Dan Williams wrote:
+> Hi Mathias, comments below:
 >
-> Don't include this twice.  Only put one blank line, not two consecutive
-> blank lines.
-
-OK
-
-> This comment is out of date.  RTL8180_NR_TX_QUEUES is 2.  I haven't
-> really understood the changes to rtl8180_queues_map[].  It used to have
-> 4 elements and now it only has 2.  Is this change needed to support
-> rtl8225se or is it a separate bugfix which should go in a separate
-> patch?
-
-It's for rtl8187se.
-That card uses more queues to enable WMM
-
-> Also this change which I have pulled out of context:
->
-> +     if (ring->entries - skb_queue_len(&ring->queue) < 2) {
-> +             if (prio != dev->queues)
-> +                     ieee80211_stop_queue(dev, prio);
-> +             else
-> +                     priv->beacon_queue_stop = 1;
-> +     }
->
-> This is a separate bugfix?
-
-Yes, the old driver uses ieee80211_stop_queue and ieee80211_wake_queue
-on the beacon queue, that is indeed handled in the driver and not by
-ieee80211
-This one of the things that I will include in patches for
-rtl8180/rtl8185 fixes before merging real rtl8187se code
-
->> +static void rtl8180_write_phy_(struct ieee80211_hw *dev, u8 addr, u32 data)
->
-> This is a temporary name to not conflight with rtl8180_write_phy()?
-
-No, this is the aux function that does the real work, but should not
-be called directly in the driver code, as rtl8180_write_phy() should
-be called.
-Maybe I have to move the underscore at the beginning of the name.
-
->
-> These don't go over the 80 character limit so we don't need the line
-> breaks.  The casts are not needed either.
-
-OK
-
->> +     if ((addr == 0xa) && (
->> +                 priv->chip_family == RTL818X_CHIP_FAMILY_RTL8185))
->> +             rb_mask = 0x7f;
->
-> Write it like this:
->
->         if (addr == 0xa && priv->chip_family == RTL818X_CHIP_FAMILY_RTL8185)
->                 rb_mask = 0x7f;
->
-> If you really want to add parenthesis then do this:
->
->         if ((addr == 0xa) &&
->             (priv->chip_family == RTL818X_CHIP_FAMILY_RTL8185))
->                 rb_mask = 0x7f;
-
-OK
-
->> -     buf = (data << 8) | addr;
->> +     if (tmp & 0x80)
->> +             printk(KERN_WARNING
->> +                    "rtl818x failed to write BB (busy) adr:%x data:%x\n",
->> +                    addr, data);
->
-> Checkpatch.pl will complain that you should use netdev_warn() or
-> something.
-
-OK
-
-
->
-> Don't put a blank line here in the middle of the declaration block.
+> s/xhci_check_bandwith/xhci_check_bandwidth/
+> s/strucure/structure/
+> s/strucure/structure/
+> s/requre/require/
+> s/strucure/structure/
 >
 
-OK
+Thanks
+I guess I need to start using a spell checker for commit messages.
 
-
->> +             frame_duration =  priv->ack_time + le16_to_cpu(
->> +                     ieee80211_generic_frame_duration(dev, priv->vif,
->> +                                     IEEE80211_BAND_2GHZ, skb->len,
->> +                                     ieee80211_get_tx_rate(dev, info)));
 >
-> Use a temporary variable:
+> One cleanup we may want to consider in this series is making
+> xhci_alloc_command() more readable.  My brain hurts when I see "false,
+> false" as I wonder what that means.  I took a look and of the 4
+> possible ways to call xhci_alloc_command, we only use 2:
 >
->                 __le16 duration;
-
-I agree. Will do.
-
->> +     /* must be written last */
->>       entry->flags = cpu_to_le32(tx_flags);
+> $ git grep xhci_alloc_command\(.*\) | grep -o
+> xhci_alloc_command\(xhci,.*,.*, | sort -u
+> xhci_alloc_command(xhci, false, true,
+> xhci_alloc_command(xhci, true, true,
 >
-> Why must this be written last?  The CPU can re-order it anyway unless
-> there is some locking.
-
-Because that marks the descriptor as good for the NIC to be processed.
-I suppose a wmb() is needed before this line to ensure it is the last written
-and another wmb() is needed to ensure that the descriptor is fully
-written before polling the NIC for performing DMA (I think that,
-depending by the situation, the HW may wait for this register write on
-not).
-
-
->> +     /* Enable DA10 TX power saving */
->> +     rtl818x_iowrite8(priv, &priv->map->PHY_PR,
->> +                      rtl818x_ioread8(priv, &priv->map->PHY_PR) | 0x04);
+> So a first take is to just have a xhci_alloc_command() for "true,
+> true" and a xhci_alloc_command_no_ctx() for "false, true".
 >
-> Use a temporary variable:
+> ...uh oh, this series adds a usage of:
+> xhci_alloc_command(xhci, false, false,
 >
->         reg = rtl818x_ioread8(priv, &priv->map->PHY_PR);
->         rtl818x_iowrite8(priv, &priv->map->PHY_PR, reg | 0x40);
+> ...any reason we can't just use something like
+> xhci_alloc_command_no_ctx() instead?
+>
+> Actually just make xhci_alloc_command() take an option in_ctx
+> parameter, when it is NULL xhci_alloc_command will allocate one,
+> otherwise it will use the passed in one.
 >
 
-OK
+This would make the code more readable.
+The same thing needs to be done for the completion parameter as well then.
 
->> +static void rtl8187se_set_antenna_config(struct ieee80211_hw *dev, u8 def_ant,
->> +                                      bool use_diver)
->
-> Could you rename "use_diver" to "diversity"?  I misread it every time.
+Do you think this change would fit in this patch series, or maybe as a 
+separate fix?
 
-It makes sense.
+>>                  xhci_dbg_trace(xhci, trace_xhci_dbg_quirks,
+>>                                  "Queueing configure endpoint command");
+>>                  xhci_queue_configure_endpoint(xhci,
+>>                                  xhci->devs[slot_id]->in_ctx->dma, slot_id,
+>>                                  false);
+>>                  xhci_ring_cmd_db(xhci);
+>> +               kfree(command);
+>
+> It's not really acceptable to add dead code in a patch.  Consider the
+> case where some of the patches are reverted due to a regression.  If,
+> for example we revert patch 2, the unused infrastructure in patch1
+> does not get deleted.  Patch size minimization is good, but not when
+> it separates new infrastructure from its first user.
+
+This was a tradeoff I wasn't sure how to do. The first six patches make 
+sure there exists a command structure every time a command is submitted. 
+I added the kfrees because I didn't want to leak memory
+up to the patch where the command can be freed in its right place (patch 
+9).
+
+Actually, now looking at it, the command is still not properly freed
+between patches 7 and 9.
+
+Any suggestions? squashing first most of the commits together, or just 
+ignoring that memory is leaked mid-series?
+
+>> -bandwidth_change:
+>> -       xhci_dbg_trace(xhci,  trace_xhci_dbg_context_change,
+>> -                       "Completed config ep cmd");
+>> -       virt_dev->cmd_status = cmd_comp_code;
+>> -       complete(&virt_dev->cmd_completion);
+>>          return;
+>
+> This change has no description in the change log.  What's the reason
+> for deleting the goto?
+>
+
+Previously xhci_configure_endpoint() could also be called without a 
+command parameter. In this case the completion was _not_ added to 
+device's own "command wait list". xhci_configure_endpoint() would wait 
+for completion on xhci->devs[udev->slot_id]->cmd_completion, and
+the code after the bandwith_change goto was run.
+
+Now this patch forces all xhci_configure_endpoint() callers to have a 
+command structure parameter, and now in all cases we're waiting for a 
+configure endpoint completion, the completion is added to the device's 
+own "command wait list". These completions are called in the beginning 
+of handle_cmd_completion_ep by handle_cmd_in_cmd_wait_list().
+
+I probably should add some description about this in the changelog as well.
+
+>
+> Given that we are waiting for the command to finish within
+> xhci_configure_endpoint() shouldn't we free the completion in
+> xhci_configure_endpoint as well?  In other words in what cases do we
+> need an xhci_command to have a longer lifetime than the scope of the
+> execution routine (xhci_stop_device, xhci_configure_endpoint,
+> xhci_discover_or_reset_device, xhci_alloc_dev, xhci_setup_device).
+
+Many of the functions that call xhci_configure_endpoint() handle their
+command strucure and completion allocation/freeing in their own little 
+way. I didn't want to mess with these.
+
+For example
+xhci_free_streams() uses some pre-allocated command strucure
+command = vdev->eps[ep_index].stream_info->free_streams_command;
+
+while xhci_update_hub_device() allocates a new command with completion 
+before calling xhci_configure_endpoint(), and frees them both afterwards
 
 
->> +#if 0
->> +static void rtl8187se_power_tracking(struct ieee80211_hw *dev)
->> +{
->> +     struct rtl8180_priv *priv = dev->priv;
->> +     u8 tmp = rtl818x_ioread8(priv, REG_ADDR1(0x238));
->> +     u8 current_temp;
->> +     int i;
->> +     char cck_idx, ofdm_idx;
->> +
->> +     current_temp = (tmp & 0xF0) >> 4;
->> +     current_temp = (current_temp > 0x0C) ? current_temp : 0x0C;
 >
->         curent_temp = max_t(u8, current_temp, 0x0C);
->
-> I prefer max_t because it looks more deliberate and people won't think
-> you intended to use the minimum value.
-
-This function is switched off by a #if 0
-It will be not included yet, and I have to review it, so it might change.
-BTW I will certainly consider your advices
-
->> +     int chan =
->> +             ieee80211_frequency_to_channel(conf->chandef.chan->center_freq);
->> +
->
-> You could avoid the split line by doing this:
->
->         struct ieee80211_conf *conf = &dev->conf;
->         int chan;
->
->         chan = ieee80211_frequency_to_channel(conf->chandef.chan->center_freq);
+> Taking things a step further it seems that all the locations where we
+> asynchronously queue commands are in the completion handlers for other
+> commands.  I'm wondering if this would be cleaner if we simply queued
+> all command submissions and completion events to a single threaded
+> workqueue.  I'll go through the rest of the series to see if that
+> impression makes sense, but something to consider...
 >
 
-OK
+Handling the command completions in a workqueue could make sense, then 
+all the async-queued commands could be allocated outside interrupt 
+context. Not sure if this would expose or create some new races.
+
+I'm not completely sure on what you have in mind when you say you want 
+to "queue all command submission and completion events to a single 
+threaded workqueue"
+
+Thanks for taking a look at this
+
+-Mathias
