@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaBEMxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 07:53:49 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:60297 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaBEMxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 07:53:48 -0500
+	id S1751200AbaBENBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:01:52 -0500
+Received: from kolab.o2s.ch ([77.109.136.180]:34271 "EHLO kolab.o2s.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757AbaBENBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:01:49 -0500
+From: David =?ISO-8859-1?Q?Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-kernel@vger.kernel.org,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/6] ARM: sunxi: Add driver for SD/MMC hosts found on allwinner sunxi SOCs
+Date: Wed, 05 Feb 2014 14:01:33 +0100
+Message-ID: <1676482.sbjAhaSLaV@dizzy-6.o2s.ch>
+Organization: O2S GmbH
+User-Agent: KMail/4.11.4 (Linux/3.11.6-4-desktop; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20140205103949.GC3192@lukather>
+References: <20140204191648.29809.14611.stgit@dizzy-6.o2s.ch> <20140205103949.GC3192@lukather>
 MIME-Version: 1.0
-In-Reply-To: <1391595106-86957-1-git-send-email-hare@suse.de>
-References: <1391595106-86957-1-git-send-email-hare@suse.de>
-Date: Wed, 5 Feb 2014 13:53:47 +0100
-Message-ID: <CANq1E4QM-SwAhBmgGgmKjAHaKW-QZ7GPBkKyrv_=ek1CFmRWEw@mail.gmail.com>
-Subject: Re: [systemd-devel] [PATCH] tty: Set correct tty name in 'active'
- sysfs attribute
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Kay Sievers <kay@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="nextPart2087342.yc2NcSH50b"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-On Wed, Feb 5, 2014 at 11:11 AM, Hannes Reinecke <hare@suse.de> wrote:
-> The 'active' sysfs attribute should refer to the currently
-> active tty devices the console is running on, not the currently
-> active console.
-> The console structure doesn't refer to any device in sysfs,
-> only the tty the console is running on has.
-> So we need to print out the tty names in 'active', not
-> the console names.
->
-> Cc: Lennart Poettering <lennart@poettering.net>
-> Cc: Kay Sievers <kay@vrfy.org>
-> Signed-off-by: Werner Fink <werner@suse.de>
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
-> ---
->  drivers/tty/tty_io.c | 14 ++++++++++++--
->  1 file changed, 12 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index c74a00a..17db8ca 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -3545,9 +3545,19 @@ static ssize_t show_cons_active(struct device *dev,
->                 if (i >= ARRAY_SIZE(cs))
->                         break;
->         }
-> -       while (i--)
-> +       while (i--) {
-> +               const struct tty_driver *driver;
-> +               const char *name = cs[i]->name;
-> +               int index = cs[i]->index;
-> +
-> +               driver = cs[i]->device(cs[i], &index);
-> +               if (driver) {
-> +                       index += driver->name_base;
-> +                       name = driver->name;
-> +               }
->                 count += sprintf(buf + count, "%s%d%c",
-> -                                cs[i]->name, cs[i]->index, i ? ' ':'\n');
-> +                                name, index, i ? ' ':'\n');
-> +       }
+--nextPart2087342.yc2NcSH50b
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Nice catch and indeed, systemd already relies on these names to be
-identical to their char-dev name. Fortunately, VTs and most serial
-devices register the console with the same name as the TTY, so we're
-fine.
-Two minor nitpicks:
-1) Could you use tty_line_name() instead of sprintf()? It's in the
-same file and avoids duplicating the name_base logic.
-2) Does it make sense to print the console-name if ->device() returns
-NULL? Seems weird if we print console-names and tty-names in the same
-attribute. It's unlikely that it causes problems, but there might be
-conflicts.
+Hi Maxime
+> I have four comments here:
+>   - Read Documentation/SubmittingPatches, especially Section 5 and 12
+>     (hints, you forgot the clock maintainers for your clock patches
+>     and you didn't put any signed-off-by tags)
+Oops. I added signed-offs now
+>   - You ignored pretty much all the comments that were made during the
+>     review of the first version. Go through
+Uh? I just fixed the commits and squashed them together for easier handling.
+I'm even using mmc_of_parse now...
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/219339.
+> html and address the comments that were made.
+>   - Each of your patches should compile. Fix the order of your
+>     patches.
+Done.
+>   - Submit a v3, with the changes you made. Otherwise we have no way
+>     of knowing what have been fixed and what didn't
+Too many patches would be bloaty.
+That's why I've squashed them into small and corrected patches.
 
-Thanks
+> Looking forward for the next iteration!
+Good :-)
+You can have a look at the recent status here:
+http://git.o2s.ch/?p=linux-next.git;a=shortlog;h=refs/heads/20140205
+
+cheers
 David
+--nextPart2087342.yc2NcSH50b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
->         console_unlock();
->
->         return count;
-> --
-> 1.7.12.4
->
-> _______________________________________________
-> systemd-devel mailing list
-> systemd-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/systemd-devel
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEABECAAYFAlLyNi0ACgkQAeZw77btGjr6zwCglDPMGsllkJPtErxxWEzepqeu
+rpoAn3iqBc/AViM5Rnu45QE72zw4y7tc
+=eD5M
+-----END PGP SIGNATURE-----
+
+--nextPart2087342.yc2NcSH50b--
+
