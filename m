@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaBENyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:54:12 -0500
-Received: from kolab.o2s.ch ([77.109.136.180]:34571 "EHLO kolab.o2s.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752155AbaBENyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:54:08 -0500
-Subject: [PATCH v3 2/7] clk: sunxi: Implement MMC phase control
-To: devicetree@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Baatz <gmbnomis@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Emilio =?utf-8?b?TMOzcGV6?= <emilio@elopez.com.ar>,
-        linux-mmc@vger.kernel.org, Chris Ball <chris@printf.net>,
-        linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-sunxi@googlegroups.com, Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Date: Wed, 05 Feb 2014 14:53:59 +0100
-Message-ID: <20140205135357.3027.39081.stgit@dizzy-6.o2s.ch>
-In-Reply-To: <20140205134741.3027.50207.stgit@dizzy-6.o2s.ch>
-References: <20140205134741.3027.50207.stgit@dizzy-6.o2s.ch>
-User-Agent: StGit/0.16
+	id S1752526AbaBENyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:54:21 -0500
+Received: from 6.mo3.mail-out.ovh.net ([188.165.43.173]:49753 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751835AbaBENyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:54:16 -0500
+Message-ID: <52F24255.9030603@overkiz.com>
+Date: Wed, 05 Feb 2014 14:53:25 +0100
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: [RFC PATCH 1/9] mtd: nand: retrieve ECC requirements from Hynix
+ READ ID byte 4
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-2-git-send-email-b.brezillon@overkiz.com> <20140123014906.GY8919@ld-irv-0074>
+In-Reply-To: <20140123014906.GY8919@ld-irv-0074>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 4782541329942673631
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.501258/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
+Hello Brian,
 
-Signed-off-by: Emilio López <emilio@elopez.com.ar>
----
- drivers/clk/sunxi/clk-sunxi.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+On 23/01/2014 02:49, Brian Norris wrote:
+> + Huang
+>
+> Hi Boris,
+>
+> On Wed, Jan 08, 2014 at 03:21:56PM +0100, Boris BREZILLON wrote:
+>> The Hynix nand flashes store their ECC requirements in byte 4 of its id
+>> (returned on READ ID command).
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> I haven't verified yet (perhaps Huang can confirm?), but this may be
+> similar to a patch Huang submitted recently. In his case, we found that
+> this table is actually quite unreliable and is likely hard to maintain.
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index abb6c5a..33b9977 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -377,6 +377,41 @@ static void sun7i_a20_get_out_factors(u32 *freq, u32 parent_rate,
- 
- 
- /**
-+ * clk_sunxi_mmc_phase_control() - configures MMC clock phase control
-+ */
-+
-+void clk_sunxi_mmc_phase_control(struct clk_hw *hw, u8 sample, u8 output)
-+{
-+	#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
-+	#define to_clk_factors(_hw) container_of(_hw, struct clk_factors, hw)
-+
-+	struct clk_composite *composite = to_clk_composite(hw);
-+	struct clk_hw *rate_hw = composite->rate_hw;
-+	struct clk_factors *factors = to_clk_factors(rate_hw);
-+	unsigned long flags = 0;
-+	u32 reg;
-+
-+	if (factors->lock)
-+		spin_lock_irqsave(factors->lock, flags);
-+
-+	reg = readl(factors->reg);
-+
-+	/* set sample clock phase control */
-+	reg &= ~(0x7 << 20);
-+	reg |= ((sample & 0x7) << 20);
-+
-+	/* set output clock phase control */
-+	reg &= ~(0x7 << 8);
-+	reg |= ((output & 0x7) << 8);
-+
-+	writel(reg, factors->reg);
-+
-+	if (factors->lock)
-+		spin_unlock_irqrestore(factors->lock, flags);
-+}
-+
-+
-+/**
-  * sunxi_factors_clk_setup() - Setup function for factor clocks
-  */
- 
+Indeed (as stated in this thread 
+http://comments.gmane.org/gmane.linux.drivers.mtd/50252).
+I'll remove this patch from the next version of this series and make use 
+of the
+nand-ecc-strength /nand-ecc-size DT properties instead.
+
+Thanks.
+
+Best Regards,
+
+Boris
+>
+> Why do you need this ECC information, for my reference?
+>
+> Brian
 
