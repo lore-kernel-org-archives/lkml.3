@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaBEU6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:58:20 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48129 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492AbaBEUFY (ORCPT
+	id S1756105AbaBEU6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:58:51 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:32511 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754338AbaBEU6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:24 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 076/213] NFSv3: Ensure that do_proc_get_root() reports errors correctly
-Date: Wed, 5 Feb 2014 15:00:31 -0500
-Message-ID: <1391630568-49251-77-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
+	Wed, 5 Feb 2014 15:58:43 -0500
+Date: Wed, 5 Feb 2014 15:58:40 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
+        penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v3] slub: fix false-positive lockdep warning in
+ free_partial()
+Message-ID: <20140205155840.43d6b4ad@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com>
+References: <52F1F25F.20402@parallels.com>
+	<1391588133-15469-1-git-send-email-vdavydov@parallels.com>
+	<20140205195837.GA6857@home.goodmis.org>
+	<alpine.DEB.2.02.1402051231250.5616@chino.kir.corp.google.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+On Wed, 5 Feb 2014 12:32:43 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> On Wed, 5 Feb 2014, Steven Rostedt wrote:
 
-commit 086600430493e04b802bee6e5b3ce0458e4eb77f upstream.
+> There's an extremely small overhead of taking this lock, the cache has 
+> been destroyed and is the process of being torn down, there will be 
+> absolutely no contention on n->list_lock.
 
-If the rpc call to NFS3PROC_FSINFO fails, then we need to report that
-error so that the mount fails. Otherwise we can end up with a
-superblock with completely unusable values for block sizes, maxfilesize,
-etc.
+But why add it if it isn't necessary? You're even disabling interrupts,
+which means that you add to the response latency. That is, this change
+does affect other aspects of the kernel!
 
-Reported-by: Yuanming Chen <hikvision_linux@163.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- fs/nfs/nfs3proc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
-index e701002694e5..4958497da25b 100644
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -68,7 +68,7 @@ do_proc_get_root(struct rpc_clnt *client, struct nfs_fh *fhandle,
- 	nfs_fattr_init(info->fattr);
- 	status = rpc_call_sync(client, &msg, 0);
- 	dprintk("%s: reply fsinfo: %d\n", __func__, status);
--	if (!(info->fattr->valid & NFS_ATTR_FATTR)) {
-+	if (status == 0 && !(info->fattr->valid & NFS_ATTR_FATTR)) {
- 		msg.rpc_proc = &nfs3_procedures[NFS3PROC_GETATTR];
- 		msg.rpc_resp = info->fattr;
- 		status = rpc_call_sync(client, &msg, 0);
--- 
-1.8.5.2
-
+-- Steve
