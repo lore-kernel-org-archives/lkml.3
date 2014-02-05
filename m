@@ -1,201 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701AbaBENsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:48:35 -0500
-Received: from eumx.net ([91.82.101.43]:42643 "EHLO owm.eumx.net"
+	id S1752069AbaBENsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:48:45 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33871 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757AbaBENsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:48:33 -0500
-From: Jack Mitchell <ml@embed.me.uk>
-To: bcousson@baylibre.com, tony@atomide.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk
-Cc: linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jack Mitchell <jack@embed.me.uk>, Matt Porter <mporter@linaro.org>
-Subject: [PATCH RESEND] ARM: dts: add BeagleBone Audio Cape (Rev A) dtsi
-Date: Wed,  5 Feb 2014 13:48:04 +0000
-Message-Id: <1391608084-12665-1-git-send-email-ml@embed.me.uk>
-X-Mailer: git-send-email 1.8.5.3
+	id S1751745AbaBENsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:48:40 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <santosh.shilimkar@ti.com>, <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <galak@codeaurora.org>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <daniel.lezcano@linaro.org>,
+        <tglx@linutronix.de>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v5 3/3] arm: dts: keystone: add keystone timer entry
+Date: Wed, 5 Feb 2014 15:47:40 +0200
+Message-ID: <1391608060-10760-4-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1391608060-10760-1-git-send-email-ivan.khoronzhuk@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jack Mitchell <jack@embed.me.uk>
+Add keystone timer entry to keystone device tree.
+This 64-bit timer is used as backup clock event device.
 
-Devicetree include file for setting up the am335x mcasp bus, i2c-2
-bus, and audio codec required for a functioning BeagleBone Audio Cape.
-
-Signed-off-by: Jack Mitchell <jack@embed.me.uk>
-Signed-off-by: Matt Porter <mporter@linaro.org>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- arch/arm/boot/dts/am335x-bone-audio-cape-reva.dtsi | 124 +++++++++++++++++++++
- arch/arm/boot/dts/am335x-bone-common.dtsi          |  14 +++
- 2 files changed, 138 insertions(+)
- create mode 100644 arch/arm/boot/dts/am335x-bone-audio-cape-reva.dtsi
+ arch/arm/boot/dts/keystone-clocks.dtsi | 10 ++++++++++
+ arch/arm/boot/dts/keystone.dtsi        |  7 +++++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/arch/arm/boot/dts/am335x-bone-audio-cape-reva.dtsi b/arch/arm/boot/dts/am335x-bone-audio-cape-reva.dtsi
-new file mode 100644
-index 0000000..b8ec3dc
---- /dev/null
-+++ b/arch/arm/boot/dts/am335x-bone-audio-cape-reva.dtsi
-@@ -0,0 +1,124 @@
-+/*
-+ * Copyright (C) 2014 Jack Mitchell <jack@embed.me.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * In order to enable the BeagleBone Audio Cape this dtsi must be
-+ * incuded in the top level dts. On BeagleBone Black hardware the
-+ * status of the HDMI dts node must also be set to "disabled".
-+ *
-+ * --- a/arch/arm/boot/dts/am335x-bone.dts
-+ * +++ b/arch/arm/boot/dts/am335x-bone.dts
-+ * @@ -9,6 +9,7 @@
-+ *
-+ *  #include "am33xx.dtsi"
-+ *  #include "am335x-bone-common.dtsi"
-+ * +#include "am335x-bone-audio-cape-reva.dtsi"
-+ *
-+ *  &ldo3_reg {
-+ *  	regulator-min-microvolt = <1800000>;
-+ *
-+ * On BeagleBone Black hardware the status of the HDMI dts node must
-+ * also be set to "disabled"
-+ *
-+ * --- a/arch/arm/boot/dts/am335x-boneblack.dts
-+ * +++ b/arch/arm/boot/dts/am335x-boneblack.dts
-+ * @@ -73,6 +74,6 @@
-+ *  		pinctrl-names = "default", "off";
-+ *  		pinctrl-0 = <&nxp_hdmi_bonelt_pins>;
-+ *  		pinctrl-1 = <&nxp_hdmi_bonelt_off_pins>;
-+ * -		status = "okay";
-+ * +		status = "disabled";
-+ *  	};
-+ *  };
-+ */
-+
-+/ {
-+	sound {
-+		compatible = "ti,da830-evm-audio";
-+		ti,model = "AM335x BeagleBone Audio Cape Rev. A";
-+		ti,audio-codec = <&tlv320aic3106>;
-+		ti,mcasp-controller = <&mcasp0>;
-+		ti,codec-clock-rate = <12000000>;
-+		ti,audio-routing =
-+			"Headphone Jack",       "HPLOUT",
-+			"Headphone Jack",       "HPROUT",
-+			"LINE1L",               "Line In",
-+			"LINE1R",               "Line In";
-+	};
-+
-+	audio-cape-gpio-leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_audio_cape_led_pins>;
-+
-+		audio-led0 {
-+			label = "audio:green:usr0";
-+			gpios = <&gpio1 18 GPIO_ACTIVE_HIGH>;
-+			linux,default-trigger = "heartbeat";
-+			default-state = "off";
-+		};
-+
-+		audio-led1 {
-+			label = "audio:green:usr1";
-+			gpios = <&gpio1 19 GPIO_ACTIVE_HIGH>;
-+			linux,default-trigger = "mmc0";
-+			default-state = "off";
-+		};
-+	};
-+};
-+
-+&am33xx_pinmux {
-+	bone_audio_cape_led_pins: pinmux_bone_audio_cape_led_pins {
-+		pinctrl-single,pins = <
-+			0x48 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_a2.gpio1_18 */
-+			0x4c (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_a3.gpio1_19 */
-+		>;
-+	};
-+
-+	bone_audio_cape_pins: bone_audio_cape_pins {
-+		pinctrl-single,pins = <
-+			0x190 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcasp0_aclkx.mcasp0_aclkx */
-+			0x194 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcasp0_fsx.mcasp0_fsx */
-+			0x19c (PIN_INPUT_PULLUP | MUX_MODE2)	/* mcasp0_ahclkr.mcasp0_axr2 */
-+			0x1ac (PIN_INPUT_PULLUP | MUX_MODE2)	/* mcasp0_ahclkx.mcasp0_axr3 */
-+		>;
-+	};
-+};
-+
-+&i2c2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c2_pins>;
-+
-+	status = "okay";
-+	clock-frequency = <100000>;
-+
-+	tlv320aic3106: tlv320aic3106@1b {
-+		compatible = "ti,tlv320aic3106";
-+		reg = <0x1b>;
-+		status = "okay";
-+
-+		/* Regulators */
-+		AVDD-supply = <&vmmcsd_fixed>;
-+		IOVDD-supply = <&vmmcsd_fixed>;
-+		DRVDD-supply = <&vmmcsd_fixed>;
-+		DVDD-supply = <&vdd1v8_fixed>;
-+	};
-+};
-+
-+&mcasp0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&bone_audio_cape_pins>;
-+
-+	status = "okay";
-+
-+	op-mode = <0>;      /* MCASP_IIS_MODE */
-+	tdm-slots = <2>;
-+	serial-dir = <      /* 0: INACTIVE, 1: TX, 2: RX */
-+		0 0 2 1
-+	>;
-+	tx-num-evt = <1>;
-+	rx-num-evt = <1>;
-+};
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index e3f27ec..c1c0f74 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -62,12 +62,26 @@
- 		regulator-min-microvolt = <3300000>;
- 		regulator-max-microvolt = <3300000>;
+diff --git a/arch/arm/boot/dts/keystone-clocks.dtsi b/arch/arm/boot/dts/keystone-clocks.dtsi
+index 2363593..16d2aba 100644
+--- a/arch/arm/boot/dts/keystone-clocks.dtsi
++++ b/arch/arm/boot/dts/keystone-clocks.dtsi
+@@ -737,6 +737,16 @@ clocks {
+ 		domain-id = <0>;
  	};
-+
-+	vdd1v8_fixed: fixedregulator@1 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vdd1v8_fixed";
-+		regulator-min-microvolt = <1800000>;
-+		regulator-max-microvolt = <1800000>;
+ 
++	clktimer15: clktimer15 {
++		#clock-cells = <0>;
++		compatible = "ti,keystone,psc-clock";
++		clocks = <&clkmodrst0>;
++		clock-output-names = "timer15";
++		reg = <0x02350000 0xb00>, <0x02350000 0x400>;
++		reg-names = "control", "domain";
++		domain-id = <0>;
 +	};
++
+ 	clkuart0: clkuart0 {
+ 		#clock-cells = <0>;
+ 		compatible = "ti,keystone,psc-clock";
+diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
+index b420290..cac9841 100644
+--- a/arch/arm/boot/dts/keystone.dtsi
++++ b/arch/arm/boot/dts/keystone.dtsi
+@@ -208,5 +208,12 @@
+ 				usb-phy = <&usb_phy>, <&usb_phy>;
+ 			};
+ 		};
++
++		clock_event: timer@22f0000 {
++			compatible = "ti,keystone-timer";
++			reg = <0x022f0000 0x80>;
++			interrupts = <GIC_SPI 110 IRQ_TYPE_EDGE_RISING>;
++			clocks = <&clktimer15>;
++		};
+ 	};
  };
- 
- &am33xx_pinmux {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&clkout2_pin>;
- 
-+	i2c2_pins: pinmux_i2c2_pins {
-+		pinctrl-single,pins = <
-+			0x178 (PIN_INPUT_PULLUP | MUX_MODE3)  /* uart1_ctsn.i2c2_sda */
-+			0x17c (PIN_INPUT_PULLUP | MUX_MODE3)  /* uart1_rtsn.i2c2_scl */
-+		>;
-+	};
-+
- 	user_leds_s0: user_leds_s0 {
- 		pinctrl-single,pins = <
- 			0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
 -- 
-1.8.5.3
+1.8.3.2
 
