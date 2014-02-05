@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162AbaBEWOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 17:14:51 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55515 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261AbaBEWOr (ORCPT
+	id S1755521AbaBEWPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 17:15:01 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:57418 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800AbaBEWO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 17:14:47 -0500
+	Wed, 5 Feb 2014 17:14:56 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 26/51] x86, oprofile,
- nmi: Fix CPU hotplug callback registration
+Subject: [PATCH 27/51] x86, kvm: Fix CPU hotplug callback registration
 To: paulus@samba.org, oleg@redhat.com, rusty@rustcorp.com.au,
         peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org
 Cc: mingo@kernel.org, paulmck@linux.vnet.ibm.com, tj@kernel.org,
         walken@google.com, ego@linux.vnet.ibm.com, linux@arm.linux.org.uk,
         linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Robert Richter <rric@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 06 Feb 2014 03:39:22 +0530
-Message-ID: <20140205220921.19080.94715.stgit@srivatsabhat.in.ibm.com>
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Thu, 06 Feb 2014 03:39:35 +0530
+Message-ID: <20140205220934.19080.30046.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 References: <20140205220251.19080.92336.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -28,7 +28,7 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14020522-1618-0000-0000-000005629553
+x-cbid: 14020522-2000-0000-0000-00000F986A31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -64,66 +64,44 @@ registration is:
 	cpu_maps_update_done();
 
 
-Fix the oprofile code in x86 by using this latter form of callback
-registration. But retain the calls to get/put_online_cpus(), since they
-also protect the variables 'nmi_enabled' and 'ctr_running'. By nesting
-get/put_online_cpus() *inside* cpu_maps_update_begin/done(), we avoid
-the ABBA deadlock possibility mentioned above.
+Fix the kvm code in x86 by using this latter form of callback registration.
 
-Cc: Robert Richter <rric@kernel.org>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
+Cc: kvm@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/oprofile/nmi_int.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 6890d84..85e5f6e 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -494,14 +494,19 @@ static int nmi_setup(void)
- 	if (err)
- 		goto fail;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 39c28f09..e3893b7 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5365,7 +5365,8 @@ static void kvm_timer_init(void)
+ 	int cpu;
  
-+	cpu_maps_update_begin();
+ 	max_tsc_khz = tsc_khz;
+-	register_hotcpu_notifier(&kvmclock_cpu_notifier_block);
 +
-+	/* Use get/put_online_cpus() to protect 'nmi_enabled' */
- 	get_online_cpus();
--	register_cpu_notifier(&oprofile_cpu_nb);
- 	nmi_enabled = 1;
- 	/* make nmi_enabled visible to the nmi handler: */
- 	smp_mb();
- 	on_each_cpu(nmi_cpu_setup, NULL, 1);
-+	__register_cpu_notifier(&oprofile_cpu_nb);
- 	put_online_cpus();
- 
++	cpu_maps_update_begin();
+ 	if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC)) {
+ #ifdef CONFIG_CPU_FREQ
+ 		struct cpufreq_policy policy;
+@@ -5382,6 +5383,10 @@ static void kvm_timer_init(void)
+ 	pr_debug("kvm: max_tsc_khz = %ld\n", max_tsc_khz);
+ 	for_each_online_cpu(cpu)
+ 		smp_call_function_single(cpu, tsc_khz_changed, NULL, 1);
++
++	__register_hotcpu_notifier(&kvmclock_cpu_notifier_block);
 +	cpu_maps_update_done();
 +
- 	return 0;
- fail:
- 	free_msrs();
-@@ -512,12 +517,18 @@ static void nmi_shutdown(void)
- {
- 	struct op_msrs *msrs;
+ }
  
-+	cpu_maps_update_begin();
-+
-+	/* Use get/put_online_cpus() to protect 'nmi_enabled' & 'ctr_running' */
- 	get_online_cpus();
--	unregister_cpu_notifier(&oprofile_cpu_nb);
- 	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
- 	nmi_enabled = 0;
- 	ctr_running = 0;
-+	__unregister_cpu_notifier(&oprofile_cpu_nb);
- 	put_online_cpus();
-+
-+	cpu_maps_update_done();
-+
- 	/* make variables visible to the nmi handler: */
- 	smp_mb();
- 	unregister_nmi_handler(NMI_LOCAL, "oprofile");
+ static DEFINE_PER_CPU(struct kvm_vcpu *, current_vcpu);
 
