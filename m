@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292AbaBEUph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:45:37 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48295 "EHLO
+	id S932654AbaBEUp3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:45:29 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48299 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864AbaBEUGU (ORCPT
+	with ESMTP id S1751515AbaBEUGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:20 -0500
+	Wed, 5 Feb 2014 15:06:21 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Christoffer Dall <cdall@cs.columbia.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Will Deacon <Will.Deacon@arm.com>, Steve Capper <Steve.Capper@arm.com>,
-        Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+CC: Mel Gorman <mgorman@suse.de>, <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 101/213] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
-Date: Wed, 5 Feb 2014 15:00:56 -0500
-Message-ID: <1391630568-49251-102-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 111/213] x86/mm: Check if PUD is large when validating a kernel address
+Date: Wed, 5 Feb 2014 15:01:06 -0500
+Message-ID: <1391630568-49251-112-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -27,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoffer Dall <cdall@cs.columbia.edu>
+From: Mel Gorman <mgorman@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -35,63 +32,84 @@ From: Christoffer Dall <cdall@cs.columbia.edu>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit ad4b3fb7ff9940bcdb1e4cd62bd189d10fa636ba upstream.
+commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
 
-Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
-(PageHead) is true, for tail pages.  If this is indeed the intended
-behavior, which I doubt because it breaks cache cleaning on some ARM
-systems, then the nomenclature is highly problematic.
+A user reported the following oops when a backup process reads
+/proc/kcore:
 
-This patch makes sure PageHead is only true for head pages and PageTail
-is only true for tail pages, and neither is true for non-compound pages.
+ BUG: unable to handle kernel paging request at ffffbb00ff33b000
+ IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+ [...]
 
-[ This buglet seems ancient - seems to have been introduced back in Apr
-  2008 in commit 6a1e7f777f61: "pageflags: convert to the use of new
-  macros".  And the reason nobody noticed is because the PageHead()
-  tests are almost all about just sanity-checking, and only used on
-  pages that are actual page heads.  The fact that the old code returned
-  true for tail pages too was thus not really noticeable.   - Linus ]
+ Call Trace:
+  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+  [<ffffffff81151687>] vfs_read+0xc7/0x130
+  [<ffffffff811517f3>] sys_read+0x53/0xa0
+  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
-Acked-by:  Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Will Deacon <Will.Deacon@arm.com>
-Cc: Steve Capper <Steve.Capper@arm.com>
-Cc: Christoph Lameter <cl@linux.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Investigation determined that the bug triggered when reading
+system RAM at the 4G mark. On this system, that was the first
+address using 1G pages for the virt->phys direct mapping so the
+PUD is pointing to a physical address, not a PMD page.
+
+The problem is that the page table walker in kern_addr_valid() is
+not checking pud_large() and treats the physical address as if
+it was a PMD.  If it happens to look like pmd_none then it'll
+silently fail, probably returning zeros instead of real data. If
+the data happens to look like a present PMD though, it will be
+walked resulting in the oops above.
+
+This patch adds the necessary pud_large() check.
+
+Unfortunately the problem was not readily reproducible and now
+they are running the backup program without accessing
+/proc/kcore so the patch has not been validated but I think it
+makes sense.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.coM>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org
+Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/page-flags.h | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/pgtable.h | 5 +++++
+ arch/x86/mm/init_64.c          | 3 +++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index 5b59f35dcb8f..040ce385f262 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -362,7 +362,7 @@ static inline int PageCompound(struct page *page)
-  * pages on the LRU and/or pagecache.
-  */
- TESTPAGEFLAG(Compound, compound)
--__PAGEFLAG(Head, compound)
-+__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index a34c785c5a63..321d24d6a924 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -132,6 +132,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
+ 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+ }
  
- /*
-  * PG_reclaim is used in combination with PG_compound to mark the
-@@ -374,8 +374,14 @@ __PAGEFLAG(Head, compound)
-  * PG_compound & PG_reclaim	=> Tail page
-  * PG_compound & ~PG_reclaim	=> Head page
-  */
-+#define PG_head_mask ((1L << PG_compound))
- #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
- 
-+static inline int PageHead(struct page *page)
++static inline unsigned long pud_pfn(pud_t pud)
 +{
-+	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
++	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
 +}
 +
- static inline int PageTail(struct page *page)
- {
- 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
+ #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
+ 
+ static inline int pmd_large(pmd_t pte)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index ee41bba315d1..3cd243b8b01d 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -864,6 +864,9 @@ int kern_addr_valid(unsigned long addr)
+ 	if (pud_none(*pud))
+ 		return 0;
+ 
++	if (pud_large(*pud))
++		return pfn_valid(pud_pfn(*pud));
++
+ 	pmd = pmd_offset(pud, addr);
+ 	if (pmd_none(*pmd))
+ 		return 0;
 -- 
 1.8.5.2
 
