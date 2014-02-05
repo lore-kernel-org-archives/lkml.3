@@ -1,93 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaBEARX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:17:23 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:49530 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaBEART (ORCPT
+	id S1754281AbaBEASr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:18:47 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:39683 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaBEASp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:17:19 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-bd-52f1830d8723
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Shuah Khan'" <shuah.kh@samsung.com>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Shuah Khan'" <shuahkhan@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
- <15798389.lgk83XnI1i@vostro.rjw.lan>
- <001f01cf157f$ca2e8530$5e8b8f90$%han@samsung.com>
- <52DD4045.4050902@samsung.com> <52F1298F.1040903@samsung.com>
-In-reply-to: <52F1298F.1040903@samsung.com>
-Subject: Re: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
-Date: Wed, 05 Feb 2014 09:17:16 +0900
-Message-id: <000401cf2207$a06765c0$e1363140$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8h0kwQZivBj+kuS/WbeVAUbnpE0QANHa2w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+ZoS5v88cgg3d/2Sw6Z15jtLi88BKr
-	xYm+D6wWl3fNYbNY9/AFk8XjFW/ZLc6cBkrs3vWU1eLLZy6Lrz8dLNbPv8XmwO2xc9Zddo8P
-	H+M8Fu95yeTx6sIdFo8tV9tZPPbM/8Hq0bdlFaPH8RvbmTw+b5IL4IzisklJzcksSy3St0vg
-	yjj6r5+9YCtrxY//p5kbGOezdDFyckgImEj0TP/MCGGLSVy4t56ti5GLQ0hgGaPE/CudrDBF
-	nXc3QSUWMUqs/joZyvnFKHF421o2kCo2ATWJL18Os4PYIgIhEtumXGYHKWIW6GSWOPL4NhNE
-	xz1GiY9PX4FVcQpoS7yYfYwJxBYW8JboOLMGzGYRUJW49OcXWA2vgK3Exi+v2SBsQYkfk+8B
-	Hc4BNFVdYsqUXJAws4C8xOY1b5lBwhJA4Ud/dSFuMJJ407ONEaJERGLfi3dQby7kkJh2LBZi
-	k4DEt8mHWCBaZSU2HWCGKJGUOLjiBssERolZSPbOQtg7C8neWUgWLGBkWcUomlqQXFCclF5k
-	rFecmFtcmpeul5yfu4kRkgb6dzDePWB9iDEZaPtEZinR5HxgGskriTc0NjOyMDUxNTYytzQj
-	TVhJnPf+w6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwBzvVf2yfu/LleTS7jzXqp9O2M
-	qm7uPR8OByw4dmrbUqe5by7uZforl9nApvE3VfZXS9v/a12//ot7h5va7C9ldpoyKbwm8eOb
-	df8f8rz48bF2x+8epxPtE1xucB7Zpjh7wVruuR6vZxa3JnyYuZ2lQGzuZxbzOonNnA++zm6c
-	V/ZhavqqGer/lViKMxINtZiLihMBOyWAbxkDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCKsWRmVeSWpSXmKPExsVy+t9jAV3e5o9BBn8XM1l0zrzGaHF54SVW
-	ixN9H1gtLu+aw2ax7uELJovHK96yW5w5DZTYvespq8WXz1wWX386WKyff4vNgdtj56y77B4f
-	PsZ5LN7zksnj1YU7LB5brrazeOyZ/4PVo2/LKkaP4ze2M3l83iQXwBnVwGiTkZqYklqkkJqX
-	nJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3SskkJZYk4pUCggsbhYSd8O
-	04TQEDddC5jGCF3fkCC4HiMDNJCwjjHj6L9+9oKtrBU//p9mbmCcz9LFyMkhIWAi0Xl3ExuE
-	LSZx4d56IJuLQ0hgEaPE6q+ToZxfjBKHt60Fq2ITUJP48uUwO4gtIhAisW3KZXaQImaBTmaJ
-	I49vM0F03GOU+Pj0FVgVp4C2xIvZx5hAbGEBb4mOM2vAbBYBVYlLf36B1fAK2Eps/PKaDcIW
-	lPgx+R7QfRxAU9UlpkzJBQkzC8hLbF7zlhkkLAEUfvRXF+IGI4k3PdsYIUpEJPa9eMc4gVFo
-	FpJBsxAGzUIyaBaSjgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgtPMM6kdjCsbLA4x
-	CnAwKvHwGgh/DBJiTSwrrsw9xCjBwawkwmv2+UOQEG9KYmVValF+fFFpTmrxIcZkoDcnMkuJ
-	JucDU2BeSbyhsYmZkaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTA2r81R
-	PffIUnHa7fyGrRZcmw811L462nRRo+x8hqBkxv8f8aVpyorZ4f8efFV30rlx6NWF87GMq86f
-	27H9qO6yWxOXvuoz6XueaB+U8E+X76uM5rnO+AXsfH/UZv2z+D+p7dEcPp2Jv7dq1i1MY9jg
-	+2SG8xZzrmfHGH+8ZphzIpC9xGfRK11/JZbijERDLeai4kQAz+It/HcDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 4 Feb 2014 19:18:45 -0500
+Message-ID: <52F18367.2060803@gmail.com>
+Date: Wed, 05 Feb 2014 08:18:47 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
+        =?UTF-8?B?SMOldmFy?= =?UTF-8?B?ZCBTa2lubmVtb2Vu?= 
+	<hskinnemoen@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] kernel: kprobe: move all *kretprobe* generic implementation
+ to CONFIG_KRETPROBES enabled area
+References: <52ECE5D8.6090209@gmail.com> <52EDB022.5070101@hitachi.com> <52EF8222.6030709@gmail.com> <52EFB8F4.6010207@hitachi.com> <52F04FA8.8040008@gmail.com> <52F077A1.3020701@gmail.com> <52F09404.3060502@hitachi.com> <52F0D7F3.7000901@gmail.com> <52F0EB30.2070401@hitachi.com> <52F0F0ED.5090005@gmail.com> <52F109AF.8040800@hitachi.com>
+In-Reply-To: <52F109AF.8040800@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 05, 2014 2:55 AM, Shuah Khan wrote:
-> On 01/20/2014 08:27 AM, Shuah Khan wrote:
-> > On 01/19/2014 06:34 PM, Jingoo Han wrote:
-> >> On Monday, January 20, 2014 12:37 AM, Rafael J. Wysocki wrote:
+On 02/04/2014 11:39 PM, Masami Hiramatsu wrote:
+> (2014/02/04 22:53), Chen Gang wrote:
+>> On 02/04/2014 09:29 PM, Masami Hiramatsu wrote:
+>>> (2014/02/04 21:07), Chen Gang wrote:
+>>>> On 02/04/2014 03:17 PM, Masami Hiramatsu wrote:
+>>>>> (2014/02/04 14:16), Chen Gang wrote:
+>>>>>> When CONFIG_KRETPROBES disabled, all *kretprobe* generic implementation
+>>>>>> are useless, so need move them to CONFIG_KPROBES enabled area.
+>>>>>>
+>>>>>> Now, *kretprobe* generic implementation are all implemented in 2 files:
+>>>>>>
+>>>>>>  - in "include/linux/kprobes.h":
+>>>>>>
+>>>>>>      move inline kretprobe*() to CONFIG_KPROBES area and dummy outside.
+>>>>>>      move some *kprobe() declarations which kretprobe*() call, to front.
+>>>>>>      not touch kretprobe_blacklist[] which is architecture's variable.
+>>>>>>
+>>>>>>  - in "kernel/kprobes.c":
+>>>>>>
+>>>>>>      move all kretprobe* to CONFIG_KPROBES area and dummy outside.
+>>>>>>      define kretprobe_flush_task() to let kprobe_flush_task() call.
+>>>>>>      define init_kretprobes() to let init_kprobes() call.
+>>>>>>
+>>>>>> The patch passes compiling (get "kernel/kprobes.o" and "kernel/built-
+>>>>>> in.o") under avr32 and x86_64 allmodconfig, and passes building (get
+>>>>>> bzImage and Modpost modules) under x86_64 defconfig.
+>>>>>
+>>>>> Thanks for the fix! and I have some comments below.
+>>>>>
+>>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>>> ---
+>>>>>>  include/linux/kprobes.h |  58 +++++----
+>>>>>>  kernel/kprobes.c        | 328 +++++++++++++++++++++++++++---------------------
+>>>>>>  2 files changed, 222 insertions(+), 164 deletions(-)
+>>>>>>
+>>>>>> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+>>>>>> index 925eaf2..c0d1212 100644
+>>>>>> --- a/include/linux/kprobes.h
+>>>>>> +++ b/include/linux/kprobes.h
+>>>>>> @@ -223,10 +223,36 @@ static inline int kprobes_built_in(void)
+>>>>>>   return 1;
+>>>>>>  }
+>>>>>>  
+>>>>>> +int disable_kprobe(struct kprobe *kp);
+>>>>>> +int enable_kprobe(struct kprobe *kp);
+>>>>>> +
+>>>>>> +void dump_kprobe(struct kprobe *kp);
+>>>>>> +
+>>>>>> +extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>>>>> +
+>>>>>>  #ifdef CONFIG_KRETPROBES
+>>>>>>  extern void arch_prepare_kretprobe(struct kretprobe_instance *ri,
+>>>>>>     struct pt_regs *regs);
+>>>>>>  extern int arch_trampoline_kprobe(struct kprobe *p);
+>>>>>> +static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>>>>>> + unsigned long orig_ret_address, unsigned long trampoline_address)
+>>>>>> +{
+>>>>>> + if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>>>>>> + printk(KERN_ERR
+>>>>>> + "kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>>>>>> + ri->rp, ri->rp->kp.addr);
+>>>>>> + BUG();
+>>>>>> + }
+>>>>>> +}
+>>>>>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>>>>> +{
+>>>>>> + return disable_kprobe(&rp->kp);
+>>>>>> +}
+>>>>>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>>>>> +{
+>>>>>> + return enable_kprobe(&rp->kp);
+>>>>>> +}
+>>>>>> +
+>>>>>>  #else /* CONFIG_KRETPROBES */
+>>>>>>  static inline void arch_prepare_kretprobe(struct kretprobe *rp,
+>>>>>>   struct pt_regs *regs)
+>>>>>> @@ -236,19 +262,20 @@ static inline int arch_trampoline_kprobe(struct kprobe *p)
+>>>>>>  {
+>>>>>>   return 0;
+>>>>>>  }
+>>>>>> -#endif /* CONFIG_KRETPROBES */
+>>>>>> -
+>>>>>> -extern struct kretprobe_blackpoint kretprobe_blacklist[];
+>>>>>> -
+>>>>>>  static inline void kretprobe_assert(struct kretprobe_instance *ri,
+>>>>>>   unsigned long orig_ret_address, unsigned long trampoline_address)
+>>>>>>  {
+>>>>>> - if (!orig_ret_address || (orig_ret_address == trampoline_address)) {
+>>>>>> - printk("kretprobe BUG!: Processing kretprobe %p @ %p\n",
+>>>>>> - ri->rp, ri->rp->kp.addr);
+>>>>>> - BUG();
+>>>>>> - }
+>>>>>>  }
+>>>>>> +static inline int disable_kretprobe(struct kretprobe *rp)
+>>>>>> +{
+>>>>>> + return 0;
+>>>>>> +}
+>>>>>> +static inline int enable_kretprobe(struct kretprobe *rp)
+>>>>>> +{
+>>>>>> + return 0;
+>>>>>> +}
+>>>>>
+>>>>> No, these should returns -EINVAL or -ENOSYS, since these are user API.
+>>>>
+>>>> OK, thanks, it sounds reasonable to me.
+>>>>
+>>>>> Anyway, I don't think those inlined functions to be changed, because
+>>>>> most of them are internal functions. If CONFIG_KRETPROBES=n, it just
+>>>>> be ignored.
+>>>>>
+>>>>
+>>>> In original implementation, if CONFIG_KRETPROBES=n, kretprobe_assert(),
+>>>> disable_kretprobe(), and enable_kretprobe() are not ignored.
+>>>
+>>> Really? where are they called? I mean, those functions do not have
+>>> any instance unless your module uses it (but that is not what the kernel
+>>> itself should help).
+>>>
+>>
+>> If what you said correct (I guess so), for me, we still need let them in
+>> CONFIG_KRETPROBES area, and without any dummy outside, just like another
+>> *kprobe* static inline functions have done in "include/linux/kprobes.h".
 > 
-> > Rafael/Jingoo Han,
-> >
-> > I did send the v3 patch with the typo fixed. Here is the link:
-> >
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1306.0/00219.html
-> >
-> > This is a while back. I will rebase and res-test and send it.
-> >
+> kretprobe_assert() is only for the internal check. So we don't need to care
+> about, and disable/enable_kretprobe() are anyway returns -EINVAL because
+> kretprobe can not be registered. And all of them are inlined functions.
+> In that case, we don't need to care about it.
+
+Hmm... it is related with code 'consistency':
+
+ - these static inline functions are kretprobe generic implementation,
+   and we are trying to let all kretprobe generic implementation within
+   CONFIG_KRETPROBES area.
+
+ - And original kprobe static inline functions have done like that,
+   in same header file, if no obvious reasons, we can try to follow.
+
+
+> I just concerned that it is a waste of memory if there are useless kretprobe
+> related instances are built when CONFIG_KRETPROBES=n.
 > 
-> Checked 3.14-rc1 and patch v3 is in there.
+
+Yeah, that is also one of reason (3rd reason).
+
+
+And if necessary, please help check what we have done whether already
+"let all kretprobe generic implementation within CONFIG_KRETPROBES area"
+(exclude declaration, struct/union definition, and architecture
+implementation).
+
+
+> Thank you,
 > 
-> commit 3601792e7b68150420ea8dc129e26e167c0484d8
 
-OK, I see. I checked that it was already merged to
-mainline kernel. Thank you.
+Thanks.
+-- 
+Chen Gang
 
-Best regards,
-Jingoo Han
-
+Open, share and attitude like air, water and life which God blessed
