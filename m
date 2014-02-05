@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaBEUFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:05:49 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54832 "EHLO
+	id S1755960AbaBEUxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:53:47 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54888 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590AbaBEUFm (ORCPT
+	with ESMTP id S1754665AbaBEUFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:42 -0500
+	Wed, 5 Feb 2014 15:05:49 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eric Dumazet <edumazet@google.com>, Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 067/213] drop_monitor: dont sleep in atomic context
-Date: Wed, 5 Feb 2014 15:00:22 -0500
-Message-ID: <1391630568-49251-68-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 091/213] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+Date: Wed, 5 Feb 2014 15:00:46 -0500
+Message-ID: <1391630568-49251-92-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,243 +33,38 @@ From: Eric Dumazet <edumazet@google.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit bec4596b4e6770c7037f21f6bd27567b152dc0d6 upstream.
+commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
 
-drop_monitor calls several sleeping functions while in atomic context.
+As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
+have kernel_restart() call disable_nonboot_cpus().  Doing so can help
+machines that require boot cpu be the last alive cpu during reboot to
+survive with kernel restart.
 
- BUG: sleeping function called from invalid context at mm/slub.c:943
- in_atomic(): 1, irqs_disabled(): 0, pid: 2103, name: kworker/0:2
- Pid: 2103, comm: kworker/0:2 Not tainted 3.5.0-rc1+ #55
- Call Trace:
-  [<ffffffff810697ca>] __might_sleep+0xca/0xf0
-  [<ffffffff811345a3>] kmem_cache_alloc_node+0x1b3/0x1c0
-  [<ffffffff8105578c>] ? queue_delayed_work_on+0x11c/0x130
-  [<ffffffff815343fb>] __alloc_skb+0x4b/0x230
-  [<ffffffffa00b0360>] ? reset_per_cpu_data+0x160/0x160 [drop_monitor]
-  [<ffffffffa00b022f>] reset_per_cpu_data+0x2f/0x160 [drop_monitor]
-  [<ffffffffa00b03ab>] send_dm_alert+0x4b/0xb0 [drop_monitor]
-  [<ffffffff810568e0>] process_one_work+0x130/0x4c0
-  [<ffffffff81058249>] worker_thread+0x159/0x360
-  [<ffffffff810580f0>] ? manage_workers.isra.27+0x240/0x240
-  [<ffffffff8105d403>] kthread+0x93/0xa0
-  [<ffffffff816be6d4>] kernel_thread_helper+0x4/0x10
-  [<ffffffff8105d370>] ? kthread_freezable_should_stop+0x80/0x80
-  [<ffffffff816be6d0>] ? gs_change+0xb/0xb
+This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
+requires that the restart routine be run on the primary cpu rather than
+secondary ones.  Otherwise, the secondary core running the restart
+routine will fail to come to online after reboot.
 
-Rework the logic to call the sleeping functions in right context.
-
-Use standard timer/workqueue api to let system chose any cpu to perform
-the allocation and netlink send.
-
-Also avoid a loop if reset_per_cpu_data() cannot allocate memory :
-use mod_timer() to wait 1/10 second before next try.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[PG: diffstat here is less by one line due to blank line removal]
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/core/drop_monitor.c | 101 ++++++++++++++++--------------------------------
- 1 file changed, 33 insertions(+), 68 deletions(-)
+ kernel/sys.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-index 58c57fcc67ad..cd3f2b942991 100644
---- a/net/core/drop_monitor.c
-+++ b/net/core/drop_monitor.c
-@@ -33,9 +33,6 @@
- #define TRACE_ON 1
- #define TRACE_OFF 0
- 
--static void send_dm_alert(struct work_struct *unused);
--
--
- /*
-  * Globals, our netlink socket pointer
-  * and the work handle that will send up
-@@ -45,11 +42,10 @@ static int trace_state = TRACE_OFF;
- static DEFINE_MUTEX(trace_state_mutex);
- 
- struct per_cpu_dm_data {
--	struct work_struct dm_alert_work;
--	struct sk_buff /* __rcu <-- only 2.6.37+ */ *skb;
--	atomic_t dm_hit_count;
--	struct timer_list send_timer;
--	int cpu;
-+	spinlock_t		lock;
-+	struct sk_buff		*skb;
-+	struct work_struct	dm_alert_work;
-+	struct timer_list	send_timer;
- };
- 
- struct dm_hw_stat_delta {
-@@ -75,13 +71,13 @@ static int dm_delay = 1;
- static unsigned long dm_hw_check_delta = 2*HZ;
- static LIST_HEAD(hw_stats_list);
- 
--static void reset_per_cpu_data(struct per_cpu_dm_data *data)
-+static struct sk_buff *reset_per_cpu_data(struct per_cpu_dm_data *data)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 0324c1cd8e7b..006883113861 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -308,6 +308,7 @@ void kernel_restart_prepare(char *cmd)
+ void kernel_restart(char *cmd)
  {
- 	size_t al;
- 	struct net_dm_alert_msg *msg;
- 	struct nlattr *nla;
- 	struct sk_buff *skb;
--	struct sk_buff *oskb = rcu_dereference_protected(data->skb, 1);
-+	unsigned long flags;
- 
- 	al = sizeof(struct net_dm_alert_msg);
- 	al += dm_hit_limit * sizeof(struct net_dm_drop_point);
-@@ -96,65 +92,40 @@ static void reset_per_cpu_data(struct per_cpu_dm_data *data)
- 				  sizeof(struct net_dm_alert_msg));
- 		msg = nla_data(nla);
- 		memset(msg, 0, al);
--	} else
--		schedule_work_on(data->cpu, &data->dm_alert_work);
--
--	/*
--	 * Don't need to lock this, since we are guaranteed to only
--	 * run this on a single cpu at a time.
--	 * Note also that we only update data->skb if the old and new skb
--	 * pointers don't match.  This ensures that we don't continually call
--	 * synchornize_rcu if we repeatedly fail to alloc a new netlink message.
--	 */
--	if (skb != oskb) {
--		rcu_assign_pointer(data->skb, skb);
--
--		synchronize_rcu();
--
--		atomic_set(&data->dm_hit_count, dm_hit_limit);
-+	} else {
-+		mod_timer(&data->send_timer, jiffies + HZ / 10);
- 	}
- 
-+	spin_lock_irqsave(&data->lock, flags);
-+	swap(data->skb, skb);
-+	spin_unlock_irqrestore(&data->lock, flags);
-+
-+	return skb;
- }
- 
--static void send_dm_alert(struct work_struct *unused)
-+static void send_dm_alert(struct work_struct *work)
- {
- 	struct sk_buff *skb;
--	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
-+	struct per_cpu_dm_data *data;
- 
--	WARN_ON_ONCE(data->cpu != smp_processor_id());
-+	data = container_of(work, struct per_cpu_dm_data, dm_alert_work);
- 
--	/*
--	 * Grab the skb we're about to send
--	 */
--	skb = rcu_dereference_protected(data->skb, 1);
--
--	/*
--	 * Replace it with a new one
--	 */
--	reset_per_cpu_data(data);
-+	skb = reset_per_cpu_data(data);
- 
--	/*
--	 * Ship it!
--	 */
- 	if (skb)
- 		genlmsg_multicast(skb, 0, NET_DM_GRP_ALERT, GFP_KERNEL);
--
--	put_cpu_var(dm_cpu_data);
- }
- 
- /*
-  * This is the timer function to delay the sending of an alert
-  * in the event that more drops will arrive during the
-- * hysteresis period.  Note that it operates under the timer interrupt
-- * so we don't need to disable preemption here
-+ * hysteresis period.
-  */
--static void sched_send_work(unsigned long unused)
-+static void sched_send_work(unsigned long _data)
- {
--	struct per_cpu_dm_data *data =  &get_cpu_var(dm_cpu_data);
--
--	schedule_work_on(smp_processor_id(), &data->dm_alert_work);
-+	struct per_cpu_dm_data *data = (struct per_cpu_dm_data *)_data;
- 
--	put_cpu_var(dm_cpu_data);
-+	schedule_work(&data->dm_alert_work);
- }
- 
- static void trace_drop_common(struct sk_buff *skb, void *location)
-@@ -164,22 +135,17 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
- 	struct nlattr *nla;
- 	int i;
- 	struct sk_buff *dskb;
--	struct per_cpu_dm_data *data = &get_cpu_var(dm_cpu_data);
--
-+	struct per_cpu_dm_data *data;
-+	unsigned long flags;
- 
--	rcu_read_lock();
--	dskb = rcu_dereference(data->skb);
-+	local_irq_save(flags);
-+	data = &__get_cpu_var(dm_cpu_data);
-+	spin_lock(&data->lock);
-+	dskb = data->skb;
- 
- 	if (!dskb)
- 		goto out;
- 
--	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
--		/*
--		 * we're already at zero, discard this hit
--		 */
--		goto out;
--	}
--
- 	nlh = (struct nlmsghdr *)dskb->data;
- 	nla = genlmsg_data(nlmsg_data(nlh));
- 	msg = nla_data(nla);
-@@ -189,7 +155,8 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
- 			goto out;
- 		}
- 	}
--
-+	if (msg->entries == dm_hit_limit)
-+		goto out;
- 	/*
- 	 * We need to create a new entry
- 	 */
-@@ -201,13 +168,11 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
- 
- 	if (!timer_pending(&data->send_timer)) {
- 		data->send_timer.expires = jiffies + dm_delay * HZ;
--		add_timer_on(&data->send_timer, smp_processor_id());
-+		add_timer(&data->send_timer);
- 	}
- 
- out:
--	rcu_read_unlock();
--	put_cpu_var(dm_cpu_data);
--	return;
-+	spin_unlock_irqrestore(&data->lock, flags);
- }
- 
- static void trace_kfree_skb_hit(struct sk_buff *skb, void *location)
-@@ -416,11 +381,11 @@ static int __init init_net_drop_monitor(void)
- 
- 	for_each_present_cpu(cpu) {
- 		data = &per_cpu(dm_cpu_data, cpu);
--		data->cpu = cpu;
- 		INIT_WORK(&data->dm_alert_work, send_dm_alert);
- 		init_timer(&data->send_timer);
--		data->send_timer.data = cpu;
-+		data->send_timer.data = (unsigned long)data;
- 		data->send_timer.function = sched_send_work;
-+		spin_lock_init(&data->lock);
- 		reset_per_cpu_data(data);
- 	}
- 
+ 	kernel_restart_prepare(cmd);
++	disable_nonboot_cpus();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
 -- 
 1.8.5.2
 
