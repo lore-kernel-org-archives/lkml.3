@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbaBEVDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 16:03:15 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54594 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369AbaBEUFI (ORCPT
+	id S1754337AbaBEUFC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:05:02 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48019 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaBEUEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:08 -0500
+	Wed, 5 Feb 2014 15:04:53 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eric Dumazet <edumazet@google.com>, David Miller <davem@davemloft.net>,
-        Tom Herbert <therbert@google.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
+CC: Cong Wang <xiyou.wangcong@gmail.com>,
+        nitin padalia <padalia.nitin@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 056/213] softirq: reduce latencies
-Date: Wed, 5 Feb 2014 15:00:11 -0500
-Message-ID: <1391630568-49251-57-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 046/213] net: prevent setting ttl=0 via IP_TTL
+Date: Wed, 5 Feb 2014 15:00:01 -0500
+Message-ID: <1391630568-49251-47-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,122 +34,50 @@ From: Eric Dumazet <edumazet@google.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c10d73671ad30f54692f7f69f0e09e75d3a8926a upstream.
+commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce upstream.
 
-In various network workloads, __do_softirq() latencies can be up
-to 20 ms if HZ=1000, and 200 ms if HZ=100.
+A regression is introduced by the following commit:
 
-This is because we iterate 10 times in the softirq dispatcher,
-and some actions can consume a lot of cycles.
+	commit 4d52cfbef6266092d535237ba5a4b981458ab171
+	Author: Eric Dumazet <eric.dumazet@gmail.com>
+	Date:   Tue Jun 2 00:42:16 2009 -0700
 
-This patch changes the fallback to ksoftirqd condition to :
+	    net: ipv4/ip_sockglue.c cleanups
 
-- A time limit of 2 ms.
-- need_resched() being set on current task
+	    Pure cleanups
 
-When one of this condition is met, we wakeup ksoftirqd for further
-softirq processing if we still have pending softirqs.
+but it is not a pure cleanup...
 
-Using need_resched() as the only condition can trigger RCU stalls,
-as we can keep BH disabled for too long.
+	-               if (val != -1 && (val < 1 || val>255))
+	+               if (val != -1 && (val < 0 || val > 255))
 
-I ran several benchmarks and got no significant difference in
-throughput, but a very significant reduction of latencies (one order
-of magnitude) :
+Since there is no reason provided to allow ttl=0, change it back.
 
-In following bench, 200 antagonist "netperf -t TCP_RR" are started in
-background, using all available cpus.
-
-Then we start one "netperf -t TCP_RR", bound to the cpu handling the NIC
-IRQ (hard+soft)
-
-Before patch :
-
-# netperf -H 7.7.7.84 -t TCP_RR -T2,2 -- -k
-RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
-MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET
-to 7.7.7.84 () port 0 AF_INET : first burst 0 : cpu bind
-RT_LATENCY=550110.424
-MIN_LATENCY=146858
-MAX_LATENCY=997109
-P50_LATENCY=305000
-P90_LATENCY=550000
-P99_LATENCY=710000
-MEAN_LATENCY=376989.12
-STDDEV_LATENCY=184046.92
-
-After patch :
-
-# netperf -H 7.7.7.84 -t TCP_RR -T2,2 -- -k
-RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
-MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET
-to 7.7.7.84 () port 0 AF_INET : first burst 0 : cpu bind
-RT_LATENCY=40545.492
-MIN_LATENCY=9834
-MAX_LATENCY=78366
-P50_LATENCY=33583
-P90_LATENCY=59000
-P99_LATENCY=69000
-MEAN_LATENCY=38364.67
-STDDEV_LATENCY=12865.26
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
+Reported-by: nitin padalia <padalia.nitin@gmail.com>
+Cc: nitin padalia <padalia.nitin@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/softirq.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ net/ipv4/ip_sockglue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 7c1a67ef0274..0df9a9406271 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -178,21 +178,21 @@ void local_bh_enable_ip(unsigned long ip)
- EXPORT_SYMBOL(local_bh_enable_ip);
- 
- /*
-- * We restart softirq processing MAX_SOFTIRQ_RESTART times,
-- * and we fall back to softirqd after that.
-+ * We restart softirq processing for at most 2 ms,
-+ * and if need_resched() is not set.
-  *
-- * This number has been established via experimentation.
-+ * These limits have been established via experimentation.
-  * The two things to balance is latency against fairness -
-  * we want to handle softirqs as soon as possible, but they
-  * should not be able to lock up the box.
-  */
--#define MAX_SOFTIRQ_RESTART 10
-+#define MAX_SOFTIRQ_TIME  msecs_to_jiffies(2)
- 
- asmlinkage void __do_softirq(void)
- {
- 	struct softirq_action *h;
- 	__u32 pending;
--	int max_restart = MAX_SOFTIRQ_RESTART;
-+	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
- 	int cpu;
- 
- 	pending = local_softirq_pending();
-@@ -236,11 +236,12 @@ restart:
- 	local_irq_disable();
- 
- 	pending = local_softirq_pending();
--	if (pending && --max_restart)
--		goto restart;
-+	if (pending) {
-+		if (time_before(jiffies, end) && !need_resched())
-+			goto restart;
- 
--	if (pending)
- 		wakeup_softirqd();
-+	}
- 
- 	lockdep_softirq_exit();
- 
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index e4256fe59a30..3ca6fa7d1365 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -573,7 +573,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 	case IP_TTL:
+ 		if (optlen < 1)
+ 			goto e_inval;
+-		if (val != -1 && (val < 0 || val > 255))
++		if (val != -1 && (val < 1 || val > 255))
+ 			goto e_inval;
+ 		inet->uc_ttl = val;
+ 		break;
 -- 
 1.8.5.2
 
