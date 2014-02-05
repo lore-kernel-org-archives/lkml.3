@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbaBEUGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:06:42 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48348 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959AbaBEUGd (ORCPT
+	id S933048AbaBEUja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:39:30 -0500
+Received: from mail.windriver.com ([147.11.1.11]:55149 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178AbaBEUGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:33 -0500
+	Wed, 5 Feb 2014 15:06:41 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <james.l.morris@oracle.com>,
+CC: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 125/213] keys: fix race with concurrent install_user_keyrings()
-Date: Wed, 5 Feb 2014 15:01:20 -0500
-Message-ID: <1391630568-49251-126-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 122/213] fix Null pointer dereference on disk error
+Date: Wed, 5 Feb 2014 15:01:17 -0500
+Message-ID: <1391630568-49251-123-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+From: Xiaotian Feng <xtfeng@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,72 +33,56 @@ From: David Howells <dhowells@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0da9dfdd2cd9889201bc6f6f43580c99165cd087 upstream.
+commit 26cd4d65deba587f3cf2329b6869ce02bcbe68ec upstream.
 
-This fixes CVE-2013-1792.
+Following oops were observed when disk error happened:
 
-There is a race in install_user_keyrings() that can cause a NULL pointer
-dereference when called concurrently for the same user if the uid and
-uid-session keyrings are not yet created.  It might be possible for an
-unprivileged user to trigger this by calling keyctl() from userspace in
-parallel immediately after logging in.
+[ 4272.896937] sd 0:0:0:0: [sda] Unhandled error code
+[ 4272.896939] sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+[ 4272.896942] sd 0:0:0:0: [sda] CDB: Read(10): 28 00 00 5a de a7 00 00 08 00
+[ 4272.896951] end_request: I/O error, dev sda, sector 5955239
+[ 4291.574947] BUG: unable to handle kernel NULL pointer dereference at (null)
+[ 4291.658305] IP: [] ahci_activity_show+0x1/0x40
+[ 4291.730090] PGD 76dbbc067 PUD 6c4fba067 PMD 0
+[ 4291.783408] Oops: 0000 [#1] SMP
+[ 4291.822100] last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/sw_activity
+[ 4291.934235] CPU 9
+[ 4291.958301] Pid: 27942, comm: hwinfo ......
 
-Assume that we have two threads both executing lookup_user_key(), both
-looking for KEY_SPEC_USER_SESSION_KEYRING.
+ata_scsi_find_dev could return NULL, so ata_scsi_activity_{show,store} should check if atadev is NULL.
 
-	THREAD A			THREAD B
-	===============================	===============================
-					==>call install_user_keyrings();
-	if (!cred->user->session_keyring)
-	==>call install_user_keyrings()
-					...
-					user->uid_keyring = uid_keyring;
-	if (user->uid_keyring)
-		return 0;
-	<==
-	key = cred->user->session_keyring [== NULL]
-					user->session_keyring = session_keyring;
-	atomic_inc(&key->usage); [oops]
-
-At the point thread A dereferences cred->user->session_keyring, thread B
-hasn't updated user->session_keyring yet, but thread A assumes it is
-populated because install_user_keyrings() returned ok.
-
-The race window is really small but can be exploited if, for example,
-thread B is interrupted or preempted after initializing uid_keyring, but
-before doing setting session_keyring.
-
-This couldn't be reproduced on a stock kernel.  However, after placing
-systemtap probe on 'user->session_keyring = session_keyring;' that
-introduced some delay, the kernel could be crashed reliably.
-
-Fix this by checking both pointers before deciding whether to return.
-Alternatively, the test could be done away with entirely as it is checked
-inside the mutex - but since the mutex is global, that may not be the best
-way.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reported-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- security/keys/process_keys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-scsi.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 20a38fed61b1..71c10cec3c18 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -55,7 +55,7 @@ int install_user_keyrings(void)
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 0dfa46877e39..191b375df95e 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -339,7 +339,8 @@ ata_scsi_activity_show(struct device *dev, struct device_attribute *attr,
+ 	struct ata_port *ap = ata_shost_to_port(sdev->host);
+ 	struct ata_device *atadev = ata_scsi_find_dev(ap, sdev);
  
- 	kenter("%p{%u}", user, user->uid);
+-	if (ap->ops->sw_activity_show && (ap->flags & ATA_FLAG_SW_ACTIVITY))
++	if (atadev && ap->ops->sw_activity_show &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY))
+ 		return ap->ops->sw_activity_show(atadev, buf);
+ 	return -EINVAL;
+ }
+@@ -354,7 +355,8 @@ ata_scsi_activity_store(struct device *dev, struct device_attribute *attr,
+ 	enum sw_activity val;
+ 	int rc;
  
--	if (user->uid_keyring) {
-+	if (user->uid_keyring && user->session_keyring) {
- 		kleave(" = 0 [exist]");
- 		return 0;
- 	}
+-	if (ap->ops->sw_activity_store && (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
++	if (atadev && ap->ops->sw_activity_store &&
++	    (ap->flags & ATA_FLAG_SW_ACTIVITY)) {
+ 		val = simple_strtoul(buf, NULL, 0);
+ 		switch (val) {
+ 		case OFF: case BLINK_ON: case BLINK_OFF:
 -- 
 1.8.5.2
 
