@@ -1,63 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaBEAW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Feb 2014 19:22:57 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:65135 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaBEAWz (ORCPT
+	id S1754932AbaBEAYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Feb 2014 19:24:33 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:1629 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946AbaBEAYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Feb 2014 19:22:55 -0500
-Date: Tue, 4 Feb 2014 16:22:53 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Holger Kiehl <Holger.Kiehl@dwd.de>
-cc: Christoph Lameter <cl@linux.com>, Rafael Aquini <aquini@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch v2] mm, page_alloc: make first_page visible before PageTail
-In-Reply-To: <alpine.DEB.2.02.1402041613450.14962@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1402041621350.14962@chino.kir.corp.google.com>
-References: <alpine.LRH.2.02.1401312037340.6630@diagnostix.dwd.de> <20140203122052.GC2495@dhcp22.suse.cz> <alpine.LRH.2.02.1402031426510.13382@diagnostix.dwd.de> <20140203162036.GJ2495@dhcp22.suse.cz> <52EFC93D.3030106@suse.cz>
- <alpine.DEB.2.02.1402031602060.10778@chino.kir.corp.google.com> <alpine.LRH.2.02.1402040713220.13901@diagnostix.dwd.de> <alpine.DEB.2.02.1402041557380.10140@chino.kir.corp.google.com> <20140204160641.8f5d369eeb2d0318618d6d5f@linux-foundation.org>
- <alpine.DEB.2.02.1402041613450.14962@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 4 Feb 2014 19:24:31 -0500
+X-IronPort-AV: E=Sophos;i="4.95,783,1384329600"; 
+   d="scan'208";a="12741299"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Chris Ball <cjb@laptop.org>, Christian Daudt <bcm@fixthebug.org>,
+        "Ulf Hansson" <ulf.hansson@linaro.org>, Axel Lin <axel.lin@ingics.com>
+CC: Tim Kryger <tim.kryger@linaro.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>
+Subject: [PATCH RESEND] mmc: sdhci-bcm-kona: Add basic use of clocks
+Date: Tue, 4 Feb 2014 16:24:14 -0800
+Message-ID: <1391559854-28004-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.8.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit bf6bddf1924e ("mm: introduce compaction and migration for ballooned
-pages") introduces page_count(page) into memory compaction which
-dereferences page->first_page if PageTail(page).
+Enable the external clock needed by the host controller during the
+probe and disable it during the remove.
 
-Introduce a store memory barrier to ensure page->first_page is properly
-initialized so that code that does page_count(page) on pages off the lru
-always have a valid p->first_page.
-
-Reported-by: Holger Kiehl <Holger.Kiehl@dwd.de>
-Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+Reviewed-by: Christian Daudt <bcm@fixthebug.org>
 ---
- v2: with commentary, per checkpatch
 
- mm/page_alloc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+This was dropped from "Update Kona drivers to use clocks" series so the
+remaining patches could get into v3.14:
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -369,9 +369,11 @@ void prep_compound_page(struct page *page, unsigned long order)
- 	__SetPageHead(page);
- 	for (i = 1; i < nr_pages; i++) {
- 		struct page *p = page + i;
--		__SetPageTail(p);
- 		set_page_count(p, 0);
- 		p->first_page = page;
-+		/* Make sure p->first_page is always valid for PageTail() */
-+		smp_wmb();
-+		__SetPageTail(p);
+https://lkml.org/lkml/2014/1/24/286
+
+Without this change the bcm28155_ap board can not be configured to use
+the bcm281xx clock driver since unused clocks will be disabled during
+late init.
+
+ drivers/mmc/host/sdhci-bcm-kona.c | 37 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 35 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+index 7a190fe..923eefa 100644
+--- a/drivers/mmc/host/sdhci-bcm-kona.c
++++ b/drivers/mmc/host/sdhci-bcm-kona.c
+@@ -54,6 +54,7 @@
+ 
+ struct sdhci_bcm_kona_dev {
+ 	struct mutex	write_lock; /* protect back to back writes */
++	struct clk	*external_clk;
+ };
+ 
+ 
+@@ -257,6 +258,24 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
+ 		goto err_pltfm_free;
  	}
+ 
++	/* Get and enable the external clock */
++	kona_dev->external_clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(kona_dev->external_clk)) {
++		dev_err(dev, "Failed to get external clock\n");
++		ret = PTR_ERR(kona_dev->external_clk);
++		goto err_pltfm_free;
++	}
++
++	if (clk_set_rate(kona_dev->external_clk, host->mmc->f_max) != 0) {
++		dev_err(dev, "Failed to set rate external clock\n");
++		goto err_pltfm_free;
++	}
++
++	if (clk_prepare_enable(kona_dev->external_clk) != 0) {
++		dev_err(dev, "Failed to enable external clock\n");
++		goto err_pltfm_free;
++	}
++
+ 	dev_dbg(dev, "non-removable=%c\n",
+ 		(host->mmc->caps & MMC_CAP_NONREMOVABLE) ? 'Y' : 'N');
+ 	dev_dbg(dev, "cd_gpio %c, wp_gpio %c\n",
+@@ -271,7 +290,7 @@ static int sdhci_bcm_kona_probe(struct platform_device *pdev)
+ 
+ 	ret = sdhci_bcm_kona_sd_reset(host);
+ 	if (ret)
+-		goto err_pltfm_free;
++		goto err_clk_disable;
+ 
+ 	sdhci_bcm_kona_sd_init(host);
+ 
+@@ -307,6 +326,9 @@ err_remove_host:
+ err_reset:
+ 	sdhci_bcm_kona_sd_reset(host);
+ 
++err_clk_disable:
++	clk_disable_unprepare(kona_dev->external_clk);
++
+ err_pltfm_free:
+ 	sdhci_pltfm_free(pdev);
+ 
+@@ -316,7 +338,18 @@ err_pltfm_free:
+ 
+ static int __exit sdhci_bcm_kona_remove(struct platform_device *pdev)
+ {
+-	return sdhci_pltfm_unregister(pdev);
++	struct sdhci_host *host = platform_get_drvdata(pdev);
++	struct sdhci_pltfm_host *pltfm_priv = sdhci_priv(host);
++	struct sdhci_bcm_kona_dev *kona_dev = sdhci_pltfm_priv(pltfm_priv);
++	int dead = (readl(host->ioaddr + SDHCI_INT_STATUS) == 0xffffffff);
++
++	sdhci_remove_host(host, dead);
++
++	clk_disable_unprepare(kona_dev->external_clk);
++
++	sdhci_pltfm_free(pdev);
++
++	return 0;
  }
  
+ static struct platform_driver sdhci_bcm_kona_driver = {
+-- 
+1.8.0.1
+
