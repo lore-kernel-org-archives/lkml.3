@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736AbaBEUvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:51:42 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48241 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750AbaBEUF7 (ORCPT
+	id S1755911AbaBEUwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:52:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38217 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaBEUwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:05:59 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 099/213] hugetlb: fix resv_map leak in error path
-Date: Wed, 5 Feb 2014 15:00:54 -0500
-Message-ID: <1391630568-49251-100-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Feb 2014 15:52:32 -0500
+Date: Wed, 5 Feb 2014 12:52:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 2/3] mm: vmscan: get rid of DEFAULT_SEEKS and document
+ shrink_slab logic
+Message-Id: <20140205125230.e1705369abcb634ddf141008@linux-foundation.org>
+In-Reply-To: <52F1E561.8020804@parallels.com>
+References: <4e2efebe688e06574f6495c634ac45d799e1518d.1389982079.git.vdavydov@parallels.com>
+	<e204471853100447541ce36b198c0d45bf06379c.1389982079.git.vdavydov@parallels.com>
+	<20140204135836.05c09c765073513e62edd174@linux-foundation.org>
+	<52F1E561.8020804@parallels.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+On Wed, 5 Feb 2014 11:16:49 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> > So why did I originally make DEFAULT_SEEKS=2?  Because I figured that to
+> > recreate (say) an inode would require a seek to the inode data then a
+> > seek back.  Is it legitimate to include the
+> > seek-back-to-what-you-were-doing-before seek in the cost of an inode
+> > reclaim?  I guess so...
+> 
+> Hmm, that explains this 2. Since we typically don't need to "seek back"
+> when recreating a cache page, as they are usually read in bunches by
+> readahead, the number of seeks to bring back a user page is 1, while the
+> number of seeks to recreate an average inode is 2, right?
 
-commit c50ac050811d6485616a193eb0f37bfbd191cc89 upstream.
+Sounds right to me.
 
-When called for anonymous (non-shared) mappings, hugetlb_reserve_pages()
-does a resv_map_alloc().  It depends on code in hugetlbfs's
-vm_ops->close() to release that allocation.
+> Then to scan inodes and user pages so that they would generate
+> approximately the same number of seeks, we should calculate the number
+> of objects to scan as follows:
+> 
+> nr_objects_to_scan = nr_pages_scanned / lru_pages *
+>                                         nr_freeable_objects /
+> shrinker->seeks
+> 
+> where shrinker->seeks = DEFAULT_SEEKS = 2 for inodes.
 
-However, in the mmap() failure path, we do a plain unmap_region() without
-the remove_vma() which actually calls vm_ops->close().
+hm, I wonder if we should take the size of the object into account. 
+Should we be maximizing (memory-reclaimed / seeks-to-reestablish-it).
 
-This is a decent fix.  This leak could get reintroduced if new code (say,
-after hugetlb_reserve_pages() in hugetlbfs_file_mmap()) decides to return
-an error.  But, I think it would have to unroll the reservation anyway.
+> But currently we
+> have four times that. I can explain why we should multiply this by 2 -
+> we do not count pages moving from active to inactive lrus in
+> nr_pages_scanned, and 2*nr_pages_scanned can be a good approximation for
+> that - but I have no idea why we multiply it by 4...
 
-Christoph's test case:
+I don't understand this code at all:
 
-	http://marc.info/?l=linux-mm&m=133728900729735
+	total_scan = nr;
+	delta = (4 * nr_pages_scanned) / shrinker->seeks;
+	delta *= freeable;
+	do_div(delta, lru_pages + 1);
+	total_scan += delta;
 
-This patch applies to 3.4 and later.  A version for earlier kernels is at
-https://lkml.org/lkml/2012/5/22/418.
+If it actually makes any sense, it sorely sorely needs documentation.
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: Christoph Lameter <cl@linux.com>
-Tested-by: Christoph Lameter <cl@linux.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- mm/hugetlb.c | 28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index ca9ce49d71e3..f7b80540ba95 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2030,6 +2030,15 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
- 		kref_get(&reservations->refs);
- }
- 
-+static void resv_map_put(struct vm_area_struct *vma)
-+{
-+	struct resv_map *reservations = vma_resv_map(vma);
-+
-+	if (!reservations)
-+		return;
-+	kref_put(&reservations->refs, resv_map_release);
-+}
-+
- static void hugetlb_vm_op_close(struct vm_area_struct *vma)
- {
- 	struct hstate *h = hstate_vma(vma);
-@@ -2045,7 +2054,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
- 		reserve = (end - start) -
- 			region_count(&reservations->regions, start, end);
- 
--		kref_put(&reservations->refs, resv_map_release);
-+		resv_map_put(vma);
- 
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
-@@ -2744,12 +2753,16 @@ int hugetlb_reserve_pages(struct inode *inode,
- 		set_vma_resv_flags(vma, HPAGE_RESV_OWNER);
- 	}
- 
--	if (chg < 0)
--		return chg;
-+	if (chg < 0) {
-+		ret = chg;
-+		goto out_err;
-+	}
- 
- 	/* There must be enough filesystem quota for the mapping */
--	if (hugetlb_get_quota(inode->i_mapping, chg))
--		return -ENOSPC;
-+	if (hugetlb_get_quota(inode->i_mapping, chg)) {
-+		ret = -ENOSPC;
-+		goto out_err;
-+	}
- 
- 	/*
- 	 * Check enough hugepages are available for the reservation.
-@@ -2758,7 +2771,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	ret = hugetlb_acct_memory(h, chg);
- 	if (ret < 0) {
- 		hugetlb_put_quota(inode->i_mapping, chg);
--		return ret;
-+		goto out_err;
- 	}
- 
- 	/*
-@@ -2775,6 +2788,9 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
- 		region_add(&inode->i_mapping->private_list, from, to);
- 	return 0;
-+out_err:
-+	resv_map_put(vma);
-+	return ret;
- }
- 
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
--- 
-1.8.5.2
-
+David, you touched it last.  Any hints?
