@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaBENoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 08:44:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25290 "EHLO mx1.redhat.com"
+	id S1751476AbaBENqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 08:46:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757AbaBENoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 08:44:04 -0500
-Date: Wed, 5 Feb 2014 08:43:55 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg Pearson <greg.pearson@hp.com>
-Cc: akpm@linux-foundation.org, d.hatayama@jp.fujitsu.com,
-        holzheu@linux.vnet.ibm.com, dhowells@redhat.com,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] vmcore: prevent PT_NOTE p_memsz overflow during
- header update
-Message-ID: <20140205134355.GD6042@redhat.com>
-References: <1391556352-15881-1-git-send-email-greg.pearson@hp.com>
- <20140205133912.GC6042@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140205133912.GC6042@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750849AbaBENqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 08:46:52 -0500
+Message-ID: <1391607995.13157.24.camel@localhost>
+Subject: Re: [PATCH v2.1] audit: Only use the syscall slowpath when syscall
+ audit rules exist
+From: Eric Paris <eparis@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>
+Date: Wed, 05 Feb 2014 14:46:35 +0100
+In-Reply-To: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
+References: <377a1c5ce05e25b068cf7576d094885c1396c6bc.1391454589.git.luto@amacapital.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 08:39:12AM -0500, Vivek Goyal wrote:
-> On Tue, Feb 04, 2014 at 04:25:52PM -0700, Greg Pearson wrote:
-> 
-> [..]
-> > diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> > index 2ca7ba0..88d4585 100644
-> > --- a/fs/proc/vmcore.c
-> > +++ b/fs/proc/vmcore.c
-> > @@ -468,17 +468,24 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
-> >  			return rc;
-> >  		}
-> >  		nhdr_ptr = notes_section;
-> > -		while (real_sz < max_sz) {
-> > -			if (nhdr_ptr->n_namesz == 0)
-> > -				break;
-> > +		while (nhdr_ptr->n_namesz != 0) {
-> >  			sz = sizeof(Elf64_Nhdr) +
-> >  				((nhdr_ptr->n_namesz + 3) & ~3) +
-> >  				((nhdr_ptr->n_descsz + 3) & ~3);
-> > +			if ((real_sz + sz) > max_sz) {
-> > +				pr_warn("Warning: Exceeded p_memsz, dropping PT_NOTE entry n_namesz=0x%x, n_descsz=0x%x\n",
-> > +					nhdr_ptr->n_namesz, nhdr_ptr->n_descsz);
-> 
-> You will need line break in pr_warn(). Too long a line. Limit it 80
-> columns per line.
-> 
-> > +				break;
-> > +			}
-> >  			real_sz += sz;
-> >  			nhdr_ptr = (Elf64_Nhdr*)((char*)nhdr_ptr + sz);
-> >  		}
-> >  		kfree(notes_section);
-> >  		phdr_ptr->p_memsz = real_sz;
-> > +		if (real_sz == 0) {
-> > +			pr_warn("Warning: Zero PT_NOTE entries found\n");
-> > +			return -EINVAL;
-> 
-> Given the fact that this is the first time I have heard about a PT_NOTE
-> being corrup, I will be fine with this patch too. If one encounters
-> an empty PT_NOTE, error out and don't create vmcore.
-> 
-> So please repost this patch with line lenght fixed.
+On Mon, 2014-02-03 at 11:11 -0800, Andy Lutomirski wrote:
 
-Hi Greg,
+> +void audit_inc_n_rules()
+> +{
+> +	struct task_struct *p, *g;
+> +	unsigned long flags;
+> +
+> +	read_lock_irqsave(&tasklist_lock, flags);
+> +	if (audit_n_rules++ == 0) {
 
-Is there any more debugging info on why a PT_NOTE is getting corrupt. Did
-you get a chance to debug it further. This patch is more of a band-aid and
-real problem is why note is getting corrupted and we need to chase that
-down and fix that.
+I know it's right, but it's too clever for me  :)  If we do end up
+adding something like this Can we just do:
+   if (!audit_n_rules) {}
+   audit_n_rules++
 
-Thanks
-Vivek
+I like dumb code   :)
+
+> +		do_each_thread(g, p) {
+> +			if (p->audit_context)
+> +				set_tsk_thread_flag(p, TIF_SYSCALL_AUDIT);
+> +		} while_each_thread(g, p);
+> +	}
+> +	read_unlock_irqrestore(&tasklist_lock, flags);
+> +}
+
