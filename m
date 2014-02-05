@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696AbaBEUVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:21:53 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48542 "EHLO
+	id S1755867AbaBEUW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:22:28 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48537 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaBEUHk (ORCPT
+	with ESMTP id S1755245AbaBEUHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:07:40 -0500
+	Wed, 5 Feb 2014 15:07:38 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jan Kara <jack@suse.cz>, Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 177/213] ext4: fix fdatasync() for files with only i_size changes
-Date: Wed, 5 Feb 2014 15:02:12 -0500
-Message-ID: <1391630568-49251-178-git-send-email-paul.gortmaker@windriver.com>
+CC: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 175/213] ext4: online defrag is not supported for journaled files
+Date: Wed, 5 Feb 2014 15:02:10 -0500
+Message-ID: <1391630568-49251-176-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -30,56 +31,37 @@ From: Jan Kara <jack@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b71fc079b5d8f42b2a52743c8d2f1d35d655b1c5 upstream.
+commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
 
-Code tracking when transaction needs to be committed on fdatasync(2) forgets
-to handle a situation when only inode's i_size is changed. Thus in such
-situations fdatasync(2) doesn't force transaction with new i_size to disk
-and that can result in wrong i_size after a crash.
+Proper block swap for inodes with full journaling enabled is
+truly non obvious task. In order to be on a safe side let's
+explicitly disable it for now.
 
-Fix the issue by updating inode's i_datasync_tid whenever its size is
-updated.
-
-Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ext4/inode.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/ext4/move_extent.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 893da43223d4..658ca8d92ded 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5236,6 +5236,7 @@ static int ext4_do_update_inode(handle_t *handle,
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	struct buffer_head *bh = iloc->bh;
- 	int err = 0, rc, block;
-+	int need_datasync = 0;
- 
- 	/* For fields not not tracking in the in-memory inode,
- 	 * initialise them to zero for new inodes. */
-@@ -5284,7 +5285,10 @@ static int ext4_do_update_inode(handle_t *handle,
- 		raw_inode->i_file_acl_high =
- 			cpu_to_le16(ei->i_file_acl >> 32);
- 	raw_inode->i_file_acl_lo = cpu_to_le32(ei->i_file_acl);
--	ext4_isize_set(raw_inode, ei->i_disksize);
-+	if (ei->i_disksize != ext4_isize(raw_inode)) {
-+		ext4_isize_set(raw_inode, ei->i_disksize);
-+		need_datasync = 1;
+diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+index deff4a5085e8..6764168776bf 100644
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1209,7 +1209,12 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp,
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
+ 	}
+-
++	/* TODO: This is non obvious task to swap blocks for inodes with full
++	   jornaling enabled */
++	if (ext4_should_journal_data(orig_inode) ||
++	    ext4_should_journal_data(donor_inode)) {
++		return -EINVAL;
 +	}
- 	if (ei->i_disksize > 0x7fffffffULL) {
- 		struct super_block *sb = inode->i_sb;
- 		if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-@@ -5337,7 +5341,7 @@ static int ext4_do_update_inode(handle_t *handle,
- 		err = rc;
- 	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
- 
--	ext4_update_inode_fsync_trans(handle, inode, 0);
-+	ext4_update_inode_fsync_trans(handle, inode, need_datasync);
- out_brelse:
- 	brelse(bh);
- 	ext4_std_error(inode->i_sb, err);
+ 	/* Protect orig and donor inodes against a truncate */
+ 	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
+ 	if (ret1 < 0)
 -- 
 1.8.5.2
 
