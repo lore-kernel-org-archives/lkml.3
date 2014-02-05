@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaBEPlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 10:41:37 -0500
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:12268
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752544AbaBEPlg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 10:41:36 -0500
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz8275ch1de098h17326ah8275bh1de097h186068hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h906i1155h)
-Date: Wed, 5 Feb 2014 07:41:28 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <monstr@monstr.eu>,
-        Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Felipe Pena <felipensp@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: zynq: Move of_clk_init from clock driver
-References: <572af6e4eaaaa1c74ea62364f8fa7ac5834cc754.1391612175.git.michal.simek@xilinx.com>
+	id S1752748AbaBEPmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 10:42:09 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40043 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbaBEPmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 10:42:06 -0500
+Date: Wed, 5 Feb 2014 10:42:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH -v2 4/6] memcg: make sure that memcg is not offline when
+ charging
+Message-ID: <20140205154202.GA2786@htj.dyndns.org>
+References: <1391520540-17436-1-git-send-email-mhocko@suse.cz>
+ <1391520540-17436-5-git-send-email-mhocko@suse.cz>
+ <20140204162939.GP6963@cmpxchg.org>
+ <20140205133834.GB2425@dhcp22.suse.cz>
+ <20140205152821.GY6963@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <572af6e4eaaaa1c74ea62364f8fa7ac5834cc754.1391612175.git.michal.simek@xilinx.com>
+In-Reply-To: <20140205152821.GY6963@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <4e03e3ec-2fc7-40fc-a2cc-4a6c64379559@CO1EHSMHS025.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 05, 2014 at 03:56:37PM +0100, Michal Simek wrote:
-> Move of_clk_init() from clock driver to enable
-> options not to use zynq clock driver.
-> Use for example fixed clock setting.
-What is the use-case? Zynq w/o this driver makes no sense, IMHO. And
-even if you wanna fake clocks, why would this driver prevent it? Just
-replace all the input clocks with different ones and don't care about
-what this driver does?
+Hello, guys.
 
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> 
-> Based on http://www.spinics.net/lists/arm-kernel/msg298287.html
-> series
-> 
-> ---
->  arch/arm/mach-zynq/common.c | 1 +
->  drivers/clk/zynq/clkc.c     | 2 --
->  2 files changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-> index 93ea19b..8df35f3 100644
-> --- a/arch/arm/mach-zynq/common.c
-> +++ b/arch/arm/mach-zynq/common.c
-> @@ -68,6 +68,7 @@ static void __init zynq_timer_init(void)
->  	zynq_early_slcr_init();
-> 
->  	zynq_clock_init();
-> +	of_clk_init(NULL);
-Now you have two clock init functions...
+On Wed, Feb 05, 2014 at 10:28:21AM -0500, Johannes Weiner wrote:
+> I thought more about this and talked to Tejun as well.  He told me
+> that the rcu grace period between disabling tryget and calling
+> css_offline() is currently an implementation detail of the refcounter
+> that css uses, but it's not a guarantee.  So my initial idea of
 
-	Sören
+Yeah, that's an implementation detail coming from how percpu_ref is
+implemented at the moment.  Also, it's a sched_rcu grace period, not a
+normal one.  The only RCU-related guarnatee that cgroup core gives is
+that there will be a full RCU grace period between css's ref reaching
+zero and invocation of ->css_free() so that it's safe to do
+css_tryget() inside RCU critical sections.
 
+In short, offlining is *not* protected by RCU.  Freeing is.
 
+> Well, css_free() is the callback invoked when the ref counter hits 0,
+> and that is a guarantee.  From a memcg perspective, it's the right
+> place to do reparenting, not css_offline().
+
+So, css_offline() is cgroup telling controllers two things.
+
+* The destruction of the css, which will commence when css ref reaches
+  zero, has initiated.  If you're holding any long term css refs for
+  caching and stuff, put them so that destruction can actually happen.
+
+* Any css_tryget() attempts which haven't finished yet are guaranteed
+  to fail.  (there's no implied RCU protection here)
+
+Maybe offline is a bit of misnomer.  It's really just telling the
+controllers to get prepared to be destroyed.
+
+> Here is the only exception to the above: swapout records maintain
+> permanent css references, so they prevent css_free() from running.
+> For that reason alone we should run one optimistic reparenting in
+> css_offline() to make sure one swap record does not pin gigabytes of
+> pages in an offlined cgroup, which is unreachable for reclaim.  But
+> the reparenting for *correctness* is in css_free(), not css_offline().
+
+A more canonical use case can be found in blkcg.  blkcg holds "cache"
+css refs for optimization in the indexing data structure.  On offline,
+blkcg purges those refs so that those stale cache refs don't put off
+actual destruction for too long.  But yeah the above sounds like a
+plausible use case too.
+
+Thanks.
+
+-- 
+tejun
