@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaBEUD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:03:56 -0500
-Received: from mail.windriver.com ([147.11.1.11]:54199 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745AbaBEUDj (ORCPT
+	id S1755619AbaBEVLl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 16:11:41 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:47948 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006AbaBEUD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:03:39 -0500
+	Wed, 5 Feb 2014 15:03:56 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eryu Guan <guaneryu@gmail.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+CC: Mathias Krause <minipli@googlemail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 015/213] jbd/jbd2: validate sb->s_first in journal_get_superblock()
-Date: Wed, 5 Feb 2014 14:59:30 -0500
-Message-ID: <1391630568-49251-16-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 028/213] ax25: fix info leak via msg_name in ax25_recvmsg()
+Date: Wed, 5 Feb 2014 14:59:43 -0500
+Message-ID: <1391630568-49251-29-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eryu Guan <guaneryu@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,96 +33,39 @@ From: Eryu Guan <guaneryu@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8762202dd0d6e46854f786bdb6fb3780a1625efe upstream.
+commit ef3313e84acbf349caecae942ab3ab731471f1a1 upstream.
 
-I hit a J_ASSERT(blocknr != 0) failure in cleanup_journal_tail() when
-mounting a fsfuzzed ext3 image. It turns out that the corrupted ext3
-image has s_first = 0 in journal superblock, and the 0 is passed to
-journal->j_head in journal_reset(), then to blocknr in
-cleanup_journal_tail(), in the end the J_ASSERT failed.
+When msg_namelen is non-zero the sockaddr info gets filled out, as
+requested, but the code fails to initialize the padding bytes of struct
+sockaddr_ax25 inserted by the compiler for alignment. Additionally the
+msg_namelen value is updated to sizeof(struct full_sockaddr_ax25) but is
+not always filled up to this size.
 
-So validate s_first after reading journal superblock from disk in
-journal_get_superblock() to ensure s_first is valid.
+Both issues lead to the fact that the code will leak uninitialized
+kernel stack bytes in net/socket.c.
 
-The following script could reproduce it:
+Fix both issues by initializing the memory with memset(0).
 
-fstype=ext3
-blocksize=1024
-img=$fstype.img
-offset=0
-found=0
-magic="c0 3b 39 98"
-
-dd if=/dev/zero of=$img bs=1M count=8
-mkfs -t $fstype -b $blocksize -F $img
-filesize=`stat -c %s $img`
-while [ $offset -lt $filesize ]
-do
-        if od -j $offset -N 4 -t x1 $img | grep -i "$magic";then
-                echo "Found journal: $offset"
-                found=1
-                break
-        fi
-        offset=`echo "$offset+$blocksize" | bc`
-done
-
-if [ $found -ne 1 ];then
-        echo "Magic \"$magic\" not found"
-        exit 1
-fi
-
-dd if=/dev/zero of=$img seek=$(($offset+23)) conv=notrunc bs=1 count=1
-
-mkdir -p ./mnt
-mount -o loop $img ./mnt
-
-Cc: Jan Kara <jack@suse.cz>
-Signed-off-by: Eryu Guan <guaneryu@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/jbd/journal.c  | 8 ++++++++
- fs/jbd2/journal.c | 8 ++++++++
- 2 files changed, 16 insertions(+)
+ net/ax25/af_ax25.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 70713d508a0f..62b66042e104 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -1078,6 +1078,14 @@ static int journal_get_superblock(journal_t *journal)
- 		goto out;
- 	}
+diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
+index 12c350c63717..d082b6db6b81 100644
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1655,6 +1655,7 @@ static int ax25_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		ax25_address src;
+ 		const unsigned char *mac = skb_mac_header(skb);
  
-+	if (be32_to_cpu(sb->s_first) == 0 ||
-+	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-+		printk(KERN_WARNING
-+			"JBD: Invalid start block of journal: %u\n",
-+			be32_to_cpu(sb->s_first));
-+		goto out;
-+	}
-+
- 	return 0;
- 
- out:
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 7f16feab9917..21bf6cdaedfd 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1194,6 +1194,14 @@ static int journal_get_superblock(journal_t *journal)
- 		goto out;
- 	}
- 
-+	if (be32_to_cpu(sb->s_first) == 0 ||
-+	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-+		printk(KERN_WARNING
-+			"JBD2: Invalid start block of journal: %u\n",
-+			be32_to_cpu(sb->s_first));
-+		goto out;
-+	}
-+
- 	return 0;
- 
- out:
++		memset(sax, 0, sizeof(struct full_sockaddr_ax25));
+ 		ax25_addr_parse(mac + 1, skb->data - mac - 1, &src, NULL,
+ 				&digi, NULL, NULL);
+ 		sax->sax25_family = AF_AX25;
 -- 
 1.8.5.2
 
