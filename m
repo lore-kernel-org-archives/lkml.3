@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209AbaBEUmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:42:43 -0500
-Received: from mx5.gridway.net ([72.1.205.140]:36101 "EHLO mx5.gridway.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932441AbaBEUmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:42:38 -0500
-X-Greylist: delayed 721 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Feb 2014 15:42:37 EST
-Date: Wed, 5 Feb 2014 15:30:27 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [v2.6.34-stable 004/213] crypto: ghash - Avoid null pointer
- dereference if no key is set
-Message-ID: <20140205203027.GA23845@elliptictech.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
- <1391630568-49251-5-git-send-email-paul.gortmaker@windriver.com>
+	id S933221AbaBEUnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:43:15 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:48079 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755326AbaBEUnL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Feb 2014 15:43:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1391630568-49251-5-git-send-email-paul.gortmaker@windriver.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [209.217.122.41]
-X-Spam-Score: undef - 72.1.205.180 is whitelisted.
-X-CanIt-Geo: ip=72.1.205.180; country=CA; region=ON; city=Ottawa; latitude=45.4167; longitude=-75.7000; http://maps.google.com/maps?q=45.4167,-75.7000&z=6
-X-CanItPRO-Stream: base:outbound (inherits from base:default)
-X-Canit-Stats-ID: Bayes signature not available
+In-Reply-To: <20140205171729.GA17974@earth.universe>
+References: <1391603582-11371-1-git-send-email-sre@debian.org>
+ <CAHYPw2Ep9VP6Tem979ewcztdxkHkG8eR_U31U=f5ibsVa5AS4Q@mail.gmail.com>
+ <20140205163117.GA15996@earth.universe> <CAHYPw2HX478ZZPfDTKCKSGhVdFc1-G5DszUR4vG+WRgZx=8+dQ@mail.gmail.com>
+ <20140205171729.GA17974@earth.universe>
+From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Wed, 5 Feb 2014 21:42:30 +0100
+Message-ID: <CAHYPw2FRbcR_anv9f2igcFV6XnCfpjJMHaeZmcNs8KpXuG96cQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP2+: Add support for thumb mode on DT booted N900
+To: Sebastian Reichel <sre@debian.org>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, freemangordon@abv.bg
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-02-05 14:59 -0500, Paul Gortmaker wrote:
-> From: Nick Bowler <nbowler@elliptictech.com>
-> 
->                    -------------------
->     This is a commit scheduled for the next v2.6.34 longterm release.
->     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
->     If you see a problem with using this for longterm, please comment.
->                    -------------------
-> 
-> commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
-> 
-> The ghash_update function passes a pointer to gf128mul_4k_lle which will
-> be NULL if ghash_setkey is not called or if the most recent call to
-> ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
-> up by returning an error code in the null case.
-> 
-> This is trivially triggered from unprivileged userspace through the
-> AF_ALG interface by simply writing to the socket without setting a key.
+2014-02-05 Sebastian Reichel <sre@debian.org>:
+> Hi,
+>
+> On Wed, Feb 05, 2014 at 05:38:54PM +0100, Pali Rohár wrote:
+>> > I assumed, that the workaround is not needed for this device type.
+>>
+>> That rx51 secure call must not be called on non secure devices (e.g.
+>> qemu), because it cause kernel crash. So I thought that kernel should
+>> write something like secure call is disabled on that device types.
+>> Kernel code for errata 430973 will update ibe bit for non secure
+>> devices.
+>
+> Do you see any advantage in having that message?
+>
 
-After all this time, I see this patch still manages to find its way,
-occasionally, into the patch queue for older -stable. :)
+Consistency. Print message 1) only if secure rx51 smc instruction is
+called or 2) print message always (also if smc is not called). With
+that patch message is printed (enabled/disabled) only if device is
+rx51 and device type is HS.
 
-It should be harmless to apply, but this patch doesn't actually fix
-any real problem on kernels previous to 2.6.38 because the AF_ALG
-userspace interface does not exist in these kernels.
+For information it is also good to know that in qemu that special
+secure smc instruction was not called.
 
-Cheers,
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Pali Rohár
+pali.rohar@gmail.com
