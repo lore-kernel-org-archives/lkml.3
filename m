@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041AbaBEUib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Feb 2014 15:38:31 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55178 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251AbaBEUGr (ORCPT
+	id S1755719AbaBEUiq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Feb 2014 15:38:46 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:24655 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251AbaBEUik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Feb 2014 15:06:47 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jun Nie <njun@marvell.com>, "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 134/213] Bluetooth: add NULL pointer check in HCI
-Date: Wed, 5 Feb 2014 15:01:29 -0500
-Message-ID: <1391630568-49251-135-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1391630568-49251-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 5 Feb 2014 15:38:40 -0500
+X-AuditID: cbfec37b-b7f216d000006a8d-07-52f2a14f0116
+Message-id: <52F2A14C.6050505@samsung.com>
+Date: Wed, 05 Feb 2014 13:38:36 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.4 00/37] 3.4.79-stable review
+References: <20140204210055.992134150@linuxfoundation.org>
+In-reply-to: <20140204210055.992134150@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.4]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hP13/hZ+CDKau5rSYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugStj96qgghnsFV2X+1kaGO+wdjFyckgImEgseHCTHcIWk7hwbz0biC0ksIxR4kNLDITd
+	yyRxcUsWhL2BUaLzFD+IzSugJXFhQgNYPYuAqsTD3pdgNpuAusTn1zvYIerlJJqWrGYGsUUF
+	IiRenZ3IAtErKPFj8j0wW0QgWGLt14WMXYxcHMwChxklzu2/BnacsICxxLSWNawQg6wkFi39
+	DWZzClhLTP71jAnEZhYwk3jUso4ZwpaX2LzmLTNEvbLEn8unmCAeU5BYceMNywRGkVlIds9C
+	0j4LSfsCRuZVjGKlxckFxUnpqRVGesWJucWleel6yfm5mxgh8VK9g/HuV5tDjAIcjEo8vAZd
+	n4KEWBPLiitzDzFKcDArifCemA4U4k1JrKxKLcqPLyrNSS0+xMjEwSnVwBhdld17e31WnmDS
+	o4tmBuebXFbLX+S2fD6Pay3zC74vlTsfi33vW1S2SENMTSr7kOT65oQ+oQKuN7fF52s4W3xd
+	Uyz6R8Z9v/99D7Y9CVdO3vC7mcFyaLmSaUD7bf+Vfs68CQ+u3P177kXS8mDRxy8Xud8Mtz17
+	8NbB+dz3zRhufFh4/Wxr8HwlluKMREMt5qLiRACcNsT2dQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jun Nie <njun@marvell.com>
+On 02/04/2014 02:00 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.79 release.
+> There are 37 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Feb  6 21:00:31 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.79-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+Patch applied cleanly. boot tests passed on all test systems. No dmesg 
+regressions: emerg, crit, alert, err are clean. No regressions in warn.
 
-commit d9319560b86839506c2011346b1f2e61438a3c73 upstream.
+-- Shuah
 
-If we fail to find a hci device pointer in hci_uart, don't try
-to deref the NULL one we do have.
-
-Signed-off-by: Jun Nie <njun@marvell.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/bluetooth/hci_ldisc.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index 283b127cea74..91be8d53d819 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -313,8 +313,10 @@ static void hci_uart_tty_close(struct tty_struct *tty)
- 
- 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
- 			hu->proto->close(hu);
--			hci_unregister_dev(hdev);
--			hci_free_dev(hdev);
-+			if (hdev) {
-+				hci_unregister_dev(hdev);
-+				hci_free_dev(hdev);
-+			}
- 		}
- 	}
- }
 -- 
-1.8.5.2
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
